@@ -1,0 +1,2 @@
+string destination
+float32 quality

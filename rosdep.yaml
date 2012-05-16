@@ -1,0 +1,6 @@
+avahi-daemon:
+  ubuntu: avahi-daemon
+
+python-avahi:
+  ubuntu: python-avahi
+

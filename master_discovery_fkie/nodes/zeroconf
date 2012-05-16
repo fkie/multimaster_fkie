@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import roslib; roslib.load_manifest('master_discovery_fkie')
+import master_discovery_fkie
+master_discovery_fkie.main_zeroconf()

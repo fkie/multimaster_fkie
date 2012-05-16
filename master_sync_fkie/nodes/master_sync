@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import roslib; roslib.load_manifest('master_sync_fkie')
+import master_sync_fkie
+master_sync_fkie.main()
