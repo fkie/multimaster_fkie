@@ -317,7 +317,7 @@ class Discoverer(threading.Thread):
           t = self.master_monitor.master_state.timestamp
         msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), t.secs, t.nsecs, self.master_monitor.rpcport)
         self.msocket.send2group(msg)
-      time.sleep(1/Discoverer.HEARTBEAT_HZ)
+      time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
     msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), -1, -1, self.master_monitor.rpcport)
     self.msocket.send2group(msg)
     self.msocket.close()
@@ -339,7 +339,7 @@ class Discoverer(threading.Thread):
         if try_count > 2*Discoverer.HEARTBEAT_HZ:
           rospy.logerr("Communication with ROS Master failed: %s", e)
           rospy.signal_shutdown("ROS Master not reachable")
-      time.sleep(1/Discoverer.HEARTBEAT_HZ)
+      time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
 
   def recv_loop(self):
     '''

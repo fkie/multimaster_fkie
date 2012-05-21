@@ -62,10 +62,10 @@ def get_changes_topic(masteruri, wait=True):
   @type masteruri: str
   @param wait: check every second for the topic
   @type wait: boolean
-  @return: the name of the topic with type MasterState
-  @rtype: str (Empty string if no topic was found and 'wait' is False)
+  @return: the list with namee of the topic with type MasterState
+  @rtype: [str] (Empty list if no topic was found and 'wait' is False)
   '''
-  result = ''
+  result = []
   while not result and not rospy.is_shutdown():
     master = xmlrpclib.ServerProxy(masteruri)
     # get the system state to resolve the published nodes
@@ -84,15 +84,15 @@ def get_changes_topic(masteruri, wait=True):
                 code, msg, val = master.lookupNode(rospy.get_name(), n)
                 # only local publisher will be tacked
                 if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
-                  return topic
-      if wait:
+                  result.append(topic)
+      if not result and wait:
         rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type 'MasterState'.")
         rospy.sleep(1)
-    elif wait:
+    elif not result and wait:
       rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!", str(code), msg)
       rospy.sleep(1)
     if not wait:
-      return ''
+      return result
   return result
 
 def get_stats_topic(masteruri, wait=True):
@@ -103,10 +103,10 @@ def get_stats_topic(masteruri, wait=True):
   @type masteruri: str
   @param wait: check every second for the topic
   @type wait: boolean
-  @return: the name of the topic with type LinkStatesStamped
-  @rtype: str (Empty string if no topic was found and 'wait' is False)
+  @return: the list of names of the topic with type LinkStatesStamped
+  @rtype: [str] (Empty list if no topic was found and 'wait' is False)
   '''
-  result = ''
+  result = []
   while not result and not rospy.is_shutdown():
     master = xmlrpclib.ServerProxy(masteruri)
     # get the system state to resolve the published nodes
@@ -125,15 +125,15 @@ def get_stats_topic(masteruri, wait=True):
                 code, msg, val = master.lookupNode(rospy.get_name(), n)
                 # only local publisher will be tacked
                 if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
-                  return topic
-      if wait:
+                  result.append(topic)
+      if not result and wait:
         rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type 'LinkStatesStamped'.")
         rospy.sleep(1)
-    elif wait:
+    elif not result and wait:
       rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!", str(code), msg)
       rospy.sleep(1)
     if not wait:
-      return ''
+      return result
   return result
 
 
@@ -145,10 +145,10 @@ def get_listmaster_service(masteruri, wait=True):
   @type masteruri: str
   @param wait: check every second for the service
   @type wait: boolean
-  @return: the name of the service ending 'list_masters'
-  @rtype: str (Empty string if no service was found and 'wait' is False)
+  @return: the list with names of the service ending 'list_masters'
+  @rtype: [str] (Empty list if no service was found and 'wait' is False)
   '''
-  result = ''
+  result = []
   while not result and not rospy.is_shutdown():
     master = xmlrpclib.ServerProxy(masteruri)
     code, msg, val = master.getSystemState(rospy.get_name())
@@ -160,13 +160,13 @@ def get_listmaster_service(masteruri, wait=True):
           # only local service will be tacked
           code, msg, val = master.lookupService(rospy.get_name(), srv)
           if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
-            return srv
-      if wait:
+            result.append(srv)
+      if not result and wait:
         rospy.logwarn("Master_discovery node appear not to running. Wait for service 'list_masters'.")
         rospy.sleep(1)
-    elif wait:
+    elif not result and wait:
       rospy.logwarn("can't get state from ROS master: %s, %s", str(code), msg)
       rospy.sleep(1)
     if not wait:
-      return ''
+      return result
   return result

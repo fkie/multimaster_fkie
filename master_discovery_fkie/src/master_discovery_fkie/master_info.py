@@ -761,7 +761,7 @@ class MasterInfo(object):
                
                - C{topicTypes} is a list of 
                  
-                 C{[topicName, topicType]}
+                 C{[ [topicName1, topicType1], ... ]}
                
                - C{nodes} is a list of (the pid of remote Nodes will not be resolved)
                  

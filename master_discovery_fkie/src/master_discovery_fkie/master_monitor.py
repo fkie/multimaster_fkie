@@ -222,7 +222,7 @@ class MasterMonitor(object):
                
                - C{topicTypes} is a list of 
                  
-                 C{[topicName, topicType]}
+                 C{[[topicName1, topicType1], ... ]}
                
                - C{nodes} is a list of (the pid of remote Nodes will not be resolved)
                  
@@ -260,7 +260,7 @@ class MasterMonitor(object):
     @raise MasterConnectionException: if not complete information was get from the ROS master.
     '''
     now = rospy.Time().now()
-    
+
     threads = []
     try:
       self._lock.acquire(True)

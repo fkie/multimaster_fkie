@@ -62,10 +62,11 @@ class Main(object):
     '''@ivar: the list with host names, which are not sync.'''
     if rospy.has_param('~ignore_hosts'):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_hosts')
-    topic_name = interface_finder.get_changes_topic(self.getMasteruri())
-    if topic_name:
+    topic_names = interface_finder.get_changes_topic(self.getMasteruri())
+    self.sub_changes = dict()
+    for topic_name in topic_names:
       rospy.loginfo("listen for updates on %s", topic_name)
-      self.sub_changes = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
+      self.sub_changes[topic_name] = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
     rospy.on_shutdown(self.finish)
     self.retrieveMasters()
 
@@ -77,11 +78,15 @@ class Main(object):
     @param data: the received message
     @type data: L{master_discovery_fkie.MasterState}
     '''
-    if data.state in [MasterState.STATE_REMOVED]:
-      self.removeMaster(data.master.name)
-    elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
-      m = data.master
-      self.updateMaster(m.name, m.uri, m.timestamp, m.discoverer_name, m.monitoruri)
+    try:
+      self.__lock.acquire()
+      if data.state in [MasterState.STATE_REMOVED]:
+        self.removeMaster(data.master.name)
+      elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+        m = data.master
+        self.updateMaster(m.name, m.uri, m.timestamp, m.discoverer_name, m.monitoruri)
+    finally:
+      self.__lock.release()
 
   def getMasteruri(self):
     '''
@@ -121,8 +126,8 @@ class Main(object):
     synchronization will be created.
     @see: L{master_discovery_fkie.interface_finder.get_listmaster_service()}
     '''
-    service_name = interface_finder.get_listmaster_service(self.getMasteruri())
-    if not (service_name is None):
+    service_names = interface_finder.get_listmaster_service(self.getMasteruri())
+    for service_name in service_names:
       rospy.loginfo("service 'list_masters' found on %s", service_name)
       self.__lock.acquire()
       try:
