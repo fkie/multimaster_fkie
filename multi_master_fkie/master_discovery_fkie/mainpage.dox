@@ -2,7 +2,11 @@
 \mainpage
 \htmlinclude manifest.html
 
-\b master_discovery_fkie is ... 
+\b master_discovery_fkie is a node to discovery the running ROS Masters in local network. The 
+     discovering is done by send a echo heartbeat messages to a defined 
+     multicast group.
+     The alternative is to use a zeroconf/avahi daemon to register the ROS 
+     master as service and discover other ROS masters. 
 
 <!-- 
 The master_discovery package creates a node, which use periodically 

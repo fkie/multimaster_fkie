@@ -19,6 +19,10 @@
   <rosdep name="python-avahi"/>
   <rosdep name="avahi-daemon"/>
 
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
 </package>
 
 
