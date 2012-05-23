@@ -1,10 +1,10 @@
 <stack>
-  <description brief="fkie-ros-pkg">
+  <description brief="multi_master_fkie">
     ROS stack with FKIE packages for multi-robot (discovering, synchronizing, configuration and other)
   </description>
   <author>Maintained by Alexander Tiderko</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/fkie-ros-pkg</url>
+  <url>http://ros.org/wiki/multi_master_fkie</url>
   <depend stack="ros" />
 </stack>
