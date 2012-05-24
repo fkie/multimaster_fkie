@@ -57,6 +57,7 @@ class Main(object):
     self.masters = {}
     # the connection to the local service master 
     self.materuri = self.getMasteruri()
+    '''@ivar: the ROS master URI of the C{local} ROS master. '''
     self.__lock = threading.RLock()
     self.ignore = []
     '''@ivar: the list with host names, which are not sync.'''
@@ -64,6 +65,7 @@ class Main(object):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_hosts')
     topic_names = interface_finder.get_changes_topic(self.getMasteruri())
     self.sub_changes = dict()
+    '''@ivar: {dict} with topics C{(name: L{rospy.Subscriber})} publishes the changes of the discovered ROS masters.'''
     for topic_name in topic_names:
       rospy.loginfo("listen for updates on %s", topic_name)
       self.sub_changes[topic_name] = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
@@ -106,6 +108,8 @@ class Main(object):
     Returns the master URI depending on ROS distribution API.
     @return: ROS master URI
     @rtype: C{str}
+    @see: L{rosgraph.rosenv.get_master_uri()} (fuerte)
+    @see: L{roslib.rosenv.get_master_uri()} (prior)
     '''
     try:
       import rospkg.distro

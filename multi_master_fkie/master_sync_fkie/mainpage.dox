@@ -2,7 +2,9 @@
 \mainpage
 \htmlinclude manifest.html
 
-\b master_sync_fkie is ... 
+\b master_sync_fkie synchronizes the local ROS master to the remote masters 
+  discovered by master_discovery_fkie node. The registration
+  of topics and services is only perform by local ROS master. 
 
 <!-- 
 Synchronize the local ROS master to the remote masters discovered by

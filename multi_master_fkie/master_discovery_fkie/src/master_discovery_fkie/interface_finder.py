@@ -38,11 +38,12 @@ import rospy
 
 def hostFromUri(uri):
   '''
-  Extracts the hostname of the given uri. 
+  Extracts the hostname from given uri. 
   @param uri: the uri to parse
-  @type uri:  str
+  @type uri:  C{str}
   @return: the hostname or None, if the uri is None or invalid
-  @rtype: str or None
+  @rtype: C{str} or C{None}
+  @see: U{http://docs.python.org/library/urlparse.html}
   '''
   if uri is None:
     return None
@@ -57,13 +58,14 @@ def hostFromUri(uri):
 def get_changes_topic(masteruri, wait=True):
   '''
   Search in publishers of ROS master for a topic with type MasterState and 
-  returns his name, if it runs on the local host.
+  returns his name, if it runs on the local host. Returns empty list if no topic
+  was found and C{wait} is C{False}.
   @param masteruri: the URI of the ROS master
-  @type masteruri: str
+  @type masteruri: C{str}
   @param wait: check every second for the topic
-  @type wait: boolean
-  @return: the list with namee of the topic with type MasterState
-  @rtype: [str] (Empty list if no topic was found and 'wait' is False)
+  @type wait: C{boolean}
+  @return: the list with names of the topic with type L{MasterState}
+  @rtype: C{[str]}
   '''
   result = []
   while not result and not rospy.is_shutdown():
@@ -98,13 +100,14 @@ def get_changes_topic(masteruri, wait=True):
 def get_stats_topic(masteruri, wait=True):
   '''
   Search in publishers of ROS master for a topic with type LinkStatesStamped and 
-  returns his name, if it runs on the local host.
+  returns his name, if it runs on the local host. Returns empty list if no topic
+  was found and C{wait} is C{False}.
   @param masteruri: the URI of the ROS master
-  @type masteruri: str
+  @type masteruri: C{str}
   @param wait: check every second for the topic
-  @type wait: boolean
-  @return: the list of names of the topic with type LinkStatesStamped
-  @rtype: [str] (Empty list if no topic was found and 'wait' is False)
+  @type wait: C{boolean}
+  @return: the list of names of the topic with type L{LinkStatesStamped}
+  @rtype: C{[str]}
   '''
   result = []
   while not result and not rospy.is_shutdown():
@@ -140,13 +143,14 @@ def get_stats_topic(masteruri, wait=True):
 def get_listmaster_service(masteruri, wait=True):
   '''
   Search in services of ROS master for a service with name ending by 
-  'list_masters' and returns his name, if it runs on the local host.
+  C{list_masters} and returns his name, if it runs on the local host. Returns 
+  empty list if no service was found and C{wait} is C{False}.
   @param masteruri: the URI of the ROS master
-  @type masteruri: str
+  @type masteruri: C{str}
   @param wait: check every second for the service
-  @type wait: boolean
-  @return: the list with names of the service ending 'list_masters'
-  @rtype: [str] (Empty list if no service was found and 'wait' is False)
+  @type wait: C{boolean}
+  @return: the list with names of the services ending with C{list_masters}
+  @rtype: C{[str]}
   '''
   result = []
   while not result and not rospy.is_shutdown():

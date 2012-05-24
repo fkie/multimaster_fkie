@@ -58,13 +58,13 @@ class DiscoveredMaster(object):
     '''
     Initialize method for the DiscoveredMaster class.
     @param monitoruri: The URI of the remote RPC server, which moniter the ROS master
-    @type monitoruri:  str
+    @type monitoruri:  C{str}
     @param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
-    @type heartbeat_rate:  float (default: 1.)
+    @type heartbeat_rate:  C{float} (Default: C{1.})
     @param timestamp: The timestamp of the state of the remoter ROS master
-    @type timestamp:  rospy.Time (default: 0)
+    @type timestamp:  L{rospy.Time} (Default: c{0})
     @param callback_master_state: the callback method to publish the changes of the ROS masters
-    @type callback_master_state: <method>(master_discovery_fkie/MasterState)  (default: None)
+    @type callback_master_state: C{<method>(master_discovery_fkie/MasterState)}  (Default: C{None})
     '''
     self.masteruri = None
     self.mastername = None
@@ -85,9 +85,9 @@ class DiscoveredMaster(object):
     Adds a new heartbeat measurement. If it is a new timestamp a ROS message 
     about the change of this ROS master will be published into ROS network.
     @param timestamp: The new timestamp of the ROS master state
-    @type timestamp:  rospy.Time
+    @type timestamp:  L{rospy.Time}
     @param rate: The remote rate, which is used to send the heartbeat messages. 
-    @type rate:  float
+    @type rate:  C{float}
     '''
     self.heartbeats.append(rospy.Time.now())
     # reset the list, if the heartbeat is changed
@@ -113,9 +113,9 @@ class DiscoveredMaster(object):
     '''
     Removes all hearbeat measurements, which are older as the given timestamp.
     @param timestamp: heartbeats older this timestamp will be removed.
-    @type timestamp:  rospy.Time
-    @return the count of removed heartbeats
-    @rtype: int
+    @type timestamp:  L{rospy.Time}
+    @return: the count of removed heartbeats
+    @rtype: C{int}
     '''
     do_remove = True
     removed = 0
@@ -126,23 +126,6 @@ class DiscoveredMaster(object):
       else:
         do_remove = False
     return removed
-
-  def nameFromUri(self, uri):
-    '''
-    Extracts the hostname of the given uri. 
-    @param uri: the uri to parse
-    @type uri:  str
-    @return the hostname or None, if the uri is None or invalid
-    @rtype: str or None
-    '''
-    if uri is None:
-      return None
-    from urlparse import urlparse
-    try:
-      o = urlparse(uri)
-      return o.hostname
-    except:
-      return None
 
   def setOffline(self):
     '''
@@ -213,11 +196,16 @@ class Discoverer(threading.Thread):
     int (4 byte): nsecs of the ROS Master state
     unsigned short: the port number of the RPC Server of the remote ROS-Core monitor
   -------------------------------------------------------------------------'''
-  HEARTBEAT_FMT = 'cBBiiH'   # packet format description
-  HEARTBEAT_HZ = 2           # the send rate of the heartbeat packets in hz
-  MEASUREMENT_INTERVALS = 5  # the count of intervals (1 sec) used for a quality calculation. If HEARTBEAT_HZ is smaller then 1, MEASUREMENT_INTERVALS will be divided by HEARTBEAT_HZ value
-  TIMEOUT_FACTOR = 1.4       # the timeout is defined by calculated measurement duration multiplied by TIMEOUT_FAKTOR 
-  ROSMASTER_HZ = 2           # the test rate of ROS master state in hz
+  HEARTBEAT_FMT = 'cBBiiH'
+  ''' @ivar: packet format description, see: U{http://docs.python.org/library/struct.html} '''
+  HEARTBEAT_HZ = 2           
+  ''' @ivar: the send rate of the heartbeat packets in hz '''
+  MEASUREMENT_INTERVALS = 5  
+  ''' @ivar: the count of intervals (1 sec) used for a quality calculation. If HEARTBEAT_HZ is smaller then 1, MEASUREMENT_INTERVALS will be divided by HEARTBEAT_HZ value '''
+  TIMEOUT_FACTOR = 1.4       
+  ''' @ivar: the timeout is defined by calculated measurement duration multiplied by TIMEOUT_FAKTOR. ''' 
+  ROSMASTER_HZ = 2           
+  ''' @ivar: the test rate of ROS master state in hz. '''
     
   def __init__(self, mcast_port, mcast_group, monitor_port):
     '''
@@ -397,6 +385,7 @@ class Discoverer(threading.Thread):
     This method will be called by a timer and has two jobs:
      1. set the masters offline, if no heartbeat messages are received a long time
      2. calculate the quality of known links
+    @see: L{rospy.Timer}
     '''
     result = LinkStatesStamped()
     result.header.stamp = event.current_real

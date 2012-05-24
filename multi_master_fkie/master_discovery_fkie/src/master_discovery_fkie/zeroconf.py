@@ -102,13 +102,11 @@ class MasterInfo(object):
   @staticmethod
   def MasteruriToAddr(masteruri):
     '''..........................................................................
-    Returns the host name and port by removing 'http:// at the front of the 
-    masteruri
-    
+    Returns the host name and port of the masteruri. C{urlparse} is used. 
     @param masteruri: the URL of the master
-    @type masteruri:  str
+    @type masteruri:  C{str}
     @return: a tupel of host and port
-    @rtype:  (str, str)
+    @rtype:  C{(str, str)}
     ..........................................................................'''
     from urlparse import urlparse
     o = urlparse(masteruri)
@@ -131,11 +129,11 @@ class MasterInfo(object):
     masteruri
     
     @param key: the parameter name stored in the txt value of the avahi info
-    @type key:  str
+    @type key:  C{str}
     @param txt: avahi txt array
-    @type txt:  avahi txt array
+    @type txt:  C{avahi txt array}
     @return: the value stored in the txt array for given name
-    @rtype:  str or None
+    @rtype:  C{str} or C{None}
     ..........................................................................'''
     for item in txt:
       valKey = item.split('=')
@@ -166,17 +164,17 @@ class Zeroconf(threading.Thread):
     '''..........................................................................
     Initialization method of the Zeroconf class.
     @param name: the name of the local ROS master
-    @type name:  str
+    @type name:  C{str}
     @param service_type: the avahi service type
-    @type service_type:  str
+    @type service_type:  C{str}
     @param host: the host of the local ROS master
-    @type host: str
+    @type host: C{str}
     @param port: the port of the local ROS master
-    @type port: int
+    @type port: C{int}
     @param domain: the domain name
-    @type domain: str
+    @type domain: C{str}
     @param txt_array: (optional) additional information
-    @type txt_array: [str]
+    @type txt_array: C{[str]}
     ..........................................................................'''
     self.masterInfo = MasterInfo(name, service_type, domain, host, port, txt_array)
     
@@ -792,7 +790,7 @@ class Discoverer(Zeroconf):
     '''..........................................................................
     Compares the current state of the local ROS master. If the state was changed
     the avahi sevice will be updated
-    @master_info   will not be used, is only for compatibility to the Polling class.
+    @param master_info: will not be used, is only for compatibility to the Polling class.
     ..........................................................................'''
     # get the state of the local ROS master
     try:
