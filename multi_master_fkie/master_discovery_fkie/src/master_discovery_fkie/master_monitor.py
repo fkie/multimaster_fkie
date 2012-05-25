@@ -198,7 +198,10 @@ class MasterMonitor(object):
         s.close()
 
     self._lock.acquire(True)
-    self.new_master_state.getService(service).type = type
+    try:
+      self.new_master_state.getService(service).type = type['type']
+    except:
+      print "type field in service header not available"
     self._lock.release()
 
   def getListedMasterInfo(self):

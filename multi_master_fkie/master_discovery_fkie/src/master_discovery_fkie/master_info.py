@@ -798,7 +798,7 @@ class MasterInfo(object):
       topicTypes.append((name, topic.type))
     for name, service in self.services.items():
       services.append((name, service.serviceProvider))
-      serviceProvider.append((name, service.uri, service.type['type'] if not service.type is None else '', 'local' if service.isLocal else 'remote'))
+      serviceProvider.append((name, service.uri, service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
     for name, node in self.nodes.items():
       nodes.append((name, node.uri, node.pid, 'local' if node.isLocal else 'remote'))
 
