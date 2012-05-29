@@ -80,7 +80,6 @@ def main():
   setProcessName(NODE_NAME)
   rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
   # time to initialize the topics to receive these in rxconsole
-  rospy.sleep(1)
   discoverer = master_sync.Main()
   rospy.spin()
 

@@ -35,6 +35,7 @@ import threading
 import xmlrpclib
 
 import roslib; roslib.load_manifest('master_sync_fkie')
+import roslib.message
 import rospy
 import rosgraph.masterapi
 

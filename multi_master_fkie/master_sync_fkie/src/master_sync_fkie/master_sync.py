@@ -213,5 +213,6 @@ class Main(object):
       m.stop()
       del m
     if hasattr(self, "sub_changes"):
-      self.sub_changes.unregister()
+      for key, item in self.sub_changes.items():
+        item.unregister()
     self.__lock.release()
