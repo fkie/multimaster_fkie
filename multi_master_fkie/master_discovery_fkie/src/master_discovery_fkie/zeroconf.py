@@ -763,7 +763,7 @@ class Discoverer(Zeroconf):
     if not self.isStopped():
       rospy.logwarn("ERROR: Service name collision. %s already exists. Retry in 3 sec...", self.masterInfo.name)
       self._removeService()
-      rospy.sleep(3)
+      time.sleep(3)
       self._registerService()
 
   def on_group_failure(self, error):

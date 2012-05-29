@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime, time
+import time
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
@@ -421,8 +421,8 @@ class MasterInfo(object):
     self.__nodelist = {}
     self.__topiclist = {}
     self.__servicelist = {}
-    self.__timestamp = rospy.Time(0)
-    self.check_ts = rospy.Time(0)
+    self.__timestamp = 0
+    self.check_ts = 0
     '''@ivar: the last time, when the state of the ROS master retrieved'''
 
   @staticmethod
@@ -438,7 +438,7 @@ class MasterInfo(object):
     if l is None:
       return None
     result = MasterInfo(l[1], l[2])
-    result.timestamp = rospy.Time.from_sec(float(l[0])/1000000000)
+    result.timestamp = time.time()
     publishers = l[3]
     subscribers = l[4]
     services = l[5]
@@ -505,7 +505,7 @@ class MasterInfo(object):
     The timestamp when this MasterInfo was first time filled with the 
     information. See L{self.check_ts} to get the time, when the information was
     compared with the data of ROS Master.
-    @rtype: L{rospy.Time}
+    @rtype: C{float}
     '''
     return self.__timestamp
 
@@ -514,30 +514,10 @@ class MasterInfo(object):
     '''
     Sets the timestamp of this instance
     @param ts: the new timestamp
-    @type ts: L{rospy.Time}
+    @type ts: C{float}
     '''
     self.__timestamp = ts
     self.check_ts = ts
-
-  @property
-  def timestampStr(self):
-    '''
-    Returns the human readable timestamp representation.
-    @rtype: C{str}
-    '''
-    dt = datetime.fromtimestamp(self.__timestamp.to_sec())
-    diff = rospy.Time().now()-self.__timestamp
-    diff_dt = datetime.fromtimestamp(diff.to_sec())
-    before = '0 sec'
-    if (diff.to_sec() < 60):
-      before = diff_dt.strftime('%S sec')
-    elif (diff.to_sec() < 3600):
-      before = diff_dt.strftime('%M:%S min')
-    elif (diff.to_sec() < 86400):
-      before = diff_dt.strftime('%H:%M:%S std')
-    else:
-      before = diff_dt.strftime('%d Day(s) %H:%M:%S')
-    return ''.join([dt.strftime('%H:%M:%S'), ' (', before, ')'])
 
   @property
   def nodes(self):

@@ -43,14 +43,14 @@ class MasterInfo(object):
   '''
   The Master representation stored in the L{SyncThread}. 
   '''
-  def __init__(self, name, uri, discoverer_name, monitoruri, timestamp, lastsync=rospy.Time(0)):
+  def __init__(self, name, uri, discoverer_name, monitoruri, timestamp, lastsync=0.0):
     self.name = name
     self.uri = uri
     self.timestamp = timestamp
     self.discoverer_name = discoverer_name
     self.monitoruri = monitoruri
     self.lastsync = lastsync
-    self.syncts = rospy.Time(0)
+    self.syncts = 0.0
   
   def __repr__(self):
     """
@@ -82,7 +82,7 @@ class SyncThread(threading.Thread):
     @param monitoruri: The URI of RPC server of the discovery node to get the ROS master state by calling a method only once.
     @type monitoruri:  C{str}
     @param timestamp: The timestamp of the current state of the ROS master info.
-    @type timestamp:  C{rospy.Time}
+    @type timestamp:  C{float64}
     '''
     # init thread
     threading.Thread.__init__(self)
@@ -116,7 +116,7 @@ class SyncThread(threading.Thread):
     @param monitoruri: The URI of RPC server of the discovery node to get the ROS master state by calling a method only once.
     @type monitoruri:  C{str}
     @param timestamp: The timestamp of the current state of the ROS master info.
-    @type timestamp:  C{rospy.Time}
+    @type timestamp:  C{float64}
     '''
     master_info = MasterInfo(name, uri, discoverer_name, monitoruri, timestamp)
     rospy.logdebug("SyncThread[%s]: update request", self.masterInfo.name)
@@ -125,7 +125,7 @@ class SyncThread(threading.Thread):
       if (self.masterInfo.timestamp != master_info.timestamp):
         master_info.lastsync = self.masterInfo.lastsync
         self.masterInfo = master_info
-        self.masterInfo.syncts = rospy.Time(0)
+        self.masterInfo.syncts = 0.0
         self.__cv.notify()
       self.__cv.release()
     rospy.logdebug("SyncThread[%s]: update exit", self.masterInfo.name)
@@ -151,7 +151,7 @@ class SyncThread(threading.Thread):
       self.__cv.acquire()
       ''' wait for new sync update '''
       rospy.logdebug("SyncThread[%s]: run waiting", self.masterInfo.name)
-      if not (self.masterInfo.syncts == rospy.Time(0)):
+      if not (self.masterInfo.syncts == 0.0):
         self.__cv.wait()
       rospy.logdebug("SyncThread[%s]: run notify received", self.masterInfo.name)
       if (not self.__stop):
@@ -169,7 +169,7 @@ class SyncThread(threading.Thread):
           #coonect to master_monitor rpc-xml server
           remote_monitor = xmlrpclib.ServerProxy(self.masterInfo.monitoruri)
           remote_state = remote_monitor.masterInfo()
-          stamp = rospy.Time.from_sec(float(remote_state[0])/1000000000)
+          stamp = float(remote_state[0])
           remote_masteruri = remote_state[1]
           remote_mastername = remote_state[2]
           publishers = remote_state[3]
@@ -232,7 +232,7 @@ class SyncThread(threading.Thread):
           self.masterInfo.lastsync = stamp
           self.masterInfo.syncts = stamp
         except:
-          self.masterInfo.syncts = rospy.Time(0)
+          self.masterInfo.syncts = 0.0
           import traceback
           rospy.logwarn("SyncThread[%s] ERROR: %s", self.masterInfo.name, traceback.format_exc())
           rospy.sleep(3)

@@ -1,6 +1,6 @@
 string name
 string uri
-time timestamp
+float64 timestamp
 bool online
 string discoverer_name
 string monitoruri

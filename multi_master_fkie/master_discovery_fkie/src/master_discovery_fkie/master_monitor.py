@@ -34,6 +34,7 @@ import cStringIO
 import threading
 import xmlrpclib
 import socket
+import time
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 
@@ -102,7 +103,7 @@ class MasterMonitor(object):
         ready = True
       except socket.error:
         rospy.logwarn(''.join(["Error while start RPC-XML server on port ", str(rpcport), ". Try again..."]))
-        rospy.sleep(1)
+        time.sleep(1)
       except:
         import traceback
         print traceback.format_exc()
@@ -201,7 +202,8 @@ class MasterMonitor(object):
     try:
       self.new_master_state.getService(service).type = type['type']
     except:
-      print "type field in service header not available"
+      pass
+#      print "type field in service header not available, type:", type 
     self._lock.release()
 
   def getListedMasterInfo(self):
@@ -246,7 +248,7 @@ class MasterMonitor(object):
                [ [str,str,str,str] ])}
     '''
     self._lock.acquire(True)
-    result = (str(rospy.Time.now()), self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
+    result = (str(time.time()), self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
     if not (self.master_state is None):
       try:
         result = self.master_state.listedState()
@@ -262,7 +264,7 @@ class MasterMonitor(object):
     @rtype: L{MasterInfo}
     @raise MasterConnectionException: if not complete information was get from the ROS master.
     '''
-    now = rospy.Time().now()
+    now = time.time()
 
     threads = []
     try:
@@ -388,10 +390,9 @@ class MasterMonitor(object):
     @return: (timestamp of the ROS master state, ROS master URI, master name, name of this service, URI of this RPC server)
     @rtype: C{(str, str, str, str, str)}
     '''
-    t = rospy.Time(0)
+    t = 0
     if not self.master_state is None:
       t = self.master_state.timestamp
-#    print (str(t), str(self.getMasteruri()), rospy.get_name(), roslib.network.create_local_xmlrpc_uri(self.rpcport))
     return (str(t), str(self.getMasteruri()), str(self.getMastername()), rospy.get_name(), roslib.network.create_local_xmlrpc_uri(self.rpcport))
   
   def checkState(self):

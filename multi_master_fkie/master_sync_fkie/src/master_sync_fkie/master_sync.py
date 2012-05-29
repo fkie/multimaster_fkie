@@ -163,7 +163,7 @@ class Main(object):
     @param masteruri: the URI of the remote ROS master.
     @type masteruri: C{str}
     @param timestamp: the timestamp of the remote ROS master.
-    @type timestamp: L{rospy.Time}
+    @type timestamp: L{float64}
     @param discoverer_name: the name of the remote master_discoverer node
     @type discoverer_name: C{str}
     @param monitoruri: the URI of the RPC interface of the remote master_discoverer node.
@@ -177,7 +177,7 @@ class Main(object):
           self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp)
         else:
 #          print "add a sync thread to:", mastername, ros_master.uri
-          self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, rospy.Time(0))
+          self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0)
     except:
       import traceback
       rospy.logwarn("ERROR while update master[%s]: %s", str(mastername), traceback.format_exc())

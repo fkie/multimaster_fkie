@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import time
 import xmlrpclib
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
@@ -89,10 +90,10 @@ def get_changes_topic(masteruri, wait=True):
                   result.append(topic)
       if not result and wait:
         rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type 'MasterState'.")
-        rospy.sleep(1)
+        time.sleep(1)
     elif not result and wait:
       rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!", str(code), msg)
-      rospy.sleep(1)
+      time.sleep(1)
     if not wait:
       return result
   return result
@@ -131,10 +132,10 @@ def get_stats_topic(masteruri, wait=True):
                   result.append(topic)
       if not result and wait:
         rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type 'LinkStatesStamped'.")
-        rospy.sleep(1)
+        time.sleep(1)
     elif not result and wait:
       rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!", str(code), msg)
-      rospy.sleep(1)
+      time.sleep(1)
     if not wait:
       return result
   return result
@@ -167,10 +168,10 @@ def get_listmaster_service(masteruri, wait=True):
             result.append(srv)
       if not result and wait:
         rospy.logwarn("Master_discovery node appear not to running. Wait for service 'list_masters'.")
-        rospy.sleep(1)
+        time.sleep(1)
     elif not result and wait:
       rospy.logwarn("can't get state from ROS master: %s, %s", str(code), msg)
-      rospy.sleep(1)
+      time.sleep(1)
     if not wait:
       return result
   return result
