@@ -154,12 +154,13 @@ class DiscoveredMaster(object):
 #          print "get Info about master", self.monitoruri
           remote_monitor = xmlrpclib.ServerProxy(self.monitoruri)
           timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
+          print timestamp, masteruri, mastername, nodename, monitoruri
         except:
           import traceback
           rospy.logwarn("socket error: %s", traceback.format_exc())
           time.sleep(1)
         else:
-          if timestamp != '0':
+          if float(timestamp) != 0:
             self.masteruri = masteruri
             self.mastername = mastername
             self.discoverername = nodename
@@ -185,24 +186,18 @@ class Discoverer(threading.Thread):
   The class to publish the current state of the ROS master.
   '''
 
-  VERSION = 2
+  VERSION = 1
   '''@ivar: the version of the packet format described by L{HEARTBEAT_FMT}'''
   '''
   Version 1: 'cBBiiH'
     one character 'R'
     unsigned char: version of the hearbeat message
     unsigned char: rate of the heartbeat message in HZ*10. Maximal rate: 25.5 Hz -> value 255
-    int: secs of rospy.Time
-    int: nsecs of rospy.Time
-    unsigned short: the port number of the RPC Server of the remote ROS-Core monitor
-  Version 2: 'cBBdH'
-    one character 'R'
-    unsigned char: version of the hearbeat message
-    unsigned char: rate of the heartbeat message in HZ*10. Maximal rate: 25.5 Hz -> value 255
-    double: secs.nsecs of the ROS Master state
+    int: secs of the ROS Master state
+    int: nsecs of the ROS Master state
     unsigned short: the port number of the RPC Server of the remote ROS-Core monitor
   '''
-  HEARTBEAT_FMT = 'cBBdH'
+  HEARTBEAT_FMT = 'cBBiiH'
   ''' @ivar: packet format description, see: U{http://docs.python.org/library/struct.html} '''
   HEARTBEAT_HZ = 2           
   ''' @ivar: the send rate of the heartbeat packets in hz '''
@@ -312,10 +307,10 @@ class Discoverer(threading.Thread):
         t = 0
         if not self.master_monitor.master_state is None:
           t = self.master_monitor.master_state.timestamp
-        msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), t, self.master_monitor.rpcport)
+        msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), int(t), int((t-(int(t))) * 1000000000), self.master_monitor.rpcport)
         self.msocket.send2group(msg)
       time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
-    msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), -1, self.master_monitor.rpcport)
+    msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), -1, -1, self.master_monitor.rpcport)
     self.msocket.send2group(msg)
     self.msocket.close()
 
@@ -361,7 +356,7 @@ class Discoverer(threading.Thread):
           if (version == Discoverer.VERSION):
             if (r == 'R'):
               if len(msg) == struct.calcsize(Discoverer.HEARTBEAT_FMT):
-                (r, version, rate, secs, monitor_port) = struct.unpack(Discoverer.HEARTBEAT_FMT, msg)
+                (r, version, rate, secs, nsecs, monitor_port) = struct.unpack(Discoverer.HEARTBEAT_FMT, msg)
                 # remove master if sec and nsec are -1
                 if secs == -1:
                   if self.masters.has_key(address[0]):
@@ -388,13 +383,13 @@ class Discoverer(threading.Thread):
                   self.__lock.acquire(True)
                   self.masters[address[0]] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                               heartbeat_rate=float(rate)/10.0,
-                                                              timestamp=secs,
+                                                              timestamp=float(secs)+float(nsecs)/1000000000,
                                                               callback_master_state=self.publish_masterstate)
                   self.__lock.release()
             else:
               rospy.logwarn("wrong initial discovery message char %s received from %s ", str(r), str(address))
           elif (version > Discoverer.VERSION):
-            rospy.logwarn("newer heartbeat version as %s detected, please update your master_discovery", str(Discoverer.VERSION), str(version))
+            rospy.logwarn("newer heartbeat version %s (own: %s) detected, please update your master_discovery", str(version), str(Discoverer.VERSION))
           elif (version < Discoverer.VERSION):
             rospy.logwarn("old heartbeat version %s detected (current: %s), please update master_discovery on %s", str(version), str(Discoverer.VERSION), str(address))
           else:
