@@ -85,7 +85,11 @@ class NodeInfo(object):
     from urlparse import urlparse
     om = urlparse(self.__masteruri)
     on = urlparse(uri if not uri is None else '')
-    self.__local = (om.hostname == on.hostname)
+    self.__local = False
+    try:
+      self.__local = (om.hostname == on.hostname)
+    except:
+      pass
 
   @property
   def masteruri(self):
@@ -298,8 +302,12 @@ class ServiceInfo(object):
     from urlparse import urlparse
     om = urlparse(self.__masteruri)
     os = urlparse(uri) if not uri is None else None
-    self.__local = (om.hostname == os.hostname)
-
+    self.__local = False
+    try:
+      self.__local = (om.hostname == os.hostname)
+    except:
+      pass
+    
   @property
   def isLocal(self):
     '''

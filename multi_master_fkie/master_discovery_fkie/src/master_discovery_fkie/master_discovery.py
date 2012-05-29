@@ -154,7 +154,6 @@ class DiscoveredMaster(object):
 #          print "get Info about master", self.monitoruri
           remote_monitor = xmlrpclib.ServerProxy(self.monitoruri)
           timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
-          print timestamp, masteruri, mastername, nodename, monitoruri
         except:
           import traceback
           rospy.logwarn("socket error: %s", traceback.format_exc())
@@ -233,6 +232,7 @@ class Discoverer(threading.Thread):
     if rospy.has_param('~timeout_factor'):
       Discoverer.TIMEOUT_FACTOR = rospy.get_param('~timeout_factor')
 
+    self.current_check_hz = Discoverer.HEARTBEAT_HZ
     # initialize the ROS publishers
     self.pubchanges = rospy.Publisher("~changes", MasterState)
     self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped)
@@ -319,22 +319,29 @@ class Discoverer(threading.Thread):
     The method test periodically the state of the ROS master. The new state will
     be published as heartbeat messages.
     '''
-#    import os
+    import os
     try_count = 0
     while (not rospy.is_shutdown()) and not self.do_finish:
       try:
-#        t = os.times()[0]
+        cputimes = os.times()
+        cputime_init = cputimes[0] + cputimes[1]
         if self.master_monitor.checkState():
           # publish the new state ?
           pass
-#        print os.times()[0]-t
+        # adapt the check rate to the CPU usage time
+        cputimes = os.times()
+        cputime = cputimes[0] + cputimes[1] - cputime_init
+        if self.current_check_hz*cputime > 0.4:
+          self.current_check_hz = float(self.current_check_hz)/2.0
+        elif self.current_check_hz*cputime < 0.20 and self.current_check_hz < Discoverer.HEARTBEAT_HZ:
+          self.current_check_hz = float(self.current_check_hz)*2.0
         try_count = 0
       except MasterConnectionException, e:
         try_count = try_count + 1
-        if try_count > 2*Discoverer.HEARTBEAT_HZ:
+        if try_count > 5:
           rospy.logerr("Communication with ROS Master failed: %s", e)
           rospy.signal_shutdown("ROS Master not reachable")
-      time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
+      time.sleep(1.0/self.current_check_hz)
 
   def recv_loop(self):
     '''
