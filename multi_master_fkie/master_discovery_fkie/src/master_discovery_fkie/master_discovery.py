@@ -335,6 +335,7 @@ class Discoverer(threading.Thread):
           self.current_check_hz = float(self.current_check_hz)/2.0
         elif self.current_check_hz*cputime < 0.20 and self.current_check_hz < Discoverer.HEARTBEAT_HZ:
           self.current_check_hz = float(self.current_check_hz)*2.0
+#        print "self.current_check_hz:", self.current_check_hz
         try_count = 0
       except MasterConnectionException, e:
         try_count = try_count + 1

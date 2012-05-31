@@ -203,7 +203,9 @@ class MasterMonitor(object):
     try:
       self.new_master_state.getService(service).type = type['type']
     except:
-      pass
+      print "ignored:"
+      import traceback
+      traceback.print_exc()
 #      print "type field in service header not available, type:", type 
     self._lock.release()
 
@@ -269,6 +271,9 @@ class MasterMonitor(object):
 
     threads = []
     try:
+#      import os
+#      cputimes = os.times()
+#      cputime_init = cputimes[0] + cputimes[1]
       self._lock.acquire(True)
       self.new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
 #      print "get state from ros master", self.__masteruri
@@ -298,8 +303,17 @@ class MasterMonitor(object):
           master_state.getNode(n).subscribedTopics = t
           master_state.getTopic(t).subscriberNodes = n
           master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
+#      cputimes = os.times()
+#      print "Auswertung: ", (cputimes[0] + cputimes[1] - cputime_init)
+
       # add services
+#      cputimes = os.times()
+#      cputime_init = cputimes[0] + cputimes[1]
+
       services = dict()
+      tmp_slist = []
+      # multi-call style xmlrpc to lock up the service uri
+      param_server_multi = xmlrpclib.MultiCall(master)
       for t, l in state[2]:
         master_state.services = t
         for n in l:
@@ -307,11 +321,24 @@ class MasterMonitor(object):
           master_state.getNode(n).services = t
           service = master_state.getService(t)
           service.serviceProvider = n
-          code, message, service.uri = master.lookupService(rospy.get_name(), t)
-          if (code == -1):
-            service.uri = None
-          elif service.isLocal:
-            services[service.name] = service.uri
+          tmp_slist.append(service)
+          param_server_multi.lookupService(rospy.get_name(), t)
+#          code, message, service.uri = master.lookupService(rospy.get_name(), t)
+#          if (code == -1):
+#            service.uri = None
+#          elif service.isLocal:
+#            services[service.name] = service.uri
+      try:
+        r = param_server_multi()
+        for (code, msg, uri), service in zip(r, tmp_slist):
+          if code == 1:
+            service.uri = uri
+            if service.isLocal:
+              services[service.name] = uri
+      except:
+        import traceback
+        traceback.print_exc()
+
       if services:
         pidThread = threading.Thread(target = self.getServiceInfo, args=((services,)))
         pidThread.start()
@@ -330,13 +357,33 @@ class MasterMonitor(object):
       
       #get additional node information
       nodes = dict()
-      for n in master_state.nodes:
-        node = master_state.getNode(n)
-        code, message, node.uri = master.lookupNode(rospy.get_name(), n)
-        if (code == -1):
-          node.uri = None
-        elif node.isLocal:
-          nodes[node.name] = node.uri
+#      for n in master_state.nodes:
+#        node = master_state.getNode(n)
+#        code, message, node.uri = master.lookupNode(rospy.get_name(), n)
+#        if (code == -1):
+#          node.uri = None
+#        elif node.isLocal:
+#          nodes[node.name] = node.uri
+
+      try:
+        # multi-call style xmlrpc to loock up the node uri
+        param_server_multi = xmlrpclib.MultiCall(master)
+        tmp_nlist = []
+        for name, node in master_state.nodes.items():
+          tmp_nlist.append(node)
+          param_server_multi.lookupNode(rospy.get_name(), name)
+        r = param_server_multi()
+        for (code, msg, uri), node in zip(r, tmp_nlist):
+          if code == 1:
+            node.uri = uri
+            if node.isLocal:
+              nodes[node.name] = uri
+      except:
+        import traceback
+        traceback.print_exc()
+
+#      cputimes = os.times()
+#      print "Nodes+Services:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(nodes)
       if nodes:
         # get process id of the nodes
         pidThread = threading.Thread(target = self.getNodePid, args=((nodes,)))
