@@ -665,7 +665,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/button_kill.png</normaloff>:/icons/button_kill.png</iconset>
+                 <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
