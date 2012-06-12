@@ -1,0 +1,26 @@
+<package>
+  <description brief="default_cfg_fkie">
+
+     A node which loads a given launch configuration and offers services to 
+     list or start the contained nodes. Furthermore the global parameter 
+     (robot_type, robot_name, robot_description) and node parameter 
+     (sensor_type, sensor_name, sensor_description) will be analyzed and offered 
+     as a part of the documentation at current nodes.
+
+  </description>
+  <author>Alexander Tiderko</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/default_cfg_fkie</url>
+
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+  <depend package="roslaunch"/>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
+</package>
+
+

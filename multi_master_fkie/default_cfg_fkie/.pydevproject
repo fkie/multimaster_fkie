@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?eclipse-pydev version="1.0"?>
+
+<pydev_project>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 2.7</pydev_property>
+<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
+<path>/opt/ros/fuerte/stacks/dynamic_reconfigure/src</path>
+<path>/opt/ros/fuerte/stacks/dynamic_reconfigure/lib</path>
+<path>/home/tiderko/workspace/ros-fkie/core_fkie/master_discovery_fkie/src</path>
+<path>/home/tiderko/workspace/ros-fkie/core_fkie/master_sync_fkie/src</path>
+<path>/home/tiderko/workspace/ros-fkie/core_fkie/default_cfg_fkie/src</path>
+<path>/home/tiderko/workspace/ros-fkie/gui_fkie/node_manager_fkie/src</path>
+<path>/opt/ros/fuerte/share/ros/core/mk</path>
+<path>/opt/ros/fuerte/lib/python2.7/dist-packages</path>
+<path>/home/tiderko/workspace/ros-fkie/gui_fkie/node_manager_fkie/</path>
+<path>/usr/lib/python2.7</path>
+<path>/usr/lib/python2.7/plat-linux2</path>
+<path>/usr/lib/python2.7/lib-tk</path>
+<path>/usr/lib/python2.7/lib-dynload</path>
+<path>/usr/local/lib/python2.7/dist-packages</path>
+<path>/usr/lib/python2.7/dist-packages</path>
+<path>/usr/lib/python2.7/dist-packages/PIL</path>
+<path>/usr/lib/python2.7/dist-packages/gtk-2.0</path>
+<path>/usr/lib/pymodules/python2.7</path>
+<path>/usr/lib/python2.7/dist-packages/wx-2.8-gtk2-unicode</path>
+</pydev_pathproperty>
+</pydev_project>

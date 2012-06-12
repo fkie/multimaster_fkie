@@ -203,9 +203,10 @@ class MasterMonitor(object):
     try:
       self.new_master_state.getService(service).type = type['type']
     except:
-      print "ignored:"
-      import traceback
-      traceback.print_exc()
+      pass
+#      print "ignored:"
+#      import traceback
+#      traceback.print_exc()
 #      print "type field in service header not available, type:", type 
     self._lock.release()
 

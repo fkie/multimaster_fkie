@@ -1,0 +1,40 @@
+<RCC>
+  <qresource>
+    <file>icons/button_graph.png</file>
+    <file>icons/crystal_clear_miscellaneous.png</file>
+    <file>icons/crystal_clear_button_close.png</file>
+    <file>icons/crystal_clear_clicknrun.png</file>
+    <file>icons/crystal_clear_default_cfg.png</file>
+    <file>icons/crystal_clear_dyncfg.png</file>
+    <file>icons/crystal_clear_edit_launch.png</file>
+    <file>icons/crystal_clear_folder.png</file>
+    <file>icons/crystal_clear_get_parameter.png</file>
+    <file>icons/crystal_clear_launch_file.png</file>
+    <file>icons/crystal_clear_launch_file_def_cfg.png</file>
+    <file>icons/crystal_clear_package.png</file>
+    <file>icons/crystal_clear_prop_run.png</file>
+    <file>icons/crystal_clear_reload.png</file>
+    <file>icons/crystal_clear_run_zeroconf.png</file>
+    <file>icons/crystal_clear_show_delete_log.png</file>
+    <file>icons/crystal_clear_show_io.png</file>
+    <file>icons/crystal_clear_show_log.png</file>
+    <file>icons/crystal_clear_stack.png</file>
+    <file>icons/crystal_clear_sync.png</file>
+    <file>icons/crystal_clear_warning.png</file>
+    <file>icons/deleket_deviantart_play.png</file>
+    <file>icons/deleket_deviantart_refresh.png</file>
+    <file>icons/deleket_deviantart_stop.png</file>
+    <file>icons/remote.png</file>
+    <file>icons/state_run.png</file>
+    <file>icons/stock_connect.png</file>
+    <file>icons/stock_connect_green.png</file>
+    <file>icons/stock_connect_yellow.png</file>
+    <file>icons/stock_connect_red.png</file>
+    <file>icons/stock_disconnect.png</file>
+  </qresource>
+  <qresource prefix="forms">
+    <file>MainWindow.ui</file>
+    <file>MasterTab.ui</file>
+    <file>PasswordInput.ui</file>
+  </qresource>
+</RCC>

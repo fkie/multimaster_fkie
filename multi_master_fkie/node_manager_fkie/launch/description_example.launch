@@ -1,0 +1,60 @@
+<launch>
+  <node name="master_discovery" pkg="master_discovery_fkie" type="master_discovery" >
+    <param name="sensor_type" value="core"/>
+    <param name="sensor_name" value="Master discoverer"/>
+    <param name="sensor_descr" value="Discover other ROS master in Network."/>
+  </node>
+  <node name="node_manager" pkg="node_manager_fkie" type="nm" >
+    <param name="sensor_type" value="core"/>
+    <param name="sensor_name" value="Node Manager"/>
+    <param name="sensor_descr" value="Manage ROS master and their configuration."/>
+  </node>
+  
+  <machine name="foo" address="foo-address" />
+  <param name="robot_type" value="local robot"/>
+  <param name="robot_name" value="current Host"/>
+  <param name="robot_descr" value="Description of the robot, which loads this configuration."/>
+
+  <group ns="foo"> 
+    <param name="robot_type" value="Testrobot"/>
+    <param name="robot_name" value="Foo"/>
+    <param name="robot_descr" value="Description of Foo robot"/>
+    <node machine="foo" name="a" pkg="test" type="a">
+      <param name="sensor_type" value="sensorA"/>
+      <param name="sensor_name" value="asens"/>
+      <param name="sensor_descr" value="
+Describes the sensor using the reStructeredText format.\n
+\n
+Example:\n
+\n
+Subscribed Topics:\n
+  ``topic name`` (*topic type*)\n
+Published Topics:\n
+  ``topic name`` (*topic type*)"/>
+    </node>
+    <node machine="foo" name="b" pkg="test" type="a">
+      <param name="sensor_type" value="sensorA"/>
+      <param name="sensor_name" value="bsens"/>
+      <param name="sensor_descr" value="Describes the sensor using the reStructeredText format."/>
+    </node>
+  </group>
+
+  <machine name="bar" address="bar-address" />
+
+  <group ns="bar"> 
+    <param name="robot_type" value="Testrobot"/>
+    <param name="robot_name" value="Bar"/>
+    <param name="robot_descr" value="Description of Bar robot"/>
+    <node machine="bar" name="a" pkg="test" type="a">
+      <param name="sensor_type" value="sensorB"/>
+      <param name="sensor_name" value="asens"/>
+      <param name="sensor_descr" value="Describes the sensor using the reStructeredText format."/>
+    </node>
+    <node machine="bar" name="b" pkg="test" type="a">
+      <param name="sensor_type" value="sensorB"/>
+      <param name="sensor_name" value="bsens"/>
+      <param name="sensor_descr" value="Describes the sensor using the reStructeredText format."/>
+    </node>
+  </group>
+
+</launch>
