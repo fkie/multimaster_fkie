@@ -2,4 +2,4 @@
 
 import roslib; roslib.load_manifest('node_manager_fkie')
 import node_manager_fkie
-node_manager_fkie.main()
+node_manager_fkie.main("node_manager")
