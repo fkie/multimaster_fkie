@@ -56,9 +56,9 @@ class NodeInfo(object):
     self.pid = None
     '''@ivar: the process id of the node. Invalid id has a C{None} value'''
     self.__local = False
-    self.__publishedTopics = []
-    self.__subscribedTopics = []
-    self.__services = []
+    self._publishedTopics = []
+    self._subscribedTopics = []
+    self._services = []
 
   @property
   def name(self):
@@ -82,14 +82,15 @@ class NodeInfo(object):
     Sets the URI of the RPC API of the node.
     '''
     self.__uri = uri
-    from urlparse import urlparse
-    om = urlparse(self.__masteruri)
-    on = urlparse(uri if not uri is None else '')
-    self.__local = False
-    try:
-      self.__local = (om.hostname == on.hostname)
-    except:
-      pass
+    if not self.__masteruri is None:
+      from urlparse import urlparse
+      om = urlparse(self.__masteruri)
+      on = urlparse(uri if not uri is None else '')
+      self.__local = False
+      try:
+        self.__local = (om.hostname == on.hostname)
+      except:
+        pass
 
   @property
   def masteruri(self):
@@ -113,7 +114,7 @@ class NodeInfo(object):
     Returns the list of all published topics by this node.
     @rtype: C{[str, ...]}
     '''
-    return self.__publishedTopics
+    return self._publishedTopics
   
   @publishedTopics.setter
   def publishedTopics(self, name):
@@ -123,13 +124,13 @@ class NodeInfo(object):
     @type name: C{str} 
     '''
     try:
-      self.__publishedTopics.index(name)
+      self._publishedTopics.index(name)
     except ValueError:
-      self.__publishedTopics.append(name)
+      self._publishedTopics.append(name)
 
   @publishedTopics.deleter
   def publishedTopics(self):
-    del self.__publishedTopics
+    del self._publishedTopics
 
   @property
   def subscribedTopics(self):
@@ -137,7 +138,7 @@ class NodeInfo(object):
     Returns the list of all subscribed topics by this node.
     @rtype: C{[str, ...]}
     '''
-    return self.__subscribedTopics
+    return self._subscribedTopics
   
   @subscribedTopics.setter
   def subscribedTopics(self, name):
@@ -147,13 +148,13 @@ class NodeInfo(object):
     @type name: C{str} 
     '''
     try:
-      self.__subscribedTopics.index(name)
+      self._subscribedTopics.index(name)
     except ValueError:
-      self.__subscribedTopics.append(name)
+      self._subscribedTopics.append(name)
 
   @subscribedTopics.deleter
   def subscribedTopics(self):
-    del self.__subscribedTopics
+    del self._subscribedTopics
 
   @property
   def services(self):
@@ -161,7 +162,7 @@ class NodeInfo(object):
     Returns the list of all services provided by this node.
     @rtype: C{[str, ...]}
     '''
-    return self.__services
+    return self._services
   
   @services.setter
   def services(self, name):
@@ -171,13 +172,26 @@ class NodeInfo(object):
     @type name: C{str} 
     '''
     try:
-      self.__services.index(name)
+      self._services.index(name)
     except ValueError:
-      self.__services.append(name)
+      self._services.append(name)
 
   @services.deleter
   def services(self):
-    del self.__services
+    del self._services
+  
+  def copy(self):
+    '''
+    Creates a copy this object and returns it.
+    @rtype: L{NodeInfo} 
+    '''
+    result = NodeInfo(self.name, self.masteruri)
+    result.uri = ''.join([self.uri]) if not self.uri is None else None
+    result.pid = self.pid
+    result._publishedTopics = list(self._publishedTopics)
+    result._subscribedTopics = list(self._subscribedTopics)
+    result._services = list(self._services)
+    return result
 
 
 class TopicInfo(object):

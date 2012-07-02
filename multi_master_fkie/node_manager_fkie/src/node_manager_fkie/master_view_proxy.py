@@ -36,9 +36,9 @@ from PySide import QtUiTools
 
 import os
 import xmlrpclib
-import socket
 import threading
 import time
+from urlparse import urlparse
 
 import rospy
 import roslib
@@ -46,11 +46,13 @@ import roslib
 import node_manager_fkie as nm
 from html_delegate import HTMLDelegate
 from topic_list_model import TopicModel, TopicItem
-from node_tree_model import NodeTreeModel, ExtendedNodeInfo
+from node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
 from service_list_model import ServiceModel, ServiceItem
 from parameter_list_model import ParameterModel, ParameterItem
 from default_cfg_handler import DefaultConfigHandler
 from launch_config import LaunchConfig, LaunchConfigException
+from master_discovery_fkie.master_info import NodeInfo 
+from echo_dialog import EchoDialog
 
 
 
@@ -64,6 +66,16 @@ class MasterViewProxy(QtGui.QWidget):
   '''@ivar: the signal is emitted on description changes and contains the host 
   and description a parameter.'''
   
+  capabilities_update_signal = QtCore.Signal(str, str, list)
+  '''@ivar: the signal is emitted if a description with capabilities is received 
+  and has the host, the name of the default_cfg node and a list with 
+  descriptions (L{default_cfg_fkie.Description}) as parameter.'''
+  remove_config_signal  = QtCore.Signal(str)
+  '''@ivar: the signal is emitted if a default_cfg was removed'''
+
+  description_signal  = QtCore.Signal(str, str)
+  '''@ivar: the signal is emitted to show a description (title, description)'''
+  
   def __init__(self, masteruri, parent=None):
     '''
     Creates a new master.
@@ -71,15 +83,25 @@ class MasterViewProxy(QtGui.QWidget):
     @type masteruri: C{str}
     '''
     QtGui.QWidget.__init__(self, parent)
+    self.main_window = parent
     self.masteruri = masteruri
+    self.hostname = masteruri
+    try:
+      o = urlparse(self.master.uri)
+      self.hostname = o.hostname
+    except:
+      pass
     self.__master_state = None
     self.__master_info = None
-    self.__launchfiles = dict()
-    self.__default_configs = dict() # [(service name, service uri)] = nodes
+    self.__configs = dict() # [file name] = LaunchConfig
     self.rosconfigs = dict() # [launch file path] = LaunchConfig()
     self.__in_question = []
+    '''@ivar: stored the question dialogs for changed files '''
     self._stop_ignores = ['/rosout', rospy.get_name(), '/master_discovery', '/master_sync', '/default_cfg']
     ''' @todo: detect the names of master_discovery and master_sync ndoes'''
+    
+    self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog
+    '''@ivar: stores the open EchoDialogs '''
     
     self.progressDialog = QtGui.QProgressDialog(self)
     self.progressDialog.setWindowModality(QtCore.Qt.WindowModal)
@@ -96,7 +118,7 @@ class MasterViewProxy(QtGui.QWidget):
     tabLayout.addWidget(self.masterTab)
     
     # setup the node view
-    self.node_tree_model = NodeTreeModel(self.masteruri)
+    self.node_tree_model = NodeTreeModel(nm.nameres().getHostname(self.masteruri), self.masteruri)
     self.node_tree_model.hostInserted.connect(self.on_host_inserted)
     self.masterTab.nodeTreeView.setModel(self.node_tree_model)
     for i, (name, width) in enumerate(NodeTreeModel.header):
@@ -112,7 +134,7 @@ class MasterViewProxy(QtGui.QWidget):
 
     # setup the topic view
     self.topic_model = TopicModel()
-    self.topic_proxyModel =  QtGui.QSortFilterProxyModel(self)
+    self.topic_proxyModel =  TopicsSortFilterProxyModel(self)
     self.topic_proxyModel.setSourceModel(self.topic_model)
     self.masterTab.topicsView.setModel(self.topic_proxyModel)
 #    self.masterTab.topicsView.setModel(self.topic_model)
@@ -123,11 +145,11 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.topicsView.selectionModel().selectionChanged.connect(self.on_topic_selection_changed)
     self.masterTab.topicsView.activated.connect(self.on_topic_activated)
     self.masterTab.topicsView.setSortingEnabled(True)
-    self.topic_proxyModel.filterAcceptsRow = self._filterTopicsAcceptsRow
+#    self.topic_proxyModel.filterAcceptsRow = _filterTopicsAcceptsRow
 
     # setup the service view
     self.service_model = ServiceModel()
-    self.service_proxyModel =  QtGui.QSortFilterProxyModel(self)
+    self.service_proxyModel =  ServicesSortFilterProxyModel(self)
     self.service_proxyModel.setSourceModel(self.service_model)
     self.masterTab.servicesView.setModel(self.service_proxyModel)
 #    self.masterTab.servicesView.setModel(self.service_model)
@@ -140,11 +162,11 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.servicesView.selectionModel().selectionChanged.connect(self.on_service_selection_changed)
     self.masterTab.servicesView.activated.connect(self.on_service_activated)
     self.masterTab.servicesView.setSortingEnabled(True)
-    self.service_proxyModel.filterAcceptsRow = self._filterServiceAcceptsRow
+#    self.service_proxyModel.filterAcceptsRow = _filterServiceAcceptsRow
     
     # setup the parameter view
     self.parameter_model = ParameterModel()
-    self.parameter_proxyModel =  QtGui.QSortFilterProxyModel(self)
+    self.parameter_proxyModel =  ParameterSortFilterProxyModel(self)
     self.parameter_proxyModel.setSourceModel(self.parameter_model)
     self.masterTab.parameterView.setModel(self.parameter_proxyModel)
     for i, (name, width) in enumerate(ParameterModel.header):
@@ -153,18 +175,19 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.parameterView.setItemDelegateForColumn(0, self.parameterNameDelegate)
     self.masterTab.parameterView.selectionModel().selectionChanged.connect(self.on_parameter_selection_changed)
     self.masterTab.parameterView.setSortingEnabled(True)
-    self.parameter_proxyModel.filterAcceptsRow = self._filterParameterAcceptsRow
+#    self.parameter_proxyModel.filterAcceptsRow = _filterParameterAcceptsRow
 #    self.masterTab.parameterView.activated.connect(self.on_service_activated)
 
     # connect the buttons
     self.masterTab.startButton.clicked.connect(self.on_start_clicked)
     self.masterTab.stopButton.clicked.connect(self.on_stop_clicked)
+#    self.masterTab.stopContextButton.toggled.connect(self.on_stop_context_toggled)
     self.masterTab.ioButton.clicked.connect(self.on_io_clicked)
     self.masterTab.logButton.clicked.connect(self.on_log_clicked)
     self.masterTab.logDeleteButton.clicked.connect(self.on_log_delete_clicked)
     self.masterTab.dynamicConfigButton.clicked.connect(self.on_dynamic_config_clicked)
     self.masterTab.editConfigButton.clicked.connect(self.on_edit_config_clicked)
-    self.masterTab.closeNodeViewButton.clicked.connect(self.on_close_clicked)
+    self.masterTab.closeCfgButton.clicked.connect(self.on_close_clicked)
 
     self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
     self.masterTab.callServiceButton.clicked.connect(self.on_service_call_clicked)
@@ -173,6 +196,20 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.parameterFilterInput.textChanged.connect(self.on_parameter_filter_changed)
     self.masterTab.getParameterButton.clicked.connect(self.on_get_parameter_clicked)
     self.masterTab.deleteParameterButton.clicked.connect(self.on_delete_parameter_clicked)
+
+    # creates a stop menu
+    stop_menu = QtGui.QMenu(self)
+    self.killNodesAct = QtGui.QAction("&Kill Node", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_Backspace), statusTip="Kill selected node", triggered=self.on_kill_nodes)
+    self.unregNodesAct = QtGui.QAction("&Unregister Nodes", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_Delete), statusTip="Removes the registration of selected nodes from ROS master", triggered=self.on_unregister_nodes)
+    stop_menu.addAction(self.killNodesAct)
+    stop_menu.addAction(self.unregNodesAct)
+    self.masterTab.stopButton.setMenu(stop_menu)
+
+    # creates a screen menu
+    screen_menu = QtGui.QMenu(self)
+    self.killScreensAct = QtGui.QAction("&Kill Screen", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_Backspace), statusTip="Kill available screens", triggered=self.on_kill_screens)
+    screen_menu.addAction(self.killScreensAct)
+    self.masterTab.ioButton.setMenu(screen_menu)
 
     # set the shortcuts
     self._shortcut1 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -229,43 +266,62 @@ class MasterViewProxy(QtGui.QWidget):
     @param master_info: the mater information object
     @type master_info: L{master_discovery_fkie.msg.MasterInfo}
     '''
-    if (master_info.masteruri == self.masteruri):
-      # store process pid's of remote nodes
-      nodepids = []
-      if not self.__master_info is None:
-        nodepids = [(n.name, n.pid, n.uri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
-      self.__master_info = master_info
-      # restore process pid's of remote nodes
-      if not self.__master_info is None:
-        for nodename, pid, uri in nodepids:
-          node = self.__master_info.getNode(nodename)
-          if not node is None:
-            node.pid = pid
-      # request master info updates for new remote nodes
-      nodepids2 = [(n.name, n.pid, n.uri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
-      node2update = list(set(nodepids2)-set(nodepids))
-      hosts2update = list(set([nm.nameres().getHostname(uri) for nodename, pid, uri in node2update]))
-      for host in hosts2update:
-        self.updateHostRequest.emit(host)
-    else:
-      if not (self.__master_info is None or master_info is None):
-        for nodename, node in master_info.nodes.items():
-          if node.isLocal:
-            n = self.__master_info.getNode(nodename)
-            if not n is None:
-              n.pid = node.pid
-    self.updateRunningNodesInModel(self.__master_info)
-    self.updateTopicsListModel(self.__master_info)
-    self.updateServiceListModel(self.__master_info)
-    self.updateDefaultConfigs(self.__master_info)
-  
-  def show_ros_names(self, value):
+    try:
+      if (master_info.masteruri == self.masteruri):
+        # store process pid's of remote nodes
+        nodepids = []
+        if not self.__master_info is None:
+          nodepids = [(n.name, n.pid, n.uri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
+        self.__master_info = master_info
+        # restore process pid's of remote nodes
+        if not self.__master_info is None:
+          for nodename, pid, uri in nodepids:
+            node = self.__master_info.getNode(nodename)
+            if not node is None:
+              node.pid = pid
+        # request master info updates for new remote nodes
+        nodepids2 = [(n.name, n.pid, n.uri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
+        node2update = list(set(nodepids2)-set(nodepids))
+        hosts2update = list(set([nm.nameres().getHostname(uri) for nodename, pid, uri in node2update]))
+        for host in hosts2update:
+          self.updateHostRequest.emit(host)
+      else:
+        if not (self.__master_info is None or master_info is None):
+          for nodename, node in master_info.nodes.items():
+            if node.isLocal:
+              n = self.__master_info.getNode(nodename)
+              if not n is None:
+                n.pid = node.pid
+  #    cputimes = os.times()
+  #    cputime_init = cputimes[0] + cputimes[1]
+  #    print "    updateRunningNodesInModel", time.time()
+      self.updateRunningNodesInModel(self.__master_info)
+  #    print "    updateTopicsListModel", time.time()
+      self.updateTopicsListModel(self.__master_info)
+  #    print "    updateServiceListModel", time.time()
+      self.updateServiceListModel(self.__master_info)
+  #    print "    updateDefaultConfigs", time.time()
+      self.updateDefaultConfigs(self.__master_info)
+  #    cputimes = os.times()
+  #    cputime = cputimes[0] + cputimes[1] - cputime_init
+  #    print "  update on ", self.__master_info.mastername, cputime
+    except:
+      import traceback
+      print traceback.format_exc()
+
+  def markNodesAsDuplicateOf(self, running_nodes):
     '''
-    @param value: show the as ROS names or as their description.
-    @type value: C{bool}
+    Marks all nodes, which are not running and in a given list as a duplicates nodes. 
+    @param running_nodes: The list with names of running nodes
+    @type running_nodes: C{[str]}
     '''
-    self.node_tree_model.show_ros_names(value)
-  
+    self.node_tree_model.markNodesAsDuplicateOf(running_nodes)
+
+  def getRunningNodesIfSync(self):
+    if not self.master_info is None and self.master_info.getNodeEndsWith('master_sync'):
+      return self.master_info.node_names
+    return []
+
   def updateRunningNodesInModel(self, master_info):
     '''
     Creates the dictionary with ExtendedNodeInfo objects and updates the nodes view.
@@ -273,14 +329,7 @@ class MasterViewProxy(QtGui.QWidget):
     @type master_info: L{master_discovery_fkie.msg.MasterInfo}
     '''
     if not master_info is None:
-      nodes_extended = dict()
-      for n in master_info.node_names:
-        node = master_info.getNode(n)
-        if not node is None:
-          nodes_extended[node.name] = ExtendedNodeInfo(node.name, str(master_info.mastername), str(master_info.masteruri), node.uri, node.pid, node.publishedTopics, node.subscribedTopics, node.services)
-        else:
-          nodes_extended[n] = ExtendedNodeInfo(n, str(master_info.mastername), str(master_info.masteruri))
-      self.node_tree_model.updateModelData(nodes_extended, nm.nameres().getHostname(self.masteruri))
+      self.node_tree_model.updateModelData(master_info.mastername, master_info.masteruri, master_info.nodes)
       self.updateButtons()
 
   def updateButtons(self):
@@ -291,13 +340,18 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     has_running = False
     has_stopped = False
+    has_invalid = False
     for node in selectedNodes:
       if not node.uri is None:
         has_running = True
+        if node.pid is None:
+          has_invalid = True
       else:
         has_stopped = True 
-    self.masterTab.startButton.setEnabled(has_stopped)
-    self.masterTab.stopButton.setEnabled(has_running)
+#    self.masterTab.startButton.setEnabled(has_stopped or has_invalid)
+#    self.masterTab.stopButton.setEnabled(has_running or has_invalid)
+    self.masterTab.startButton.setEnabled(True)
+    self.masterTab.stopButton.setEnabled(True)
     self.masterTab.ioButton.setEnabled(has_running or has_stopped)
     self.masterTab.logButton.setEnabled(has_running or has_stopped)
     self.masterTab.logDeleteButton.setEnabled(has_running or has_stopped)
@@ -311,6 +365,8 @@ class MasterViewProxy(QtGui.QWidget):
     if len(selectedNodes) == 1:
       cfg_enable = len(selectedNodes[0].cfgs) > 0
     self.masterTab.editConfigButton.setEnabled(cfg_enable)
+    self.masterTab.closeCfgButton.setEnabled(len(self.__configs) > 0)
+
 
   def updateTopicsListModel(self, master_info):
     '''
@@ -342,10 +398,14 @@ class MasterViewProxy(QtGui.QWidget):
   @property
   def launchfiles(self):
     '''
-    Returns the dictionary with loaded launch files on this host
+    Returns the copy of the dictionary with loaded launch files on this host
     @rtype: C{dict(str(file) : L{LaunchConfig}, ...)}
     '''
-    return self.__launchfiles
+    result = dict()
+    for (c, cfg) in self.__configs.items():
+      if not isinstance(c, tuple):
+        result[c] = cfg
+    return result
 
   @launchfiles.setter
   def launchfiles(self, launchfile):
@@ -356,9 +416,9 @@ class MasterViewProxy(QtGui.QWidget):
     @type launchfile: C{str}
     '''
 #    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-    if self.__launchfiles.has_key(launchfile):
+    if self.__configs.has_key(launchfile):
       # close the configuration
-      self.removeConfigFromModel(launchfile, self.__launchfiles[launchfile].Roscfg)
+      self.removeConfigFromModel(launchfile)
     #load launch config
     try:
       # test for requerid args
@@ -384,7 +444,7 @@ class MasterViewProxy(QtGui.QWidget):
           loaded, req_args = launchConfig.load(argv)
 
       if loaded:
-        self.__launchfiles[launchfile] = launchConfig
+        self.__configs[launchfile] = launchConfig
         #connect the signal, which is emitted on changes on configuration file 
         launchConfig.file_changed.connect(self.on_configfile_changed)
         for name, machine in launchConfig.Roscfg.machines.items():
@@ -393,21 +453,36 @@ class MasterViewProxy(QtGui.QWidget):
         self.appendConfigToModel(launchfile, launchConfig.Roscfg)
         self.masterTab.tabWidget.setCurrentIndex(0)
         
-        #set the description of the nodes
+        #get the descriptions of capabilities and hosts
         try:
-          sensor_descr = launchConfig.getSensorDesrc()
-          for robot, nodes in sensor_descr.items():
-            if not robot:
-              robot = nm.nameres().getHost(masteruri=self.masteruri)
-            self.node_tree_model.updateNodesDescr(robot, nodes)
           robot_descr = launchConfig.getRobotDescr()
-          for name, d in robot_descr.items():
-            if not name:
-              name = nm.nameres().getHost(masteruri=self.masteruri)
-            self.node_tree_model.updateHostDescription(name, d['robot_type'], d['robot_name'], d['robot_descr'])
+          capabilities = launchConfig.getCapabilitiesDesrc()
+          for (host, caps) in capabilities.items():
+            self.node_tree_model.addCapabilities(host, self.masteruri, launchfile, caps)
+          for (host, descr) in robot_descr.items():
+            tooltip = self.node_tree_model.updateHostDescription(host, descr['type'], descr['name'], descr['description'])
+            self.host_description_updated.emit(host, tooltip)
         except:
           import traceback
           print traceback.print_exc()
+        
+#        try:
+#          sensor_descr = launchConfig.getSensorDesrc()
+#          for robot, nodes in sensor_descr.items():
+#            if not robot:
+#              robot = nm.nameres().getHost(masteruri=self.masteruri)
+#            self.node_tree_model.updateNodesDescr(robot, nodes)
+#          robot_descr = launchConfig.getRobotDescr()
+#          for name, d in robot_descr.items():
+#            if not name:
+#              name = nm.nameres().getHost(masteruri=self.masteruri)
+#            self.node_tree_model.updateHostDescription(name, d['robot_type'], d['robot_name'], d['robot_descr'])
+#        except:
+#          import traceback
+#          print traceback.print_exc()
+
+
+
 #        host = nm.nameres().getName(masteruri=self.masteruri)
 #        tooltip = self.node_tree_model.updateNodesDescription(host, items)
 #        self.host_description_updated.emit(host, tooltip)
@@ -432,8 +507,6 @@ class MasterViewProxy(QtGui.QWidget):
 #      print "ERRORS:", launchConfig.Roscfg.config_errors
 #        
 #      print "M:", launchConfig.Roscfg.m
-        self.masterTab.closeNodeViewButton.setEnabled(len(self.__launchfiles) > 0)
-        self.masterTab.closeNodeViewButton.setToolTip("Closes open configuration files")
     except Exception, e:
       import os
       err_msg = ''.join([os.path.basename(launchfile),' loading failed!\n\n', str(e)])
@@ -450,36 +523,36 @@ class MasterViewProxy(QtGui.QWidget):
     @param rosconfig: the configuration
     @type rosconfig: L{LaunchConfig}
     '''
-    nodes_extended = dict()
-    for n in rosconfig.nodes:
-      masteruri = self.masteruri
-      mastername = nm.nameres().getName(masteruri=self.masteruri)
-      if n.machine_name:
-        mastername = n.machine_name
-        masteruri = nm.nameres().getUri(host=rosconfig.machines[n.machine_name].address)
-      node = str(''.join([n.namespace, n.name]))
-      nodes_extended[node] = ExtendedNodeInfo(node, mastername, masteruri, cfgs=[launchfile])
-    self.node_tree_model.appendConfigNodes(nodes_extended, nm.nameres().getHostname(self.masteruri))
-    self.updateButtons()
-
-  def removeConfigFromModel(self, launchfile, rosconfig):
+    try:
+      hosts = dict() # dict(host : dict(node : [config]) )
+      for n in rosconfig.nodes:
+        masteruri = self.masteruri
+        host = nm.nameres().getName(masteruri=self.masteruri)
+        if n.machine_name:
+          host = n.machine_name
+          masteruri = nm.nameres().getUri(host=rosconfig.machines[n.machine_name].address)
+        node = roslib.names.ns_join(n.namespace, n.name)
+        hosts_key = (host, masteruri)
+        if not hosts.has_key(hosts_key):
+          hosts[hosts_key] = dict()
+        hosts[hosts_key][node] = launchfile
+      # add the configurations for each host separately 
+      for ((host, masteruri), nodes) in hosts.items():
+        self.node_tree_model.appendConfigNodes(host, masteruri, nodes)
+      self.updateButtons()
+    except:
+      import traceback
+      print traceback.format_exc()
+      
+  def removeConfigFromModel(self, launchfile):
     '''
     Update the node view after removed configuration.
     @param launchfile: the launch file path
     @type launchfile: C{str}
-    @param rosconfig: the configuration
-    @type rosconfig: L{LaunchConfig}
     '''
-    nodes_extended = dict()
-    for n in rosconfig.nodes:
-      mastername = self.master_info.mastername
-      masteruri = self.master_info.masteruri
-      if n.machine_name:
-        mastername = n.machine_name
-        masteruri = nm.nameres().getUri(host=rosconfig.machines[n.machine_name].address)
-      node = str(''.join([n.namespace, n.name]))
-      nodes_extended[node] = ExtendedNodeInfo(node, mastername, masteruri, cfgs=[launchfile])
-    self.node_tree_model.removeConfigNodes(nodes_extended)
+    if isinstance(launchfile, tuple):
+      self.remove_config_signal.emit(launchfile[0])
+    self.node_tree_model.removeConfigNodes(launchfile)
     self.updateButtons()
 
   def updateDefaultConfigs(self, master_info):
@@ -494,43 +567,29 @@ class MasterViewProxy(QtGui.QWidget):
     for name in self.__master_info.service_names:
       if name.endswith('list_nodes'):
         srv = self.__master_info.getService(name)
-        default_cfgs.append((name, srv.uri))
+        default_cfgs.append((roslib.names.namespace(name).rstrip(roslib.names.SEP), srv.uri))
     # remove the node contained in default configuration form the view
-    removed = list(set(self.__default_configs.keys()) - set(default_cfgs))
+    removed = list(set([c for c in self.__configs.keys() if isinstance(c, tuple)]) - set(default_cfgs))
     if removed:
       for r in removed:
-        host = nm.nameres().getHostname(r[1])
-        nodes_extended = dict()
-        for node in self.__default_configs[r]:
-          nodes_extended[node] = ExtendedNodeInfo(node, nm.nameres().getName(host=host), master_info.masteruri, default_cfgs=[r])
-        self.node_tree_model.removeDefaultConfigNodes(nodes_extended)
-        del self.__default_configs[r]
-        tooltip = self.node_tree_model.updateNodesDescription(host, [])
-        self.host_description_updated.emit(host, tooltip)
-    if len(default_cfgs) == 0:
-      host = nm.nameres().getHost(masteruri=master_info.masteruri)
+        host = nm.nameres().getName(host=nm.nameres().getHostname(r[1]))
+        self.node_tree_model.removeConfigNodes(r)
+        self.remove_config_signal.emit(r[0])
+        del self.__configs[r]
+    if len(self.__configs) == 0:
+      host = nm.nameres().getName(host=nm.nameres().getHostname(master_info.masteruri))
       tooltip = self.node_tree_model.updateHostDescription(host, '', '', '')
       self.host_description_updated.emit(host, tooltip)
     # request the nodes of new default configurations
-    added = list(set(default_cfgs) - set(self.__default_configs.keys()))
+    added = list(set(default_cfgs) - set(self.__configs.keys()))
     for (name, uri) in added:
-      self.default_cfg_handler.requestNodeList(uri, name)
+      self.default_cfg_handler.requestNodeList(uri, roslib.names.ns_join(name, 'list_nodes'))
       #request the description
-      ns = roslib.names.namespace(name)
-      descr_service = self.__master_info.getService(roslib.names.ns_join(ns, 'description'))
+      descr_service = self.__master_info.getService(roslib.names.ns_join(name, 'description'))
       if not descr_service is None:
         self.default_cfg_handler.requestDescriptionList(descr_service.uri, descr_service.name)
     self.updateButtons()
     
-  def remove_all_def_configs(self):
-    for r in list(set(self.__default_configs.keys())):
-      nodes_extended = dict()
-      for node in self.__default_configs[r]:
-        nodes_extended[node] = ExtendedNodeInfo(node, nm.nameres().getName(host=nm.nameres().getHostname(r[1])), self.__master_info.masteruri, default_cfgs=[r])
-      self.node_tree_model.removeDefaultConfigNodes(nodes_extended)
-      del self.__default_configs[r]
-    self.updateButtons()
-
   def on_default_cfg_nodes_retrieved(self, service_uri, config_name, nodes):
     '''
     Handles the new list with nodes from default configuration service.
@@ -543,24 +602,24 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     # remove the current state
     masteruri = self.masteruri
-    key = (config_name, service_uri)
-    if self.__default_configs.has_key(key):
-      nodes_extended = dict()
-      for node in self.__default_configs[key]:
-        nodes_extended[node] = ExtendedNodeInfo(node, nm.nameres().getName(host=nm.nameres().getHostname(service_uri)), masteruri, default_cfgs=[key])
-      self.node_tree_model.removeDefaultConfigNodes(nodes_extended)
+    key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri)
+#    if self.__configs.has_key(key):
+#      self.node_tree_model.removeConfigNodes(key)
     # add the new config
-    nodes_extended = dict()
-    for node in nodes:
-      nodes_extended[node] = ExtendedNodeInfo(node, nm.nameres().getName(host=nm.nameres().getHostname(service_uri)), masteruri, default_cfgs=[key])
-    self.node_tree_model.appendDefaultConfigNodes(nodes_extended, nm.nameres().getHostname(self.masteruri))
-    self.__default_configs[key] = nodes
+    node_cfgs = dict()
+    for n in nodes:
+      node_cfgs[n] = key
+    hostname = nm.nameres().getName(host=nm.nameres().getHostname(service_uri))
+    self.node_tree_model.appendConfigNodes(hostname, masteruri, node_cfgs)
+    self.__configs[key] = nodes
+    self.updateButtons()
 
   def on_default_cfg_descr_retrieved(self, service_uri, config_name, items):
     '''
     Handles the description list from default configuration service.
     Emits a Qt signal L{host_description_updated} to notify about a new host 
-    description.
+    description and a Qt signal L{capabilities_update} to notify about a capabilities
+    update.
     @param service_uri: the URI of the service provided the default configuration
     @type service_uri: C{str}
     @param config_name: the name of default configuration service
@@ -568,9 +627,20 @@ class MasterViewProxy(QtGui.QWidget):
     @param items: list with descriptions
     @type items: C{[L{default_cfg_fkie.Description}]}
     '''
-    host = nm.nameres().getName(host=nm.nameres().getHostname(service_uri))
-    tooltip = self.node_tree_model.updateNodesDescription(host, items)
-    self.host_description_updated.emit(host, tooltip)
+    if items:
+      key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri)
+      host = nm.nameres().getName(host=nm.nameres().getHostname(service_uri))
+      #add capabilities
+      caps = dict()
+      for c in items[0].capabilities:
+        if not caps.has_key(c.namespace):
+          caps[c.namespace] = dict()
+        caps[c.namespace][c.name] = { 'type' : c.type, 'images' : c.images, 'description' : c.description.replace("\\n ", "\n"), 'nodes' : list(c.nodes) }
+      self.node_tree_model.addCapabilities(host, self.masteruri, key, caps)
+      # set host description
+      tooltip = self.node_tree_model.updateHostDescription(host, items[0].robot_type, items[0].robot_name, items[0].robot_descr)
+      self.host_description_updated.emit(host, tooltip)
+      self.capabilities_update_signal.emit(host, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
 
   def on_default_cfg_err(self, service_uri, service, msg):
     '''
@@ -599,14 +669,12 @@ class MasterViewProxy(QtGui.QWidget):
     if not self.__master_info is None:
       name = self.__master_info.mastername
     if not config in self.__in_question:
-#      print "append", config
       self.__in_question.append(config)
       ret = QtGui.QMessageBox.question(self, ''.join([name, ' - configuration update']),
                                        ' '.join(['The configuration file', changed, 'was changed!\n\nReload the configuration', os.path.basename(config), 'for', name,'?']),
-                                       QtGui.QMessageBox.Ok | QtGui.QMessageBox.No, QtGui.QMessageBox.Ok)
+                                       QtGui.QMessageBox.No | QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
       self.__in_question.remove(config)
-#      print "remove", config
-      if ret == QtGui.QMessageBox.Ok:
+      if ret == QtGui.QMessageBox.Yes:
         self.launchfiles = config
 
 
@@ -621,9 +689,23 @@ class MasterViewProxy(QtGui.QWidget):
     @param index: The index of the activated node
     @type index: L{PySide.QtCore.QModelIndex}
     '''
-    if self.masterTab.startButton.isEnabled():
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes(), False)
+    if not selectedNodes:
+      return
+    has_running = False
+    has_stopped = False
+    has_invalid = False
+    for node in selectedNodes:
+      if not node.uri is None:
+        has_running = True
+        if node.pid is None:
+          has_invalid = True
+      else:
+        has_stopped = True 
+
+    if has_stopped:
       self.on_start_clicked()
-    elif self.masterTab.ioButton.isEnabled():
+    elif has_running and not has_invalid:
       self.on_io_clicked()
     else:
       self.on_log_clicked()
@@ -642,8 +724,12 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     self.on_service_call_clicked()
 
-  def on_host_inserted(self, index):
-    self.masterTab.nodeTreeView.expandAll()
+  def on_host_inserted(self, item):
+    if item.name == nm.nameres().getName(masteruri=self.masteruri):
+      index = self.node_tree_model.indexFromItem(item)
+      if index.isValid():
+        self.masterTab.nodeTreeView.expand(index)
+#    self.masterTab.nodeTreeView.expandAll()
 
   def on_node_collapsed(self, index):
     if not index.parent ().isValid():
@@ -652,28 +738,158 @@ class MasterViewProxy(QtGui.QWidget):
   def on_node_expanded(self, index):
     pass
 
+  def _create_html_list(self, title, items):
+    result = ''
+    if items:
+      result = ''.join([result, '<b><u>', title,'</u></b>'])
+      if len(items) > 1:
+        result = ''.join([result, ' [', str(len(items)),']'])
+      result = ''.join([result, '<ul>'])
+      for i in items:
+        result = ''.join([result, '<li>', i, '</li>'])
+      result = ''.join([result, '</ul>'])
+    return result
+
   def on_node_selection_changed(self, selected, deselected):
+    '''
+    updates the Buttons, create a description and emit L{description_signal} to
+    show the description of host, group or node. 
+    '''
+    selectedHosts = self.hostsFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    if len(selectedHosts) == 1:
+      host = selectedHosts[0]
+      self.description_signal.emit(' - '.join([host.name, 'Robot']), host.toolTip())
+    else:
+      selectedGroups = self.groupsFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      if len(selectedGroups) == 1:
+        group = selectedGroups[0]
+        self.description_signal.emit(' - '.join([group.name, 'Group']), group.toolTip())
+      else:
+        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        if len(selectedNodes) == 1:
+          # create description for a node
+          node = selectedNodes[0]
+          text = ''.join(['<h3>', node.name,'</h3>'])
+          text = ''.join([text, '<dl>'])
+          text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
+          text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
+          text = ''.join([text, '</dl>'])
+          text = ''.join([text, self._create_html_list('Published Topics:', node.published)])
+          text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed)])
+          text = ''.join([text, self._create_html_list('Services:', node.services)])
+          launches = []
+          default_cfgs = []
+          for c in node.cfgs:
+            if isinstance(c, tuple):
+              default_cfgs.append(c[0])
+            else:
+              launches.append(c)
+          text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches)])
+          text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
+          self.description_signal.emit(node.name, ''.join(['<div>', text, '</div>']))
+        else:
+          self.description_signal.emit('', '')
     self.updateButtons()
 
   def on_topic_selection_changed(self, selected, deselected):
+    '''
+    updates the Buttons, create a description and emit L{description_signal} to
+    show the description of selected topic
+    '''
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     self.masterTab.echoTopicButton.setEnabled(len(selectedTopics) > 0)
+    if len(selectedTopics) == 1:
+      topic = selectedTopics[0]
+      text = ''.join(['<h3>', topic.name,'</h3>'])
+      text = ''.join([text, self._create_html_list('Publisher:', topic.publisherNodes)])
+      text = ''.join([text, self._create_html_list('Subscriber:', topic.subscriberNodes)])
+      text = ''.join([text, '<b><u>Type:</u></b> ', str(topic.type)])
+      text = ''.join([text, '<dl>'])
+      try:
+        mclass = roslib.message.get_message_class(topic.type)
+        if not mclass is None:
+          text = ''.join([text, '<ul>'])
+          for f in mclass.__slots__:
+            idx = mclass.__slots__.index(f)
+            idtype = mclass._slot_types[idx]
+            base_type = roslib.msgs.base_msg_type(idtype)
+#            primitive = "unknown"
+#            if base_type in roslib.msgs.PRIMITIVE_TYPES:
+#              primitive = "primitive"
+#            else:
+#              try:
+#                primitive =roslib.message.get_message_class(base_type)
+##                primitive = "class", list_msg_class.__slots__
+#              except ValueError:
+#                pass
+            text = ''.join([text, '<li>', str(f), ': ', str(idtype), '</li>'])
+          text = ''.join([text, '</ul>'])
+      except ValueError:
+        pass
+      text = ''.join([text, '</dl>'])
+      self.description_signal.emit(topic.name, ''.join(['<div>', text, '</div>']))
 
   def on_service_selection_changed(self, selected, deselected):
+    '''
+    updates the Buttons, create a description and emit L{description_signal} to
+    show the description of selected service
+    '''
     selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
     self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
+    if len(selectedServices) == 1:
+      service = selectedServices[0]
+      text = ''.join(['<h3>', service.name,'</h3>'])
+      text = ''.join([text, '<dl><dt><b>URI</b>: ', str(service.uri), '</dt></dl>'])
+      try:
+        service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
+        text = ''.join([text, '<h4>', service_class._type, '</h4>'])
+        text = ''.join([text, '<b><u>', 'Request', ':</u></b>'])
+        text = ''.join([text, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
+  
+        text = ''.join([text, '<b><u>', 'Response', ':</u></b>'])
+        text = ''.join([text, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
+      except:
+        pass
+      self.description_signal.emit(service.name, ''.join(['<div>', text, '</div>']))
 
   def on_parameter_selection_changed(self, selected, deselected):
     selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
     self.masterTab.deleteParameterButton.setEnabled(len(selectedParameter) > 0)
 
-  def nodesFromIndexes(self, indexes):
+  def hostsFromIndexes(self, indexes, recursive=True):
+    result = []
+    for index in indexes:
+      if index.column() == 0:
+        item = self.node_tree_model.itemFromIndex(index)
+        if not item is None:
+          if isinstance(item, HostItem):
+            result.append(item)
+    return result
+
+  def groupsFromIndexes(self, indexes, recursive=True):
     result = []
     for index in indexes:
       if index.column() == 0 and index.parent().isValid():
         item = self.node_tree_model.itemFromIndex(index)
         if not item is None:
-          result.append(item.node)
+          if isinstance(item, GroupItem):
+            result.append(item)
+    return result
+
+  def nodesFromIndexes(self, indexes, recursive=True):
+    result = []
+    for index in indexes:
+      if index.column() == 0 and index.parent().isValid():
+        item = self.node_tree_model.itemFromIndex(index)
+        if not item is None:
+          if isinstance(item, GroupItem):
+            if recursive:
+              for j in range(item.rowCount()):
+                if not item.child(j) in result: 
+                  result.append(item.child(j))
+          elif isinstance(item, NodeItem):
+            if not item in result:
+              result.append(item)
     return result
 
   def topicsFromIndexes(self, indexes):
@@ -716,21 +932,35 @@ class MasterViewProxy(QtGui.QWidget):
     cursor = self.cursor()
     self.masterTab.startButton.setEnabled(False)
     self.setCursor(QtCore.Qt.WaitCursor)
-    key_mod = QtGui.QApplication.keyboardModifiers()
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    self.start_nodes(selectedNodes)
+    self.setCursor(cursor)
+    self.masterTab.startButton.setEnabled(True)
+
+  def start_nodes(self, nodes):
+    '''
+    Internal method to start a list with nodes
+    @param nodes: the list with nodes to start
+    @type nodes: C{[L{NodeItem}, ...]}
+    '''
+    key_mod = QtGui.QApplication.keyboardModifiers()
     self.progressDialog.setWindowTitle('Start')
-    self.progressDialog.setMaximum(len(selectedNodes)+1)
+    self.progressDialog.setMaximum(len(nodes))
     self.progressDialog.show()
     QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
     i = 0
-    for node in selectedNodes:
+    choice = None
+    for node in nodes:
       i += 1
       self.progressDialog.setLabelText(node.name)
       self.progressDialog.setValue(i)
       if self.progressDialog.wasCanceled():
         break
-      if node.uri is None:
-        config = None
+      if node.pid is None:
+        if self.node_tree_model.isDuplicateNode(node.name):
+          ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['The node ', node.name, ' is already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+          if ret == QtGui.QMessageBox.No:
+            break
         choices = {} # dict with available configurations {displayed name: LaunchConfig() or str[service name of default configuration]} 
         choices_cfg = self._getCfgChoises(node)
         choices_def_cfg = self._getDefaultCfgChoises(node)
@@ -740,18 +970,24 @@ class MasterViewProxy(QtGui.QWidget):
           choices = choices_cfg
         if not choices:
           choices = dict(choices_cfg.items() + choices_def_cfg.items())
-        config = self._getUserCfgChoice(choices, node.name)
+        if not choice in choices.keys():
+          choice = self._getUserCfgChoice(choices, node.name)
 
         # start the node using launch configuration
+        if choice is None:
+          break
+        config = choices[choice]
         if isinstance(config, LaunchConfig):
           try:
-            nm.starter().runNode(node.name, self.launchfiles[node.cfgs[0]])
+            nm.starter().runNode(node.name, config)
           except (Exception, nm.StartException), e:
+            import traceback
+            print traceback.format_exc()
             rospy.logwarn("Error while start '%s': %s", node.name, str(e))
             QtGui.QMessageBox.warning(None, 'Error while start %s'%node.name,
                                       str(e),
                                       QtGui.QMessageBox.Ok)
-        elif isinstance(config, str):
+        elif isinstance(config, (str, unicode)):
           # start with default configuration
           from default_cfg_fkie.srv import Task
           try:
@@ -761,34 +997,57 @@ class MasterViewProxy(QtGui.QWidget):
             QtGui.QMessageBox.warning(None, 'Error while call a service of node %s'%node.name,
                                       str(e),
                                       QtGui.QMessageBox.Ok)
+        else:
+          break
     self.progressDialog.setValue(self.progressDialog.maximum())
-    self.setCursor(cursor)
+    self.progressDialog.hide()
+
+  def start_nodes_by_name(self, nodes, cfg):
+    '''
+    Start nodes given in a list by their names.
+    @param nodes: a list with full node names
+    @type nodes: C{[str]}
+    '''
+    
+    result = []
+    if not self.master_info is None:
+      for n in nodes:
+        node = self.master_info.getNode(n)
+        if node is None or node.pid is None:
+          node_info = NodeInfo(n, self.masteruri)
+          node_item = NodeItem(node_info)
+          node_item.addConfig(cfg)
+          result.append(node_item)
+    self.start_nodes(result)
+
 
   def _getDefaultCfgChoises(self, node):
     result = {}
-    for (name, uri) in node.default_cfgs:
-      service = name[0:-11] # remove the last '/list_nodes'
-      result[' '.join(['[default]', service])] = str(''.join([service, '/run']))
+    for c in node.cfgs:
+      if isinstance(c, tuple):
+        result[' '.join(['[default]', c[0]])] = roslib.names.ns_join(c[0], 'run')
     return result
 
   def _getCfgChoises(self, node):
     result = {}
     for c in node.cfgs:
-      launch = self.launchfiles[c]
-      result[''.join([str(launch.LaunchName), ' [', str(launch.PackageName), ']'])] = self.launchfiles[c]
+      if not isinstance(c, tuple):
+        launch = self.launchfiles[c]
+        result[''.join([str(launch.LaunchName), ' [', str(launch.PackageName), ']'])] = self.launchfiles[c]
     return result
 
   def _getUserCfgChoice(self, choices, nodename):
     value = None
     # Open selection
     if len(choices) == 1:
-      value = choices[choices.keys()[0]]
+      value = choices.keys()[0]
     elif len(choices) > 0:
       item, ok = QtGui.QInputDialog.getItem(self, "Configuration selection",
-                                        "Select a configuration for '%s'"%nodename,
+                                        "Select a configuration to use for start",
                                         choices.keys(), 0, False)
+#                                        "Select a configuration for '%s'"%nodename,
       if ok:
-        value = choices[item]
+        value = item
     return value
 
   
@@ -808,10 +1067,10 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     Internal method to stop a list with nodes
     @param nodes: the list with nodes to stop
-    @type nodes: L{[master_discovery_fkie.NodeInfo, ...]}
+    @type nodes: C{[L{master_discovery_fkie.NodeInfo}, ...]}
     '''
     self.progressDialog.setWindowTitle('Stop')
-    self.progressDialog.setMaximum(len(nodes)+1)
+    self.progressDialog.setMaximum(len(nodes))
     self.progressDialog.show()
     QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
     i = 0
@@ -821,58 +1080,124 @@ class MasterViewProxy(QtGui.QWidget):
       if self.progressDialog.wasCanceled():
         break
       if not node is None and not node.uri is None and (not (node.name in self._stop_ignores) or len(nodes) == 1):
-        key_mod = QtGui.QApplication.keyboardModifiers()
-        if key_mod & QtCore.Qt.ControlModifier:
-          pid = node.pid
-          if pid is None:
-            # try to get the process id of the node
-            try:
-              rpc_node = xmlrpclib.ServerProxy(node.uri)
-              code, msg, pid = rpc_node.getPid(rospy.get_name())
-            except:
-              self.masterTab.stopButton.setEnabled(False)
-          # kill the node
-          if not pid is None:
-            try:
-              nm.starter().kill(self.getHostFromNode(node), pid)
-            except Exception, e:
-              rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
-              QtGui.QMessageBox.warning(None, 'Error while kill the node %s'%node.name,
-                                        str(e),
-                                        QtGui.QMessageBox.Ok)
-  
-        else:
-          try:
-            p = xmlrpclib.ServerProxy(node.uri)
-            p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', socket.gethostname()]))
-          except Exception, e:
+        try:
+          p = xmlrpclib.ServerProxy(node.uri)
+          p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
+        except Exception, e:
 #            import traceback
 #            formatted_lines = traceback.format_exc().splitlines()
-            rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
-            self.masterTab.stopButton.setEnabled(False)
-        if key_mod & QtCore.Qt.ShiftModifier and not node is None:
-          # unregister all entries of the node from ROS master
-          master = xmlrpclib.ServerProxy(node.masteruri)
-          master_multi = xmlrpclib.MultiCall(master)
-          master_multi.deleteParam(node.name, node.name)
-          for p in node.published:
-            rospy.logdebug("unregister publisher '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-            master_multi.unregisterPublisher(node.name, p, node.uri)
-          for s in node.subscribed:
-            rospy.logdebug("unregister subscriber '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-            master_multi.unregisterSubscriber(node.name, s, node.uri)
-          if not self.master_state is None:
-            for s in node.services:
-              rospy.logdebug("unregister service '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-              service = self.master_info.getService(s)
-              if not (service is None):
-                master_multi.unregisterService(node.name, s, service.uri)
-          r = master_multi()
-          for code, msg, _ in r:
-            if code != 1:
-              rospy.logdebug("unregistration failed: %s", msg)
+          rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
+#          self.masterTab.stopButton.setEnabled(False)
       i += 1
     self.progressDialog.setValue(self.progressDialog.maximum())
+    self.progressDialog.hide()
+
+  def stop_nodes_by_name(self, nodes):
+    '''
+    Stop nodes given in a list by their names.
+    @param nodes: a list with full node names
+    @type nodes: C{[str]}
+    '''
+    result = []
+    if not self.master_info is None:
+      for n in nodes:
+        node = self.master_info.getNode(n)
+        if not node is None:
+          result.append(node)
+    self.stop_nodes(result)
+
+  def on_kill_nodes(self):
+    cursor = self.cursor()
+    self.setCursor(QtCore.Qt.WaitCursor)
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    self.progressDialog.setWindowTitle('Kill nodes')
+    self.progressDialog.setMaximum(len(selectedNodes))
+    self.progressDialog.show()
+    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
+    i = 0
+    for node in selectedNodes:
+      self.progressDialog.setLabelText(node.name)
+      self.progressDialog.setValue(i)
+      if self.progressDialog.wasCanceled():
+        break
+      if not node is None and not node.uri is None and (not (node.name in self._stop_ignores) or len(selectedNodes) == 1):
+        pid = node.pid
+        if pid is None:
+          # try to get the process id of the node
+          try:
+            rpc_node = xmlrpclib.ServerProxy(node.uri)
+            code, msg, pid = rpc_node.getPid(rospy.get_name())
+          except:
+#            self.masterTab.stopButton.setEnabled(False)
+            pass
+        # kill the node
+        if not pid is None:
+          try:
+            nm.starter().kill(self.getHostFromNode(node), pid)
+          except Exception, e:
+            rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
+            QtGui.QMessageBox.warning(None, 'Error while kill the node %s'%node.name,
+                                      str(e),
+                                      QtGui.QMessageBox.Ok)
+      i += 1
+    self.progressDialog.setValue(self.progressDialog.maximum())
+    self.progressDialog.hide()
+    self.setCursor(cursor)
+
+  def on_unregister_nodes(self):
+    cursor = self.cursor()
+    self.setCursor(QtCore.Qt.WaitCursor)
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    self.progressDialog.setWindowTitle('Unregister nodes')
+    self.progressDialog.setMaximum(len(selectedNodes))
+    self.progressDialog.show()
+    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
+    i = 0
+    for node in selectedNodes:
+      self.progressDialog.setLabelText(node.name)
+      self.progressDialog.setValue(i)
+      if self.progressDialog.wasCanceled():
+        break
+      if not node is None and not node.uri is None and (not (node.name in self._stop_ignores) or len(selectedNodes) == 1):
+        try:
+          p = xmlrpclib.ServerProxy(node.uri)
+          p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
+        except Exception, e:
+          rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
+#          self.masterTab.stopButton.setEnabled(False)
+        # unregister all entries of the node from ROS master
+        master = xmlrpclib.ServerProxy(node.masteruri)
+        master_multi = xmlrpclib.MultiCall(master)
+        master_multi.deleteParam(node.name, node.name)
+        for p in node.published:
+          rospy.logdebug("unregister publisher '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+          master_multi.unregisterPublisher(node.name, p, node.uri)
+        for s in node.subscribed:
+          rospy.logdebug("unregister subscriber '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+          master_multi.unregisterSubscriber(node.name, s, node.uri)
+        if not self.master_state is None:
+          for s in node.services:
+            rospy.logdebug("unregister service '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+            service = self.master_info.getService(s)
+            if not (service is None):
+              master_multi.unregisterService(node.name, s, service.uri)
+        r = master_multi()
+        for code, msg, _ in r:
+          if code != 1:
+            rospy.logdebug("unregistration failed: %s", msg)
+      i += 1
+    self.progressDialog.setValue(self.progressDialog.maximum())
+    self.progressDialog.hide()
+    self.setCursor(cursor)
+
+  def on_stop_context_toggled(self, state):
+    menu = QtGui.QMenu(self)
+    self.killAct = QtGui.QAction("&Kill Node", self, shortcut=QtGui.QKeySequence.New, statusTip="Kill selected node", triggered=self.kill_nodes)
+    self.unregAct = QtGui.QAction("&Unregister Nodes...", self, shortcut=QtGui.QKeySequence.Open, statusTip="Open an existing file", triggered=self.unreg_nodes)
+    menu.addAction(self.killAct)
+    menu.addAction(self.unregAct)
+    menu.exec_(self.masterTab.stopContextButton.pos())
+
 
   def getHostFromNode(self, node):
     '''
@@ -886,11 +1211,12 @@ class MasterViewProxy(QtGui.QWidget):
     if not node.uri is None:
       return nm.nameres().getHostname(node.uri)
     # try to get it from the configuration
-    if len(node.cfgs) > 0:
-      launch_config = self.launchfiles[node.cfgs[0]]
-      item = launch_config.getNode(node.name)
-      if not item is None and item.machine_name:
-        return launch_config.Roscfg.machines[item.machine_name].address
+    for c in node.cfgs:
+      if not isinstance(c, tuple):
+        launch_config = self.__configs[c]
+        item = launch_config.getNode(node.name)
+        if not item is None and item.machine_name:
+          return launch_config.Roscfg.machines[item.machine_name].address
     # return the host of the assigned ROS master
     return nm.nameres().getHostname(node.masteruri)
   
@@ -900,19 +1226,33 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     cursor = self.cursor()
     self.setCursor(QtCore.Qt.WaitCursor)
-    key_mod = QtGui.QApplication.keyboardModifiers()
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     for node in selectedNodes:
       try:
-        if key_mod & QtCore.Qt.ControlModifier:
-          # send kill to the associated screens
-          nm.screen().killScreens(self.getHostFromNode(node), node.name, parent=self)
-        else:
-          if not nm.screen().openScreen(self.getHostFromNode(node), node.name, parent=self):
-            self.masterTab.ioButton.setEnabled(False)
+        if not nm.screen().openScreen(self.getHostFromNode(node), node.name, parent=self):
+          self.masterTab.ioButton.setEnabled(False)
       except Exception, e:
         rospy.logwarn("Error while show IO for %s: %s", str(node), str(e))
         QtGui.QMessageBox.warning(None, 'Error while show IO %s'%node.name,
+                                  str(e),
+                                  QtGui.QMessageBox.Ok)
+    self.setCursor(cursor)
+
+  def on_kill_screens(self):
+    '''
+    Kills selected screens, if some available.
+    '''
+    cursor = self.cursor()
+    self.setCursor(QtCore.Qt.WaitCursor)
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    for node in selectedNodes:
+      try:
+        # send kill to the associated screens
+        nm.screen().killScreens(self.getHostFromNode(node), node.name, parent=self)
+        self.masterTab.ioButton.setEnabled(False)
+      except Exception, e:
+        rospy.logwarn("Error while kill screen for %s: %s", str(node), str(e))
+        QtGui.QMessageBox.warning(None, 'Error while kill screen %s'%node.name,
                                   str(e),
                                   QtGui.QMessageBox.Ok)
     self.setCursor(cursor)
@@ -927,6 +1267,8 @@ class MasterViewProxy(QtGui.QWidget):
         if not nm.starter().openLog(node.name, self.getHostFromNode(node)):
           self.masterTab.logButton.setEnabled(False)
     except Exception, e:
+#      import traceback
+#      print traceback.format_exc()
       rospy.logwarn("Error while show log for '%s': %s", str(node), str(e))
       QtGui.QMessageBox.warning(None, 'Error while show Log of %s'%node.name,
                                 str(e),
@@ -970,7 +1312,11 @@ class MasterViewProxy(QtGui.QWidget):
             import os, subprocess
             env = dict(os.environ)
             env["ROS_MASTER_URI"] = str(self.master_info.masteruri)
-            subprocess.Popen(['rosrun', 'dynamic_reconfigure', 'reconfigure_gui', node], env=env)
+            ps = subprocess.Popen(['rosrun', 'dynamic_reconfigure', 'reconfigure_gui', node], env=env)
+            # wait for process to avoid 'defunct' processes
+            thread = threading.Thread(target=ps.wait)
+            thread.setDaemon(True)
+            thread.start()
         except Exception, e:
           rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s", str(node), str(e))
           QtGui.QMessageBox.warning(None, self.tr("Start dynamic reconfiguration"),
@@ -983,43 +1329,75 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     from xml_editor import XmlEditor
     for node in selectedNodes:
-      config = self._getUserCfgChoice(self._getCfgChoises(node), node.name)
+      choices = self._getCfgChoises(node)
+      choice = self._getUserCfgChoice(choices, node.name)
+      config = choices[choice]
       # get the file, which include the node and the main configuration file
       node_cfg = config.getNode(node.name)
       files = [config.Filename]
       if not node_cfg.filename in files:
         files.append(node_cfg.filename)
-      self.editor = XmlEditor(files, os.path.basename(node.name), self)
-      self.editor.show()
+
+      if self.main_window.editor_dialogs.has_key(config.Filename):
+        self.main_window.editor_dialogs[config.Filename].on_load_request(node_cfg.filename, os.path.basename(node.name))
+        self.main_window.editor_dialogs[config.Filename].activateWindow()
+      else:
+        editor = XmlEditor(files, os.path.basename(node.name), self)
+        self.main_window.editor_dialogs[config.Filename] = editor
+        editor.finished_signal.connect(self._editor_dialog_closed)
+        editor.show()
+
+  def _editor_dialog_closed(self, files):
+    if self.main_window.editor_dialogs.has_key(files[0]):
+      del self.main_window.editor_dialogs[files[0]]
 
   def on_close_clicked(self):
     '''
     Closes the open launch configurations. If more then one configuration is 
     open a selection dialog will be open.
     '''
-    cfgs = {'all': None} if len(self.launchfiles) > 1 else {}
-    for file, launchConfig in self.launchfiles.items():
-      cfgs[''.join([launchConfig.LaunchName, ' [',str(launchConfig.PackageName),']'])] = file
-    if len(cfgs) > 1:
+    choices = {'all': None} if len(self.launchfiles) > 1 else {}
+
+    for c in self.__configs:
+      if isinstance(c, tuple):
+        choices[''.join(['[', c[0], ']'])] = c
+      else:
+        choices[c] = c
+    cfg = None
+    if len(choices) > 1:
       item = QtGui.QInputDialog.getItem(None, self.tr("Close configuration selection"),
                                         'Select a configuration to close',
-                                        cfgs.keys(), 0, False)
+                                        choices.keys(), 0, False)
       if item[1]:
-        path = cfgs[item[0]]
-        if self.__launchfiles.has_key(path):
-          # close the configuration
-          self.removeConfigFromModel(path, self.__launchfiles[path].Roscfg)
-          del self.__launchfiles[path]
-        elif item[0] == 'all':
-          # close all configurations
-          for path, cfg in self.__launchfiles.items():
-            self.removeConfigFromModel(path, cfg.Roscfg)
-          self.__launchfiles.clear()
-    elif len(self.__launchfiles) == 1:
+        if item[0] == 'all':
+          cfg = 'all'
+        else:
+          cfg = choices[item[0]]
+    elif len(choices) == 1:
+      cfg = choices.values()[0]
+
+    if cfg == 'all':
       # close all configurations
-      for path, cfg in self.__launchfiles.items():
-        self.removeConfigFromModel(path, cfg.Roscfg)
-      self.__launchfiles.clear()
+      for path, cfg in self.__configs.items():
+        self._close_cfg(path)
+    elif not cfg is None:
+      self._close_cfg(cfg)
+    self.updateButtons()
+
+  def _close_cfg(self, cfg):
+    try:
+      self.removeConfigFromModel(cfg)
+      if isinstance(cfg, tuple):
+        if not self.master_info is None:
+          # close default configuration: stop the default_cfg node
+          node = self.master_info.getNode(cfg[0])
+          if not node is None:
+            self.stop_nodes([node])
+      del self.__configs[cfg]
+    except:
+      import traceback
+      print traceback.format_exc()
+      pass
 
   def on_topic_echo_clicked(self):
     '''
@@ -1028,17 +1406,35 @@ class MasterViewProxy(QtGui.QWidget):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     for topic in selectedTopics:
       try:
-        import os, shlex, subprocess
-        env = dict(os.environ)
-        env["ROS_MASTER_URI"] = str(self.masteruri)
-        cmd = nm.terminal_cmd(['rostopic', 'echo', topic.name], topic.name)
-        subprocess.Popen(shlex.split(cmd), env=env)
+        if nm.is_local(nm.nameres().getHostname(self.masteruri)):
+          if self.__echo_topics_dialogs.has_key(topic.name):
+            self.__echo_topics_dialogs[topic.name].activateWindow()
+          else:
+            topicDia = EchoDialog(topic.name, topic.type, self)
+            self.__echo_topics_dialogs[topic.name] = topicDia
+            topicDia.finished_signal.connect(self._topic_dialog_closed)
+            topicDia.show()
+        else:
+          # connect to topic on remote host
+          import os, shlex, subprocess
+          env = dict(os.environ)
+          env["ROS_MASTER_URI"] = str(self.masteruri)
+          cmd = ' '.join(['rosrun', 'node_manager_fkie', 'nm', '-t', topic.name, topic.type])
+          rospy.loginfo("Echo topic: %s", cmd)
+          ps = subprocess.Popen(shlex.split(cmd), env=env, close_fds=True)
+          # wait for process to avoid 'defunct' processes
+          thread = threading.Thread(target=ps.wait)
+          thread.setDaemon(True)
+          thread.start()
       except Exception, e:
         rospy.logwarn("Echo topic '%s' failed: %s", str(topic.name), str(e))
-        QtGui.QMessageBox.warning(None, 'self.tr("Error")',
+        QtGui.QMessageBox.warning(None, 'Error',
                                   str(''.join(['Echo of topic ', topic.name, ' failed!\n', str(e)])),
                                   QtGui.QMessageBox.Ok)
 
+  def _topic_dialog_closed(self, topic_name):
+    if self.__echo_topics_dialogs.has_key(topic_name):
+      del self.__echo_topics_dialogs[topic_name]
 
   def on_service_call_clicked(self):
     '''
@@ -1160,7 +1556,7 @@ class MasterViewProxy(QtGui.QWidget):
     while root.child(i, 0).isValid():
       index = root.child(i, 0)
       item = self.node_tree_model.itemFromIndex(index)
-      if not item is None and not self._is_in_ignore_list(item.node.name):
+      if not item is None and not self._is_in_ignore_list(item.name):
         selection.append(QtGui.QItemSelectionRange(index, root.child(i, 2)))
       i = i + 1
 #    selection = QtGui.QItemSelection(firstChild, lastChild)
@@ -1233,30 +1629,39 @@ class MasterViewProxy(QtGui.QWidget):
   #%%%%%%%%%%%%%   Filter handling                               %%%%%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  def _filterTopicsAcceptsRow(self, sourceRow, sourceParent):
+class TopicsSortFilterProxyModel(QtGui.QSortFilterProxyModel):
+  def filterAcceptsRow(self, sourceRow, sourceParent):
     '''
     Perform filtering on columns 0 and 3 (Name, Type)
     '''
-    index0 = self.topic_proxyModel.sourceModel().index(sourceRow, 0, sourceParent)
-    index3 = self.topic_proxyModel.sourceModel().index(sourceRow, 3, sourceParent)
+    index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
+    index3 = self.sourceModel().index(sourceRow, 3, sourceParent)
+  
+    regex = self.filterRegExp()
+    return (regex.indexIn(self.sourceModel().data(index0)) != -1
+            or regex.indexIn(self.sourceModel().data(index3)) != -1)
 
-    regex = self.topic_proxyModel.filterRegExp()
-    return (regex.indexIn(self.topic_proxyModel.sourceModel().data(index0)) != -1
-            or regex.indexIn(self.topic_proxyModel.sourceModel().data(index3)) != -1)
+class ServicesSortFilterProxyModel(QtGui.QSortFilterProxyModel):
+  def filterAcceptsRow(self, sourceRow, sourceParent):
+    '''
+    Perform filtering on columns 0 and 1 (Name, Type)
+    '''
+    index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
+    index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
+  
+    regex = self.filterRegExp()
+    return (regex.indexIn(self.sourceModel().data(index0)) != -1
+            or regex.indexIn(self.sourceModel().data(index1)) != -1)
 
-  def _filterServiceAcceptsRow(self, sourceRow, sourceParent):
-    index0 = self.service_proxyModel.sourceModel().index(sourceRow, 0, sourceParent)
-    index1 = self.service_proxyModel.sourceModel().index(sourceRow, 1, sourceParent)
-
-    regex = self.service_proxyModel.filterRegExp()
-    return (regex.indexIn(self.service_proxyModel.sourceModel().data(index0)) != -1
-            or regex.indexIn(self.service_proxyModel.sourceModel().data(index1)) != -1)
-
-  def _filterParameterAcceptsRow(self, sourceRow, sourceParent):
-    index0 = self.parameter_proxyModel.sourceModel().index(sourceRow, 0, sourceParent)
-    index1 = self.parameter_proxyModel.sourceModel().index(sourceRow, 1, sourceParent)
-
-    regex = self.parameter_proxyModel.filterRegExp()
-    return (regex.indexIn(self.parameter_proxyModel.sourceModel().data(index0)) != -1
-            or regex.indexIn(self.parameter_proxyModel.sourceModel().data(index1)) != -1)
+class ParameterSortFilterProxyModel(QtGui.QSortFilterProxyModel):
+  def filterAcceptsRow(self, sourceRow, sourceParent):
+    '''
+    Perform filtering on columns 0 and 1 (Name, Value)
+    '''
+    index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
+    index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
+  
+    regex = self.filterRegExp()
+    return (regex.indexIn(self.sourceModel().data(index0)) != -1
+            or regex.indexIn(self.sourceModel().data(index1)) != -1)
 

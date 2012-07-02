@@ -30,9 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import time
 import sys
 import xmlrpclib
+import threading
 
 from datetime import datetime
 
@@ -48,6 +50,8 @@ from discovery_listener import MasterListService, MasterStateTopic, MasterStatis
 from update_handler import UpdateHandler
 from launch_list_model import LaunchListModel 
 from master_view_proxy import MasterViewProxy
+from launch_config import LaunchConfig, LaunchConfigException
+from capability_table import CapabilityTable
 import node_manager_fkie as nm
 
 from master_discovery_fkie.msg import *
@@ -84,6 +88,7 @@ class MainWindow(QtGui.QMainWindow):
     # init the stack layout which contains the information about different ros master
     self.stackedLayout = QtGui.QStackedLayout()
     self.stackedLayout.addWidget(QtGui.QWidget())
+    self.ui.tabWidget.currentChanged.connect(self.on_currentChanged_tab)
     self.ui.tabLayout = QtGui.QVBoxLayout(self.ui.tabPlace)
     self.ui.tabLayout.setContentsMargins(0, 0, 0, 0)
     self.ui.tabLayout.addLayout(self.stackedLayout)
@@ -107,6 +112,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.ui.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
     self.ui.loadXmlButton.clicked.connect(self.on_load_xml_clicked)
+    self.ui.loadXmlAsDefaultButton.clicked.connect(self.on_load_as_default)
 
     # stores the widget to a 
     self.masters = dict() # masteruri : MasterViewProxy
@@ -135,15 +141,78 @@ class MainWindow(QtGui.QMainWindow):
     else:
       self._subscribe()
 
-    self.show_ros_names = True
-    self.shortcut_toggle_names = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+N", "toggle the view of the names")), self)
-    self.shortcut_toggle_names.activated.connect(self.on_toggle_name_view)
+    self.editor_dialogs  = dict() # [file] = XmlEditor
+    '''@ivar: stores the open XmlEditor '''
 
-
+    # since the is_local method is threaded for host names, call it to cache the localhost
+    nm.is_local("localhost")
+    
     # timer to update the showed update time of the ros state 
     self.master_timecheck_timer = QtCore.QTimer()
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
+
+    ############################################################################
+    ############################################################################
+    ############################################################################
+    ############################################################################
+    ############################################################################
+    self.capabilitiesTable = CapabilityTable(self.ui.capabilities_tab)
+    self.capabilitiesTable.setObjectName("capabilitiesTable")
+    self.capabilitiesTable.start_nodes_signal.connect(self.on_start_nodes)
+    self.capabilitiesTable.stop_nodes_signal.connect(self.on_stop_nodes)
+    self.capabilitiesTable.description_requested_signal.connect(self.on_description_update)
+    self.ui.capabilities_tab.layout().addWidget(self.capabilitiesTable)
+    
+    self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.descriptionDock)
+    self.ui.launchDock.raise_()
+
+
+  def createSlider(self):
+    slider = QtGui.QSlider()
+    palette = QtGui.QPalette()
+    brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Button, brush)
+    brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Button, brush)
+    brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Button, brush)
+    #red
+    palette = QtGui.QPalette()
+    brush = QtGui.QBrush(QtGui.QColor(212, 0, 0))
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Button, brush)
+    brush = QtGui.QBrush(QtGui.QColor(212, 0, 0))
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Button, brush)
+    brush = QtGui.QBrush(QtGui.QColor(212, 0, 0))
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Button, brush)
+
+    slider.setPalette(palette)
+    slider.setMinimum(1)
+    slider.setMaximum(2)
+    slider.setPageStep(1)
+    slider.setOrientation(QtCore.Qt.Horizontal)
+#    slider.setInvertedAppearance(True)
+#    slider.setInvertedControls(True)
+#    slider.setTickPosition(QtGui.QSlider.TicksBelow)
+    slider.actionTriggered .connect(self.was)
+    return slider
+
+
+
+  def on_currentChanged_tab(self, index):
+    pass
+#    if index == self.ui.tabWidget.widget(0):
+#      self.ui.networkDock.show()
+#      self.ui.launchDock.show()
+#    else:
+#      self.ui.networkDock.hide()
+#      self.ui.launchDock.hide()
 
   def closeEvent(self, event):
     self.finish()
@@ -163,6 +232,7 @@ class MainWindow(QtGui.QMainWindow):
       masteruri = nm.masteruri_from_ros()
       master = xmlrpclib.ServerProxy(masteruri)
       code, message, self.materuri = master.getUri(rospy.get_name())
+      nm.is_local(nm.nameres().getHostname(self.materuri))
     return self.materuri
 
   def removeMaster(self, masteruri):
@@ -187,9 +257,12 @@ class MainWindow(QtGui.QMainWindow):
     @rtype: L{MasterViewProxy} 
     '''
     if not self.masters.has_key(masteruri):
-      self.masters[masteruri] = MasterViewProxy(masteruri)
+      self.masters[masteruri] = MasterViewProxy(masteruri, self)
       self.masters[masteruri].updateHostRequest.connect(self.on_host_update_request)
       self.masters[masteruri].host_description_updated.connect(self.on_host_description_updated)
+      self.masters[masteruri].capabilities_update_signal.connect(self.on_capabilities_update)
+      self.masters[masteruri].remove_config_signal.connect(self.on_remove_config)
+      self.masters[masteruri].description_signal.connect(self.on_description_update)
       self.stackedLayout.addWidget(self.masters[masteruri])
     return self.masters[masteruri]
 
@@ -201,6 +274,14 @@ class MainWindow(QtGui.QMainWindow):
   def on_host_description_updated(self, host, descr):
     self.master_model.updateDescription(nm.nameres().getName(host=host), descr)
 
+  def on_capabilities_update(self, host, config_node, descriptions):
+    for d in descriptions:
+      self.capabilitiesTable.updateCapabilities(host, config_node, d)
+    master = self.getMaster(nm.nameres().getUri(host=host))
+    self.capabilitiesTable.updateState(host, master.master_info)
+
+  def on_remove_config(self, cfg):
+    self.capabilitiesTable.removeConfig(cfg)
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%            Handling of local monitoring            %%%%%%%%
@@ -311,11 +392,22 @@ class MainWindow(QtGui.QMainWindow):
     @type minfo: L{master_discovery_fkie.MasterInfo}
     '''
     rospy.loginfo("MASTERINFO from %s received", minfo.mastername)
+#    cputimes_m = os.times()
+#    cputime_init_m = cputimes_m[0] + cputimes_m[1]
     if self.masters.has_key(minfo.masteruri):
+#      print "update"
       for uri, master in self.masters.items():
+#        print "!update:", minfo.mastername
         try:
           # check for running discovery service
-          if nm.is_local(nm.nameres().getHostname(minfo.masteruri)) and (master.master_info is None or master.master_info.timestamp < minfo.timestamp):
+          new_info = master.master_info is None or master.master_info.timestamp < minfo.timestamp
+#          cputimes = os.times()
+#          cputime_init = cputimes[0] + cputimes[1]
+          master.master_info = minfo
+#          cputimes = os.times()
+#          cputime = cputimes[0] + cputimes[1] - cputime_init
+#          print minfo.mastername, cputime
+          if nm.is_local(nm.nameres().getHostname(minfo.masteruri)) and new_info:
             has_discovery_service = self.hasDiscoveryService(minfo)
             if not self.own_master_monitor.isPaused() and has_discovery_service:
               self._setLocalMonitoring(False)
@@ -326,15 +418,22 @@ class MainWindow(QtGui.QMainWindow):
               self.stackedLayout.setCurrentWidget(master)
               self.ui.masterInfoFrame.setEnabled(True)
               self.on_master_timecheck()
-          master.master_info = minfo
+          # update the list view, whether master is synchronized or not
           if not master.master_info is None and master.master_info.masteruri == minfo.masteruri:
             self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
+          self.capabilitiesTable.updateState(nm.nameres().getHost(masteruri=minfo.masteruri), minfo)
+          self.updateDuplicateNodes()
         except Exception, e:
           rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, str(e))
-          
+#        print "!updated:", minfo.mastername
+#      print "!updated"
+      # update the buttons, whether master is synchronized or not
       if not self.currentMaster is None and not self.currentMaster.master_info is None:
         self.ui.syncButton.setEnabled(True)
         self.ui.syncButton.setChecked(not self.currentMaster.master_info.getNodeEndsWith('master_sync') is None)
+#    cputimes_m = os.times()
+#    cputime_m = cputimes_m[0] + cputimes_m[1] - cputime_init_m
+#    print "ALL:", cputime_m
 
   def on_conn_stats_updated(self, stats):
     '''
@@ -355,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
   def on_refresh_master_clicked(self):
     if not self.currentMaster is None:
       self._update_handler.requestMasterInfo(self.currentMaster.master_state.uri, self.currentMaster.master_state.monitoruri)
-      self.currentMaster.remove_all_def_configs()
+#      self.currentMaster.remove_all_def_configs()
 
   def on_run_node_clicked(self):
     '''
@@ -372,14 +471,22 @@ class MainWindow(QtGui.QMainWindow):
       import os, subprocess
       env = dict(os.environ)
       env["ROS_MASTER_URI"] = str(self.currentMaster.master_state.uri)
-      subprocess.Popen(['rxconsole'], env=env)
+      ps = subprocess.Popen(['rxconsole'], env=env)
+      # wait for process to avoid 'defunct' processes
+      thread = threading.Thread(target=ps.wait)
+      thread.setDaemon(True)
+      thread.start()
 
   def on_show_rxgraph_clicked(self):
     if not self.currentMaster is None:
       import os, subprocess
       env = dict(os.environ)
       env["ROS_MASTER_URI"] = str(self.currentMaster.master_state.uri)
-      subprocess.Popen(['rxgraph'], env=env)
+      ps = subprocess.Popen(['rxgraph'], env=env)
+      # wait for process to avoid 'defunct' processes
+      thread = threading.Thread(target=ps.wait)
+      thread.setDaemon(True)
+      thread.start()
 
   def on_sync_released(self):
     '''
@@ -397,13 +504,15 @@ class MainWindow(QtGui.QMainWindow):
                                     QtGui.QMessageBox.Ok)
       elif not self.currentMaster.master_info is None:
         node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
-        self.currentMaster.stop_node(node)
+        self.currentMaster.stop_nodes([node])
 
   def on_master_timecheck(self):
     if not self.currentMaster is None:
       master = self.getMaster(self.currentMaster.master_state.uri)
       if not master.master_info is None:
-        self.showMasterName(self.currentMaster.master_state.name, self.timestampStr(master.master_info.check_ts), self.currentMaster.master_state.online)
+        self.showMasterName(master.master_state.name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
+      elif not master.master_state is None:
+        self.showMasterName(master.master_state.name, 'Try to get info!!! Currently not received!!!', master.master_state.online)
     else:
       self.showMasterName('No robot selected', None, False)
 
@@ -449,6 +558,15 @@ class MainWindow(QtGui.QMainWindow):
     else:
       before = diff_dt.strftime('%d Day(s) %H:%M:%S')
     return ''.join([dt.strftime('%H:%M:%S'), ' (', before, ')'])
+
+  def updateDuplicateNodes(self):
+    # update the duplicate nodes
+    running_nodes = []
+    for uri, m in self.masters.items():
+      running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
+    for uri, m in self.masters.items():
+      m.markNodesAsDuplicateOf(running_nodes)
+
 
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -496,23 +614,64 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Tries to start the master_discovery node on the machine requested by a dialog.
     '''
-    host, result = QtGui.QInputDialog.getText(self, self.tr("Launch master_discovery on"),
-                                      self.tr("Hostname / address:"), QtGui.QLineEdit.Normal,
-                                      'localhost')
+    # get the history list
+    history = self._getHostHistory()
+    host, result = QtGui.QInputDialog.getItem(self, self.tr("Launch master_discovery on"),
+                                      self.tr("Hostname / address:"), list(['localhost'] + history), 0,
+                                      True)
     if result and host:
       try:
         nm.starter().runNodeWithoutConfig(host, 'master_discovery_fkie', 'master_discovery', 'master_discovery')
+        if host != 'localhost':
+          # insert the host into first place
+          try:
+            history.remove(host)
+          except:
+            pass
+          history.insert(0, host)
+          self._storeHostHistory(history)
       except (Exception, nm.StartException), e:
         rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
         QtGui.QMessageBox.warning(None, 'Error while start master_discovery',
                                   str(e),
                                   QtGui.QMessageBox.Ok)
 
+  def _getHostHistory(self):
+    '''
+    Read the history of the entered robots from the file stored in ROS_HOME path.
+    @return: the list with robot names
+    @rtype: C{[str]}
+    '''
+    result = list()
+    historyFile = ''.join([nm.CFG_PATH, 'host.history'])
+    if os.path.isfile(historyFile):
+      with open(historyFile, 'r') as f:
+        line = f.readline()
+        while line:
+          if line:
+            result.append(line.strip())
+          line = f.readline()
+      f.closed
+    return result
+
+  def _storeHostHistory(self, hosts):
+    '''
+    Saves the list of hosts to history. The existing history will be replaced!
+    @param hosts: the list with robot names
+    @type hosts: C{[str]}
+    '''
+    if not os.path.isdir(nm.CFG_PATH):
+      os.makedirs(nm.CFG_PATH)
+    with open(''.join([nm.CFG_PATH, 'host.history']), 'w') as f:
+      for host in hosts:
+        f.write(''.join([host, '\n']))
+    f.closed
+
 #  def on_clear_master_selection(self):
 #    if not self.ui.masterListView.selectionModel() is None:
 #      self.ui.masterListView.selectionModel().clear()
 #    self.ui.masterInfoFrame.setEnabled(False)
-##    self.ui.closeNodeViewButton.setEnabled(False)
+##    self.ui.closeCfgButton.setEnabled(False)
 ##    self.ui.tabWidget.setEnabled(False)
 #    self.currentMaster = None
 #    self.ui.tabPlace.layout().clear()
@@ -531,7 +690,6 @@ class MainWindow(QtGui.QMainWindow):
     item, path, id = activated.model().items[activated.row()]
     file = activated.model().getFilePath(item)
     if not file is None:
-      rospy.loginfo("LOAD the launch file: %s", path)
       self.loadLaunchFile(path)
 
   def on_xmlFileView_selection_changed(self, selected, deselected):
@@ -543,6 +701,7 @@ class MainWindow(QtGui.QMainWindow):
       isfile = self.ui.xmlFileView.model().isLaunchFile(index.row())
       self.ui.editXmlButton.setEnabled(isfile)
       self.ui.loadXmlButton.setEnabled(isfile)
+      self.ui.loadXmlAsDefaultButton.setEnabled(isfile)
 
   def on_refresh_xml_clicked(self):
     '''
@@ -551,6 +710,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.xmlFileView.model().reloadCurrentPath()
     self.ui.editXmlButton.setEnabled(False)
     self.ui.loadXmlButton.setEnabled(False)
+    self.ui.loadXmlAsDefaultButton.setEnabled(False)
     
   def on_edit_xml_clicked(self):
     '''
@@ -562,9 +722,19 @@ class MainWindow(QtGui.QMainWindow):
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
       path = self.ui.xmlFileView.model().getFilePath(pathItem)
       if not path is None:
-        self.editor = XmlEditor([path], '', self)
-        self.editor.show()
-    
+        if self.editor_dialogs.has_key(path):
+          self.editor_dialogs[path].on_load_request(path, '')
+          self.editor_dialogs[path].activateWindow()
+        else:
+          editor = XmlEditor([path], '', self)
+          self.editor_dialogs[path] = editor
+          editor.finished_signal.connect(self._editor_dialog_closed)
+          editor.show()
+
+  def _editor_dialog_closed(self, files):
+    if self.editor_dialogs.has_key(files[0]):
+      del self.editor_dialogs[files[0]]
+
   def on_load_xml_clicked(self):
     '''
     Tries to load the selected launch file. The button is only enabled and this
@@ -575,29 +745,67 @@ class MainWindow(QtGui.QMainWindow):
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
       path = self.ui.xmlFileView.model().getFilePath(pathItem)
       if not path is None:
-        rospy.loginfo("LOAD the launch file: %s", path)
         self.loadLaunchFile(path)
 
-  def loadLaunchFile(self, path):
+  def loadLaunchFile(self, path, force_as_default=False):
     '''
     Load the launch file. A ROS master mast be selected first.
     @param path: the path of the launch file.
     @type path: C{str}
     '''
+    rospy.loginfo("LOAD the launch file: %s", path)
     master_proxy = self.stackedLayout.currentWidget()
     if isinstance(master_proxy, MasterViewProxy):
       cursor = self.cursor()
       self.setCursor(QtCore.Qt.WaitCursor)
       self.ui.xmlFileView.setEnabled(False)
       QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-      master_proxy.launchfiles = path
+      #todo: except errors on determination of the defaul_cfg name
+      key_mod = QtGui.QApplication.keyboardModifiers()
+      if (key_mod & QtCore.Qt.ControlModifier) or force_as_default:
+        args = list()
+        args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(path)))]))
+        args.append(''.join(['_launch_file:="', os.path.basename(path), '"']))
+        nm.starter().runNodeWithoutConfig(nm.nameres().getHost(masteruri=master_proxy.masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().getHost(masteruri=master_proxy.masteruri)), '/default_cfg']), args)
+      else:
+        master_proxy.launchfiles = path
+        # update the duplicate nodes
+        self.updateDuplicateNodes()
       self.ui.xmlFileView.setEnabled(True)
       self.setCursor(cursor)
     else:
       QtGui.QMessageBox.information(self, "Load of launch file",
                                     "Select a master first!", )
 
-  def on_toggle_name_view(self):
-    self.show_ros_names = not self.show_ros_names
-    for uri, m in self.masters.items():
-      m.show_ros_names(self.show_ros_names)
+  def on_load_as_default(self):
+    '''
+    Tries to load the selected launch file as default configuration. The button 
+    is only enabled and this method is called, if the button was enabled by 
+    on_launch_selection_clicked()
+    '''
+    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
+    for index in indexes:
+      pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
+      path = self.ui.xmlFileView.model().getFilePath(pathItem)
+      if not path is None:
+        rospy.loginfo("LOAD the launch file as default: %s", path)
+        self.loadLaunchFile(path, True)
+
+
+  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  #%%%%%%%%%%%%%              Capabilities handling      %%%%%%%%%%%%%%%%%%%
+  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  def on_start_nodes(self, host, cfg, nodes):
+    master = self.getMaster(nm.nameres().getUri(host=host))
+    master.start_nodes_by_name(nodes, (cfg, ''))
+  
+  def on_stop_nodes(self, host, nodes):
+    master = self.getMaster(nm.nameres().getUri(host=host))
+    master.stop_nodes_by_name(nodes)
+    
+  def on_description_update(self, title, text):
+    self.ui.descriptionDock.setWindowTitle(title)
+    self.ui.descriptionTextEdit.setText(text)
+
+  

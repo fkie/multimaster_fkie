@@ -24,7 +24,10 @@
     <file>icons/deleket_deviantart_play.png</file>
     <file>icons/deleket_deviantart_refresh.png</file>
     <file>icons/deleket_deviantart_stop.png</file>
+    <file>icons/imacadam_stop.png</file>
     <file>icons/remote.png</file>
+    <file>icons/state_off.png</file>
+    <file>icons/state_part.png</file>
     <file>icons/state_run.png</file>
     <file>icons/stock_connect.png</file>
     <file>icons/stock_connect_green.png</file>

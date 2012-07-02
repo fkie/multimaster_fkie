@@ -52,9 +52,6 @@ class LaunchConfig(QtCore.QObject):
   '''@ivar: a signal to inform the receiver about the changes on
   launch file or included file. ParameterB{:} (changed file, launch file)'''
   
-  CFG_PATH = ''.join([os.environ['HOME'], '/', '.ros/node_manager/'])
-  '''@ivar: configuration path to store the argument history.'''
-  
   def __init__(self, launch_file, package=None, masteruri=None, argv=[]):
     '''
     Creates the LaunchConfig object. The launch file will be not loaded on 
@@ -75,7 +72,7 @@ class LaunchConfig(QtCore.QObject):
     '''
     QtCore.QObject.__init__(self)
     self.__launchFile = launch_file
-    self.__package = self.__getPackageName(os.path.dirname(self.__launchFile)) if package is None else package 
+    self.__package = self.packageName(os.path.dirname(self.__launchFile)) if package is None else package 
     self.__masteruri = masteruri if not masteruri is None else 'localhost'
     self.__roscfg = None
     self.argv = argv
@@ -152,14 +149,19 @@ class LaunchConfig(QtCore.QObject):
     '''
     return self.__package
   
-  def __getPackageName(self, dir):
+  @classmethod
+  def packageName(cls, dir):
+    '''
+    Returns for given directory the package name or None
+    @rtype: C{str} or C{None}
+    '''
     if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
       package = os.path.basename(dir)
       fileList = os.listdir(dir)
       for file in fileList:
         if file == 'manifest.xml':
             return package
-      return self.__getPackageName(os.path.dirname(dir))
+      return cls.packageName(os.path.dirname(dir))
     return None
 
   def _index(self, text, regexp_list):
@@ -273,61 +275,74 @@ class LaunchConfig(QtCore.QObject):
 
   def getRobotDescr(self):
     '''
+    Parses the launch file for C{robots} parameter to get the description of the
+    robot.
     @return: the robot description stored in the configuration
-    @rtype: C{dict(robot:dict({'robot_type', 'robot_name', 'robot_descr'}:str(value)))}
+    @rtype: C{dict(robot:dict('type' :str, 'name': str, 'images' : [str], 'description': str))}
     '''
     result = dict()
     if not self.Roscfg is None:
       for param, p in self.Roscfg.params.items():
-        t = ''
-        if param.endswith('robot_type'):
-          t = 'robot_type'
-        elif param.endswith('robot_name'):
-          t = 'robot_name'
-        elif param.endswith('robot_descr'):
-          t = 'robot_descr'
-        if t:
-          robot = roslib.names.namespace(param).strip(roslib.names.SEP)
-          if not result.has_key(robot):
-            result[robot] = dict()
-            result[robot]['robot_type'] = ''
-            result[robot]['robot_name'] = ''
-            result[robot]['robot_descr'] = ''
-          result[robot][t] = p.value.replace("\\n ", "\n")
+        if param.endswith('robots'):
+          if isinstance(p.value, list):
+            if len(p.value) > 0 and len(p.value[0]) != 5:
+              print "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore", param
+            else:
+              for entry in p.value:
+                result[entry[0]] = { 'type' : entry[1], 'name' : entry[2], 'images' : entry[4].split(), 'description' : entry[4].replace("\\n ", "\n") }
     return result
 
-  def getSensorDesrc(self):
+  def getCapabilitiesDesrc(self):
     '''
-    @return: the sensor description stored in the configuration
-    @rtype: C{dict(robot: dict(sensor:dict({'sensor_type', 'sensor_name', 'sensor_descr'}:str(value))))}
+    Parses the launch file for C{capabilities} and C{capability_group} parameter 
+    and creates  dictionary for grouping the nodes.
+    @return: the capabilities description stored in this configuration
+    @rtype: C{dict(machine : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))}
     '''
-    # get the sensor description
     result = dict()
     if not self.Roscfg is None:
+      # get the capabilities description
+      # use two separate loops, to create the description list first
       for param, p in self.Roscfg.params.items():
-        t = ''
-        if param.endswith('sensor_type'):
-          t = 'sensor_type'
-        elif param.endswith('sensor_name'):
-          t = 'sensor_name'
-        elif param.endswith('sensor_descr'):
-          t = 'sensor_descr'
-        if t:
-          node = roslib.names.namespace(param).strip(roslib.names.SEP)
-          node = ''.join([roslib.names.SEP, node])
-          machine = ''
+        if param.endswith('capabilities'):
+          if isinstance(p.value, list):
+            if len(p.value) > 0 and len(p.value[0]) != 4:
+              print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
+            else:
+              ns = roslib.names.namespace(param)
+              for m in self.Roscfg.machines.keys():
+                if not result.has_key(m):
+                  result[m] = dict()
+                for entry in p.value:
+                  if not result[m].has_key(ns):
+                    result[m][ns] = dict()
+                  result[m][ns][entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : entry[3].replace("\\n ", "\n"), 'nodes' : [] }
+      # get the capability nodes
+      for param, p in self.Roscfg.params.items():
+        if param.endswith('capability_group'):
+          param_node = roslib.names.namespace(param).rstrip(roslib.names.SEP)
+          if not param_node:
+            param_node = roslib.names.SEP
+          # get the nodes with groups
           for item in self.Roscfg.nodes:
-            if roslib.names.ns_join(item.namespace, item.name) == node:
-              if item.machine_name:
-                machine = self.Roscfg.machines[item.machine_name].name
-          if not result.has_key(machine):
-            result[machine] = dict()
-          if not result[machine].has_key(node):
-            result[machine][node] = dict()
-            result[machine][node]['sensor_type'] = ''
-            result[machine][node]['sensor_name'] = ''
-            result[machine][node]['sensor_descr'] = ''
-          result[machine][node][t] = p.value.replace("\\n ", "\n")
+            node_fullname = roslib.names.ns_join(item.namespace, item.name)
+            machine_name = item.machine_name if not item.machine_name is None else ''
+            added = False
+            if node_fullname == param_node:
+              if not result.has_key(machine_name):
+                result[machine_name] = dict()
+              for (ns, groups) in result[machine_name].items():
+                if groups.has_key(p.value):
+                  groups[p.value]['nodes'].append(node_fullname)
+                  added = True
+                  break
+              if not added:
+                # add new group in the namespace of the node
+                if not result[machine_name].has_key(item.namespace):
+                  result[machine_name][item.namespace] = dict()
+                if not result[machine_name][item.namespace].has_key(p.value):
+                  result[machine_name][item.namespace][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
+                result[machine_name][item.namespace][p.value]['nodes'].append(node_fullname)
     return result
   
   def argvToDict(self, argv):
@@ -345,7 +360,7 @@ class LaunchConfig(QtCore.QObject):
     @rtype: C{dict(str(name):[str(value), ...], ...)}
     '''
     result = {}
-    historyFile = ''.join([self.CFG_PATH, 'arg.history'])
+    historyFile = ''.join([nm.CFG_PATH, 'arg.history'])
     if os.path.isfile(historyFile):
       with open(historyFile, 'r') as f:
         line = f.readline()
@@ -386,9 +401,9 @@ class LaunchConfig(QtCore.QObject):
         save = True
     # safe history
     if save:
-      if not os.path.isdir(self.CFG_PATH):
-        os.makedirs(self.CFG_PATH)
-      with open(''.join([self.CFG_PATH, 'arg.history']), 'w') as f:
+      if not os.path.isdir(nm.CFG_PATH):
+        os.makedirs(nm.CFG_PATH)
+      with open(''.join([nm.CFG_PATH, 'arg.history']), 'w') as f:
         for key in history.keys():
           for value in history[key]:
             f.write(''.join([key, ':=', value, '\n']))

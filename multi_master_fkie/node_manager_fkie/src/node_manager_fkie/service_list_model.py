@@ -35,6 +35,8 @@ from PySide import QtGui
 
 import roslib
 
+import node_manager_fkie as nm
+
 class ServiceItem(QtGui.QStandardItem):
   '''
   The service item stored in the service model. This class stores the service as
@@ -80,7 +82,7 @@ class ServiceItem(QtGui.QStandardItem):
     ns, sep, name = service_name.rpartition('/')
     result = ''
     if sep:
-      result = ''.join(['<html><body>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></body></html>'])
+      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
     else:
       result = name
     return result
@@ -97,7 +99,7 @@ class ServiceItem(QtGui.QStandardItem):
     '''
     items = []
     item = ServiceItem(service)
-    item.setToolTip(''.join(['<html><body><h4>', service.name, '</h4><dl><dt>', service.uri,'</dt></dl></body></html>']))
+    item.setToolTip(''.join(['<div><h4>', str(service.name), '</h4><dl><dt>', str(service.uri),'</dt></dl></div>']))
     items.append(item)
     typeItem = QtGui.QStandardItem()
     ServiceItem.updateTypeView(service, typeItem)
@@ -114,28 +116,23 @@ class ServiceItem(QtGui.QStandardItem):
     @type item: L{ServiceItem}
     '''
     try:
-      service_class = service.get_service_class(service.isLocal)
+      service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
       item.setText(cls.toHTML(service_class._type))
-      tooltip = ''.join(['<html><body>'])
+      tooltip = ''
       tooltip = ''.join([tooltip, '<h4>', service_class._type, '</h4>'])
-      tooltip = ''.join([tooltip, '<h4>', 'Request', ':</h4><dl>'])
-      tooltip = ''.join([tooltip, '<dt>', str(service_class._request_class.__slots__), '</dt>'])
-      tooltip = ''.join([tooltip, '</dl>'])
+      tooltip = ''.join([tooltip, '<b><u>', 'Request', ':</u></b>'])
+      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
 
-      tooltip = ''.join([tooltip, '<h4>', 'Response', ':</h4><dl>'])
-      tooltip = ''.join([tooltip, '<dt>', str(service_class._response_class.__slots__), '</dt>'])
-      tooltip = ''.join([tooltip, '</dl>'])
+      tooltip = ''.join([tooltip, '<b><u>', 'Response', ':</u></b>'])
+      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
 
-      tooltip = ''.join([tooltip, '</body></html>'])
-      item.setToolTip(tooltip)
+      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
     except:
 #      import traceback
 #      print traceback.format_exc()
       if not service.isLocal:
-        tooltip = ''.join(['<html><body>'])
-        tooltip = ''.join([tooltip, '<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
-        tooltip = ''.join([tooltip, '</body></html>'])
-        item.setToolTip(tooltip)
+        tooltip = ''.join(['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
+        item.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
 
   def __eq__(self, item):

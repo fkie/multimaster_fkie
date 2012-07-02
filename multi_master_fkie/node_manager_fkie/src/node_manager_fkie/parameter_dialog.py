@@ -33,6 +33,7 @@
 from PySide import QtCore, QtGui
 
 import roslib
+import node_manager_fkie as nm
 
 class ParameterDialog(QtGui.QDialog):
   '''
@@ -53,7 +54,8 @@ class ParameterDialog(QtGui.QDialog):
     self.setObjectName("ParameterDialog")
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
-
+    self.verticalLayout.setContentsMargins(1, 1, 1, 1)
+    
     scrollArea = QtGui.QScrollArea(self);
     scrollArea.setObjectName("scrollArea")
     scrollArea.setWidgetResizable(True)
@@ -110,6 +112,8 @@ class ParameterDialog(QtGui.QDialog):
             field.addItems(values[name])
           else:
             field = QtGui.QLineEdit(parent)
+            if nm.PARAM_CACHE.has_key(name):
+              field.setText(nm.PARAM_CACHE[name])
         field.setObjectName(name);
         label = QtGui.QLabel(''.join([name, ' (', type, ')']), parent)
         label.setObjectName(''.join([name, '_label']))
@@ -146,6 +150,7 @@ class ParameterDialog(QtGui.QDialog):
         elif isinstance(value, QtGui.QComboBox):
           text = value.currentText()
         if text:
+          nm.PARAM_CACHE[key] = text
           if 'int' in type:
             result[key] = int(text)
           elif 'float' in type:

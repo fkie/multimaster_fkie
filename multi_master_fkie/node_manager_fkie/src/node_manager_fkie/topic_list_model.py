@@ -88,12 +88,12 @@ class TopicItem(QtGui.QStandardItem):
     @type item: L{TopicItem}
     '''
     item.setText(str(len(topic.publisherNodes)))
-    tooltip = ''.join(['<html><body><h4>', 'Publisher [', topic.name, ']:</h4><dl>'])
+    tooltip = ''.join(['<h4>', 'Publisher [', topic.name, ']:</h4><dl>'])
     for p in topic.publisherNodes:
       tooltip = ''.join([tooltip, '<dt>', p, '</dt>'])
-    tooltip = ''.join([tooltip, '</dl></body></html>'])
+    tooltip = ''.join([tooltip, '</dl>'])
     if len(topic.publisherNodes) > 0:
-      item.setToolTip(tooltip)
+      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
   @classmethod
   def updateSubscriberView(cls, topic, item):
@@ -105,12 +105,12 @@ class TopicItem(QtGui.QStandardItem):
     @type item: L{TopicItem}
     '''
     item.setText(str(len(topic.subscriberNodes)))
-    tooltip = ''.join(['<html><body><h4>', 'Subscriber [', topic.name, ']:</h4><dl>'])
+    tooltip = ''.join(['<h4>', 'Subscriber [', topic.name, ']:</h4><dl>'])
     for p in topic.subscriberNodes:
       tooltip = ''.join([tooltip, '<dt>', p, '</dt>'])
-    tooltip = ''.join([tooltip, '</dl></body></html>'])
+    tooltip = ''.join([tooltip, '</dl>'])
     if len(topic.subscriberNodes) > 0:
-      item.setToolTip(tooltip)
+      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
   @classmethod
   def updateTypeView(cls, topic, item):
@@ -159,7 +159,7 @@ class TopicItem(QtGui.QStandardItem):
     ns, sep, name = topic_name.rpartition('/')
     result = ''
     if sep:
-      result = ''.join(['<html><body>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></body></html>'])
+      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
     else:
       result = name
     return result

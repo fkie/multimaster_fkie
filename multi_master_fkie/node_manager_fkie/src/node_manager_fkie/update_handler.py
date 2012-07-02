@@ -69,31 +69,47 @@ class UpdateHandler(QtCore.QObject):
     @param monitoruri: the URI of the monitor RPC interface of the master_discovery node
     @type monitoruri: C{str}
     '''
-    self._lock.acquire(True)
-    if (self.__updateThreads.has_key(masteruri)):
-      self.__requestedUpdates[masteruri] = monitoruri
-    else:
-      upthread = UpdateThread(monitoruri)
-      upthread.update_signal.connect(self._on_master_info)
-      self.__updateThreads[masteruri] = upthread
-      from urlparse import urlparse
-      om = urlparse(masteruri)
-      upthread.start()
-    self._lock.release()
+    try:
+      self._lock.acquire(True)
+      if (self.__updateThreads.has_key(masteruri)):
+        self.__requestedUpdates[masteruri] = monitoruri
+      else:
+        self.__create_update_thread(monitoruri, masteruri)
+#        from urlparse import urlparse
+#        om = urlparse(masteruri)
+    except:
+      pass
+    finally:
+      self._lock.release()
 
   def _on_master_info(self, minfo):
     self.master_info_signal.emit(minfo)
+    self.__handle_requests(minfo.masteruri)
+
+  def _on_error(self, masteruri, error):
+    self.__handle_requests(masteruri)
+    
+  def __handle_requests(self, masteruri):
     self._lock.acquire(True)
     try:
-      thread = self.__updateThreads.pop(minfo.masteruri)
+      thread = self.__updateThreads.pop(masteruri)
       del thread
-      monitoruri = self.__requestedUpdates.pop(minfo.masteruri)
+      monitoruri = self.__requestedUpdates.pop(masteruri)
     except KeyError:
+#      import traceback
+#      print traceback.format_exc()
       pass
+    except:
+      import traceback
+      print traceback.format_exc()
     else:
-      upthread = UpdateThread(monitoruri)
-      upthread.update_signal.connect(self._on_master_info)
-      self.__updateThreads[minfo.masteruri] = upthread
-      upthread.start()
-    self._lock.release()
-      
+      self.__create_update_thread(monitoruri, masteruri)
+    finally:
+      self._lock.release()
+
+  def __create_update_thread(self, monitoruri, masteruri):
+    upthread = UpdateThread(monitoruri, masteruri)
+    self.__updateThreads[masteruri] = upthread
+    upthread.update_signal.connect(self._on_master_info)
+    upthread.error_signal.connect(self._on_error)
+    upthread.start()

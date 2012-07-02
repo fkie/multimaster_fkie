@@ -33,6 +33,8 @@
 from PySide import QtCore
 from PySide import QtGui
 
+import threading
+
 from urlparse import urlparse
 from socket import gethostbyname
 
@@ -55,9 +57,27 @@ class MasterItem(QtGui.QStandardItem):
                   'yellow': QtGui.QIcon(":/icons/stock_connect_yellow.png"),
                   'red'   : QtGui.QIcon(":/icons/stock_connect_red.png"),
                   'grey'  : QtGui.QIcon(":/icons/stock_connect.png"),
-                  'disconnected' : QtGui.QIcon(":/icons/stock_disconnect.png") }
-    self.updateNameView(master, quality, self)
+                  'disconnected' : QtGui.QIcon(":/icons/stock_disconnect.png"),
+                  'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png') }
     self.setCheckable(True)
+    self.master_ip = None
+    self._threaded_get_ip()
+    self.updateNameView(master, quality, self)
+
+  def _threaded_get_ip(self):
+    thread = threading.Thread(target=self.__get_ip)
+    thread.daemon = True
+    thread.start()
+
+  def __get_ip(self):
+    try:
+      # get the IP of the master uri
+      o = urlparse(self.master.uri)
+      self.master_ip = gethostbyname(o.hostname)
+      self.updateNameView(master, quality, self)
+    except:
+      pass
+    
 
   def updateMasterView(self, parent):
     '''
@@ -85,12 +105,7 @@ class MasterItem(QtGui.QStandardItem):
     tooltip = ''.join(['<html><body>'])
     tooltip = ''.join([tooltip, '<h4>', master.uri, '</h4>'])
     tooltip = ''.join([tooltip, '<dl>'])
-    try:
-      # get the IP of the master uri
-      o = urlparse(master.uri)
-      tooltip = ''.join([tooltip, '<dt>', 'IP: ', gethostbyname(o.hostname), '</dt>'])
-    except:
-      pass
+    tooltip = ''.join([tooltip, '<dt>', 'IP: ', str(self.master_ip), '</dt>'])
     if master.online:
       if not quality is None:
         tooltip = ''.join([tooltip, '<dt>', 'Quality: ', str(quality),' %', '</dt>'])
@@ -102,20 +117,25 @@ class MasterItem(QtGui.QStandardItem):
     if item.descr:
 #      tooltip = ''.join([tooltip, '<b><u>Description:</u></b>'])
       tooltip = ''.join([tooltip, item.descr])
-    tooltip = ''.join([tooltip, '</body></html>'])
-    item.setToolTip(tooltip)
     # update the icon
     if master.online:
-      if not quality is None:
+      if self.master_ip is None:
+        item.setIcon(self.ICONS['warning'])
+        tooltip = ''.join([tooltip, '<h4>', 'Host not reachable by name!!! The ROS topics may not by connected!!!', '</h4>'])
+      elif not quality is None:
         if quality > 30:
-          return item.setIcon(self.ICONS['green'])
+          item.setIcon(self.ICONS['green'])
         elif quality > 5:
-          return item.setIcon(self.ICONS['yellow'])
+          item.setIcon(self.ICONS['yellow'])
         else:
-          return item.setIcon(self.ICONS['red'])
-      return item.setIcon(self.ICONS['grey'])
+          item.setIcon(self.ICONS['red'])
+      else:
+        item.setIcon(self.ICONS['grey'])
     else:
-      return item.setIcon(self.ICONS['disconnected'])
+      item.setIcon(self.ICONS['disconnected'])
+
+    tooltip = ''.join([tooltip, '</body></html>'])
+    item.setToolTip(tooltip)
   
   def updateDescription(self, descr):
     self.descr = descr

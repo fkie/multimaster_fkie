@@ -1,0 +1,418 @@
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2012, Fraunhofer FKIE/US, Alexander Tiderko
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of I Heart Engineering nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+import os
+
+from PySide import QtCore
+from PySide import QtGui
+
+import roslib
+import node_manager_fkie as nm
+from master_discovery_fkie.master_info import NodeInfo 
+
+
+################################################################################
+##############                  CapabilityHeader                  ##############
+################################################################################
+
+class CapabilityHeader(QtGui.QHeaderView):
+
+  description_requested_signal = QtCore.Signal(str, str)
+  '''@ivar: the signal is emitted by click on a header to show a description.'''
+
+  def __init__(self, orientation, parent=None):
+    QtGui.QHeaderView.__init__(self, orientation, parent)
+    self._data = []
+    ''' @ivar a list with dictionaries C{dict('cfgs' : [], 'name': str, 'type' : str, 'description' : str, 'images' : [QtGui.QPixmap])}'''
+    if orientation == QtCore.Qt.Horizontal:
+      self.setDefaultAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
+    elif orientation == QtCore.Qt.Vertical:
+      self.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+
+  def index(self, name):
+    '''
+    Returns the index of the object stored with given name
+    @param name: the name of the item
+    @type name: C{str}
+    @return: the index or -1 if the item was not found
+    @rtype: C{int}
+    '''
+    for index, entry in enumerate(self._data):
+      if entry['name'] == name:
+        return index
+    return -1
+
+  def paintSection(self, painter, rect, logicalIndex):
+    painter.save()
+    QtGui.QHeaderView.paintSection(self, painter, rect, logicalIndex)
+    painter.restore()
+
+    if logicalIndex in range(len(self._data)) and self._data[logicalIndex]['images']:
+      if len(self._data[logicalIndex]['images']) == 1:
+        pix = self._data[logicalIndex]['images'][0]
+        pix = pix.scaled(rect.width(), rect.height()-20, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        self.style().drawItemPixmap(painter, rect, 5, pix)
+      elif len(self._data[logicalIndex]['images']) > 1:
+        new_rect = QtCore.QRect(rect.left(), rect.top(), rect.width(), (rect.height()-20) / 2.)
+        pix = self._data[logicalIndex]['images'][0]
+        pix = pix.scaled(new_rect.width(), new_rect.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        self.style().drawItemPixmap(painter, new_rect, 5, pix)
+        new_rect = QtCore.QRect(rect.left(), rect.top()+new_rect.height(), rect.width(), new_rect.height())
+        pix = self._data[logicalIndex]['images'][1]
+        pix = pix.scaled(new_rect.width(), new_rect.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        self.style().drawItemPixmap(painter, new_rect, 5, pix)
+        
+
+  def mousePressEvent(self, event):
+    QtGui.QHeaderView.mousePressEvent(self, event)
+    index = self.logicalIndexAt(event.pos())
+    if index in range(len(self._data)):
+      suffix = 'Capability'
+      if self.orientation() == QtCore.Qt.Horizontal:
+        suffix = 'Robot'
+      title = ' - '.join([self._data[index]['name'], suffix])
+      text = self._data[index]['description']
+      try:
+        from docutils import examples
+        text = examples.html_body(text, input_encoding='utf8')
+      except:
+        import traceback
+        rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], str(traceback.format_exc()))
+      self.description_requested_signal.emit(title, text)
+
+  def setDescription(self, index, cfg, name, type, description, images=[]):
+    if index < len(self._data):
+      obj = self._data[index]
+      if not cfg in obj['cfgs']:
+        obj['cfgs'].append(cfg)
+      obj['name'] = name
+      obj['type'] = type
+      obj['description'] = description
+      del obj['images'][:]
+      for image_path in images:
+        img = ''.join([nm.PACKAGE_DIR,image_path])
+        if os.path.isfile(img):
+          obj['images'].append(QtGui.QPixmap(img))
+
+  def updateDescription(self, index, cfg, name, type, description, images=[]):
+    if index < len(self._data):
+      obj = self._data[index]
+      if not cfg in obj['cfgs']:
+        obj['cfgs'].append(cfg)
+      if not obj['name']:
+        obj['name'] = name
+      if not obj['type']:
+        obj['type'] = type
+      if not obj['description']:
+        obj['description'] = description
+      if not obj['images']:
+        for image_path in images:
+          img = ''.join([nm.PACKAGE_DIR,image_path])
+          if os.path.isfile(img):
+            obj['images'].append(QtGui.QPixmap(img))
+
+  def removeDescription(self, index):
+    if index < len(self._data):
+      self._data.pop(index)
+    
+  def insertItem(self, index):
+    new_dict = {'cfgs' : [], 'name': '', 'type' : '', 'description' : '', 'images' : []}
+    if index < len(self._data):
+      self._data.insert(index, new_dict)
+    else:
+      self._data.append(new_dict)
+
+  def insertSortedItem(self, name):
+    '''
+    Insert the new item with given name at the sorted position and return the index of
+    the item.
+    @param name: the name of the new item
+    @type name: C{str}
+    @return: index of the inserted item
+    @rtype: C{int}
+    '''
+    new_dict = {'cfgs' : [], 'name': name, 'type' : '', 'description' : '', 'images' : []}
+    for index, item in enumerate(self._data):
+      if item['name'].lower() > name.lower():
+        self._data.insert(index, new_dict)
+        return index
+    self._data.append(new_dict)
+    return len(self._data)-1
+
+  def removeCfg(self, cfg):
+    '''
+    Removes the configuration entries from objects and returns the list with 
+    indexes, where the configuration was removed.
+    @param cfg: configuration to remove
+    @type cfg: C{str}
+    @return: the list the indexes, where the configuration was removed
+    @rtype: C{[int]}
+    '''
+    result = []
+    for index, d in enumerate(self._data):
+      if cfg in d['cfgs']:
+        d['cfgs'].remove(cfg)
+        result.append(index)
+    return result
+  
+  def count(self):
+    return len(self._data)
+
+  def getConfigs(self, index):
+    result = []
+    if index < len(self._data):
+      result = list(self._data[index]['cfgs'])
+    return result
+
+
+################################################################################
+##############              CapabilityControlWidget               ##############
+################################################################################
+
+class CapabilityControlWidget(QtGui.QFrame):
+  start_nodes_signal = QtCore.Signal(str, str, list)
+  '''@ivar: the signal is emitted to start on host the nodes described in the list, Parameter(host, config, nodes).'''
+
+  stop_nodes_signal = QtCore.Signal(str, list)
+  '''@ivar: the signal is emitted to stop on host the nodes described in the list.'''
+
+  def __init__(self, host, cfg, nodes, parent=None):
+    QtGui.QFrame.__init__(self, parent)
+    self._host = host
+    self._nodes = nodes
+    self._cfg = cfg
+    frame_layout = QtGui.QHBoxLayout(self)
+    frame_layout.setContentsMargins(0, 0, 0, 0)
+    frame_layout.addItem(QtGui.QSpacerItem(20, 20))
+    self.on_button = QtGui.QPushButton()
+    self.on_button.setFlat(False)
+    self.on_button.setText("On")
+    self.on_button.clicked.connect(self.on_on_clicked)
+    frame_layout.addWidget(self.on_button)
+
+    self.off_button = QtGui.QPushButton()
+    self.off_button.setFlat(True)
+    self.off_button.setText("Off")
+    self.off_button.clicked.connect(self.on_off_clicked)
+    frame_layout.addWidget(self.off_button)
+    frame_layout.addItem(QtGui.QSpacerItem(20, 20))
+
+  def config(self):
+    return self._cfg
+
+  def nodes(self):
+    return self._nodes
+  
+  def setNodeState(self, running_nodes, stopped_nodes, error_nodes):
+    self.setAutoFillBackground(True)
+    self.setBackgroundRole(QtGui.QPalette.Base)
+    palette = QtGui.QPalette()
+    if error_nodes:
+      brush = QtGui.QBrush(QtGui.QColor(255, 100, 0))
+    elif running_nodes and stopped_nodes:
+      brush = QtGui.QBrush(QtGui.QColor(140, 185, 255)) #30, 50, 255
+    elif running_nodes:
+      self.on_button.setFlat(True)
+      self.off_button.setFlat(False)
+      brush = QtGui.QBrush(QtGui.QColor(59, 223, 18)) # 59, 223, 18
+    else:
+      brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+      self.on_button.setFlat(False)
+      self.off_button.setFlat(True)
+    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Base, brush)
+    brush.setStyle(QtCore.Qt.SolidPattern)
+    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
+    self.setPalette(palette)
+
+
+  def on_on_clicked(self):
+    self.start_nodes_signal.emit(self._host, self._cfg, self._nodes)
+    self.on_button.setFlat(True)
+    self.off_button.setFlat(False)
+    
+  def on_off_clicked(self):
+    self.stop_nodes_signal.emit(self._host, self._nodes)
+    self.on_button.setFlat(False)
+    self.off_button.setFlat(True)
+
+
+
+################################################################################
+##############                  CapabilityTable                   ##############
+################################################################################
+
+class CapabilityTable(QtGui.QTableWidget):
+  
+  start_nodes_signal = QtCore.Signal(str, str, list)
+  '''@ivar: the signal is emitted to start on host the nodes described in the list, Parameter(host, config, nodes).'''
+
+  stop_nodes_signal = QtCore.Signal(str, list)
+  '''@ivar: the signal is emitted to stop on host the nodes described in the list.'''
+
+  description_requested_signal = QtCore.Signal(str, str)
+  '''@ivar: the signal is emitted by click on a header to show a description.'''
+
+
+  def __init__(self, parent=None):
+    QtGui.QTableWidget.__init__(self, parent)
+    self._robotHeader = CapabilityHeader(QtCore.Qt.Horizontal, self)
+    self._robotHeader.description_requested_signal.connect(self.show_description)
+    self.setHorizontalHeader(self._robotHeader)
+    self._capabilityHeader = CapabilityHeader(QtCore.Qt.Vertical, self)
+    self._capabilityHeader.description_requested_signal.connect(self.show_description)
+    self.setVerticalHeader(self._capabilityHeader)
+
+  def updateCapabilities(self, host, cfg_name, description):
+    '''
+    Updates the capabilities view.
+    @param host: the name of updated host.
+    @type host: C{str}
+    @param cfg_name: The name of the node provided the capabilities description.
+    @type cfg_name: C{str}
+    @param description: The capabilities description object.
+    @type description: L{default_cfg_fkie.Description}
+    '''
+    # if it is a new host add a new column
+    robot_index = self._robotHeader.index(host)
+    if robot_index == -1:
+      # append a new robot
+      robot_index = self._robotHeader.insertSortedItem(host)
+      self.insertColumn(robot_index)
+#      robot_index = self.columnCount()-1
+#      self._robotHeader.insertItem(robot_index)
+      self._robotHeader.setDescription(robot_index, cfg_name, host, description.robot_type, description.robot_descr.replace("\\n ", "\n"), description.robot_images)
+      item = QtGui.QTableWidgetItem()
+      item.setSizeHint(QtCore.QSize(96,96))
+      self.setHorizontalHeaderItem(robot_index, item)
+      self.horizontalHeaderItem(robot_index).setText(description.robot_name if description.robot_name else host)
+    else:
+      #update
+      self._robotHeader.setDescription(robot_index, cfg_name, host, description.robot_type, description.robot_descr.replace("\\n ", "\n"), description.robot_images)
+    
+    #set the capabilities
+    for c in description.capabilities:
+      cap_index = self._capabilityHeader.index(c.name)
+      if cap_index == -1:
+        # append a new capability
+        cap_index = self._capabilityHeader.insertSortedItem(c.name)
+        self.insertRow(cap_index)
+        self.setRowHeight(cap_index, 96)
+        self._capabilityHeader.setDescription(cap_index, cfg_name, c.name, c.type, c.description.replace("\\n ", "\n"), c.images)
+        item = QtGui.QTableWidgetItem()
+        item.setSizeHint(QtCore.QSize(96,96))
+        self.setVerticalHeaderItem(cap_index, item)
+        self.verticalHeaderItem(cap_index).setText(c.name)
+      else:
+        self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name, c.type, c.description.replace("\\n ", "\n"), c.images)
+
+      # add the capability control widget
+      controlWidget = CapabilityControlWidget(host, cfg_name, c.nodes)
+      controlWidget.start_nodes_signal.connect(self.start_nodes)
+      controlWidget.stop_nodes_signal.connect(self.stop_nodes)
+      self.setCellWidget(cap_index, robot_index, controlWidget)
+
+  def removeConfig(self, cfg):
+    removed_from_robots = self._robotHeader.removeCfg(cfg)
+#    for r in removed_from_robots:
+#      if not self._robotHeader.getConfigs(r):
+#        #remove the column with robot
+#        pass
+    removed_from_caps = self._capabilityHeader.removeCfg(cfg)
+    # remove control widget with given configuration
+    for r in reversed(removed_from_robots):
+      for c in removed_from_caps:
+        controlWidget = self.cellWidget(c, r)
+        if isinstance(controlWidget, CapabilityControlWidget) and controlWidget.config() == cfg:
+          self.removeCellWidget(c, r)
+    # remove empty columns
+    for r in removed_from_robots:
+      is_empty = True
+      for c in reversed(range(self.rowCount())):
+        controlWidget = self.cellWidget(c, r)
+        if isinstance(controlWidget, CapabilityControlWidget):
+          is_empty = False
+          break
+      if is_empty:
+        self.removeColumn(r)
+        self._robotHeader.removeDescription(r)
+    # remove empty rows
+    for c in reversed(removed_from_caps):
+      is_empty = True
+      for r in reversed(range(self.columnCount())):
+        controlWidget = self.cellWidget(c, r)
+        if isinstance(controlWidget, CapabilityControlWidget):
+          is_empty = False
+          break
+      if is_empty:
+        self.removeRow(c)
+        self._capabilityHeader.removeDescription(c)
+
+  def updateState(self, host, master_info):
+    '''
+    Updates the run state of the capability.
+    @param host: The host, which sends the master_info
+    @type host: C{str}
+    @param master_info: The state of the ROS master
+    @type master_info: L{master_discovery_fkie.MasterInfo}
+    '''
+    if master_info is None:
+      return
+    robot_index = self._robotHeader.index(host)
+    if robot_index != -1:
+      for c in range(self.rowCount()):
+        controlWidget = self.cellWidget(c, robot_index)
+        if not controlWidget is None:
+          running_nodes = []
+          stopped_nodes = []
+          error_nodes = []
+          for n in controlWidget.nodes():
+            node = master_info.getNode(n)
+            if not node is None:
+              # while a synchronization there are node from other hosts in the master_info -> filter these nodes
+              if not node.uri is None and host == nm.nameres().getHostname(node.uri):
+                if not node.pid is None:
+                  running_nodes.append(n)
+                else:
+                  error_nodes.append(n)
+            else:
+              stopped_nodes.append(n)
+          controlWidget.setNodeState(running_nodes, stopped_nodes, error_nodes)
+
+  def start_nodes(self, host, cfg, nodes):
+    self.start_nodes_signal.emit(host, cfg, nodes)
+
+  def stop_nodes(self, host, nodes):
+    self.stop_nodes_signal.emit(host, nodes)
+
+  def show_description(self, name, description):
+    self.description_requested_signal.emit(name, description)
+      

@@ -63,6 +63,27 @@ def parse_options(args):
       argv.append(a)
   return result, argv
 
+def packageName(dir):
+  '''
+  Returns for given directory the package name or None
+  @rtype: C{str} or C{None}
+  '''
+  if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
+    package = os.path.basename(dir)
+    fileList = os.listdir(dir)
+    for file in fileList:
+      if file == 'manifest.xml':
+          return package
+    return packageName(os.path.dirname(dir))
+  return None
+
+def getCwdArg(arg, argv):
+  for a in argv:
+    key, sep, value = a.partition(':=')
+    if sep and arg == key:
+      return value
+  return None
+
 def main(argv=sys.argv):
   try:
 #    (options, args) = parser.parse_args(argv)
@@ -123,9 +144,17 @@ def runNode(package, type, name, args, prefix=''):
     cmd = [cmd]
   if cmd is None or len(cmd) == 0:
     raise nm.StartException(' '.join([type, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
-  cmd_args = [nm.ScreenHandler.getSceenCmd(name), prefix, cmd[0], ' '.join([a for a in args[1:]])]
+  cmd_args = [nm.ScreenHandler.getSceenCmd(name), prefix, cmd[0], ' '.join(args[1:])]
   print 'run on remote host:', ' '.join(cmd_args)
-  subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])))
+  # determine the current working path
+  arg_cwd = getCwdArg('__cwd', args) 
+  cwd = nm.get_ros_home()
+  if not (arg_cwd is None):
+    if arg_cwd == 'ROS_HOME':
+      cwd = nm.get_ros_home()
+    elif arg_cwd == 'node':
+      cwd = os.path.dirname(cmd[0])
+  subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd)
 
 if __name__ == '__main__':
   main()

@@ -51,10 +51,17 @@ class UpdateThread(QtCore.QObject, threading.Thread):
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
 
-  def __init__(self, monitoruri, parent=None):
+  error_signal = QtCore.Signal(str, str)
+  '''
+  @ivar: error_signal is a signal (masteruri, error message), which is emitted, 
+  if an error while retrieving a master info was occurred.
+  '''
+
+  def __init__(self, monitoruri, masteruri, parent=None):
     QtCore.QObject.__init__(self)
     threading.Thread.__init__(self)
     self._monitoruri = monitoruri
+    self._masteruri = masteruri
     self.setDaemon(True)
 
   def run(self):
@@ -71,3 +78,4 @@ class UpdateThread(QtCore.QObject, threading.Thread):
 #      print traceback.print_exc()
       formatted_lines = traceback.format_exc().splitlines()
       rospy.logwarn("Connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
+      self.error_signal.emit(self._masteruri, formatted_lines[-1])

@@ -163,7 +163,7 @@ class DiscoveredMaster(object):
             self.masteruri = masteruri
             self.mastername = mastername
             self.discoverername = nodename
-            self.monitoruri = monitoruri
+#            self.monitoruri = monitoruri
             self.timestamp = float(timestamp)
             self.online = True
             #publish new node 

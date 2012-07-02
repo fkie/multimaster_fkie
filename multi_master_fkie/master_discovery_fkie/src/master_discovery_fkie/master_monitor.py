@@ -190,6 +190,16 @@ class MasterMonitor(object):
                     'callerid':rospy.get_name(), 'service':service}
           roslib.network.write_ros_handshake_header(s, header)
           type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
+          self._lock.acquire(True)
+          try:
+            self.new_master_state.getService(service).type = type['type']
+          except:
+            pass
+      #      print "ignored:"
+      #      import traceback
+      #      traceback.print_exc()
+      #      print "type field in service header not available, type:", uri, type 
+          self._lock.release()
         except socket.error:
           pass
     #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
@@ -199,16 +209,6 @@ class MasterMonitor(object):
           if s is not None:
             s.close()
 
-    self._lock.acquire(True)
-    try:
-      self.new_master_state.getService(service).type = type['type']
-    except:
-      pass
-#      print "ignored:"
-#      import traceback
-#      traceback.print_exc()
-#      print "type field in service header not available, type:", type 
-    self._lock.release()
 
   def getListedMasterInfo(self):
     '''

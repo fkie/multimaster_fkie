@@ -158,7 +158,6 @@ class ServiceThread(QtCore.QObject, threading.Thread):
     threading.Thread.__init__(self)
     self._service_uri = service_uri
     self._service = service
-    self._lock = threading.RLock()
     self.setDaemon(True)
 
   def run(self):
@@ -188,7 +187,6 @@ class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
     threading.Thread.__init__(self)
     self._service_uri = service_uri
     self._service = service
-    self._lock = threading.RLock()
     self.setDaemon(True)
 
   def run(self):
@@ -203,4 +201,4 @@ class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
         lines = traceback.format_exc().splitlines()
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
       else:
-        self.update_signal.emit(self._service_uri, self._service, resp.items)
+        self.update_signal.emit(self._service_uri, self._service, [resp])

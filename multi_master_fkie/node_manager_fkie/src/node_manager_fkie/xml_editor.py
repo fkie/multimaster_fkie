@@ -36,6 +36,7 @@ from PySide import QtCore
 from PySide import QtUiTools
 
 import roslib
+import rospy
 from xml_highlighter import XmlHighlighter
 
 class Editor(QtGui.QTextEdit):
@@ -59,6 +60,7 @@ class Editor(QtGui.QTextEdit):
     self.setTabStopWidth(25)
     self.setAcceptRichText(False)
     self.setCursorWidth(2)
+    self.setFontFamily("courier new")
     self.setProperty("backgroundVisible", True)
     self.regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
                         QtCore.QRegExp("\\bfile\\b")]
@@ -68,7 +70,7 @@ class Editor(QtGui.QTextEdit):
   #      data = str(file.readAll())
   #      self.editor.document().addResource(QtGui.QTextDocument.UserResource, QtCore.QUrl(''.join(['mydata://', self.filename])), data)
   #      self.editor.textCursor().insertBlock()
-      self.setPlainText(str(file.readAll()))
+      self.setText(unicode(file.readAll(), "utf-8"))
 
     self.path = '.'
 
@@ -219,9 +221,19 @@ class Editor(QtGui.QTextEdit):
     if event.key() == QtCore.Qt.Key_Control:
       self.setMouseTracking(True)
     if event.key() != QtCore.Qt.Key_Escape:
-      QtGui.QTextEdit.keyPressEvent(self, event)
+#      if event.key() == QtCore.Qt.Key_Tab:
+#        event_space = QtGui.QKeyEvent(event.type(), QtCore.Qt.Key_Space, event.modifiers())
+#        QtGui.QTextEdit.keyPressEvent(self, event_space)
+##        QtGui.QTextEdit.keyReleaseEvent(self, event_space)
+#        QtGui.QTextEdit.keyReleaseEvent(self, event_space)
+#
+##        QtGui.QTextEdit.keyPressEvent(self, event_space)
+#      else:
+        QtGui.QTextEdit.keyPressEvent(self, event)
     else:
       self.parent.close()
+    if event.key() == QtCore.Qt.Key_Space:
+      self.stored_space = event
 
   def keyReleaseEvent(self, event):
     '''
@@ -325,6 +337,13 @@ class XmlEditor(QtGui.QDialog):
   '''
   Creates a dialog to edit a launch file.
   '''
+  
+  finished_signal = QtCore.Signal(list)
+  '''
+  finished_signal has as parameter the filenames of the initialization and is emitted, if this
+  dialog was closed.
+  '''
+  
   def __init__(self, filenames, search_text='', parent=None):
     '''
     @param filenames: a list with filenames. The last one will be activated.
@@ -334,10 +353,11 @@ class XmlEditor(QtGui.QDialog):
     '''
     QtGui.QDialog.__init__(self, parent)
     self.setWindowFlags(QtCore.Qt.Window)
-    self.resize(728,512)
+    self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("ROSLaunch Editor");
+    self.init_filenames = list(filenames)
     
     self.files = []
     '''@ivar: list with all open files '''
@@ -354,7 +374,7 @@ class XmlEditor(QtGui.QDialog):
     self.tabWidget.setObjectName("tabWidget")
     self.tabWidget.tabCloseRequested.connect(self.on_close_tab)
     self.verticalLayout.addWidget(self.tabWidget)
-
+    
     # create the buttons line
     self.buttons = QtGui.QWidget(self)
     self.horizontalLayout = QtGui.QHBoxLayout(self.buttons)
@@ -406,7 +426,6 @@ class XmlEditor(QtGui.QDialog):
       if f:
         self.on_load_request(os.path.normpath(f), search_text)
 
-
   def on_load_request(self, filename, search_text=''):
     '''
     Loads a file in a new tab or focus the tab with already opened file.
@@ -440,7 +459,7 @@ class XmlEditor(QtGui.QDialog):
             break
     except:
       import traceback
-      print traceback.format_exc()
+      rospy.logwarn("Error while open %s: %s", filename, traceback.format_exc())
     
     self.tabWidget.setUpdatesEnabled(True)
     if search_text:
@@ -448,10 +467,12 @@ class XmlEditor(QtGui.QDialog):
       pos = self.tabWidget.currentWidget().document().find(search_text, self.tabWidget.currentWidget().textCursor())
       if not pos.isNull():
         self.tabWidget.currentWidget().setTextCursor(pos)
+        self.tabWidget.currentWidget().moveCursor(QtGui.QTextCursor.StartOfLine)
       else:
         pos = self.tabWidget.currentWidget().document().find(search_text)
         if not pos.isNull():
           self.tabWidget.currentWidget().setTextCursor(pos)
+          self.tabWidget.currentWidget().moveCursor(QtGui.QTextCursor.StartOfLine)
 
   def on_close_tab(self, tab_index):
     '''
@@ -482,7 +503,7 @@ class XmlEditor(QtGui.QDialog):
           self.close()
     except:
       import traceback
-      print traceback.format_exc()
+      rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc())
 
 
   def closeEvent (self, event):
@@ -508,6 +529,8 @@ class XmlEditor(QtGui.QDialog):
         event.ignore()
     else:
       event.accept()
+    self.finished_signal.emit(self.init_filenames)
+
   
   def save(self):
     if self.tabWidget.currentWidget().save():

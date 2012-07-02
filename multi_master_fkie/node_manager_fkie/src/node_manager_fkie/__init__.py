@@ -41,6 +41,7 @@ import os
 import sys
 import signal
 import socket
+import threading
 
 import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
@@ -54,8 +55,16 @@ from screen_handler import ScreenHandler
 from start_handler import StartHandler, StartException 
 from name_resolution import NameResolution
 
-NODE_NAME = "node_manager"
-ROBOTS_DIR = ''.join([os.path.abspath(os.path.dirname(os.path.dirname(sys.argv[0]))), os.path.sep, 'robots', os.path.sep])
+# set the cwd to the package of the node_manager_fkie to support the images
+# in HTML descriptions of the robots and capabilities
+
+PACKAGE_DIR = ''.join([roslib.packages.get_dir_pkg(os.path.abspath(os.path.dirname(sys.argv[0])))[0], os.path.sep])
+os.chdir(PACKAGE_DIR)
+ROBOTS_DIR = ''.join([PACKAGE_DIR, os.path.sep, 'images', os.path.sep])
+
+CFG_PATH = ''.join(['.node_manager', os.sep])
+'''@ivar: configuration path to store the history.'''
+
 LESS = "/usr/bin/less -fKLnQrSU"
 STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
 '''
@@ -71,6 +80,12 @@ the cache directory to store the results of tests for local hosts.
 @see: L{is_local()}
 ''' 
 
+PARAM_CACHE = dict()
+'''
+the cache is used to store and recover the value for last entered parameter in parameter dialog.
+'''
+
+_lock = threading.RLock()
 
 def terminal_cmd(cmd, title):
   '''
@@ -82,7 +97,10 @@ def terminal_cmd(cmd, title):
   @return: command with a terminal prefix
   @rtype:  str
   '''
-  return ' '.join(['/usr/bin/xterm', '-geometry 112x35', '-title', str(title), '-e', ' '.join(cmd)])
+  if os.path.isfile('/usr/bin/xterm'):
+    return str(' '.join(['/usr/bin/xterm', '-geometry 112x35', '-title', str(title), '-e', ' '.join(cmd)]))
+  elif os.path.isfile('/usr/bin/konsole'):
+    return str(' '.join(['/usr/bin/konsole', '--noclose', '-title', str(title), '-e', ' '.join(cmd)]))
 
 _ssh_handler = None
 _screen_handler = None
@@ -134,26 +152,64 @@ def is_local(hostname):
   @rtype: C{bool}
   @raise Exception: on errors while resolving host
   '''
-  if hostname in HOSTS_CACHE:
-    return HOSTS_CACHE[hostname]
-  
   if (hostname is None):
     return True
-  import socket
+
+  if hostname in HOSTS_CACHE:
+    if isinstance(HOSTS_CACHE[hostname], threading.Thread):
+      return False
+    return HOSTS_CACHE[hostname]
+  
+  try:
+    machine_addr = socket.inet_aton(hostname)
+    local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+    # check 127/8 and local addresses
+    result = machine_addr.startswith('127.') or machine_addr in local_addresses
+    HOSTS_CACHE[hostname] = result
+    return result
+  except socket.error:
+    thread = threading.Thread(target=__is_local, args=((hostname,)))
+    thread.daemon = True
+    thread.start()
+    HOSTS_CACHE[hostname] = thread
+  return False
+
+def __is_local(hostname):
   import roslib
   try:
     machine_addr = socket.gethostbyname(hostname)
   except socket.gaierror:
-    raise Exception("cannot resolve host address for machine [%s]"%str(hostname))
+    HOSTS_CACHE[hostname] = False
+    return
   local_addresses = ['localhost'] + roslib.network.get_local_addresses()
   # check 127/8 and local addresses
   result = machine_addr.startswith('127.') or machine_addr in local_addresses
-  #491: override local to be ssh if machine.user != local user
-#    if is_local and machine.user:
-#      import getpass
-#      is_local = machine.user == getpass.getuser()
+  _lock.acquire(True)
   HOSTS_CACHE[hostname] = result
-  return result
+  _lock.release()
+
+
+def get_ros_home():
+  '''
+  Returns the ROS HOME depending on ROS distribution API.
+  @return: ROS HOME path
+  @rtype: C{str}
+  '''
+  try:
+    import rospkg.distro
+    distro = rospkg.distro.current_distro_codename()
+    if distro in ['electric', 'diamondback', 'cturtle']:
+      import roslib.rosenv
+      return roslib.rosenv.get_ros_home()
+    else:
+      import rospkg
+      return rospkg.get_ros_home()
+  except:
+#    import traceback
+#    print traceback.format_exc()
+    import roslib.rosenv
+    return roslib.rosenv.get_ros_home()
+
 
 def masteruri_from_ros():
   '''
@@ -178,7 +234,8 @@ def finish(*arg):
   '''
   # close all ssh sessions
   global _ssh_handler
-  _ssh_handler.close()
+  if not _ssh_handler is None:
+    _ssh_handler.close()
   global app
   if not app is None:
     app.exit()
@@ -209,48 +266,63 @@ def setProcessName(name):
     pass
 
 
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%                 MAIN                               %%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-def main():
+def main(name, anonymous=False):
+  global CFG_PATH
+  CFG_PATH = ''.join([get_ros_home(), os.sep, 'node_manager', os.sep])
   '''
   Creates and runs the ROS node.
   '''
-  setTerminalName(NODE_NAME)
-  setProcessName(NODE_NAME)
+  args = rospy.myargv(argv=sys.argv)
+  # decide to show main or echo dialog
+  if len(args) >= 4 and args[1] == '-t':
+    name = ''.join([name, '_echo'])
+    anonymous = True
+
   try:
     from PySide.QtGui import QApplication
     from PySide.QtCore import QTimer
   except:
     print >> sys.stderr, "please install 'python-pyside' package!!"
     sys.exit(-1)
-  rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  rospy.init_node(name, anonymous=anonymous, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
+
   # Initialize Qt
   global app
   app = QApplication(sys.argv)
 
-  # initialize the global handler 
-  global _ssh_handler
-  global _screen_handler
-  global _start_handler
-  global _name_resolution
-  _ssh_handler = SSHhandler()
-  _screen_handler = ScreenHandler()
-  _start_handler = StartHandler()
-  _name_resolution = NameResolution()
+  # decide to show main or echo dialog
+  if len(args) >= 4 and args[1] == '-t':
+    import echo_dialog
+    mainForm = echo_dialog.EchoDialog(args[2], args[3])
+  else:
+    # initialize the global handler 
+    global _ssh_handler
+    global _screen_handler
+    global _start_handler
+    global _name_resolution
+    _ssh_handler = SSHhandler()
+    _screen_handler = ScreenHandler()
+    _start_handler = StartHandler()
+    _name_resolution = NameResolution()
+  
+    #start the gui
+    import main_window
+    mainForm = main_window.MainWindow()
 
-  #start the gui
-  import main_window
-  mainForm = main_window.MainWindow()
   if not rospy.is_shutdown():
     mainForm.show()
     exit_code = -1
-    try:
-      rospy.on_shutdown(finish)
-      exit_code = app.exec_()
-      mainForm.finish()
-    finally:
-      sys.exit(exit_code)
-
-
+    rospy.on_shutdown(finish)
+    exit_code = app.exec_()
+    mainForm.finish()
+#    finally:
+#      print "final"
+#      sys.exit(exit_code)
+#      print "ex"

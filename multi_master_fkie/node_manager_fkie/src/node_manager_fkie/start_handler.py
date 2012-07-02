@@ -30,11 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import threading
 import os, shlex, subprocess
+import types
 
 import roslib
 import rospy
+import threading
 import node_manager_fkie as nm
 try:
   from launch_config import LaunchConfig
@@ -51,7 +52,7 @@ class StartHandler(object):
   in a screen terminal.
   '''
   def __init__(self):
-    self._lock = threading.RLock()
+    pass
   
   @classmethod
   def runNode(cls, node, launch_config):
@@ -97,11 +98,12 @@ class StartHandler(object):
     if masteruri is None:
       env.append(('ROS_MASTER_URI', nm.masteruri_from_ros()))
 
+    abs_paths = list()
     # set the global parameter
     if not masteruri is None and not masteruri in launch_config.global_param_done:
       global_node_names = cls.getGlobalParams(launch_config.Roscfg)
       rospy.loginfo("Register global parameter:\n%s", '\n'.join(global_node_names))
-      cls._load_parameters(masteruri, global_node_names, [])
+      abs_paths[len(abs_paths):] = cls._load_parameters(masteruri, global_node_names, [])
       launch_config.global_param_done.append(masteruri)
 
     # add params
@@ -116,7 +118,7 @@ class StartHandler(object):
         if cparam.startswith(nodens):
           clear_params.append(param)
       rospy.loginfo("Register parameter:\n%s", '\n'.join(params))
-      cls._load_parameters(masteruri, params, clear_params)
+      abs_paths[len(abs_paths):] = cls._load_parameters(masteruri, params, clear_params)
     if nm.is_local(host): 
       nm.screen().testScreen()
       try:
@@ -147,13 +149,26 @@ class StartHandler(object):
           raise nm.StartException('Multiple executables with same name in package found!')
       else:
         cmd_type = cmd[0]
+      # determine the current working path, Default: the package of the node
+      cwd = nm.get_ros_home()
+      if not (n.cwd is None):
+        if n.cwd == 'ROS_HOME':
+          cwd = nm.get_ros_home()
+        elif n.cwd == 'node':
+          cwd = os.path.dirname(cmd_type)
+#      else:
+#        cwd = LaunchConfig.packageName(os.path.dirname(cmd_type))
       node_cmd = [prefix, cmd_type]
       cmd_args = [nm.screen().getSceenCmd(node)]
       cmd_args[len(cmd_args):] = node_cmd
-      cmd_args.append(n.args)
+      cmd_args.append(str(n.args))
       cmd_args[len(cmd_args):] = args
       rospy.loginfo("RUN: %s", ' '.join(cmd_args))
-      subprocess.Popen(shlex.split(str(' '.join(cmd_args))))
+      ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd)
+      # wait for process to avoid 'defunct' processes
+      thread = threading.Thread(target=ps.wait)
+      thread.setDaemon(True)
+      thread.start()
     else:
       # start remote
       if launch_config.PackageName is None:
@@ -173,9 +188,9 @@ class StartHandler(object):
       if prefix:
         startcmd[len(startcmd):] = ['--prefix', prefix]
 
-      startcmd[len(startcmd):] = n.args
+      startcmd[len(startcmd):] = [n.args]
       startcmd[len(startcmd):] = args
-      rospy.loginfo("Run remote: %s", ' '.join(startcmd))
+      rospy.loginfo("Run remote on %s: %s", host, str(' '.join(startcmd)))
       (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, startcmd)
 
       if ok:
@@ -189,10 +204,11 @@ class StartHandler(object):
         output = stdout.read()
         if output:
           rospy.logdebug("STDOUT while start '%s': %s", node, output)
-  #      if error:
-  #        raise StartException(''.join(['Error while run a node ', node, ':\n', error]))
-  #        content = stdout.read()
-  
+      # inform about absolute paths in parameter value
+      if len(abs_paths) > 0:
+        parameters = '\n'.join(abs_paths)
+        raise nm.StartException(str('\n'.join(['Following parameter seems to use an absolute local path for remote host:', parameters, 'Use "cwd" attribute of the "node" tag to specify relative paths for remote usage!'])))
+
   @classmethod
   def _load_parameters(cls, masteruri, params, clear_params):
     """
@@ -203,6 +219,7 @@ class StartHandler(object):
     import xmlrpclib
     param_server = xmlrpclib.ServerProxy(masteruri)
     p = None
+    abs_paths = list() # parameter names
     try:
       # multi-call style xmlrpc
       param_server_multi = xmlrpclib.MultiCall(param_server)
@@ -220,6 +237,8 @@ class StartHandler(object):
       param_server_multi = xmlrpclib.MultiCall(param_server)
       for p in params.itervalues():
         # suppressing this as it causes too much spam
+        if isinstance(p.value, types.StringTypes) and p.value.startswith('/') and (os.path.isfile(p.value) or os.path.isdir(p.value)):
+          abs_paths.append(p.key)
         param_server_multi.setParam(rospy.get_name(), p.key, p.value)
       r  = param_server_multi()
       for code, msg, _ in r:
@@ -229,7 +248,7 @@ class StartHandler(object):
       raise StartException(e)
     except Exception as e:
       raise #re-raise as this is fatal
-
+    return abs_paths
   
   @classmethod
   def runNodeWithoutConfig(cls, host, package, type, name, args=[]):
@@ -288,7 +307,11 @@ class StartHandler(object):
         cmd_type = cmd[0]
       cmd_str = str(' '.join([nm.screen().getSceenCmd(fullname), cmd_type, ' '.join(args2)]))
       rospy.loginfo("Run without config: %s", cmd_str)
-      subprocess.Popen(shlex.split(cmd_str))
+      ps = subprocess.Popen(shlex.split(cmd_str))
+      # wait for process to avoid 'defunct' processes
+      thread = threading.Thread(target=ps.wait)
+      thread.setDaemon(True)
+      thread.start()
     else:
       # run on a remote machine
       startcmd = [nm.STARTER_SCRIPT, 
@@ -296,7 +319,7 @@ class StartHandler(object):
                   '--node_type', str(type),
                   '--node_name', str(fullname)]
       startcmd[len(startcmd):] = args2
-      rospy.loginfo("Run remote: %s", ' '.join(startcmd))
+      rospy.loginfo("Run remote on %s: %s", host, ' '.join(startcmd))
       (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, startcmd)
       if ok:
         stdin.close()
@@ -420,7 +443,11 @@ class StartHandler(object):
       if os.path.isfile(screenLog):
         cmd = nm.terminal_cmd([nm.LESS, screenLog], title_opt)
         rospy.loginfo("open log: %s", cmd)
-        subprocess.Popen(shlex.split(cmd))
+        ps = subprocess.Popen(shlex.split(cmd))
+        # wait for process to avoid 'defunct' processes
+        thread = threading.Thread(target=ps.wait)
+        thread.setDaemon(True)
+        thread.start()
         found = True
       #open roslog file
       roslog = nm.screen().getROSLogFile(nodename)
@@ -428,12 +455,24 @@ class StartHandler(object):
         title_opt = title_opt.replace('LOG', 'ROSLOG')
         cmd = nm.terminal_cmd([nm.LESS, roslog], title_opt)
         rospy.loginfo("open ROS log: %s", cmd)
-        subprocess.Popen(shlex.split(cmd))
+        ps = subprocess.Popen(shlex.split(cmd))
+        # wait for process to avoid 'defunct' processes
+        thread = threading.Thread(target=ps.wait)
+        thread.setDaemon(True)
+        thread.start()
         found = True
       return found
     else:
-      nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_screen_log', nodename], title_opt)
-      nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'))
+      ps = nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_screen_log', nodename], title_opt)
+      # wait for process to avoid 'defunct' processes
+      thread = threading.Thread(target=ps.wait)
+      thread.setDaemon(True)
+      thread.start()
+      ps = nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'))
+      # wait for process to avoid 'defunct' processes
+      thread = threading.Thread(target=ps.wait)
+      thread.setDaemon(True)
+      thread.start()
     return False
 
 
@@ -481,7 +520,7 @@ class StartHandler(object):
     else:
       # kill on a remote machine
       cmd = ['kill -9', str(pid)]
-      rospy.loginfo("kill remote: %s", ' '.join(cmd))
+      rospy.loginfo("kill remote on %s: %s", host, ' '.join(cmd))
       (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, cmd)
       if ok:
         stdin.close()
@@ -491,5 +530,5 @@ class StartHandler(object):
           raise nm.StartException(str(''.join(['The host "', host, '" reports:\n', error])))
         output = stdout.read()
         if output:
-          rospy.logdebug("STDOUT while kill %s: %s", str(pid), output)
+          rospy.logdebug("STDOUT while kill %s on %s: %s", str(pid), host, output)
 

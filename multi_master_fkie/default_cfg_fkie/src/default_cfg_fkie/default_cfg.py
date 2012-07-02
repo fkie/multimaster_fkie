@@ -37,6 +37,7 @@ import xmlrpclib
 import threading
 
 import roslib
+import roslib.names
 import rospy
 import roslib.network
 from ros import roslaunch
@@ -76,7 +77,7 @@ class DefaultCfg(object):
     self.listService = None
     '''@ivar: The service will be created on each load of a launch file to
     inform the caller about a new configuration. '''
-    
+    self.description_response = ListDescriptionResponse()
     self.global_parameter_setted = False
 
   
@@ -117,35 +118,41 @@ class DefaultCfg(object):
         else:
           self.nodes.append(str(''.join([item.namespace, item.name])))
       # get the robot description
-      robot_type = ''
-      robot_name = ''
-      robot_descr = ''
+      self.description_response = dr = ListDescriptionResponse()
+      dr.robot_name = ''
+      dr.robot_type = ''
+      dr.robot_descr = ''
       for param, p in self.roscfg.params.items():
-        if os.path.basename(param) == 'robot_type':
-          robot_type = p.value
-        if os.path.basename(param) == 'robot_name':
-          robot_name = p.value
-        if os.path.basename(param) == 'robot_descr':
-          robot_descr = p.value
-      self.robot_descr = (robot_type, robot_name, robot_descr)
-
+        if param.endswith('robots'):
+          if isinstance(p.value, list):
+            if len(p.value) > 0 and len(p.value[0]) != 5:
+              print "WRONG format -> ignore", param
+            else:
+              for entry in p.value:
+                try:
+                  if roslib.network.is_local_address(entry[0]):
+                    dr.robot_name = entry[2]
+                    dr.robot_type = entry[1]
+                    dr.robot_images = entry[3].split()
+                    dr.robot_descr = entry[4]
+                    break
+                except:
+                  pass
       # get the sensor description
-      for nname in self.roscfg.resolved_node_names:
-        sensor_type_name = '/'.join([nname, 'sensor_type'])
-        sensor_type_value = ''
-        if self.roscfg.params.has_key(sensor_type_name):
-          sensor_type_value = self.roscfg.params[sensor_type_name].value
-        sensor_name_name = '/'.join([nname, 'sensor_name'])
-        sensor_name_value = ''
-        if self.roscfg.params.has_key(sensor_name_name):
-          sensor_name_value = self.roscfg.params[sensor_name_name].value
-        sensor_description_name = '/'.join([nname, 'sensor_descr'])
-        sensor_description_value = ''
-        if self.roscfg.params.has_key(sensor_description_name):
-          sensor_description_value = self.roscfg.params[sensor_description_name].value.replace("\\n ", "\n")
-        # append valid value to the list
-        if sensor_type_value or sensor_name_value or sensor_description_value:
-          self.sensors[nname] =   [(sensor_type_value, sensor_name_value, sensor_description_value)]
+      tmp_cap_dict = self.getCapabilitiesDesrc()
+      for machine, ns_dict in tmp_cap_dict.items():
+        if not machine or roslib.network.is_local_address(machine):
+          for ns, group_dict in ns_dict.items():
+            for group, descr_dict in group_dict.items():
+              if descr_dict['nodes']:
+                cap = Capability()
+                cap.namespace = ns
+                cap.name = group
+                cap.type = descr_dict['type']
+                cap.images = list(descr_dict['images'])
+                cap.description = descr_dict['description']
+                cap.nodes = list(descr_dict['nodes'])
+                dr.capabilities.append(cap)
       # initialize the ROS services
       #HACK to let the node_manager to update the view
       t = threading.Timer(2.0, self._timed_service_creation)
@@ -156,6 +163,65 @@ class DefaultCfg(object):
   #    self.listService = rospy.Service('~list_nodes', ListNodes, self.rosservice_list_nodes)
     finally:
       self.__lock.release()
+
+  def getCapabilitiesDesrc(self):
+    '''
+    Parses the launch file for C{capabilities} and C{capability_group} parameter 
+    and creates  dictionary for grouping the nodes.
+    @return: the capabilities description stored in this configuration
+    @rtype: C{dict(machine : dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str]))))}
+    '''
+    result = dict()
+    if not self.roscfg is None:
+      # get the capabilities description
+      # use two separate loops, to create the description list first
+      for param, p in self.roscfg.params.items():
+        if param.endswith('capabilities'):
+          if isinstance(p.value, list):
+            if len(p.value) > 0 and len(p.value[0]) != 4:
+              print "WRONG format -> ignore", param
+            else:
+              ns = str(roslib.names.namespace(param))
+              for m in self.roscfg.machines.keys():
+                if not result.has_key(m):
+                  result[m] = dict()
+                for entry in p.value:
+                  if not result[m].has_key(ns):
+                    result[m][ns] = dict()
+                  descr = entry[3].replace("\\n ", "\n")
+                  try:
+                    descr = str(descr) 
+                  except:
+                    pass
+                  result[m][ns][entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : descr, 'nodes' : [] }
+      # get the capability nodes
+      for param, p in self.roscfg.params.items():
+        if param.endswith('capability_group'):
+          param_node = roslib.names.namespace(param).rstrip(roslib.names.SEP)
+          if not param_node:
+            param_node = roslib.names.SEP
+          # get the nodes with groups
+          for item in self.roscfg.nodes:
+            ns = str(item.namespace)
+            node_fullname = str(roslib.names.ns_join(ns, item.name))
+            machine_name = item.machine_name if not item.machine_name is None else ''
+            added = False
+            if node_fullname == param_node:
+              if not result.has_key(machine_name):
+                result[machine_name] = dict()
+              for (ns, groups) in result[machine_name].items():
+                if groups.has_key(p.value):
+                  groups[p.value]['nodes'].append(node_fullname)
+                  added = True
+                  break
+              if not added:
+                # add new group in the namespace of the node
+                if not result[machine_name].has_key(ns):
+                  result[machine_name][ns] = dict()
+                if not result[machine_name][ns].has_key(p.value):
+                  result[machine_name][ns][p.value] = { 'type' : '', 'images' : [], 'description' : '', 'nodes' : [] }
+                result[machine_name][ns][p.value]['nodes'].append(node_fullname)
+    return result
 
   def _masteruri_from_ros(self):
     '''
@@ -241,19 +307,20 @@ class DefaultCfg(object):
     '''
     Returns the current description.
     '''
-    result = ListDescriptionResponse()
-    if req.node:
-      if self.sensors.has_key(req.node):
-        descr_list = self.sensors[req.node]
-        for type, name, descr in descr_list:
-          result.items.append(Description(Description.ID_SENSOR, req.node, type, name, descr))
-    else:
-      (type, name, descr) = self.robot_descr
-      if type or name or descr:
-        result.items.append(Description(Description.ID_ROBOT, '', type, name, descr))
-      for node, descr_list in self.sensors.items():
-        for type, name, descr in descr_list:
-          result.items.append(Description(Description.ID_SENSOR, node, type, name, descr))
+    return self.description_response
+#    result = ListDescriptionResponse()
+#    if req.node:
+#      if self.sensors.has_key(req.node):
+#        descr_list = self.sensors[req.node]
+#        for type, name, descr in descr_list:
+#          result.items.append(Description(Description.ID_SENSOR, req.node, type, name, descr))
+#    else:
+#      (type, name, descr) = self.robot_descr
+#      if type or name or descr:
+#        result.items.append(Description(Description.ID_ROBOT, '', type, name, descr))
+#      for node, descr_list in self.sensors.items():
+#        for type, name, descr in descr_list:
+#          result.items.append(Description(Description.ID_SENSOR, node, type, name, descr))
     return result
     
   def runNode(self, node):
@@ -323,6 +390,13 @@ class DefaultCfg(object):
       cmd = [cmd]
     if cmd is None or len(cmd) == 0:
       raise StartException(' '.join([n.type, 'in package [', n.package, '] not found!']))
+    # determine the current working path, Default: the package of the node
+    cwd = self.get_ros_home()
+    if not (n.cwd is None):
+      if n.cwd == 'ROS_HOME':
+        cwd = self.get_ros_home()
+      elif n.cwd == 'node':
+        cwd = os.path.dirname(cmd[0])
     node_cmd = [prefix, cmd[0]]
     cmd_args = [ScreenHandler.getSceenCmd(node)]
     cmd_args[len(cmd_args):] = node_cmd
@@ -331,7 +405,28 @@ class DefaultCfg(object):
 #    print 'runNode: ', cmd_args
     popen_cmd = shlex.split(str(' '.join(cmd_args)))
     rospy.loginfo("run node '%s as': %s", node, str(' '.join(popen_cmd)))
-    subprocess.Popen(popen_cmd)
+    subprocess.Popen(popen_cmd, cwd=cwd)
+
+  def get_ros_home(self):
+    '''
+    Returns the ROS HOME depending on ROS distribution API.
+    @return: ROS HOME path
+    @rtype: C{str}
+    '''
+    try:
+      import rospkg.distro
+      distro = rospkg.distro.current_distro_codename()
+      if distro in ['electric', 'diamondback', 'cturtle']:
+        import roslib.rosenv
+        return roslib.rosenv.get_ros_home()
+      else:
+        import rospkg
+        return rospkg.get_ros_home()
+    except:
+      import traceback
+      print traceback.format_exc()
+      import roslib.rosenv
+      return roslib.rosenv.get_ros_home()
 
   @classmethod
   def getGlobalParams(cls, roscfg):
@@ -394,3 +489,18 @@ class DefaultCfg(object):
       raise StartException(e)
     except Exception as e:
       raise #re-raise as this is fatal
+
+#  @classmethod
+#  def packageName(cls, dir):
+#    '''
+#    Returns for given directory the package name or None
+#    @rtype: C{str} or C{None}
+#    '''
+#    if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
+#      package = os.path.basename(dir)
+#      fileList = os.listdir(dir)
+#      for file in fileList:
+#        if file == 'manifest.xml':
+#            return package
+#      return cls.packageName(os.path.dirname(dir))
+#    return None

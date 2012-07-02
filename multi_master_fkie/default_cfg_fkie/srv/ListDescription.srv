@@ -1,3 +1,6 @@
-string node
 ---
-default_cfg_fkie/Description[] items
+string robot_name
+string robot_type
+string[] robot_images
+string robot_descr
+default_cfg_fkie/Capability[] capabilities 

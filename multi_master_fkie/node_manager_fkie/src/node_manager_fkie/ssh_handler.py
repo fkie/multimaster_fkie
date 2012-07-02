@@ -33,7 +33,7 @@
 import sys
 import shlex
 import subprocess
-from threading import RLock
+import threading
 
 try:
   import paramiko
@@ -54,7 +54,7 @@ class SSHhandler(object):
 
 
   def __init__(self):
-    self.mutex = RLock()
+    self.mutex = threading.RLock()
 
   def close(self):
     '''
@@ -86,8 +86,9 @@ class SSHhandler(object):
       self.mutex.acquire()
       ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw)
       if not ssh is None:
-        rospy.loginfo("REMOTE execute: %s",' '.join(cmd))
-        return ssh.exec_command(' '.join(cmd)), True
+        cmd_str = str(' '.join(cmd))
+        rospy.loginfo("REMOTE execute on %s: %s", host, cmd_str)
+        return ssh.exec_command(cmd_str), True
       else:
         return (None, None, None), False
     finally:
@@ -125,9 +126,9 @@ class SSHhandler(object):
       if not title is None:
         cmd_str = nm.terminal_cmd([ssh_str, ' '.join(cmd)], title)
       else:
-        cmd_str = ' '.join([ssh_str, ' '.join(cmd)])
-      rospy.loginfo("REMOTE x11 execute: %s",cmd_str)
-      return subprocess.Popen(shlex.split(str(cmd_str)))
+        cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
+      rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
+      return subprocess.Popen(shlex.split(cmd_str))
     finally:
       self.mutex.release()
     
@@ -141,7 +142,7 @@ class SSHhandler(object):
     @raise socket.error: - if a socket error occurred while connecting
     '''
     session = SSHhandler.SSH_SESSIONS.get(host, paramiko.SSHClient())
-    if session is None:
+    if session is None or (not session.get_transport() is None and not session.get_transport().is_active()):
       t = SSHhandler.SSH_SESSIONS.pop(host)
       del t
       session = SSHhandler.SSH_SESSIONS.get(host, paramiko.SSHClient())

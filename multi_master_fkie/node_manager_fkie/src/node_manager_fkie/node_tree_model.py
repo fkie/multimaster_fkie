@@ -35,236 +35,381 @@ from urlparse import urlparse
 from PySide import QtCore
 from PySide import QtGui
 
+import roslib
 import node_manager_fkie as nm
+from master_discovery_fkie.master_info import NodeInfo 
 
-class ExtendedNodeInfo(object):
+
+################################################################################
+##############                  GrouptItem                        ##############
+################################################################################
+
+class GroupItem(QtGui.QStandardItem):
   '''
-  The ExtendedNodeInfo stores all information about a node. This information is 
-  used to create the view items.
-  '''
-  
-  def __init__(self, nodename, mastername, masteruri, uri=None, pid=None, published=[], subscribed=[], services=[], cfgs=[], default_cfgs=[]):
-    '''
-    Initialize the ExtendedNodeInfo object with given values.
-    @param nodename: the name of the node
-    @type nodename: C{str}
-    @param mastername: the name of ROS master, where the node is registered
-    @type mastername: C{str}
-    @param masteruri: the URI of ROS master, where the node is registered
-    @type masteruri: C{str}
-    @param uri: the URI of of the node, if the node was started and registered 
-    by ROS master.
-    @type uri: C{str} (Default: C{None})
-    @param pid: the process ID of of the node, if the node is running and is 
-    located at the same host as the "main" ROS master.
-    @type pid: C{int} (Default: C{None})
-    @param published: the list with all topics published by this node.
-    @type published: C{[str, ...]} (Default: C{[]})
-    @param subscribed: the list with all topics subscribed by this node.
-    @type subscribed: C{[str, ...]} (Default: C{[]})
-    @param services: the list with all services provided by this node.
-    @type services: C{[str, ...]} (Default: C{[]})
-    @param cfgs: the list with all loaded configuration, which contains this node.
-    @type cfgs: C{[str, ...]} (Default: C{[]})
-    @param default_cfgs: the list with all default configurations, which contains this node. @see: X{http://ros.org/wiki/default_cfg_fkie|default_cfg_fkie}
-    @type default_cfgs: C{[str, ...]} (Default: C{[]})
-    '''
-    self.name = nodename
-    self.mastername = mastername
-    self.masteruri = masteruri
-    self.uri = uri
-    self.pid = pid
-    self.published = published
-    self.subscribed = subscribed
-    self.services = services
-    self.cfgs = cfgs
-    self.default_cfgs = default_cfgs
-    self.descr_type = self.descr_name = self.descr = ''
-  
-  def addConfig(self, cfgs):
-    '''
-    Add the given configurations to the node.
-    @param cfgs: the list with loaded configuration, which contains this node.
-    @type cfgs: C{[str, ...]}
-    '''
-    self.cfgs = list(set(self.cfgs) | set(cfgs))
-
-  def remConfig(self, cfgs):
-    '''
-    Remove the given configurations from the node.
-    @param cfgs: the list with loaded configuration, which contains this node.
-    @type cfgs: C{[str, ...]}
-    '''
-    self.cfgs = list(set(self.cfgs) - set(cfgs))
-
-  def addDefaultConfig(self, default_cfgs):
-    '''
-    Add the given default configurations to the node.
-    @param default_cfgs: the list with default configurations, which contains this node.
-    @type default_cfgs: C{[str, ...]} 
-    @see: U{http://ros.org/wiki/default_cfg_fkie|default_cfg_fkie}
-    '''
-    self.default_cfgs = list(set(self.default_cfgs) | set(default_cfgs))
-
-  def remDefaultConfig(self, default_cfgs):
-    '''
-    Remove the given default configurations from the node.
-    @param default_cfgs: the list with default configurations, which contains this node. 
-    @type default_cfgs: C{[str, ...]} 
-    @see: U{http://ros.org/wiki/default_cfg_fkie|default_cfg_fkie}
-    '''
-    self.default_cfgs = list(set(self.default_cfgs) - set(default_cfgs))
-    
-
-  def updateRunState(self, other):
-    '''
-    Update only the informations, which can be changed while the node is running.  
-    The name, mastername, masteruri and launch configurations are not changed.
-    @param other: the other instance of the L{ExtendedNodeInfo}
-    @type other: L{ExtendedNodeInfo}
-    '''
-    self.uri = other.uri
-    self.pid = other.pid
-    self.published = other.published
-    self.subscribed = other.subscribed
-    self.services = other.services
-
-
-  def updateDispayedName(self, item, show_ros_names):
-    '''
-    Updates the name representation of the given QStandardItem
-    @param item: item which represent the URI 
-    @type item: L{PySide.QtGui.QStandardItem}
-    @param show_ros_names: show the as ROS names or as their description.
-    @type show_ros_names: C{bool}
-    '''
-    if self.descr_name and not show_ros_names:
-      item.setText(self.descr_name)
-    else:
-      item.setText(NodeItem.toHTML(self.name))
-    tooltip = ''.join(['<html><body><h4>', self.name, '</h4><dl>'])
-    tooltip = ''.join([tooltip, '<dt>PID: ', str(self.pid), '</dt></dl>'])
-    uri = nm.nameres().getUri(host=nm.nameres().getHostname(self.uri))
-    master_discovered = (not uri is None)
-    local = (nm.nameres().getHostname(self.uri) == nm.nameres().getHostname(self.masteruri))
-    if not self.pid is None:
-      item.setIcon(QtGui.QIcon(':/icons/state_run.png'))
-    elif not local and not master_discovered and not self.uri is None:
-      item.setIcon(QtGui.QIcon(':/icons/state_run.png'))
-      tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
-#    elif not master_discovered and not self.uri is None:
-#      item.setIcon(QtGui.QIcon(':/icons/state_run.png'))
-    elif not self.uri is None:
-      item.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
-      if not local and master_discovered:
-        tooltip = ''.join(['<h4>', self.name, ' is not local, however the ROS master on this host is discovered, but no information about this node received!', '</h4>'])
-    else:
-      item.setIcon(QtGui.QIcon())
-
-    if self.descr_type or self.descr_name or self.descr:
-      tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-      if self.descr_type:
-        tooltip = ''.join([tooltip, '<dl><dt><b>Sensor type:</b> ', self.descr_type, '</dt>'])
-      if self.descr_name:
-        tooltip = ''.join([tooltip, '<dt><b>Sensor name:</b> ', self.descr_name, '</dt></dl>'])
-      if self.descr:
-        try:
-          from docutils import examples
-          tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
-        except:
-          import traceback
-          rospy.logwarn("Error while generate description for a node: %s", str(traceback.format_exc()))
-    tooltip = ''.join([tooltip, '</dl></body></html>'])
-    item.setToolTip(tooltip)
-
-  def updateDisplayedConfig(self, item):
-    '''
-    Updates the configuration representation of the given QStandardItem
-    @param item: item which represent the URI 
-    @type item: L{PySide.QtGui.QStandardItem}
-    '''
-    if not item is None and isinstance(item, QtGui.QStandardItem):
-      item.setText(str(''.join(['[',str(len(self.cfgs)+len(self.default_cfgs)),']'])) if len(self.cfgs)+len(self.default_cfgs) > 1 else "")
-      # set tooltip
-      tooltip = ''
-      if len(self.cfgs)+len(self.default_cfgs) > 0:
-        tooltip = '<html><body>'
-        if len(self.cfgs) > 0:
-          tooltip = ''.join([tooltip, '<h4>', 'Configuration files:', '</h4><dl>'])
-          for c in self.cfgs:
-            tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
-          tooltip = ''.join([tooltip, '</dl>'])
-        if len(self.default_cfgs) > 0:
-          tooltip = ''.join([tooltip, '<h4>', 'Default configurations:', '</h4><dl>'])
-          for (name, uri) in self.default_cfgs:
-            tooltip = ''.join([tooltip, '<dt>', name[0:-11] , '</dt>']) # remove the last '/list_nodes'
-          tooltip = ''.join([tooltip, '</dl>'])
-        tooltip = ''.join([tooltip, '</body></html>'])
-      item.setToolTip(tooltip)
-      # set icons
-      if len(self.cfgs) > 0 and len(self.default_cfgs) > 0:
-        item.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
-      elif len(self.cfgs) > 0:
-        item.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
-      elif len(self.default_cfgs) > 0:
-        item.setIcon(QtGui.QIcon(':/icons/crystal_clear_default_cfg.png'))
-      else:
-        item.setIcon(QtGui.QIcon())
-
-  def updateDisplayedURI(self, item):
-    '''
-    Updates the URI representation of the given L{PySide.QtGui.QStandardItem}
-    @param item: item which represent the URI 
-    @type item: L{PySide.QtGui.QStandardItem}
-    '''
-    if not item is None and isinstance(item, QtGui.QStandardItem):
-      item.setText(str(self.uri) if not self.uri is None else "")
-#      item.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
-
-  def setDescription(self, descr_type, descr_name, descr):
-    '''
-    Sets the description of the node
-    @see: L{updateTooltip()}
-    @param descr_type: the type of the sensor
-    @type descr_type: C{str}
-    @param descr_name: the name of the sensor
-    @type descr_name: C{str}
-    @param descr: the description of the sensor as a U{http://docutils.sourceforge.net/rst.html|reStructuredText} 
-    @type descr: C{str}
-    '''
-    self.descr_type = descr_type
-    self.descr_name = descr_name
-    self.descr = descr
-
-
-class HostItem(QtGui.QStandardItem):
-  '''
-  The HostItem stores the information about a host. 
+  The GroupItem stores the information about a group of nodes. 
   '''
   ITEM_TYPE = QtCore.Qt.UserRole + 25
   
-  def __init__(self, name, masteruri, local):
+  def __init__(self, name, parent=None):
     '''
-    Initialize the HostItem object with given values.
-    @param name: the name of the host
+    Initialize the GroupItem object with given values.
+    @param name: the name of the group
     @type name: C{str}
-    @param masteruri: the URI of ROS master located at this host
-    @type masteruri: C{str}
-    @param local: is this host the localhost where the node_manager is running.
-    @type local: C{bool}
+    @param parent: the parent item. In most cases this is the HostItem. The 
+    variable is used to determine the different columns of the NodeItem. 
+    @type parent: L{PySide.QtGui.QStandardItem}
     '''
-    QtGui.QStandardItem.__init__(self, NodeItem.toHTML(name))
-    self.name = name
-    self.masteruri = masteruri
-    if QtCore.QFile.exists(''.join([nm.ROBOTS_DIR, name, '.png'])):
-      self.setIcon(QtGui.QIcon(''.join([nm.ROBOTS_DIR, name, '.png'])))
-    else:
-      if local:
-        self.setIcon(QtGui.QIcon(':/icons/computer.png'))
-      else:
-        self.setIcon(QtGui.QIcon(':/icons/remote.png'))
+    QtGui.QStandardItem.__init__(self, GroupItem.toHTML(name))
+    self.parent_item = parent
+    self._name = name
+    self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     self.descr_type = self.descr_name = self.descr = ''
+    self.descr_images = []
+    self._capcabilities = dict()
+    ''' 
+     @ivar: dict(config : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
+    '''
   
+  @property
+  def name(self):
+    '''
+    The name of this group.
+    @rtype: C{str}
+    '''
+    return self._name
+  
+  @name.setter
+  def name(self, new_name):
+    '''
+    Set the new name of this group and updates the displayed name of the item.
+    @param new_name: The new name of the group. Used also to identify the group.
+    @type new_name: C{str}
+    '''
+    self._name = new_name
+    self.setText(GroupItem.toHTML(self._name))
+  
+  def addCapabilities(self, config, capabilities, masteruri):
+    '''
+    Add new capabilities. Based on this capabilities the node are grouped. The 
+    view will be updated.
+    @param config: The name of the configuration containing this new capabilities.
+    @type config: C{str}
+    @param masteruri: The masteruri is used only used, if new nodes are created.
+    @type masteruri: C{str}
+    @param capabilities: The capabilities, which defines groups and containing nodes.
+    @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str])))}
+    '''
+    self._capcabilities[config] = capabilities 
+    # update the view
+    for ns, groups in capabilities.items():
+      for group, descr in groups.items():
+        # create nodes for each group
+        nodes = descr['nodes']
+        if nodes:
+          groupItem = self.getGroupItem(roslib.names.ns_join(ns, group))
+          groupItem.descr_name = group
+          if descr['type']:
+            groupItem.descr_type = descr['type']
+          if descr['description']:
+            groupItem.descr = descr['description']
+          if descr['images']:
+            groupItem.descr_images = list(descr['images'])
+          # move the nodes from host to the group
+          for i in reversed(range(self.rowCount())):
+            item = self.child(i)
+            if isinstance(item, NodeItem) and item.name in nodes:
+              row = self.takeRow(i)
+              groupItem._addRow_sorted(row)
+          # create new or update existing items in the group
+          for node_name in nodes:
+            items = groupItem.getNodeItemsByName(node_name)
+            if items:
+              for item in items:
+                item.addConfig(config)
+            else:
+              items = self.getNodeItemsByName(node_name)
+              if items:
+                # copy the state of the existing node
+                groupItem.addNode(items[0].node_info, config)
+              else:
+                groupItem.addNode(NodeInfo(node_name, masteruri), config)
+          groupItem.updateIcon()
+          groupItem.updateTooltip()
+
+  def remCapablities(self, config):
+    '''
+    Removes internal entry of the capability, so the new nodes are not grouped.
+    To update view L{NodeTreeModel.removeConfigNodes()} and L{GroupItem.clearUp()}
+    must be called.
+    @param config: The name of the configuration containing this new capabilities.
+    @type config: C{str}
+    '''
+    try:
+      if self._capcabilities.has_key(config):
+        del self._capcabilities[config]
+    except:
+      pass
+    else:
+      #todo update view?
+      pass
+
+  def getCapabilityGroups(self, node_name, cfg=''):
+    '''
+    Returns the names of groups, which contains the given node.
+    @param node_name: The name of the node
+    @type node_name: C{str}
+    @param cfg: The name of configuration, which describes the node.
+    @type cfg: C{str}
+    @return: The name of the configuration containing this new capabilities.
+    @rtype: C{dict(config : [str])}
+    '''
+    result = dict() # dict(config : [group names])
+    try:
+      if cfg:
+        for ns, groups in self._capcabilities[cfg].items():
+          for group, descr in groups.items():
+            if node_name in descr['nodes']:
+              if not result.has_key(c):
+                result[c] = []
+              result[c].append(roslib.ns_join(ns, group))
+    except:
+      pass
+#      import traceback
+#      print traceback.format_exc()
+    return result
+
+  def getNodeItemsByName(self, node_name, recursive=True):
+    '''
+    Since the same node can be included by different groups, this method searches
+    for all nodes with given name and returns these items. 
+    @param node_name: The name of the node
+    @type node_name: C{str}
+    @param recursive: Searches in (sub) groups
+    @type recursive: C{bool}
+    @return: The list with node items.
+    @rtype: C{[L{PySide.QtGui.QStandardItem}]}
+    '''
+    result = []
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        if recursive:
+          result[len(result):] = item.getNodeItemsByName(node_name)
+      elif isinstance(item, NodeItem) and item == node_name:
+        return [item]
+    return result
+
+  def getNodeItems(self):
+    '''
+    Returns all nodes in this group and subgroups.
+    @return: The list with node items.
+    @rtype: C{[L{PySide.QtGui.QStandardItem}]}
+    '''
+    result = []
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        result[len(result):] = item.getNodeItems()
+      elif isinstance(item, NodeItem):
+        result.append(item)
+    return result
+
+  def getGroupItems(self):
+    '''
+    Returns all group items this group
+    @return: The list with group items.
+    @rtype: C{[L{GroupItem}]}
+    '''
+    result = []
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        result.append(item)
+        result[len(result):] = item.getGroupItems()
+    return result
+
+
+  def getGroupItem(self, group_name):
+    '''
+    Returns a GroupItem with given name. If no group with this name exists, a 
+    new one will be created.
+    Assumption: No groups in group!!
+    @param group_name: the name of the group
+    @type group_name: C{str} 
+    @return: The group with given name
+    @rtype: L{GroupItem} 
+    '''
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        if item == group_name:
+          return item
+        elif item > group_name:
+          items = []
+          newItem = GroupItem(group_name, self)
+          items.append(newItem)
+          cfgitem = QtGui.QStandardItem()
+          items.append(cfgitem)
+          self.insertRow(i, items)
+          return newItem
+    items = []
+    newItem = GroupItem(group_name, self)
+    items.append(newItem)
+    cfgitem = QtGui.QStandardItem()
+    items.append(cfgitem)
+    self.appendRow(items)
+    return newItem
+
+  def addNode(self, node, cfg=''):
+    '''
+    Adds a new node with given name.
+    @param node: the NodeInfo of the node to create
+    @type node: L{NodeInfo}
+    @param cfg: The configuration, which describes the node
+    @type cfg: C{str}
+    '''
+    groups = self.getCapabilityGroups(node.name, cfg)
+    if groups:
+      for c, group_list in groups.items():
+        for group_name in group_list:
+          # insert in the group
+          groupItem = self.getGroupItem(group_name)
+          groupItem.addNode(node)
+    else:
+      # insert in orter
+      new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
+      self._addRow_sorted(new_item_row)
+      new_item_row[0].node_info = node
+      if cfg:
+        new_item_row[0].addConfig(cfg)
+
+  def _addRow_sorted(self, row):
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if item > row[0].name:
+        self.insertRow(i, row)
+        row[0].parent_item = self
+        return
+    self.appendRow(row)
+    row[0].parent_item = self
+
+  def clearUp(self, fixed_node_names = None):
+    '''
+    Removes not running and not configured nodes.
+    @param fixed_node_names: If the list is not None, the node not in the list are
+    set to not running!
+    @type fixed_node_names: C{[str]}
+    '''
+    # first clear sub groups
+    groups = self.getGroupItems()
+    for group in groups:
+      group.clearUp(fixed_node_names)
+
+    # move running nodes without configuration to the upper layer, remove not running and duplicate nodes
+    for i in reversed(range(self.rowCount())):
+      item = self.child(i)
+      if isinstance(item, NodeItem):
+        # set the running state of the node to None
+        if not fixed_node_names is None and not item.name in fixed_node_names:
+          item.node_info = NodeInfo(item.name, item.node_info.masteruri)
+        if not item.is_valid():
+          self.removeRow(i)
+        elif not isinstance(self, HostItem):
+          if item.state == NodeItem.STATE_RUN and len(item.cfgs) == 0:
+            # if it is in a group, is running, but has no configuration, move it to the host
+            if not self.parent_item is None and isinstance(self.parent_item, HostItem):
+              items_in_host = self.parent_item.getNodeItemsByName(item.name, False)
+              if len(items_in_host) == 0:
+                row = self.takeRow(i)
+                self.parent_item._addRow_sorted(row)
+                row[0].parent_item = self.parent_item
+              else:
+                #remove item
+                self.removeRow(i)
+
+    # remove empty groups 
+    for i in reversed(range(self.rowCount())):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        # remove empty groups
+        if item.rowCount() == 0:
+          self.removeRow(i)
+
+  def updateRunningNodeState(self, nodes):
+    '''
+    Updates the running state of the nodes given in a dictionary.
+    @param nodes: A dictionary with node names and their running state described by L{NodeInfo}.
+    @type nodes: C{dict(str: L{master_discovery_fkie.NodeInfo})}
+    '''
+    for (name, node) in nodes.items():
+      # get the node items
+      items = self.getNodeItemsByName(name)
+      if items:
+        for item in items:
+          # update the node item
+          item.node_info = node
+      else:
+        # create the new node
+        self.addNode(node)
+    self.clearUp(nodes.keys())
+
+  def getRunningNodes(self):
+    '''
+    Returns the names of all running nodes. A running node is defined by his 
+    PID. 
+    @see: L{master_dicovery_fkie.NodeInfo}
+    @return: A list with node names
+    @rtype: C{[str]}
+    '''
+    result = []
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        result[len(result):] = item.getRunningNodes()
+      elif isinstance(item, NodeItem) and not item.node_info.pid is None:
+        result.append(item.name)
+    return result
+
+  def markNodesAsDuplicateOf(self, running_nodes):
+    '''
+    While a synchronization same node on different hosts have the same name, the 
+    nodes with the same on other host are marked.
+    @param running_nodes: A list with node names, which are running on other hosts.
+    @type running_nodes: C{[str]}
+    '''
+    ignore = ['/master_sync', '/master_discovery', '/node_manager']
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, GroupItem):
+        item.markNodesAsDuplicateOf(running_nodes)
+      elif isinstance(item, NodeItem):
+        item.has_running = (item.node_info.pid is None and not item.name in ignore and item.name in running_nodes)
+
+  def updateIcon(self):
+    has_running = False
+    has_off = False
+    has_duplicate = False
+    for i in range(self.rowCount()):
+      item = self.child(i)
+      if isinstance(item, NodeItem):
+        if item.state == NodeItem.STATE_WARNING:
+          self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
+          return
+        elif item.state == NodeItem.STATE_OFF:
+          has_off = True
+        elif item.state == NodeItem.STATE_RUN:
+          has_running = True
+        elif item.state == NodeItem.STATE_DUPLICATE:
+          has_duplicate = True
+    if has_duplicate:
+      self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
+    elif has_running and has_off:
+      self.setIcon(QtGui.QIcon(':/icons/state_part.png'))
+    elif not has_running:
+      self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+    elif not has_off and has_running:
+      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+
   def updateTooltip(self):
     '''
     Creates a tooltip description based on text set by L{updateDescription()} 
@@ -276,33 +421,30 @@ class HostItem(QtGui.QStandardItem):
     tooltip = ''
     if self.descr_type or self.descr_name or self.descr:
       tooltip = ''.join(['<h4>', self.descr_name, '</h4><dl>'])
-      tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
-      tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-      if self.descr:
-        try:
-          from docutils import examples
-          tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
-        except:
-          import traceback
-          rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
-    # get sensors
-    sensors = []
-    for j in range(self.rowCount()):
-      nodeItem = self.child(j)
-      if nodeItem.node.descr_name:
-        sensor = nodeItem.node.descr_name
-        if nodeItem.node.descr_type:
-          sensor = ' '.join([sensor, '(', nodeItem.node.descr_type, ')'])
-        sensors.append(sensor)
-    if sensors:
-      tooltip = ''.join([tooltip, '<b><u>sensors:</u></b>'])
+      if self.descr_type:
+        tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
       try:
         from docutils import examples
-        tooltip = ''.join([tooltip, examples.html_body(''.join(['- ', '\n- '.join(sensors)]), input_encoding='utf8')])
+        if self.descr:
+          tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
+          tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
       except:
         import traceback
         rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
-    self.setToolTip(''.join(['<html><body>', tooltip, '</body></html>']) if tooltip else self.name)
+        tooltip = ''.join([tooltip, '<br>'])
+    # get nodes
+    nodes = []
+    for j in range(self.rowCount()):
+      nodes.append(self.child(j).name)
+    if nodes:
+      tooltip = ''.join([tooltip, '<b><u>Nodes:</u></b>'])
+      try:
+        from docutils import examples
+        tooltip = ''.join([tooltip, examples.html_body(''.join(['- ', '\n- '.join(nodes)]), input_encoding='utf8')])
+      except:
+        import traceback
+        rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
+    self.setToolTip(''.join(['<div>', tooltip, '</div>']) if tooltip else self.name)
     return ''.join(['<div>', tooltip, '</div>']) if tooltip else ''
   
   def updateDescription(self, descr_type, descr_name, descr):
@@ -319,12 +461,68 @@ class HostItem(QtGui.QStandardItem):
     self.descr_name = descr_name
     self.descr = descr
 
+  def updateDisplayedConfig(self):
+    '''
+    Updates the configuration representation in other column.
+    '''
+    if not self.parent_item is None:
+      # get nodes
+      cfgs = []
+      for j in range(self.rowCount()):
+        cfgs[len(cfgs):] = self.child(j).cfgs
+      if cfgs:
+        cfgs = list(set(cfgs))
+      cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
+      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+        cfg_col.setText(str(''.join(['[',str(len(cfgs)),']'])) if len(cfgs) > 1 else "")
+        # set tooltip
+        tooltip = ''
+        if len(cfgs) > 0:
+          tooltip = ''
+          if len(cfgs) > 0:
+            tooltip = ''.join([tooltip, '<h4>', 'Configurations:', '</h4><dl>'])
+            for c in cfgs:
+              if NodeItem.is_default_cfg(c):
+                tooltip = ''.join([tooltip, '<dt>[default]', c[0], '</dt>'])
+              else:
+                tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
+            tooltip = ''.join([tooltip, '</dl>'])
+        cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
+        # set icons
+        has_launches = NodeItem.has_launch_cfgs(cfgs)
+        has_defaults = NodeItem.has_default_cfgs(cfgs)
+        if has_launches and has_defaults:
+          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
+        elif has_launches:
+          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
+        elif has_defaults:
+          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_default_cfg.png'))
+        else:
+          cfg_col.setIcon(QtGui.QIcon())
+  
+  @classmethod
+  def toHTML(cls, group_name):
+    '''
+    Creates a HTML representation of the group name.
+    @param group_name: the name of the group
+    @type group_name: C{str}
+    @return: the HTML representation of the name of the group
+    @rtype: C{str}
+    '''
+    ns, sep, name = group_name.rpartition('/')
+    result = ''
+    if sep:
+      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>[', name, ']</b></div>'])
+    else:
+      result = name
+    return result
+
   def type(self):
-    return HostItem.ITEM_TYPE
+    return GroupItem.ITEM_TYPE
 
   def __eq__(self, item):
     '''
-    Compares the name of the host.
+    Compares the name of the group.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
       return self.name.lower() == item.lower()
@@ -334,7 +532,7 @@ class HostItem(QtGui.QStandardItem):
 
   def __gt__(self, item):
     '''
-    Compares the name of the host.
+    Compares the name of the group.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
       return self.name.lower() > item.lower()
@@ -342,6 +540,84 @@ class HostItem(QtGui.QStandardItem):
       return self.name.lower() > item.name.lower()
     return False
 
+
+
+################################################################################
+##############                   HostItem                         ##############
+################################################################################
+
+class HostItem(GroupItem):
+  '''
+  The HostItem stores the information about a host. 
+  '''
+  ITEM_TYPE = QtCore.Qt.UserRole + 26
+  
+  def __init__(self, name, masteruri, local, parent=None):
+    '''
+    Initialize the HostItem object with given values.
+    @param name: the name of the host
+    @type name: C{str}
+    @param masteruri: the URI of ROS master located at this host
+    @type masteruri: C{str}
+    @param local: is this host the localhost where the node_manager is running.
+    @type local: C{bool}
+    '''
+    GroupItem.__init__(self, NodeItem.toHTML(name), parent)
+    self.masteruri = masteruri
+    if QtCore.QFile.exists(''.join([nm.ROBOTS_DIR, name, '.png'])):
+      self.setIcon(QtGui.QIcon(''.join([nm.ROBOTS_DIR, name, '.png'])))
+    else:
+      if local:
+        self.setIcon(QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'))
+      else:
+        self.setIcon(QtGui.QIcon(':/icons/remote.png'))
+    self.descr_type = self.descr_name = self.descr = ''
+  
+  def updateTooltip(self):
+    '''
+    Creates a tooltip description based on text set by L{updateDescription()} 
+    and all childs of this host with valid sensor description. The result is
+    returned as a HTML part.
+    @return: the tooltip description coded as a HTML part 
+    @rtype: C{str}
+    '''
+    tooltip = ''
+    if self.descr_type or self.descr_name or self.descr:
+      tooltip = ''.join(['<h4>', self.descr_name, '</h4><dl>'])
+      if self.descr_type:
+        tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
+      try:
+        from docutils import examples
+        if self.descr:
+          tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
+          tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
+      except:
+        import traceback
+        rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
+        tooltip = ''.join([tooltip, '<br>'])
+    # get sensors
+    capabilities = []
+    for j in range(self.rowCount()):
+      item = self.child(j)
+      if isinstance(item, GroupItem):
+        capabilities.append(item.name)
+    if capabilities:
+      tooltip = ''.join([tooltip, '<b><u>Capabilities:</u></b>'])
+      try:
+        from docutils import examples
+        tooltip = ''.join([tooltip, examples.html_body(''.join(['- ', '\n- '.join(capabilities)]), input_encoding='utf8')])
+      except:
+        import traceback
+        rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
+    self.setToolTip(''.join(['<div>', tooltip, '</div>']) if tooltip else self.name)
+    return ''.join(['<div>', tooltip, '</div>']) if tooltip else ''
+  
+  def type(self):
+    return HostItem.ITEM_TYPE
+
+################################################################################
+##############                   NodeItem                         ##############
+################################################################################
 
 class NodeItem(QtGui.QStandardItem):
   '''
@@ -351,65 +627,282 @@ class NodeItem(QtGui.QStandardItem):
   '''
   
   ITEM_TYPE = QtGui.QStandardItem.UserType + 35
+  COL_CFG = 1
+  COL_URI = 2
 
-  def __init__(self, ext_node):
+  STATE_OFF = 0
+  STATE_RUN = 1
+  STATE_WARNING = 2
+  STATE_DUPLICATE = 3
+
+  def __init__(self, node_info):
     '''
     Initialize the NodeItem instance.
-    @param ext_node: the node information
-    @type ext_node: L{ExtendedNodeInfo}
+    @param node_info: the node information
+    @type node_info: L{master_discovery_fkie.NodeInfo}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(ext_node.name))
-    self.node = ext_node
-    '''@ivar: the stored node information as L{ExtendedNodeInfo}'''
+    QtGui.QStandardItem.__init__(self, self.toHTML(node_info.name))
+    self.parent_item = None
+    self._node_info = node_info.copy()
+#    self.ICONS = {'empty' : QtGui.QIcon(),
+#                  'run'    : QtGui.QIcon(':/icons/state_run.png'),
+#                  'off'     :QtGui.QIcon(':/icons/state_off.png'),
+#                  'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png'),
+#                  'stop'    : QtGui.QIcon('icons/imacadam_stop.png'),
+#                  'cfg+def' : QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'),
+#                  'cfg'     : QtGui.QIcon(':/icons/crystal_clear_launch_file.png'),
+#                  'default_cfg' : QtGui.QIcon(':/icons/crystal_clear_default_cfg.png')
+#                  }
+    self._cfgs = []
+    self._has_running = False
+    self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+    self._state = NodeItem.STATE_OFF
+  
+  @property
+  def state(self):
+    return self._state
+  
+  def is_valid(self):
+    '''
+    Returns C{True} if the node has no configuration and is not running, so the pid 
+    and node URI are C{None}
+    @rtype: C{bool}
+    '''
+    return not (self._node_info.pid is None and self._node_info.uri is None and len(self._cfgs) == 0)
 
-  def updateNodeView(self, parent, show_ros_names):
+  @property
+  def name(self):
+    return self._node_info.name
+
+  @property
+  def masteruri(self):
+    return self._node_info.masteruri
+
+  @property
+  def published(self):
+    return self._node_info.publishedTopics
+
+  @property
+  def subscribed(self):
+    return self._node_info.subscribedTopics
+
+  @property
+  def services(self):
+    return self._node_info.services
+
+  @property
+  def node_info(self):
     '''
-    This method is called after the self.node is changed to update the 
-    representation of the node. The name will not be changed, but all other 
-    data.
-    @param parent: Item which contains this node item, usually the L{HostItem}. 
-    This is needed to update other columns of this node.
-    @type parent: L{PySide.QtGui.QStandardItem}
-    @param show_ros_names: show the as ROS names or as their description.
-    @type show_ros_names: C{bool}
+    Returns the NodeInfo instance of this node.
+    @rtype: L{master_discovery_fkie.NodeInfo}
     '''
-    self.node.updateDispayedName(self, show_ros_names)
-    if not parent is None:
-      #update the node configurations
-      child = parent.child(self.row(), 1)
-      if not child is None:
-        self.node.updateDisplayedConfig(child)
-      #update the node uri
-      child = parent.child(self.row(), 2)
-      if not child is None:
-        self.node.updateDisplayedURI(child)
+    return self._node_info
+
+  @node_info.setter
+  def node_info(self, node_info):
+    '''
+    Sets the NodeInfo and updates the view, if needed.
+    '''
+    abbos_changed = False
+    run_changed = False
+    if self._node_info.publishedTopics != node_info.publishedTopics:
+      abbos_changed = True
+      self._node_info._publishedTopics = list(node_info.publishedTopics)
+    if self._node_info.subscribedTopics != node_info.subscribedTopics:
+      abbos_changed = True
+      self._node_info._subscribedTopics = list(node_info.subscribedTopics)
+    if self._node_info.services != node_info.services:
+      abbos_changed = True
+      self._node_info._services = list(node_info.services)
+    if self._node_info.pid != node_info.pid:
+      self._node_info.pid = node_info.pid
+      run_changed = True
+    if self._node_info.uri != node_info.uri:
+      self._node_info.uri = node_info.uri
+      run_changed = True
+    # update the tooltip and icon
+    if run_changed and self.is_valid():
+      self.updateDispayedName()
+      self.updateDisplayedURI()
+      if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
+        self.parent_item.updateIcon()
+  
+  @property
+  def uri(self):
+    return self._node_info.uri
+
+  @property
+  def pid(self):
+    return self._node_info.pid
+
+  @property
+  def has_running(self):
+    '''
+    Returns C{True}, if there are exists other nodes with the same name. This 
+    variable must be set manually! 
+    @rtype: C{bool}
+    '''
+    return self._has_running
+
+  @has_running.setter
+  def has_running(self, state):
+    '''
+    Sets however other node with the same name are running or not (on other hosts)
+    and updates the view oth this item.
+    '''
+    if self._has_running != state:
+      self._has_running = state
+      if self.is_valid():
+        self.updateDispayedName()
+      if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
+        self.parent_item.updateIcon()
+
+
+  def updateDispayedName(self):
+    '''
+    Updates the name representation of the Item
+    '''
+    tooltip = ''.join(['<h4>', self.node_info.name, '</h4><dl>'])
+    tooltip = ''.join([tooltip, '<dt>PID: ', str(self.node_info.pid), '</dt></dl>'])
+    uri = nm.nameres().getUri(host=nm.nameres().getHostname(self.node_info.uri))
+    master_discovered = (not uri is None)
+    local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
+    if not self.node_info.pid is None:
+      self._state = NodeItem.STATE_RUN
+      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+    elif not local and not master_discovered and not self.node_info.uri is None:
+      self._state = NodeItem.STATE_RUN
+      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+      tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
+    elif not self.node_info.uri is None:
+      self._state = NodeItem.STATE_WARNING
+      self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
+      if not local and master_discovered:
+        tooltip = ''.join(['<h4>', self.node_info.name, ' is not local, however the ROS master on this host is discovered, but no information about this node received!', '</h4>'])
+    elif self.has_running:
+      self._state = NodeItem.STATE_DUPLICATE
+      self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
+      tooltip = ''.join(['<h4>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node!</h4>'])
+    else:
+      self._state = NodeItem.STATE_OFF
+      self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+    tooltip = ''.join([tooltip, '</dl>'])
+    self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+
+  def updateDisplayedURI(self):
+    '''
+    Updates the URI representation in other column.
+    '''
+    if not self.parent_item is None:
+      uri_col = self.parent_item.child(self.row(), NodeItem.COL_URI)
+      if not uri_col is None and isinstance(uri_col, QtGui.QStandardItem):
+        uri_col.setText(str(self.node_info.uri) if not self.node_info.uri is None else "")
+
+  @property
+  def cfgs(self):
+    '''
+    Returns the list with all launch configurations assigned to this item.
+    @rtype: C{[str]}
+    '''
+    return self._cfgs
+
+  def addConfig(self, cfg):
+    '''
+    Add the given configurations to the node.
+    @param cfg: the loaded configuration, which contains this node.
+    @type cfg: C{str}
+    '''
+    if not cfg in self._cfgs:
+      self._cfgs.append(cfg)
+      self.updateDisplayedConfig()
+
+  def remConfig(self, cfg):
+    '''
+    Remove the given configurations from the node.
+    @param cfg: the loaded configuration, which contains this node.
+    @type cfg: C{str}
+    '''
+    if cfg in self._cfgs:
+      self._cfgs.remove(cfg)
+    if self.is_valid():
+      self.updateDisplayedConfig()
+
+  def updateDisplayedConfig(self):
+    '''
+    Updates the configuration representation in other column.
+    '''
+    if not self.parent_item is None:
+      cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
+      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+        cfg_col.setText(str(''.join(['[',str(len(self._cfgs)),']'])) if len(self._cfgs) > 1 else "")
+        # set tooltip
+        tooltip = ''
+        if len(self._cfgs) > 0:
+          tooltip = ''
+          if len(self._cfgs) > 0:
+            tooltip = ''.join([tooltip, '<h4>', 'Configurations:', '</h4><dl>'])
+            for c in self._cfgs:
+              if NodeItem.is_default_cfg(c):
+                tooltip = ''.join([tooltip, '<dt>[default]', c[0], '</dt>'])
+              else:
+                tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
+            tooltip = ''.join([tooltip, '</dl>'])
+        cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
+        # set icons
+        has_launches = NodeItem.has_launch_cfgs(self._cfgs)
+        has_defaults = NodeItem.has_default_cfgs(self._cfgs)
+        if has_launches and has_defaults:
+          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
+        elif has_launches:
+          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
+        elif has_defaults:
+          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_default_cfg.png'))
+        else:
+          cfg_col.setIcon(QtGui.QIcon())
+        if isinstance(self.parent_item, GroupItem):
+          self.parent_item.updateDisplayedConfig()
 
   def type(self):
     return NodeItem.ITEM_TYPE
 
   @classmethod
-  def getItemList(self, ext_node, show_ros_names):
+  def newNodeRow(self, name, masteruri):
     '''
-    Creates the list of the items from given L{ExtendedNodeInfo}. This list is 
+    Creates a new node row and returns it as a list with items. This list is 
     used for the visualization of node data as a table row.
-    @param ext_node: the node data
-    @type ext_node: L{ExtendedNodeInfo}
-    @param show_ros_names: show the as ROS names or as their description.
-    @type show_ros_names: C{bool}
+    @param name: the node name
+    @type name: C{str}
+    @param masteruri: the URI or the ROS master assigned to this node.
+    @type masteruri: C{str}
     @return: the list for the representation as a row
-    @rtype: C{[L{NodeItem}, L{PySide.QtGui.QStandardItem}, ...]}
+    @rtype: C{[L{NodeItem}, L{PySide.QtGui.QStandardItem}(Cofigurations), L{PySide.QtGui.QStandardItem}(Node URI)]}
     '''
     items = []
-    item = NodeItem(ext_node)
-    ext_node.updateDispayedName(item, show_ros_names)
+    item = NodeItem(NodeInfo(name, masteruri))
     items.append(item)
     cfgitem = QtGui.QStandardItem()
-    ext_node.updateDisplayedConfig(cfgitem)
     items.append(cfgitem)
     uriitem = QtGui.QStandardItem()
-    ext_node.updateDisplayedURI(uriitem)
     items.append(uriitem)
     return items
+
+  @classmethod
+  def has_launch_cfgs(cls, cfgs):
+    for c in cfgs:
+      if not cls.is_default_cfg(c):
+        return True
+    return False
+
+  @classmethod
+  def has_default_cfgs(cls, cfgs):
+    for c in cfgs:
+      if cls.is_default_cfg(c):
+        return True
+    return False
+
+  @classmethod
+  def is_default_cfg(cls, cfg):
+    return isinstance(cfg, tuple)
 
   @classmethod
   def toHTML(cls, node_name):
@@ -423,7 +916,7 @@ class NodeItem(QtGui.QStandardItem):
     ns, sep, name = node_name.rpartition('/')
     result = ''
     if sep:
-      result = ''.join(['<html><body>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></body></html>'])
+      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
     else:
       result = name
     return result
@@ -433,9 +926,9 @@ class NodeItem(QtGui.QStandardItem):
     Compares the name of the node.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.node.name.lower() == item.lower()
+      return self.name.lower() == item.lower()
     elif not (item is None):
-      return self.node.name.lower() == item.node.name.lower()
+      return self.name.lower() == item.name.lower()
     return False
 
   def __gt__(self, item):
@@ -443,10 +936,15 @@ class NodeItem(QtGui.QStandardItem):
     Compares the name of the node.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.node.name.lower() > item.lower()
+      return self.name.lower() > item.lower()
     elif not (item is None):
-      return self.node.name.lower() > item.node.name.lower()
+      return self.name.lower() > item.name.lower()
     return False
+
+
+################################################################################
+##############                NodeTreeModel                       ##############
+################################################################################
 
 class NodeTreeModel(QtGui.QStandardItemModel):
   '''
@@ -464,35 +962,40 @@ class NodeTreeModel(QtGui.QStandardItemModel):
             ('Cfgs', 60),
             ('URI', -1)]
 
-  hostInserted = QtCore.Signal(QtCore.QModelIndex)
+  hostInserted = QtCore.Signal(HostItem)
   '''@ivar: the Qt signal, which is emitted, if a new host was inserted. 
   Parameter: L{QtCore.QModelIndex} of the inserted host item'''
 
-  def __init__(self, masteruri, parent=None):
+  def __init__(self, hostname, masteruri, parent=None):
     '''
     Initialize the model.
     '''
     super(NodeTreeModel, self).__init__(parent)
     self.setColumnCount(len(NodeTreeModel.header))
     self.setHorizontalHeaderLabels([label for label, width in NodeTreeModel.header])
-#    self.rootItem = NodeTreeItem([name for name, width in self.header])
-    self.show_rosnames = True
+    self._local_name = hostname
 
-  def show_ros_names(self, value):
-    self.show_rosnames = value
-    for i in range(self.invisibleRootItem().rowCount()):
-      host = self.invisibleRootItem().child(i)
-      if not host is None: # should not occur
-        for j in range(host.rowCount()):
-          host.child(j).updateNodeView(host, value)
-
+  @property
+  def local_name(self):
+    return self._local_name
+  
+  @local_name.setter
+  def local_name(self, new_name):
+    if self._local_name != str:
+      # rename the local host
+      root = self.invisibleRootItem()
+      for i in range(root.rowCount()):
+        hostItem = root.child(i)
+        if hostItem == self._local_name:
+          hostItem.name = str
+      self._local_name = str
 
   def flags(self, index):
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
   
-  def getHostItem(self, mastername, masteruri, onhost=''):
+  def getHostItem(self, mastername, masteruri):
     '''
     Searches for the host item in the model. If no item is found a new one will 
     created and inserted in sorted order.
@@ -500,240 +1003,160 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @type mastername: C{str}
     @param masteruri: used in case of creation a new host item 
     @type masteruri: C{str}
-    @param onhost: the name of the displayed host
-    @type onhost: C{str}
     @return: the item associated with the given master
     @rtype: L{HostItem}
     '''
-    local = (onhost == mastername)
+    host = mastername
+    if not host:
+      host = self.local_name
+    local = (self.local_name == host)
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):
-      if root.child(i) == mastername:
+      if root.child(i) == host:
         return root.child(i)
-      elif root.child(i) > mastername:
-        hostItem = HostItem(mastername, masteruri, local)
+      elif root.child(i) > host:
+        hostItem = HostItem(host, masteruri, local)
         self.insertRow(i, hostItem)
         self.hostInserted.emit(hostItem)
         return hostItem
-    self.appendRow(HostItem(mastername, masteruri, local))
-    self.hostInserted.emit(self.invisibleRootItem().child(self.invisibleRootItem().rowCount()-1))
-    return root.child(root.rowCount()-1)
+    hostItem = HostItem(host, masteruri, local)
+    self.appendRow(hostItem)
+    self.hostInserted.emit(hostItem)
+    return hostItem
 
-  def updateModelData(self, nodes_extended, onhost):
+  def updateModelData(self, mastername, masteruri, nodes):
     '''
     Updates the model data.
-    @param nodes_extended: a dictionary with name and extended info of the nodes.
-    @type nodes_extended: C{dict(node name : L{ExtendedNodeInfo}, ...)}
-    @param onhost: the displayed host
-    @type onhost: C{str}
+    @param mastername: the displayed name of the host, where the master is running
+    @type mastername: C{str}
+    @param masteruri: the masteruri of ROS assinged the host
+    @type masteruri: C{str}
+    @param nodes: a dictionary with name and info objects of the nodes.
+    @type nodes: C{dict(str:L{NodeInfo}, ...)}
     '''
-    #remove old nodes from the list
-    nodes = nodes_extended.keys()
+    # separate into different hosts
+    hosts = dict()
+    for (name, node) in nodes.items():
+      host = nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri)
+      master_name = nm.nameres().getName(host=host)
+      if not hosts.has_key(master_name):
+        hosts[master_name] = dict()
+      hosts[master_name][name] = node
+    # update nodes for each host
+    for (name, nodes_filtered) in hosts.items():
+      hostItem = self.getHostItem(name, masteruri)
+      hostItem.updateRunningNodeState(nodes_filtered)
+    # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not host is None: # should not occur
-        for j in reversed(range(host.rowCount())):
-          nodeItem = host.child(j)
-          if not nodeItem.node.name in nodes:
-            nodeItem.node.updateRunState(ExtendedNodeInfo(nodeItem.node.name, None, None, None, None))
-            if self.canBeremoved(nodeItem.node):
-              host.removeRow(j)
-            else:
-              nodeItem.updateNodeView(host, self.show_rosnames)
-          elif nodes_extended[nodeItem.node.name].uri != nodeItem.node.uri and not nodeItem.node.cfgs and not nodeItem.node.default_cfgs:
-            # if the node was started on the other host, remove the current existing
-            host.removeRow(j)
-      else:
-        return
-      if host.rowCount() == 0:
-        self.invisibleRootItem().removeRow(i)
-    for (name, node) in nodes_extended.items():
-      # create parent items for different hosts
-      host = nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri)
-      if not host is None:
-        hostItem = self.getHostItem(host, node.masteruri, onhost)
-        doAddItem = True
-        for i in range(hostItem.rowCount()):
-          nodeItem = hostItem.child(i)
-          if (nodeItem == node.name):
-            # update item
-            nodeItem.node.updateRunState(node)
-            nodeItem.updateNodeView(hostItem, self.show_rosnames)
-            doAddItem = False
-            break
-          elif (hostItem.child(i) > node.name):
-            hostItem.insertRow(i, NodeItem.getItemList(node, self.show_rosnames))
-            doAddItem = False
-            break
-        if doAddItem:
-          hostItem.appendRow(NodeItem.getItemList(node, self.show_rosnames))
-      else: # should not happen!
-        print "node IGNORED", name, " - no host detected, uri:", node.uri, ", masteruri:", node.masteruri
+      if not hosts.has_key(host.name):
+        host.updateRunningNodeState({})
+    self.removeEmptyHosts()
+    # update the duplicate state
+#    self.markNodesAsDuplicateOf(self.getRunningNodes())
 
-  def appendConfigNodes(self, nodes_extended, onhost):
+  def addCapabilities(self, host, masteruri, cfg, capabilities):
+    '''
+    Adds groups to the model
+    @param host: the host enterend in the configuration 
+    @type host: C{str}
+    @param masteruri: the masteruri of ROS assinged the host
+    @type masteruri: C{str}
+    @param cfg: the configuration name (launch file name or tupel for default configuration)
+    @type cfg: C{str or (str, str))} 
+    @param capabilities: the structure for capabilities
+    @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str])))} 
+    '''
+    hostItem = self.getHostItem(host, masteruri)
+    hostItem.addCapabilities(cfg, capabilities, masteruri)
+    self.removeEmptyHosts()
+    
+  def appendConfigNodes(self, host, masteruri, nodes):
     '''
     Adds nodes to the model. If the node is already in the model, only his 
     configuration list will be extended.
-    @param nodes_extended: a dictionary with nodes and his names
-    @type nodes_extended: C{dict(node name : L{ExtendedNodeInfo}, ...)} 
+    @param host: the host enterend in the configuration 
+    @type host: C{str}
+    @param masteruri: the masteruri of ROS assinged the host
+    @type masteruri: C{str}
+    @param nodes: a dictionary with node names and their configurations
+    @type nodes: C{dict(str : str)} 
     '''
-    for (name, node) in nodes_extended.items():
-      # create parent items for different hosts
-      hostItem = self.getHostItem(node.mastername, node.masteruri, onhost)
-      doAddItem = True
-      for i in range(hostItem.rowCount()):
-        nodeItem = hostItem.child(i)
-        if (hostItem.child(i) == node.name):
-          # update item
-          hostItem.child(i).node.addConfig(node.cfgs)
-          hostItem.child(i).updateNodeView(hostItem, self.show_rosnames)
-          doAddItem = False
-          break
-        elif (hostItem.child(i) > node.name):
-          hostItem.insertRow(i, NodeItem.getItemList(node, self.show_rosnames))
-          doAddItem = False
-          break
-      if doAddItem:
-        hostItem.appendRow(NodeItem.getItemList(node, self.show_rosnames))
+    hostItem = self.getHostItem(host, masteruri)
+    for (name, cfg) in nodes.items():
+      items = hostItem.getNodeItemsByName(name)
+      for item in items:
+        item.addConfig(cfg)
+      if not items:
+        # create the new node
+        node_info = NodeInfo(name, masteruri)
+        hostItem.addNode(node_info, cfg)
+    self.removeEmptyHosts()
+    # update the duplicate state
+#    self.markNodesAsDuplicateOf(self.getRunningNodes())
 
-  def removeConfigNodes(self, nodes_extended):
+  def removeConfigNodes(self, cfg):
     '''
     Removes nodes from the model. If node is running or containing in other
     launch or default configurations , only his configuration list will be 
     reduced.
-    @param nodes_extended: a dictionary with nodes and his names
-    @type nodes_extended: C{dict(node name : L{ExtendedNodeInfo}, ...)} 
+    @param cfg: the name of the confugration to close
+    @type cfg: C{str} 
     '''
-    nodenames= nodes_extended.keys()
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not host is None:
-        for j in reversed(range(host.rowCount())):
-          nodeItem = host.child(j)
-          if nodeItem.node.name in nodenames:
-            nodeItem.node.remConfig(nodes_extended[nodeItem.node.name].cfgs)
-            if self.canBeremoved(nodeItem.node):
-              host.removeRow(j)
-            else:
-              nodeItem.updateNodeView(host, self.show_rosnames)
-        if host.rowCount() == 0:
-          self.invisibleRootItem().removeRow(i)
+      items = host.getNodeItems()
+      for item in items:
+        item.remConfig(cfg)
+      host.remCapablities(cfg)
+      host.clearUp()
+      if host.rowCount() == 0:
+        self.invisibleRootItem().removeRow(i)
 
-  def appendDefaultConfigNodes(self, nodes_extended, onhost):
-    '''
-    Adds nodes to the model. If the node is already in the model, only his 
-    C{default configuration} list will be extended.
-    @param nodes_extended: a dictionary with nodes and his names
-    @type nodes_extended: C{dict(node name : L{ExtendedNodeInfo}, ...)} 
-    '''
-    for (name, node) in nodes_extended.items():
-      # create parent items for different hosts
-      hostItem = self.getHostItem(node.mastername, node.masteruri, onhost)
-      doAddItem = True
-      for i in range(hostItem.rowCount()):
-        nodeItem = hostItem.child(i)
-        if (hostItem.child(i) == node.name):
-          # update item
-          hostItem.child(i).node.addDefaultConfig(node.default_cfgs)
-          hostItem.child(i).updateNodeView(hostItem, self.show_rosnames)
-          doAddItem = False
-          break
-        elif (hostItem.child(i) > node.name):
-          hostItem.insertRow(i, NodeItem.getItemList(node, self.show_rosnames))
-          doAddItem = False
-          break
-      if doAddItem:
-        hostItem.appendRow(NodeItem.getItemList(node, self.show_rosnames))
-
-  def removeDefaultConfigNodes(self, nodes_extended):
-    '''
-    Removes nodes from the model. If node is running or containing in other
-    launch or default configurations , only his C{default configuration} list will be 
-    reduced.
-    @param nodes_extended: a dictionary with nodes and his names
-    @type nodes_extended: C{dict(node name : L{ExtendedNodeInfo}, ...)} 
-    '''
-    nodenames= nodes_extended.keys()
+  def removeEmptyHosts(self):
+    # remove empty hosts
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not host is None:
-        for j in reversed(range(host.rowCount())):
-          nodeItem = host.child(j)
-          if nodeItem.node.name in nodenames:
-            nodeItem.node.remDefaultConfig(nodes_extended[nodeItem.node.name].default_cfgs)
-            if self.canBeremoved(nodeItem.node):
-              host.removeRow(j)
-            else:
-              nodeItem.updateNodeView(host, self.show_rosnames)
-        if host.rowCount() == 0:
-          self.invisibleRootItem().removeRow(i)
-        else:
-          host.updateTooltip()
+      if host.rowCount() == 0:
+        self.invisibleRootItem().removeRow(i)
 
-  def canBeremoved(self, node):
-    '''
-    @return: True if the node has no configuration and is not running, so the pid 
-    and node URI are C{None}
-    @rtype: C{bool}
-    '''
-    return (node.pid is None and node.uri is None and (len(node.cfgs)+len(node.default_cfgs)) == 0)
+  def isDuplicateNode(self, node_name):
+    for i in reversed(range(self.invisibleRootItem().rowCount())):
+      host = self.invisibleRootItem().child(i)
+      if not host is None: # should not occur
+        nodes = host.getNodeItemsByName(node_name)
+        for n in nodes:
+          if n.has_running:
+            return True
+    return False
 
-  def updateNodesDescription(self, onhost, items):
+  def getRunningNodes(self):
     '''
-    Updates the description of the nodes received from default_cfg
-    @param onhost: the host, where the node is located
-    @type onhost: C{str} 
-    @param items: list with descriptions
-    @type items: C{[L{default_cfg_fkie.Description}]}
-    @return: the host description codes a HTML or an empty string 
-    @rtype: C{str}
+    Returns a list with all known running nodes.
+    @rtype: C{[str]}
     '''
-    ROBOT_ID = 'robot'
-    try:
-      from default_cfg_fkie.msg import Description
-      ROBOT_ID = Description.ID_ROBOT
-    except:
-      import traceback
-      rospy.logwarn("%s", str(traceback.format_exc()))
+    running_nodes = list()
+    ## determine all running nodes
+    for i in reversed(range(self.invisibleRootItem().rowCount())):
+      host = self.invisibleRootItem().child(i)
+      if not host is None: # should not occur
+        running_nodes[len(running_nodes):] = host.getRunningNodes()
+    return running_nodes
 
-    root = self.invisibleRootItem()
-    for i in range(root.rowCount()):
-      if root.child(i) == onhost:
-        host = root.child(i)
-        for item in items:
-          if (intern(item.id) == intern(ROBOT_ID)):
-            host.updateDescription(item.type, item.name, item.description)
-          else:
-            for j in range(host.rowCount()):
-              nodeItem = host.child(j)
-              if nodeItem.node.name == item.ros_name:
-                nodeItem.node.setDescription(item.type, item.name, item.description)
-                nodeItem.updateNodeView(host, self.show_rosnames)
-        return host.updateTooltip()
-    return ''
-
-  def updateNodesDescr(self, onhost, nodes):
+  def markNodesAsDuplicateOf(self, running_nodes):
     '''
-    Updates the description of the nodes
-    @param onhost: the host, where the node is located
-    @type onhost: C{str} 
-    @param nodes: dictonary with descriptions
-    @type nodes: C{dict(sensor:dict({'sensor_type', 'sensor_name', 'sensor_descr'}:str(value)))}
-    @return: the host description codes a HTML or an empty string 
-    @rtype: C{str}
+    If there are a synchronization running, you have to avoid to running the 
+    node with the same name on different hosts. This method helps to find the 
+    nodes with same name running on other hosts and loaded by a configuration.
+    The nodes loaded by a configuration will be inform about a currently running
+    nodes, so a warning can be displayed!
+    @param running_nodes: A list with node names, which are running on other hosts.
+    @type running_nodes: C{[str]}
     '''
-    root = self.invisibleRootItem()
-    for i in range(root.rowCount()):
-      if root.child(i) == onhost:
-        host = root.child(i)
-        for node, d in nodes.items():
-          for j in range(host.rowCount()):
-            nodeItem = host.child(j)
-            if nodeItem.node.name == node:
-              nodeItem.node.setDescription(d['sensor_type'], d['sensor_name'], d['sensor_descr'])
-              nodeItem.updateNodeView(host, self.show_rosnames)
-        return host.updateTooltip()
-    return ''
+    for i in reversed(range(self.invisibleRootItem().rowCount())):
+      host = self.invisibleRootItem().child(i)
+      if not host is None: # should not occur
+        host.markNodesAsDuplicateOf(running_nodes)
 
   def updateHostDescription(self, host, descr_type, descr_name, descr):
     '''
