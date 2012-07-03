@@ -120,6 +120,9 @@ class GroupItem(QtGui.QStandardItem):
             if isinstance(item, NodeItem) and item.name in nodes:
               row = self.takeRow(i)
               groupItem._addRow_sorted(row)
+#              row[0].parent_item = groupItem
+              groupItem.updateDisplayedConfig()
+
           # create new or update existing items in the group
           for node_name in nodes:
             items = groupItem.getNodeItemsByName(node_name)
@@ -276,10 +279,11 @@ class GroupItem(QtGui.QStandardItem):
           groupItem = self.getGroupItem(group_name)
           groupItem.addNode(node)
     else:
-      # insert in orter
+      # insert in order
       new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
       self._addRow_sorted(new_item_row)
       new_item_row[0].node_info = node
+#      new_item_row[0].parent_item = self
       if cfg:
         new_item_row[0].addConfig(cfg)
 
@@ -322,7 +326,7 @@ class GroupItem(QtGui.QStandardItem):
               if len(items_in_host) == 0:
                 row = self.takeRow(i)
                 self.parent_item._addRow_sorted(row)
-                row[0].parent_item = self.parent_item
+#                row[0].parent_item = self.parent_item
               else:
                 #remove item
                 self.removeRow(i)

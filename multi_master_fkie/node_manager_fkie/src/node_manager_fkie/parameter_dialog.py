@@ -33,6 +33,7 @@
 from PySide import QtCore, QtGui
 
 import roslib
+import rospy
 import node_manager_fkie as nm
 
 class ParameterDialog(QtGui.QDialog):
@@ -122,16 +123,19 @@ class ParameterDialog(QtGui.QDialog):
         self.params.append((name, type, field))
       else:
         try:
-          list_msg_class =roslib.message.get_message_class(base_type)
-          box = QtGui.QGroupBox(type, parent)
-          boxLayout = QtGui.QFormLayout(box)
-#          boxLayout.setFieldGrowthPolicy(QtGui.QFormLayout.ExpandingFieldsGrow)
-#          boxLayout.setVerticalSpacing(0)
-#          boxLayout.setHorizontalSpacing(1)
-#          boxLayout.addRow(box)
-          self._insertItems(box, boxLayout, list_msg_class.__slots__, list_msg_class._slot_types)
-          box.setLayout(boxLayout)
-        except ValueError:
+          if base_type == 'time':
+            QtGui.QMessageBox.information(self, self.tr("sorry"),
+                                '<time> parameter is not supported yet! This parameter will be ignored!',
+                                QtGui.QMessageBox.Ok)
+          else:
+            list_msg_class =roslib.message.get_message_class(base_type)
+            box = QtGui.QGroupBox(type, parent)
+            boxLayout = QtGui.QFormLayout(box)
+            self._insertItems(box, boxLayout, list_msg_class.__slots__, list_msg_class._slot_types)
+            box.setLayout(boxLayout)
+            layout.addRow(box)
+        except ValueError, e:
+          print "ERROR", e
           pass
 
   def getKeywords(self):
