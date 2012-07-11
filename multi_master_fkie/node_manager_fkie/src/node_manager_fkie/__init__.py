@@ -298,8 +298,8 @@ def main(name, anonymous=False):
   app = QApplication(sys.argv)
 
   # decide to show main or echo dialog
+  import main_window, echo_dialog
   if len(args) >= 4 and args[1] == '-t':
-    import echo_dialog
     mainForm = echo_dialog.EchoDialog(args[2], args[3])
   else:
     # initialize the global handler 
@@ -313,7 +313,6 @@ def main(name, anonymous=False):
     _name_resolution = NameResolution()
   
     #start the gui
-    import main_window
     mainForm = main_window.MainWindow()
 
   if not rospy.is_shutdown():
@@ -321,7 +320,8 @@ def main(name, anonymous=False):
     exit_code = -1
     rospy.on_shutdown(finish)
     exit_code = app.exec_()
-    mainForm.finish()
+    if isinstance(mainForm, main_window.MainWindow):
+      mainForm.finish()
 #    finally:
 #      print "final"
 #      sys.exit(exit_code)

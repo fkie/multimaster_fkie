@@ -67,12 +67,11 @@ class EchoDialog(QtGui.QDialog):
     @type type: C{str}
     @raise Exception: if no topic class was found for the given type
     '''
-    QtGui.QDialog.__init__(self, parent)
-    self.parent = parent
-    self.setWindowFlags(QtCore.Qt.Window)
+    QtGui.QDialog.__init__(self, parent=parent)
+    self.setObjectName(' - '.join(['EchoDialog', topic]))
+#    self.setWindowFlags(QtCore.Qt.Window)
     self.setWindowTitle(''.join(['Echo of ', topic]))
     self.resize(728,512)
-    self.setObjectName("EchoDialog")
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
@@ -85,7 +84,6 @@ class EchoDialog(QtGui.QDialog):
     self.message_interval_count = 0
     self.message_interval_count_last = 0
     self.field_filter_fn = None
-    
     
     options = QtGui.QWidget(self)
     hLayout = QtGui.QHBoxLayout(options)
@@ -101,14 +99,12 @@ class EchoDialog(QtGui.QDialog):
     hLayout.addItem(spacerItem)
     self.verticalLayout.addWidget(options)
     
-    self.display = QtGui.QTextEdit()
+    self.display = QtGui.QTextEdit(self)
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display);
 
-    self.status_label = QtGui.QLabel('0 messages')
+    self.status_label = QtGui.QLabel('0 messages', self)
     self.verticalLayout.addWidget(self.status_label)
-
-    self.finished.connect(self._finished)
 
     # subscribe to the topic
     msg_class = roslib.message.get_message_class(type)
@@ -116,17 +112,23 @@ class EchoDialog(QtGui.QDialog):
       raise Exception("Cannot load message class for [%s]. Are your messages built?"%type)
     self.sub = rospy.Subscriber(topic, msg_class, self._msg_handle)
     self.msg_signal.connect(self._append_message)
+#    print "======== create", self.objectName()
+#
+#  def __del__(self):
+#    print "******* destroy", self.objectName()
 
-  def finish(self):
-    pass
+  def hideEvent(self, event):
+    self.close()
 
-  def _finished(self, result):
+  def closeEvent (self, event):
     self.sub.unregister()
     del self.sub
     self.finished_signal.emit(self.topic)
-    if self.parent is None:
+    if self.parent() is None:
       QtGui.QApplication.quit()
-
+    else:
+      self.setParent(None)
+  
   def create_field_filter(self, echo_nostr, echo_noarr):
     def field_filter(val):
       try:
