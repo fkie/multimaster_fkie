@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import sys
 import time
 from ros import roslaunch
 import rospy
@@ -155,7 +156,7 @@ class LaunchConfig(QtCore.QObject):
     Returns for given directory the package name or None
     @rtype: C{str} or C{None}
     '''
-    if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
+    if not (dir is None) and dir and dir != os.path.sep and os.path.isdir(dir):
       package = os.path.basename(dir)
       fileList = os.listdir(dir)
       for file in fileList:
@@ -203,9 +204,9 @@ class LaunchConfig(QtCore.QObject):
         script = path[startIndex+1:endIndex].split()
         if len(script) == 2 and (script[0] == 'find'):
           pkg = roslib.packages.get_pkg_dir(script[1])
-          return ''.join([pkg, '/', path[endIndex+1:]])
-    elif len(path) > 0 and path[0] != '/':
-      return ''.join([pwd, '/', path])
+          return ''.join([pkg, os.path.sep, path[endIndex+1:]])
+    elif len(path) > 0 and path[0] != os.path.sep:
+      return ''.join([pwd, os.path.sep, path])
     return path
 
   def getIncludedFiles(self):
@@ -218,20 +219,20 @@ class LaunchConfig(QtCore.QObject):
     result = set(self.__roscfg.roslaunch_files)
     regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
                    QtCore.QRegExp("\\bfile\\b")]
-    file = QtCore.QFile(self.__launchFile)
-    if file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
-      while not file.atEnd():
-        line = str(file.readLine()) # A QByteArray
-        index = self._index(line, regexp_list)
-        if index > -1:
-          startIndex = line.find('"', index)
-          if startIndex > -1:
-            endIndex = line.find('"', startIndex+1)
-            fileName = line[startIndex+1:endIndex]
-            if len(fileName) > 0:
-              f = QtCore.QFile(self.interpretPath(fileName, os.path.dirname(self.__launchFile)))
-              if f.exists():
-                result.add(f.fileName())
+    lines = []
+    with open(self.__launchFile, 'r') as f:
+      lines = f.readlines()
+    for line in lines:
+      index = self._index(line, regexp_list)
+      if index > -1:
+        startIndex = line.find('"', index)
+        if startIndex > -1:
+          endIndex = line.find('"', startIndex+1)
+          fileName = line[startIndex+1:endIndex]
+          if len(fileName) > 0:
+            path = self.interpretPath(fileName, os.path.dirname(self.__launchFile))
+            if os.path.isfile(path):
+              result.add(path)
     return list(result)
 
   def load(self, argv):
@@ -273,6 +274,14 @@ class LaunchConfig(QtCore.QObject):
           argvAdded = True
     return not argvAdded, testarg
 
+  def _decode(self, val):
+    result = val.replace("\\n ", "\n")
+    try:
+      result = result.decode(sys.getfilesystemencoding())
+    except:
+      pass
+    return result
+
   def getRobotDescr(self):
     '''
     Parses the launch file for C{robots} parameter to get the description of the
@@ -289,7 +298,7 @@ class LaunchConfig(QtCore.QObject):
               print "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore", param
             else:
               for entry in p.value:
-                result[entry[0]] = { 'type' : entry[1], 'name' : entry[2], 'images' : entry[4].split(), 'description' : entry[4].replace("\\n ", "\n") }
+                result[entry[0]] = { 'type' : entry[1], 'name' : entry[2], 'images' : entry[4].split(), 'description' : self._decode(entry[4]) }
     return result
 
   def getCapabilitiesDesrc(self):
@@ -316,7 +325,7 @@ class LaunchConfig(QtCore.QObject):
                 for entry in p.value:
                   if not result[m].has_key(ns):
                     result[m][ns] = dict()
-                  result[m][ns][entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : entry[3].replace("\\n ", "\n"), 'nodes' : [] }
+                  result[m][ns][entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3]), 'nodes' : [] }
       # get the capability nodes
       for param, p in self.Roscfg.params.items():
         if param.endswith('capability_group'):
@@ -337,12 +346,13 @@ class LaunchConfig(QtCore.QObject):
                   added = True
                   break
               if not added:
+                ns = ''.join([item.namespace])
                 # add new group in the namespace of the node
-                if not result[machine_name].has_key(item.namespace):
-                  result[machine_name][item.namespace] = dict()
-                if not result[machine_name][item.namespace].has_key(p.value):
-                  result[machine_name][item.namespace][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
-                result[machine_name][item.namespace][p.value]['nodes'].append(node_fullname)
+                if not result[machine_name].has_key(ns):
+                  result[machine_name][ns] = dict()
+                if not result[machine_name][ns].has_key(p.value):
+                  result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
+                result[machine_name][ns][p.value]['nodes'].append(node_fullname)
     return result
   
   def argvToDict(self, argv):
@@ -418,9 +428,9 @@ class LaunchConfig(QtCore.QObject):
     @rtype: L{roslaunch.Node} or C{None}
     '''
     nodename = os.path.basename(name)
-    namespace = os.path.dirname(name).strip('/')
+    namespace = os.path.dirname(name).strip(roslib.names.SEP)
     for item in self.Roscfg.nodes:
-      if (item.name == nodename) and (item.namespace.strip('/') == namespace):
+      if (item.name == nodename) and (item.namespace.strip(roslib.names.SEP) == namespace):
         return item
     return None
 

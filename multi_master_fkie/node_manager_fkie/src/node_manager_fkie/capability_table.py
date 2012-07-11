@@ -31,11 +31,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import sys
 
 from PySide import QtCore
 from PySide import QtGui
 
 import roslib
+import rospy
 import node_manager_fkie as nm
 from master_discovery_fkie.master_info import NodeInfo 
 
@@ -52,7 +54,7 @@ class CapabilityHeader(QtGui.QHeaderView):
   def __init__(self, orientation, parent=None):
     QtGui.QHeaderView.__init__(self, orientation, parent)
     self._data = []
-    ''' @ivar a list with dictionaries C{dict('cfgs' : [], 'name': str, 'type' : str, 'description' : str, 'images' : [QtGui.QPixmap])}'''
+    ''' @ivar a list with dictionaries C{dict('cfgs' : [], 'name': str, 'displayed_name' : str, 'type' : str, 'description' : str, 'images' : [QtGui.QPixmap])}'''
     if orientation == QtCore.Qt.Horizontal:
       self.setDefaultAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
     elif orientation == QtCore.Qt.Vertical:
@@ -103,18 +105,19 @@ class CapabilityHeader(QtGui.QHeaderView):
       text = self._data[index]['description']
       try:
         from docutils import examples
-        text = examples.html_body(text, input_encoding='utf8')
+        text = examples.html_body(text)
       except:
         import traceback
         rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], str(traceback.format_exc()))
       self.description_requested_signal.emit(title, text)
 
-  def setDescription(self, index, cfg, name, type, description, images=[]):
+  def setDescription(self, index, cfg, name, displayed_name, type, description, images):
     if index < len(self._data):
       obj = self._data[index]
       if not cfg in obj['cfgs']:
         obj['cfgs'].append(cfg)
       obj['name'] = name
+      obj['displayed_name'] = displayed_name
       obj['type'] = type
       obj['description'] = description
       del obj['images'][:]
@@ -123,13 +126,15 @@ class CapabilityHeader(QtGui.QHeaderView):
         if os.path.isfile(img):
           obj['images'].append(QtGui.QPixmap(img))
 
-  def updateDescription(self, index, cfg, name, type, description, images=[]):
+  def updateDescription(self, index, cfg, name, displayed_name, type, description, images):
     if index < len(self._data):
       obj = self._data[index]
       if not cfg in obj['cfgs']:
         obj['cfgs'].append(cfg)
       if not obj['name']:
         obj['name'] = name
+      if not obj['displayed_name']:
+        obj['displayed_name'] = displayed_name
       if not obj['type']:
         obj['type'] = type
       if not obj['description']:
@@ -145,13 +150,13 @@ class CapabilityHeader(QtGui.QHeaderView):
       self._data.pop(index)
     
   def insertItem(self, index):
-    new_dict = {'cfgs' : [], 'name': '', 'type' : '', 'description' : '', 'images' : []}
+    new_dict = {'cfgs' : [], 'name': '', 'displayed_name' : '', 'type' : '', 'description' : '', 'images' : []}
     if index < len(self._data):
       self._data.insert(index, new_dict)
     else:
       self._data.append(new_dict)
 
-  def insertSortedItem(self, name):
+  def insertSortedItem(self, name, displayed_name):
     '''
     Insert the new item with given name at the sorted position and return the index of
     the item.
@@ -160,9 +165,9 @@ class CapabilityHeader(QtGui.QHeaderView):
     @return: index of the inserted item
     @rtype: C{int}
     '''
-    new_dict = {'cfgs' : [], 'name': name, 'type' : '', 'description' : '', 'images' : []}
+    new_dict = {'cfgs' : [], 'name': name, 'displayed_name' : displayed_name, 'type' : '', 'description' : '', 'images' : []}
     for index, item in enumerate(self._data):
-      if item['name'].lower() > name.lower():
+      if item['displayed_name'].lower() > displayed_name.lower():
         self._data.insert(index, new_dict)
         return index
     self._data.append(new_dict)
@@ -303,36 +308,37 @@ class CapabilityTable(QtGui.QTableWidget):
     '''
     # if it is a new host add a new column
     robot_index = self._robotHeader.index(host)
+    robot_name = description.robot_name if description.robot_name else host
     if robot_index == -1:
       # append a new robot
-      robot_index = self._robotHeader.insertSortedItem(host)
+      robot_index = self._robotHeader.insertSortedItem(host, robot_name)
       self.insertColumn(robot_index)
 #      robot_index = self.columnCount()-1
 #      self._robotHeader.insertItem(robot_index)
-      self._robotHeader.setDescription(robot_index, cfg_name, host, description.robot_type, description.robot_descr.replace("\\n ", "\n"), description.robot_images)
+      self._robotHeader.setDescription(robot_index, cfg_name, host, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
       item = QtGui.QTableWidgetItem()
       item.setSizeHint(QtCore.QSize(96,96))
       self.setHorizontalHeaderItem(robot_index, item)
-      self.horizontalHeaderItem(robot_index).setText(description.robot_name if description.robot_name else host)
+      self.horizontalHeaderItem(robot_index).setText(robot_name)
     else:
       #update
-      self._robotHeader.setDescription(robot_index, cfg_name, host, description.robot_type, description.robot_descr.replace("\\n ", "\n"), description.robot_images)
+      self._robotHeader.setDescription(robot_index, cfg_name, host, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
     
     #set the capabilities
     for c in description.capabilities:
-      cap_index = self._capabilityHeader.index(c.name)
+      cap_index = self._capabilityHeader.index(c.name.decode(sys.getfilesystemencoding()))
       if cap_index == -1:
         # append a new capability
-        cap_index = self._capabilityHeader.insertSortedItem(c.name)
+        cap_index = self._capabilityHeader.insertSortedItem(c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()))
         self.insertRow(cap_index)
         self.setRowHeight(cap_index, 96)
-        self._capabilityHeader.setDescription(cap_index, cfg_name, c.name, c.type, c.description.replace("\\n ", "\n"), c.images)
+        self._capabilityHeader.setDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
         item = QtGui.QTableWidgetItem()
         item.setSizeHint(QtCore.QSize(96,96))
         self.setVerticalHeaderItem(cap_index, item)
-        self.verticalHeaderItem(cap_index).setText(c.name)
+        self.verticalHeaderItem(cap_index).setText(c.name.decode(sys.getfilesystemencoding()))
       else:
-        self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name, c.type, c.description.replace("\\n ", "\n"), c.images)
+        self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
 
       # add the capability control widget
       controlWidget = CapabilityControlWidget(host, cfg_name, c.nodes)

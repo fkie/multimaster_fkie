@@ -36,20 +36,14 @@
 
    <rosparam param="robots" tag="Format: [Name (name of the host), Type, Displayed name, Image, Description in as 'reStructeredText']">
       [
-      ["abckiste", "UGV", "Kutusow2 (Longcross)", "images/abckiste.png", "Kiste mit ABC Sensoren"],
-      ["tiderko", "Workstation", "tiderko", "images/veryicon_devcom_workstation.png", "Arbeitsrechner\n\n|ws|\n\n.. |ws| image:: images/veryicon_devcom_workstation.png\n"],
-      ["tiderko4", "Notebook", "tiderko4", "images/crystal_clear_app_klaptop.png", "Notebook\n\n|nb|\n\n.. |nb| image:: images/crystal_clear_app_klaptop.png\n"]
+      ["tiderko", "Workstation", "pc", "images/crystal_clear_app_klaptop.png", "Notebook\n\n|nb|\n\n.. |nb| image:: images/crystal_clear_app_klaptop.png\n"]
       ]
    </rosparam>
 
-  <!-- machine name="second_local_robot" address="tiderko" />
+  <machine name="robot" address="tiderko" />
+  <machine name="control station" address="tiderko4" />
 
-  <node machine="second_local_robot" name="default_cfg" ns="second_robot" pkg="default_cfg_fkie" type="default_cfg">
-    <param name="capability_group" value="Management"/>
-    <param name="package" value="node_manager_fkie"/>
-    <param name="launch_file" value="description_example.launch"/>
-  </node-->
-
+  <group ns="example">
 
   <node name="master_sync" pkg="master_sync_fkie" type="master_sync">
     <param name="capability_group" value="Management"/>
@@ -61,40 +55,49 @@
     <param name="capability_group" value="Management"/>
   </node>
   
-  <node name="hokuyo" pkg="rostopic" type="rostopic" args="pub /description_example/hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+  <node machine="robot" name="hokuyo" pkg="rostopic" type="rostopic" args="pub /description_example/hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
     <param name="capability_group" value="Hokuyo"/>
   </node>
 
-  <node name="velodyne" pkg="rostopic" type="rostopic" args="pub /description_example/velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+  <node machine="robot" name="velodyne" pkg="rostopic" type="rostopic" args="pub /description_example/velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
     <param name="capability_group" value="Velodyne"/>
   </node>
 
-  <node name="velodyne_helper" pkg="rostopic" type="rostopic" args="echo /description_example/velodyne_scan">
+  <node machine="robot" name="velodyne_helper" pkg="rostopic" type="rostopic" args="echo /description_example/velodyne_scan">
     <param name="capability_group" value="Velodyne"/>
   </node>
 
-  <node name="joy" pkg="rostopic" type="rostopic" args="pub /description_example/joy std_msgs/String -r 1 'joy'">
+  <node machine="robot" name="joy" pkg="rostopic" type="rostopic" args="pub /description_example/joy std_msgs/String -r 1 'joy'">
     <param name="capability_group" value="Joystick"/>
   </node>
 
-  <node name="joy_mapper" pkg="rostopic" type="rostopic" args="echo /description_example/joy">
+  <node machine="robot" name="joy_mapper" pkg="rostopic" type="rostopic" args="echo /description_example/joy">
     <param name="capability_group" value="Joystick"/>
   </node>
 
-  <node name="gps" pkg="rostopic" type="rostopic" args="pub /description_example/gps std_msgs/String -r 1 'gps'">
+  <node machine="robot" name="gps" pkg="rostopic" type="rostopic" args="pub /description_example/gps std_msgs/String -r 1 'gps'">
     <param name="capability_group" value="GPS"/>
   </node>
-  <node name="gps_tf" pkg="rostopic" type="rostopic" args="echo /description_example/gps">
+  <node machine="robot" name="gps_tf" pkg="rostopic" type="rostopic" args="echo /description_example/gps">
     <param name="capability_group" value="GPS"/>
   </node>
 
-  <node name="base" pkg="rostopic" type="rostopic" args="pub /description_example/base std_msgs/String -r 1 'base'">
+  <node machine="robot" name="base" pkg="rostopic" type="rostopic" args="pub /description_example/base std_msgs/String -r 1 'base'">
     <param name="capability_group" value="Base"/>
   </node>
 
-  <node name="local_navigation" pkg="rostopic" type="rostopic" args="echo /description_example/base">
+  <node machine="robot" name="local_navigation" pkg="rostopic" type="rostopic" args="echo /description_example/base">
     <param name="capability_group" value="Local Navigation"/>
   </node>
 
+  <node machine="control station" name="rviz" pkg="rviz" type="rviz">
+    <param name="capability_group" value="GUI"/>
+  </node>
+
+  <node machine="control station" name="map" pkg="rostopic" type="rostopic" args="pub /description_example/base std_msgs/String -r 1 'map'">
+    <param name="capability_group" value="Map"/>
+  </node>
+  
+  </group>
 
 </launch>

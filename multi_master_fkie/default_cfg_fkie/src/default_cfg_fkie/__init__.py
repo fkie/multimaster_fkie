@@ -38,7 +38,6 @@ __license__ = "BSD"
 __version__ = "0.1"
 __date__ = "2012-04-01"
 
-import os
 import sys
 
 import roslib; roslib.load_manifest('default_cfg_fkie')
@@ -83,10 +82,16 @@ def main():
   package = rospy.get_param('~package', '')
   argv = rospy.get_param('~argv', '')
   default_cfg = DefaultCfg()
+#  try:
   try:
     default_cfg.load(package, launch_file, argv)
   except:
+    # on load error the process will be killed to notify user in node_manager
+    # about error
     import traceback
-    traceback.print_exc()
-    print "No configuration loaded! Use ~load service to load a configuration!"
+    print traceback.format_exc()
+    import os, signal
+    os.kill(os.getpid(), signal.SIGKILL)
+    import time
+    time.sleep(10)
   rospy.spin()

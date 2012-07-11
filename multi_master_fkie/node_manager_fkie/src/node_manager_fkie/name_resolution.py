@@ -57,7 +57,20 @@ class NameResolution(object):
       self.mutex.acquire()
       for s in list(self._hosts):
         if (name, 'name') in s or (masteruri, 'uri') in s or (host, 'host') in s:
-          self._hosts.remove(s)
+          try:
+            s.remove((name, 'name'))
+          except:
+            pass
+          try:
+            s.remove((masteruri, 'uri'))
+          except:
+            pass
+          try:
+            s.remove((host, 'host'))
+          except:
+            pass
+          if len(s) < 2:
+            self._hosts.remove(s)
     finally:
       self.mutex.release()
   
@@ -134,9 +147,14 @@ class NameResolution(object):
       new_set = set([(name, id) for name, id in [(masteruri, 'uri'), (host, 'host')] if not name is None])
       for s in self._hosts:
         if new_set&s:
+          result = ''
           for value, id in list(s):
             if id == 'name':
-              return value
+              if result:
+                result = ''.join([result, ', '])
+              result = ''.join([result, value])
+          if result:
+            return result
       return None
     finally:
       self.mutex.release()

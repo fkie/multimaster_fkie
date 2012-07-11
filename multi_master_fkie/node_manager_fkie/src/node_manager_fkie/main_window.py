@@ -52,6 +52,8 @@ from launch_list_model import LaunchListModel
 from master_view_proxy import MasterViewProxy
 from launch_config import LaunchConfig, LaunchConfigException
 from capability_table import CapabilityTable
+from xml_editor import XmlEditor
+
 import node_manager_fkie as nm
 
 from master_discovery_fkie.msg import *
@@ -68,10 +70,12 @@ class MainWindow(QtGui.QMainWindow):
     Creates the window, connects the signals and init the class.
     '''
     QtGui.QMainWindow.__init__(self)
-    self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
+    #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
     loader = QtUiTools.QUiLoader()
+    self.setObjectName('MainWindow')
     self.ui = mainWindow = loader.load(":/forms/MainWindow.ui")
+    self.ui.setObjectName('MainUI')
     self.ui.masterInfoFrame.setEnabled(False)
     self.ui.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
     self.ui.runButton.clicked.connect(self.on_run_node_clicked)
@@ -87,9 +91,13 @@ class MainWindow(QtGui.QMainWindow):
     
     # init the stack layout which contains the information about different ros master
     self.stackedLayout = QtGui.QStackedLayout()
-    self.stackedLayout.addWidget(QtGui.QWidget())
+    self.stackedLayout.setObjectName('stackedLayout')
+    emptyWidget = QtGui.QWidget()
+    emptyWidget.setObjectName('emptyWidget')
+    self.stackedLayout.addWidget(emptyWidget)
     self.ui.tabWidget.currentChanged.connect(self.on_currentChanged_tab)
     self.ui.tabLayout = QtGui.QVBoxLayout(self.ui.tabPlace)
+    self.ui.tabLayout.setObjectName("tabLayout")
     self.ui.tabLayout.setContentsMargins(0, 0, 0, 0)
     self.ui.tabLayout.addLayout(self.stackedLayout)
 
@@ -242,13 +250,14 @@ class MainWindow(QtGui.QMainWindow):
     @type masteruri: C{str}
     '''
     if self.masters.has_key(masteruri):
-      self.currentMaster = None
-      self.stackedLayout.setCurrentIndex(0)
-      self.ui.masterInfoFrame.setEnabled(False)
-      self.on_master_timecheck()
+      if not self.currentMaster is None and self.currentMaster.masteruri == masteruri:
+        self.currentMaster = None
+        self.stackedLayout.setCurrentIndex(0)
+        self.on_master_timecheck()
       self.stackedLayout.removeWidget(self.masters[masteruri])
+      self.ui.tabPlace.layout().removeWidget(self.masters[masteruri])
+      self.masters[masteruri].setParent(None)
       del self.masters[masteruri]
-    #todo update the tab View?
 
   def getMaster(self, masteruri):
     '''
@@ -263,6 +272,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].capabilities_update_signal.connect(self.on_capabilities_update)
       self.masters[masteruri].remove_config_signal.connect(self.on_remove_config)
       self.masters[masteruri].description_signal.connect(self.on_description_update)
+      self.masters[masteruri].request_xml_editor.connect(self._editor_dialog_open)
       self.stackedLayout.addWidget(self.masters[masteruri])
     return self.masters[masteruri]
 
@@ -364,21 +374,18 @@ class MainWindow(QtGui.QMainWindow):
     '''
     if msg.state == master_discovery_fkie.msg.MasterState.STATE_CHANGED:
       nm.nameres().add(name=msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
-      self.ui.masternameLabel.setEnabled(True)
       self.getMaster(msg.master.uri).master_state = msg.master
       self.master_model.updateMaster(msg.master)
       self.ui.masterListView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
     if msg.state == master_discovery_fkie.msg.MasterState.STATE_NEW:
       nm.nameres().add(name=msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
-      self.ui.masternameLabel.setEnabled(True)
       self.getMaster(msg.master.uri).master_state = msg.master
       self.master_model.updateMaster(msg.master)
       self.ui.masterListView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
     if msg.state == master_discovery_fkie.msg.MasterState.STATE_REMOVED:
       nm.nameres().remove(name=msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
-      self.ui.masternameLabel.setEnabled(False)
       self.master_model.removeMaster(msg.master.name)
       self.ui.masterListView.doItemsLayout()
       self.removeMaster(msg.master.uri)
@@ -416,7 +423,6 @@ class MainWindow(QtGui.QMainWindow):
               self._setLocalMonitoring(True)
               self.currentMaster = master
               self.stackedLayout.setCurrentWidget(master)
-              self.ui.masterInfoFrame.setEnabled(True)
               self.on_master_timecheck()
           # update the list view, whether master is synchronized or not
           if not master.master_info is None and master.master_info.masteruri == minfo.masteruri:
@@ -543,6 +549,8 @@ class MainWindow(QtGui.QMainWindow):
       icon = QtGui.QIcon()
       self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
       self.ui.imageLabel.setToolTip('')
+    self.ui.masternameLabel.setEnabled(online)
+    self.ui.masterInfoFrame.setEnabled((not timestamp is None))
 
   def timestampStr(self, timestamp):
     dt = datetime.fromtimestamp(timestamp)
@@ -583,8 +591,6 @@ class MainWindow(QtGui.QMainWindow):
       if index.row() == selected.row():
         item = self.master_model.itemFromIndex(selected)
         if not item is None:
-          self.ui.masterInfoFrame.setEnabled(True)
-          self.ui.masternameLabel.setEnabled(True)
           self.currentMaster = self.getMaster(item.master.uri)
           self.stackedLayout.setCurrentWidget(self.currentMaster)
           self.on_master_timecheck()
@@ -667,17 +673,6 @@ class MainWindow(QtGui.QMainWindow):
         f.write(''.join([host, '\n']))
     f.closed
 
-#  def on_clear_master_selection(self):
-#    if not self.ui.masterListView.selectionModel() is None:
-#      self.ui.masterListView.selectionModel().clear()
-#    self.ui.masterInfoFrame.setEnabled(False)
-##    self.ui.closeCfgButton.setEnabled(False)
-##    self.ui.tabWidget.setEnabled(False)
-#    self.currentMaster = None
-#    self.ui.tabPlace.layout().clear()
-#    self.ui.nodesView.setModel(self.empty_node_tree_model)
-#    self.ui.nodesView.model().setSourceModel(self.empty_node_tree_model)
-
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Handling of the launch file view      %%%%%%%%
@@ -716,24 +711,31 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Opens an XML editor to edit the launch file. 
     '''
-    from xml_editor import XmlEditor
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
       path = self.ui.xmlFileView.model().getFilePath(pathItem)
       if not path is None:
-        if self.editor_dialogs.has_key(path):
-          self.editor_dialogs[path].on_load_request(path, '')
-          self.editor_dialogs[path].activateWindow()
-        else:
-          editor = XmlEditor([path], '', self)
-          self.editor_dialogs[path] = editor
-          editor.finished_signal.connect(self._editor_dialog_closed)
-          editor.show()
+        self._editor_dialog_open([path], '')
+
+  def _editor_dialog_open(self, files, search_text):
+    if files:
+      path = files[0]
+      if self.editor_dialogs.has_key(path):
+        last_path = files[-1]
+        self.editor_dialogs[path].on_load_request(last_path, search_text)
+        self.editor_dialogs[path].activateWindow()
+      else:
+        editor = XmlEditor(files, search_text, self)
+        self.editor_dialogs[path] = editor
+        editor.finished_signal.connect(self._editor_dialog_closed)
+        editor.show()
 
   def _editor_dialog_closed(self, files):
     if self.editor_dialogs.has_key(files[0]):
-      del self.editor_dialogs[files[0]]
+      self.editor_dialogs[files[0]].setParent(None)
+      item = self.editor_dialogs.pop(files[0])
+      del item
 
   def on_load_xml_clicked(self):
     '''

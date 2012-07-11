@@ -35,43 +35,102 @@ from PySide import QtGui
 
 import roslib
 
-class ParameterItem(QtGui.QStandardItem):
+class ParameterValueItem(QtGui.QStandardItem):
   '''
   The parameter item is stored in the parameter model. This class stores the name 
-  and value of a parameter of ROS parameter server. The name of the parameter is 
-  represented in HTML.
+  and value of a parameter of ROS parameter server and shows the value.
+  '''
+
+  ITEM_TYPE = QtGui.QStandardItem.UserType + 39
+
+  def __init__(self, name, value, parent=None):
+    '''
+    Initialize the item object.
+    @param name: the name of the parameter
+    @type name: C{str}
+    @param value: the value of the parameter
+    @type value: C{str}
+    '''
+    QtGui.QStandardItem.__init__(self, unicode(value))
+    self._name = name
+    '''@ivar: the name of parameter '''
+    self._value = value
+    '''@ivar: the value of the parameter '''
+
+  @property
+  def name(self):
+    return self._name
+
+  @property
+  def value(self):
+    return self._value
+
+  @value.setter
+  def value(self, value):
+    self._value = value
+    self.setText(unicode(value))
+
+  def type(self):
+    return ParameterValueItem.ITEM_TYPE
+
+
+  def __eq__(self, item):
+    '''
+    Compares the value of parameter.
+    '''
+    if isinstance(item, str) or isinstance(item, unicode):
+      return unicode(self.value) == item
+    elif not (item is None):
+      return unicode(self.value) == unicode(item.value)
+    return False
+
+  def __gt__(self, item):
+    '''
+    Compares the value of parameter.
+    '''
+    if isinstance(item, str) or isinstance(item, unicode):
+      return unicode(self.value) > item
+    elif not (item is None):
+      return unicode(self.value) > unicode(item.value)
+    return False
+
+class ParameterNameItem(QtGui.QStandardItem):
+  '''
+  The parameter item is stored in the parameter model. This class stores the name 
+  and value of a parameter of ROS parameter server and shows the name.
   '''
 
   ITEM_TYPE = QtGui.QStandardItem.UserType + 38
 
-  def __init__(self, key, value, parent=None):
+  def __init__(self, name, value, parent=None):
     '''
     Initialize the item object.
-    @param key: the name of the parameter
-    @type key: C{str}
+    @param name: the name of the parameter
+    @type name: C{str}
     @param value: the value of the parameter
     @type value: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(key))
-    self.key = key
+    QtGui.QStandardItem.__init__(self, self.toHTML(name))
+    self._name = name
     '''@ivar: the name of parameter '''
-    self.value = value
+    self._value = value
     '''@ivar: the value of the parameter '''
 
-  def updateParameterView(self, parent):
-    '''
-    Updates the view of the parameter on changes.
-    @param parent: the item containing this item
-    @type parent: L{PySide.QtGui.QStandardItem}
-    '''
-    if not parent is None:
-      # update type view
-      child = parent.child(self.row(), 1)
-      if not child is None:
-        self.updateValueView(self.value, child)
+  @property
+  def name(self):
+    return self._name
+
+  @property
+  def value(self):
+    return self._value
+
+  @value.setter
+  def value(self, value):
+    self._value = value
+    self.setText(str(value))
 
   def type(self):
-    return TopicItem.ITEM_TYPE
+    return ParameterValueItem.ITEM_TYPE
 
   @classmethod
   def toHTML(cls, key):
@@ -90,45 +149,14 @@ class ParameterItem(QtGui.QStandardItem):
       result = name
     return result
 
-  @classmethod
-  def getItemList(self, key, value):
-    '''
-    Creates the list of the items. This list is used for the 
-    visualization of the parameter as a table row.
-    @param key: the parameter name
-    @type key: C{str}
-    @param value: the value of the parameter
-    @type value: each value, that can be converted to C{str} using L{str()}
-    @return: the list for the representation as a row
-    @rtype: C{[L{ParameterItem}, ...]}
-    '''
-    items = []
-    item = ParameterItem(key, value)
-    items.append(item)
-    typeItem = QtGui.QStandardItem(key)
-    ParameterItem.updateValueView(value, typeItem)
-    items.append(typeItem)
-    return items
-
-  @classmethod
-  def updateValueView(cls, value, item):
-    '''
-    Updates the representation of the column contains the value of the parameter.
-    @param value: the value of the parameter
-    @type value: each value, that can be converted to C{str} using L{str()}
-    @param item: corresponding item in the model
-    @type item ServiceItem
-    '''
-    item.setText(str(value))
-
   def __eq__(self, item):
     '''
     Compares the name of parameter.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.key.lower() == item.lower()
+      return self.name.lower() == item.lower()
     elif not (item is None):
-      return self.key.lower() == item.key.lower()
+      return self.name.lower() == item.name.lower()
     return False
 
   def __gt__(self, item):
@@ -136,10 +164,11 @@ class ParameterItem(QtGui.QStandardItem):
     Compares the name of parameter.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.key.lower() > item.lower()
+      return self.name.lower() > item.lower()
     elif not (item is None):
-      return self.key.lower() > item.key.lower()
+      return self.name.lower() > item.name.lower()
     return False
+
 
 
 class ParameterModel(QtGui.QStandardItemModel):
@@ -168,6 +197,8 @@ class ParameterModel(QtGui.QStandardItemModel):
     '''
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
+    if index.column() == 1:
+      return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
   def updateModelData(self, parameters):
@@ -182,7 +213,7 @@ class ParameterModel(QtGui.QStandardItemModel):
     # remove not available items
     for i in reversed(range(root.rowCount())):
       parameterItem = root.child(i)
-      if not parameterItem.key in parameter_names:
+      if not parameterItem.name in parameter_names:
         root.removeRow(i)
     # add new items
     for (name, value) in parameters.items():
@@ -191,13 +222,33 @@ class ParameterModel(QtGui.QStandardItemModel):
         parameterItem = root.child(i)
         if (parameterItem == name):
           # update item
-          parameterItem.value = value
-          parameterItem.updateParameterView(root)
+          parameterValueItem = root.child(i, 1)
+          parameterValueItem.value = value
           doAddItem = False
           break
         elif (parameterItem > name):
-          root.insertRow(i, ParameterItem.getItemList(name, value))
+          root.insertRow(i, self.createParameter(name, value))
           doAddItem = False
           break
       if doAddItem:
-        root.appendRow(ParameterItem.getItemList(name, value))
+        root.appendRow(self.createParameter(name, value))
+
+  def createParameter(self, name, value):
+    '''
+    Creates the list of the items. This list is used for the 
+    visualization of the parameter as a table row.
+    @param name: the parameter name
+    @type name: C{str}
+    @param value: the value of the parameter
+    @type value: each value, that can be converted to C{str} using L{str()}
+    @return: the list for the representation as a row
+    @rtype: C{[L{ParameterNameItem}, L{ParameterValueItem}]}
+    '''
+    items = []
+    item = ParameterNameItem(name, value)
+    item.setEditable(False)
+    items.append(item)
+    itemValue = ParameterValueItem(name, value)
+    itemValue.setEditable(True)
+    items.append(itemValue)
+    return items

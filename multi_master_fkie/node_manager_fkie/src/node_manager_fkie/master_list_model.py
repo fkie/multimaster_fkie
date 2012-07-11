@@ -233,6 +233,15 @@ class MasterModel(QtGui.QStandardItemModel):
     @param master: the ROS master to update
     @type master: L{master_discovery_fkie.msg.ROSMaster}
     '''
+    # remove master, if his name was changed but not the ROS master URI
+    root = self.invisibleRootItem()
+    for i in reversed(range(root.rowCount())):
+      masterItem = root.child(i)
+      if masterItem.master.uri == master.uri and masterItem.master.name != master.name:
+        root.removeRow(i)
+        break
+    
+    # update or add a the item
     root = self.invisibleRootItem()
     doAddItem = True
     for i in range(root.rowCount()):

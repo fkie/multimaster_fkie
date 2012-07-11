@@ -163,7 +163,7 @@ class ServiceThread(QtCore.QObject, threading.Thread):
   def run(self):
     '''
     '''
-    if self._service:
+    if self._service and self._service_uri:
       try:
         req, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
       except:

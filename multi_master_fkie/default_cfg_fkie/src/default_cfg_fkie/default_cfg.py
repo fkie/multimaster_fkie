@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import sys
 import shlex
 import subprocess
 import xmlrpclib
@@ -69,7 +70,7 @@ class DefaultCfg(object):
     self.file = ''
     self.__lock = threading.RLock()
     # initialize the ROS services
-    rospy.Service('~load', LoadLaunch, self.rosservice_load_launch)
+#    rospy.Service('~load', LoadLaunch, self.rosservice_load_launch)
     rospy.Service('~description', ListDescription, self.rosservice_description)
     self.runService = None
     '''@ivar: The service will be created on each load of a launch file to
@@ -78,7 +79,7 @@ class DefaultCfg(object):
     '''@ivar: The service will be created on each load of a launch file to
     inform the caller about a new configuration. '''
     self.description_response = ListDescriptionResponse()
-    self.global_parameter_setted = False
+#    self.global_parameter_setted = False
 
   
   def load(self, package, file, argv):
@@ -131,16 +132,18 @@ class DefaultCfg(object):
               for entry in p.value:
                 try:
                   if roslib.network.is_local_address(entry[0]):
-                    dr.robot_name = entry[2]
+                    dr.robot_name = self._decode(entry[2])
                     dr.robot_type = entry[1]
                     dr.robot_images = entry[3].split()
-                    dr.robot_descr = entry[4]
+                    dr.robot_descr = self._decode(entry[4])
                     break
                 except:
                   pass
       # get the sensor description
       tmp_cap_dict = self.getCapabilitiesDesrc()
       for machine, ns_dict in tmp_cap_dict.items():
+        if self.roscfg.machines.has_key(machine):
+          machine = self.roscfg.machines[machine].address
         if not machine or roslib.network.is_local_address(machine):
           for ns, group_dict in ns_dict.items():
             for group, descr_dict in group_dict.items():
@@ -154,15 +157,35 @@ class DefaultCfg(object):
                 cap.nodes = list(descr_dict['nodes'])
                 dr.capabilities.append(cap)
       # initialize the ROS services
+      self._timed_service_creation()
       #HACK to let the node_manager to update the view
-      t = threading.Timer(2.0, self._timed_service_creation)
-      t.start()
+#      t = threading.Timer(2.0, self._timed_service_creation)
+#      t.start()
+      self.loadParams()
   #    self.timer = rospy.Timer(rospy.Duration(2), self.timed_service_creation, True)
   #    if self.nodes:
   #      self.runService = rospy.Service('~run', Task, self.rosservice_start_node)
-  #    self.listService = rospy.Service('~list_nodes', ListNodes, self.rosservice_list_nodes)
+  #    self.listServic = rospy.Service('~list_nodes', ListNodes, self.rosservice_list_nodes)
+#    except:
+#      import traceback
+#      print traceback.format_exc()
     finally:
       self.__lock.release()
+
+  def _decode(self, val):
+    '''
+    Replaces the '\\n' by '\n' and decode the string entry from system default 
+    coding to unicode.
+    @param val: the string coding as system default
+    @return: the decoded string
+    @rtype: C{unicode} or original on error
+    '''
+    result = val.replace("\\n ", "\n")
+    try:
+      result = result.decode(sys.getfilesystemencoding())
+    except:
+      pass
+    return result
 
   def getCapabilitiesDesrc(self):
     '''
@@ -188,39 +211,35 @@ class DefaultCfg(object):
                 for entry in p.value:
                   if not result[m].has_key(ns):
                     result[m][ns] = dict()
-                  descr = entry[3].replace("\\n ", "\n")
-                  try:
-                    descr = str(descr) 
-                  except:
-                    pass
-                  result[m][ns][entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : descr, 'nodes' : [] }
+                  result[m][ns][self._decode(entry[0])] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3]), 'nodes' : [] }
       # get the capability nodes
       for param, p in self.roscfg.params.items():
         if param.endswith('capability_group'):
+          value = self._decode(p.value)
           param_node = roslib.names.namespace(param).rstrip(roslib.names.SEP)
           if not param_node:
             param_node = roslib.names.SEP
           # get the nodes with groups
           for item in self.roscfg.nodes:
-            ns = str(item.namespace)
-            node_fullname = str(roslib.names.ns_join(ns, item.name))
+            node_fullname = str(roslib.names.ns_join(item.namespace, item.name))
             machine_name = item.machine_name if not item.machine_name is None else ''
             added = False
             if node_fullname == param_node:
               if not result.has_key(machine_name):
                 result[machine_name] = dict()
               for (ns, groups) in result[machine_name].items():
-                if groups.has_key(p.value):
-                  groups[p.value]['nodes'].append(node_fullname)
+                if groups.has_key(value):
+                  groups[value]['nodes'].append(node_fullname)
                   added = True
                   break
               if not added:
+                ns = str(item.namespace)
                 # add new group in the namespace of the node
                 if not result[machine_name].has_key(ns):
                   result[machine_name][ns] = dict()
-                if not result[machine_name][ns].has_key(p.value):
-                  result[machine_name][ns][p.value] = { 'type' : '', 'images' : [], 'description' : '', 'nodes' : [] }
-                result[machine_name][ns][p.value]['nodes'].append(node_fullname)
+                if not result[machine_name][ns].has_key(value):
+                  result[machine_name][ns][value] = { 'type' : '', 'images' : [], 'description' : '', 'nodes' : [] }
+                result[machine_name][ns][value]['nodes'].append(node_fullname)
     return result
 
   def _masteruri_from_ros(self):
@@ -292,16 +311,16 @@ class DefaultCfg(object):
 #      return TaskResponse(str(traceback.format_exc().splitlines()[-1]))
 #    return TaskResponse('')
 
-  def rosservice_load_launch(self, req):
-    '''
-    Load the launch file
-    '''
-    try:
-      self.__lock.acquire()
-      self.load(req.package, req.file, req.argv)
-    finally:
-      self.__lock.release()
-    return []
+#  def rosservice_load_launch(self, req):
+#    '''
+#    Load the launch file
+#    '''
+#    try:
+#      self.__lock.acquire()
+#      self.load(req.package, req.file, req.argv)
+#    finally:
+#      self.__lock.release()
+#    return []
 
   def rosservice_description(self, req):
     '''
@@ -322,7 +341,18 @@ class DefaultCfg(object):
 #        for type, name, descr in descr_list:
 #          result.items.append(Description(Description.ID_SENSOR, node, type, name, descr))
     return result
-    
+  
+  def loadParams(self):
+    '''
+    Loads all parameter into ROS parameter server.
+    '''
+    params = dict()
+    for param, value in self.roscfg.params.items():
+      params[param] = value
+#      rospy.loginfo("register PARAMS:\n%s", '\n'.join(params))
+    self._load_parameters(self.masteruri, params, self.roscfg.clear_params)
+
+  
   def runNode(self, node):
     '''
     Start the node with given name from the currently loaded configuration.
@@ -357,26 +387,6 @@ class DefaultCfg(object):
       #TODO: env-loader support?
 #      if machine.env_args:
 #        env[len(env):] = machine.env_args
-
-    # set the global parameter
-    if not self.global_parameter_setted:
-      global_node_names = self.getGlobalParams(self.roscfg)
-      self._load_parameters(masteruri, global_node_names, [])
-      self.global_parameter_setted = True
-
-    # add params
-    nodens = ''.join([n.namespace, n.name, '/'])
-    params = dict()
-    for param, value in self.roscfg.params.items():
-      if param.startswith(nodens):
-        params[param] = value
-    clear_params = []
-    for cparam in self.roscfg.clear_params:
-      if cparam.startswith(nodens):
-        clear_params.append(param)
-      rospy.loginfo("register PARAMS:\n%s", '\n'.join(params))
-    self._load_parameters(masteruri, params, clear_params)
-
 
 #    nm.screen().testScreen()
     try:
@@ -428,29 +438,29 @@ class DefaultCfg(object):
       import roslib.rosenv
       return roslib.rosenv.get_ros_home()
 
-  @classmethod
-  def getGlobalParams(cls, roscfg):
-    '''
-    Return the parameter of the configuration file, which are not associated with 
-    any nodes in the configuration.
-    @param roscfg: the launch configuration
-    @type roscfg: L{roslaunch.ROSLaunchConfig}
-    @return: the list with names of the global parameter
-    @rtype: C{dict(param:value, ...)}
-    '''
-    result = dict()
-    nodes = []
-    for item in roscfg.resolved_node_names:
-      nodes.append(item)
-    for param, value in roscfg.params.items():
-      nodesparam = False
-      for n in nodes:
-        if param.startswith(n):
-          nodesparam = True
-          break
-      if not nodesparam:
-        result[param] = value
-    return result
+#  @classmethod
+#  def getGlobalParams(cls, roscfg):
+#    '''
+#    Return the parameter of the configuration file, which are not associated with 
+#    any nodes in the configuration.
+#    @param roscfg: the launch configuration
+#    @type roscfg: L{roslaunch.ROSLaunchConfig}
+#    @return: the list with names of the global parameter
+#    @rtype: C{dict(param:value, ...)}
+#    '''
+#    result = dict()
+#    nodes = []
+#    for item in roscfg.resolved_node_names:
+#      nodes.append(item)
+#    for param, value in roscfg.params.items():
+#      nodesparam = False
+#      for n in nodes:
+#        if param.startswith(n):
+#          nodesparam = True
+#          break
+#      if not nodesparam:
+#        result[param] = value
+#    return result
 
   @classmethod
   def _load_parameters(cls, masteruri, params, clear_params):

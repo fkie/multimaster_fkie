@@ -383,7 +383,7 @@ class Discoverer(threading.Thread):
                 # update the timestamp of existing master
                 elif self.masters.has_key(address[0]):
                   self.__lock.acquire(True)
-                  self.masters[address[0]].addHeartbeat(secs, float(rate)/10.0)
+                  self.masters[address[0]].addHeartbeat(float(secs)+float(nsecs)/1000000000.0, float(rate)/10.0)
                   self.__lock.release()
                 # or create a new master
                 else:
@@ -391,7 +391,7 @@ class Discoverer(threading.Thread):
                   self.__lock.acquire(True)
                   self.masters[address[0]] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                               heartbeat_rate=float(rate)/10.0,
-                                                              timestamp=float(secs)+float(nsecs)/1000000000,
+                                                              timestamp=float(secs)+float(nsecs)/1000000000.0,
                                                               callback_master_state=self.publish_masterstate)
                   self.__lock.release()
             else:

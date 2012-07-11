@@ -36,6 +36,7 @@ from PySide import QtCore
 from PySide import QtGui
 
 import roslib
+import rospy
 import node_manager_fkie as nm
 from master_discovery_fkie.master_info import NodeInfo 
 
@@ -413,6 +414,18 @@ class GroupItem(QtGui.QStandardItem):
       self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     elif not has_off and has_running:
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+  
+  def _create_html_list(self, title, items):
+    result = ''
+    if items:
+      result = ''.join([result, '<b><u>', title,'</u></b>'])
+      if len(items) > 1:
+        result = ''.join([result, ' [', str(len(items)),']'])
+      result = ''.join([result, '<ul>'])
+      for i in items:
+        result = ''.join([result, '<li>', i, '</li>'])
+      result = ''.join([result, '</ul>'])
+    return result
 
   def updateTooltip(self):
     '''
@@ -422,35 +435,34 @@ class GroupItem(QtGui.QStandardItem):
     @return: the tooltip description coded as a HTML part 
     @rtype: C{str}
     '''
+    tooltip = self.generateDescription(False)
+    self.setToolTip(tooltip if tooltip else self.name)
+    return tooltip
+  
+  def generateDescription(self, extended=True):
     tooltip = ''
     if self.descr_type or self.descr_name or self.descr:
       tooltip = ''.join(['<h4>', self.descr_name, '</h4><dl>'])
       if self.descr_type:
         tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
-      try:
-        from docutils import examples
-        if self.descr:
-          tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-          tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
-      except:
-        import traceback
-        rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
-        tooltip = ''.join([tooltip, '<br>'])
-    # get nodes
-    nodes = []
-    for j in range(self.rowCount()):
-      nodes.append(self.child(j).name)
-    if nodes:
-      tooltip = ''.join([tooltip, '<b><u>Nodes:</u></b>'])
-      try:
-        from docutils import examples
-        tooltip = ''.join([tooltip, examples.html_body(''.join(['- ', '\n- '.join(nodes)]), input_encoding='utf8')])
-      except:
-        import traceback
-        rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
-    self.setToolTip(''.join(['<div>', tooltip, '</div>']) if tooltip else self.name)
+      if extended:
+        try:
+          from docutils import examples
+          if self.descr:
+            tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
+            tooltip = ''.join([tooltip, examples.html_body(self.descr)])
+        except:
+          import traceback
+          rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
+          tooltip = ''.join([tooltip, '<br>'])
+      # get nodes
+      nodes = []
+      for j in range(self.rowCount()):
+        nodes.append(self.child(j).name)
+      if nodes:
+        tooltip = ''.join([tooltip, self._create_html_list('Nodes:', nodes)])
     return ''.join(['<div>', tooltip, '</div>']) if tooltip else ''
-  
+
   def updateDescription(self, descr_type, descr_name, descr):
     '''
     Sets the description of the robot. To update the tooltip of the host item use L{updateTooltip()}.
@@ -516,7 +528,7 @@ class GroupItem(QtGui.QStandardItem):
     ns, sep, name = group_name.rpartition('/')
     result = ''
     if sep:
-      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>[', name, ']</b></div>'])
+      result = ''.join(['<div>', '<span style="color:gray;">', ns, sep, '</span><b>[', name, ']</b></div>'])
     else:
       result = name
     return result
@@ -556,18 +568,19 @@ class HostItem(GroupItem):
   '''
   ITEM_TYPE = QtCore.Qt.UserRole + 26
   
-  def __init__(self, name, masteruri, local, parent=None):
+  def __init__(self, address, local, parent=None):
     '''
     Initialize the HostItem object with given values.
-    @param name: the name of the host
-    @type name: C{str}
-    @param masteruri: the URI of ROS master located at this host
-    @type masteruri: C{str}
+    @param address: the address of the host
+    @type address: C{str}
     @param local: is this host the localhost where the node_manager is running.
     @type local: C{bool}
     '''
+    name = nm.nameres().getName(host=address)
+    if not name:
+      name = address
     GroupItem.__init__(self, NodeItem.toHTML(name), parent)
-    self.masteruri = masteruri
+    self.address = address
     if QtCore.QFile.exists(''.join([nm.ROBOTS_DIR, name, '.png'])):
       self.setIcon(QtGui.QIcon(''.join([nm.ROBOTS_DIR, name, '.png'])))
     else:
@@ -585,20 +598,26 @@ class HostItem(GroupItem):
     @return: the tooltip description coded as a HTML part 
     @rtype: C{str}
     '''
+    tooltip = self.generateDescription(False)
+    self.setToolTip(tooltip if tooltip else self.name)
+    return tooltip
+  
+  def generateDescription(self, extended=True):
     tooltip = ''
     if self.descr_type or self.descr_name or self.descr:
       tooltip = ''.join(['<h4>', self.descr_name, '</h4><dl>'])
       if self.descr_type:
         tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
-      try:
-        from docutils import examples
-        if self.descr:
-          tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-          tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
-      except:
-        import traceback
-        rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
-        tooltip = ''.join([tooltip, '<br>'])
+      if extended:
+        try:
+          from docutils import examples
+          if self.descr:
+            tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
+            tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
+        except:
+          import traceback
+          rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
+          tooltip = ''.join([tooltip, '<br>'])
     # get sensors
     capabilities = []
     for j in range(self.rowCount()):
@@ -613,11 +632,31 @@ class HostItem(GroupItem):
       except:
         import traceback
         rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
-    self.setToolTip(''.join(['<div>', tooltip, '</div>']) if tooltip else self.name)
     return ''.join(['<div>', tooltip, '</div>']) if tooltip else ''
   
   def type(self):
     return HostItem.ITEM_TYPE
+
+  def __eq__(self, item):
+    '''
+    Compares the address of the host.
+    '''
+    if isinstance(item, str) or isinstance(item, unicode):
+      return self.address.lower() == item.lower()
+    elif not (item is None):
+      return self.address.lower() == item.name.lower()
+    return False
+
+  def __gt__(self, item):
+    '''
+    Compares the address of the host.
+    '''
+    if isinstance(item, str) or isinstance(item, unicode):
+      return self.address.lower() > item.lower()
+    elif not (item is None):
+      return self.address.lower() > item.name.lower()
+    return False
+
 
 ################################################################################
 ##############                   NodeItem                         ##############
@@ -661,7 +700,7 @@ class NodeItem(QtGui.QStandardItem):
     self._has_running = False
     self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     self._state = NodeItem.STATE_OFF
-  
+
   @property
   def state(self):
     return self._state
@@ -770,7 +809,9 @@ class NodeItem(QtGui.QStandardItem):
     tooltip = ''.join([tooltip, '<dt>PID: ', str(self.node_info.pid), '</dt></dl>'])
     uri = nm.nameres().getUri(host=nm.nameres().getHostname(self.node_info.uri))
     master_discovered = (not uri is None)
-    local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
+    local = False
+    if not self.node_info.uri is None and not self.node_info.masteruri is None:
+      local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
     if not self.node_info.pid is None:
       self._state = NodeItem.STATE_RUN
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
@@ -970,71 +1011,56 @@ class NodeTreeModel(QtGui.QStandardItemModel):
   '''@ivar: the Qt signal, which is emitted, if a new host was inserted. 
   Parameter: L{QtCore.QModelIndex} of the inserted host item'''
 
-  def __init__(self, hostname, masteruri, parent=None):
+  def __init__(self, host_address, masteruri, parent=None):
     '''
     Initialize the model.
     '''
     super(NodeTreeModel, self).__init__(parent)
     self.setColumnCount(len(NodeTreeModel.header))
     self.setHorizontalHeaderLabels([label for label, width in NodeTreeModel.header])
-    self._local_name = hostname
+    self._local_host_address = host_address
 
   @property
-  def local_name(self):
-    return self._local_name
-  
-  @local_name.setter
-  def local_name(self, new_name):
-    if self._local_name != str:
-      # rename the local host
-      root = self.invisibleRootItem()
-      for i in range(root.rowCount()):
-        hostItem = root.child(i)
-        if hostItem == self._local_name:
-          hostItem.name = str
-      self._local_name = str
+  def local_addr(self):
+    return self._local_host_address
 
   def flags(self, index):
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
   
-  def getHostItem(self, mastername, masteruri):
+  def getHostItem(self, address):
     '''
     Searches for the host item in the model. If no item is found a new one will 
     created and inserted in sorted order.
-    @param mastername: the name of the master
-    @type mastername: C{str}
-    @param masteruri: used in case of creation a new host item 
-    @type masteruri: C{str}
+    @param address: used in case of creation a new host item 
+    @type address: C{str}
     @return: the item associated with the given master
     @rtype: L{HostItem}
     '''
-    host = mastername
+    host = address
     if not host:
-      host = self.local_name
-    local = (self.local_name == host)
+      host = self.local_addr
+    local = (self.local_addr == host)
+
+    # find the host item by address
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):
       if root.child(i) == host:
         return root.child(i)
       elif root.child(i) > host:
-        hostItem = HostItem(host, masteruri, local)
+        hostItem = HostItem(address, local)
         self.insertRow(i, hostItem)
         self.hostInserted.emit(hostItem)
         return hostItem
-    hostItem = HostItem(host, masteruri, local)
+    hostItem = HostItem(address, local)
     self.appendRow(hostItem)
     self.hostInserted.emit(hostItem)
     return hostItem
 
-  def updateModelData(self, mastername, masteruri, nodes):
+  def updateModelData(self, nodes):
     '''
     Updates the model data.
-    @param mastername: the displayed name of the host, where the master is running
-    @type mastername: C{str}
-    @param masteruri: the masteruri of ROS assinged the host
-    @type masteruri: C{str}
     @param nodes: a dictionary with name and info objects of the nodes.
     @type nodes: C{dict(str:L{NodeInfo}, ...)}
     '''
@@ -1042,57 +1068,57 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     hosts = dict()
     for (name, node) in nodes.items():
       host = nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri)
-      master_name = nm.nameres().getName(host=host)
-      if not hosts.has_key(master_name):
-        hosts[master_name] = dict()
-      hosts[master_name][name] = node
+      if not hosts.has_key(host):
+        hosts[host] = dict()
+      hosts[host][name] = node
     # update nodes for each host
-    for (name, nodes_filtered) in hosts.items():
-      hostItem = self.getHostItem(name, masteruri)
+    for (host, nodes_filtered) in hosts.items():
+      hostItem = self.getHostItem(host)
+      # rename the host item if needed
+      host_name = nm.nameres().getName(host=host)
+      if host_name and not (hostItem.name == host_name):
+        hostItem.name = host_name
       hostItem.updateRunningNodeState(nodes_filtered)
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not hosts.has_key(host.name):
+      if not hosts.has_key(host.address):
         host.updateRunningNodeState({})
     self.removeEmptyHosts()
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
 
-  def addCapabilities(self, host, masteruri, cfg, capabilities):
+  def addCapabilities(self, host_address, cfg, capabilities):
     '''
     Adds groups to the model
-    @param host: the host enterend in the configuration 
-    @type host: C{str}
-    @param masteruri: the masteruri of ROS assinged the host
-    @type masteruri: C{str}
+    @param host_address: the address the host
+    @type host_address: C{str}
     @param cfg: the configuration name (launch file name or tupel for default configuration)
     @type cfg: C{str or (str, str))} 
     @param capabilities: the structure for capabilities
     @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str])))} 
     '''
-    hostItem = self.getHostItem(host, masteruri)
-    hostItem.addCapabilities(cfg, capabilities, masteruri)
+    hostItem = self.getHostItem(host_address)
+    hostItem.addCapabilities(cfg, capabilities, host_address)
     self.removeEmptyHosts()
     
-  def appendConfigNodes(self, host, masteruri, nodes):
+  def appendConfigNodes(self, host_address, nodes):
     '''
     Adds nodes to the model. If the node is already in the model, only his 
     configuration list will be extended.
-    @param host: the host enterend in the configuration 
-    @type host: C{str}
-    @param masteruri: the masteruri of ROS assinged the host
-    @type masteruri: C{str}
+    @param host_address: the address the host
+    @type host_address: C{str}
     @param nodes: a dictionary with node names and their configurations
     @type nodes: C{dict(str : str)} 
     '''
-    hostItem = self.getHostItem(host, masteruri)
+    hostItem = self.getHostItem(host_address)
     for (name, cfg) in nodes.items():
       items = hostItem.getNodeItemsByName(name)
       for item in items:
         item.addConfig(cfg)
       if not items:
         # create the new node
+        masteruri = nm.nameres().getUri(host=host_address)
         node_info = NodeInfo(name, masteruri)
         hostItem.addNode(node_info, cfg)
     self.removeEmptyHosts()

@@ -2,10 +2,8 @@
   <description brief="default_cfg_fkie">
 
      A node which loads a given launch configuration and offers services to 
-     list or start the contained nodes. Furthermore the global parameter 
-     (robot_type, robot_name, robot_description) and node parameter 
-     (sensor_type, sensor_name, sensor_description) will be analyzed and offered 
-     as a part of the documentation at current nodes.
+     list or start the contained nodes. It provides additional description 
+     extracted from launch file. This is used by node_manager_fkie.
 
   </description>
   <author>Alexander Tiderko</author>

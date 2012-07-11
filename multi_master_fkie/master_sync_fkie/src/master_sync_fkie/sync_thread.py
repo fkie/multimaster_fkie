@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+import time
 import threading
 import xmlrpclib
 
@@ -119,13 +120,14 @@ class SyncThread(threading.Thread):
     @param timestamp: The timestamp of the current state of the ROS master info.
     @type timestamp:  C{float64}
     '''
-    master_info = MasterInfo(name, uri, discoverer_name, monitoruri, timestamp)
     rospy.logdebug("SyncThread[%s]: update request", self.masterInfo.name)
     if self.__cv.acquire(blocking=False):
-      rospy.logdebug("SyncThread[%s]: update notify", self.masterInfo.name)
-      if (self.masterInfo.timestamp != master_info.timestamp):
-        master_info.lastsync = self.masterInfo.lastsync
-        self.masterInfo = master_info
+      rospy.logdebug("SyncThread[%s]: update notify new timestamp(%s), old(%s)", self.masterInfo.name, str(timestamp), str(self.masterInfo.timestamp))
+      if (self.masterInfo.timestamp != timestamp):
+        self.masterInfo.name = name
+        self.masterInfo.uri = uri
+        self.masterInfo.discoverer_name = discoverer_name
+        self.masterInfo.monitoruri = monitoruri
         self.masterInfo.syncts = 0.0
         self.__cv.notify()
       self.__cv.release()
@@ -151,7 +153,7 @@ class SyncThread(threading.Thread):
     while not self.__stop and not rospy.is_shutdown():
       self.__cv.acquire()
       ''' wait for new sync update '''
-      rospy.logdebug("SyncThread[%s]: run waiting", self.masterInfo.name)
+      rospy.logdebug("SyncThread[%s]: run waiting timestamp(%s), syncts(%s)", self.masterInfo.name, str(self.masterInfo.timestamp), str(self.masterInfo.syncts))
       if not (self.masterInfo.syncts == 0.0):
         self.__cv.wait()
       rospy.logdebug("SyncThread[%s]: run notify received", self.masterInfo.name)
@@ -230,13 +232,15 @@ class SyncThread(threading.Thread):
               del self.__services[key]
 
           # set the last synchronization time
+          self.masterInfo.timestamp = stamp
           self.masterInfo.lastsync = stamp
           self.masterInfo.syncts = stamp
+          rospy.logdebug("SyncThread[%s]: seteeddd timestamp %s", self.masterInfo.name, str(stamp))
         except:
           self.masterInfo.syncts = 0.0
           import traceback
           rospy.logwarn("SyncThread[%s] ERROR: %s", self.masterInfo.name, traceback.format_exc())
-          rospy.sleep(3)
+          time.sleep(3)
       self.__cv.release()
 
     #end routine if the master was removed
@@ -273,7 +277,7 @@ class SyncThread(threading.Thread):
 
   def __registerPublisher(self, topic, type, node, nodeuri):
     try:
-      rospy.loginfo("SendThread[%s] register published topic: %s [%s(%s)]", self.masterInfo.name, topic, node, nodeuri)
+      rospy.loginfo("SyncThread[%s] register published topic: %s [%s(%s)]", self.masterInfo.name, topic, node, nodeuri)
       lm = rosgraph.masterapi.Master(node)
       lm.registerPublisher(topic, type, nodeuri)
     except Exception:
@@ -282,7 +286,7 @@ class SyncThread(threading.Thread):
 
   def __unregisterPublisher(self, topic, node, nodeuri):
     try:
-      rospy.loginfo("SendThread[%s] unregister published topic: %s [%s]", self.masterInfo.name, topic, nodeuri)
+      rospy.loginfo("SyncThread[%s] unregister published topic: %s [%s]", self.masterInfo.name, topic, nodeuri)
       lm = rosgraph.masterapi.Master(node)
       lm.unregisterPublisher(topic, nodeuri)
     except Exception:
@@ -292,7 +296,7 @@ class SyncThread(threading.Thread):
 
   def __registerSubscriber(self, topic, type, node, nodeuri):
     try:
-      rospy.loginfo("SendThread[%s] register subscriber topic: %s [%s(%s)]", self.masterInfo.name, topic, node, nodeuri)
+      rospy.loginfo("SyncThread[%s] register subscriber topic: %s [%s(%s)]", self.masterInfo.name, topic, node, nodeuri)
       lm = rosgraph.masterapi.Master(node)
       lm.registerSubscriber(topic, type, nodeuri)
       # Horrible hack: the response from registerSubscriber() can contain a
@@ -317,7 +321,7 @@ class SyncThread(threading.Thread):
 
   def __unregisterSubscriber(self, topic, node, nodeuri):
     try:
-      rospy.loginfo("SendThread[%s] unregister subscriber topic: %s [%s]", self.masterInfo.name, topic, nodeuri)
+      rospy.loginfo("SyncThread[%s] unregister subscriber topic: %s [%s]", self.masterInfo.name, topic, nodeuri)
       lm = rosgraph.masterapi.Master(node)
       lm.unregisterSubscriber(topic, nodeuri)
     except Exception:
@@ -326,7 +330,7 @@ class SyncThread(threading.Thread):
 
   def __registerService(self, service, serviceuri, node, nodeuri):
     try:
-      rospy.loginfo("SendThread[%s] register service: %s [%s, %s(%s)]", self.masterInfo.name, service, serviceuri, node, nodeuri)
+      rospy.loginfo("SyncThread[%s] register service: %s [%s, %s(%s)]", self.masterInfo.name, service, serviceuri, node, nodeuri)
       lm = rosgraph.masterapi.Master(node)
       lm.registerService(service, serviceuri, nodeuri)
     except Exception:
@@ -335,7 +339,7 @@ class SyncThread(threading.Thread):
 
   def __unregisterService(self, service, serviceuri, node):
     try:
-      rospy.loginfo("SendThread[%s] unregister service: %s [%s]", self.masterInfo.name, service, serviceuri)
+      rospy.loginfo("SyncThread[%s] unregister service: %s [%s]", self.masterInfo.name, service, serviceuri)
       lm = rosgraph.masterapi.Master(node)
       lm.unregisterService(service, serviceuri)
     except Exception:

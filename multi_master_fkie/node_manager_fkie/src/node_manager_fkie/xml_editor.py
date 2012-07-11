@@ -52,6 +52,7 @@ class Editor(QtGui.QTextEdit):
   def __init__(self, filename, parent=None):
     self.parent = parent
     QtGui.QTextEdit.__init__(self, parent)
+    self.setObjectName(' - '.join(['Editor', filename]))
     font = QtGui.QFont()
     font.setFamily("Fixed".decode("utf-8"))
     font.setPointSize(12)
@@ -67,12 +68,12 @@ class Editor(QtGui.QTextEdit):
     self.filename = filename
     file = QtCore.QFile(filename);
     if file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
-  #      data = str(file.readAll())
-  #      self.editor.document().addResource(QtGui.QTextDocument.UserResource, QtCore.QUrl(''.join(['mydata://', self.filename])), data)
-  #      self.editor.textCursor().insertBlock()
       self.setText(unicode(file.readAll(), "utf-8"))
 
     self.path = '.'
+
+#  def __del__(self):
+#    print "********** desctroy:", self.objectName()
 
   def save(self):
     '''
@@ -221,19 +222,13 @@ class Editor(QtGui.QTextEdit):
     if event.key() == QtCore.Qt.Key_Control:
       self.setMouseTracking(True)
     if event.key() != QtCore.Qt.Key_Escape:
-#      if event.key() == QtCore.Qt.Key_Tab:
-#        event_space = QtGui.QKeyEvent(event.type(), QtCore.Qt.Key_Space, event.modifiers())
-#        QtGui.QTextEdit.keyPressEvent(self, event_space)
-##        QtGui.QTextEdit.keyReleaseEvent(self, event_space)
-#        QtGui.QTextEdit.keyReleaseEvent(self, event_space)
-#
-##        QtGui.QTextEdit.keyPressEvent(self, event_space)
-#      else:
+      # handle the shifting of the block
+      if event.key() == QtCore.Qt.Key_Tab:
+        self.shiftText()
+      else:
         QtGui.QTextEdit.keyPressEvent(self, event)
     else:
-      self.parent.close()
-    if event.key() == QtCore.Qt.Key_Space:
-      self.stored_space = event
+      event.accept()
 
   def keyReleaseEvent(self, event):
     '''
@@ -245,20 +240,86 @@ class Editor(QtGui.QTextEdit):
       self.viewport().setCursor(QtCore.Qt.IBeamCursor)
     QtGui.QTextEdit.keyReleaseEvent(self, event)
 
+  def shiftText(self):
+    '''
+    Increase (Decrease) indentation using Tab (Ctrl+Tab).
+    '''
+    cursor = self.textCursor()
+    if not cursor.isNull():
+      key_mod = QtGui.QApplication.keyboardModifiers()
+      # one undo operation
+      cursor.beginEditBlock()
+      start = cursor.selectionStart()
+      end = cursor.selectionEnd()
+      cursor.setPosition(start)
+      block_start = cursor.blockNumber()
+      cursor.setPosition(end)
+      block_end = cursor.blockNumber()
+      if block_end-block_start == 0:
+        # shift one line two spaces to the left
+        if key_mod & QtCore.Qt.ControlModifier:
+          for s in range(2):
+            cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+            cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 1)
+            if cursor.selectedText() == ' ':
+              cursor.insertText('')
+            elif cursor.selectedText() == "\t":
+              cursor.insertText('')
+              break
+          cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+        else:
+        # shift one line two spaces to the right
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, end-start)
+          cursor.insertText('  ')
+      else:
+        # shift the selected block two spaces to the left
+        if key_mod & QtCore.Qt.ControlModifier:
+          removed = 0
+          for i in reversed(range(start, end)):
+            cursor.setPosition(i)
+            if cursor.atBlockStart():
+              cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 2)
+              if cursor.selectedText() == '  ':
+                cursor.insertText('')
+                removed += 2
+              else:
+                cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+                cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 1)
+                if cursor.selectedText() == ' ':
+                  cursor.insertText('')
+                  removed += 1
+                elif cursor.selectedText() == "\t":
+                  cursor.insertText('')
+                  removed += 1
+          cursor.setPosition(start)
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, end-start-removed)
+        else:
+          # shift selected block two spaces to the right
+          inserted = 0
+          for i in reversed(range(start, end)):
+            cursor.setPosition(i)
+            if cursor.atBlockStart():
+              cursor.insertText('  ')
+              inserted += 2
+          cursor.setPosition(start)
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, end-start+inserted)
+      self.setTextCursor(cursor)
+      cursor.endEditBlock()
+
 
 class FindDialog(QtGui.QDialog):
   '''
   A dialog to find text in the Editor.
   '''
 
-  def __init__(self, xmleditor, parent=None):
+  def __init__(self, parent=None):
     QtGui.QDialog.__init__(self, parent)
-    self.xmleditor = xmleditor
-    self.setWindowTitle('Find')
+    self.setObjectName('FindDialog')
+    self.setWindowTitle('Search')
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
 
-    self.content = QtGui.QWidget()
+    self.content = QtGui.QWidget(self)
     self.contentLayout = QtGui.QFormLayout(self.content)
 #    self.contentLayout.setFieldGrowthPolicy(QtGui.QFormLayout.AllNonFixedFieldsGrow)
 #    self.contentLayout.setVerticalSpacing(0)
@@ -268,20 +329,24 @@ class FindDialog(QtGui.QDialog):
     label = QtGui.QLabel("Find:", self.content)
     self.search_field = QtGui.QLineEdit(self.content)
     self.contentLayout.addRow(label, self.search_field)
+    replace_label = QtGui.QLabel("Replace:", self.content)
+    self.replace_field = QtGui.QLineEdit(self.content)
+    self.contentLayout.addRow(replace_label, self.replace_field)
     self.recursive = QtGui.QCheckBox("recursive search")
     self.contentLayout.addRow(self.recursive)
     self.result_label = QtGui.QLabel("")
     self.verticalLayout.addWidget(self.result_label)
     self.found_files = QtGui.QListWidget()
     self.found_files.setVisible(False)
-    self.found_files.itemActivated.connect(self.itemActivated)
     self.found_files.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
     self.verticalLayout.addWidget(self.found_files)
     
     self.buttonBox = QtGui.QDialogButtonBox(self)
-    self.find_button = find_button = QtGui.QPushButton(self.tr("&Find"))
-    find_button.setDefault(True)
-    self.buttonBox.addButton(find_button, QtGui.QDialogButtonBox.ActionRole)
+    self.find_button = QtGui.QPushButton(self.tr("&Find"))
+    self.find_button.setDefault(True)
+    self.buttonBox.addButton(self.find_button, QtGui.QDialogButtonBox.ActionRole)
+    self.replace_button = QtGui.QPushButton(self.tr("&Replace/Find"))
+    self.buttonBox.addButton(self.replace_button, QtGui.QDialogButtonBox.ActionRole)
     self.buttonBox.addButton(QtGui.QDialogButtonBox.Close)
     self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
     self.buttonBox.setObjectName("buttonBox")
@@ -291,47 +356,12 @@ class FindDialog(QtGui.QDialog):
     QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
     QtCore.QMetaObject.connectSlotsByName(self)
     
-    self.buttonBox.clicked.connect(self.on_clicked)
-    
     self.search_text = ''
     self.search_pos = QtGui.QTextCursor()
-    
-  def on_clicked(self, button):
-    if button == self.find_button:
-      search_text = self.search_field.text()
-      if self.search_text != search_text:
-        self.search_pos = QtGui.QTextCursor()
-        self.found_files.clear()
-        self.found_files.setVisible(False)
-        self.result_label.setText(''.join(["'", search_text, "'", ' not found!']))
-      self.search_text = search_text
-      if search_text:
-        if self.recursive.isChecked():
-          files = self.xmleditor.tabWidget.currentWidget().fileWithText(search_text)
-          items = list(set(files))
-          self.result_label.setText(''.join(["'", search_text, "'", ' found in ', str(len(items)), ' files:']))
-          self.found_files.clear()
-          self.found_files.addItems(items)
-          self.found_files.setVisible(True)
-          self.resize(self.found_files.contentsSize())
-        else:
-          tmp_pos = self.search_pos
-          self.search_pos = self.xmleditor.tabWidget.currentWidget().document().find(search_text, self.search_pos.position()+1)
-          if self.search_pos.isNull() and not tmp_pos.isNull():
-            self.search_pos = self.xmleditor.tabWidget.currentWidget().document().find(search_text, self.search_pos.position()+1)
-            # do recursive search
-          if not self.search_pos.isNull():
-            self.xmleditor.tabWidget.currentWidget().setTextCursor(self.search_pos)
-            currentTabName = self.xmleditor.tabWidget.tabText(self.xmleditor.tabWidget.currentIndex())
-            currentLine = str(self.xmleditor.tabWidget.currentWidget().textCursor().blockNumber()+1)
-            self.result_label.setText(''.join(["'", search_text, "'", ' found at line: ', currentLine, ' in ', "'", currentTabName,"'"]))
-  
-  def itemActivated(self, item):
-    self.recursive.setChecked(False)
-    self.xmleditor.on_load_request(item.text(), self.search_text)
-    currentTabName = self.xmleditor.tabWidget.tabText(self.xmleditor.tabWidget.currentIndex())
-    currentLine = str(self.xmleditor.tabWidget.currentWidget().textCursor().blockNumber()+1)
-    self.result_label.setText(''.join(["'", self.search_text, "'", ' found at line: ', currentLine, ' in ', "'", currentTabName,"'"]))
+
+#  def __del__(self):
+#    print "********** desctroy:", self.objectName()
+
 
 class XmlEditor(QtGui.QDialog):
   '''
@@ -352,11 +382,13 @@ class XmlEditor(QtGui.QDialog):
     @type search_text: C{str} (Default: C{Empty String})
     '''
     QtGui.QDialog.__init__(self, parent)
+    self.setObjectName(' - '.join(['xmlEditor', str(filenames)]))
     self.setWindowFlags(QtCore.Qt.Window)
     self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("ROSLaunch Editor");
+#    self.finished.connect(self.closeEvent)
     self.init_filenames = list(filenames)
     
     self.files = []
@@ -416,7 +448,9 @@ class XmlEditor(QtGui.QDialog):
     self.verticalLayout.addWidget(self.buttons)
 
     #create the find dialog
-    self.find_dialog = FindDialog(self, self)
+    self.find_dialog = FindDialog(self)
+    self.find_dialog.buttonBox.clicked.connect(self.on_find_dialog_clicked)
+    self.find_dialog.found_files.itemActivated.connect(self.find_dialog_itemActivated)
 
 #    self._shortcut_find = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+F", "find text")), self)
 #    self._shortcut_find.activated.connect(self.on_shortcut_find)
@@ -425,6 +459,10 @@ class XmlEditor(QtGui.QDialog):
     for f in filenames:
       if f:
         self.on_load_request(os.path.normpath(f), search_text)
+#    print "================ create", self.objectName()
+
+#  def __del__(self):
+#    print "******** destroy", self.objectName()
 
   def on_load_request(self, filename, search_text=''):
     '''
@@ -463,15 +501,8 @@ class XmlEditor(QtGui.QDialog):
     
     self.tabWidget.setUpdatesEnabled(True)
     if search_text:
-      self.find_dialog.search_field.setText(search_text)
-      pos = self.tabWidget.currentWidget().document().find(search_text, self.tabWidget.currentWidget().textCursor())
-      if not pos.isNull():
-        self.tabWidget.currentWidget().setTextCursor(pos)
-        self.tabWidget.currentWidget().moveCursor(QtGui.QTextCursor.StartOfLine)
-      else:
-        pos = self.tabWidget.currentWidget().document().find(search_text)
-        if not pos.isNull():
-          self.tabWidget.currentWidget().setTextCursor(pos)
+      if self.find(search_text, False):
+        if not self.find_dialog.search_pos.isNull():
           self.tabWidget.currentWidget().moveCursor(QtGui.QTextCursor.StartOfLine)
 
   def on_close_tab(self, tab_index):
@@ -505,6 +536,8 @@ class XmlEditor(QtGui.QDialog):
       import traceback
       rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc())
 
+  def hideEvent(self, event):
+    self.close()
 
   def closeEvent (self, event):
     '''
@@ -529,7 +562,8 @@ class XmlEditor(QtGui.QDialog):
         event.ignore()
     else:
       event.accept()
-    self.finished_signal.emit(self.init_filenames)
+    if event.isAccepted():
+      self.finished_signal.emit(self.init_filenames)
 
   
   def save(self):
@@ -587,4 +621,62 @@ class XmlEditor(QtGui.QDialog):
       return self.__getPackageName(os.path.dirname(dir))
     return None
 
+
+  def on_find_dialog_clicked(self, button):
+    if button == self.find_dialog.find_button:
+      self.find(self.find_dialog.search_field.text(), self.find_dialog.recursive.isChecked())
+    elif button == self.find_dialog.replace_button:
+      self.find_dialog.recursive.setChecked(False)
+      cursor = self.tabWidget.currentWidget().textCursor()
+      if self.find_dialog.search_field.text() and cursor.selectedText() == self.find_dialog.search_field.text():
+        cursor.insertText(self.find_dialog.replace_field.text())
+        currentLine = str(cursor.blockNumber()+1)
+        self.find_dialog.result_label.setText(''.join(["'", self.find_dialog.search_text, "'", ' replaced at line: ', currentLine, ' by ', "'", self.find_dialog.replace_field.text(),"'"]))
+        self.tabWidget.currentWidget().setTextCursor(cursor)
+      self.find(self.find_dialog.search_field.text(), self.find_dialog.recursive.isChecked())
+
+  def find(self, search_text, recursive):
+    '''
+    Searches for text in the current text editor. If `recursive` is True, the included files will be searched.
+    '''
+    found = False
+    if self.find_dialog.search_text != search_text:
+      self.find_dialog.search_pos = QtGui.QTextCursor()
+      self.find_dialog.found_files.clear()
+      self.find_dialog.found_files.setVisible(False)
+      self.find_dialog.result_label.setText(''.join(["'", search_text, "'", ' not found!']))
+    self.find_dialog.search_text = search_text
+    if search_text:
+      if recursive:
+        files = self.tabWidget.currentWidget().fileWithText(search_text)
+        items = list(set(files))
+        self.find_dialog.result_label.setText(''.join(["'", search_text, "'", ' found in ', str(len(items)), ' files:']))
+        self.find_dialog.found_files.clear()
+        self.find_dialog.found_files.addItems(items)
+        self.find_dialog.found_files.setVisible(True)
+        self.find_dialog.resize(self.find_dialog.found_files.contentsSize())
+        found = True
+      else:
+        tmp_pos = self.find_dialog.search_pos
+        self.find_dialog.search_pos = self.tabWidget.currentWidget().document().find(search_text, self.find_dialog.search_pos.position()+1)
+        if self.find_dialog.search_pos.isNull() and not tmp_pos.isNull():
+          self.find_dialog.search_pos = self.tabWidget.currentWidget().document().find(search_text, self.find_dialog.search_pos.position()+1)
+          # do recursive search
+        if not self.find_dialog.search_pos.isNull():
+          self.tabWidget.currentWidget().setTextCursor(self.find_dialog.search_pos)
+          currentTabName = self.tabWidget.tabText(self.tabWidget.currentIndex())
+          currentLine = str(self.tabWidget.currentWidget().textCursor().blockNumber()+1)
+          self.find_dialog.result_label.setText(''.join(["'", search_text, "'", ' found at line: ', currentLine, ' in ', "'", currentTabName,"'"]))
+          found = True
+        else:
+          self.find_dialog.result_label.setText(''.join(["'", search_text, "'", ' not found!']))
+    return found
+
+  def find_dialog_itemActivated(self, item):
+    self.find_dialog.recursive.setChecked(False)
+    self.on_load_request(item.text(), self.find_dialog.search_text)
+    self.find(self.find_dialog.search_text, False)
+    currentTabName = self.tabWidget.tabText(self.tabWidget.currentIndex())
+    currentLine = str(self.tabWidget.currentWidget().textCursor().blockNumber()+1)
+    self.find_dialog.result_label.setText(''.join(["'", self.find_dialog.search_text, "'", ' found at line: ', currentLine, ' in ', "'", currentTabName,"'"]))
 
