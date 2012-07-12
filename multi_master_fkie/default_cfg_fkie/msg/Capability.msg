@@ -1,15 +1,12 @@
-# one of the ID_* defines
-# if the id of the message is sensor, then the ros_name contains full ROS node
-# name, empty string otherwise
-# type of the sensor, defined in launch file using sensor_type parameter tag.
-# name of the sensor, defined in launch file using sensor_name parameter tag.
-# description of the sensor, defined in launch file using sensor_description parameter tag.
-#string ID_ROBOT=robot
-#string ID_SENSOR=sensor
-
+# the ROS namespace of the capability
 string namespace
+# the name of the capability
 string name
+# the type of the capability
 string type
+# list of the images assigned to the this capability
 string[] images
+# the description of the capability
 string description
+# a list of nodes assigned to this group. The nodes are described by full ROS name (with namesspace)
 string[] nodes 

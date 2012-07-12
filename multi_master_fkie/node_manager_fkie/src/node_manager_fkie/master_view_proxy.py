@@ -103,7 +103,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.rosconfigs = dict() # [launch file path] = LaunchConfig()
     self.__in_question = []
     '''@ivar: stored the question dialogs for changed files '''
-    self._stop_ignores = ['/rosout', rospy.get_name(), '/master_discovery', '/master_sync', '/default_cfg']
+    self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'master_discovery', 'master_sync', 'default_cfg']
     ''' @todo: detect the names of master_discovery and master_sync ndoes'''
     
     self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog
@@ -1087,7 +1087,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.progressDialog.setValue(i)
       if self.progressDialog.wasCanceled():
         break
-      if not node is None and not node.uri is None and (not (node.name in self._stop_ignores) or len(nodes) == 1):
+      if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or len(nodes) == 1):
         try:
           p = xmlrpclib.ServerProxy(node.uri)
           p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
@@ -1128,7 +1128,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.progressDialog.setValue(i)
       if self.progressDialog.wasCanceled():
         break
-      if not node is None and not node.uri is None and (not (node.name in self._stop_ignores) or len(selectedNodes) == 1):
+      if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or len(selectedNodes) == 1):
         pid = node.pid
         if pid is None:
           # try to get the process id of the node
@@ -1166,7 +1166,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.progressDialog.setValue(i)
       if self.progressDialog.wasCanceled():
         break
-      if not node is None and not node.uri is None and (not (node.name in self._stop_ignores) or len(selectedNodes) == 1):
+      if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or len(selectedNodes) == 1):
         # stop the node?
 #        try:
 #          p = xmlrpclib.ServerProxy(node.uri)
@@ -1715,8 +1715,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.nodeTreeView.selectionModel().select(selection, QtGui.QItemSelectionModel.ClearAndSelect)
 
   def _is_in_ignore_list(self, name):
-    ignore_list = ['rosout', 'master_discovery', 'master_sync', 'node_manager', 'default_cfg']
-    for i in ignore_list:
+    for i in self._stop_ignores:
       if name.endswith(i):
         return True
     return False
