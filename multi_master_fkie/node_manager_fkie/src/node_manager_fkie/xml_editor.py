@@ -229,6 +229,7 @@ class Editor(QtGui.QTextEdit):
         QtGui.QTextEdit.keyPressEvent(self, event)
     else:
       event.accept()
+      QtGui.QTextEdit.keyPressEvent(self, event)
 
   def keyReleaseEvent(self, event):
     '''
@@ -383,7 +384,8 @@ class XmlEditor(QtGui.QDialog):
     '''
     QtGui.QDialog.__init__(self, parent)
     self.setObjectName(' - '.join(['xmlEditor', str(filenames)]))
-    self.setWindowFlags(QtCore.Qt.Window)
+    self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+#    self.setWindowFlags(QtCore.Qt.Window)
     self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
     self.setWindowIcon(self.mIcon)
@@ -459,8 +461,9 @@ class XmlEditor(QtGui.QDialog):
     for f in filenames:
       if f:
         self.on_load_request(os.path.normpath(f), search_text)
-#    print "================ create", self.objectName()
 
+#    print "================ create", self.objectName()
+#
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
 
@@ -551,7 +554,11 @@ class XmlEditor(QtGui.QDialog):
         changed.append(self.__getTabName(w.filename))
     if changed:
       # ask the user for save changes
-      result = QtGui.QMessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", '\n'.join(changed)]), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No | QtGui.QMessageBox.Cancel)
+      if self.isHidden():
+        buttons = QtGui.QMessageBox.Yes | QtGui.QMessageBox.No
+      else:
+        buttons = QtGui.QMessageBox.Yes | QtGui.QMessageBox.No | QtGui.QMessageBox.Cancel
+      result = QtGui.QMessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", '\n'.join(changed)]), buttons)
       if result == QtGui.QMessageBox.Yes:
         for i in range(self.tabWidget.count()):
           w = self.tabWidget.widget(i).save()
@@ -565,7 +572,6 @@ class XmlEditor(QtGui.QDialog):
     if event.isAccepted():
       self.finished_signal.emit(self.init_filenames)
 
-  
   def save(self):
     if self.tabWidget.currentWidget().save():
       self.on_editor_textChanged()

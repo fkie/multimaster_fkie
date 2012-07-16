@@ -7,7 +7,6 @@
     <file>icons/crystal_clear_miscellaneous.png</file>
     <file>icons/crystal_clear_button_close.png</file>
     <file>icons/crystal_clear_clicknrun.png</file>
-    <file>icons/crystal_clear_default_cfg.png</file>
     <file>icons/crystal_clear_dyncfg.png</file>
     <file>icons/crystal_clear_edit_launch.png</file>
     <file>icons/crystal_clear_folder.png</file>
@@ -24,6 +23,8 @@
     <file>icons/crystal_clear_stack.png</file>
     <file>icons/crystal_clear_sync.png</file>
     <file>icons/crystal_clear_warning.png</file>
+    <file>icons/default_cfg.png</file>
+    <file>icons/default_cfg_edit.png</file>
     <file>icons/deleket_deviantart_play.png</file>
     <file>icons/deleket_deviantart_refresh.png</file>
     <file>icons/deleket_deviantart_stop.png</file>

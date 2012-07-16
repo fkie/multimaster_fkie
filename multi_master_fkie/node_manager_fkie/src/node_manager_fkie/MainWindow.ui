@@ -556,7 +556,7 @@ p, li { white-space: pre-wrap; }
           </property>
           <property name="icon">
            <iconset resource="GUI.qrc">
-            <normaloff>:/icons/crystal_clear_default_cfg.png</normaloff>:/icons/crystal_clear_default_cfg.png</iconset>
+            <normaloff>:/icons/default_cfg.png</normaloff>:/icons/default_cfg.png</iconset>
           </property>
           <property name="shortcut">
            <string>Ctrl+O</string>

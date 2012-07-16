@@ -53,7 +53,7 @@ from parameter_list_model import ParameterModel, ParameterValueItem
 from default_cfg_handler import DefaultConfigHandler
 from launch_config import LaunchConfig, LaunchConfigException
 from master_discovery_fkie.master_info import NodeInfo 
-from parameter_dialog import ParameterDialog, ThreadedParameterDialog
+from parameter_dialog import ParameterDialog#, ThreadedParameterDialog
 from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 
@@ -199,6 +199,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.logDeleteButton.clicked.connect(self.on_log_delete_clicked)
     self.masterTab.dynamicConfigButton.clicked.connect(self.on_dynamic_config_clicked)
     self.masterTab.editConfigButton.clicked.connect(self.on_edit_config_clicked)
+    self.masterTab.editRosParamButton.clicked.connect(self.on_edit_rosparam_clicked)
     self.masterTab.closeCfgButton.clicked.connect(self.on_close_clicked)
 
     self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
@@ -382,10 +383,11 @@ class MasterViewProxy(QtGui.QWidget):
       dyncfgNodes = [s for n in selectedNodes for s in dyncfgServices if s.startswith((n.name))]
       self.masterTab.dynamicConfigButton.setEnabled(len(dyncfgNodes))
     # the configuration is only available, if only one node is selected
-    cfg_enable = (len(selectedNodes) == 1)
-#    if len(selectedNodes) == 1:
-#      cfg_enable = len(selectedNodes[0].cfgs) > 0
+    cfg_enable = False
+    if len(selectedNodes) == 1:
+      cfg_enable = len(self._getCfgChoises(selectedNodes[0], True)) > 0
     self.masterTab.editConfigButton.setEnabled(cfg_enable)
+    self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
     self.masterTab.closeCfgButton.setEnabled(len(self.__configs) > 0)
 
 
@@ -1239,7 +1241,8 @@ class MasterViewProxy(QtGui.QWidget):
     for node in selectedNodes:
       try:
         if not nm.screen().openScreen(self.getHostFromNode(node), node.name, parent=self):
-          self.masterTab.ioButton.setEnabled(False)
+#          self.masterTab.ioButton.setEnabled(False)
+          pass
       except Exception, e:
         rospy.logwarn("Error while show IO for %s: %s", str(node), str(e))
         QtGui.QMessageBox.warning(None, 'Error while show IO %s'%node.name,
@@ -1258,7 +1261,7 @@ class MasterViewProxy(QtGui.QWidget):
       try:
         # send kill to the associated screens
         nm.screen().killScreens(self.getHostFromNode(node), node.name, parent=self)
-        self.masterTab.ioButton.setEnabled(False)
+#        self.masterTab.ioButton.setEnabled(False)
       except Exception, e:
         rospy.logwarn("Error while kill screen for %s: %s", str(node), str(e))
         QtGui.QMessageBox.warning(None, 'Error while kill screen %s'%node.name,
@@ -1274,7 +1277,8 @@ class MasterViewProxy(QtGui.QWidget):
     try:
       for node in selectedNodes:
         if not nm.starter().openLog(node.name, self.getHostFromNode(node)):
-          self.masterTab.logButton.setEnabled(False)
+          pass
+#          self.masterTab.logButton.setEnabled(False)
     except Exception, e:
 #      import traceback
 #      print traceback.format_exc()
@@ -1317,7 +1321,7 @@ class MasterViewProxy(QtGui.QWidget):
             if item[1]:
               node = item[0]
           if not node is None:
-            self.masterTab.dynamicConfigButton.setEnabled(False)
+#            self.masterTab.dynamicConfigButton.setEnabled(False)
             import os, subprocess
             env = dict(os.environ)
             env["ROS_MASTER_URI"] = str(self.master_info.masteruri)
@@ -1338,7 +1342,6 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     for node in selectedNodes:
       choices = self._getCfgChoises(node, True)
-      choices['ROS parameter server'] = ''
       choice = self._getUserCfgChoice(choices, node.name)
       config = choices[choice] if choices else ''
       if isinstance(config, LaunchConfig):
@@ -1348,16 +1351,21 @@ class MasterViewProxy(QtGui.QWidget):
         if not node_cfg.filename in files:
           files.append(node_cfg.filename)
         self.request_xml_editor.emit(files, ''.join(['name="', os.path.basename(node.name), '"']))
-      else:
-        # set the parameter in the ROS parameter server
-        try:
-          # get parameter from ROS parameter server
-          inputDia = ThreadedParameterDialog(self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
-          inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
-          inputDia.show()
-        except:
-          import traceback
-          rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), str(traceback.format_exc()))
+
+  def on_edit_rosparam_clicked(self):
+    '''
+    '''
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    for node in selectedNodes:
+      # set the parameter in the ROS parameter server
+      try:
+        # get parameter from ROS parameter server
+        inputDia = ParameterDialog(dict(), self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
+        inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
+        inputDia.show()
+      except:
+        import traceback
+        rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), str(traceback.format_exc()))
 
   def on_close_clicked(self):
     '''
@@ -1564,7 +1572,7 @@ class MasterViewProxy(QtGui.QWidget):
           value = params['value']
         self.parameterHandler.deliverParameter(self.masteruri, {params['name'] : value})
         self.parameterHandler.requestParameterList(self.masteruri)
-      except ValueError, e:
+      except (KeyError, ValueError), e:
         QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
 
   def on_delete_parameter_clicked(self):

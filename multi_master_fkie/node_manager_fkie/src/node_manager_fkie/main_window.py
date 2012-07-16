@@ -724,6 +724,7 @@ class MainWindow(QtGui.QMainWindow):
       if self.editor_dialogs.has_key(path):
         last_path = files[-1]
         self.editor_dialogs[path].on_load_request(last_path, search_text)
+        self.editor_dialogs[path].raise_()
         self.editor_dialogs[path].activateWindow()
       else:
         editor = XmlEditor(files, search_text, self)
@@ -733,9 +734,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def _editor_dialog_closed(self, files):
     if self.editor_dialogs.has_key(files[0]):
-      self.editor_dialogs[files[0]].setParent(None)
-      item = self.editor_dialogs.pop(files[0])
-      del item
+      del self.editor_dialogs[files[0]]
 
   def on_load_xml_clicked(self):
     '''

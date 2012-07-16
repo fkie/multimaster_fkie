@@ -67,10 +67,18 @@ class ParameterHandler(QtCore.QObject):
 
   def __init__(self):
     QtCore.QObject.__init__(self)
+    self.setObjectName('ParameterHandler')
     self.__requestListThreads = []
     self.__requestValuesThreads = []
     self.__deliveryThreads = []
     self._lock = threading.RLock()
+#    print '=============== create', self.objectName()
+#
+#  def __del__(self):
+#    print "************ destroy", self.objectName()
+#    print self.__requestListThreads
+#    print self.__requestValuesThreads
+#    print self.__deliveryThreads
 
   def requestParameterList(self, masteruri, ns='/'):
     '''

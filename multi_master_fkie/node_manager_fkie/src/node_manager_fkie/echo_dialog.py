@@ -69,6 +69,7 @@ class EchoDialog(QtGui.QDialog):
     '''
     QtGui.QDialog.__init__(self, parent=parent)
     self.setObjectName(' - '.join(['EchoDialog', topic]))
+    self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 #    self.setWindowFlags(QtCore.Qt.Window)
     self.setWindowTitle(''.join(['Echo of ', topic]))
     self.resize(728,512)
@@ -112,6 +113,7 @@ class EchoDialog(QtGui.QDialog):
       raise Exception("Cannot load message class for [%s]. Are your messages built?"%type)
     self.sub = rospy.Subscriber(topic, msg_class, self._msg_handle)
     self.msg_signal.connect(self._append_message)
+
 #    print "======== create", self.objectName()
 #
 #  def __del__(self):
@@ -126,8 +128,8 @@ class EchoDialog(QtGui.QDialog):
     self.finished_signal.emit(self.topic)
     if self.parent() is None:
       QtGui.QApplication.quit()
-    else:
-      self.setParent(None)
+#    else:
+#      self.setParent(None)
   
   def create_field_filter(self, echo_nostr, echo_noarr):
     def field_filter(val):

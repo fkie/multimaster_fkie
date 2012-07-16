@@ -512,7 +512,7 @@ class GroupItem(QtGui.QStandardItem):
         elif has_launches:
           cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
         elif has_defaults:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_default_cfg.png'))
+          cfg_col.setIcon(QtGui.QIcon(':/icons/default_cfg.png'))
         else:
           cfg_col.setIcon(QtGui.QIcon())
   
@@ -694,7 +694,7 @@ class NodeItem(QtGui.QStandardItem):
 #                  'stop'    : QtGui.QIcon('icons/imacadam_stop.png'),
 #                  'cfg+def' : QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'),
 #                  'cfg'     : QtGui.QIcon(':/icons/crystal_clear_launch_file.png'),
-#                  'default_cfg' : QtGui.QIcon(':/icons/crystal_clear_default_cfg.png')
+#                  'default_cfg' : QtGui.QIcon(':/icons/default_cfg.png')
 #                  }
     self._cfgs = []
     self._has_running = False
@@ -901,7 +901,7 @@ class NodeItem(QtGui.QStandardItem):
         elif has_launches:
           cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
         elif has_defaults:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_default_cfg.png'))
+          cfg_col.setIcon(QtGui.QIcon(':/icons/default_cfg.png'))
         else:
           cfg_col.setIcon(QtGui.QIcon())
         if isinstance(self.parent_item, GroupItem):
@@ -1001,7 +1001,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
 #           'warning'        : QtGui.QIcon(":/icons/crystal_clear_warning.png"),
 #           'def_launch_cfg' : QtGui.QIcon(":/icons/crystal_clear_launch_file_def_cfg.png"),
 #           'launch_cfg'     : QtGui.QIcon(":/icons/crystal_clear_launch_file.png"),
-#           'def_cfg'        : QtGui.QIcon(":/icons/crystal_clear_default_cfg.png") }
+#           'def_cfg'        : QtGui.QIcon(":/icons/default_cfg.png") }
   
   header = [('Name', 300),
             ('Cfgs', 60),
