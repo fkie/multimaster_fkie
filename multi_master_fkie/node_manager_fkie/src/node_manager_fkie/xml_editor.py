@@ -469,7 +469,7 @@ class XmlEditor(QtGui.QDialog):
 
   def on_load_request(self, filename, search_text=''):
     '''
-    Loads a file in a new tab or focus the tab with already opened file.
+    Loads a file in a new tab or focus the tab, if the file is already open.
     @param filename: the path to file
     @type filename: C{str}
     @param search_text: if not empty, searches in new document for first occurrence of the given text
@@ -572,12 +572,13 @@ class XmlEditor(QtGui.QDialog):
     if event.isAccepted():
       self.finished_signal.emit(self.init_filenames)
 
-  def save(self):
+  def on_saveButton_clicked(self):
+    '''
+    Saves the current document. This method is called if the C{save button} 
+    was clicked.
+    '''
     if self.tabWidget.currentWidget().save():
       self.on_editor_textChanged()
-  
-  def on_saveButton_clicked(self):
-    self.save();
   
   def on_editor_textChanged(self):
     '''
@@ -596,10 +597,17 @@ class XmlEditor(QtGui.QDialog):
     self.pos_label.setText(''.join([str(cursor.blockNumber()+1), ':', str(cursor.columnNumber()+1)]))
   
   def on_shortcut_find(self):
+    '''
+    Opens a find dialog.
+    '''
     self.find_dialog.show()
+    self.find_dialog.raise_()
     self.find_dialog.activateWindow()
 
   def on_shortcut_goto(self):
+    '''
+    Opens a C{goto} dialog.
+    '''
     value, ok = QtGui.QInputDialog.getInt(self, "Goto",
                                       self.tr("Line number:"), QtGui.QLineEdit.Normal,
                                       minValue=1, step=1)
@@ -629,6 +637,9 @@ class XmlEditor(QtGui.QDialog):
 
 
   def on_find_dialog_clicked(self, button):
+    '''
+    Method to handle the button actions of the C{find dialog}. 
+    '''
     if button == self.find_dialog.find_button:
       self.find(self.find_dialog.search_field.text(), self.find_dialog.recursive.isChecked())
     elif button == self.find_dialog.replace_button:
@@ -643,7 +654,12 @@ class XmlEditor(QtGui.QDialog):
 
   def find(self, search_text, recursive):
     '''
-    Searches for text in the current text editor. If `recursive` is True, the included files will be searched.
+    Searches for text in the current text editor. If `recursive` is C{True}, 
+    the included files will be searched.
+    @param search_text: text to find
+    @type search_text: C{str}
+    @param recursive: search in included files if this is C{True}
+    @type recursive: C{bool}
     '''
     found = False
     if self.find_dialog.search_text != search_text:
@@ -679,6 +695,13 @@ class XmlEditor(QtGui.QDialog):
     return found
 
   def find_dialog_itemActivated(self, item):
+    '''
+    On recursive search all files contained the search text are listed. If one of
+    this file is activated, it will be open in a new tab and the cursor moved to
+    the C{search text} position.
+    @param item: The activated item of the C{QListWidget}
+    @type item: L{PySide.QtGui.QListWidgetItem}
+    '''
     self.find_dialog.recursive.setChecked(False)
     self.on_load_request(item.text(), self.find_dialog.search_text)
     self.find(self.find_dialog.search_text, False)

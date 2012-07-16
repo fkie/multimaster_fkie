@@ -47,9 +47,15 @@ from master_discovery_fkie.master_info import NodeInfo
 ################################################################################
 
 class CapabilityHeader(QtGui.QHeaderView):
+  '''
+  This class is used for visualization of robots or capabilities in header of 
+  the capability table. It is also used to manage the displayed robots or
+  capabilities. Furthermore L{QtGui.QHeaderView.paintSection()} method is
+  overridden to paint the images in background of the cell.
+  '''
 
   description_requested_signal = QtCore.Signal(str, str)
-  '''@ivar: the signal is emitted by click on a header to show a description.'''
+  '''the signal is emitted by click on a header to show a description.'''
 
   def __init__(self, orientation, parent=None):
     QtGui.QHeaderView.__init__(self, orientation, parent)
@@ -74,6 +80,10 @@ class CapabilityHeader(QtGui.QHeaderView):
     return -1
 
   def paintSection(self, painter, rect, logicalIndex):
+    '''
+    The method paint the robot or capability images in the backgroud of the cell.
+    @see: L{QtGui.QHeaderView.paintSection()} 
+    '''
     painter.save()
     QtGui.QHeaderView.paintSection(self, painter, rect, logicalIndex)
     painter.restore()
@@ -95,6 +105,10 @@ class CapabilityHeader(QtGui.QHeaderView):
         
 
   def mousePressEvent(self, event):
+    '''
+    Interpret the mouse events to send the description of a robot or capability 
+    if the user click on the header.
+    '''
     QtGui.QHeaderView.mousePressEvent(self, event)
     index = self.logicalIndexAt(event.pos())
     if index in range(len(self._data)):
@@ -112,6 +126,9 @@ class CapabilityHeader(QtGui.QHeaderView):
       self.description_requested_signal.emit(title, text)
 
   def setDescription(self, index, cfg, name, displayed_name, type, description, images):
+    '''
+    Sets the values of an existing item to the given items.
+    '''
     if index < len(self._data):
       obj = self._data[index]
       if not cfg in obj['cfgs']:
@@ -127,6 +144,10 @@ class CapabilityHeader(QtGui.QHeaderView):
           obj['images'].append(QtGui.QPixmap(img))
 
   def updateDescription(self, index, cfg, name, displayed_name, type, description, images):
+    '''
+    Sets the values of an existing item to the given items only if the current 
+    value is empty.
+    '''
     if index < len(self._data):
       obj = self._data[index]
       if not cfg in obj['cfgs']:
@@ -146,10 +167,20 @@ class CapabilityHeader(QtGui.QHeaderView):
             obj['images'].append(QtGui.QPixmap(img))
 
   def removeDescription(self, index):
+    '''
+    Removes an existing value from the header.
+    @param index: the index of the item to remove.
+    @type index: C{int}
+    '''
     if index < len(self._data):
       self._data.pop(index)
     
   def insertItem(self, index):
+    '''
+    Inserts an item at the given index into the header.
+    @param index: the index
+    @type index: C{int}
+    '''
     new_dict = {'cfgs' : [], 'name': '', 'displayed_name' : '', 'type' : '', 'description' : '', 'images' : []}
     if index < len(self._data):
       self._data.insert(index, new_dict)
@@ -190,9 +221,17 @@ class CapabilityHeader(QtGui.QHeaderView):
     return result
   
   def count(self):
+    '''
+    @return: The count of items in the header.
+    @rtype: C{int}
+    '''
     return len(self._data)
 
   def getConfigs(self, index):
+    '''
+    @return: The configurations assigned to the item at the given index
+    @rtype: C{str}
+    '''
     result = []
     if index < len(self._data):
       result = list(self._data[index]['cfgs'])
@@ -204,6 +243,12 @@ class CapabilityHeader(QtGui.QHeaderView):
 ################################################################################
 
 class CapabilityControlWidget(QtGui.QFrame):
+  '''
+  The control widget contains buttons for control a capability. Currently this 
+  are C{On} and C{Off} buttons. Additionally, the state of the capability is 
+  color coded.
+  '''
+
   start_nodes_signal = QtCore.Signal(str, str, list)
   '''@ivar: the signal is emitted to start on host the nodes described in the list, Parameter(host, config, nodes).'''
 
@@ -232,12 +277,30 @@ class CapabilityControlWidget(QtGui.QFrame):
     frame_layout.addItem(QtGui.QSpacerItem(20, 20))
 
   def config(self):
+    '''
+    @return: the configuration defines this capability
+    @rtype: C{str}
+    '''
     return self._cfg
 
   def nodes(self):
+    '''
+    @return: the list with nodes required by this capability. The nodes are 
+    defined by ROS full name.
+    @rtype: C{[str]}
+    '''
     return self._nodes
   
   def setNodeState(self, running_nodes, stopped_nodes, error_nodes):
+    '''
+    Sets the state of this capability.
+    @param running_nodes: a list with running nodes.
+    @type running_nodes: C{[str]}
+    @param stopped_nodes: a list with not running nodes.
+    @type stopped_nodes: C{[str]}
+    @param error_nodes: a list with nodes having a problem.
+    @type error_nodes: C{[str]}
+    '''
     self.setAutoFillBackground(True)
     self.setBackgroundRole(QtGui.QPalette.Base)
     palette = QtGui.QPalette()
@@ -276,6 +339,12 @@ class CapabilityControlWidget(QtGui.QFrame):
 ################################################################################
 
 class CapabilityTable(QtGui.QTableWidget):
+  '''
+  The table shows all detected capabilities of robots in tabular view. The 
+  columns represents the robot and rows the capabilities. The cell of available 
+  capability contains a L{CapabilityControlWidget} to show the state and manage 
+  the capability.
+  '''
   
   start_nodes_signal = QtCore.Signal(str, str, list)
   '''@ivar: the signal is emitted to start on host the nodes described in the list, Parameter(host, config, nodes).'''
@@ -290,10 +359,10 @@ class CapabilityTable(QtGui.QTableWidget):
   def __init__(self, parent=None):
     QtGui.QTableWidget.__init__(self, parent)
     self._robotHeader = CapabilityHeader(QtCore.Qt.Horizontal, self)
-    self._robotHeader.description_requested_signal.connect(self.show_description)
+    self._robotHeader.description_requested_signal.connect(self._show_description)
     self.setHorizontalHeader(self._robotHeader)
     self._capabilityHeader = CapabilityHeader(QtCore.Qt.Vertical, self)
-    self._capabilityHeader.description_requested_signal.connect(self.show_description)
+    self._capabilityHeader.description_requested_signal.connect(self._show_description)
     self.setVerticalHeader(self._capabilityHeader)
 
   def updateCapabilities(self, host, cfg_name, description):
@@ -342,11 +411,15 @@ class CapabilityTable(QtGui.QTableWidget):
 
       # add the capability control widget
       controlWidget = CapabilityControlWidget(host, cfg_name, c.nodes)
-      controlWidget.start_nodes_signal.connect(self.start_nodes)
-      controlWidget.stop_nodes_signal.connect(self.stop_nodes)
+      controlWidget.start_nodes_signal.connect(self._start_nodes)
+      controlWidget.stop_nodes_signal.connect(self._stop_nodes)
       self.setCellWidget(cap_index, robot_index, controlWidget)
 
   def removeConfig(self, cfg):
+    '''
+    @param cfg: The name of the node provided the capabilities description.
+    @type cfg: C{str}
+    '''
     removed_from_robots = self._robotHeader.removeCfg(cfg)
 #    for r in removed_from_robots:
 #      if not self._robotHeader.getConfigs(r):
@@ -413,12 +486,12 @@ class CapabilityTable(QtGui.QTableWidget):
               stopped_nodes.append(n)
           controlWidget.setNodeState(running_nodes, stopped_nodes, error_nodes)
 
-  def start_nodes(self, host, cfg, nodes):
+  def _start_nodes(self, host, cfg, nodes):
     self.start_nodes_signal.emit(host, cfg, nodes)
 
-  def stop_nodes(self, host, nodes):
+  def _stop_nodes(self, host, nodes):
     self.stop_nodes_signal.emit(host, nodes)
 
-  def show_description(self, name, description):
+  def _show_description(self, name, description):
     self.description_requested_signal.emit(name, description)
       

@@ -1343,7 +1343,7 @@ class MasterViewProxy(QtGui.QWidget):
     for node in selectedNodes:
       choices = self._getCfgChoises(node, True)
       choice = self._getUserCfgChoice(choices, node.name)
-      config = choices[choice] if choices else ''
+      config = choices[choice] if choices and choice else ''
       if isinstance(config, LaunchConfig):
         # get the file, which include the node and the main configuration file
         node_cfg = config.getNode(node.name)
