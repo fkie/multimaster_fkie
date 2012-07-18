@@ -250,7 +250,7 @@ class ParameterDialog(QtGui.QDialog):
         self.params.append((type, field))
     parent.setUpdatesEnabled(True)
 
-  def getKeywords(self):
+  def getKeywords(self, skip_empty=False):
     '''
     @returns: a directory with parameter and value for all entered fields.
     @rtype: C{dict(str(param) : str(value))}
@@ -272,6 +272,8 @@ class ParameterDialog(QtGui.QDialog):
             result[field.objectName()] = float(text)
           else:
             result[field.objectName()] = text
+        elif not skip_empty:
+          result[field.objectName()] = text
           self.addParamCache(field.objectName(), text)
     return result
   

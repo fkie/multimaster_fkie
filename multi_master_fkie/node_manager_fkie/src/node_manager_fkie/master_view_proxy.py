@@ -468,7 +468,7 @@ class MasterViewProxy(QtGui.QWidget):
         inputDia.setFilterVisible(False)
         inputDia.setWindowTitle(''.join(['Enter the argv for ', launchfile]))
         if inputDia.exec_():
-          params = inputDia.getKeywords()
+          params = inputDia.getKeywords(True)
           argv = []
           for p,v in params.items():
             launchConfig.addToArgHistory(p, v)
@@ -498,10 +498,15 @@ class MasterViewProxy(QtGui.QWidget):
         except:
           import traceback
           print traceback.print_exc()
-
         # by this call the name of the host will be updated if a new one is defined in the launch file
         self.updateRunningNodesInModel(self.__master_info)
-
+      else:
+        import os
+        err_msg = ''.join([os.path.basename(launchfile),' not loaded, invalid args:\n\n', ', '.join([arg.split(':=')[0] for arg in req_args])])
+        rospy.logwarn("%s", err_msg)
+        QtGui.QMessageBox.warning(None, self.tr("Loading launch file"),
+                                err_msg,
+                                QtGui.QMessageBox.Ok)
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:
