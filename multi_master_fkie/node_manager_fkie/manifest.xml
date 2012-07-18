@@ -22,6 +22,7 @@
   <rosdep name="python-pyside" />
   <rosdep name="python-paramiko" />
   <rosdep name="python-psutil" />
+  <rosdep name="pyside-tools" />
   <rosdep name="screen" />
 
   <export>
