@@ -468,13 +468,15 @@ class MasterViewProxy(QtGui.QWidget):
         inputDia.setFilterVisible(False)
         inputDia.setWindowTitle(''.join(['Enter the argv for ', launchfile]))
         if inputDia.exec_():
-          params = inputDia.getKeywords(True)
+          params = inputDia.getKeywords()
           argv = []
           for p,v in params.items():
-            launchConfig.addToArgHistory(p, v)
-            argv.append(''.join([p, ':=', v]))
+            if v:
+              launchConfig.addToArgHistory(p, v)
+              argv.append(''.join([p, ':=', v]))
           loaded, req_args = launchConfig.load(argv)
-
+        else:
+          return
       if loaded:
         self.__configs[launchfile] = launchConfig
         #connect the signal, which is emitted on changes on configuration file 
@@ -1007,7 +1009,7 @@ class MasterViewProxy(QtGui.QWidget):
           # start with default configuration
           from default_cfg_fkie.srv import Task
           try:
-            nm.starter().callService(self.master_info.getService(config).uri, config, Task, node.name)
+            nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
           except (Exception, nm.StartException), e:
             rospy.logwarn("Error while call a service of node '%s': %s", node.name, str(e))
             QtGui.QMessageBox.warning(None, 'Error while call a service of node %s'%node.name,
@@ -1481,28 +1483,20 @@ class MasterViewProxy(QtGui.QWidget):
           showDia.setWindowTitle(''.join(['Response of ', service.name]))
           showDia.setText(str(resp))
           showDia.show()
-#          QtGui.QMessageBox.information(self, ''.join(['Response of ', service.name]),
-#                                    str(resp),
-#                                    QtGui.QMessageBox.Ok)
         else:
           inputDia = ParameterDialog(self._params_from_slots(slots, types))
-#          for name, type in zip(names, types):
-            
           inputDia.setWindowTitle(''.join(['Run service ', service.name]))
+          inputDia.resize(450,300)
           if inputDia.exec_():
             params = inputDia.getKeywords()
-            req, resp = nm.starter().callService(service.uri, service.name, service.get_service_class(), **params)
+            req, resp = nm.starter().callService(service.uri, service.name, service.get_service_class(), [params])
             showDia = ParameterDialog(dict(), buttons=QtGui.QDialogButtonBox.Ok, parent=self)
             showDia.setWindowTitle(''.join(['Request / Response of ', service.name]))
             showDia.setText('\n'.join([str(req), '---', str(resp)]))
             showDia.show()
-#            QtGui.QMessageBox.information(self, ''.join(['Request / Response of ', service.name]),
-#                                      str('\n'.join([str(req), '---', str(resp)])),
-#                                      QtGui.QMessageBox.Ok)
-#          QtGui.QMessageBox.information(self, ''.join(['Call of ', service.name]),
-#                                    'Call of service with parameter is not yet supported!',
-#                                    QtGui.QMessageBox.Ok)
-      except nm.StartException, e:
+      except Exception, e:
+        import traceback
+        print traceback.format_exc()
         rospy.logwarn("Error while call service '%s': %s", str(service.name), str(e))
         QtGui.QMessageBox.warning(None, 'Error while call %s'%service.name,
                                   str(e),
@@ -1510,19 +1504,19 @@ class MasterViewProxy(QtGui.QWidget):
 
   def _params_from_slots(self, slots, types):
     result = dict()
-    for slot, type in zip(slots, types):
-      base_type = roslib.msgs.base_msg_type(type)
-      if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type == 'time':
-        result[slot] = (type, '')
+    for slot, msg_type in zip(slots, types):
+      base_type, is_array, array_length = roslib.msgs.parse_type(msg_type)
+      if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
+        result[slot] = (msg_type, 'now' if base_type in ['time', 'duration'] else '')
       else:
         try:
           list_msg_class = roslib.message.get_message_class(base_type)
           subresult = self._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types)
-          result[slot] = (type, subresult)
+          result[slot] = (msg_type, [subresult] if is_array else subresult)
         except ValueError, e:
           import traceback
           print traceback.format_exc()
-          print "ERROR:", e
+          rospy.logwarn("Error while parse message type '%s': %s", str(msg_type), str(e))
     return result
 
 

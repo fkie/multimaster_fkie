@@ -334,7 +334,7 @@ class StartHandler(object):
         if output:
           rospy.logdebug("STDOUT while start '%s': %s", name, output)
 
-  def callService(self, service_uri, service, type, *args, **kwds):
+  def callService(self, service_uri, service, service_type, service_args=[]):
     '''
     Calls the service and return the response.
     To call the service the ServiceProxy can't be used, because it uses 
@@ -347,10 +347,9 @@ class StartHandler(object):
     @type service_uri: C{str}
     @param service: full service name (with name space)
     @type service: C{str}
-    @param type: service class
-    @type type: ServiceDefinition: service class
-    @param args: arguments to remote service
-    @param kwds: message keyword arguments
+    @param service_type: service class
+    @type service_type: ServiceDefinition: service class
+    @param args: arguments
     @return: the tuple of request and response.
     @rtype: C{(request object, response object)}
     @raise StartException: on error
@@ -364,9 +363,24 @@ class StartHandler(object):
     from rospy.impl.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, DEFAULT_BUFF_SIZE
     from rospy.impl.tcpros_service import TCPROSServiceClient
     from rospy.service import ServiceException
-    request = args_kwds_to_message(type._request_class, args, kwds) 
+    request = service_type._request_class()
+    import genpy
+    try:
+      now = rospy.get_rostime() 
+      import std_msgs.msg
+      keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
+      genpy.message.fill_message_args(request, service_args, keys)
+    except genpy.MessageException as e:
+        def argsummary(args):
+            if type(args) in [tuple, list]:
+                return '\n'.join([' * %s (type %s)'%(a, type(a).__name__) for a in args])
+            else:
+                return ' * %s (type %s)'%(args, type(args).__name__)
+        raise StartException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]"%(e, argsummary(service_args), genpy.message.get_printable_message_args(request)))
+
+#    request = args_kwds_to_message(type._request_class, args, kwds) 
     transport = None
-    protocol = TCPROSServiceClient(service, type, headers={})
+    protocol = TCPROSServiceClient(service, service_type, headers={})
     transport = TCPROSTransport(protocol, service)
     # initialize transport
     dest_addr, dest_port = parse_rosrpc_uri(service_uri)

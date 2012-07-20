@@ -388,7 +388,7 @@ class GroupItem(QtGui.QStandardItem):
       if isinstance(item, GroupItem):
         item.markNodesAsDuplicateOf(running_nodes)
       elif isinstance(item, NodeItem):
-        item.has_running = (item.node_info.pid is None and not item.name in ignore and item.name in running_nodes)
+        item.has_running = (item.node_info.uri is None and not item.name in ignore and item.name in running_nodes)
 
   def updateIcon(self):
     has_running = False

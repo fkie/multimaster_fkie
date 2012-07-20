@@ -56,6 +56,8 @@ class ParameterValueItem(QtGui.QStandardItem):
     '''@ivar: the name of parameter '''
     self._value = value
     '''@ivar: the value of the parameter '''
+    if isinstance(value, (str, unicode)) and value.find('\n') > -1:
+      self.setSizeHint(QtCore.QSize(-1, 45))
 
   @property
   def name(self):
@@ -69,6 +71,8 @@ class ParameterValueItem(QtGui.QStandardItem):
   def value(self, value):
     self._value = value
     self.setText(unicode(value))
+    if isinstance(value, (str, unicode)) and value.find('\n') > -1:
+      self.setSizeHint(QtCore.QSize(-1, 45))
 
   def type(self):
     return ParameterValueItem.ITEM_TYPE

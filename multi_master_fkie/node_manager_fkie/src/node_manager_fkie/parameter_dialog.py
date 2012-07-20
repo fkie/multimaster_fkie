@@ -32,11 +32,308 @@
 
 from PySide import QtCore, QtGui
 
+import sys
 import roslib
 import rospy
 import node_manager_fkie as nm
 
 from parameter_handler import ParameterHandler
+
+class ParameterDescription(object):
+  def __init__(self, name, msg_type, value=None, widget=None):
+    self._name = name
+    self._type = msg_type
+    if isinstance(self._type, dict):
+      self._type = 'dict'
+    elif isinstance(self._type, list):
+      self._type = 'list'
+    self._value = value
+    self._widget = widget
+    self._base_type, self._is_array_type, array_length = roslib.msgs.parse_type(self._type)
+    self._is_primitive_type =  self._base_type in roslib.msgs.PRIMITIVE_TYPES or self._base_type in ['int', 'float', 'time', 'duration']
+    self._is_time_type = self._base_type in ['time', 'duration']
+  
+  def name(self):
+    return self._name
+  
+  def setWidget(self, widget):
+    self._widget = widget
+    self.addCachedValuesToWidget()
+  
+  def widget(self):
+    return self._widget
+
+  def fullName(self):
+    result = self.name()
+    widget = self._widget
+    while not widget is None:
+      if isinstance(widget, (MainBox, GroupBox, ArrayBox)):
+        result = roslib.names.ns_join(widget.name, result)
+      widget = widget.parent()
+    return result
+
+  def isArrayType(self):
+    return self._is_array_type
+
+  def isPrimitiveType(self):
+    return self._is_primitive_type
+
+  def isTimeType(self):
+    return self._is_time_type
+  
+  def baseType(self):
+    return self._base_type
+  
+  def updateValueFromField(self):
+    field = self.widget()
+    result = ''
+    if isinstance(field, QtGui.QCheckBox):
+      result = repr(field.isChecked())
+    elif isinstance(field, QtGui.QLineEdit):
+      result = field.text()
+    elif isinstance(field, QtGui.QComboBox):
+      result = field.currentText()
+    self.setValue(result)
+
+  def setValue(self, value):
+    try:
+      if isinstance(value, (dict, list)):
+        self._value = value
+      elif value:
+        self.addParamCache(self.fullName(), self._value)
+        if self.isArrayType():
+          if 'int' in self.baseType():
+            self._value = map(int, value.split(','))
+          elif 'float' in self.baseType():
+            self._value = map(float, value.split(','))
+          elif 'bool' in self.baseType():
+            self._value = map(bool, value.split(','))
+          else:
+            self._value = [ s.encode(sys.getfilesystemencoding()) for s in value.split(',')]
+        else:
+          if 'int' in self.baseType():
+            self._value = int(value)
+          elif 'float' in self.baseType():
+            self._value = float(value)
+          elif 'bool' in self.baseType():
+            self._value = bool(value)
+          elif self.isTimeType():
+            if value == 'now':
+              self._value = 'now'
+            else:
+              val = float(value)
+              secs = int(val)
+              nsecs = int((val - secs) * 1000000000)
+              self._value = {'secs': secs, 'nsecs': nsecs}
+          else:
+            self._value = value.encode(sys.getfilesystemencoding())
+      else:
+        if self.isArrayType():
+          arr = []
+          self._value = arr
+        else:
+          if 'int' in self.baseType():
+            self._value = 0
+          elif 'float' in self.baseType():
+            self._value = 0.0
+          elif 'bool' in self.baseType():
+            self._value = False
+          elif self.isTimeType():
+            self._value = {'secs': 0, 'nsecs': 0}
+          else:
+            self._value = ''
+      self.addParamCache(self.fullName(), value)
+    except Exception, e:
+      raise Exception(''.join(["Error while set value '", unicode(value), "' for '", self.fullName(), "': ", str(e)]))
+    return self._value
+
+  def value(self):
+    return self._value
+
+  def cachedValues(self):
+    try:
+      return nm.PARAM_CACHE[self.fullName()]
+    except:
+      result = []
+      return result
+
+  def addParamCache(self, key, value):
+    if value:
+      if not nm.PARAM_CACHE.has_key(key):
+        nm.PARAM_CACHE[key] = [unicode(value)]
+      elif not key in nm.PARAM_CACHE[key]:
+        nm.PARAM_CACHE[key].append(unicode(value))
+
+
+  def createTypedWidget(self, parent):
+    result = None
+    if self.isPrimitiveType():
+      if 'bool' in self.baseType():
+        result = QtGui.QCheckBox(parent=parent)
+        result.setObjectName(self.name())
+        result.setChecked(bool(self.value()))
+      else:
+        result = QtGui.QComboBox(parent=parent)
+        result.setObjectName(self.name())
+        result.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+        result.setEditable(True)
+        items = []
+        if isinstance(self.value(), list):
+          items[len(items):] = self.value()
+        else:
+          if not self.value() is None and self.value():
+            items.append(unicode(self.value()))
+          elif self.isTimeType():
+            items.append(now)
+        result.addItems(items)
+    else:
+      if self.isArrayType():
+        result = ArrayBox(self.name(), self._type, parent=parent)
+      else:
+        result = GroupBox(self.name(), self._type, parent=parent)
+    return result
+
+  def addCachedValuesToWidget(self):
+    if isinstance(self.widget(), QtGui.QComboBox):
+      values = self.cachedValues()
+      try:
+        values.remove(self.widget().currentText())
+      except:
+        pass
+      self.widget().addItems(values)
+
+class MainBox(QtGui.QWidget):
+  def __init__(self, name, type, parent=None):
+    QtGui.QWidget.__init__(self, parent)
+    self.setObjectName(name)
+    self.name = name
+    self.type = type
+    self.createLayout()
+  
+  def createLayout(self):
+    boxLayout = QtGui.QFormLayout()
+    boxLayout.setVerticalSpacing(0)
+    self.setLayout(boxLayout)
+  
+  def createFieldFromValue(self, value):
+    self.setUpdatesEnabled(False)
+    if isinstance(value, list):
+      for v in value:
+        if isinstance(v, dict):
+          self._createFieldFromDict(v)
+          line = QtGui.QFrame()
+          line.setFrameShape(QtGui.QFrame.HLine)
+          line.setFrameShadow(QtGui.QFrame.Sunken)
+          line.setObjectName("__line__")
+          self.layout().addRow(line)
+        #@TODO add an ADD button
+    elif isinstance(value, dict):
+      self._createFieldFromDict(value)
+    self.setUpdatesEnabled(True)
+        
+  def _createFieldFromDict(self, value):
+    for name, (_type, val) in sorted(value.iteritems(), key=lambda (k,v): (k.lower(),v)):
+      if not hasattr(self, 'params'):
+        self.params = []
+      field = self.getField(name)
+      if field is None:
+        param_desc = ParameterDescription(name, _type, val)
+        self.params.append(param_desc)
+        field = param_desc.createTypedWidget(self)
+        param_desc.setWidget(field)
+        if isinstance(field, (GroupBox, ArrayBox)):
+          field.createFieldFromValue(val)
+          self.layout().addRow(field)
+        else:
+          label_name = name if _type == 'string' else ''.join([name, ' (', _type, ')'])
+          label = QtGui.QLabel(label_name, self)
+          label.setObjectName(''.join([name, '_label']))
+          label.setBuddy(field)
+          self.layout().addRow(label, field)
+      else:
+        if isinstance(field, (GroupBox, ArrayBox)):
+          field.createFieldFromValue(val)
+        else:
+          self.setUpdatesEnabled(True)
+          raise Exception(''.join(["Parameter with name '", name, "' already exists!"]))
+
+  def value(self):
+    if isinstance(self, ArrayBox):
+      result = list()
+      result_dict = dict()
+      result.append(result_dict)
+    else:
+      result = result_dict = dict()
+    if hasattr(self, 'params'):
+      for param in self.params:
+        if param.isPrimitiveType():
+          param.updateValueFromField()
+          result_dict[param.name()] = param.value()
+        elif isinstance(param.widget(), (GroupBox, GroupBox)):
+          result_dict[param.name()] = param.widget().value()
+    return result
+
+  def getField(self, name):
+    for child in self.children():
+      if child.objectName() == name:
+        return child
+    return None
+
+  def filter(self, arg):
+    '''
+    Hide the parameter input field, which label dosn't contains the C{arg}.
+    @param arg: the filter text
+    @type art: C{str}
+    '''
+    for child in self.children():
+      if isinstance(child, (GroupBox, ArrayBox)):
+        child.filter(arg)
+        show_group = False
+        # hide group, if no parameter are visible
+        for cchild in child.children():
+          if isinstance(cchild, (QtGui.QWidget)) and cchild.objectName() != '__line__' and cchild.isVisible():
+            show_group = True
+            break
+        child.setVisible(show_group)
+      elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)):
+        label = child.parentWidget().layout().labelForField(child)
+        if not label is None:
+          show = not (child.objectName().lower().find(arg.lower()) == -1)
+          # set the parent group visible if it is not visible
+          if show and not child.parentWidget().isVisible():
+            child.parentWidget().setVisible(show)
+          label.setVisible(show)
+          child.setVisible(show)
+
+  def setVisible(self, arg):
+    if arg and not self.parentWidget() is None and not self.parentWidget().isVisible():
+      self.parentWidget().setVisible(arg)
+    QtGui.QWidget.setVisible(self, arg)
+
+
+class GroupBox(QtGui.QGroupBox, MainBox):
+  def __init__(self, name, type, parent=None):
+    QtGui.QGroupBox.__init__(self, ''.join([name, ' (', type, ')']), parent)
+    self.setObjectName(name)
+    self.name = name
+    self.type = type
+    self.setAlignment(QtCore.Qt.AlignLeft)
+    self.createLayout()
+
+class ArrayBox(GroupBox):
+  def __init__(self, name, type, parent=None):
+    GroupBox.__init__(self, name, type, parent)
+    self.setFlat(True)
+
+
+
+class ScrollArea(QtGui.QScrollArea):
+  
+  def viewportEvent(self, arg):
+    if self.widget() and self.viewport().size().width() != self.widget().maximumWidth():
+      self.widget().setMaximumWidth(self.viewport().size().width())
+    return QtGui.QScrollArea.viewportEvent(self, arg)
+
 
 class ParameterDialog(QtGui.QDialog):
   '''
@@ -63,7 +360,6 @@ class ParameterDialog(QtGui.QDialog):
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
-
     # add filter row
     self.filter_frame = QtGui.QFrame(self)
     filterLayout = QtGui.QHBoxLayout(self.filter_frame)
@@ -78,15 +374,11 @@ class ParameterDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.filter_frame)
     
     # create area for the parameter
-    self.scrollArea = scrollArea = QtGui.QScrollArea(self);
+    self.scrollArea = scrollArea = ScrollArea(self);
     scrollArea.setObjectName("scrollArea")
-#    scrollArea.setWidgetResizable(True)
+    scrollArea.setWidgetResizable(True)
 #    scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-    self.content = QtGui.QWidget(self)
-    self.content.setObjectName("scrollAreaWidgetContents")
-    self.contentLayout = QtGui.QFormLayout(self.content)
-    self.contentLayout.setVerticalSpacing(0)
-    self.content.setLayout(self.contentLayout)
+    self.content = MainBox(ns, 'str', self)
     scrollArea.setWidget(self.content)
     self.verticalLayout.addWidget(scrollArea)
 
@@ -121,15 +413,12 @@ class ParameterDialog(QtGui.QDialog):
       self.add_new_button = QtGui.QPushButton(self.tr("&Add"))
       self.add_new_button.clicked.connect(self._on_add_parameter)
       self.buttonBox.addButton(self.add_new_button, QtGui.QDialogButtonBox.ActionRole)
-#      self.buttonBox.clicked.connect(self.on_clicked)
     self.verticalLayout.addWidget(self.buttonBox)
 
     # set the input fields
-    self.params = list() # (field, type)
     if params:
-      self._insertItems(self.content, self.contentLayout, params)
-    if self.params:
-      self.params[0][1].setFocus(QtCore.Qt.OtherFocusReason)
+      self.content.createFieldFromValue(params)
+      self.setInfoActive(False)
 
     self.is_delivered = False
     self.is_send = False
@@ -143,23 +432,15 @@ class ParameterDialog(QtGui.QDialog):
       self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
       self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
       self.parameterHandler.requestParameterList(masteruri, ns)
-
+      
+    self.filter_field.setFocus()
 #    print '=============== create', self.objectName()
 #
 #  def __del__(self):
 #    print "************ destroy", self.objectName()
 
   def _on_filter_changed(self):
-    for type, field in self.params:
-      if field.objectName().lower().find(self.filter_field.text().lower()) == -1:
-        label = field.parentWidget().layout().labelForField(field)
-        field.setVisible(False)
-        label.setVisible(False)
-      else:
-        label = field.parentWidget().layout().labelForField(field)
-        field.setVisible(True)
-        label.setVisible(True)
-      self.contentLayout.update()
+    self.content.filter(self.filter_field.text())
 
   def setFilterVisible(self, val):
     '''
@@ -167,7 +448,6 @@ class ParameterDialog(QtGui.QDialog):
     '''
     self.filter_visible = val
     self.filter_frame.setVisible(val&self.scrollArea.isHidden())
-
 
   def setText(self, text):
     '''
@@ -187,101 +467,16 @@ class ParameterDialog(QtGui.QDialog):
       self.filter_frame.setVisible(True&self.filter_visible)
       self.scrollArea.setVisible(True)
       self.info_field.setVisible(False)
+      if self.filter_frame.isVisible():
+        self.filter_field.setFocus()
 
-  def resizeEvent(self, event):
-    self.updateContentSize()
 
-  def updateContentSize(self):
-    width = max(self.scrollArea.size().width()-6, self.layout().contentsRect().width()-6)
-    if self.scrollArea.verticalScrollBar().isVisible():
-      width -= self.scrollArea.verticalScrollBar().size().width()
-    max_height = max(self.content.layout().totalMinimumSize().height(), self.size().height()-(self.filter_frame.size().height() if self.filter_frame.isVisible() else 0) - self.buttonBox.size().height() - 25)
-    self.content.resize(width, max_height)
-
-  def _insertItems(self, parent, layout, params, ns=''):
-    '''
-    Adds input fields to the layout of the dialog.
-    @param params: a dictionary with parameter names and (type, values). 
-    The C{value}, can be a primitive value, a list with values or parameter 
-    dictionary to create groups. In this case the type is the name of the group.
-    @type params: C{dict(str:(str, {value, [..], dict()}))}
-    '''
-    parent.setUpdatesEnabled(False)
-    self.setInfoActive(False)
-    for name, (type, value) in sorted(params.items()):
-      full_name = roslib.names.ns_join(ns, name) if ns else name
-      base_type = roslib.msgs.base_msg_type(type)
-      if isinstance(value, dict) and value:
-        box = QtGui.QGroupBox(type, parent)
-        box.setObjectName(type)
-        box.setAlignment(QtCore.Qt.AlignLeft)
-        boxLayout = QtGui.QFormLayout(box)
-        box.setLayout(boxLayout)
-        namespace = roslib.names.ns_join(ns, type) if ns else type
-        self._insertItems(box, boxLayout, value, namespace)
-        layout.addRow(box)
-      elif base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['int', 'float'] and not isinstance(value, dict):
-        if base_type == 'bool':
-          field = QtGui.QCheckBox(parent)
-          if isinstance(value, bool):
-            field.setChecked(value)
-        else:
-          field = QtGui.QComboBox(parent)
-#          field.setMaximumWidth(self.size().width())
-          field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
-          field.setEditable(True)
-          items = []
-          cache = []
-          if nm.PARAM_CACHE.has_key(full_name):
-            cache[len(cache):] = [unicode(v) for v in nm.PARAM_CACHE[full_name]] 
-          if isinstance(value, list):
-            items[len(items):] = value
-          else:
-            items.append(unicode(value))
-            self.addParamCache(full_name, unicode(value))
-          field.addItems(items)
-          field.addItems(list(set(cache)-set(items)))
-        field.setObjectName(full_name)
-        label_name = name if type == 'string' else ''.join([name, ' (', type, ')'])
-        label = QtGui.QLabel(label_name, parent)
-        label.setObjectName(''.join([full_name, '_label']))
-        label.setBuddy(field)
-        layout.addRow(label, field)
-        self.params.append((type, field))
-    parent.setUpdatesEnabled(True)
-
-  def getKeywords(self, skip_empty=False):
+  def getKeywords(self, skip_empty=False, use_group_as_namespace=False):
     '''
     @returns: a directory with parameter and value for all entered fields.
     @rtype: C{dict(str(param) : str(value))}
     '''
-    result = {}
-    for type, field in self.params:
-      if isinstance(field, QtGui.QCheckBox):
-        result[field.objectName()] = field.isChecked()
-      else:
-        test = ''
-        if isinstance(field, QtGui.QLineEdit):
-          text = field.text()
-        elif isinstance(field, QtGui.QComboBox):
-          text = field.currentText()
-        if text:
-          if 'int' in type:
-            result[field.objectName()] = int(text)
-          elif 'float' in type:
-            result[field.objectName()] = float(text)
-          else:
-            result[field.objectName()] = text
-        elif not skip_empty:
-          result[field.objectName()] = text
-          self.addParamCache(field.objectName(), text)
-    return result
-  
-  def addParamCache(self, key, value):
-    if not nm.PARAM_CACHE.has_key(key):
-      nm.PARAM_CACHE[key] = [value]
-    elif not key in nm.PARAM_CACHE[key]:
-      nm.PARAM_CACHE[key].append(value)
+    return self.content.value()
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,12 +485,12 @@ class ParameterDialog(QtGui.QDialog):
 
 
   def _on_add_parameter(self):
-    params = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool']), 'value' : ('string', '') }
-    dia = ParameterDialog(params)
+    params_arg = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool']), 'value' : ('string', '') }
+    dia = ParameterDialog(params_arg)
     dia.setFilterVisible(False)
     if dia.exec_():
-      params = dia.getKeywords()
       try:
+        params = dia.getKeywords()
         if params['type'] == 'int':
           value = int(params['value'])
         elif params['type'] == 'float':
@@ -359,7 +554,7 @@ class ParameterDialog(QtGui.QDialog):
         if names_sep:
           group = dia_params
           for n in names_sep:
-            group_name = '_'.join([n, 'group'])
+            group_name = n
             if group.has_key(group_name):
               group = group[group_name][1]
             else:
@@ -369,10 +564,11 @@ class ParameterDialog(QtGui.QDialog):
           group[param_name] = (type_str, value)
         else:
           dia_params[param_name] = (type_str, value)
-      self._insertItems(self.content, self.contentLayout, dia_params)
-      self.updateContentSize()
-      if self.params:
-        self.params[0][1].setFocus(QtCore.Qt.OtherFocusReason)
+      try:
+        self.content.createFieldFromValue(dia_params)
+        self.setInfoActive(False)
+      except Exception, e:
+        QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
     else:
       self.setText(msg)
 
@@ -424,7 +620,7 @@ class ParameterDialog(QtGui.QDialog):
     '''
     if not self.masteruri is None and self.result() == QtGui.QDialog.Accepted and not self.is_send:
       try:
-        params = self.getKeywords()
+        params = self.getKeywords(use_group_as_namespace=True)
         ros_params = dict()
         for p,v in params.items():
           ros_params[roslib.names.ns_join(self.ns, p)] = v
@@ -435,7 +631,7 @@ class ParameterDialog(QtGui.QDialog):
           event.ignore()
         else:
           event.accept()
-      except ValueError, e:
+      except Exception, e:
         QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
     else:
       event.accept()
