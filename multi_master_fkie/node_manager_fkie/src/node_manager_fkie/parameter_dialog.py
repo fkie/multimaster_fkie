@@ -33,6 +33,8 @@
 from PySide import QtCore, QtGui
 
 import sys
+import threading
+
 import roslib
 import rospy
 import node_manager_fkie as nm
@@ -40,6 +42,9 @@ import node_manager_fkie as nm
 from parameter_handler import ParameterHandler
 
 class ParameterDescription(object):
+  '''
+  Used for internal representation of the parameter in dialog.
+  '''
   def __init__(self, name, msg_type, value=None, widget=None):
     self._name = name
     self._type = msg_type
@@ -100,7 +105,7 @@ class ParameterDescription(object):
       if isinstance(value, (dict, list)):
         self._value = value
       elif value:
-        self.addParamCache(self.fullName(), self._value)
+        self.addParamCache(self.fullName(), value)
         if self.isArrayType():
           if 'int' in self.baseType():
             self._value = map(int, value.split(','))
@@ -161,9 +166,8 @@ class ParameterDescription(object):
     if value:
       if not nm.PARAM_CACHE.has_key(key):
         nm.PARAM_CACHE[key] = [unicode(value)]
-      elif not key in nm.PARAM_CACHE[key]:
+      elif not value in nm.PARAM_CACHE[key]:
         nm.PARAM_CACHE[key].append(unicode(value))
-
 
   def createTypedWidget(self, parent):
     result = None
@@ -202,7 +206,12 @@ class ParameterDescription(object):
         pass
       self.widget().addItems(values)
 
+
+
 class MainBox(QtGui.QWidget):
+  '''
+  Groups the parameter without visualization of the group. It is the main widget.
+  '''
   def __init__(self, name, type, parent=None):
     QtGui.QWidget.__init__(self, parent)
     self.setObjectName(name)
@@ -217,19 +226,21 @@ class MainBox(QtGui.QWidget):
   
   def createFieldFromValue(self, value):
     self.setUpdatesEnabled(False)
-    if isinstance(value, list):
-      for v in value:
-        if isinstance(v, dict):
-          self._createFieldFromDict(v)
-          line = QtGui.QFrame()
-          line.setFrameShape(QtGui.QFrame.HLine)
-          line.setFrameShadow(QtGui.QFrame.Sunken)
-          line.setObjectName("__line__")
-          self.layout().addRow(line)
-        #@TODO add an ADD button
-    elif isinstance(value, dict):
-      self._createFieldFromDict(value)
-    self.setUpdatesEnabled(True)
+    try:
+      if isinstance(value, list):
+        for v in value:
+          if isinstance(v, dict):
+            self._createFieldFromDict(v)
+            line = QtGui.QFrame()
+            line.setFrameShape(QtGui.QFrame.HLine)
+            line.setFrameShadow(QtGui.QFrame.Sunken)
+            line.setObjectName("__line__")
+            self.layout().addRow(line)
+          #@TODO add an ADD button
+      elif isinstance(value, dict):
+          self._createFieldFromDict(value)
+    finally:
+      self.setUpdatesEnabled(True)
         
   def _createFieldFromDict(self, value):
     for name, (_type, val) in sorted(value.iteritems(), key=lambda (k,v): (k.lower(),v)):
@@ -254,7 +265,6 @@ class MainBox(QtGui.QWidget):
         if isinstance(field, (GroupBox, ArrayBox)):
           field.createFieldFromValue(val)
         else:
-          self.setUpdatesEnabled(True)
           raise Exception(''.join(["Parameter with name '", name, "' already exists!"]))
 
   def value(self):
@@ -311,7 +321,12 @@ class MainBox(QtGui.QWidget):
     QtGui.QWidget.setVisible(self, arg)
 
 
+
 class GroupBox(QtGui.QGroupBox, MainBox):
+  '''
+  Groups the parameter of a dictionary, struct or class using the group box for 
+  visualization.
+  '''
   def __init__(self, name, type, parent=None):
     QtGui.QGroupBox.__init__(self, ''.join([name, ' (', type, ')']), parent)
     self.setObjectName(name)
@@ -320,7 +335,12 @@ class GroupBox(QtGui.QGroupBox, MainBox):
     self.setAlignment(QtCore.Qt.AlignLeft)
     self.createLayout()
 
+
+
 class ArrayBox(GroupBox):
+  '''
+  Groups the parameter of a list.
+  '''
   def __init__(self, name, type, parent=None):
     GroupBox.__init__(self, name, type, parent)
     self.setFlat(True)
@@ -328,6 +348,9 @@ class ArrayBox(GroupBox):
 
 
 class ScrollArea(QtGui.QScrollArea):
+  '''
+  ScrollArea provides the maximal width of the internal widget.
+  '''
   
   def viewportEvent(self, arg):
     if self.widget() and self.viewport().size().width() != self.widget().maximumWidth():
@@ -335,27 +358,22 @@ class ScrollArea(QtGui.QScrollArea):
     return QtGui.QScrollArea.viewportEvent(self, arg)
 
 
+
 class ParameterDialog(QtGui.QDialog):
   '''
-  This dialog creates an input mask for the given slots and their types.
+  This dialog creates an input mask for the given parameter and their types.
   '''
 
-  def __init__(self, params=dict(), masteruri=None, ns='/', buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, parent=None):
+  def __init__(self, params=dict(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, parent=None):
     '''
     Creates an input dialog.
     @param params: a dictionary with parameter names and (type, values). 
     The C{value}, can be a primitive value, a list with values or parameter 
     dictionary to create groups. In this case the type is the name of the group.
     @type params: C{dict(str:(str, {value, [..], dict()}))}
-    @param masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
-    @type masteruri: C{str}
-    @param ns: namespace of the parameter retrieved from the ROS parameter server. Only used if C{masteruri} is not None.
-    @type ns: C{str}
     '''
     QtGui.QDialog.__init__(self, parent=parent)
-    self.setObjectName(' - '.join(['ParameterDialog', str(params) if params else str(masteruri)]))
-    self.masteruri = masteruri
-    self.ns = ns
+    self.setObjectName(' - '.join(['ParameterDialog', str(params)]))
 
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
@@ -377,8 +395,7 @@ class ParameterDialog(QtGui.QDialog):
     self.scrollArea = scrollArea = ScrollArea(self);
     scrollArea.setObjectName("scrollArea")
     scrollArea.setWidgetResizable(True)
-#    scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-    self.content = MainBox(ns, 'str', self)
+    self.content = MainBox('/', 'str', self)
     scrollArea.setWidget(self.content)
     self.verticalLayout.addWidget(scrollArea)
 
@@ -409,10 +426,6 @@ class ParameterDialog(QtGui.QDialog):
     self.buttonBox.setStandardButtons(buttons)
     self.buttonBox.accepted.connect(self.accept)
     self.buttonBox.rejected.connect(self.reject)
-    if not masteruri is None:
-      self.add_new_button = QtGui.QPushButton(self.tr("&Add"))
-      self.add_new_button.clicked.connect(self._on_add_parameter)
-      self.buttonBox.addButton(self.add_new_button, QtGui.QDialogButtonBox.ActionRole)
     self.verticalLayout.addWidget(self.buttonBox)
 
     # set the input fields
@@ -420,19 +433,6 @@ class ParameterDialog(QtGui.QDialog):
       self.content.createFieldFromValue(params)
       self.setInfoActive(False)
 
-    self.is_delivered = False
-    self.is_send = False
-    if not masteruri is None:
-      self.resize(450,300)
-      self.mIcon = QtGui.QIcon(":/icons/default_cfg.png")
-      self.setWindowIcon(self.mIcon)
-      self.setText(' '.join(['Obtaining parameters from the parameter server', masteruri, '...']))
-      self.parameterHandler = ParameterHandler()
-      self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
-      self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
-      self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
-      self.parameterHandler.requestParameterList(masteruri, ns)
-      
     self.filter_field.setFocus()
 #    print '=============== create', self.objectName()
 #
@@ -459,6 +459,11 @@ class ParameterDialog(QtGui.QDialog):
     self.setInfoActive(True)
 
   def setInfoActive(self, val):
+    '''
+    Activates or deactivates the info field of this dialog. If info field is
+    activated, the filter frame and the input field are deactivated.
+    @type val: C{bool} 
+    '''
     if val and self.info_field.isHidden():
       self.filter_frame.setVisible(False&self.filter_visible)
       self.scrollArea.setVisible(False)
@@ -470,19 +475,92 @@ class ParameterDialog(QtGui.QDialog):
       if self.filter_frame.isVisible():
         self.filter_field.setFocus()
 
-
-  def getKeywords(self, skip_empty=False, use_group_as_namespace=False):
+  def getKeywords(self):
     '''
     @returns: a directory with parameter and value for all entered fields.
     @rtype: C{dict(str(param) : str(value))}
     '''
     return self.content.value()
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  def accept(self):
+    self.setResult(QtGui.QDialog.Accepted)
+    self.hide()
+  
+  def reject(self):
+    self.setResult(QtGui.QDialog.Rejected)
+    self.hide()
+
+  def hideEvent(self, event):
+    self.close()
+
+  def closeEvent (self, event):
+    '''
+    Test the open files for changes and save this if needed.
+    '''
+    self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+    QtGui.QDialog.closeEvent(self, event)
+
+
+
+class MasterParameterDialog(ParameterDialog):
+  '''
+  This dialog is an extension to the L{ParameterDialog}. The parameter and their 
+  values are requested from the ROS master parameter server. The requests are 
+  threaded and allows the also threaded changed of ROS parameter assigned to 
+  given namespace.
+  '''
+  
+  def __init__(self, masteruri, ns='/', parent=None):
+    '''
+    @param masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
+    @type masteruri: C{str}
+    @param ns: namespace of the parameter retrieved from the ROS parameter server.
+    @type ns: C{str}
+    '''
+    ParameterDialog.__init__(self, dict(), buttons=QtGui.QDialogButtonBox.Close, parent=parent)
+    self.masteruri = masteruri
+    self.ns = ns
+    self.is_delivered = False
+    self.is_send = False
+    self.mIcon = QtGui.QIcon(":/icons/default_cfg.png")
+    self.setWindowIcon(self.mIcon)
+    self.resize(450,300)
+    self.add_new_button = QtGui.QPushButton(self.tr("&Add"))
+    self.add_new_button.clicked.connect(self._on_add_parameter)
+    self.buttonBox.addButton(self.add_new_button, QtGui.QDialogButtonBox.ActionRole)
+    self.apply_button = QtGui.QPushButton(self.tr("&Apply"))
+    self.apply_button.clicked.connect(self._on_apply)
+    self.buttonBox.addButton(self.apply_button, QtGui.QDialogButtonBox.ActionRole)
+    self.setText(' '.join(['Obtaining parameters from the parameter server', masteruri, '...']))
+    self.parameterHandler = ParameterHandler()
+    self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
+    self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
+    self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
+    self.parameterHandler.requestParameterList(masteruri, ns)
+
+  def _on_apply(self):
+    if not self.masteruri is None and not self.is_send:
+      try:
+        params = self.getKeywords()
+        ros_params = dict()
+        for p,v in params.items():
+          ros_params[roslib.names.ns_join(self.ns, p)] = v
+        if ros_params:
+          self.is_send = True
+          self.setText('Send the parameter into server...')
+          self.parameterHandler.deliverParameter(self.masteruri, ros_params)
+      except Exception, e:
+        QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
+    elif self.masteruri is None:
+      QtGui.QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QtGui.QMessageBox.Ok)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%          ROS parameter handling       %%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
   def _on_add_parameter(self):
     params_arg = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool']), 'value' : ('string', '') }
@@ -491,15 +569,18 @@ class ParameterDialog(QtGui.QDialog):
     if dia.exec_():
       try:
         params = dia.getKeywords()
-        if params['type'] == 'int':
-          value = int(params['value'])
-        elif params['type'] == 'float':
-          value = float(params['value'])
-        elif params['type'] == 'bool':
-          value = bool(params['value'])
+        if params['name']:
+          if params['type'] == 'int':
+            value = int(params['value'])
+          elif params['type'] == 'float':
+            value = float(params['value'])
+          elif params['type'] == 'bool':
+            value = bool(params['value'])
+          else:
+            value = params['value']
+          self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']) : (1, '', value)})
         else:
-          value = params['value']
-        self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']) : (1, '', value)})
+          QtGui.QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QtGui.QMessageBox.Ok)
       except ValueError, e:
         QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
 
@@ -532,7 +613,6 @@ class ParameterDialog(QtGui.QDialog):
     @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
     '''
     if code == 1:
-      self.setText('')
       values = dict()
       dia_params = dict()
       for p, (code_n, msg_n, val) in params.items():
@@ -599,43 +679,85 @@ class ParameterDialog(QtGui.QDialog):
     if self.is_delivered:
       self.close()
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  def accept(self):
-    self.setResult(QtGui.QDialog.Accepted)
-    self.hide()
-  
-  def reject(self):
-    self.setResult(QtGui.QDialog.Rejected)
-    self.hide()
 
-  def hideEvent(self, event):
-    self.close()
+class ServiceDialog(ParameterDialog):
+  '''
+  Adds a support for calling a service to the L{ParameterDialog}. The needed 
+  input fields are created from the service request message type. The service 
+  call is executed in a thread to avoid blocking GUI.
+  '''
+  service_resp_signal = QtCore.Signal(str, str)
 
-  def closeEvent (self, event):
+  def __init__(self, service, parent=None):
     '''
-    Test the open files for changes and save this if needed.
+    @param service: Service to call.
+    @type service: L{ServiceInfo}
     '''
-    if not self.masteruri is None and self.result() == QtGui.QDialog.Accepted and not self.is_send:
-      try:
-        params = self.getKeywords(use_group_as_namespace=True)
-        ros_params = dict()
-        for p,v in params.items():
-          ros_params[roslib.names.ns_join(self.ns, p)] = v
-        if ros_params:
-          self.is_send = True
-          self.setText('Send the parameter into server...')
-          self.parameterHandler.deliverParameter(self.masteruri, ros_params)
-          event.ignore()
-        else:
-          event.accept()
-      except Exception, e:
-        QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
+    self.service = service
+    slots = service.get_service_class(True)._request_class.__slots__
+    types = service.get_service_class()._request_class._slot_types
+    ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QtGui.QDialogButtonBox.Close, parent=parent)
+    self.setWindowTitle(''.join(['Call ', service.name]))
+    self.service_resp_signal.connect(self._handle_resp)
+    self.resize(450,300)
+    if not slots:
+      self.setText(''.join(['Wait for response ...']))
+      thread = threading.Thread(target=self._callService)
+      thread.setDaemon(True)
+      thread.start()
     else:
-      event.accept()
+      self.call_service_button = QtGui.QPushButton(self.tr("&Call"))
+      self.call_service_button.clicked.connect(self._on_call_service)
+      self.buttonBox.addButton(self.call_service_button, QtGui.QDialogButtonBox.ActionRole)
+      self.hide_button = QtGui.QPushButton(self.tr("&Hide/Show output"))
+      self.hide_button.clicked.connect(self._on_hide_output)
+      self.buttonBox.addButton(self.hide_button, QtGui.QDialogButtonBox.ActionRole)
+      self.hide_button.setVisible(False)
 
-    if event.isAccepted():
-      self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-      QtGui.QDialog.closeEvent(self, event)
+  def _on_hide_output(self):
+    self.setInfoActive(not self.info_field.isVisible())
+
+  def _on_call_service(self):
+    try:
+      self.hide_button.setVisible(True)
+      params = self.getKeywords()
+      self.setText(''.join(['Wait for response ...']))
+      thread = threading.Thread(target=self._callService, args=((params,)))
+      thread.setDaemon(True)
+      thread.start()
+    except Exception, e:
+      rospy.logwarn("Error while reading parameter for %s service: %s", str(self.service.name), unicode(e))
+      self.setText(''.join(['Error while reading parameter:\n', unicode(e)]))
+
+  def _callService(self, params={}):
+    req = unicode(params) if params else ''
+    try:
+      req, resp = nm.starter().callService(self.service.uri, self.service.name, self.service.get_service_class(), [params])
+      self.service_resp_signal.emit(str(req), str(resp))
+    except Exception, e:
+      import traceback
+      print traceback.format_exc()
+      rospy.logwarn("Error while call service '%s': %s", str(self.service.name), str(e))
+      self.service_resp_signal.emit(unicode(req), unicode(e))
+
+  def _params_from_slots(self, slots, types):
+    result = dict()
+    for slot, msg_type in zip(slots, types):
+      base_type, is_array, array_length = roslib.msgs.parse_type(msg_type)
+      if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
+        result[slot] = (msg_type, 'now' if base_type in ['time', 'duration'] else '')
+      else:
+        try:
+          list_msg_class = roslib.message.get_message_class(base_type)
+          subresult = self._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types)
+          result[slot] = (msg_type, [subresult] if is_array else subresult)
+        except ValueError, e:
+          import traceback
+          print traceback.format_exc()
+          rospy.logwarn("Error while parse message type '%s': %s", str(msg_type), str(e))
+    return result
+
+  def _handle_resp(self, req, resp):
+    self.setWindowTitle(''.join(['Request / Response of ', self.service.name]))
+    self.setText('\n'.join([unicode(req), '---', unicode(resp)]))

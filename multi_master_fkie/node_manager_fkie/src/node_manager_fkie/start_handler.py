@@ -239,6 +239,8 @@ class StartHandler(object):
         # suppressing this as it causes too much spam
         if isinstance(p.value, types.StringTypes) and p.value.startswith('/') and (os.path.isfile(p.value) or os.path.isdir(p.value)):
           abs_paths.append(p.key)
+        if p.value is None:
+          raise StartException("The parameter '%s' is invalid!"%(p.value))
         param_server_multi.setParam(rospy.get_name(), p.key, p.value)
       r  = param_server_multi()
       for code, msg, _ in r:

@@ -53,7 +53,7 @@ from parameter_list_model import ParameterModel, ParameterValueItem
 from default_cfg_handler import DefaultConfigHandler
 from launch_config import LaunchConfig, LaunchConfigException
 from master_discovery_fkie.master_info import NodeInfo 
-from parameter_dialog import ParameterDialog#, ThreadedParameterDialog
+from parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
 from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 
@@ -901,10 +901,10 @@ class MasterViewProxy(QtGui.QWidget):
   def nodesFromIndexes(self, indexes, recursive=True):
     result = []
     for index in indexes:
-      if index.column() == 0 and index.parent().isValid():
+      if index.column() == 0:
         item = self.node_tree_model.itemFromIndex(index)
         if not item is None:
-          if isinstance(item, GroupItem):
+          if isinstance(item, (GroupItem, HostItem)):
             if recursive:
               for j in range(item.rowCount()):
                 if not item.child(j) in result: 
@@ -1366,8 +1366,7 @@ class MasterViewProxy(QtGui.QWidget):
     for node in selectedNodes:
       # set the parameter in the ROS parameter server
       try:
-        # get parameter from ROS parameter server
-        inputDia = ParameterDialog(dict(), self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
+        inputDia = MasterParameterDialog(self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
         inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
         inputDia.show()
       except:
@@ -1474,52 +1473,8 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
     for service in selectedServices:
-      try:
-        slots = service.get_service_class(True)._request_class.__slots__
-        types = service.get_service_class()._request_class._slot_types
-        if not slots:
-          req, resp = nm.starter().callService(service.uri, service.name, service.get_service_class())
-          showDia = ParameterDialog(dict(), buttons=QtGui.QDialogButtonBox.Ok, parent=self)
-          showDia.setWindowTitle(''.join(['Response of ', service.name]))
-          showDia.setText(str(resp))
-          showDia.show()
-        else:
-          inputDia = ParameterDialog(self._params_from_slots(slots, types))
-          inputDia.setWindowTitle(''.join(['Run service ', service.name]))
-          inputDia.resize(450,300)
-          if inputDia.exec_():
-            params = inputDia.getKeywords()
-            req, resp = nm.starter().callService(service.uri, service.name, service.get_service_class(), [params])
-            showDia = ParameterDialog(dict(), buttons=QtGui.QDialogButtonBox.Ok, parent=self)
-            showDia.setWindowTitle(''.join(['Request / Response of ', service.name]))
-            showDia.setText('\n'.join([str(req), '---', str(resp)]))
-            showDia.show()
-      except Exception, e:
-        import traceback
-        print traceback.format_exc()
-        rospy.logwarn("Error while call service '%s': %s", str(service.name), str(e))
-        QtGui.QMessageBox.warning(None, 'Error while call %s'%service.name,
-                                  str(e),
-                                  QtGui.QMessageBox.Ok)
-
-  def _params_from_slots(self, slots, types):
-    result = dict()
-    for slot, msg_type in zip(slots, types):
-      base_type, is_array, array_length = roslib.msgs.parse_type(msg_type)
-      if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
-        result[slot] = (msg_type, 'now' if base_type in ['time', 'duration'] else '')
-      else:
-        try:
-          list_msg_class = roslib.message.get_message_class(base_type)
-          subresult = self._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types)
-          result[slot] = (msg_type, [subresult] if is_array else subresult)
-        except ValueError, e:
-          import traceback
-          print traceback.format_exc()
-          rospy.logwarn("Error while parse message type '%s': %s", str(msg_type), str(e))
-    return result
-
-
+      param = ServiceDialog(service, self)
+      param.show()
 
   def on_topic_filter_changed(self, text):
     '''
