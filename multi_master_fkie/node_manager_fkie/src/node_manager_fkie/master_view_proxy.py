@@ -1521,7 +1521,7 @@ class MasterViewProxy(QtGui.QWidget):
         elif params['type'] == 'float':
           value = float(params['value'])
         elif params['type'] == 'bool':
-          value = bool(params['value'])
+          value = bool(params['value'].lower() in ("yes", "true", "t", "1"))
         else:
           value = params['value']
         self.parameterHandler.deliverParameter(self.masteruri, {params['name'] : value})
@@ -1574,7 +1574,7 @@ class MasterViewProxy(QtGui.QWidget):
     if isinstance(item, ParameterValueItem):
       try:
         if isinstance(item.value, bool):
-          value = bool(item.text())
+          value = bool(item.text().lower() in ("yes", "true", "t", "1"))
         elif isinstance(item.value, int):
           value = int(item.text())
         elif isinstance(item.value, float):

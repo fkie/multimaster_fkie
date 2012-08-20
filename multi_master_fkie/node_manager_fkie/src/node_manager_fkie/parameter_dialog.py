@@ -41,6 +41,9 @@ import node_manager_fkie as nm
 
 from parameter_handler import ParameterHandler
 
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
+
 class ParameterDescription(object):
   '''
   Used for internal representation of the parameter in dialog.
@@ -112,7 +115,7 @@ class ParameterDescription(object):
           elif 'float' in self.baseType():
             self._value = map(float, value.split(','))
           elif 'bool' in self.baseType():
-            self._value = map(bool, value.split(','))
+            self._value = map(str2bool, value.split(','))
           else:
             self._value = [ s.encode(sys.getfilesystemencoding()) for s in value.split(',')]
         else:
@@ -121,7 +124,10 @@ class ParameterDescription(object):
           elif 'float' in self.baseType():
             self._value = float(value)
           elif 'bool' in self.baseType():
-            self._value = bool(value)
+            if isinstance(value, bool):
+              self._value = value
+            else:
+              self._value = str2bool(value)
           elif self.isTimeType():
             if value == 'now':
               self._value = 'now'
@@ -175,7 +181,7 @@ class ParameterDescription(object):
       if 'bool' in self.baseType():
         result = QtGui.QCheckBox(parent=parent)
         result.setObjectName(self.name())
-        result.setChecked(bool(self.value()))
+        result.setChecked(self.value())
       else:
         result = QtGui.QComboBox(parent=parent)
         result.setObjectName(self.name())
@@ -200,10 +206,11 @@ class ParameterDescription(object):
   def addCachedValuesToWidget(self):
     if isinstance(self.widget(), QtGui.QComboBox):
       values = self.cachedValues()
-      try:
-        values.remove(self.widget().currentText())
-      except:
-        pass
+      for i in range(self.widget().count()):
+        try:
+          values.remove(self.widget().itemText(i))
+        except:
+          pass
       self.widget().addItems(values)
 
 
@@ -575,7 +582,7 @@ class MasterParameterDialog(ParameterDialog):
           elif params['type'] == 'float':
             value = float(params['value'])
           elif params['type'] == 'bool':
-            value = bool(params['value'])
+            value = str2bool(params['value'])
           else:
             value = params['value']
           self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']) : (1, '', value)})
