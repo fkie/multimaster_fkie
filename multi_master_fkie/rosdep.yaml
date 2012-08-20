@@ -4,3 +4,21 @@ avahi-daemon:
 python-avahi:
   ubuntu: python-avahi
 
+python-pyside:
+  ubuntu: python-pyside
+
+python-paramiko:
+  ubuntu: python-paramiko
+
+python-psutil:
+  ubuntu: python-psutil
+
+pyside-tools:
+  ubuntu: pyside-tools
+
+python-pyside.qtuitools:
+  ubuntu: python-pyside.qtuitools
+
+screen:
+  ubuntu: screen
+
