@@ -25,7 +25,8 @@
   <rosdep name="pyside-tools" />
   <rosdep name="python-pyside.qtuitools" />
   <rosdep name="screen" />
-
+  <rosdep name="xterm" />
+  
   <export>
     <rosdoc config="rosdoc.yaml" />
   </export>

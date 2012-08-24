@@ -98,12 +98,13 @@ class StartHandler(object):
     if masteruri is None:
       env.append(('ROS_MASTER_URI', nm.masteruri_from_ros()))
 
-    abs_paths = list()
+    abs_paths = list() # tuples of (parameter name, old value, new value)
+    not_found_packages = list() # package names
     # set the global parameter
     if not masteruri is None and not masteruri in launch_config.global_param_done:
       global_node_names = cls.getGlobalParams(launch_config.Roscfg)
       rospy.loginfo("Register global parameter:\n%s", '\n'.join(global_node_names))
-      abs_paths[len(abs_paths):] = cls._load_parameters(masteruri, global_node_names, [])
+      abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, global_node_names, [])
       launch_config.global_param_done.append(masteruri)
 
     # add params
@@ -118,7 +119,7 @@ class StartHandler(object):
         if cparam.startswith(nodens):
           clear_params.append(param)
       rospy.loginfo("Register parameter:\n%s", '\n'.join(params))
-      abs_paths[len(abs_paths):] = cls._load_parameters(masteruri, params, clear_params)
+      abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, params, clear_params)
     if nm.is_local(host): 
       nm.screen().testScreen()
       try:
@@ -187,8 +188,18 @@ class StartHandler(object):
                   '--node_name', str(node)]
       if prefix:
         startcmd[len(startcmd):] = ['--prefix', prefix]
+      
+      #rename the absolute paths in the args of the node
+      node_args = []
+      for a in n.args.split():
+        a_value, is_abs_path, found, package = cls._resolve_abs_paths(a, host)
+        node_args.append(a_value)
+        if is_abs_path:
+          abs_paths.append(('ARGS', a, a_value))
+          if not found:
+            not_found_packages.append(package)
 
-      startcmd[len(startcmd):] = [n.args]
+      startcmd[len(startcmd):] = node_args
       startcmd[len(startcmd):] = args
       rospy.loginfo("Run remote on %s: %s", host, str(' '.join(startcmd)))
       (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, startcmd)
@@ -206,8 +217,14 @@ class StartHandler(object):
           rospy.logdebug("STDOUT while start '%s': %s", node, output)
       # inform about absolute paths in parameter value
       if len(abs_paths) > 0:
-        parameters = '\n'.join(abs_paths)
-        raise nm.StartException(str('\n'.join(['Following parameter seems to use an absolute local path for remote host:', parameters, 'Use "cwd" attribute of the "node" tag to specify relative paths for remote usage!'])))
+        rospy.loginfo("Absolute paths found while start:\n%s", str('\n'.join([''.join([p, '\n  OLD: ', ov, '\n  NEW: ', nv]) for p, ov, nv in abs_paths])))
+
+      if len(not_found_packages) > 0:
+        packages = '\n'.join(not_found_packages)
+        raise nm.StartException(str('\n'.join(['Some absolute paths are not renamed because following packages are not found on remote host:', packages])))
+#      if len(abs_paths) > 0:
+#        parameters = '\n'.join(abs_paths)
+#        raise nm.StartException(str('\n'.join(['Following parameter seems to use an absolute local path for remote host:', parameters, 'Use "cwd" attribute of the "node" tag to specify relative paths for remote usage!'])))
 
   @classmethod
   def _load_parameters(cls, masteruri, params, clear_params):
@@ -219,7 +236,8 @@ class StartHandler(object):
     import xmlrpclib
     param_server = xmlrpclib.ServerProxy(masteruri)
     p = None
-    abs_paths = list() # parameter names
+    abs_paths = list() # tuples of (parameter name, old value, new value)
+    not_found_packages = list() # pacakges names
     try:
       # multi-call style xmlrpc
       param_server_multi = xmlrpclib.MultiCall(param_server)
@@ -237,11 +255,14 @@ class StartHandler(object):
       param_server_multi = xmlrpclib.MultiCall(param_server)
       for p in params.itervalues():
         # suppressing this as it causes too much spam
-        if isinstance(p.value, types.StringTypes) and p.value.startswith('/') and (os.path.isfile(p.value) or os.path.isdir(p.value)):
-          abs_paths.append(p.key)
+        value, is_abs_path, found, package = cls._resolve_abs_paths(p.value, nm.nameres().getHost(masteruri=masteruri))
+        if is_abs_path:
+          abs_paths.append((p.key, p.value, value))
+          if not found:
+            not_found_packages.append(package)
         if p.value is None:
           raise StartException("The parameter '%s' is invalid!"%(p.value))
-        param_server_multi.setParam(rospy.get_name(), p.key, p.value)
+        param_server_multi.setParam(rospy.get_name(), p.key, value if is_abs_path else p.value)
       r  = param_server_multi()
       for code, msg, _ in r:
         if code != 1:
@@ -250,8 +271,42 @@ class StartHandler(object):
       raise StartException(e)
     except Exception as e:
       raise #re-raise as this is fatal
-    return abs_paths
+    return abs_paths, not_found_packages
   
+  @classmethod
+  def _resolve_abs_paths(cls, value, host):
+    '''
+    Replaces the local absolute path by remote absolute path. Only valid ROS
+    package paths are resolved.
+    @return: value, is absolute path, remote package found (ignore it on local host or if is not absolute path!), package name (if absolute path and remote package NOT found)
+    '''
+    if isinstance(value, types.StringTypes) and value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
+      if nm.is_local(host):
+        return value, True, True, ''
+      else:
+#        print "ABS PATH:", value
+        dir = os.path.dirname(value) if os.path.isfile(value) else value
+        package, package_path = LaunchConfig.packageName(dir)
+        if package:
+          (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package])
+          if ok:
+            stdin.close()
+            output = stdout.read()
+            if output:
+#              print "  RESOLVED:", output
+#              print "  PACK_PATH:", package_path
+              value.replace(package_path, output)
+#              print "  RENAMED:", value.replace(package_path, output.strip())
+              return value.replace(package_path, output.strip()), True, True, package
+            else:
+              # package on remote host not found! 
+              # TODO add error message
+              #      error = stderr.read()
+              pass
+        return value, True, False, package
+    else:
+      return value, False, False, ''
+
   @classmethod
   def runNodeWithoutConfig(cls, host, package, type, name, args=[]):
     '''

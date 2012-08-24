@@ -112,7 +112,7 @@ class DefaultCfg(object):
       loader.load(launch_file, self.roscfg, verbose=False, argv=argv)
       # create the list with node names
       for item in self.roscfg.nodes:
-        if item.machine_name:
+        if item.machine_name and not item.machine_name == 'localhost':
           machine = self.roscfg.machines[item.machine_name]
           if roslib.network.is_local_address(machine.address):
             self.nodes.append(str(''.join([item.namespace, item.name])))
@@ -222,7 +222,7 @@ class DefaultCfg(object):
           # get the nodes with groups
           for item in self.roscfg.nodes:
             node_fullname = str(roslib.names.ns_join(item.namespace, item.name))
-            machine_name = item.machine_name if not item.machine_name is None else ''
+            machine_name = item.machine_name if not item.machine_name is None and not item.machine_name == 'localhost' else ''
             added = False
             if node_fullname == param_node:
               if not result.has_key(machine_name):
@@ -382,7 +382,7 @@ class DefaultCfg(object):
 
     masteruri = self.masteruri
     
-    if n.machine_name:
+    if n.machine_name and not n.machine_name == 'localhost':
       machine = self.roscfg.machines[n.machine_name]
       #TODO: env-loader support?
 #      if machine.env_args:

@@ -73,7 +73,7 @@ class LaunchConfig(QtCore.QObject):
     '''
     QtCore.QObject.__init__(self)
     self.__launchFile = launch_file
-    self.__package = self.packageName(os.path.dirname(self.__launchFile)) if package is None else package 
+    self.__package = self.packageName(os.path.dirname(self.__launchFile))[0] if package is None else package 
     self.__masteruri = masteruri if not masteruri is None else 'localhost'
     self.__roscfg = None
     self.argv = argv
@@ -153,17 +153,17 @@ class LaunchConfig(QtCore.QObject):
   @classmethod
   def packageName(cls, dir):
     '''
-    Returns for given directory the package name or None
-    @rtype: C{str} or C{None}
+    Returns for given directory a tuple of package name and package path or None values.
+    @rtype: C{(name, path)}
     '''
     if not (dir is None) and dir and dir != os.path.sep and os.path.isdir(dir):
       package = os.path.basename(dir)
       fileList = os.listdir(dir)
       for file in fileList:
         if file == 'manifest.xml':
-            return package
+            return (package, dir)
       return cls.packageName(os.path.dirname(dir))
-    return None
+    return (None, None)
 
   def _index(self, text, regexp_list):
     '''
@@ -249,6 +249,7 @@ class LaunchConfig(QtCore.QObject):
     doTest = True
     argvAdded = False
     while doTest:
+      print "do test", testarg
       try:
         roscfg = roslaunch.ROSLaunchConfig()
         loader = roslaunch.XmlLoader()
@@ -260,6 +261,7 @@ class LaunchConfig(QtCore.QObject):
         self.file_watcher.addPaths(self.getIncludedFiles())
         doTest = False
       except roslaunch.XmlParseException, e:
+        print "e", e
         result = list(re.finditer(r"requires the '\w+' arg to be set", str(e)))
         if not result:
           message = str(e)
@@ -270,8 +272,12 @@ class LaunchConfig(QtCore.QObject):
           raise LaunchConfigException(message)
         for m in result:
           argName = m.group(0).split("'")[1]
-          testarg.append(''.join([argName, ':=', '$[', argName, ']']))
-          argvAdded = True
+          arg = ''.join([argName, ':=', '$[', argName, ']'])
+          if not arg in testarg:
+            testarg.append(''.join([argName, ':=', '$[', argName, ']']))
+            argvAdded = True
+          else:
+            raise LaunchConfigException(e)
     return not argvAdded, testarg
 
   def _decode(self, val):
@@ -335,7 +341,7 @@ class LaunchConfig(QtCore.QObject):
           # get the nodes with groups
           for item in self.Roscfg.nodes:
             node_fullname = roslib.names.ns_join(item.namespace, item.name)
-            machine_name = item.machine_name if not item.machine_name is None else ''
+            machine_name = item.machine_name if not item.machine_name is None and not item.machine_name == 'localhost' else ''
             added = False
             if node_fullname == param_node:
               if not result.has_key(machine_name):

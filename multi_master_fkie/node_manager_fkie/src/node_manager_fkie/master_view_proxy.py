@@ -551,7 +551,7 @@ class MasterViewProxy(QtGui.QWidget):
       hosts = dict() # dict(host : dict(node : [config]) )
       for n in rosconfig.nodes:
         host = nm.nameres().getHost(masteruri=self.masteruri)
-        if n.machine_name:
+        if n.machine_name and not n.machine_name == 'localhost':
           host = rosconfig.machines[n.machine_name].address
         node = roslib.names.ns_join(n.namespace, n.name)
         if not hosts.has_key(host):
@@ -1233,7 +1233,7 @@ class MasterViewProxy(QtGui.QWidget):
       if not isinstance(c, tuple):
         launch_config = self.__configs[c]
         item = launch_config.getNode(node.name)
-        if not item is None and item.machine_name:
+        if not item is None and item.machine_name and not item.machine_name == 'localhost':
           return launch_config.Roscfg.machines[item.machine_name].address
     # return the host of the assigned ROS master
     return nm.nameres().getHostname(node.masteruri)

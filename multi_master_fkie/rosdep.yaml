@@ -22,3 +22,6 @@ python-pyside.qtuitools:
 screen:
   ubuntu: screen
 
+xterm:
+  ubuntu: xterm
+

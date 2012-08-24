@@ -65,7 +65,7 @@ class MainWindow(QtGui.QMainWindow):
   The class to create the main window of the application.
   '''
 
-  def __init__(self, parent=None):
+  def __init__(self, args=[], parent=None):
     '''
     Creates the window, connects the signals and init the class.
     '''
@@ -174,6 +174,13 @@ class MainWindow(QtGui.QMainWindow):
     
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.descriptionDock)
     self.ui.launchDock.raise_()
+    
+    self.default_load_launch = os.path.abspath(args[1]) if len(args) >= 2 else ''
+    if self.default_load_launch:
+      if os.path.isdir(self.default_load_launch):
+        self.ui.xmlFileView.model().setPath(self.default_load_launch)
+      elif os.path.isfile(self.default_load_launch):
+        self.ui.xmlFileView.model().setPath(os.path.dirname(self.default_load_launch))
 
 
   def createSlider(self):
@@ -274,6 +281,14 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].description_signal.connect(self.on_description_update)
       self.masters[masteruri].request_xml_editor.connect(self._editor_dialog_open)
       self.stackedLayout.addWidget(self.masters[masteruri])
+      if masteruri == self.getMasteruri():
+        if self.default_load_launch:
+          if os.path.isfile(self.default_load_launch):
+            args = list()
+            args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(self.default_load_launch))[0])]))
+            args.append(''.join(['_launch_file:="', os.path.basename(self.default_load_launch), '"']))
+            nm.starter().runNodeWithoutConfig(nm.nameres().getHost(masteruri=masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().getHost(masteruri=masteruri)), '/default_cfg']), args)
+
     return self.masters[masteruri]
 
   def on_host_update_request(self, host):
@@ -765,7 +780,7 @@ class MainWindow(QtGui.QMainWindow):
       key_mod = QtGui.QApplication.keyboardModifiers()
       if (key_mod & QtCore.Qt.ControlModifier) or force_as_default:
         args = list()
-        args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(path)))]))
+        args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(path))[0])]))
         args.append(''.join(['_launch_file:="', os.path.basename(path), '"']))
         nm.starter().runNodeWithoutConfig(nm.nameres().getHost(masteruri=master_proxy.masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().getHost(masteruri=master_proxy.masteruri)), '/default_cfg']), args)
       else:

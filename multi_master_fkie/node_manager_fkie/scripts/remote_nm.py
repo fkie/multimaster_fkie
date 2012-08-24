@@ -144,7 +144,9 @@ def runNode(package, type, name, args, prefix=''):
     cmd = [cmd]
   if cmd is None or len(cmd) == 0:
     raise nm.StartException(' '.join([type, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
-  cmd_args = [nm.ScreenHandler.getSceenCmd(name), prefix, cmd[0], ' '.join(args[1:])]
+  # create string for node parameter. Set arguments with spaces into "'".
+  node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
+  cmd_args = [nm.ScreenHandler.getSceenCmd(name), prefix, cmd[0], node_params]
   print 'run on remote host:', ' '.join(cmd_args)
   # determine the current working path
   arg_cwd = getCwdArg('__cwd', args) 
