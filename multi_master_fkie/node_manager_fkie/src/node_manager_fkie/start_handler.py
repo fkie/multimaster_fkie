@@ -72,9 +72,6 @@ class StartHandler(object):
     
     env = list(n.env_args)
     prefix = n.launch_prefix if not n.launch_prefix is None else ''
-    # thus the parameters while the transfer are not separated
-    if prefix:
-      prefix = ''.join(['"', prefix, '"'])
     args = [''.join(['__ns:=', n.namespace]), ''.join(['__name:=', n.name])]
     if not (n.cwd is None):
       args.append(''.join(['__cwd:=', n.cwd]))
@@ -174,6 +171,9 @@ class StartHandler(object):
       # start remote
       if launch_config.PackageName is None:
         raise StartException(''.join(["Can't run remote without a valid package name!"]))
+      # thus the prefix parameters while the transfer are not separated
+      if prefix:
+        prefix = ''.join(['"', prefix, '"'])
       # setup environment
       env_command = ''
       if env_loader:
@@ -214,7 +214,7 @@ class StartHandler(object):
           raise nm.StartException(str(''.join(['The host "', host, '" reports:\n', error])))
         output = stdout.read()
         if output:
-          rospy.logdebug("STDOUT while start '%s': %s", node, output)
+          rospy.loginfo("STDOUT while start '%s': %s", node, output)
       # inform about absolute paths in parameter value
       if len(abs_paths) > 0:
         rospy.loginfo("Absolute paths found while start:\n%s", str('\n'.join([''.join([p, '\n  OLD: ', ov, '\n  NEW: ', nv]) for p, ov, nv in abs_paths])))

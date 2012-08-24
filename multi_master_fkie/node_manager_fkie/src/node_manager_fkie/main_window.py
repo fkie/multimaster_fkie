@@ -144,22 +144,6 @@ class MainWindow(QtGui.QMainWindow):
     self.stats_topic = MasterStatisticTopic()
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
     
-    if not masterlist_service.retrieveMasterList(self.getMasteruri(), False):
-      self._setLocalMonitoring(True)
-    else:
-      self._subscribe()
-
-    self.editor_dialogs  = dict() # [file] = XmlEditor
-    '''@ivar: stores the open XmlEditor '''
-
-    # since the is_local method is threaded for host names, call it to cache the localhost
-    nm.is_local("localhost")
-    
-    # timer to update the showed update time of the ros state 
-    self.master_timecheck_timer = QtCore.QTimer()
-    self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
-    self.master_timecheck_timer.start(1000)
-
     ############################################################################
     ############################################################################
     ############################################################################
@@ -181,6 +165,22 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.xmlFileView.model().setPath(self.default_load_launch)
       elif os.path.isfile(self.default_load_launch):
         self.ui.xmlFileView.model().setPath(os.path.dirname(self.default_load_launch))
+
+    if not masterlist_service.retrieveMasterList(self.getMasteruri(), False):
+      self._setLocalMonitoring(True)
+    else:
+      self._subscribe()
+
+    self.editor_dialogs  = dict() # [file] = XmlEditor
+    '''@ivar: stores the open XmlEditor '''
+
+    # since the is_local method is threaded for host names, call it to cache the localhost
+    nm.is_local("localhost")
+
+    # timer to update the showed update time of the ros state 
+    self.master_timecheck_timer = QtCore.QTimer()
+    self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
+    self.master_timecheck_timer.start(1000)
 
 
   def createSlider(self):
