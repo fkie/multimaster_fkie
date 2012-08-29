@@ -159,6 +159,16 @@ class LaunchListModel(QtCore.QAbstractListModel):
     return None
 
 
+  def setPath(self, path):
+    '''
+    Shows the new path in the launch configuration view. Only if the new path
+    is in ros package paths
+    @param path: new path
+    @type path: C{str}
+    '''
+    if self._is_in_ros_packages(path):
+      self._setNewList(self._moveDown(path))
+
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Functionality                         %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

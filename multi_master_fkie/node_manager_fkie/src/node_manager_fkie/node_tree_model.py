@@ -671,7 +671,7 @@ class NodeItem(QtGui.QStandardItem):
   
   ITEM_TYPE = QtGui.QStandardItem.UserType + 35
   COL_CFG = 1
-  COL_URI = 2
+#  COL_URI = 2
 
   STATE_OFF = 0
   STATE_RUN = 1
@@ -766,7 +766,7 @@ class NodeItem(QtGui.QStandardItem):
     # update the tooltip and icon
     if run_changed and self.is_valid():
       self.updateDispayedName()
-      self.updateDisplayedURI()
+#      self.updateDisplayedURI()
       if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
         self.parent_item.updateIcon()
   
@@ -806,7 +806,8 @@ class NodeItem(QtGui.QStandardItem):
     Updates the name representation of the Item
     '''
     tooltip = ''.join(['<h4>', self.node_info.name, '</h4><dl>'])
-    tooltip = ''.join([tooltip, '<dt>PID: ', str(self.node_info.pid), '</dt></dl>'])
+    tooltip = ''.join([tooltip, '<dt><b>URI:</b> ', str(self.node_info.uri), '</dt>'])
+    tooltip = ''.join([tooltip, '<dt><b>PID:</b> ', str(self.node_info.pid), '</dt></dl>'])
     uri = nm.nameres().getUri(host=nm.nameres().getHostname(self.node_info.uri))
     master_discovered = (not uri is None)
     local = False
@@ -927,8 +928,8 @@ class NodeItem(QtGui.QStandardItem):
     items.append(item)
     cfgitem = QtGui.QStandardItem()
     items.append(cfgitem)
-    uriitem = QtGui.QStandardItem()
-    items.append(uriitem)
+#    uriitem = QtGui.QStandardItem()
+#    items.append(uriitem)
     return items
 
   @classmethod
@@ -1003,9 +1004,9 @@ class NodeTreeModel(QtGui.QStandardItemModel):
 #           'launch_cfg'     : QtGui.QIcon(":/icons/crystal_clear_launch_file.png"),
 #           'def_cfg'        : QtGui.QIcon(":/icons/default_cfg.png") }
   
-  header = [('Name', 300),
-            ('Cfgs', 60),
-            ('URI', -1)]
+  header = [('Name', 450),
+            ('Cfgs', -1)]
+#            ('URI', -1)]
 
   hostInserted = QtCore.Signal(HostItem)
   '''@ivar: the Qt signal, which is emitted, if a new host was inserted. 

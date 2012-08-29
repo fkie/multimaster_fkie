@@ -163,6 +163,7 @@ class LaunchConfig(QtCore.QObject):
         if file == 'manifest.xml':
             return (package, dir)
       return cls.packageName(os.path.dirname(dir))
+    print "not resolved:", dir
     return (None, None)
 
   def _index(self, text, regexp_list):
@@ -249,7 +250,6 @@ class LaunchConfig(QtCore.QObject):
     doTest = True
     argvAdded = False
     while doTest:
-      print "do test", testarg
       try:
         roscfg = roslaunch.ROSLaunchConfig()
         loader = roslaunch.XmlLoader()
@@ -261,7 +261,6 @@ class LaunchConfig(QtCore.QObject):
         self.file_watcher.addPaths(self.getIncludedFiles())
         doTest = False
       except roslaunch.XmlParseException, e:
-        print "e", e
         result = list(re.finditer(r"requires the '\w+' arg to be set", str(e)))
         if not result:
           message = str(e)

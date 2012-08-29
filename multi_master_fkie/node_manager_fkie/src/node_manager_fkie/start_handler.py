@@ -196,7 +196,7 @@ class StartHandler(object):
         node_args.append(a_value)
         if is_abs_path:
           abs_paths.append(('ARGS', a, a_value))
-          if not found:
+          if not found and package:
             not_found_packages.append(package)
 
       startcmd[len(startcmd):] = node_args
@@ -258,7 +258,7 @@ class StartHandler(object):
         value, is_abs_path, found, package = cls._resolve_abs_paths(p.value, nm.nameres().getHost(masteruri=masteruri))
         if is_abs_path:
           abs_paths.append((p.key, p.value, value))
-          if not found:
+          if not found and package:
             not_found_packages.append(package)
         if p.value is None:
           raise StartException("The parameter '%s' is invalid!"%(p.value))
@@ -284,7 +284,7 @@ class StartHandler(object):
       if nm.is_local(host):
         return value, True, True, ''
       else:
-#        print "ABS PATH:", value
+#        print "ABS PATH:", value, os.path.dirname(value)
         dir = os.path.dirname(value) if os.path.isfile(value) else value
         package, package_path = LaunchConfig.packageName(dir)
         if package:
@@ -303,7 +303,7 @@ class StartHandler(object):
               # TODO add error message
               #      error = stderr.read()
               pass
-        return value, True, False, package
+        return value, True, False, ''
     else:
       return value, False, False, ''
 

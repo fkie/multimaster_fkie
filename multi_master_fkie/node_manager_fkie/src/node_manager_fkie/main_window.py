@@ -166,10 +166,7 @@ class MainWindow(QtGui.QMainWindow):
       elif os.path.isfile(self.default_load_launch):
         self.ui.xmlFileView.model().setPath(os.path.dirname(self.default_load_launch))
 
-    if not masterlist_service.retrieveMasterList(self.getMasteruri(), False):
-      self._setLocalMonitoring(True)
-    else:
-      self._subscribe()
+    self._subscribe()
 
     self.editor_dialogs  = dict() # [file] = XmlEditor
     '''@ivar: stores the open XmlEditor '''
@@ -318,11 +315,10 @@ class MainWindow(QtGui.QMainWindow):
     Try to subscribe to the topics of the master_discovery node. If it fails, the
     own local monitoring of the ROS master state will be enabled.
     '''
-#    self.masterlist_service.retrieveMasterList(self.getMasteruri())
-    result = self.state_topic.registerByROS(self.getMasteruri(), False)
-    result = self.stats_topic.registerByROS(self.getMasteruri(), False)
-    result = self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
-    if not result:
+    result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
+    result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
+    self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
+    if not result_1 or not result_2:
       self._setLocalMonitoring(True)
 
   def _setLocalMonitoring(self, on):
@@ -339,8 +335,24 @@ class MainWindow(QtGui.QMainWindow):
       self.ui.masterListView.setToolTip("use 'Start' button to enable the master discovering")
     else:
       self.ui.masterListView.setToolTip('')
+    if on:
+      # remove discovered ROS master and set the local master to selected
+      to_remove = []
+      for uri, master in self.masters.items():
+        if nm.is_local(nm.nameres().getHostname(uri)):
+          self.currentMaster = master
+          self.stackedLayout.setCurrentWidget(master)
+          self.on_master_timecheck()
+        else:
+          self.master_model.removeMaster(master.master_state.name)
+          to_remove.append(uri)
+      for r in to_remove:
+        self.removeMaster(r)
+      self.ui.masterListView.doItemsLayout()
 
-  def on_master_list_err_retrieved(self, str):
+
+
+  def on_master_list_err_retrieved(self, masteruri, error):
     '''
     The callback method connected to the signal, which is emitted on an error 
     while call the service to determine the discovered ROS master. On the error
@@ -365,13 +377,14 @@ class MainWindow(QtGui.QMainWindow):
   #%%%%%%%%%%%%%   Handling of received ROS master state messages   %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  def on_master_list_retrieved(self, master_list):
+  def on_master_list_retrieved(self, masteruri, servic_name, master_list):
     '''
     Handle the retrieved list with ROS master.
       1. update the ROS Network view
     @param master_list: a list with ROS masters
     @type master_list: C{[L{master_discovery_fkie.msg.MasterState}]}
     '''
+    self._setLocalMonitoring(False)
     for m in master_list:
       nm.nameres().add(name=m.name, masteruri=m.uri, host=nm.nameres().getHostname(m.uri))
       master = self.getMaster(m.uri)
@@ -417,9 +430,7 @@ class MainWindow(QtGui.QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
     if self.masters.has_key(minfo.masteruri):
-#      print "update"
       for uri, master in self.masters.items():
-#        print "!update:", minfo.mastername
         try:
           # check for running discovery service
           new_info = master.master_info is None or master.master_info.timestamp < minfo.timestamp
@@ -428,17 +439,16 @@ class MainWindow(QtGui.QMainWindow):
           master.master_info = minfo
 #          cputimes = os.times()
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
-#          print minfo.mastername, cputime
+#          print master.master_state.name, cputime
           if nm.is_local(nm.nameres().getHostname(minfo.masteruri)) and new_info:
             has_discovery_service = self.hasDiscoveryService(minfo)
             if not self.own_master_monitor.isPaused() and has_discovery_service:
-              self._setLocalMonitoring(False)
               self._subscribe()
-            elif not has_discovery_service:
-              self._setLocalMonitoring(True)
+            elif self.currentMaster is None:
               self.currentMaster = master
               self.stackedLayout.setCurrentWidget(master)
               self.on_master_timecheck()
+
           # update the list view, whether master is synchronized or not
           if not master.master_info is None and master.master_info.masteruri == minfo.masteruri:
             self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
@@ -446,8 +456,6 @@ class MainWindow(QtGui.QMainWindow):
           self.updateDuplicateNodes()
         except Exception, e:
           rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, str(e))
-#        print "!updated:", minfo.mastername
-#      print "!updated"
       # update the buttons, whether master is synchronized or not
       if not self.currentMaster is None and not self.currentMaster.master_info is None:
         self.ui.syncButton.setEnabled(True)
@@ -586,7 +594,8 @@ class MainWindow(QtGui.QMainWindow):
     # update the duplicate nodes
     running_nodes = []
     for uri, m in self.masters.items():
-      running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
+      if m.master_state.online:
+        running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
     for uri, m in self.masters.items():
       m.markNodesAsDuplicateOf(running_nodes)
 
@@ -629,7 +638,7 @@ class MainWindow(QtGui.QMainWindow):
     Retrieves from the master_discovery node the list of all discovered ROS 
     master and get their current state.
     '''
-    self.masterlist_service.retrieveMasterList(self.getMasteruri())
+    self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
 
   def on_start_robot_clicked(self):
     '''
@@ -642,7 +651,11 @@ class MainWindow(QtGui.QMainWindow):
                                       True)
     if result and host:
       try:
+        progressDialog = QtGui.QProgressDialog('Start discovering on %s'%host, 'wait', 0, 2)
+        progressDialog.setWindowModality(QtCore.Qt.WindowModal)
+        progressDialog.show()
         nm.starter().runNodeWithoutConfig(host, 'master_discovery_fkie', 'master_discovery', 'master_discovery')
+#        progressDialog.hide()
         if host != 'localhost':
           # insert the host into first place
           try:

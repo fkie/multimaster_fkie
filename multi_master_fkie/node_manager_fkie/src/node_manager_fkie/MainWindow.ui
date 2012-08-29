@@ -179,12 +179,18 @@ p, li { white-space: pre-wrap; }
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Updates the current host (F5)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
              <property name="icon">
               <iconset resource="GUI.qrc">
                <normaloff>:/icons/crystal_clear_reload.png</normaloff>:/icons/crystal_clear_reload.png</iconset>
+             </property>
+             <property name="shortcut">
+              <string>F5</string>
              </property>
             </widget>
            </item>

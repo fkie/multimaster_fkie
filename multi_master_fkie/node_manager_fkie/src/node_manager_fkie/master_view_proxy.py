@@ -203,6 +203,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.closeCfgButton.clicked.connect(self.on_close_clicked)
 
     self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
+    self.masterTab.hzTopicButton.clicked.connect(self.on_topic_hz_clicked)
     self.masterTab.callServiceButton.clicked.connect(self.on_service_call_clicked)
     self.masterTab.topicFilterInput.textChanged.connect(self.on_topic_filter_changed)
     self.masterTab.serviceFilterInput.textChanged.connect(self.on_service_filter_changed)
@@ -216,6 +217,14 @@ class MasterViewProxy(QtGui.QWidget):
     self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
     self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
     self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
+
+    # creates a start menu
+    start_menu = QtGui.QMenu(self)
+    self.forceStartNodesAct = QtGui.QAction("&Force Start Node", self, statusTip="Force the start of selected node", triggered=self.on_force_start_nodes)
+    start_menu.addAction(self.forceStartNodesAct)
+    self.masterTab.startButton.setMenu(start_menu)
+
+
 
     # creates a stop menu
     stop_menu = QtGui.QMenu(self)
@@ -289,6 +298,8 @@ class MasterViewProxy(QtGui.QWidget):
     @type master_info: L{master_discovery_fkie.msg.MasterInfo}
     '''
     try:
+      update_nodes = False
+      update_others = False
       if (master_info.masteruri == self.masteruri):
         # store process pid's of remote nodes
         nodepids = []
@@ -307,26 +318,33 @@ class MasterViewProxy(QtGui.QWidget):
         hosts2update = list(set([nm.nameres().getHostname(uri) for nodename, pid, uri in node2update]))
         for host in hosts2update:
           self.updateHostRequest.emit(host)
+        update_nodes = True
+        update_others = True
       else:
         if not (self.__master_info is None or master_info is None):
           for nodename, node in master_info.nodes.items():
             if node.isLocal:
               n = self.__master_info.getNode(nodename)
-              if not n is None:
+              if not n is None and n.pid != node.pid and not n.isLocal:
+                update_nodes = True
                 n.pid = node.pid
-  #    cputimes = os.times()
-  #    cputime_init = cputimes[0] + cputimes[1]
-  #    print "    updateRunningNodesInModel", time.time()
-      self.updateRunningNodesInModel(self.__master_info)
-  #    print "    updateTopicsListModel", time.time()
-      self.updateTopicsListModel(self.__master_info)
-  #    print "    updateServiceListModel", time.time()
-      self.updateServiceListModel(self.__master_info)
-  #    print "    updateDefaultConfigs", time.time()
-      self.updateDefaultConfigs(self.__master_info)
-  #    cputimes = os.times()
-  #    cputime = cputimes[0] + cputimes[1] - cputime_init
-  #    print "  update on ", self.__master_info.mastername, cputime
+#      cputimes = os.times()
+#      cputime_init = cputimes[0] + cputimes[1]
+      if update_nodes:
+#        print "    updateRunningNodesInModel", time.time()
+        self.updateRunningNodesInModel(self.__master_info)
+#        print "    updateRunningNodesInModel total", time.time()
+      if update_others:
+#        print "    updateTopicsListModel", time.time(), "topic count:", len(self.__master_info.topics)
+        self.updateTopicsListModel(self.__master_info)
+#        print "    updateServiceListModel", time.time(), "services count:", len(self.__master_info.services)
+        self.updateServiceListModel(self.__master_info)
+#        print "    updateDefaultConfigs", time.time()
+        self.updateDefaultConfigs(self.__master_info)
+#        print "    updateDefaultConfigs", time.time()
+#      cputimes = os.times()
+#      cputime = cputimes[0] + cputimes[1] - cputime_init
+#      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
     except:
       import traceback
       print traceback.format_exc()
@@ -819,7 +837,9 @@ class MasterViewProxy(QtGui.QWidget):
     show the description of selected topic
     '''
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
-    self.masterTab.echoTopicButton.setEnabled(len(selectedTopics) > 0)
+    topics_selected = (len(selectedTopics) > 0)
+    self.masterTab.echoTopicButton.setEnabled(topics_selected)
+    self.masterTab.hzTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
       text = ''.join(['<h3>', topic.name,'</h3>'])
@@ -903,15 +923,22 @@ class MasterViewProxy(QtGui.QWidget):
     for index in indexes:
       if index.column() == 0:
         item = self.node_tree_model.itemFromIndex(index)
-        if not item is None:
-          if isinstance(item, (GroupItem, HostItem)):
-            if recursive:
-              for j in range(item.rowCount()):
-                if not item.child(j) in result: 
-                  result.append(item.child(j))
-          elif isinstance(item, NodeItem):
-            if not item in result:
-              result.append(item)
+        res = self._nodesFromItems(item, recursive)
+        for r in res:
+          if not r in result:
+            result.append(r)
+    return result
+
+  def _nodesFromItems(self, item, recursive):
+    result = []
+    if not item is None:
+      if isinstance(item, (GroupItem, HostItem)):
+        if recursive:
+          for j in range(item.rowCount()):
+            result[len(result):] = self._nodesFromItems(item.child(j), recursive)
+      elif isinstance(item, NodeItem):
+        if not item in result:
+          result.append(item)
     return result
 
   def topicsFromIndexes(self, indexes):
@@ -959,11 +986,13 @@ class MasterViewProxy(QtGui.QWidget):
     self.setCursor(cursor)
     self.masterTab.startButton.setEnabled(True)
 
-  def start_nodes(self, nodes):
+  def start_nodes(self, nodes, force=False):
     '''
     Internal method to start a list with nodes
     @param nodes: the list with nodes to start
     @type nodes: C{[L{NodeItem}, ...]}
+    @param force: force the start of the node, also if it is already started.
+    @type force: C{bool}
     '''
     key_mod = QtGui.QApplication.keyboardModifiers()
     self.progressDialog.setWindowTitle('Start')
@@ -978,7 +1007,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.progressDialog.setValue(i)
       if self.progressDialog.wasCanceled():
         break
-      if node.pid is None:
+      if node.pid is None or force:
         if self.node_tree_model.isDuplicateNode(node.name):
           ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['The node ', node.name, ' is already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
           if ret == QtGui.QMessageBox.No:
@@ -993,6 +1022,9 @@ class MasterViewProxy(QtGui.QWidget):
 
         # start the node using launch configuration
         if choice is None:
+          QtGui.QMessageBox.warning(None, 'Error while start %s'%node.name,
+                                      'No configuration found!',
+                                      QtGui.QMessageBox.Ok)
           break
         config = choices[choice]
         if isinstance(config, LaunchConfig):
@@ -1035,6 +1067,18 @@ class MasterViewProxy(QtGui.QWidget):
         result.append(node_item)
     self.start_nodes(result)
 
+  def on_force_start_nodes(self):
+    '''
+    Starts the selected nodes (also if it already running). If for a node more then one configuration is 
+    available, the selection dialog will be show.
+    '''
+    cursor = self.cursor()
+    self.masterTab.startButton.setEnabled(False)
+    self.setCursor(QtCore.Qt.WaitCursor)
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    self.start_nodes(selectedNodes, True)
+    self.setCursor(cursor)
+    self.masterTab.startButton.setEnabled(True)
 
   def _getDefaultCfgChoises(self, node):
     result = {}
@@ -1434,6 +1478,18 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     Shows the output of the topic in a terminal.
     '''
+    self._show_topic_output(False)
+
+  def on_topic_hz_clicked(self):
+    '''
+    Shows the hz of the topic in a terminal.
+    '''
+    self._show_topic_output(True)
+
+  def _show_topic_output(self, show_hz_only):
+    '''
+    Shows the output of the topic in a terminal.
+    '''
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     for topic in selectedTopics:
       try:
@@ -1441,7 +1497,7 @@ class MasterViewProxy(QtGui.QWidget):
           if self.__echo_topics_dialogs.has_key(topic.name):
             self.__echo_topics_dialogs[topic.name].activateWindow()
           else:
-            topicDia = EchoDialog(topic.name, topic.type, self)
+            topicDia = EchoDialog(topic.name, topic.type, show_hz_only, self)
             self.__echo_topics_dialogs[topic.name] = topicDia
             topicDia.finished_signal.connect(self._topic_dialog_closed)
             topicDia.show()
@@ -1450,7 +1506,7 @@ class MasterViewProxy(QtGui.QWidget):
           import os, shlex, subprocess
           env = dict(os.environ)
           env["ROS_MASTER_URI"] = str(self.masteruri)
-          cmd = ' '.join(['rosrun', 'node_manager_fkie', 'nm', '-t', topic.name, topic.type])
+          cmd = ' '.join(['rosrun', 'node_manager_fkie', 'nm', '-t', topic.name, topic.type, '--hz' if show_hz_only else ''])
           rospy.loginfo("Echo topic: %s", cmd)
           ps = subprocess.Popen(shlex.split(cmd), env=env, close_fds=True)
           # wait for process to avoid 'defunct' processes
@@ -1462,6 +1518,7 @@ class MasterViewProxy(QtGui.QWidget):
         QtGui.QMessageBox.warning(None, 'Error',
                                   str(''.join(['Echo of topic ', topic.name, ' failed!\n', str(e)])),
                                   QtGui.QMessageBox.Ok)
+
 
   def _topic_dialog_closed(self, topic_name):
     if self.__echo_topics_dialogs.has_key(topic_name):

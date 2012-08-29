@@ -34,10 +34,12 @@
 from PySide import QtCore, QtGui
 
 import time
+import math
 
 import roslib
 import roslib.message
 import rospy
+import threading
 
 class EchoDialog(QtGui.QDialog):
   
@@ -58,7 +60,7 @@ class EchoDialog(QtGui.QDialog):
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
   
-  def __init__(self, topic, type, parent=None):
+  def __init__(self, topic, type, show_only_rate=False, parent=None):
     '''
     Creates an input dialog.
     @param topic: the name of the topic
@@ -70,35 +72,46 @@ class EchoDialog(QtGui.QDialog):
     QtGui.QDialog.__init__(self, parent=parent)
     self.setObjectName(' - '.join(['EchoDialog', topic]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-#    self.setWindowFlags(QtCore.Qt.Window)
-    self.setWindowTitle(''.join(['Echo of ', topic]))
+    self.setWindowFlags(QtCore.Qt.Window)
+    self.setWindowTitle(''.join(['Echo of ' if not show_only_rate else 'Hz of ', topic]))
     self.resize(728,512)
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
     
     self.topic = topic
-    self._auto_scroll = True
+    self.show_only_rate = show_only_rate
+    self.lock = threading.Lock()
+    self.last_printed_tn = 0
+    self.msg_t0 = -1.
+    self.msg_tn = 0
+    self.times =[]
+        
     self.message_count = 0
+
+    self._rate_message = ''
+
     self.message_ignored_count = 0
     self.ts_first_msg = 0
     self.message_interval_count = 0
     self.message_interval_count_last = 0
+    
     self.field_filter_fn = None
     
     options = QtGui.QWidget(self)
-    hLayout = QtGui.QHBoxLayout(options)
-    hLayout.setContentsMargins(1, 1, 1, 1)
-    self.no_str_checkbox = no_str_checkbox = QtGui.QCheckBox('Hide strings')
-    no_str_checkbox.toggled.connect(self.on_no_str_checkbox_toggled)
-    hLayout.addWidget(no_str_checkbox)
-    self.no_arr_checkbox = no_arr_checkbox = QtGui.QCheckBox('Hide arrays')
-    no_arr_checkbox.toggled.connect(self.on_no_arr_checkbox_toggled)
-    hLayout.addWidget(no_arr_checkbox)
-    # add spacer
-    spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-    hLayout.addItem(spacerItem)
-    self.verticalLayout.addWidget(options)
+    if not show_only_rate:
+      hLayout = QtGui.QHBoxLayout(options)
+      hLayout.setContentsMargins(1, 1, 1, 1)
+      self.no_str_checkbox = no_str_checkbox = QtGui.QCheckBox('Hide strings')
+      no_str_checkbox.toggled.connect(self.on_no_str_checkbox_toggled)
+      hLayout.addWidget(no_str_checkbox)
+      self.no_arr_checkbox = no_arr_checkbox = QtGui.QCheckBox('Hide arrays')
+      no_arr_checkbox.toggled.connect(self.on_no_arr_checkbox_toggled)
+      hLayout.addWidget(no_arr_checkbox)
+      # add spacer
+      spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+      hLayout.addItem(spacerItem)
+      self.verticalLayout.addWidget(options)
     
     self.display = QtGui.QTextEdit(self)
     self.display.setReadOnly(True)
@@ -113,6 +126,10 @@ class EchoDialog(QtGui.QDialog):
       raise Exception("Cannot load message class for [%s]. Are your messages built?"%type)
     self.sub = rospy.Subscriber(topic, msg_class, self._msg_handle)
     self.msg_signal.connect(self._append_message)
+    
+    self.print_hz_timer = QtCore.QTimer()
+    self.print_hz_timer.timeout.connect(self._on_calc_hz)
+    self.print_hz_timer.start(1000)
 
 #    print "======== create", self.objectName()
 #
@@ -162,24 +179,72 @@ class EchoDialog(QtGui.QDialog):
     @type msg: C{str}
     '''
     current_time = time.time()
+    with self.lock:
+      current_time = time.time()
+      # time reset
+      if self.msg_t0 < 0 or self.msg_t0 > current_time:
+        self.msg_t0 = current_time
+        self.msg_tn = current_time
+        self.times = []
+      else:
+        self.times.append(current_time - self.msg_tn)
+        self.msg_tn = current_time
+
+      #only keep statistics for the last 5000 messages so as not to run out of memory
+      if len(self.times) > 5000:
+        self.times.pop(0)
+
+    
+    
     self.message_count += 1
-    if not self.ts_first_msg:
-      self.ts_first_msg = time.time()
-    elif int(current_time) - int(self.ts_first_msg) > 0:
-      self.message_interval_count_last = self.message_interval_count
-      self.message_interval_count = 0
-      self.ts_first_msg = current_time
-    self.message_interval_count += 1
-    if self.message_interval_count > self.MESSAGE_HZ_LIMIT:
-      self.message_ignored_count += 1
-    status_text = ' '.join([str(self.message_count), 'messages'])
-    # show rate of last second
-    if self.message_interval_count_last > 0:
-      status_text = ' '.join([status_text, ', rate: ', str(self.message_interval_count_last),'Hz'])
-    # show the info, what no more then the limit messages is displayed
-    if self.message_ignored_count > 0:
-      status_text = ' '.join([status_text, ', skipped: ', str(self.message_ignored_count), ' (maximum displayed: ', str(self.MESSAGE_HZ_LIMIT),'Hz)'])
-    self.status_label.setText(status_text)
-    # append message only if the limit is not reached
-    if self.message_interval_count < self.MESSAGE_HZ_LIMIT:
+#    if not self.ts_first_msg:
+#      self.ts_first_msg = time.time()
+#    elif int(current_time) - int(self.ts_first_msg) > 0:
+#      self.message_interval_count_last = self.message_interval_count
+#      self.message_interval_count = 0
+#      self.ts_first_msg = current_time
+#    self.message_interval_count += 1
+#    if self.message_interval_count > self.MESSAGE_HZ_LIMIT:
+#      self.message_ignored_count += 1
+#    status_text = ' '.join([str(self.message_count), 'messages'])
+#    # show rate of last second
+#    if self.message_interval_count_last > 0:
+#      status_text = ' '.join([status_text, ', rate: ', str(self.message_interval_count_last),'Hz'])
+#    # show the info, what no more then the limit messages is displayed
+#    if self.message_ignored_count > 0:
+#      status_text = ' '.join([status_text, ', skipped: ', str(self.message_ignored_count), ' (maximum displayed: ', str(self.MESSAGE_HZ_LIMIT),'Hz)'])
+#    self.status_label.setText(status_text)
+#    # append message only if the limit is not reached
+    if not self.show_only_rate:
       self.display.append(''.join(['<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier,monospace; padding:10px;">\n', msg,'\n</pre><hr>']))
+    self._print_status()
+
+  def _on_calc_hz(self):
+    if self.msg_tn == self.last_printed_tn:
+      self._rate_message = 'no new messages'
+      return
+    with self.lock:
+      # the code from ROS rostopic
+      n = len(self.times)
+      if n == 0:
+        return
+      mean = sum(self.times) / n
+      rate = 1./mean if mean > 0. else 0
+
+      #std dev
+      std_dev = math.sqrt(sum((x - mean)**2 for x in self.times) /n)
+      # min and max
+      max_delta = max(self.times)
+      min_delta = min(self.times)
+
+      self.last_printed_tn = self.msg_tn
+      self._rate_message = "average rate: %.3f\tmin: %.3fs   max: %.3fs   std dev: %.5fs   window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
+      self._print_status()
+      if self.show_only_rate:
+        self.display.append(self._rate_message)
+
+
+  def _print_status(self):
+    status_text = ' '.join([str(self.message_count), 'messages', ', ' if self._rate_message else '', self._rate_message])
+    self.status_label.setText(status_text)
+

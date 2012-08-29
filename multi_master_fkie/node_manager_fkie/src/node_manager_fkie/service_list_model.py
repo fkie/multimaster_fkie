@@ -33,6 +33,8 @@
 from PySide import QtCore
 from PySide import QtGui
 
+import os
+
 import roslib
 
 import node_manager_fkie as nm
@@ -135,25 +137,25 @@ class ServiceItem(QtGui.QStandardItem):
         item.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
 
-  def __eq__(self, item):
-    '''
-    Compares the name of service.
-    '''
-    if isinstance(item, str) or isinstance(item, unicode):
-      return self.service.name.lower() == item.lower()
-    elif not (item is None):
-      return self.service.name.lower() == item.service.name.lower()
-    return False
-
-  def __gt__(self, item):
-    '''
-    Compares the name of service.
-    '''
-    if isinstance(item, str) or isinstance(item, unicode):
-      return self.service.name.lower() > item.lower()
-    elif not (item is None):
-      return self.service.name.lower() > item.service.name.lower()
-    return False
+#  def __eq__(self, item):
+#    '''
+#    Compares the name of service.
+#    '''
+#    if isinstance(item, str) or isinstance(item, unicode):
+#      return self.service.name.lower() == item.lower()
+#    elif not (item is None):
+#      return self.service.name.lower() == item.service.name.lower()
+#    return False
+#
+#  def __gt__(self, item):
+#    '''
+#    Compares the name of service.
+#    '''
+#    if isinstance(item, str) or isinstance(item, unicode):
+#      return self.service.name.lower() > item.lower()
+#    elif not (item is None):
+#      return self.service.name.lower() > item.service.name.lower()
+#    return False
 
 
 class ServiceModel(QtGui.QStandardItemModel):
@@ -193,24 +195,33 @@ class ServiceModel(QtGui.QStandardItemModel):
     '''
     service_names = services.keys()
     root = self.invisibleRootItem()
+    updated = []
+    cputimes = os.times()
+    cputime_init = cputimes[0] + cputimes[1]
+    # remove or update the items
     for i in reversed(range(root.rowCount())):
       serviceItem = root.child(i)
       if not serviceItem.service.name in service_names:
         root.removeRow(i)
+      else:
+        serviceItem.service = services[serviceItem.service.name]
+        updated.append(serviceItem.service.name)
+    # add new items in sorted order
     for (name, service) in services.items():
       if not service is None:
         doAddItem = True
         for i in range(root.rowCount()):
           serviceItem = root.child(i)
-          if (serviceItem == service.name):
-            # update item
-            serviceItem.service = service
-            serviceItem.updateServiceView(root)
-            doAddItem = False
-            break
-          elif (serviceItem > service.name):
-            root.insertRow(i, ServiceItem.getItemList(service))
+          if not name in updated:
+            if cmp(serviceItem.service.name.lower(), service.name.lower()) > 0:
+              root.insertRow(i, ServiceItem.getItemList(service))
+              doAddItem = False
+              break
+          else:
             doAddItem = False
             break
         if doAddItem:
           root.appendRow(ServiceItem.getItemList(service))
+#    cputimes = os.times()
+#    cputime = cputimes[0] + cputimes[1] - cputime_init
+#    print "      update services ", cputime, ', service count:', len(services)

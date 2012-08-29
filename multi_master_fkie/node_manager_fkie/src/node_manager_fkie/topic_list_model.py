@@ -33,9 +33,13 @@
 from PySide import QtCore
 from PySide import QtGui
 
+import os
+
 import roslib
 import roslib.message
 import roslib.msgs
+from master_discovery_fkie.master_info import TopicInfo 
+
 
 class TopicItem(QtGui.QStandardItem):
   '''
@@ -44,108 +48,123 @@ class TopicItem(QtGui.QStandardItem):
   '''
   
   ITEM_TYPE = QtGui.QStandardItem.UserType + 36
+  COL_PUB = 1
+  COL_SUB = 2
+  COL_TYPE = 3
 
-  def __init__(self, topic, parent=None):
+
+  def __init__(self, name, parent=None):
     '''
     Initialize the topic item.
-    @param topic: the topic object to view
-    @type topic: L{master_discovery_fkie.TopicInfo}
+    @param name: the topic name
+    @type name: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(topic.name))
-    self.topic = topic
+    QtGui.QStandardItem.__init__(self, self.toHTML(name))
+    self.parent_item = parent
+    self._topic = TopicInfo(name)
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
 
-  def updateTopicView(self, parent):
-    '''
-    This method is called after the self.topic is changed to update the 
-    representation of the topic. The name will not be changed, but all other 
-    data.
-    @param parent: Item which contains this topic item. This is needed to update 
-    other columns of this topic.
-    @type parent: L{PySide.QtGui.QStandardItem}
-    '''
-    if not parent is None:
-      #update the topic publishers
-      child = parent.child(self.row(), 1)
-      if not child is None:
-        self.updatePublisherView(self.topic, child)
-      #update the topic subscriber
-      child = parent.child(self.row(), 2)
-      if not child is None:
-        self.updateSubscriberView(self.topic, child)
-      #update the topic type
-      child = parent.child(self.row(), 3)
-      if not child is None:
-        self.updateTypeView(self.topic, child)
+#  def __del__(self):
+#    print "delete TOPIC", self._topic.name
 
-  @classmethod
-  def updatePublisherView(cls, topic, item):
+  @property
+  def topic(self):
+    '''
+    Returns the TopicInfo instance of this topic.
+    @rtype: L{master_discovery_fkie.TopicInfo}
+    '''
+    return self._topic
+
+  @topic.setter
+  def topic(self, topic_info):
+    '''
+    Sets the TopicInfo and updates the view, if needed.
+    @type topic_info: L{master_discovery_fkie.TopicInfo}
+    '''
+    pubs_changed = False
+    subs_changed = False
+    type_changed = False
+    if self._topic.publisherNodes != topic_info.publisherNodes:
+      pubs_changed = True
+      self._topic.publisherNodes = topic_info.publisherNodes
+    if self._topic.subscriberNodes != topic_info.subscriberNodes:
+      subs_changed = True
+      self._topic.subscriberNodes = topic_info.subscriberNodes
+    if self._topic.type != topic_info.type:
+      self._topic.type = topic_info.type
+      type_changed = True
+    # update the tooltip and icon
+#    if pubs_changed or subs_changed:
+#      self._topic = topic_info.copy()
+    if pubs_changed:
+      self.updatePublisherView()
+    if subs_changed:
+      self.updateSubscriberView()
+    if type_changed:
+      self.updateTypeView()
+
+  def updatePublisherView(self):
     '''
     Updates the representation of the column contains the publisher state.
-    @param topic: the topic data
-    @type topic: L{master_discovery_fkie.TopicInfo}
-    @param item: corresponding item in the model
-    @type item: L{TopicItem}
     '''
-    item.setText(str(len(topic.publisherNodes)))
-    tooltip = ''.join(['<h4>', 'Publisher [', topic.name, ']:</h4><dl>'])
-    for p in topic.publisherNodes:
-      tooltip = ''.join([tooltip, '<dt>', p, '</dt>'])
-    tooltip = ''.join([tooltip, '</dl>'])
-    if len(topic.publisherNodes) > 0:
-      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
+    if not self.parent_item is None:
+      cfg_col = self.parent_item.child(self.row(), TopicItem.COL_PUB)
+      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+        cfg_col.setText(str(len(self.topic.publisherNodes)))
+        tooltip = ''.join(['<h4>', 'Publisher [', self.topic.name, ']:</h4><dl>'])
+        for p in self.topic.publisherNodes:
+          tooltip = ''.join([tooltip, '<dt>', p, '</dt>'])
+        tooltip = ''.join([tooltip, '</dl>'])
+        if len(self.topic.publisherNodes) > 0:
+          cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
-  @classmethod
-  def updateSubscriberView(cls, topic, item):
+  def updateSubscriberView(self):
     '''
     Updates the representation of the column contains the subscriber state.
-    @param topic: the topic data
-    @type topic: L{master_discovery_fkie.TopicInfo}
-    @param item: corresponding item in the model
-    @type item: L{TopicItem}
     '''
-    item.setText(str(len(topic.subscriberNodes)))
-    tooltip = ''.join(['<h4>', 'Subscriber [', topic.name, ']:</h4><dl>'])
-    for p in topic.subscriberNodes:
-      tooltip = ''.join([tooltip, '<dt>', p, '</dt>'])
-    tooltip = ''.join([tooltip, '</dl>'])
-    if len(topic.subscriberNodes) > 0:
-      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
+    if not self.parent_item is None:
+      cfg_col = self.parent_item.child(self.row(), TopicItem.COL_SUB)
+      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+        cfg_col.setText(str(len(self.topic.subscriberNodes)))
+        tooltip = ''.join(['<h4>', 'Subscriber [', self.topic.name, ']:</h4><dl>'])
+        for p in self.topic.subscriberNodes:
+          tooltip = ''.join([tooltip, '<dt>', p, '</dt>'])
+        tooltip = ''.join([tooltip, '</dl>'])
+        if len(self.topic.subscriberNodes) > 0:
+          cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
-  @classmethod
-  def updateTypeView(cls, topic, item):
+  def updateTypeView(self):
     '''
     Updates the representation of the column contains the type of the topic.
-    @param topic: the topic data
-    @type topic: L{master_discovery_fkie.TopicInfo}
-    @param item: corresponding item in the model
-    @type item: L{TopicItem}
     '''
-    item.setText(str(topic.type))
-    if not topic.type is None:
-      tooltip = ''
-      try:
-        mclass = roslib.message.get_message_class(topic.type)
-        tooltip = str(mclass)
-        if not mclass is None:
-          tooltip = str(mclass.__slots__)
-          for f in mclass.__slots__:
-            idx = mclass.__slots__.index(f)
-            idtype = mclass._slot_types[idx]
-            base_type = roslib.msgs.base_msg_type(idtype)
-            primitive = "unknown"
-            if base_type in roslib.msgs.PRIMITIVE_TYPES:
-              primitive = "primitive"
-            else:
-              try:
-                list_msg_class =roslib.message.get_message_class(base_type)
-                primitive = "class", list_msg_class.__slots__
-              except ValueError:
-                pass
-            tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
-      except ValueError:
-        pass
-      item.setToolTip(tooltip)
+    if not self.parent_item is None:
+      cfg_col = self.parent_item.child(self.row(), TopicItem.COL_TYPE)
+      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+        cfg_col.setText(str(self.topic.type))
+        if not self.topic.type is None and not cfg_col.toolTip():
+          tooltip = ''
+          try:
+            mclass = roslib.message.get_message_class(self.topic.type)
+            tooltip = str(mclass)
+            if not mclass is None:
+              tooltip = str(mclass.__slots__)
+              for f in mclass.__slots__:
+                idx = mclass.__slots__.index(f)
+                idtype = mclass._slot_types[idx]
+                base_type = roslib.msgs.base_msg_type(idtype)
+                primitive = "unknown"
+                if base_type in roslib.msgs.PRIMITIVE_TYPES:
+                  primitive = "primitive"
+                else:
+                  try:
+                    list_msg_class =roslib.message.get_message_class(base_type)
+                    primitive = "class", list_msg_class.__slots__
+                  except ValueError:
+                    pass
+                tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
+          except ValueError:
+            pass
+          cfg_col.setToolTip(tooltip)
   
   @classmethod
   def toHTML(cls, topic_name):
@@ -168,50 +187,51 @@ class TopicItem(QtGui.QStandardItem):
     return TopicItem.ITEM_TYPE
 
   @classmethod
-  def getItemList(self, topic):
+  def getItemList(self, name, root):
     '''
     Creates the list of the items from topic. This list is used for the 
     visualization of topic data as a table row.
-    @param topic: the topic data
-    @type topic: L{master_discovery_fkie.TopicInfo}
+    @param name: the topic name
+    @type name: C{str}
+    @param root: The parent QStandardItem
+    @type root: L{PySide.QtGui.QStandardItem}
     @return: the list for the representation as a row
     @rtype: C{[L{TopicItem} or L{PySide.QtGui.QStandardItem}, ...]}
     '''
     items = []
-    item = TopicItem(topic)
+    item = TopicItem(name, parent=root)
     items.append(item)
     pubItem = QtGui.QStandardItem()
-    TopicItem.updatePublisherView(topic, pubItem)
+#    TopicItem.updatePublisherView(topic, pubItem)
     items.append(pubItem)
     subItem = QtGui.QStandardItem()
-    TopicItem.updateSubscriberView(topic, subItem)
+#    TopicItem.updateSubscriberView(topic, subItem)
     items.append(subItem)
     typeItem = QtGui.QStandardItem()
-    TopicItem.updateTypeView(topic, typeItem)
+#    TopicItem.updateTypeView(topic, typeItem)
     items.append(typeItem)
     return items
 
 
-
-  def __eq__(self, item):
-    '''
-    Compares the name of topic.
-    '''
-    if isinstance(item, str) or isinstance(item, unicode):
-      return self.topic.name.lower() == item.lower()
-    elif not (item is None):
-      return self.topic.name.lower() == item.topic.name.lower()
-    return False
-
-  def __gt__(self, item):
-    '''
-    Compares the name of topic.
-    '''
-    if isinstance(item, str) or isinstance(item, unicode):
-      return self.topic.name.lower() > item.lower()
-    elif not (item is None):
-      return self.topic.name.lower() > item.topic.name.lower()
-    return False
+#  def __eq__(self, item):
+#    '''
+#    Compares the name of topic.
+#    '''
+#    if isinstance(item, str) or isinstance(item, unicode):
+#      return self.topic.name.lower() == item.lower()
+#    elif not (item is None):
+#      return self.topic.name.lower() == item.topic.name.lower()
+#    return False
+#
+#  def __gt__(self, item):
+#    '''
+#    Compares the name of topic.
+#    '''
+#    if isinstance(item, str) or isinstance(item, unicode):
+#      return self.topic.name.lower() > item.lower()
+#    elif not (item is None):
+#      return self.topic.name.lower() > item.topic.name.lower()
+#    return False
 
 
 class TopicModel(QtGui.QStandardItemModel):
@@ -253,24 +273,37 @@ class TopicModel(QtGui.QStandardItemModel):
     '''
     topic_names = topics.keys()
     root = self.invisibleRootItem()
+    updated = []
+    #remove or update the existing items
     for i in reversed(range(root.rowCount())):
       topicItem = root.child(i)
       if not topicItem.topic.name in topic_names:
         root.removeRow(i)
+      else:
+        topicItem.topic = topics[topicItem.topic.name]
+        updated.append(topicItem.topic.name)
+    # insert other items in sorted order
+#    cputimes = os.times()
+#    cputime_init = cputimes[0] + cputimes[1]
     for (name, topic) in topics.items():
       doAddItem = True
       for i in range(root.rowCount()):
         topicItem = root.child(i)
-        if (topicItem == topic.name):
-          # update item
-          topicItem.topic = topic
-          topicItem.updateTopicView(root)
-          doAddItem = False
-          break
-        elif (topicItem > topic.name):
-          root.insertRow(i, TopicItem.getItemList(topic))
+        if not name in updated:
+          res = cmp(topicItem.topic.name.lower(), topic.name.lower())
+          if res > 0:
+            new_item_row = TopicItem.getItemList(topic.name, root)
+            root.insertRow(i, new_item_row)
+            new_item_row[0].topic = topic
+            doAddItem = False
+            break
+        else:
           doAddItem = False
           break
       if doAddItem:
-        root.appendRow(TopicItem.getItemList(topic))
-
+        new_item_row = TopicItem.getItemList(topic.name, root)
+        root.appendRow(new_item_row)
+        new_item_row[0].topic = topic
+#    cputimes = os.times()
+#    cputime = cputimes[0] + cputimes[1] - cputime_init
+#    print "      update topic ", cputime, ", topic count:", len(topics)

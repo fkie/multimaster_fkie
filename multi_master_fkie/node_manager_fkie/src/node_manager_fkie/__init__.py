@@ -59,7 +59,6 @@ from name_resolution import NameResolution
 # in HTML descriptions of the robots and capabilities
 
 PACKAGE_DIR = ''.join([roslib.packages.get_dir_pkg(os.path.abspath(os.path.dirname(sys.argv[0])))[0], os.path.sep])
-os.chdir(PACKAGE_DIR)
 ROBOTS_DIR = ''.join([PACKAGE_DIR, os.path.sep, 'images', os.path.sep])
 
 CFG_PATH = ''.join(['.node_manager', os.sep])
@@ -285,7 +284,6 @@ def main(name, anonymous=False):
 
   try:
     from PySide.QtGui import QApplication
-    from PySide.QtCore import QTimer
   except:
     print >> sys.stderr, "please install 'python-pyside' package!!"
     sys.exit(-1)
@@ -300,7 +298,8 @@ def main(name, anonymous=False):
   # decide to show main or echo dialog
   import main_window, echo_dialog
   if len(args) >= 4 and args[1] == '-t':
-    mainForm = echo_dialog.EchoDialog(args[2], args[3])
+    show_hz_only = (len(args) > 4 and args[4] == '--hz')
+    mainForm = echo_dialog.EchoDialog(args[2], args[3], show_hz_only)
   else:
     # initialize the global handler 
     global _ssh_handler
@@ -313,9 +312,10 @@ def main(name, anonymous=False):
     _name_resolution = NameResolution()
   
     #start the gui
-    mainForm = main_window.MainWindow()
+    mainForm = main_window.MainWindow(args)
 
   if not rospy.is_shutdown():
+    os.chdir(PACKAGE_DIR) # change path to be able to the images of descriptions
     mainForm.show()
     exit_code = -1
     rospy.on_shutdown(finish)

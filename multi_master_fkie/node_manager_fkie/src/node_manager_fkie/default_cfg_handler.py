@@ -168,7 +168,7 @@ class ServiceThread(QtCore.QObject, threading.Thread):
         req, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
       except:
         import traceback
-        rospy.logwarn("Error while retrieve the node list from default_cfg: %s", str(traceback.format_exc()))
+        rospy.logwarn("Error while retrieve the node list from %s: %s", str(self._service), str(traceback.format_exc()))
         lines = traceback.format_exc().splitlines()
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
       else:
@@ -197,7 +197,7 @@ class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
         req, resp = nm.starter().callService(self._service_uri, self._service, ListDescription)
       except:
         import traceback
-        rospy.logwarn("Error while retrieve the description from default_cfg: %s", str(traceback.format_exc()))
+        rospy.logwarn("Error while retrieve the description from %s: %s", str(self._service), str(traceback.format_exc()))
         lines = traceback.format_exc().splitlines()
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
       else:

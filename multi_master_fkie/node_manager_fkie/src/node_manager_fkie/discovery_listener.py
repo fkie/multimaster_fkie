@@ -56,15 +56,20 @@ class MasterListService(QtCore.QObject):
   will be determine using L{master_discovery_fkie.interface_finder.get_listmaster_service()}
 
   '''
-  masterlist_signal = QtCore.Signal(list)
+  masterlist_signal = QtCore.Signal(str, str, list)
   '''@ivar: a signal with a list of the masters retrieved from the master_discovery service 'list_masters'.
-  ParameterB{:} C{[L{master_discovery_fkie.ROSMaster}, ...]}'''
-  masterlist_err_signal = QtCore.Signal(str)
+  ParameterB{:} C{masteruri}, C{service name}, C{[L{master_discovery_fkie.ROSMaster}, ...]}'''
+  masterlist_err_signal = QtCore.Signal(str, str)
   '''@ivar: this signal is emitted if an error while calling #list_masters' 
   service of master_discovery is failed.
-  ParameterB{:} C{str}'''
+  ParameterB{:} C{masteruri}, C{error}'''
   
-  def retrieveMasterList(self, masteruri, wait=True):
+  def __init__(self):
+    QtCore.QObject.__init__(self)
+    self.__serviceThreads = {}
+    self._lock = threading.RLock()
+
+  def retrieveMasterList(self, masteruri, wait=False):
     '''
     This method use the service 'list_masters' of the master_discovery to get 
     the list of discovered ROS master. The retrieved list will be emitted as 
@@ -74,21 +79,78 @@ class MasterListService(QtCore.QObject):
     @param wait: wait for the service
     @type wait: C{boolean}
     '''
-    found = False
-    service_names = interface_finder.get_listmaster_service(masteruri, wait)
-    for service_name in service_names:
-      rospy.loginfo("service 'list_masters' found on %s as %s", masteruri, service_name)
-      rospy.wait_for_service(service_name)
-      discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
-      try:
-        resp = discoverMasters()
-      except rospy.ServiceException, e:
-        rospy.logwarn("ERROR Service call 'list_masters' failed: %s", str(e))
-        self.masterlist_err_signal.emit("ERROR Service call 'list_masters' failed: %s", str(e))
-      else:
-        self.masterlist_signal.emit(resp.masters)
-        found = True
-    return found
+    self._lock.acquire(True)
+    if not (self.__serviceThreads.has_key(masteruri)):
+      upthread = MasterListThread(masteruri, wait)
+      upthread.master_list_signal.connect(self._on_master_list)
+      upthread.err_signal.connect(self._on_err)
+      self.__serviceThreads[masteruri] = upthread
+      upthread.start()
+    self._lock.release()
+
+  def _on_master_list(self, masteruri, service_name, items):
+    self.masterlist_signal.emit(masteruri, service_name, items)
+    self._lock.acquire(True)
+    try:
+      thread = self.__serviceThreads.pop(masteruri)
+      del thread
+    except KeyError:
+      pass
+    self._lock.release()
+
+  def _on_err(self, masteruri, str):
+    self.masterlist_err_signal.emit(masteruri, str)
+    self._lock.acquire(True)
+    try:
+      thread = self.__serviceThreads.pop(masteruri)
+      del thread
+    except KeyError:
+      pass
+    self._lock.release()
+
+
+
+class MasterListThread(QtCore.QObject, threading.Thread):
+  '''
+  A thread to to retrieve the list of discovered ROS master from master_discovery 
+  service and publish it by sending a QT signal.
+  '''
+  master_list_signal = QtCore.Signal(str, str, list)
+  err_signal = QtCore.Signal(str, str)
+
+  def __init__(self, masteruri, wait, parent=None):
+    QtCore.QObject.__init__(self)
+    threading.Thread.__init__(self)
+    self._masteruri = masteruri
+    self._wait = wait
+    self.setDaemon(True)
+
+  def run(self):
+    '''
+    '''
+    if self._masteruri:
+      found = False
+      print "search for servcie interface"
+      service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait)
+      print "services:", service_names
+      err_msg = ''
+      for service_name in service_names:
+        rospy.loginfo("service 'list_masters' found on %s as %s", self._masteruri, service_name)
+        print "wait for service:", service_name
+        if self._wait:
+          rospy.wait_for_service(service_name)
+        print "connect to service:", service_name
+        discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
+        try:
+          resp = discoverMasters()
+        except rospy.ServiceException, e:
+          rospy.logwarn("ERROR Service call 'list_masters' failed: %s", str(e))
+          err_msg = ''.join([err_msg, '\n', service_name, ': ', str(e)])
+        else:
+          self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
+          found = True
+      if not found:
+        self.err_signal.emit(self._masteruri, "ERROR Service call 'list_masters' failed: %s"%err_msg)
 
 
 
