@@ -73,6 +73,7 @@ class DiscoveredMaster(object):
     self.monitoruri = monitoruri
     self.heartbeat_rate = heartbeat_rate
     self.heartbeats = list()
+    self.last_heartbeat_ts = time.time()
     self.online = False
     self.callback_master_state = callback_master_state
     # create a thread to retrieve additional information about the remote ROS master
@@ -89,7 +90,9 @@ class DiscoveredMaster(object):
     @param rate: The remote rate, which is used to send the heartbeat messages. 
     @type rate:  C{float}
     '''
-    self.heartbeats.append(time.time())
+    cur_time = time.time()
+    self.heartbeats.append(cur_time)
+    self.last_heartbeat_ts = cur_time
     # reset the list, if the heartbeat is changed
     if self.heartbeat_rate != rate:
       self.heartbeat_rate = rate
@@ -198,15 +201,19 @@ class Discoverer(threading.Thread):
   '''
   HEARTBEAT_FMT = 'cBBiiH'
   ''' @ivar: packet format description, see: U{http://docs.python.org/library/struct.html} '''
-  HEARTBEAT_HZ = 2           
-  ''' @ivar: the send rate of the heartbeat packets in hz '''
-  MEASUREMENT_INTERVALS = 5  
-  ''' @ivar: the count of intervals (1 sec) used for a quality calculation. If HEARTBEAT_HZ is smaller then 1, MEASUREMENT_INTERVALS will be divided by HEARTBEAT_HZ value '''
-  TIMEOUT_FACTOR = 1.4       
+  HEARTBEAT_HZ = 2
+  ''' @ivar: the send rate of the heartbeat packets in hz (Default: 2 Hz)'''
+  MEASUREMENT_INTERVALS = 5
+  ''' @ivar: the count of intervals (1 sec) used for a quality calculation. If 
+  HEARTBEAT_HZ is smaller then 1, MEASUREMENT_INTERVALS will be divided by HEARTBEAT_HZ value. 
+  (Default: 5 sec are used to determine the link qaulity)'''
+  TIMEOUT_FACTOR = 1.4
   ''' @ivar: the timeout is defined by calculated measurement duration multiplied by TIMEOUT_FAKTOR. ''' 
-  ROSMASTER_HZ = 2           
-  ''' @ivar: the test rate of ROS master state in hz. '''
-    
+  ROSMASTER_HZ = 2
+  ''' @ivar: the test rate of ROS master state in Hz (Deafult: 2 Hz). '''
+  REMOVE_AFTER = 300
+  ''' @ivar: remove an offline host after this time in [sec] (Default: 300 sec). '''
+  
   def __init__(self, mcast_port, mcast_group, monitor_port):
     '''
     Initialize method for the Discoverer class
@@ -231,6 +238,8 @@ class Discoverer(threading.Thread):
       Discoverer.MEASUREMENT_INTERVALS = rospy.get_param('~measurement_intervals')
     if rospy.has_param('~timeout_factor'):
       Discoverer.TIMEOUT_FACTOR = rospy.get_param('~timeout_factor')
+    if rospy.has_param('~remove_after'):
+      Discoverer.REMOVE_AFTER = rospy.get_param('~remove_after')
 
     self.current_check_hz = Discoverer.HEARTBEAT_HZ
     # initialize the ROS publishers
@@ -342,6 +351,25 @@ class Discoverer(threading.Thread):
         if try_count > 5:
           rospy.logerr("Communication with ROS Master failed: %s", e)
           rospy.signal_shutdown("ROS Master not reachable")
+      # remove offline hosts
+      self.__lock.acquire(True)
+      print "update remote hosts"
+      current_time = time.time()
+      to_remove = []
+      for (k, v) in self.masters.iteritems():
+        if current_time - v.last_heartbeat_ts > Discoverer.REMOVE_AFTER:
+          to_remove.append(k)
+          if not v.mastername is None:
+            self.publish_masterstate(MasterState(MasterState.STATE_REMOVED, 
+                                           ROSMaster(str(v.mastername), 
+                                                     v.masteruri, 
+                                                     v.timestamp, 
+                                                     v.online, 
+                                                     v.discoverername, 
+                                                     v.monitoruri)))
+      for r in to_remove:
+        del self.masters[r]
+      self.__lock.release()
       time.sleep(1.0/self.current_check_hz)
 
   def recv_loop(self):
@@ -367,6 +395,7 @@ class Discoverer(threading.Thread):
                 (r, version, rate, secs, nsecs, monitor_port) = struct.unpack(Discoverer.HEARTBEAT_FMT, msg)
                 # remove master if sec and nsec are -1
                 if secs == -1:
+                  self.__lock.acquire(True)
                   if self.masters.has_key(address[0]):
                     master = self.masters[address[0]]
                     if not master.mastername is None:
@@ -377,9 +406,8 @@ class Discoverer(threading.Thread):
                                                                False, 
                                                                master.discoverername, 
                                                                master.monitoruri)))
-                    self.__lock.acquire(True)
                     del self.masters[address[0]]
-                    self.__lock.release()
+                  self.__lock.release()
                 # update the timestamp of existing master
                 elif self.masters.has_key(address[0]):
                   self.__lock.acquire(True)
@@ -429,11 +457,7 @@ class Discoverer(threading.Thread):
           ts_oldest = current_time - measurement_duration
           removed_ts = v.removeHeartbeats(ts_oldest)
           # sets the master offline if the last received heartbeat is to old
-          if len(v.heartbeats) > 0:
-            last_ts = v.heartbeats[-1]
-            if current_time - last_ts > measurement_duration * Discoverer.TIMEOUT_FACTOR:
-              v.setOffline()
-          elif removed_ts > 0: # no heartbeats currently received, and last removed, so set master offline
+          if current_time - v.last_heartbeat_ts > (measurement_duration * Discoverer.TIMEOUT_FACTOR):
             v.setOffline()
           # calculate the quality for inly online masters
           if v.online:
