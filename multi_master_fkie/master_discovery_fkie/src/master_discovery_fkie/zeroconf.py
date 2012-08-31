@@ -71,7 +71,7 @@ class MasterInfo(object):
     self.txt = txt[:]
     # additional information
     self.online = online
-    self.lastUpdate = rospy.Time(0)
+    self.lastUpdate = 0
 
   def getMasterUri(self):
     return self.getTXTValue('master_uri')
@@ -87,7 +87,7 @@ class MasterInfo(object):
     ..........................................................................'''
     try:
       if not (timestamp is None):
-        return rospy.Time.from_sec(float(timestamp)/1000000000)
+        return float(timestamp)/1000000000
     except:
       #depricated
 #      import traceback
@@ -96,7 +96,7 @@ class MasterInfo(object):
         t = datetime.strptime(timestamp, '%Y%m%d%H%M%S.%f')
       else:
         t = datetime.now()
-      return rospy.Time.from_sec(time.mktime(t.timetuple()) + t.microsecond / 1e6)
+      return time.mktime(t.timetuple()) + t.microsecond / 1e6
 
 
   @staticmethod
@@ -566,7 +566,7 @@ class MasterList(object):
                                                         True, 
                                                         master_info.getTXTValue('zname', ''), 
                                                         master_info.getTXTValue('rpcuri', ''))))
-        self.__masters[master_info.name].lastUpdate = rospy.Time.now()
+        self.__masters[master_info.name].lastUpdate = time.time()
         self.setMasterOnline(master_info.name, True)
       else:
 #        print "new master:", master_info.name
@@ -709,7 +709,7 @@ class Discoverer(Zeroconf):
     if (masterhost in ['localhost', '127.0.0.1']):
       sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!", masterhost)
     rpcuri = ''.join(['http://', socket.gethostname(), ':', str(monitor_port), '/'])
-    txtArray = ["timestamp=%s"%str(rospy.Time(0)), "master_uri=%s"%materuri, "zname=%s"%rospy.get_name(), "rpcuri=%s"%rpcuri]
+    txtArray = ["timestamp=%s"%str(0), "master_uri=%s"%materuri, "zname=%s"%rospy.get_name(), "rpcuri=%s"%rpcuri]
     # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
     Zeroconf.__init__(self, name, '_ros-master._tcp', masterhost, masterport, domain, txtArray)
     # the list with all ROS master neighbors with theirs SyncThread's and all Polling threads

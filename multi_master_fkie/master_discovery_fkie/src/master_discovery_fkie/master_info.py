@@ -124,13 +124,17 @@ class NodeInfo(object):
     @type name: C{str} 
     '''
     try:
-      self._publishedTopics.index(name)
+      if isinstance(name, list):
+        del self._publishedTopics
+        self._publishedTopics = name
+      else:
+        self._publishedTopics.index(name)
     except ValueError:
       self._publishedTopics.append(name)
 
-  @publishedTopics.deleter
-  def publishedTopics(self):
-    del self._publishedTopics
+#  @publishedTopics.deleter
+#  def publishedTopics(self):
+#    del self._publishedTopics
 
   @property
   def subscribedTopics(self):
@@ -148,13 +152,17 @@ class NodeInfo(object):
     @type name: C{str} 
     '''
     try:
-      self._subscribedTopics.index(name)
+      if isinstance(name, list):
+        del self._subscribedTopics
+        self._subscribedTopics = name
+      else:
+        self._subscribedTopics.index(name)
     except ValueError:
       self._subscribedTopics.append(name)
 
-  @subscribedTopics.deleter
-  def subscribedTopics(self):
-    del self._subscribedTopics
+#  @subscribedTopics.deleter
+#  def subscribedTopics(self):
+#    del self._subscribedTopics
 
   @property
   def services(self):
@@ -172,13 +180,17 @@ class NodeInfo(object):
     @type name: C{str} 
     '''
     try:
-      self._services.index(name)
+      if isinstance(name, list):
+        del self._services
+        self._services = name
+      else:
+        self._services.index(name)
     except ValueError:
       self._services.append(name)
 
-  @services.deleter
-  def services(self):
-    del self._services
+#  @services.deleter
+#  def services(self):
+#    del self._services
   
   def copy(self):
     '''
@@ -207,8 +219,8 @@ class TopicInfo(object):
     self.__name = name
     self.type = None
     '''@ivar: the type of the topic. (Default: None)'''
-    self.__publisherNodes = []
-    self.__subscriberNodes = []
+    self._publisherNodes = []
+    self._subscriberNodes = []
 
   @property
   def name(self):
@@ -224,7 +236,7 @@ class TopicInfo(object):
     Returns the list with node names witch are publishing to this topic.
     @rtype: C{[str,...]}
     '''
-    return list(self.__publisherNodes)
+    return list(self._publisherNodes)
   
   @publisherNodes.setter
   def publisherNodes(self, name):
@@ -232,13 +244,17 @@ class TopicInfo(object):
     Append a new publishing node to this topic.
     '''
     try:
-      self.__publisherNodes.index(name)
+      if isinstance(name, list):
+        del self._publisherNodes
+        self._publisherNodes = name
+      else:
+        self._publisherNodes.index(name)
     except ValueError:
-      self.__publisherNodes.append(name)
+      self._publisherNodes.append(name)
 
-  @publisherNodes.deleter
-  def publisherNodes(self):
-    del self.__publisherNodes
+#  @publisherNodes.deleter
+#  def publisherNodes(self):
+#    del self._publisherNodes
 
   @property
   def subscriberNodes(self):
@@ -246,7 +262,7 @@ class TopicInfo(object):
     Returns the list with node names witch are subscribed to this topic.
     @rtype: C{[str,...]}
     '''
-    return list(self.__subscriberNodes)
+    return list(self._subscriberNodes)
   
   @subscriberNodes.setter
   def subscriberNodes(self, name):
@@ -254,14 +270,28 @@ class TopicInfo(object):
     Append a new subscribing node to this topic.
     '''
     try:
-      self.__subscriberNodes.index(name)
+      if isinstance(name, list):
+        del self._subscriberNodes
+        self._subscriberNodes = name
+      else:
+        self._subscriberNodes.index(name)
     except ValueError:
-      self.__subscriberNodes.append(name)
+      self._subscriberNodes.append(name)
 
-  @subscriberNodes.deleter
-  def subscriberNodes(self):
-    del self.__subscriberNodes
+#  @subscriberNodes.deleter
+#  def subscriberNodes(self):
+#    del self._subscriberNodes
 
+  def copy(self):
+    '''
+    Creates a copy this object and returns it.
+    @rtype: L{TopicInfo} 
+    '''
+    result = TopicInfo(self.name)
+    result.type = self.type
+    result._publisherNodes = list(self._publisherNodes)
+    result._subscriberNodes = list(self._subscriberNodes)
+    return result
 
 
 class ServiceInfo(object):

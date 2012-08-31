@@ -357,7 +357,7 @@ class Discoverer(threading.Thread):
       current_time = time.time()
       to_remove = []
       for (k, v) in self.masters.iteritems():
-        if current_time - v.last_heartbeat_ts > Discoverer.REMOVE_AFTER:
+        if Discoverer.REMOVE_AFTER > 0 and current_time - v.last_heartbeat_ts > Discoverer.REMOVE_AFTER:
           to_remove.append(k)
           if not v.mastername is None:
             self.publish_masterstate(MasterState(MasterState.STATE_REMOVED, 
