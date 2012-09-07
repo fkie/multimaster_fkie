@@ -75,15 +75,18 @@ class MasterMonitor(object):
     @param rpcport: the port number for the XML-RPC server
     @type rpcport:  C{int}
     '''
+    self._state_access_lock = threading.RLock()
+    self._create_access_lock = threading.RLock()
     self._lock = threading.RLock()
     self.__masteruri = self._masteruri_from_ros()
-
+    self.__new_master_state = None
     self.__masteruri_rpc = None
     self.__mastername = None
+    self.ros_node_name = str(rospy.get_name())
     if rospy.has_param('~name'):
       self.__mastername = rospy.get_param('~name')
 
-    self.master_state = None
+    self.__master_state = None
     '''@ivar: the current state of the ROS master'''
     self.rpcport = rpcport
     '''@ivar: the port number of the RPC server'''
@@ -132,7 +135,7 @@ class MasterMonitor(object):
     if hasattr(self, 'rpcServer'):
       self.rpcServer.shutdown()
 
-  def getNodePid(self, nodes):
+  def _getNodePid(self, nodes):
     '''
     Gets process id of the node.
     @param nodename: the name of the node
@@ -145,25 +148,20 @@ class MasterMonitor(object):
         pid = None
         try:
           node = xmlrpclib.ServerProxy(uri)
-          pid = _succeed(node.getPid(rospy.get_name()))
+          pid = _succeed(node.getPid(self.ros_node_name))
         except (Exception, socket.error):
     #      import traceback
     #      print traceback.format_exc()
-          self._lock.acquire(True)
-          master = xmlrpclib.ServerProxy(self.__masteruri)
+          master = xmlrpclib.ServerProxy(self.getMasteruri())
     #      print "request again nodeuri for", nodename
-          code, message, self.new_master_state.getNode(nodename).uri = master.lookupNode(rospy.get_name(), nodename)
-          self._lock.release()
-          if (code == -1):
-            self._lock.acquire(True)
-            self.new_master_state.getNode(nodename).uri = None
-            self._lock.release()
+          code, message, new_uri = master.lookupNode(self.ros_node_name, nodename)
+          with self._lock:
+            self.__new_master_state.getNode(nodename).uri = None if (code == -1) else new_uri
         else:
-          self._lock.acquire(True)
-          self.new_master_state.getNode(nodename).pid = pid
-          self._lock.release()
+          with self._lock:
+            self.__new_master_state.getNode(nodename).pid = pid
 
-  def getServiceInfo(self, services):
+  def _getServiceInfo(self, services):
     '''
     Gets service info through the RPC interface of the service.
     @param service: the name of the service
@@ -187,19 +185,11 @@ class MasterMonitor(object):
           s.settimeout(0.5)
           s.connect((dest_addr, dest_port))
           header = { 'probe':'1', 'md5sum':'*',
-                    'callerid':rospy.get_name(), 'service':service}
+                    'callerid':self.ros_node_name, 'service':service}
           roslib.network.write_ros_handshake_header(s, header)
           type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
-          self._lock.acquire(True)
-          try:
-            self.new_master_state.getService(service).type = type['type']
-          except:
-            pass
-      #      print "ignored:"
-      #      import traceback
-      #      traceback.print_exc()
-      #      print "type field in service header not available, type:", uri, type 
-          self._lock.release()
+          with self._lock:
+            self.__new_master_state.getService(service).type = type['type']
         except socket.error:
           pass
     #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
@@ -251,171 +241,154 @@ class MasterMonitor(object):
                [ [str,str,int,str] ], 
                [ [str,str,str,str] ])}
     '''
-    self._lock.acquire(True)
-    result = (str(time.time()), self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
-    if not (self.master_state is None):
-      try:
-        result = self.master_state.listedState()
-      except:
-        import traceback
-        print traceback.format_exc()
-    self._lock.release()
-    return result
+    with self._state_access_lock:
+      result = (str(time.time()), self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
+      if not (self.__master_state is None):
+        try:
+          result = self.__master_state.listedState()
+        except:
+          import traceback
+          print traceback.format_exc()
+      return result
 
-  def getState(self):
+  def getCurrentState(self):
+    with self._state_access_lock:
+      return self.__master_state
+    
+  def updateState(self):
     '''
     Gets state from the ROS master through his RPC interface.
     @rtype: L{MasterInfo}
     @raise MasterConnectionException: if not complete information was get from the ROS master.
     '''
-    now = time.time()
-
-    threads = []
-    try:
-#      import os
-#      cputimes = os.times()
-#      cputime_init = cputimes[0] + cputimes[1]
-      self._lock.acquire(True)
-      self.new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
-#      print "get state from ros master", self.__masteruri
-      master = xmlrpclib.ServerProxy(self.__masteruri)
-      # get system state
-      code, message, state = master.getSystemState(rospy.get_name())
-      # get topic types
-      code, message, topicTypes = master.getTopicTypes(rospy.get_name())
-      #convert topicType list to the dict
-      topicTypesDict = {}
-      for topic, type in topicTypes:
-        topicTypesDict[topic] = type
-
-      # add published topics
-      for t, l in state[0]:
-        master_state.topics = t
-        for n in l:
-          master_state.nodes = n
-          master_state.getNode(n).publishedTopics = t
-          master_state.getTopic(t).publisherNodes = n
-          master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
-      # add subscribed topics
-      for t, l in state[1]:
-        master_state.topics = t
-        for n in l:
-          master_state.nodes = n
-          master_state.getNode(n).subscribedTopics = t
-          master_state.getTopic(t).subscriberNodes = n
-          master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
-#      cputimes = os.times()
-#      print "Auswertung: ", (cputimes[0] + cputimes[1] - cputime_init)
-
-      # add services
-#      cputimes = os.times()
-#      cputime_init = cputimes[0] + cputimes[1]
-
-      services = dict()
-      tmp_slist = []
-      # multi-call style xmlrpc to lock up the service uri
-      param_server_multi = xmlrpclib.MultiCall(master)
-      for t, l in state[2]:
-        master_state.services = t
-        for n in l:
-          master_state.nodes = n
-          master_state.getNode(n).services = t
-          service = master_state.getService(t)
-          service.serviceProvider = n
-          tmp_slist.append(service)
-          param_server_multi.lookupService(rospy.get_name(), t)
-#          code, message, service.uri = master.lookupService(rospy.get_name(), t)
-#          if (code == -1):
-#            service.uri = None
-#          elif service.isLocal:
-#            services[service.name] = service.uri
+    with self._create_access_lock:
+      now = time.time()
+      threads = []
       try:
-        r = param_server_multi()
-        for (code, msg, uri), service in zip(r, tmp_slist):
-          if code == 1:
-            service.uri = uri
-            if service.isLocal:
-              services[service.name] = uri
-      except:
-        import traceback
-        traceback.print_exc()
+  #      import os
+  #      cputimes = os.times()
+  #      cputime_init = cputimes[0] + cputimes[1]
+        self._lock.acquire(True)
+        self.__new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
+        master = xmlrpclib.ServerProxy(self.getMasteruri())
+        # get topic types
+        code, message, topicTypes = master.getTopicTypes(self.ros_node_name)
+        #convert topicType list to the dict
+        topicTypesDict = {}
+        for topic, type in topicTypes:
+          topicTypesDict[topic] = type
+        # get system state
+        code, message, state = master.getSystemState(self.ros_node_name)
 
-      if services:
-        pidThread = threading.Thread(target = self.getServiceInfo, args=((services,)))
-        pidThread.start()
-        threads.append(pidThread)
-#          if service.isLocal:
-#            try:
-#              pidThread = threading.Thread(target = self.getServiceInfo, args=(t, service.uri))
-#      #        self._pidThread.setDaemon(True)
-#              pidThread.start()
-#              threads.append(pidThread)
-#  #            master_state.getService(t).type = rosservice.get_service_headers(t, master_state.getService(t).uri).get('type', None)
-#  #            master_state.getService(t).serviceClass = get_service_class_by_type(master_state.getService(t).type)
-#  #            master_state.getService(t).args = roslib.message.get_printable_message_args(master_state.getService(t).serviceClass._request_class)
-#            except rosservice.ROSServiceIOException, ROSServiceException:
-#              pass
-      
-      #get additional node information
-      nodes = dict()
-#      for n in master_state.nodes:
-#        node = master_state.getNode(n)
-#        code, message, node.uri = master.lookupNode(rospy.get_name(), n)
-#        if (code == -1):
-#          node.uri = None
-#        elif node.isLocal:
-#          nodes[node.name] = node.uri
-
-      try:
-        # multi-call style xmlrpc to loock up the node uri
-        param_server_multi = xmlrpclib.MultiCall(master)
-        tmp_nlist = []
-        for name, node in master_state.nodes.items():
-          tmp_nlist.append(node)
-          param_server_multi.lookupNode(rospy.get_name(), name)
-        r = param_server_multi()
-        for (code, msg, uri), node in zip(r, tmp_nlist):
-          if code == 1:
-            node.uri = uri
-            if node.isLocal:
-              nodes[node.name] = uri
-      except:
-        import traceback
-        traceback.print_exc()
-
-#      cputimes = os.times()
-#      print "Nodes+Services:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(nodes)
-      if nodes:
-        # get process id of the nodes
-        pidThread = threading.Thread(target = self.getNodePid, args=((nodes,)))
-        pidThread.start()
-        threads.append(pidThread)
+        # add published topics
+        for t, l in state[0]:
+          master_state.topics = t
+          for n in l:
+            master_state.nodes = n
+            master_state.getNode(n).publishedTopics = t
+            master_state.getTopic(t).publisherNodes = n
+            master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
+        # add subscribed topics
+        for t, l in state[1]:
+          master_state.topics = t
+          for n in l:
+            master_state.nodes = n
+            master_state.getNode(n).subscribedTopics = t
+            master_state.getTopic(t).subscriberNodes = n
+            master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
+  #      cputimes = os.times()
+  #      print "Auswertung: ", (cputimes[0] + cputimes[1] - cputime_init)
   
-      master_state.timestamp = now
-    except socket.error, (errn, msg):
-      if not errn in [100, 101, 102]:
+        # add services
+  #      cputimes = os.times()
+  #      cputime_init = cputimes[0] + cputimes[1]
+  
+        services = dict()
+        tmp_slist = []
+        # multi-call style xmlrpc to lock up the service uri
+        param_server_multi = xmlrpclib.MultiCall(master)
+        for t, l in state[2]:
+          master_state.services = t
+          for n in l:
+            master_state.nodes = n
+            master_state.getNode(n).services = t
+            service = master_state.getService(t)
+            service.serviceProvider = n
+            tmp_slist.append(service)
+            param_server_multi.lookupService(self.ros_node_name, t)
+  #          code, message, service.uri = master.lookupService(rospy.get_name(), t)
+  #          if (code == -1):
+  #            service.uri = None
+  #          elif service.isLocal:
+  #            services[service.name] = service.uri
+        try:
+          r = param_server_multi()
+          for (code, msg, uri), service in zip(r, tmp_slist):
+            if code == 1:
+              service.uri = uri
+              if service.isLocal:
+                services[service.name] = uri
+        except:
+          import traceback
+          traceback.print_exc()
+        if services:
+          pidThread = threading.Thread(target = self._getServiceInfo, args=((services,)))
+          pidThread.start()
+          threads.append(pidThread)
+
+        #get additional node information
+        nodes = dict()
+        try:
+          # multi-call style xmlrpc to loock up the node uri
+          param_server_multi = xmlrpclib.MultiCall(master)
+          tmp_nlist = []
+          for name, node in master_state.nodes.items():
+            tmp_nlist.append(node)
+            param_server_multi.lookupNode(self.ros_node_name, name)
+          r = param_server_multi()
+          for (code, msg, uri), node in zip(r, tmp_nlist):
+            if code == 1:
+              node.uri = uri
+              if node.isLocal:
+                nodes[node.name] = uri
+        except:
+          import traceback
+          traceback.print_exc()
+  
+  #      cputimes = os.times()
+  #      print "Nodes+Services:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(nodes)
+        if nodes:
+          # get process id of the nodes
+          pidThread = threading.Thread(target = self._getNodePid, args=((nodes,)))
+          pidThread.start()
+          threads.append(pidThread)
+    
+        master_state.timestamp = now
+      except socket.error, (errn, msg):
+        if not errn in [100, 101, 102]:
+          import traceback
+          formatted_lines = traceback.format_exc().splitlines()
+    #      print "Service call failed: %s"%traceback.format_exc()
+          raise MasterConnectionException(formatted_lines[-1])
+      except:
         import traceback
         formatted_lines = traceback.format_exc().splitlines()
   #      print "Service call failed: %s"%traceback.format_exc()
         raise MasterConnectionException(formatted_lines[-1])
-    except:
-      import traceback
-      formatted_lines = traceback.format_exc().splitlines()
-#      print "Service call failed: %s"%traceback.format_exc()
-      raise MasterConnectionException(formatted_lines[-1])
-    finally:
-      self._lock.release()
-
-    # wait for all threads are finished 
-    while threads:
-      th = threads.pop()
-      if th.isAlive():
-#        print "join"
-        th.join()
-#        print "release"
-      del th
-#    print "state update of ros master", self.__masteruri, " finished"
-    return master_state
+      finally:
+        self._lock.release()
+  
+      # wait for all threads are finished 
+      while threads:
+        th = threads.pop()
+        if th.isAlive():
+  #        print "join"
+          th.join()
+  #        print "release"
+        del th
+  #    print "state update of ros master", self.__masteruri, " finished"
+#      return MasterInfo.from_list(master_state.listedState())
+      return master_state
   
   def getMasteruri(self):
     '''
@@ -424,10 +397,11 @@ class MasterMonitor(object):
     @return: ROS master URI
     @rtype: C{str} or C{None}
     '''
+    code = -1
     if self.__masteruri_rpc is None:
       master = xmlrpclib.ServerProxy(self.__masteruri)
-      code, message, self.__masteruri_rpc = master.getUri(rospy.get_name())
-    return self.__masteruri_rpc
+      code, message, self.__masteruri_rpc = master.getUri(self.ros_node_name)
+    return self.__masteruri_rpc if code >= 0 or not self.__masteruri_rpc is None else self.__masteruri
 
   def getMastername(self):
     '''
@@ -449,10 +423,11 @@ class MasterMonitor(object):
     @return: (timestamp of the ROS master state, ROS master URI, master name, name of this service, URI of this RPC server)
     @rtype: C{(str, str, str, str, str)}
     '''
-    t = 0
-    if not self.master_state is None:
-      t = self.master_state.timestamp
-    return (str(t), str(self.getMasteruri()), str(self.getMastername()), rospy.get_name(), roslib.network.create_local_xmlrpc_uri(self.rpcport))
+    with self._state_access_lock:
+      t = 0
+      if not self.__master_state is None:
+        t = self.__master_state.timestamp
+      return (str(t), str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
   
   def checkState(self):
     '''
@@ -461,16 +436,20 @@ class MasterMonitor(object):
     @rtype: C{boolean}
     '''
     result = False
-    if self.getState() != self.master_state:
-      self.master_state = self.new_master_state
-      result = True
-    self.master_state.check_ts = self.new_master_state.timestamp
-    return result
+    s = self.updateState()
+    with self._create_access_lock:
+      with self._state_access_lock:
+        if s != self.__master_state:
+          self.__master_state = self.__new_master_state
+          result = True
+        self.__master_state.check_ts = self.__new_master_state.timestamp
+        return result
 
   def reset(self):
     '''
     Sets the master state to None. 
     '''
-    if not self.master_state is None:
-      del self.master_state
-      self.master_state = None
+    with self._state_access_lock:
+      if not self.__master_state is None:
+        del self.__master_state
+      self.__master_state = None

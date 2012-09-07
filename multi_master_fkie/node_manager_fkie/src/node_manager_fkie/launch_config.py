@@ -84,6 +84,11 @@ class LaunchConfig(QtCore.QObject):
     self.file_watcher.fileChanged.connect(self.on_file_changed)
     self.changed = {}
 
+  def __del__(self):
+    # Delete to avoid segfault if the LaunchConfig class is destroyed recently 
+    # after creation and xmlrpclib.ServerProxy process a method call.
+    del self.file_watcher
+
   def on_file_changed(self, file):
     '''
     callback method, which is called by L{QtCore.QFileSystemWatcher} if the 

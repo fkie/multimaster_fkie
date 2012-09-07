@@ -130,12 +130,12 @@ class Main(object):
     synchronization will be created.
     @see: L{master_discovery_fkie.interface_finder.get_listmaster_service()}
     '''
-    service_names = interface_finder.get_listmaster_service(self.getMasteruri())
+    service_names = interface_finder.get_listmaster_service(self.getMasteruri(), False)
     for service_name in service_names:
       rospy.loginfo("service 'list_masters' found on %s", service_name)
       self.__lock.acquire()
       try:
-        rospy.wait_for_service(service_name)
+#        rospy.wait_for_service(service_name)
         try:
           discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
           resp = discoverMasters()
@@ -153,6 +153,9 @@ class Main(object):
         rospy.logwarn("ERROR while initial list masters: %s", traceback.format_exc())
       finally:
         self.__lock.release()
+        t = threading.Timer(15.0, self.retrieveMasters)
+        t.start()
+
 
   def updateMaster(self, mastername, masteruri, timestamp, discoverer_name, monitoruri):
     '''

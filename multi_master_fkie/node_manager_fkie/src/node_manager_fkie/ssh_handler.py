@@ -119,6 +119,7 @@ class SSHhandler(object):
       ssh_str = ' '.join(['/usr/bin/ssh',
                           '-aqtx',
                           '-oClearAllForwardings=yes',
+                          '-oConnectTimeout=5',
                           '-oStrictHostKeyChecking=no',
                           '-oVerifyHostKeyDNS=no',
                           '-oCheckHostIP=no',

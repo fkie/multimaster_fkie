@@ -136,8 +136,8 @@ class EchoDialog(QtGui.QDialog):
 #  def __del__(self):
 #    print "******* destroy", self.objectName()
 
-  def hideEvent(self, event):
-    self.close()
+#  def hideEvent(self, event):
+#    self.close()
 
   def closeEvent (self, event):
     self.sub.unregister()

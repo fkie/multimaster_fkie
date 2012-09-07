@@ -130,16 +130,12 @@ class MasterListThread(QtCore.QObject, threading.Thread):
     '''
     if self._masteruri:
       found = False
-      print "search for servcie interface"
       service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait)
-      print "services:", service_names
       err_msg = ''
       for service_name in service_names:
         rospy.loginfo("service 'list_masters' found on %s as %s", self._masteruri, service_name)
-        print "wait for service:", service_name
         if self._wait:
           rospy.wait_for_service(service_name)
-        print "connect to service:", service_name
         discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
         try:
           resp = discoverMasters()
@@ -163,7 +159,7 @@ class MasterStateTopic(QtCore.QObject):
   '''@ivar: a signal to inform the receiver about new master state. 
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
 
-  def registerByROS(self, masteruri, wait=True):
+  def registerByROS(self, masteruri, wait=False):
     '''
     This method creates a ROS subscriber to received the notifications of ROS 
     master updates. The retrieved messages will be emitted as state_signal.
@@ -211,7 +207,7 @@ class MasterStatisticTopic(QtCore.QObject):
   '''@ivar: a signal with a list of link states to discovered ROS masters.
   Paramter: L{master_discovery_fkie.msg.LinkStatesStamped}'''
 
-  def registerByROS(self, masteruri, wait=True):
+  def registerByROS(self, masteruri, wait=False):
     '''
     This method creates a ROS subscriber to received the notifications of 
     connection updates. The retrieved messages will be emitted as stats_signal.
@@ -293,7 +289,7 @@ class OwnMasterMonitoring(QtCore.QObject):
           cputimes = os.times()
           cputime_init = cputimes[0] + cputimes[1]
           if self._master_monitor.checkState():
-            mon_state = self._master_monitor.getState()
+            mon_state = self._master_monitor.getCurrentState()
             # publish the new state
             state = MasterState(MasterState.STATE_CHANGED, 
                                 ROSMaster(str(self._local_addr), 

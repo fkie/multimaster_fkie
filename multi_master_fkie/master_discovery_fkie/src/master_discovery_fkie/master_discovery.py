@@ -314,8 +314,8 @@ class Discoverer(threading.Thread):
     while (not rospy.is_shutdown()) and not self.do_finish:
       if not self.master_monitor.getMasteruri() is None:
         t = 0
-        if not self.master_monitor.master_state is None:
-          t = self.master_monitor.master_state.timestamp
+        if not self.master_monitor.getCurrentState() is None:
+          t = self.master_monitor.getCurrentState().timestamp
         msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), int(t), int((t-(int(t))) * 1000000000), self.master_monitor.rpcport)
         self.msocket.send2group(msg)
       time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
@@ -353,7 +353,6 @@ class Discoverer(threading.Thread):
           rospy.signal_shutdown("ROS Master not reachable")
       # remove offline hosts
       self.__lock.acquire(True)
-      print "update remote hosts"
       current_time = time.time()
       to_remove = []
       for (k, v) in self.masters.iteritems():

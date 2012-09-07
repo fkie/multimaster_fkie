@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os, shlex, subprocess
+import socket
 import types
 
 import roslib
@@ -239,6 +240,7 @@ class StartHandler(object):
     abs_paths = list() # tuples of (parameter name, old value, new value)
     not_found_packages = list() # pacakges names
     try:
+      socket.setdefaulttimeout(3)
       # multi-call style xmlrpc
       param_server_multi = xmlrpclib.MultiCall(param_server)
 
@@ -271,6 +273,8 @@ class StartHandler(object):
       raise StartException(e)
     except Exception as e:
       raise #re-raise as this is fatal
+    finally:
+      socket.setdefaulttimeout(None)
     return abs_paths, not_found_packages
   
   @classmethod
@@ -445,7 +449,7 @@ class StartHandler(object):
     # connect to service            
     transport.buff_size = DEFAULT_BUFF_SIZE
     try:
-      transport.connect(dest_addr, dest_port, service_uri)
+      transport.connect(dest_addr, dest_port, service_uri, timeout=5)
     except TransportInitError as e:
       # can be a connection or md5sum mismatch
       raise StartException("unable to connect to service: %s"%e)

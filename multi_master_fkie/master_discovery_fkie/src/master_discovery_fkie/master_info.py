@@ -453,6 +453,7 @@ class ServiceInfo(object):
 class MasterInfo(object):
   '''
   The MasterInfo class stores informations about a ROS master.
+  Not thread safe!
   '''
   def __init__(self, masteruri, mastername = None):
     '''
@@ -836,5 +837,5 @@ class MasterInfo(object):
 
     return (stamp, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
   
-  def __str__(self):
-    return str(self.listedState())
+#  def __str__(self):
+#    return str(self.listedState())

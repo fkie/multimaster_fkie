@@ -53,6 +53,7 @@ from master_view_proxy import MasterViewProxy
 from launch_config import LaunchConfig, LaunchConfigException
 from capability_table import CapabilityTable
 from xml_editor import XmlEditor
+from detailed_msg_box import WarningMessageBox
 
 import node_manager_fkie as nm
 
@@ -129,6 +130,7 @@ class MainWindow(QtGui.QMainWindow):
     # initialize the class to get the state of discovering of other ROS master
     self._update_handler = UpdateHandler()
     self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
+    self._update_handler.error_signal.connect(self.on_master_info_error)
     
     # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
     self.own_master_monitor = OwnMasterMonitoring()
@@ -178,6 +180,7 @@ class MainWindow(QtGui.QMainWindow):
     self.master_timecheck_timer = QtCore.QTimer()
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
+    self._refresh_time = time.time()
 
 
   def createSlider(self):
@@ -440,7 +443,7 @@ class MainWindow(QtGui.QMainWindow):
 #          cputimes = os.times()
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
 #          print master.master_state.name, cputime
-          if nm.is_local(nm.nameres().getHostname(minfo.masteruri)) and new_info:
+          if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) and new_info:
             has_discovery_service = self.hasDiscoveryService(minfo)
             if not self.own_master_monitor.isPaused() and has_discovery_service:
               self._subscribe()
@@ -463,6 +466,10 @@ class MainWindow(QtGui.QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_m = cputimes_m[0] + cputimes_m[1] - cputime_init_m
 #    print "ALL:", cputime_m
+
+  def on_master_info_error(self, masteruri, error):
+    if nm.is_local(nm.nameres().getHostname(masteruri)):
+      self._setLocalMonitoring(True)
 
   def on_conn_stats_updated(self, stats):
     '''
@@ -528,9 +535,9 @@ class MainWindow(QtGui.QMainWindow):
           nm.starter().runNodeWithoutConfig(nm.nameres().getHostname(self.currentMaster.masteruri), 'master_sync_fkie', 'master_sync', 'master_sync')
         except (Exception, nm.StartException), e:
           rospy.logwarn("Error while start master_sync for %s: %s", str(self.currentMaster.masteruri), str(e))
-          QtGui.QMessageBox.warning(None, 'Error while start master_sync',
-                                    str(e),
-                                    QtGui.QMessageBox.Ok)
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                            'Error while start master_sync',
+                            str(e)).exec_()
       elif not self.currentMaster.master_info is None:
         node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
         self.currentMaster.stop_nodes([node])
@@ -544,6 +551,11 @@ class MainWindow(QtGui.QMainWindow):
         self.showMasterName(master.master_state.name, 'Try to get info!!! Currently not received!!!', master.master_state.online)
     else:
       self.showMasterName('No robot selected', None, False)
+    if (time.time() - self._refresh_time > 15.0):
+      master = self.getMaster(self.getMasteruri())
+      if not master is None:
+        self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
+      self._refresh_time = time.time()
 
 
   def showMasterName(self, name, timestamp, online=True):
@@ -595,7 +607,8 @@ class MainWindow(QtGui.QMainWindow):
     running_nodes = []
     for uri, m in self.masters.items():
       if m.master_state.online:
-        running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
+#        running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
+        running_nodes[len(running_nodes):] = m.getRunningNodesIfLocal()
     for uri, m in self.masters.items():
       m.markNodesAsDuplicateOf(running_nodes)
 
@@ -666,9 +679,9 @@ class MainWindow(QtGui.QMainWindow):
           self._storeHostHistory(history)
       except (Exception, nm.StartException), e:
         rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
-        QtGui.QMessageBox.warning(None, 'Error while start master_discovery',
-                                  str(e),
-                                  QtGui.QMessageBox.Ok)
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                          'Error while start master_discovery',
+                          str(e)).exec_()
 
   def _getHostHistory(self):
     '''

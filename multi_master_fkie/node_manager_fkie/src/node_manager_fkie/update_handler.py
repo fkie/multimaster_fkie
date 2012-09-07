@@ -47,6 +47,11 @@ class UpdateHandler(QtCore.QObject):
   @ivar: master_info_signal is a signal, which is emitted, if a new 
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
+  error_signal = QtCore.Signal(str, str)
+  '''
+  @ivar: error_signal is a signal (masteruri, error message), which is emitted, 
+  if an error while retrieving a master info was occurred.
+  '''
 
   def __init__(self):
     QtCore.QObject.__init__(self)
@@ -87,6 +92,7 @@ class UpdateHandler(QtCore.QObject):
     self.__handle_requests(minfo.masteruri)
 
   def _on_error(self, masteruri, error):
+    self.error_signal.emit(masteruri, error)
     self.__handle_requests(masteruri)
     
   def __handle_requests(self, masteruri):
