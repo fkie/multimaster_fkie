@@ -185,7 +185,7 @@ class Editor(QtGui.QTextEdit):
     Opens the new editor, if the user clicked on the included file and sets the 
     default cursor.
     '''
-    if event.modifiers() == QtCore.Qt.ControlModifier:
+    if event.modifiers() == QtCore.Qt.ControlModifier or event.modifiers() == QtCore.Qt.ShiftModifier:
       cursor = self.cursorForPosition(event.pos())
       index = self.index(cursor.block().text())
       if index > -1:
@@ -195,7 +195,18 @@ class Editor(QtGui.QTextEdit):
           fileName = cursor.block().text()[startIndex+1:endIndex]
           if len(fileName) > 0:
             file = QtCore.QFile(self.interpretPath(fileName))
-            if file.exists():
+            if not file.exists():
+              # create a new file, if it does not exists
+              result = QtGui.QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", file.fileName()]), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+              if result == QtGui.QMessageBox.Yes:
+                dir = os.path.dirname(file.fileName())
+                if not os.path.exists(dir):
+                  os.makedirs(dir)
+                with open(file.fileName(),'w') as f:
+                  if file.fileName().endswith('.launch'):
+                    f.write('<launch>\n\n</launch>')
+                self.load_request_signal.emit(file.fileName())
+            else:
               self.load_request_signal.emit(file.fileName())
     QtGui.QTextEdit.mouseReleaseEvent(self, event)
   
@@ -204,7 +215,7 @@ class Editor(QtGui.QTextEdit):
     Sets the X{QtCore.Qt.PointingHandCursor} if the control key is pressed and 
     the mouse is over the included file.
     '''
-    if event.modifiers() == QtCore.Qt.ControlModifier:
+    if event.modifiers() == QtCore.Qt.ControlModifier or event.modifiers() == QtCore.Qt.ShiftModifier:
       cursor = self.cursorForPosition(event.pos())
       index = self.index(cursor.block().text())
       if index > -1:
@@ -219,7 +230,7 @@ class Editor(QtGui.QTextEdit):
     '''
     Enable the mouse tracking by X{setMouseTracking()} if the control key is pressed.
     '''
-    if event.key() == QtCore.Qt.Key_Control:
+    if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
       self.setMouseTracking(True)
     if event.key() != QtCore.Qt.Key_Escape:
       # handle the shifting of the block
@@ -236,7 +247,7 @@ class Editor(QtGui.QTextEdit):
     Disable the mouse tracking by X{setMouseTracking()} if the control key is 
     released and set the cursor back to X{QtCore.Qt.IBeamCursor}.
     '''
-    if event.key() == QtCore.Qt.Key_Control:
+    if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
       self.setMouseTracking(False)
       self.viewport().setCursor(QtCore.Qt.IBeamCursor)
     QtGui.QTextEdit.keyReleaseEvent(self, event)
