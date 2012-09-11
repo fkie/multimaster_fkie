@@ -396,7 +396,7 @@ class XmlEditor(QtGui.QDialog):
     QtGui.QDialog.__init__(self, parent)
     self.setObjectName(' - '.join(['xmlEditor', str(filenames)]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-#    self.setWindowFlags(QtCore.Qt.Window)
+    self.setWindowFlags(QtCore.Qt.Window)
     self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
     self.setWindowIcon(self.mIcon)
@@ -550,8 +550,8 @@ class XmlEditor(QtGui.QDialog):
       import traceback
       rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc())
 
-  def hideEvent(self, event):
-    self.close()
+#  def hideEvent(self, event):
+#    self.close()
 
   def closeEvent (self, event):
     '''
