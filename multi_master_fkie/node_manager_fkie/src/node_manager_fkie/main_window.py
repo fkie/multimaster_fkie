@@ -155,7 +155,7 @@ class MainWindow(QtGui.QMainWindow):
     self.capabilitiesTable.setObjectName("capabilitiesTable")
     self.capabilitiesTable.start_nodes_signal.connect(self.on_start_nodes)
     self.capabilitiesTable.stop_nodes_signal.connect(self.on_stop_nodes)
-    self.capabilitiesTable.description_requested_signal.connect(self.on_description_update)
+    self.capabilitiesTable.description_requested_signal.connect(self.on_description_update_cap)
     self.ui.capabilities_tab.layout().addWidget(self.capabilitiesTable)
     
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.descriptionDock)
@@ -847,6 +847,12 @@ class MainWindow(QtGui.QMainWindow):
     master.stop_nodes_by_name(nodes)
     
   def on_description_update(self, title, text):
+    self.ui.descriptionDock.setWindowTitle(title)
+    self.ui.descriptionTextEdit.setText(text)
+    if text:
+      self.ui.descriptionDock.raise_()
+
+  def on_description_update_cap(self, title, text):
     self.ui.descriptionDock.setWindowTitle(title)
     self.ui.descriptionTextEdit.setText(text)
 

@@ -142,12 +142,13 @@ class TopicItem(QtGui.QStandardItem):
       if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
         cfg_col.setText(str(self.topic.type))
         if not self.topic.type is None and not cfg_col.toolTip():
-          tooltip = ''
+          # removed tooltip for clarity !!!
+#          tooltip = ''
           try:
             mclass = roslib.message.get_message_class(self.topic.type)
-            tooltip = str(mclass)
+#            tooltip = str(mclass)
             if not mclass is None:
-              tooltip = str(mclass.__slots__)
+#              tooltip = str(mclass.__slots__)
               for f in mclass.__slots__:
                 idx = mclass.__slots__.index(f)
                 idtype = mclass._slot_types[idx]
@@ -161,10 +162,10 @@ class TopicItem(QtGui.QStandardItem):
                     primitive = "class", list_msg_class.__slots__
                   except ValueError:
                     pass
-                tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
+#                tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
           except ValueError:
             pass
-          cfg_col.setToolTip(tooltip)
+#          cfg_col.setToolTip(tooltip)
   
   @classmethod
   def toHTML(cls, topic_name):

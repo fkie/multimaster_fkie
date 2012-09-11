@@ -101,7 +101,8 @@ class ServiceItem(QtGui.QStandardItem):
     '''
     items = []
     item = ServiceItem(service)
-    item.setToolTip(''.join(['<div><h4>', str(service.name), '</h4><dl><dt>', str(service.uri),'</dt></dl></div>']))
+    # removed tooltip for clarity !!!
+#    item.setToolTip(''.join(['<div><h4>', str(service.name), '</h4><dl><dt>', str(service.uri),'</dt></dl></div>']))
     items.append(item)
     typeItem = QtGui.QStandardItem()
     ServiceItem.updateTypeView(service, typeItem)
@@ -120,15 +121,17 @@ class ServiceItem(QtGui.QStandardItem):
     try:
       service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
       item.setText(cls.toHTML(service_class._type))
-      tooltip = ''
-      tooltip = ''.join([tooltip, '<h4>', service_class._type, '</h4>'])
-      tooltip = ''.join([tooltip, '<b><u>', 'Request', ':</u></b>'])
-      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
-
-      tooltip = ''.join([tooltip, '<b><u>', 'Response', ':</u></b>'])
-      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
-
-      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      # removed tooltip for clarity !!!
+#      tooltip = ''
+#      tooltip = ''.join([tooltip, '<h4>', service_class._type, '</h4>'])
+#      tooltip = ''.join([tooltip, '<b><u>', 'Request', ':</u></b>'])
+#      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
+#
+#      tooltip = ''.join([tooltip, '<b><u>', 'Response', ':</u></b>'])
+#      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
+#
+#      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      item.setToolTip('')
     except:
 #      import traceback
 #      print traceback.format_exc()

@@ -138,7 +138,7 @@ class GroupItem(QtGui.QStandardItem):
               else:
                 groupItem.addNode(NodeInfo(node_name, masteruri), config)
           groupItem.updateIcon()
-          groupItem.updateTooltip()
+#          groupItem.updateTooltip()
 
   def remCapablities(self, config):
     '''
@@ -492,18 +492,19 @@ class GroupItem(QtGui.QStandardItem):
       if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
         cfg_col.setText(str(''.join(['[',str(len(cfgs)),']'])) if len(cfgs) > 1 else "")
         # set tooltip
-        tooltip = ''
-        if len(cfgs) > 0:
-          tooltip = ''
-          if len(cfgs) > 0:
-            tooltip = ''.join([tooltip, '<h4>', 'Configurations:', '</h4><dl>'])
-            for c in cfgs:
-              if NodeItem.is_default_cfg(c):
-                tooltip = ''.join([tooltip, '<dt>[default]', c[0], '</dt>'])
-              else:
-                tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
-            tooltip = ''.join([tooltip, '</dl>'])
-        cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
+        # removed for clarity !!!
+#        tooltip = ''
+#        if len(cfgs) > 0:
+#          tooltip = ''
+#          if len(cfgs) > 0:
+#            tooltip = ''.join([tooltip, '<h4>', 'Configurations:', '</h4><dl>'])
+#            for c in cfgs:
+#              if NodeItem.is_default_cfg(c):
+#                tooltip = ''.join([tooltip, '<dt>[default]', c[0], '</dt>'])
+#              else:
+#                tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
+#            tooltip = ''.join([tooltip, '</dl>'])
+#        cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
         # set icons
         has_launches = NodeItem.has_launch_cfgs(cfgs)
         has_defaults = NodeItem.has_default_cfgs(cfgs)
@@ -816,24 +817,32 @@ class NodeItem(QtGui.QStandardItem):
     if not self.node_info.pid is None:
       self._state = NodeItem.STATE_RUN
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+      self.setToolTip('')
     elif not local and not master_discovered and not self.node_info.uri is None:
       self._state = NodeItem.STATE_RUN
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
       tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
+      tooltip = ''.join([tooltip, '</dl>'])
+      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
     elif not self.node_info.uri is None:
       self._state = NodeItem.STATE_WARNING
       self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
       if not local and master_discovered:
         tooltip = ''.join(['<h4>', self.node_info.name, ' is not local, however the ROS master on this host is discovered, but no information about this node received!', '</h4>'])
+        tooltip = ''.join([tooltip, '</dl>'])
+        self.setToolTip(''.join(['<div>', tooltip, '</div>']))
     elif self.has_running:
       self._state = NodeItem.STATE_DUPLICATE
       self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
       tooltip = ''.join(['<h4>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'])
+      tooltip = ''.join([tooltip, '</dl>'])
+      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
     else:
       self._state = NodeItem.STATE_OFF
       self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
-    tooltip = ''.join([tooltip, '</dl>'])
-    self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      self.setToolTip('')
+    # removed common tooltip for clarity !!!
+#    self.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
   def updateDisplayedURI(self):
     '''
@@ -882,18 +891,19 @@ class NodeItem(QtGui.QStandardItem):
       if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
         cfg_col.setText(str(''.join(['[',str(len(self._cfgs)),']'])) if len(self._cfgs) > 1 else "")
         # set tooltip
-        tooltip = ''
-        if len(self._cfgs) > 0:
-          tooltip = ''
-          if len(self._cfgs) > 0:
-            tooltip = ''.join([tooltip, '<h4>', 'Configurations:', '</h4><dl>'])
-            for c in self._cfgs:
-              if NodeItem.is_default_cfg(c):
-                tooltip = ''.join([tooltip, '<dt>[default]', c[0], '</dt>'])
-              else:
-                tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
-            tooltip = ''.join([tooltip, '</dl>'])
-        cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
+        # removed tooltip for clarity !!!
+#        tooltip = ''
+#        if len(self._cfgs) > 0:
+#          tooltip = ''
+#          if len(self._cfgs) > 0:
+#            tooltip = ''.join([tooltip, '<h4>', 'Configurations:', '</h4><dl>'])
+#            for c in self._cfgs:
+#              if NodeItem.is_default_cfg(c):
+#                tooltip = ''.join([tooltip, '<dt>[default]', c[0], '</dt>'])
+#              else:
+#                tooltip = ''.join([tooltip, '<dt>', c, '</dt>'])
+#            tooltip = ''.join([tooltip, '</dl>'])
+#        cfg_col.setToolTip(''.join(['<div>', tooltip, '</div>']))
         # set icons
         has_launches = NodeItem.has_launch_cfgs(self._cfgs)
         has_defaults = NodeItem.has_default_cfgs(self._cfgs)
