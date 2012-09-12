@@ -35,6 +35,9 @@ import os
 from PySide import QtCore
 from PySide import QtGui
 
+import node_manager_fkie as nm
+from launch_config import LaunchConfig
+
 class LaunchListModel(QtCore.QAbstractListModel):
   '''
   The model to manage the files with launch files.
@@ -42,10 +45,13 @@ class LaunchListModel(QtCore.QAbstractListModel):
   
   NOT_FOUND = -1
   NOTHING = 0
-  LAUNCH_FILE = 1
-  FOLDER = 2
-  PACKAGE = 3
-  STACK = 4
+  RECENT_FILE = 1
+  LAUNCH_FILE = 2
+  FOLDER = 3
+  PACKAGE = 4
+  STACK = 5
+
+  RECENT_LENGTH = 5
 
   def __init__(self):
     '''
@@ -55,12 +61,18 @@ class LaunchListModel(QtCore.QAbstractListModel):
     self.icons = {LaunchListModel.FOLDER : QtGui.QIcon(":/icons/crystal_clear_folder.png"),
                   LaunchListModel.STACK : QtGui.QIcon(":/icons/crystal_clear_stack.png"),
                   LaunchListModel.PACKAGE : QtGui.QIcon(":/icons/crystal_clear_package.png"),
-                  LaunchListModel.LAUNCH_FILE : QtGui.QIcon(":/icons/crystal_clear_launch_file.png")}
+                  LaunchListModel.LAUNCH_FILE : QtGui.QIcon(":/icons/crystal_clear_launch_file.png"),
+                  LaunchListModel.RECENT_FILE : QtGui.QIcon(":/icons/crystal_clear_launch_file_recent.png")}
     self.items = []
     self.currentPath = None
+    self.load_history = self._getLoadHistory()
     self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
     self._setNewList(self._moveUp(None))
 
+  def _getRootItems(self):
+    result = list(self.load_history)
+    result[len(result):] = self.root_paths
+    return result
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
@@ -86,7 +98,10 @@ class LaunchListModel(QtCore.QAbstractListModel):
     if role == QtCore.Qt.DisplayRole:
       # return the displayed item name
       pathItem, path, pathId = self.items[index.row()]
-      return pathItem
+      if pathId == LaunchListModel.RECENT_FILE:
+        return ''.join([pathItem, '   [', str(LaunchConfig.packageName(os.path.dirname(path))[0]), ']'])
+      else:
+        return pathItem
     elif role == QtCore.Qt.ToolTipRole:
       # return the tooltip of the item
       pathItem, path, pathId = self.items[index.row()]
@@ -169,6 +184,16 @@ class LaunchListModel(QtCore.QAbstractListModel):
     if self._is_in_ros_packages(path):
       self._setNewList(self._moveDown(path))
 
+  def add2LoadHistory(self, file):
+    try:
+      self.load_history.remove(file)
+    except:
+      pass
+    self.load_history.append(file)
+    if len(self.load_history) > self.RECENT_LENGTH:
+      self.load_history.pop(0)
+    self._storeLoadHistory(self.load_history)
+
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Functionality                         %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -221,7 +246,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
     if (path_id != LaunchListModel.NOT_FOUND):
       # add sorted a new entry
       for index, (i, p, id) in enumerate(self.items):
-        if id > path_id or (id == path_id and i > item): 
+        if id > path_id or (id == path_id and (i > item or path_id == LaunchListModel.RECENT_FILE)): 
           self.beginInsertRows(QtCore.QModelIndex(), index, index)
           self.items.insert(index, (item, path, path_id))
           self.endInsertRows()
@@ -239,7 +264,9 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @rtype: C{constants of LaunchListModel} 
     '''
     if os.path.basename(path)[0] != '.':
-      if os.path.isfile(path):
+      if path in self.load_history:
+        return LaunchListModel.RECENT_FILE
+      elif os.path.isfile(path):
         if (path.endswith('.launch')):
           return LaunchListModel.LAUNCH_FILE
       elif os.path.isdir(path):
@@ -301,7 +328,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
     '''
     result_list = []
     if path is None or not self._is_in_ros_packages(path):
-      dirlist = self.root_paths
+      dirlist = self._getRootItems()
       path = None
     else:
       dirlist = os.listdir(path)
@@ -314,3 +341,34 @@ class LaunchListModel(QtCore.QAbstractListModel):
     if not path is None and len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
       return self._moveUp(os.path.dirname(path))
     return path, result_list
+
+  def _getLoadHistory(self):
+    '''
+    Read the history of the recently loaded files from the file stored in ROS_HOME path.
+    @return: the list with file names
+    @rtype: C{[str]}
+    '''
+    result = list()
+    historyFile = ''.join([nm.CFG_PATH, 'launch.history'])
+    if os.path.isfile(historyFile):
+      with open(historyFile, 'r') as f:
+        line = f.readline()
+        while line:
+          if line:
+            result.append(line.strip())
+          line = f.readline()
+      f.closed
+    return result
+
+  def _storeLoadHistory(self, files):
+    '''
+    Saves the list of recently loaded files to history. The existing history will be replaced!
+    @param files: the list with filenames
+    @type files: C{[str]}
+    '''
+    if not os.path.isdir(nm.CFG_PATH):
+      os.makedirs(nm.CFG_PATH)
+    with open(''.join([nm.CFG_PATH, 'launch.history']), 'w') as f:
+      for files in files:
+        f.write(''.join([files, '\n']))
+    f.closed

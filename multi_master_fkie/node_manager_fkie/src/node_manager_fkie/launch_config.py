@@ -168,7 +168,6 @@ class LaunchConfig(QtCore.QObject):
         if file == 'manifest.xml':
             return (package, dir)
       return cls.packageName(os.path.dirname(dir))
-    print "not resolved:", dir
     return (None, None)
 
   def _index(self, text, regexp_list):

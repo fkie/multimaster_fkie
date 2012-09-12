@@ -443,18 +443,19 @@ class MainWindow(QtGui.QMainWindow):
 #          cputimes = os.times()
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
 #          print master.master_state.name, cputime
-          if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) and new_info:
-            has_discovery_service = self.hasDiscoveryService(minfo)
-            if not self.own_master_monitor.isPaused() and has_discovery_service:
-              self._subscribe()
-            elif self.currentMaster is None:
-              self.currentMaster = master
-              self.stackedLayout.setCurrentWidget(master)
-              self.on_master_timecheck()
-
-          # update the list view, whether master is synchronized or not
-          if not master.master_info is None and master.master_info.masteruri == minfo.masteruri:
-            self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
+          if not master.master_info is None:
+            if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) and new_info:
+              has_discovery_service = self.hasDiscoveryService(minfo)
+              if not self.own_master_monitor.isPaused() and has_discovery_service:
+                self._subscribe()
+              elif self.currentMaster is None:
+                self.currentMaster = master
+                self.stackedLayout.setCurrentWidget(master)
+                self.on_master_timecheck()
+  
+            # update the list view, whether master is synchronized or not
+            if master.master_info.masteruri == minfo.masteruri:
+              self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
           self.capabilitiesTable.updateState(nm.nameres().getHost(masteruri=minfo.masteruri), minfo)
           self.updateDuplicateNodes()
         except Exception, e:
@@ -801,6 +802,7 @@ class MainWindow(QtGui.QMainWindow):
       cursor = self.cursor()
       self.setCursor(QtCore.Qt.WaitCursor)
       self.ui.xmlFileView.setEnabled(False)
+      self.ui.xmlFileView.model().add2LoadHistory(path)
       QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
       #todo: except errors on determination of the defaul_cfg name
       key_mod = QtGui.QApplication.keyboardModifiers()
