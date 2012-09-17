@@ -62,6 +62,7 @@ class TopicItem(QtGui.QStandardItem):
     QtGui.QStandardItem.__init__(self, self.toHTML(name))
     self.parent_item = parent
     self._topic = TopicInfo(name)
+    self._first_call = True
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
 
 #  def __del__(self):
@@ -96,12 +97,13 @@ class TopicItem(QtGui.QStandardItem):
     # update the tooltip and icon
 #    if pubs_changed or subs_changed:
 #      self._topic = topic_info.copy()
-    if pubs_changed:
+    if pubs_changed or self._first_call:
       self.updatePublisherView()
-    if subs_changed:
+    if subs_changed or self._first_call:
       self.updateSubscriberView()
-    if type_changed:
+    if type_changed or self._first_call:
       self.updateTypeView()
+    self._first_call = False
 
   def updatePublisherView(self):
     '''
