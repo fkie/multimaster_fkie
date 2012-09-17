@@ -109,7 +109,8 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.masterListView.setAlternatingRowColors(True)
     self.ui.masterListView.clicked.connect(self.on_master_selection_changed)
     self.ui.masterListView.activated.connect(self.on_master_selection_changed)
-    self.ui.masterListView.selectionModel().currentRowChanged.connect(self.on_masterListView_selection_changed)
+    sm = self.ui.masterListView.selectionModel()
+    sm.currentRowChanged.connect(self.on_masterListView_selection_changed)
     self.ui.refreshAllButton.clicked.connect(self.on_all_master_refresh_clicked)
     self.ui.startRobotButton.clicked.connect(self.on_start_robot_clicked)
 
@@ -117,7 +118,8 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.xmlFileView.setModel(LaunchListModel())
     self.ui.xmlFileView.setAlternatingRowColors(True)
     self.ui.xmlFileView.activated.connect(self.on_launch_selection_activated)
-    self.ui.xmlFileView.selectionModel().selectionChanged.connect(self.on_xmlFileView_selection_changed)
+    sm = self.ui.xmlFileView.selectionModel()
+    sm.selectionChanged.connect(self.on_xmlFileView_selection_changed)
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.ui.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
     self.ui.loadXmlButton.clicked.connect(self.on_load_xml_clicked)
@@ -470,6 +472,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_master_info_error(self, masteruri, error):
     if nm.is_local(nm.nameres().getHostname(masteruri)):
+      rospy.logwarn("Error while connect to local master_discovery %s: %s", masteruri, error)
       self._setLocalMonitoring(True)
 
   def on_conn_stats_updated(self, stats):
@@ -581,10 +584,10 @@ class MainWindow(QtGui.QMainWindow):
         icon = QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png']))
         self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
         self.ui.imageLabel.setToolTip('')
-    else:
-      icon = QtGui.QIcon()
-      self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
-      self.ui.imageLabel.setToolTip('')
+#    else:
+#      icon = QtGui.QIcon()
+#      self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
+#      self.ui.imageLabel.setToolTip('')
     self.ui.masternameLabel.setEnabled(online)
     self.ui.masterInfoFrame.setEnabled((not timestamp is None))
 
@@ -639,6 +642,7 @@ class MainWindow(QtGui.QMainWindow):
           else:
             self.ui.syncButton.setEnabled(False)
           return
+    self.ui.launchDock.raise_()
   
   def on_masterListView_selection_changed(self, selected, deselected):
     '''

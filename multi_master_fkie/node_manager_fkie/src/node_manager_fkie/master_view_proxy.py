@@ -136,7 +136,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
     self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
     self.masterTab.nodeTreeView.expanded.connect(self.on_node_expanded)
-    self.masterTab.nodeTreeView.selectionModel().selectionChanged.connect(self.on_node_selection_changed)
+    sm = self.masterTab.nodeTreeView.selectionModel()
+    sm.selectionChanged.connect(self.on_node_selection_changed)
     self.masterTab.nodeTreeView.activated.connect(self.on_node_activated)
 #    self.masterTab.nodeTreeView.setAcceptDrops(True)
 #    self.masterTab.nodeTreeWidget.setSortingEnabled(True)
@@ -151,7 +152,8 @@ class MasterViewProxy(QtGui.QWidget):
       self.masterTab.topicsView.setColumnWidth(i, width)
     self.topicNameDelegate = HTMLDelegate()
     self.masterTab.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
-    self.masterTab.topicsView.selectionModel().selectionChanged.connect(self.on_topic_selection_changed)
+    sm = self.masterTab.topicsView.selectionModel()
+    sm.selectionChanged.connect(self.on_topic_selection_changed)
     self.masterTab.topicsView.activated.connect(self.on_topic_activated)
     self.masterTab.topicsView.setSortingEnabled(True)
 #    self.topic_proxyModel.filterAcceptsRow = _filterTopicsAcceptsRow
@@ -168,7 +170,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.serviceTypeDelegate = HTMLDelegate()
     self.masterTab.servicesView.setItemDelegateForColumn(0, self.serviceNameDelegate)
     self.masterTab.servicesView.setItemDelegateForColumn(1, self.serviceTypeDelegate)
-    self.masterTab.servicesView.selectionModel().selectionChanged.connect(self.on_service_selection_changed)
+    sm = self.masterTab.servicesView.selectionModel()
+    sm.selectionChanged.connect(self.on_service_selection_changed)
     self.masterTab.servicesView.activated.connect(self.on_service_activated)
     self.masterTab.servicesView.setSortingEnabled(True)
 #    self.service_proxyModel.filterAcceptsRow = _filterServiceAcceptsRow
@@ -187,7 +190,8 @@ class MasterViewProxy(QtGui.QWidget):
 #    factory = QtGui.QItemEditorFactory.defaultFactory()
 #    self.parameterEditor.setItemEditorFactory(factory)
 #    self.masterTab.parameterView.setItemDelegateForColumn(1, self.parameterEditor)
-    self.masterTab.parameterView.selectionModel().selectionChanged.connect(self.on_parameter_selection_changed)
+    sm = self.masterTab.parameterView.selectionModel()
+    sm.selectionChanged.connect(self.on_parameter_selection_changed)
     self.masterTab.parameterView.setSortingEnabled(True)
     
 #    self.parameter_proxyModel.filterAcceptsRow = _filterParameterAcceptsRow
