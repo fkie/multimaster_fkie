@@ -134,8 +134,7 @@ class DiscoveredMaster(object):
     '''
     Sets this master to offline and publish the new state to the ROS network.
     '''
-    self.online = False
-    if not (self.callback_master_state is None):
+    if not (self.callback_master_state is None) and self.online:
       self.callback_master_state(MasterState(MasterState.STATE_CHANGED, 
                                              ROSMaster(str(self.mastername), 
                                                        self.masteruri, 
@@ -143,6 +142,7 @@ class DiscoveredMaster(object):
                                                        self.online, 
                                                        self.discoverername, 
                                                        self.monitoruri)))
+    self.online = False
 
   def __retrieveMasterinfo(self):
     '''
