@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -246,7 +246,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
     if (path_id != LaunchListModel.NOT_FOUND):
       # add sorted a new entry
       for index, (i, p, id) in enumerate(self.items):
-        if id > path_id or (id == path_id and (i > item or path_id == LaunchListModel.RECENT_FILE)): 
+        launch_file_cmp = (path_id == LaunchListModel.RECENT_FILE and id == LaunchListModel.LAUNCH_FILE and i > item)
+        if launch_file_cmp or (id == path_id and i > item): 
           self.beginInsertRows(QtCore.QModelIndex(), index, index)
           self.items.insert(index, (item, path, path_id))
           self.endInsertRows()
@@ -340,6 +341,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
         result_list.append((pathItem, item, pathId))
     if not path is None and len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
       return self._moveUp(os.path.dirname(path))
+    else:
+      self.currentPath = None
     return path, result_list
 
   def _getLoadHistory(self):

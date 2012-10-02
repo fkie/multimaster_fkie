@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -463,7 +463,7 @@ class CapabilityTable(QtGui.QTableWidget):
     @param master_info: The state of the ROS master
     @type master_info: L{master_discovery_fkie.MasterInfo}
     '''
-    if master_info is None:
+    if master_info is None or host is None:
       return
     robot_index = self._robotHeader.index(host)
     if robot_index != -1:

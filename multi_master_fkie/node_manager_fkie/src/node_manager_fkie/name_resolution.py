@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -41,6 +41,7 @@ class NameResolution(object):
   def __init__(self):
     self.mutex = RLock()
     self._hosts = [] #sets with hosts
+    self._address = [] # avoid the mixing of ip and name as address
   
   def remove(self, name=None, masteruri=None, host=None):
     '''
@@ -67,6 +68,7 @@ class NameResolution(object):
             pass
           try:
             s.remove((host, 'host'))
+            self._address.remove(host)
           except:
             pass
           if len(s) < 2:
@@ -89,6 +91,8 @@ class NameResolution(object):
       added = False
       l = [(name, id) for name, id in [(name, 'name'), (masteruri, 'uri'), (host, 'host')] if not name is None]
       new_set = set(l)
+      if not host is None and not host in self._address:
+        self._address.append(host)
       for s in self._hosts:
         if new_set&s:
           s |= new_set
@@ -97,7 +101,7 @@ class NameResolution(object):
     finally:
       self.mutex.release()
     
-  def getHost(self, name =None, masteruri=None):
+  def getHost(self, name=None, masteruri=None):
     '''
     Returns for the name or masteruri the associated host name or ip, which is 
     first in the list.
@@ -106,13 +110,21 @@ class NameResolution(object):
     '''
     try:
       self.mutex.acquire()
+      result = None
       new_set = set([(name, id) for name, id in [(name, 'name'), (masteruri, 'uri')] if not name is None])
       for s in self._hosts:
         if new_set&s:
+          index = -1
           for value, id in list(s):
             if id == 'host':
-              return value
-      return None
+              try:
+                i = self._address.index(value)
+                if index == -1 or index > i:
+                  index = i
+                  result = value
+              except:
+                pass
+      return result
     finally:
       self.mutex.release()
 

@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -66,19 +66,14 @@ class RunDialog(QtGui.QDialog):
     self.package_field = QtGui.QComboBox(self.content)
     self.package_field.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
     self.package_field.setEditable(True)
-    packages = self.packages.keys()
-    packages.sort()
-    self.package_field.addItems(packages)
     self.contentLayout.addRow(package_label, self.package_field)
     binary_label = QtGui.QLabel("Binary:", self.content)
     self.binary_field = QtGui.QComboBox(self.content)
     self.binary_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-    self.binary_field.setEnabled(False)
     self.binary_field.setEditable(True)
     self.contentLayout.addRow(binary_label, self.binary_field)
     ns_name_label = QtGui.QLabel("NS/Name:", self.content)
     self.ns_field = QtGui.QLineEdit('/', self.content)
-    self.ns_field.setEnabled(False)
     self.name_field = QtGui.QLineEdit(self.content)
     self.name_field.setEnabled(False)
     horizontalLayout = QtGui.QHBoxLayout()
@@ -87,11 +82,10 @@ class RunDialog(QtGui.QDialog):
     self.contentLayout.addRow(ns_name_label, horizontalLayout)
     args_label = QtGui.QLabel("Args:", self.content)
     self.args_field = QtGui.QLineEdit(self.content)
-    self.args_field.setEnabled(False)
     self.contentLayout.addRow(args_label, self.args_field)
     
     self.buttonBox = QtGui.QDialogButtonBox(self)
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
+    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
     self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
     self.buttonBox.setObjectName("buttonBox")
     self.verticalLayout.addWidget(self.buttonBox)
@@ -100,10 +94,18 @@ class RunDialog(QtGui.QDialog):
     QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
     QtCore.QMetaObject.connectSlotsByName(self)
     self.package_field.activated[str].connect(self.on_package_selected)
+    self.package_field.textChanged.connect(self.on_package_selected)
     self.binary_field.activated[str].connect(self.on_binary_selected)
     
+    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
     self.package = ''
     self.binary = ''
+
+    packages = self.packages.keys()
+    packages.sort()
+    self.package_field.addItems(packages)
+    if packages:
+      self.on_package_selected(packages[0])
     
   def runSelected(self):
     '''
@@ -138,6 +140,7 @@ class RunDialog(QtGui.QDialog):
     return result
 
   def on_package_selected(self, package):
+    print "changed", package
     self.binary_field.clear()
     if self.packages.has_key(package):
       self.binary_field.setEnabled(True)

@@ -14,7 +14,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -54,6 +54,7 @@ from ssh_handler import SSHhandler
 from screen_handler import ScreenHandler
 from start_handler import StartHandler, StartException 
 from name_resolution import NameResolution
+from history import History
 
 # set the cwd to the package of the node_manager_fkie to support the images
 # in HTML descriptions of the robots and capabilities
@@ -66,22 +67,15 @@ CFG_PATH = ''.join(['.node_manager', os.sep])
 
 LESS = "/usr/bin/less -fKLnQrSU"
 STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
+RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
 '''
 the script used on remote hosts to start new ROS nodes
 '''
-ARG_HISTORY_LENGTH = 5
-''' 
-the history for each required argument to load a launch file.
-''' 
-HOSTS_CACHE = {}
+
+HOSTS_CACHE = dict()
 ''' 
 the cache directory to store the results of tests for local hosts.
 @see: L{is_local()}
-''' 
-
-PARAM_CACHE = dict()
-'''
-the cache is used to store and recover the value for last entered parameter in parameter dialog.
 '''
 
 _lock = threading.RLock()
@@ -101,10 +95,12 @@ def terminal_cmd(cmd, title):
   elif os.path.isfile('/usr/bin/konsole'):
     return str(' '.join(['/usr/bin/konsole', '--noclose', '-title', str(title), '-e', ' '.join(cmd)]))
 
+main_form = None
 _ssh_handler = None
 _screen_handler = None
 _start_handler = None
 _name_resolution = None
+_history = None
 app = None
 
 def ssh():
@@ -141,6 +137,14 @@ def nameres():
   '''
   global _name_resolution
   return _name_resolution
+
+def history():
+  '''
+  @return: The history of entered parameter.
+  @rtype: L{History}
+  '''
+  global _history
+  return _history
 
 def is_local(hostname):
   '''
@@ -235,6 +239,12 @@ def finish(*arg):
   global _ssh_handler
   if not _ssh_handler is None:
     _ssh_handler.close()
+  global _history
+  _history.storeAll()
+  global main_form
+  import main_window
+  if isinstance(main_form, main_window.MainWindow):
+    main_form.finish()
   global app
   if not app is None:
     app.exit()
@@ -276,6 +286,9 @@ def main(name, anonymous=False):
   '''
   Creates and runs the ROS node.
   '''
+  if not os.path.isdir(CFG_PATH):
+    os.makedirs(CFG_PATH)
+
   args = rospy.myargv(argv=sys.argv)
   # decide to show main or echo dialog
   if len(args) >= 4 and args[1] == '-t':
@@ -297,31 +310,32 @@ def main(name, anonymous=False):
 
   # decide to show main or echo dialog
   import main_window, echo_dialog
+  global main_form
   if len(args) >= 4 and args[1] == '-t':
     show_hz_only = (len(args) > 4 and args[4] == '--hz')
-    mainForm = echo_dialog.EchoDialog(args[2], args[3], show_hz_only)
+    main_form = echo_dialog.EchoDialog(args[2], args[3], show_hz_only)
   else:
     # initialize the global handler 
     global _ssh_handler
     global _screen_handler
     global _start_handler
     global _name_resolution
+    global _history
     _ssh_handler = SSHhandler()
     _screen_handler = ScreenHandler()
     _start_handler = StartHandler()
     _name_resolution = NameResolution()
+    _history = History()
   
     #start the gui
-    mainForm = main_window.MainWindow(args)
+    main_form = main_window.MainWindow(args)
 
   if not rospy.is_shutdown():
     os.chdir(PACKAGE_DIR) # change path to be able to the images of descriptions
-    mainForm.show()
+    main_form.show()
     exit_code = -1
     rospy.on_shutdown(finish)
     exit_code = app.exec_()
-    if isinstance(mainForm, main_window.MainWindow):
-      mainForm.finish()
 #    finally:
 #      print "final"
 #      sys.exit(exit_code)

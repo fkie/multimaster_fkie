@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -252,7 +252,8 @@ class Discoverer(threading.Thread):
     local_addr = roslib.network.get_local_address()
     if (local_addr in ['localhost', '127.0.0.1']):
       sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!", local_addr)
-      
+    
+    rospy.loginfo("Start broadcasting at ('%s', %d)", mcast_group, mcast_port)
     # create the multicast socket and join the multicast group
     self.msocket = msocket = McastSocket(mcast_port, mcast_group)
 #    msocket.settimeout(3.0)
@@ -385,50 +386,67 @@ class Discoverer(threading.Thread):
         import traceback
         rospy.logwarn("socket error: %s", traceback.format_exc())
       else:
-        if len(msg) > 2:
-          (r,) = struct.unpack('c', msg[0])
-          (version,) = struct.unpack('B', msg[1])
+        try:
+          (version, msg_tuple) = self.msg2masterState(msg)
           if (version == Discoverer.VERSION):
-            if (r == 'R'):
-              if len(msg) == struct.calcsize(Discoverer.HEARTBEAT_FMT):
-                (r, version, rate, secs, nsecs, monitor_port) = struct.unpack(Discoverer.HEARTBEAT_FMT, msg)
-                # remove master if sec and nsec are -1
-                if secs == -1:
-                  self.__lock.acquire(True)
-                  if self.masters.has_key(address[0]):
-                    master = self.masters[address[0]]
-                    if not master.mastername is None:
-                      self.publish_masterstate(MasterState(MasterState.STATE_REMOVED, 
-                                                     ROSMaster(str(master.mastername), 
-                                                               master.masteruri, 
-                                                               master.timestamp, 
-                                                               False, 
-                                                               master.discoverername, 
-                                                               master.monitoruri)))
-                    del self.masters[address[0]]
-                  self.__lock.release()
-                # update the timestamp of existing master
-                elif self.masters.has_key(address[0]):
-                  self.__lock.acquire(True)
-                  self.masters[address[0]].addHeartbeat(float(secs)+float(nsecs)/1000000000.0, float(rate)/10.0)
-                  self.__lock.release()
-                # or create a new master
-                else:
-  #                print "create new masterstate", ''.join(['http://', address[0],':',str(monitor_port)])
-                  self.__lock.acquire(True)
-                  self.masters[address[0]] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
-                                                              heartbeat_rate=float(rate)/10.0,
-                                                              timestamp=float(secs)+float(nsecs)/1000000000.0,
-                                                              callback_master_state=self.publish_masterstate)
-                  self.__lock.release()
+            (r, version, rate, secs, nsecs, monitor_port) = msg_tuple
+            # remove master if sec and nsec are -1
+            if secs == -1:
+              self.__lock.acquire(True)
+              if self.masters.has_key(address[0]):
+                master = self.masters[address[0]]
+                if not master.mastername is None:
+                  self.publish_masterstate(MasterState(MasterState.STATE_REMOVED, 
+                                                 ROSMaster(str(master.mastername), 
+                                                           master.masteruri, 
+                                                           master.timestamp, 
+                                                           False, 
+                                                           master.discoverername, 
+                                                           master.monitoruri)))
+                del self.masters[address[0]]
+              self.__lock.release()
+            # update the timestamp of existing master
+            elif self.masters.has_key(address[0]):
+              self.__lock.acquire(True)
+              self.masters[address[0]].addHeartbeat(float(secs)+float(nsecs)/1000000000.0, float(rate)/10.0)
+              self.__lock.release()
+            # or create a new master
             else:
-              rospy.logwarn("wrong initial discovery message char %s received from %s ", str(r), str(address))
-          elif (version > Discoverer.VERSION):
-            rospy.logwarn("newer heartbeat version %s (own: %s) detected, please update your master_discovery", str(version), str(Discoverer.VERSION))
-          elif (version < Discoverer.VERSION):
-            rospy.logwarn("old heartbeat version %s detected (current: %s), please update master_discovery on %s", str(version), str(Discoverer.VERSION), str(address))
-          else:
-            rospy.logwarn("heartbeat version %s expected, received: %s", str(Discoverer.VERSION), str(version))
+#                print "create new masterstate", ''.join(['http://', address[0],':',str(monitor_port)])
+              self.__lock.acquire(True)
+              self.masters[address[0]] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
+                                                          heartbeat_rate=float(rate)/10.0,
+                                                          timestamp=float(secs)+float(nsecs)/1000000000.0,
+                                                          callback_master_state=self.publish_masterstate)
+              self.__lock.release()
+        except Exception, e:
+          rospy.logwarn("Error while decode message: %s", str(e))
+
+  @classmethod
+  def msg2masterState(cls, msg):
+    '''
+    @return: parses the hearbeat message and return a tuple of
+            version and values corresponding with current version of message.
+            @see L{Discoverer.HEARTBEAT_FMT}
+    @raise Exception on invalid message
+    @rtype: C{(unsigned char, tuple corresponding to L{Discoverer.HEARTBEAT_FMT})}
+    '''
+    if len(msg) > 2:
+      (r,) = struct.unpack('c', msg[0])
+      (version,) = struct.unpack('B', msg[1])
+      if (version == Discoverer.VERSION):
+        if (r == 'R'):
+          if len(msg) == struct.calcsize(Discoverer.HEARTBEAT_FMT):
+            return (version, struct.unpack(Discoverer.HEARTBEAT_FMT, msg))
+        else:
+          raise Exception(' '.join(["wrong initial discovery message char", str(r), "received from", str(address)]))
+      elif (version > Discoverer.VERSION):
+        raise Exception(' '.join(["newer heartbeat version", str(version), "(own:", str(Discoverer.VERSION), ") detected, please update your master_discovery"]))
+      elif (version < Discoverer.VERSION):
+        raise Exception(' '.join(["old heartbeat version", str(version), "detected (current:", str(Discoverer.VERSION),"), please update master_discovery on", str(address)]))
+      else:
+        raise Exception(' '.join(["heartbeat version", str(Discoverer.VERSION), "expected, received:", str(version)]))
+    raise Exception("massage is to small")
 
   def timed_stats_calculation(self):
     '''

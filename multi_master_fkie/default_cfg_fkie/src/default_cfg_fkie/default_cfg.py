@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -407,7 +407,7 @@ class DefaultCfg(object):
         cwd = self.get_ros_home()
       elif n.cwd == 'node':
         cwd = os.path.dirname(cmd[0])
-    node_cmd = [prefix, cmd[0]]
+    node_cmd = ['rosrun node_manager_fkie respawn' if n.respawn else '', prefix, cmd[0]]
     cmd_args = [ScreenHandler.getSceenCmd(node)]
     cmd_args[len(cmd_args):] = node_cmd
     cmd_args.append(n.args)

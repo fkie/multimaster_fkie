@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -157,7 +157,7 @@ class StartHandler(object):
           cwd = os.path.dirname(cmd_type)
 #      else:
 #        cwd = LaunchConfig.packageName(os.path.dirname(cmd_type))
-      node_cmd = [prefix, cmd_type]
+      node_cmd = [nm.RESPAWN_SCRIPT if n.respawn else '', prefix, cmd_type]
       cmd_args = [nm.screen().getSceenCmd(node)]
       cmd_args[len(cmd_args):] = node_cmd
       cmd_args.append(str(n.args))
@@ -186,7 +186,8 @@ class StartHandler(object):
       startcmd = [env_command, nm.STARTER_SCRIPT, 
                   '--package', str(n.package),
                   '--node_type', str(n.type),
-                  '--node_name', str(node)]
+                  '--node_name', str(node),
+                  '--node_respawn true' if n.respawn else '']
       if prefix:
         startcmd[len(startcmd):] = ['--prefix', prefix]
       
@@ -240,7 +241,7 @@ class StartHandler(object):
     abs_paths = list() # tuples of (parameter name, old value, new value)
     not_found_packages = list() # pacakges names
     try:
-      socket.setdefaulttimeout(3)
+      socket.setdefaulttimeout(6)
       # multi-call style xmlrpc
       param_server_multi = xmlrpclib.MultiCall(param_server)
 
@@ -452,7 +453,7 @@ class StartHandler(object):
       transport.connect(dest_addr, dest_port, service_uri, timeout=5)
     except TransportInitError as e:
       # can be a connection or md5sum mismatch
-      raise StartException("unable to connect to service: %s"%e)
+      raise StartException(''.join(["unable to connect to service: ", str(e)]))
     transport.send_message(request, 0)
     try:
       responses = transport.receive_once()

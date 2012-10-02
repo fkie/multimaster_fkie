@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -32,6 +32,7 @@
 
 import threading
 import time
+import socket
 
 from PySide import QtCore
 
@@ -136,6 +137,7 @@ class MasterListThread(QtCore.QObject, threading.Thread):
         rospy.loginfo("service 'list_masters' found on %s as %s", self._masteruri, service_name)
         if self._wait:
           rospy.wait_for_service(service_name)
+        socket.setdefaulttimeout(3)
         discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
         try:
           resp = discoverMasters()
@@ -144,7 +146,10 @@ class MasterListThread(QtCore.QObject, threading.Thread):
           err_msg = ''.join([err_msg, '\n', service_name, ': ', str(e)])
         else:
           self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
-          found = True
+          if resp.masters:
+            found = True
+        finally:
+          socket.setdefaulttimeout(None)
       if not found:
         self.err_signal.emit(self._masteruri, "ERROR Service call 'list_masters' failed: %s"%err_msg)
 

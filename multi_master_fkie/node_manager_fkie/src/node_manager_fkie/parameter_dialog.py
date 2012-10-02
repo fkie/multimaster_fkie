@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -108,7 +108,7 @@ class ParameterDescription(object):
       if isinstance(value, (dict, list)):
         self._value = value
       elif value:
-        self.addParamCache(self.fullName(), value)
+        nm.history().addParamCache(self.fullName(), value)
         if self.isArrayType():
           if 'int' in self.baseType():
             self._value = map(int, value.split(','))
@@ -153,7 +153,7 @@ class ParameterDescription(object):
             self._value = {'secs': 0, 'nsecs': 0}
           else:
             self._value = ''
-      self.addParamCache(self.fullName(), value)
+      nm.history().addParamCache(self.fullName(), value)
     except Exception, e:
       raise Exception(''.join(["Error while set value '", unicode(value), "' for '", self.fullName(), "': ", str(e)]))
     return self._value
@@ -161,27 +161,16 @@ class ParameterDescription(object):
   def value(self):
     return self._value
 
-  def cachedValues(self):
-    try:
-      return nm.PARAM_CACHE[self.fullName()]
-    except:
-      result = []
-      return result
-
-  def addParamCache(self, key, value):
-    if value:
-      if not nm.PARAM_CACHE.has_key(key):
-        nm.PARAM_CACHE[key] = [unicode(value)]
-      elif not value in nm.PARAM_CACHE[key]:
-        nm.PARAM_CACHE[key].append(unicode(value))
-
   def createTypedWidget(self, parent):
     result = None
     if self.isPrimitiveType():
       if 'bool' in self.baseType():
         result = QtGui.QCheckBox(parent=parent)
         result.setObjectName(self.name())
-        result.setChecked(self.value())
+        value = self.value()
+        if not isinstance(value, bool):
+          value = str2bool(self.value())
+        result.setChecked(value)
       else:
         result = QtGui.QComboBox(parent=parent)
         result.setObjectName(self.name())
@@ -205,7 +194,7 @@ class ParameterDescription(object):
 
   def addCachedValuesToWidget(self):
     if isinstance(self.widget(), QtGui.QComboBox):
-      values = self.cachedValues()
+      values = nm.history().cachedParamValues(self.fullName())
       for i in range(self.widget().count()):
         try:
           values.remove(self.widget().itemText(i))
@@ -440,7 +429,8 @@ class ParameterDialog(QtGui.QDialog):
       self.content.createFieldFromValue(params)
       self.setInfoActive(False)
 
-    self.filter_field.setFocus()
+    if self.filter_frame.isVisible():
+      self.filter_field.setFocus()
 #    print '=============== create', self.objectName()
 #
 #  def __del__(self):
@@ -528,7 +518,7 @@ class MasterParameterDialog(ParameterDialog):
     @param ns: namespace of the parameter retrieved from the ROS parameter server.
     @type ns: C{str}
     '''
-    ParameterDialog.__init__(self, dict(), buttons=QtGui.QDialogButtonBox.Close, parent=parent)
+    ParameterDialog.__init__(self, dict(), parent=parent)
     self.masteruri = masteruri
     self.ns = ns
     self.is_delivered = False
@@ -539,17 +529,19 @@ class MasterParameterDialog(ParameterDialog):
     self.add_new_button = QtGui.QPushButton(self.tr("&Add"))
     self.add_new_button.clicked.connect(self._on_add_parameter)
     self.buttonBox.addButton(self.add_new_button, QtGui.QDialogButtonBox.ActionRole)
-    self.apply_button = QtGui.QPushButton(self.tr("&Apply"))
-    self.apply_button.clicked.connect(self._on_apply)
-    self.buttonBox.addButton(self.apply_button, QtGui.QDialogButtonBox.ActionRole)
+#    self.apply_button = QtGui.QPushButton(self.tr("&Ok"))
+#    self.apply_button.clicked.connect(self._on_apply)
+#    self.buttonBox.addButton(self.apply_button, QtGui.QDialogButtonBox.ApplyRole)
+#    self.buttonBox.accepted.connect(self._on_apply)
     self.setText(' '.join(['Obtaining parameters from the parameter server', masteruri, '...']))
     self.parameterHandler = ParameterHandler()
     self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
     self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
     self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
     self.parameterHandler.requestParameterList(masteruri, ns)
+#    self.apply_button.setFocus(QtCore.Qt.OtherFocusReason)
 
-  def _on_apply(self):
+  def accept(self):
     if not self.masteruri is None and not self.is_send:
       try:
         params = self.getKeywords()
@@ -748,7 +740,8 @@ class ServiceDialog(ParameterDialog):
       rospy.logwarn("Error while call service '%s': %s", str(self.service.name), str(e))
       self.service_resp_signal.emit(unicode(req), unicode(e))
 
-  def _params_from_slots(self, slots, types):
+  @classmethod
+  def _params_from_slots(cls, slots, types):
     result = dict()
     for slot, msg_type in zip(slots, types):
       base_type, is_array, array_length = roslib.msgs.parse_type(msg_type)
@@ -757,7 +750,7 @@ class ServiceDialog(ParameterDialog):
       else:
         try:
           list_msg_class = roslib.message.get_message_class(base_type)
-          subresult = self._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types)
+          subresult = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types)
           result[slot] = (msg_type, [subresult] if is_array else subresult)
         except ValueError, e:
           import traceback

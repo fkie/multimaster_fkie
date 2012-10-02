@@ -46,7 +46,8 @@ def parse_options(args):
             'node_name' : '',
             'package' : '',
             'prefix' : '',
-            'pidkill' : ''}
+            'pidkill' : '',
+            'node_respawn' : ''}
   options = [''.join(['--', v]) for v in result.keys()]
   argv = []
   arg_added = False
@@ -110,7 +111,7 @@ def main(argv=sys.argv):
         if os.path.isfile(roslog):
           os.remove(roslog)
       elif options['node_type'] and options['package'] and options['node_name']:
-        runNode(options['package'], options['node_type'], options['node_name'], args, options['prefix'])
+        runNode(options['package'], options['node_type'], options['node_name'], args, options['prefix'], options['node_respawn'])
       elif options['pidkill']:
         import signal
         os.kill(int(options['pidkill']), signal.SIGKILL)
@@ -122,7 +123,7 @@ def main(argv=sys.argv):
   except Exception, e:
     print >> sys.stderr, e
 
-def runNode(package, type, name, args, prefix=''):
+def runNode(package, type, name, args, prefix='', repawn=False):
   '''
   Runs a ROS node. Starts a roscore if needed.
   '''
@@ -146,7 +147,7 @@ def runNode(package, type, name, args, prefix=''):
     raise nm.StartException(' '.join([type, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
   # create string for node parameter. Set arguments with spaces into "'".
   node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
-  cmd_args = [nm.ScreenHandler.getSceenCmd(name), prefix, cmd[0], node_params]
+  cmd_args = [nm.ScreenHandler.getSceenCmd(name), nm.RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
   print 'run on remote host:', ' '.join(cmd_args)
   # determine the current working path
   arg_cwd = getCwdArg('__cwd', args) 

@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -54,6 +54,7 @@ from launch_config import LaunchConfig, LaunchConfigException
 from capability_table import CapabilityTable
 from xml_editor import XmlEditor
 from detailed_msg_box import WarningMessageBox
+from network_discovery_dialog import NetworkDiscoveryDialog
 
 import node_manager_fkie as nm
 
@@ -112,6 +113,7 @@ class MainWindow(QtGui.QMainWindow):
     sm = self.ui.masterListView.selectionModel()
     sm.currentRowChanged.connect(self.on_masterListView_selection_changed)
     self.ui.refreshAllButton.clicked.connect(self.on_all_master_refresh_clicked)
+    self.ui.discoveryButton.clicked.connect(self.on_discover_network_clicked)
     self.ui.startRobotButton.clicked.connect(self.on_start_robot_clicked)
 
     # initialize the view for the launch files
@@ -170,6 +172,7 @@ class MainWindow(QtGui.QMainWindow):
       elif os.path.isfile(self.default_load_launch):
         self.ui.xmlFileView.model().setPath(os.path.dirname(self.default_load_launch))
 
+    self._local_tries = 0
     self._subscribe()
 
     self.editor_dialogs  = dict() # [file] = XmlEditor
@@ -183,6 +186,9 @@ class MainWindow(QtGui.QMainWindow):
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
     self._refresh_time = time.time()
+    
+    
+    self._discover_dialog = None
 
 
   def createSlider(self):
@@ -304,8 +310,10 @@ class MainWindow(QtGui.QMainWindow):
   def on_capabilities_update(self, host, config_node, descriptions):
     for d in descriptions:
       self.capabilitiesTable.updateCapabilities(host, config_node, d)
-    master = self.getMaster(nm.nameres().getUri(host=host))
-    self.capabilitiesTable.updateState(host, master.master_info)
+    masteruri = nm.nameres().getUri(host=host)
+    if not masteruri is None:
+      master = self.getMaster(masteruri)
+      self.capabilitiesTable.updateState(host, master.master_info)
 
   def on_remove_config(self, cfg):
     self.capabilitiesTable.removeConfig(cfg)
@@ -363,7 +371,9 @@ class MainWindow(QtGui.QMainWindow):
     while call the service to determine the discovered ROS master. On the error
     the local monitoring will be enabled.
     '''
-    self._setLocalMonitoring(True)
+    self._local_tries += 1
+    if self._local_tries > 2:
+      self._setLocalMonitoring(True)
 
   def hasDiscoveryService(self, minfo):
     '''
@@ -390,12 +400,14 @@ class MainWindow(QtGui.QMainWindow):
     @type master_list: C{[L{master_discovery_fkie.msg.MasterState}]}
     '''
     self._setLocalMonitoring(False)
+    self._local_tries = 0
     for m in master_list:
-      nm.nameres().add(name=m.name, masteruri=m.uri, host=nm.nameres().getHostname(m.uri))
-      master = self.getMaster(m.uri)
-      master.master_state = m
-      self.master_model.updateMaster(m)
-      self._update_handler.requestMasterInfo(m.uri, m.monitoruri)
+      if not m.uri is None:
+        nm.nameres().add(name=m.name, masteruri=m.uri, host=nm.nameres().getHostname(m.uri))
+        master = self.getMaster(m.uri)
+        master.master_state = m
+        self.master_model.updateMaster(m)
+        self._update_handler.requestMasterInfo(m.uri, m.monitoruri)
 
   def on_master_state_changed(self, msg):
     '''
@@ -446,14 +458,16 @@ class MainWindow(QtGui.QMainWindow):
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
 #          print master.master_state.name, cputime
           if not master.master_info is None:
-            if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) and new_info:
-              has_discovery_service = self.hasDiscoveryService(minfo)
-              if not self.own_master_monitor.isPaused() and has_discovery_service:
-                self._subscribe()
-              elif self.currentMaster is None:
-                self.currentMaster = master
-                self.stackedLayout.setCurrentWidget(master)
-                self.on_master_timecheck()
+            if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)):
+              self._local_tries = 0
+              if new_info:
+                has_discovery_service = self.hasDiscoveryService(minfo)
+                if not self.own_master_monitor.isPaused() and has_discovery_service:
+                  self._subscribe()
+                elif self.currentMaster is None:
+                  self.currentMaster = master
+                  self.stackedLayout.setCurrentWidget(master)
+                  self.on_master_timecheck()
   
             # update the list view, whether master is synchronized or not
             if master.master_info.masteruri == minfo.masteruri:
@@ -473,7 +487,13 @@ class MainWindow(QtGui.QMainWindow):
   def on_master_info_error(self, masteruri, error):
     if nm.is_local(nm.nameres().getHostname(masteruri)):
       rospy.logwarn("Error while connect to local master_discovery %s: %s", masteruri, error)
-      self._setLocalMonitoring(True)
+      # switch to local monitoring after 3 timeouts
+      self._local_tries += 1
+      if self._local_tries > 2:
+        self._setLocalMonitoring(True)
+      elif not masteruri is None:
+        master = self.getMaster(masteruri)
+        self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
 
   def on_conn_stats_updated(self, stats):
     '''
@@ -493,6 +513,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_refresh_master_clicked(self):
     if not self.currentMaster is None:
+      rospy.loginfo("Request an update from %s", str(self.currentMaster.master_state.monitoruri))
       self._update_handler.requestMasterInfo(self.currentMaster.master_state.uri, self.currentMaster.master_state.monitoruri)
 #      self.currentMaster.remove_all_def_configs()
 
@@ -556,10 +577,12 @@ class MainWindow(QtGui.QMainWindow):
     else:
       self.showMasterName('No robot selected', None, False)
     if (time.time() - self._refresh_time > 15.0):
-      master = self.getMaster(self.getMasteruri())
-      if not master is None:
-        self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
-      self._refresh_time = time.time()
+      masteruri = self.getMasteruri()
+      if not masteruri is None:
+        master = self.getMaster(masteruri)
+        if not master is None and not master.master_state is None:
+          self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
+        self._refresh_time = time.time()
 
 
   def showMasterName(self, name, timestamp, online=True):
@@ -610,11 +633,12 @@ class MainWindow(QtGui.QMainWindow):
     # update the duplicate nodes
     running_nodes = []
     for uri, m in self.masters.items():
-      if m.master_state.online:
+      if not m.master_state is None and m.master_state.online:
 #        running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
         running_nodes[len(running_nodes):] = m.getRunningNodesIfLocal()
     for uri, m in self.masters.items():
-      m.markNodesAsDuplicateOf(running_nodes)
+      if not m.master_state is None:
+        m.markNodesAsDuplicateOf(running_nodes)
 
 
 
@@ -657,68 +681,73 @@ class MainWindow(QtGui.QMainWindow):
     master and get their current state.
     '''
     self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
+  
+  def on_discover_network_clicked(self):
+    try:
+      self._discover_dialog.raise_()
+    except:
+      self._discover_dialog = NetworkDiscoveryDialog('226.0.0.0', 11511, 100, self)
+      self._discover_dialog.network_join_request.connect(self._join_network)
+      self._discover_dialog.show()
 
   def on_start_robot_clicked(self):
     '''
     Tries to start the master_discovery node on the machine requested by a dialog.
     '''
     # get the history list
-    history = self._getHostHistory()
+    history = nm.history().getHostHistory()
     host, result = QtGui.QInputDialog.getItem(self, self.tr("Launch master_discovery on"),
-                                      self.tr("Hostname / address:"), list(['localhost'] + history), 0,
+                                      self.tr("host[:network(0..99)]:"), list(['localhost'] + history), 0,
                                       True)
+    progressDialog = None
     if result and host:
       try:
-        progressDialog = QtGui.QProgressDialog('Start discovering on %s'%host, 'wait', 0, 2)
+        hostname, sep, port = host.partition(':')
+        args = []
+        if not port is None and port and int(port) < 100 and int(port) >= 0:
+          args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
+        else:
+          args.append(''.join(['_mcast_port:=', str(11511)]))
+        progressDialog = QtGui.QProgressDialog('Start discovering on %s'%hostname, 'wait', 0, 2, parent=self)
         progressDialog.setWindowModality(QtCore.Qt.WindowModal)
+        progressDialog.setValue(0)
         progressDialog.show()
-        nm.starter().runNodeWithoutConfig(host, 'master_discovery_fkie', 'master_discovery', 'master_discovery')
+        nm.starter().runNodeWithoutConfig(hostname, 'master_discovery_fkie', 'master_discovery', 'master_discovery', args)
+        progressDialog.setValue(1)
 #        progressDialog.hide()
         if host != 'localhost':
-          # insert the host into first place
-          try:
-            history.remove(host)
-          except:
-            pass
-          history.insert(0, host)
-          self._storeHostHistory(history)
+          nm.history().add2HostHistory(host)
+        progressDialog.setValue(2)
       except (Exception, nm.StartException), e:
+        import traceback
+        print traceback.format_exc()
         rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
         WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                           'Error while start master_discovery',
                           str(e)).exec_()
+        if not progressDialog is None:
+          progressDialog.setValue(progressDialog.maximum())
 
-  def _getHostHistory(self):
-    '''
-    Read the history of the entered robots from the file stored in ROS_HOME path.
-    @return: the list with robot names
-    @rtype: C{[str]}
-    '''
-    result = list()
-    historyFile = ''.join([nm.CFG_PATH, 'host.history'])
-    if os.path.isfile(historyFile):
-      with open(historyFile, 'r') as f:
-        line = f.readline()
-        while line:
-          if line:
-            result.append(line.strip())
-          line = f.readline()
-      f.closed
-    return result
-
-  def _storeHostHistory(self, hosts):
-    '''
-    Saves the list of hosts to history. The existing history will be replaced!
-    @param hosts: the list with robot names
-    @type hosts: C{[str]}
-    '''
-    if not os.path.isdir(nm.CFG_PATH):
-      os.makedirs(nm.CFG_PATH)
-    with open(''.join([nm.CFG_PATH, 'host.history']), 'w') as f:
-      for host in hosts:
-        f.write(''.join([host, '\n']))
-    f.closed
-
+  def _join_network(self, network):
+    progressDialog = None
+    try:
+      hostname = 'localhost'
+      progressDialog = QtGui.QProgressDialog('Start discovering on %s'%hostname, 'wait', 0, 2, parent=self)
+      progressDialog.setWindowModality(QtCore.Qt.WindowModal)
+      progressDialog.setValue(0)
+      progressDialog.show()
+      args = []
+      if network < 100 and network >= 0:
+        args.append(''.join(['_mcast_port:=', str(11511 + int(network))]))
+      nm.starter().runNodeWithoutConfig(hostname, 'master_discovery_fkie', 'master_discovery', 'master_discovery', args)
+      progressDialog.setValue(2)
+    except (Exception, nm.StartException), e:
+      rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                        'Error while start master_discovery',
+                        str(e)).exec_()
+      if not progressDialog is None:
+        progressDialog.setValue(progressDialog.maximum())
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Handling of the launch file view      %%%%%%%%
@@ -845,18 +874,24 @@ class MainWindow(QtGui.QMainWindow):
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def on_start_nodes(self, host, cfg, nodes):
-    master = self.getMaster(nm.nameres().getUri(host=host))
-    master.start_nodes_by_name(nodes, (cfg, ''))
+    muri = nm.nameres().getUri(host=host)
+    if not muri is None:
+      master = self.getMaster(muri)
+      master.start_nodes_by_name(nodes, (cfg, ''))
   
   def on_stop_nodes(self, host, nodes):
-    master = self.getMaster(nm.nameres().getUri(host=host))
-    master.stop_nodes_by_name(nodes)
+    muri = nm.nameres().getUri(host=host)
+    if not muri is None:
+      master = self.getMaster(muri)
+      master.stop_nodes_by_name(nodes)
     
   def on_description_update(self, title, text):
     self.ui.descriptionDock.setWindowTitle(title)
     self.ui.descriptionTextEdit.setText(text)
     if text:
       self.ui.descriptionDock.raise_()
+    else:
+      self.ui.launchDock.raise_()
 
   def on_description_update_cap(self, title, text):
     self.ui.descriptionDock.setWindowTitle(title)

@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -168,8 +168,8 @@ class ServiceThread(QtCore.QObject, threading.Thread):
         req, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
       except:
         import traceback
-        rospy.logwarn("Error while retrieve the node list from %s: %s", str(self._service), str(traceback.format_exc()))
         lines = traceback.format_exc().splitlines()
+        rospy.logwarn("Error while retrieve the node list from %s: %s", str(self._service), str(lines[-1]))
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
       else:
         self.update_signal.emit(self._service_uri, self._service, resp.nodes)
@@ -197,8 +197,8 @@ class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
         req, resp = nm.starter().callService(self._service_uri, self._service, ListDescription)
       except:
         import traceback
-        rospy.logwarn("Error while retrieve the description from %s: %s", str(self._service), str(traceback.format_exc()))
         lines = traceback.format_exc().splitlines()
+        rospy.logwarn("Error while retrieve the description from %s: %s", str(self._service), str(lines[-1]))
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
       else:
         self.update_signal.emit(self._service_uri, self._service, [resp])

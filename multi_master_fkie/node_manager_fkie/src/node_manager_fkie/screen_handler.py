@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -38,6 +38,7 @@ import threading
 import rospy
 
 import node_manager_fkie as nm
+from select_dialog import SelectDialog
 
 class ScreenHandlerException(Exception):
   pass
@@ -191,7 +192,7 @@ class ScreenHandler(object):
     if not (output is None):
       splits = output.split()
       for i in splits:
-        if i.count('.') > 0 and i.endswith(session):
+        if i.count('.') > 0 and i.endswith(session) and i.find('._') >= 0:
           result.append(i)
     return result
 
@@ -256,12 +257,10 @@ class ScreenHandler(object):
       # Open selection
       if len(choices) > 0:
         from PySide import QtGui
-        item = QtGui.QInputDialog.getItem(parent, "Screen selection",
-                                          'Select the screen to show',
-                                          choices.keys(), 0, False)
-        if item[1]:
+        items = SelectDialog.getValue('Show screen', choices.keys(), False)
+        for item in items:
           #open the selected screen
-          cls.openScreenTerminal(host, choices[item[0]], node, user)
+          cls.openScreenTerminal(host, choices[item], node, user)
     return len(screens) > 0
 
   @classmethod

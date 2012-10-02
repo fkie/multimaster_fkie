@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -37,9 +37,11 @@ import socket
 import time
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+from SocketServer import ThreadingMixIn
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
+import rosnode
 
 from master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
 import interface_finder
@@ -55,6 +57,9 @@ def _succeed(args):
     if code != 1:
         raise rosnode.ROSNodeException("remote call failed: %s"%msg)
     return val
+
+class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
+  pass
 
 class MasterMonitor(object):
   '''
@@ -95,7 +100,7 @@ class MasterMonitor(object):
     ready = False
     while not ready and (not rospy.is_shutdown()):
       try:
-        self.rpcServer = SimpleXMLRPCServer(('', rpcport), logRequests=False, allow_none=True)
+        self.rpcServer = RPCThreading(('', rpcport), logRequests=False, allow_none=True)
         rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
         self.rpcServer.register_introspection_functions()
         self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')
@@ -147,6 +152,7 @@ class MasterMonitor(object):
       if not uri is None:
         pid = None
         try:
+          socket.setdefaulttimeout(3)
           node = xmlrpclib.ServerProxy(uri)
           pid = _succeed(node.getPid(self.ros_node_name))
         except (Exception, socket.error):
@@ -160,6 +166,8 @@ class MasterMonitor(object):
         else:
           with self._lock:
             self.__new_master_state.getNode(nodename).pid = pid
+        finally:
+          socket.setdefaulttimeout(None)
 
   def _getServiceInfo(self, services):
     '''
@@ -269,6 +277,7 @@ class MasterMonitor(object):
   #      cputimes = os.times()
   #      cputime_init = cputimes[0] + cputimes[1]
         self._lock.acquire(True)
+        socket.setdefaulttimeout(5)
         self.__new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
         master = xmlrpclib.ServerProxy(self.getMasteruri())
         # get topic types
@@ -364,12 +373,17 @@ class MasterMonitor(object):
           threads.append(pidThread)
     
         master_state.timestamp = now
-      except socket.error, (errn, msg):
-        if not errn in [100, 101, 102]:
+      except socket.error, e:
+        if isinstance(e, tuple):
+          (errn, msg) = e
+          if not errn in [100, 101, 102]:
+            import traceback
+            formatted_lines = traceback.format_exc().splitlines()
+      #      print "Service call failed: %s"%traceback.format_exc()
+            raise MasterConnectionException(formatted_lines[-1])
+        else:
           import traceback
-          formatted_lines = traceback.format_exc().splitlines()
-    #      print "Service call failed: %s"%traceback.format_exc()
-          raise MasterConnectionException(formatted_lines[-1])
+          raise MasterConnectionException(traceback.format_exc())
       except:
         import traceback
         formatted_lines = traceback.format_exc().splitlines()
@@ -377,6 +391,7 @@ class MasterMonitor(object):
         raise MasterConnectionException(formatted_lines[-1])
       finally:
         self._lock.release()
+        socket.setdefaulttimeout(None)
   
       # wait for all threads are finished 
       while threads:

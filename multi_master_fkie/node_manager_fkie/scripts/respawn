@@ -1,0 +1,23 @@
+#!/bin/bash
+if which stdbuf >/dev/null 2>&1
+then
+function linebuffer()
+{
+	stdbuf -i0 -oL -eL "$@"
+}
+else
+function linebuffer()
+{
+	"$@"
+}
+fi
+exitcode=1
+exec 3>&1
+while [ "$exitcode" -ne 0 ]
+do
+	echo "Spawning:" "$@" >&2
+	linebuffer "$@" 2>&1 | linebuffer tee /dev/fd/3 | linebuffer grep -i "shutdown request" >/dev/null
+	exitcode=$?
+	sleep 1
+done
+

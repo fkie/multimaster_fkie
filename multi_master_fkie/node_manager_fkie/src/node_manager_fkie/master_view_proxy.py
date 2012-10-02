@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -55,6 +55,7 @@ from default_cfg_handler import DefaultConfigHandler
 from launch_config import LaunchConfig, LaunchConfigException
 from master_discovery_fkie.master_info import NodeInfo 
 from parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
+from select_dialog import SelectDialog
 from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 from detailed_msg_box import WarningMessageBox
@@ -84,7 +85,7 @@ class MasterViewProxy(QtGui.QWidget):
   
   request_xml_editor = QtCore.Signal(list, str)
   '''@ivar: the signal to open a xml editor dialog (list with files, search text)'''
-  
+
   def __init__(self, masteruri, parent=None):
     '''
     Creates a new master.
@@ -100,6 +101,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.hostname = o.hostname
     except:
       pass
+    self._tmpObjects = []
     self.__master_state = None
     self.__master_info = None
     self.__configs = dict() # [file name] = LaunchConfig
@@ -111,10 +113,7 @@ class MasterViewProxy(QtGui.QWidget):
     
     self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog
     '''@ivar: stores the open EchoDialogs '''
-    
-    self.progressDialog = QtGui.QProgressDialog(self)
-    self.progressDialog.setWindowModality(QtCore.Qt.WindowModal)
-    
+
     self.default_cfg_handler = DefaultConfigHandler()
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
     self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
@@ -211,6 +210,9 @@ class MasterViewProxy(QtGui.QWidget):
 
     self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
     self.masterTab.hzTopicButton.clicked.connect(self.on_topic_hz_clicked)
+    self.masterTab.pubTopicButton.clicked.connect(self.on_topic_pub_clicked)
+    self.masterTab.pubStopTopicButton.clicked.connect(self.on_topic_pub_stop_clicked)
+
     self.masterTab.callServiceButton.clicked.connect(self.on_service_call_clicked)
     self.masterTab.topicFilterInput.textChanged.connect(self.on_topic_filter_changed)
     self.masterTab.serviceFilterInput.textChanged.connect(self.on_service_filter_changed)
@@ -245,7 +247,10 @@ class MasterViewProxy(QtGui.QWidget):
     screen_menu = QtGui.QMenu(self)
     self.killScreensAct = QtGui.QAction("&Kill Screen", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_Backspace), statusTip="Kill available screens", triggered=self.on_kill_screens)
     screen_menu.addAction(self.killScreensAct)
+    self.showAllScreensAct = QtGui.QAction("&Show all available screens", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_S), statusTip="Shows all available screens", triggered=self.on_show_all_screens)
+    screen_menu.addAction(self.showAllScreensAct)
     self.masterTab.ioButton.setMenu(screen_menu)
+    self.masterTab.ioButton.setEnabled(True)
 
     # set the shortcuts
     self._shortcut1 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -421,7 +426,7 @@ class MasterViewProxy(QtGui.QWidget):
 #    self.masterTab.stopButton.setEnabled(has_running or has_invalid)
     self.masterTab.startButton.setEnabled(True)
     self.masterTab.stopButton.setEnabled(True)
-    self.masterTab.ioButton.setEnabled(has_running or has_stopped)
+#    self.masterTab.ioButton.setEnabled(has_running or has_stopped)
     self.masterTab.logButton.setEnabled(has_running or has_stopped)
     self.masterTab.logDeleteButton.setEnabled(has_running or has_stopped)
     # test for available dynamic reconfigure services
@@ -504,7 +509,7 @@ class MasterViewProxy(QtGui.QWidget):
       loaded, req_args = launchConfig.load([])
       ok = False
       if not loaded:
-        arg_history = launchConfig.getArgHistory()
+        arg_history = nm.history().getArgHistory()
         params = dict()
         for arg in launchConfig.argvToDict(req_args).keys():
           if arg_history.has_key(arg):
@@ -519,7 +524,7 @@ class MasterViewProxy(QtGui.QWidget):
           argv = []
           for p,v in params.items():
             if v:
-              launchConfig.addToArgHistory(p, v)
+              nm.history().addToArgHistory(p, v)
               argv.append(''.join([p, ':=', v]))
           loaded, req_args = launchConfig.load(argv)
         else:
@@ -864,6 +869,9 @@ class MasterViewProxy(QtGui.QWidget):
     topics_selected = (len(selectedTopics) > 0)
     self.masterTab.echoTopicButton.setEnabled(topics_selected)
     self.masterTab.hzTopicButton.setEnabled(topics_selected)
+    if nm.is_local(nm.nameres().getHostname(self.masteruri)):
+      self.masterTab.pubTopicButton.setEnabled(len(selectedTopics) == 1)
+      self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
       text = ''.join(['<h3>', topic.name,'</h3>'])
@@ -1010,6 +1018,59 @@ class MasterViewProxy(QtGui.QWidget):
     self.setCursor(cursor)
     self.masterTab.startButton.setEnabled(True)
 
+  def start_node(self, node, force, last_result=None):
+
+    choice = last_result
+    if node is None:
+      return choice
+    if node.pid is None or force:
+      if self.node_tree_model.isDuplicateNode(node.name):
+        ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['The node ', node.name, ' is already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        if ret == QtGui.QMessageBox.No:
+          return choice
+      choices = {} # dict with available configurations {displayed name: LaunchConfig() or str[service name of default configuration]} 
+      choices = self._getCfgChoises(node)
+      if not choice in choices.keys():
+        choice = self._getUserCfgChoice(choices, node.name)
+
+      # start the node using launch configuration
+      if choice is None:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                          ''.join(['Error while start ', node.name, ':\nNo configuration found!'])).exec_()
+        return False
+      config = choices[choice]
+      if isinstance(config, LaunchConfig):
+        try:
+          nm.starter().runNode(node.name, config)
+        except socket.error, se:
+          rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                            ''.join(['Error while start ', node.name, '\n\nStart canceled!']), 
+                            str(se)).exec_()
+          return False
+        except (Exception, nm.StartException), e:
+          print type(e)
+          import traceback
+          print traceback.format_exc()
+          rospy.logwarn("Error while start '%s': %s", node.name, str(e))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                            ''.join(['Error while start ', node.name]), 
+                            str(e)).exec_()
+      elif isinstance(config, (str, unicode)):
+        # start with default configuration
+        from default_cfg_fkie.srv import Task
+        try:
+          nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
+        except (Exception, nm.StartException), e:
+          socket_error =  (str(e).find("timeout") or str(e).find("113"))
+          rospy.logwarn("Error while call a service of node '%s': %s", node.name, str(e))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Service error", 
+                            ''.join(['Error while call a service of node ', node.name]), 
+                            ''.join([str(e), '\n\nQueue canceled!' if socket_error else ''])).exec_()
+          if socket_error:
+            return False
+    return choice
+
   def start_nodes(self, nodes, force=False):
     '''
     Internal method to start a list with nodes
@@ -1018,72 +1079,7 @@ class MasterViewProxy(QtGui.QWidget):
     @param force: force the start of the node, also if it is already started.
     @type force: C{bool}
     '''
-    key_mod = QtGui.QApplication.keyboardModifiers()
-    self.progressDialog.setWindowTitle('Start')
-    self.progressDialog.setMaximum(len(nodes))
-    self.progressDialog.show()
-    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-    i = 0
-    choice = None
-    for node in nodes:
-      i += 1
-      self.progressDialog.setLabelText(node.name)
-      self.progressDialog.setValue(i)
-      if self.progressDialog.wasCanceled():
-        break
-      if node.pid is None or force:
-        if self.node_tree_model.isDuplicateNode(node.name):
-          ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['The node ', node.name, ' is already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-          if ret == QtGui.QMessageBox.No:
-            break
-        choices = {} # dict with available configurations {displayed name: LaunchConfig() or str[service name of default configuration]} 
-        if (key_mod & QtCore.Qt.ControlModifier and not key_mod & QtCore.Qt.ShiftModifier):
-          choices = self._getDefaultCfgChoises(node)
-        else:
-          choices = self._getCfgChoises(node)
-        if not choice in choices.keys():
-          choice = self._getUserCfgChoice(choices, node.name)
-
-        # start the node using launch configuration
-        if choice is None:
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
-                            ''.join(['Error while start ', node.name, ':\nNo configuration found!'])).exec_()
-          break
-        config = choices[choice]
-        if isinstance(config, LaunchConfig):
-          try:
-            nm.starter().runNode(node.name, config)
-          except socket.error, se:
-            rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
-                              ''.join(['Error while start ', node.name, '\n\nStart canceled!']), 
-                              str(se)).exec_()
-            break
-          except (Exception, nm.StartException), e:
-            print type(e)
-            import traceback
-            print traceback.format_exc()
-            rospy.logwarn("Error while start '%s': %s", node.name, str(e))
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
-                              ''.join(['Error while start ', node.name]), 
-                              str(e)).exec_()
-        elif isinstance(config, (str, unicode)):
-          # start with default configuration
-          from default_cfg_fkie.srv import Task
-          try:
-            nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
-          except (Exception, nm.StartException), e:
-            socket_error =  (str(e).find("timeout") or str(e).find("113"))
-            rospy.logwarn("Error while call a service of node '%s': %s", node.name, str(e))
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Service error", 
-                              ''.join(['Error while call a service of node ', node.name]), 
-                              ''.join([str(e), '\n\nQueue canceled!' if socket_error else ''])).exec_()
-            if socket_error:
-              break
-        else:
-          break
-    self.progressDialog.setValue(self.progressDialog.maximum())
-    self.progressDialog.hide()
+    self._tmpObjects.append(ProgressObject('Start nodes', nodes, force, self.start_node, self._tmpObjects))
 
   def start_nodes_by_name(self, nodes, cfg):
     '''
@@ -1136,15 +1132,11 @@ class MasterViewProxy(QtGui.QWidget):
     if len(choices) == 1:
       value = choices.keys()[0]
     elif len(choices) > 0:
-      item, ok = QtGui.QInputDialog.getItem(self, "Configuration selection",
-                                        "Select a configuration to use for start",
-                                        choices.keys(), 0, False)
-#                                        "Select a configuration for '%s'"%nodename,
-      if ok:
-        value = item
+      items = SelectDialog.getValue('Configuration selection', choices.keys(), True)
+      if items:
+        value = items[0]
     return value
 
-  
   def on_stop_clicked(self):
     '''
     Stops the selected and running nodes. If the node can't be stopped using his
@@ -1157,37 +1149,28 @@ class MasterViewProxy(QtGui.QWidget):
     self.stop_nodes(selectedNodes)
     self.setCursor(cursor)
   
+  def stop_node(self, node, force=False, last_result=None):
+    if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
+      try:
+        socket.setdefaulttimeout(3)
+        p = xmlrpclib.ServerProxy(node.uri)
+        p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
+      except Exception, e:
+#            import traceback
+#            formatted_lines = traceback.format_exc().splitlines()
+        rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
+#          self.masterTab.stopButton.setEnabled(False)
+      finally:
+        socket.setdefaulttimeout(None)
+    return True
+    
   def stop_nodes(self, nodes):
     '''
     Internal method to stop a list with nodes
     @param nodes: the list with nodes to stop
     @type nodes: C{[L{master_discovery_fkie.NodeInfo}, ...]}
     '''
-    self.progressDialog.setWindowTitle('Stop')
-    self.progressDialog.setMaximum(len(nodes))
-    self.progressDialog.show()
-    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-    i = 0
-    for node in nodes:
-      self.progressDialog.setLabelText(node.name)
-      self.progressDialog.setValue(i)
-      if self.progressDialog.wasCanceled():
-        break
-      if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or len(nodes) == 1):
-        try:
-          socket.setdefaulttimeout(3)
-          p = xmlrpclib.ServerProxy(node.uri)
-          p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
-        except Exception, e:
-#            import traceback
-#            formatted_lines = traceback.format_exc().splitlines()
-          rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
-#          self.masterTab.stopButton.setEnabled(False)
-        finally:
-          socket.setdefaulttimeout(None)
-      i += 1
-    self.progressDialog.setValue(self.progressDialog.maximum())
-    self.progressDialog.hide()
+    self._tmpObjects.append(ProgressObject('Stop nodes', nodes, len(nodes)==1, self.stop_node, self._tmpObjects))
 
   def stop_nodes_by_name(self, nodes):
     '''
@@ -1203,99 +1186,76 @@ class MasterViewProxy(QtGui.QWidget):
           result.append(node)
     self.stop_nodes(result)
 
-  def on_kill_nodes(self):
-    cursor = self.cursor()
-    self.setCursor(QtCore.Qt.WaitCursor)
-    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-    self.progressDialog.setWindowTitle('Kill nodes')
-    self.progressDialog.setMaximum(len(selectedNodes))
-    self.progressDialog.show()
-    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-    i = 0
-    for node in selectedNodes:
-      self.progressDialog.setLabelText(node.name)
-      self.progressDialog.setValue(i)
-      if self.progressDialog.wasCanceled():
-        break
-      if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or len(selectedNodes) == 1):
-        pid = node.pid
-        if pid is None:
-          # try to get the process id of the node
-          try:
-            socket.setdefaulttimeout(3)
-            rpc_node = xmlrpclib.ServerProxy(node.uri)
-            code, msg, pid = rpc_node.getPid(rospy.get_name())
-          except:
+  def kill_node(self, node, force=False, last_result=None):
+    if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
+      pid = node.pid
+      if pid is None:
+        # try to get the process id of the node
+        try:
+          socket.setdefaulttimeout(3)
+          rpc_node = xmlrpclib.ServerProxy(node.uri)
+          code, msg, pid = rpc_node.getPid(rospy.get_name())
+        except:
 #            self.masterTab.stopButton.setEnabled(False)
-            pass
-          finally:
-            socket.setdefaulttimeout(None)
-        # kill the node
-        if not pid is None:
-          try:
-            nm.starter().kill(self.getHostFromNode(node), pid)
-          except Exception, e:
-            rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Kill error", 
-                              ''.join(['Error while kill the node ', node.name]),
-                              str(e)).exec_()
-      i += 1
-    self.progressDialog.setValue(self.progressDialog.maximum())
-    self.progressDialog.hide()
-    self.setCursor(cursor)
+          pass
+        finally:
+          socket.setdefaulttimeout(None)
+      # kill the node
+      if not pid is None:
+        try:
+          nm.starter().kill(self.getHostFromNode(node), pid)
+        except Exception, e:
+          rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Kill error", 
+                            ''.join(['Error while kill the node ', node.name]),
+                            str(e)).exec_()
+    return True
 
-  def on_unregister_nodes(self):
-    cursor = self.cursor()
-    self.setCursor(QtCore.Qt.WaitCursor)
+
+  def on_kill_nodes(self):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-    self.progressDialog.setWindowTitle('Unregister nodes')
-    self.progressDialog.setMaximum(len(selectedNodes))
-    self.progressDialog.show()
-    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-    i = 0
-    for node in selectedNodes:
-      self.progressDialog.setLabelText(node.name)
-      self.progressDialog.setValue(i)
-      if self.progressDialog.wasCanceled():
-        break
-      if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or len(selectedNodes) == 1):
-        # stop the node?
+    self._tmpObjects.append(ProgressObject('Kill Nodes', selectedNodes, len(selectedNodes)==1, self.kill_node, self._tmpObjects))
+
+  def unregister_node(self, node, force=False, last_result=None):
+    if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
+      # stop the node?
 #        try:
 #          p = xmlrpclib.ServerProxy(node.uri)
 #          p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
 #        except Exception, e:
 #          rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
 #          self.masterTab.stopButton.setEnabled(False)
-        # unregister all entries of the node from ROS master
-        try:
-          socket.setdefaulttimeout(3)
-          master = xmlrpclib.ServerProxy(node.masteruri)
-          master_multi = xmlrpclib.MultiCall(master)
-  #        master_multi.deleteParam(node.name, node.name)
-          for p in node.published:
-            rospy.logdebug("unregister publisher '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-            master_multi.unregisterPublisher(node.name, p, node.uri)
-          for s in node.subscribed:
-            rospy.logdebug("unregister subscriber '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-            master_multi.unregisterSubscriber(node.name, s, node.uri)
-          if not self.master_state is None:
-            for s in node.services:
-              rospy.logdebug("unregister service '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-              service = self.master_info.getService(s)
-              if not (service is None):
-                master_multi.unregisterService(node.name, s, service.uri)
-          r = master_multi()
-          for code, msg, _ in r:
-            if code != 1:
-              rospy.logdebug("unregistration failed: %s", msg)
-        except Exception, e:
-          pass
-        finally:
-          socket.setdefaulttimeout(None)
-      i += 1
-    self.progressDialog.setValue(self.progressDialog.maximum())
-    self.progressDialog.hide()
-    self.setCursor(cursor)
+      # unregister all entries of the node from ROS master
+      try:
+        socket.setdefaulttimeout(3)
+        master = xmlrpclib.ServerProxy(node.masteruri)
+        master_multi = xmlrpclib.MultiCall(master)
+#        master_multi.deleteParam(node.name, node.name)
+        for p in node.published:
+          rospy.logdebug("unregister publisher '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+          master_multi.unregisterPublisher(node.name, p, node.uri)
+        for s in node.subscribed:
+          rospy.logdebug("unregister subscriber '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+          master_multi.unregisterSubscriber(node.name, s, node.uri)
+        if not self.master_state is None:
+          for s in node.services:
+            rospy.logdebug("unregister service '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+            service = self.master_info.getService(s)
+            if not (service is None):
+              master_multi.unregisterService(node.name, s, service.uri)
+        r = master_multi()
+        for code, msg, _ in r:
+          if code != 1:
+            rospy.logdebug("unregistration failed: %s", msg)
+      except Exception, e:
+        pass
+      finally:
+        socket.setdefaulttimeout(None)
+    return True
+    
+  def on_unregister_nodes(self):
+    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    self._tmpObjects.append(ProgressObject('Unregister nodes', selectedNodes, len(selectedNodes)==1, self.unregister_node, self._tmpObjects))
 
   def on_stop_context_toggled(self, state):
     menu = QtGui.QMenu(self)
@@ -1334,16 +1294,19 @@ class MasterViewProxy(QtGui.QWidget):
     cursor = self.cursor()
     self.setCursor(QtCore.Qt.WaitCursor)
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-    for node in selectedNodes:
-      try:
-        if not nm.screen().openScreen(self.getHostFromNode(node), node.name, parent=self):
-#          self.masterTab.ioButton.setEnabled(False)
-          pass
-      except Exception, e:
-        rospy.logwarn("Error while show IO for %s: %s", str(node), str(e))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Show IO error", 
-                          ''.join(['Error while show IO ', node.name]),
-                          str(e)).exec_()
+    if selectedNodes:
+      for node in selectedNodes:
+        try:
+          if not nm.screen().openScreen(self.getHostFromNode(node), node.name, parent=self):
+  #          self.masterTab.ioButton.setEnabled(False)
+            pass
+        except Exception, e:
+          rospy.logwarn("Error while show IO for %s: %s", str(node), str(e))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Show IO error", 
+                            ''.join(['Error while show IO ', node.name]),
+                            str(e)).exec_()
+    else:
+      self.on_show_all_screens()
     self.setCursor(cursor)
 
   def on_kill_screens(self):
@@ -1364,6 +1327,35 @@ class MasterViewProxy(QtGui.QWidget):
                           ''.join(['Error while kill screen ', node.name]),
                           str(e)).exec_()
     self.setCursor(cursor)
+
+  def on_show_all_screens(self):
+    '''
+    Shows all available screens.
+    '''
+    cursor = self.cursor()
+    self.setCursor(QtCore.Qt.WaitCursor)
+    host = nm.nameres().getHostname(self.masteruri)
+    sel_screen = []
+    try:
+      screens = nm.screen().getActiveScreens(host)
+      sel_screen = SelectDialog.getValue('Open screen', screens, False, self)
+    except Exception, e:
+      rospy.logwarn("Error while get screen list: %s", str(e))
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error", 
+                        ''.join(['Error while get screen list from ', host]),
+                        str(e)).exec_()
+    for screen in sel_screen:
+      try:
+        if not nm.screen().openScreenTerminal(host, screen, screen):
+#          self.masterTab.ioButton.setEnabled(False)
+          pass
+      except Exception, e:
+        rospy.logwarn("Error while show IO for %s: %s", str(screen), str(e))
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Show IO error", 
+                          ''.join(['Error while show IO ', screen, ' on ', host]),
+                          str(e)).exec_()
+    self.setCursor(cursor)
+
 
   def on_log_clicked(self):
     '''
@@ -1410,11 +1402,9 @@ class MasterViewProxy(QtGui.QWidget):
           if len(nodes) == 1:
             node = nodes[0]
           elif len(nodes) > 1:
-            item = QtGui.QInputDialog.getItem(None, self.tr("Dynamic configuration selection"),
-                                              'Select a node to configure',
-                                              [i for i in nodes], 0, False)
-            if item[1]:
-              node = item[0]
+            items = SelectDialog.getValue('Dynamic configuration selection', [i for i in nodes], True)
+            if items:
+              node = items[0]
           if not node is None:
 #            self.masterTab.dynamicConfigButton.setEnabled(False)
             import os, subprocess
@@ -1466,32 +1456,24 @@ class MasterViewProxy(QtGui.QWidget):
     Closes the open launch configurations. If more then one configuration is 
     open a selection dialog will be open.
     '''
-    choices = {'all': None} if len(self.launchfiles) > 1 else {}
+    choices = dict()
 
-    for c in self.__configs:
-      if isinstance(c, tuple):
-        choices[''.join(['[', c[0], ']'])] = c
+    for path, cfg in self.__configs.items():
+      if isinstance(path, tuple):
+        if nm.nameres().getHostname(path[1]) == nm.nameres().getHostname(self.masteruri):
+          choices[''.join(['[', path[0], ']'])] = path
       else:
-        choices[c] = c
-    cfg = None
-    if len(choices) > 1:
-      item = QtGui.QInputDialog.getItem(None, self.tr("Close configuration selection"),
-                                        'Select a configuration to close',
-                                        choices.keys(), 0, False)
-      if item[1]:
-        if item[0] == 'all':
-          cfg = 'all'
-        else:
-          cfg = choices[item[0]]
-    elif len(choices) == 1:
-      cfg = choices.values()[0]
+        choices[''.join([os.path.basename(path), '   [', str(LaunchConfig.packageName(os.path.dirname(path))[0]), ']'])] = path
+    cfgs = []
+    
+#    if len(choices) > 1:
+    cfgs = SelectDialog.getValue('Close configurations', choices.keys(), False, self)
+#    elif len(choices) == 1:
+#      cfgs = choices.values()[0]
 
-    if cfg == 'all':
-      # close all configurations
-      for path, cfg in self.__configs.items():
-        self._close_cfg(path)
-    elif not cfg is None:
-      self._close_cfg(cfg)
+    # close configurations
+    for c in cfgs:
+      self._close_cfg(choices[c])
     self.updateButtons()
 
   def _close_cfg(self, cfg):
@@ -1529,6 +1511,22 @@ class MasterViewProxy(QtGui.QWidget):
     Shows the hz of the topic in a terminal.
     '''
     self._show_topic_output(True)
+
+  def on_topic_pub_clicked(self):
+    selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+    for topic in selectedTopics:
+      try:
+        self.topic_model.publish_topic(topic.name, self.masteruri)
+      except Exception, e:
+        rospy.logwarn("Publish topic '%s' failed: %s", str(topic.name), str(e))
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Publish topic error", 
+                          ''.join(['Publish topic ', topic.name, ' failed!']),
+                          str(e)).exec_()
+
+  def on_topic_pub_stop_clicked(self):
+    selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+    for topic in selectedTopics:
+      self.topic_model.publish_stop_topic(topic.name)
 
   def _show_topic_output(self, show_hz_only):
     '''
@@ -1892,3 +1890,47 @@ class ParameterSortFilterProxyModel(QtGui.QSortFilterProxyModel):
     return (regex.indexIn(self.sourceModel().data(index0)) != -1
             or regex.indexIn(self.sourceModel().data(index1)) != -1)
 
+class ProgressObject(QtGui.QWidget):
+  '''
+  An object to start the selected nodes and show an abortabe progress dialog.
+  '''
+
+  def __init__(self, title, nodes, force, callback, parent_list):
+    QtGui.QWidget.__init__(self)
+    self._pd = QtGui.QProgressDialog(title, "Abort", 0, len(nodes), self)
+    self._pd.setWindowModality(QtCore.Qt.WindowModal)
+    self._pd.show()
+    self._nodes = nodes
+    self._index = 0
+    self._force = force
+    self._last_result = None
+    self._callback = callback
+    self._parent_list = parent_list
+    QtCore.QTimer.singleShot(50, self._next_start_node)
+
+  def _next_start_node(self):
+    if self._index >= len(self._nodes) or self._pd.wasCanceled() or self._callback is None:
+      self._finish()
+      return
+    else:
+      node = self._nodes[self._index]
+      self._pd.setLabelText(node.name)
+      self._last_result = self._callback(node, self._force, self._last_result)
+      if isinstance(self._last_result, bool) and not self._last_result:
+        self._finish()
+        return
+    if self._pd.wasCanceled():
+      self._finish()
+      return
+    else:
+      self._pd.setValue(self._index)
+      QtCore.QTimer.singleShot(50, self._next_start_node)
+    self._index += 1
+
+  def _finish(self):
+    self._pd.setValue(self._pd.maximum())
+    try:
+      self._parent_list.remove(self)
+    except:
+      pass
+    del self._pd

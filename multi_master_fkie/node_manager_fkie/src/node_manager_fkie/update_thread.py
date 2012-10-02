@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -31,8 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import time
+import socket
 import threading
 import xmlrpclib
+import random
 from PySide import QtCore
 
 #import roslib; roslib.load_manifest('node_manager_fkie')
@@ -68,6 +70,8 @@ class UpdateThread(QtCore.QObject, threading.Thread):
     '''
     '''
     try:
+      time.sleep(random.random())
+      socket.setdefaulttimeout(6)
       remote_monitor = xmlrpclib.ServerProxy(self._monitoruri)
       remote_info = remote_monitor.masterInfo()
       master_info = MasterInfo.from_list(remote_info)
@@ -79,3 +83,5 @@ class UpdateThread(QtCore.QObject, threading.Thread):
       formatted_lines = traceback.format_exc().splitlines()
       rospy.logwarn("Connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
       self.error_signal.emit(self._masteruri, formatted_lines[-1])
+    finally:
+      socket.setdefaulttimeout(None)

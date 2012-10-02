@@ -13,7 +13,7 @@
 #    copyright notice, this list of conditions and the following
 #    disclaimer in the documentation and/or other materials provided
 #    with the distribution.
-#  * Neither the name of I Heart Engineering nor the names of its
+#  * Neither the name of Fraunhofer nor the names of its
 #    contributors may be used to endorse or promote products derived
 #    from this software without specific prior written permission.
 #
@@ -371,62 +371,6 @@ class LaunchConfig(QtCore.QObject):
       if sep:
         result[key] = value
     return result
-
-  def getArgHistory(self):
-    '''
-    Reads the arguments from a history file stored in a defined configuration path.
-    @return: the dictionary with arguments
-    @rtype: C{dict(str(name):[str(value), ...], ...)}
-    '''
-    result = {}
-    historyFile = ''.join([nm.CFG_PATH, 'arg.history'])
-    if os.path.isfile(historyFile):
-      with open(historyFile, 'r') as f:
-        line = f.readline()
-        while line:
-          if line:
-            line = line.strip()
-            if line:
-              key, sep, value = line.partition(':=')
-              if sep:
-                if not key in result.keys():
-                  result[key] = [value]
-                else:
-                  result[key].insert(0, value)
-          line = f.readline()
-      f.closed
-    return result
-
-  def addToArgHistory(self, key, value):
-    '''
-    Adds an argument the history file and save it in a defined configuration path 
-    under the name 'arg.history'. For a key there stored up to 
-    L{node_manager_fkie.ARG_HISTORY_LENGTH} values.
-    @param key: the argument name
-    @type key: C{str}
-    @param value: the argument value
-    @type value: C{str}
-    '''
-    history = self.getArgHistory()
-    save = False
-    if not key in history:
-      history[key] = [value]
-      save = True
-    else:
-      if not value in history[key]:
-        if len(history[key]) >= nm.ARG_HISTORY_LENGTH:
-          history[key].pop()
-        history[key].append(value)
-        save = True
-    # safe history
-    if save:
-      if not os.path.isdir(nm.CFG_PATH):
-        os.makedirs(nm.CFG_PATH)
-      with open(''.join([nm.CFG_PATH, 'arg.history']), 'w') as f:
-        for key in history.keys():
-          for value in history[key]:
-            f.write(''.join([key, ':=', value, '\n']))
-      f.closed
 
   def getNode(self, name):
     '''
