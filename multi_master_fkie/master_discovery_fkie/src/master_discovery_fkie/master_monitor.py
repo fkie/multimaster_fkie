@@ -40,6 +40,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from SocketServer import ThreadingMixIn
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
+import roslib.network
 import rospy
 import rosnode
 
@@ -202,6 +203,8 @@ class MasterMonitor(object):
           pass
     #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
         except:
+#          import traceback
+#          print traceback.format_exc()
           pass
         finally:
           if s is not None:

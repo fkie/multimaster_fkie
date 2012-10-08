@@ -33,13 +33,14 @@
 #
 # Roughly based on the code here; http://avahi.org/wiki/PythonPublishExample
 
-import threading
+import os
 import sys
 import time
 import socket
 import dbus
 import gobject
 import avahi
+import threading
 from datetime import datetime
 from dbus.mainloop.glib import DBusGMainLoop
 
@@ -453,11 +454,21 @@ class Polling(threading.Thread):
     ..........................................................................'''
     while (not (self.__callback is None)) and (not rospy.is_shutdown()):
       master = self.__callback(self.masterInfo)
+      current_check_hz = self.__update_hz
+      cputimes = os.times()
+      cputime_init = cputimes[0] + cputimes[1]
       if not master is None:
         self.masterList.updateMaster(master)
       else:
         self.masterList.setMasterOnline(self.masterInfo.name, False)
-      time.sleep(1/self.__update_hz)
+      # adapt the check rate to the CPU usage time
+      cputimes = os.times()
+      cputime = cputimes[0] + cputimes[1] - cputime_init
+      if current_check_hz*cputime > 0.4:
+        current_check_hz = float(current_check_hz)/2.0
+      elif current_check_hz*cputime < 0.20 and current_check_hz < self.__update_hz:
+        current_check_hz = float(current_check_hz)*2.0
+      time.sleep(1.0/self.__update_hz)
 #    print "stop polling", self.masterInfo.name
 #    else:
 #      raise Exception("no callback defined for %s", self.masterInfo.name)
@@ -538,11 +549,11 @@ class MasterList(object):
       self.__lock.acquire()
       for key in self.__masters.keys():
         master = self.__masters[key]
-        if rospy.Time.now() - master.lastUpdate > rospy.Duration(1/Discoverer.ROSMASTER_HZ+2):
+        if rospy.Time.now() - master.lastUpdate > rospy.Duration(1.0/Discoverer.ROSMASTER_HZ+2):
           self.setMasterOnline(key, False)
     except:
       import traceback
-      rospy.logwarn("%s", traceback.format_exc())
+      rospy.logwarn("Error while check master state: %s", traceback.format_exc())
     finally:
       self.__lock.release()
 
@@ -582,7 +593,7 @@ class MasterList(object):
                                                       master_info.getTXTValue('rpcuri', ''))))
     except:
       import traceback
-      rospy.logwarn("%s", traceback.format_exc())
+      rospy.logwarn("Error while update master: %s", traceback.format_exc())
     finally:
       self.__lock.release()
 
@@ -613,7 +624,7 @@ class MasterList(object):
         del r
     except:
       import traceback
-      rospy.logwarn("%s", traceback.format_exc())
+      rospy.logwarn("Error while remove master: %s", traceback.format_exc())
     finally:
       self.__lock.release()
 
@@ -631,7 +642,7 @@ class MasterList(object):
       result = self.__masters[name]
     except:
       import traceback
-      rospy.logwarn("%s", traceback.format_exc())
+      rospy.logwarn("Error while getMasterInfo: %s", traceback.format_exc())
     finally:
       self.__lock.release()
       return result
@@ -656,7 +667,7 @@ class MasterList(object):
                                                       master.getTXTValue('rpcuri', ''))))
     except Exception:
       import traceback
-      rospy.logwarn("%s", traceback.format_exc())
+      rospy.logwarn("Error while removeAll: %s", traceback.format_exc())
     finally:
       self.__lock.release()
 
@@ -797,14 +808,13 @@ class Discoverer(Zeroconf):
       # compare the current system state of ROS master with stored one and update the timestamp if needed
       if self.master_monitor.checkState():
         # sets a new timestamp in zeroconf
-        rospy.logdebug("state of local master changed")
+#        rospy.logdebug("state of local master changed")
         rpcuri = self.masterInfo.getTXTValue('rpcuri', '')
         masteruri = self.masterInfo.getTXTValue('master_uri', '')
-        self.masterInfo.txt = ["timestamp=%s"%str(self.master_monitor.master_state.timestamp), "master_uri=%s"%masteruri, "zname=%s"%rospy.get_name(), "rpcuri=%s"%rpcuri]
+        self.masterInfo.txt = ["timestamp=%s"%str(self.master_monitor.getCurrentState().timestamp), "master_uri=%s"%masteruri, "zname=%s"%rospy.get_name(), "rpcuri=%s"%rpcuri]
         self.updateService(self.masterInfo.txt)
-
       return self.masterInfo
     except:
       import traceback
-      rospy.logerr("%s", traceback.format_exc())
+      rospy.logerr("Error while check local master: %s", traceback.format_exc())
     return None
