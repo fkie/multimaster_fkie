@@ -70,6 +70,7 @@ class Main(object):
       rospy.loginfo("listen for updates on %s", topic_name)
       self.sub_changes[topic_name] = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
     rospy.on_shutdown(self.finish)
+    self.update_timer = None
     self.retrieveMasters()
 
   def handlerMasterStateMsg(self, data):
@@ -153,8 +154,8 @@ class Main(object):
         rospy.logwarn("ERROR while initial list masters: %s", traceback.format_exc())
       finally:
         self.__lock.release()
-        t = threading.Timer(15.0, self.retrieveMasters)
-        t.start()
+    self.update_timer = threading.Timer(15.0, self.retrieveMasters)
+    self.update_timer.start()
 
 
   def updateMaster(self, mastername, masteruri, timestamp, discoverer_name, monitoruri):
@@ -211,6 +212,8 @@ class Main(object):
     '''
     rospy.logdebug("Stop synchronization")
     self.__lock.acquire()
+    if not self.update_timer is None:
+      self.update_timer.cancel()
     for key in self.masters.keys():
       m = self.masters[key]
       m.stop()

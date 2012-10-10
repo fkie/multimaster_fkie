@@ -88,7 +88,7 @@ class MasterInfo(object):
     ..........................................................................'''
     try:
       if not (timestamp is None):
-        return float(timestamp)/1000000000
+        return float(timestamp)
     except:
       #depricated
 #      import traceback
@@ -452,11 +452,11 @@ class Polling(threading.Thread):
     '''..........................................................................
     Callback method of the ROS timer for periodically polling.
     ..........................................................................'''
+    self.current_check_hz = self.__update_hz
     while (not (self.__callback is None)) and (not rospy.is_shutdown()):
-      master = self.__callback(self.masterInfo)
-      current_check_hz = self.__update_hz
       cputimes = os.times()
       cputime_init = cputimes[0] + cputimes[1]
+      master = self.__callback(self.masterInfo)
       if not master is None:
         self.masterList.updateMaster(master)
       else:
@@ -464,11 +464,12 @@ class Polling(threading.Thread):
       # adapt the check rate to the CPU usage time
       cputimes = os.times()
       cputime = cputimes[0] + cputimes[1] - cputime_init
-      if current_check_hz*cputime > 0.4:
-        current_check_hz = float(current_check_hz)/2.0
-      elif current_check_hz*cputime < 0.20 and current_check_hz < self.__update_hz:
-        current_check_hz = float(current_check_hz)*2.0
-      time.sleep(1.0/self.__update_hz)
+      if self.current_check_hz*cputime > 0.20:
+        self.current_check_hz = float(self.current_check_hz)/2.0
+      elif self.current_check_hz*cputime < 0.10 and self.current_check_hz < self.__update_hz:
+        self.current_check_hz = float(self.current_check_hz)*2.0
+#      print "update rate", self.current_check_hz
+      time.sleep(1.0/self.current_check_hz)
 #    print "stop polling", self.masterInfo.name
 #    else:
 #      raise Exception("no callback defined for %s", self.masterInfo.name)
@@ -535,8 +536,9 @@ class MasterList(object):
                                                       m.getTXTValue('zname', ''), 
                                                       m.getTXTValue('rpcuri', ''))))
     except:
-      import traceback
-      rospy.logwarn("%s", traceback.format_exc())
+#      import traceback
+#      rospy.logwarn("%s", traceback.format_exc())
+      pass
     finally:
       self.__lock.release()
 
@@ -549,7 +551,7 @@ class MasterList(object):
       self.__lock.acquire()
       for key in self.__masters.keys():
         master = self.__masters[key]
-        if rospy.Time.now() - master.lastUpdate > rospy.Duration(1.0/Discoverer.ROSMASTER_HZ+2):
+        if time.time() - master.lastUpdate > 1.0/Discoverer.ROSMASTER_HZ+2:
           self.setMasterOnline(key, False)
     except:
       import traceback

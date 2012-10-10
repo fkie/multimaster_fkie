@@ -341,9 +341,9 @@ class Discoverer(threading.Thread):
         # adapt the check rate to the CPU usage time
         cputimes = os.times()
         cputime = cputimes[0] + cputimes[1] - cputime_init
-        if self.current_check_hz*cputime > 0.4:
+        if self.current_check_hz*cputime > 0.20:
           self.current_check_hz = float(self.current_check_hz)/2.0
-        elif self.current_check_hz*cputime < 0.20 and self.current_check_hz < Discoverer.HEARTBEAT_HZ:
+        elif self.current_check_hz*cputime < 0.10 and self.current_check_hz < Discoverer.HEARTBEAT_HZ:
           self.current_check_hz = float(self.current_check_hz)*2.0
 #        print "self.current_check_hz:", self.current_check_hz
         try_count = 0
@@ -370,6 +370,7 @@ class Discoverer(threading.Thread):
       for r in to_remove:
         del self.masters[r]
       self.__lock.release()
+#      print "update rate", self.current_check_hz
       time.sleep(1.0/self.current_check_hz)
 
   def recv_loop(self):

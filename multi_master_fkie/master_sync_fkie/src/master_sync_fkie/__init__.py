@@ -76,9 +76,9 @@ def main():
   '''
   Creates and runs the ROS node.
   '''
-  setTerminalName(NODE_NAME)
-  setProcessName(NODE_NAME)
   rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
   # time to initialize the topics to receive these in rxconsole
   discoverer = master_sync.Main()
   rospy.spin()
