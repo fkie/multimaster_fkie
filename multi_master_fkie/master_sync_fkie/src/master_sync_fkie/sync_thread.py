@@ -99,7 +99,7 @@ class SyncThread(threading.Thread):
     # a dictionary with services, the key is a tuple of (service name, service URL, node name, node URL), value is a boolean
     self.__services = {}
     
-    self.ignore = ['/rosout', rospy.get_name(), self.masterInfo.discoverer_name, '/default_cfg', '/node_manager']
+    self.ignore = ['/rosout', rospy.get_name(), self.masterInfo.discoverer_name, '/default_cfg', '/node_manager', '/zeroconf']
     if rospy.has_param('~ignore_nodes'):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_nodes')
     self.start()

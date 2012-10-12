@@ -493,7 +493,8 @@ class MainWindow(QtGui.QMainWindow):
         self._setLocalMonitoring(True)
       elif not masteruri is None:
         master = self.getMaster(masteruri)
-        self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
+        if not master.master_state is None:
+          self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
 
   def on_conn_stats_updated(self, stats):
     '''

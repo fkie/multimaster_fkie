@@ -326,6 +326,12 @@ def main(name, anonymous=False):
     _start_handler = StartHandler()
     _name_resolution = NameResolution()
     _history = History()
+
+    masteruri = masteruri_from_ros()
+    __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
+    if not is_local(_name_resolution.getHostname(masteruri)):
+      rospy.logerr("Node manager can only run with roscore on the same host!!! exit now!")
+      exit(-1)
   
     #start the gui
     main_form = main_window.MainWindow(args)

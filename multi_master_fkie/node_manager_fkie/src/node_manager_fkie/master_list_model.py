@@ -36,7 +36,10 @@ from PySide import QtGui
 import threading
 
 from urlparse import urlparse
-from socket import gethostbyname
+from socket import getaddrinfo
+
+import node_manager_fkie as nm
+
 
 
 class MasterItem(QtGui.QStandardItem):
@@ -73,10 +76,19 @@ class MasterItem(QtGui.QStandardItem):
     try:
       # get the IP of the master uri
       o = urlparse(self.master.uri)
-      self.master_ip = gethostbyname(o.hostname)
-      self.updateNameView(master, quality, self)
+      result = getaddrinfo(o.hostname, None)
+      ips = []
+      for r in result:
+        (family, socktype, proto, canonname, (ip, port)) = r
+        if self.master_ip is None and ip:
+          self.master_ip = ''
+        if ip and not ip in ips:
+          self.master_ip = ' '.join([self.master_ip, ip])
+          ips.append(ip)
+      self.updateNameView(self.master, self.quality, self)
     except:
-      pass
+      import traceback
+      print traceback.format_exc()
     
 
   def updateMasterView(self, parent):
