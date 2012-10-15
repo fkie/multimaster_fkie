@@ -67,7 +67,7 @@ class MainWindow(QtGui.QMainWindow):
   The class to create the main window of the application.
   '''
 
-  def __init__(self, args=[], parent=None):
+  def __init__(self, args=[], restricted_to_one_master=False, parent=None):
     '''
     Creates the window, connects the signals and init the class.
     '''
@@ -172,6 +172,14 @@ class MainWindow(QtGui.QMainWindow):
       elif os.path.isfile(self.default_load_launch):
         self.ui.xmlFileView.model().setPath(os.path.dirname(self.default_load_launch))
 
+    self._discover_dialog = None
+    self.restricted_to_one_master = restricted_to_one_master
+    if restricted_to_one_master:
+      self.ui.syncButton.setEnabled(False)
+      self.ui.refreshAllButton.setEnabled(False)
+      self.ui.discoveryButton.setEnabled(False)
+      self.ui.startRobotButton.setEnabled(False)
+
     self._local_tries = 0
     self._subscribe()
 
@@ -186,10 +194,6 @@ class MainWindow(QtGui.QMainWindow):
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
     self._refresh_time = time.time()
-    
-    
-    self._discover_dialog = None
-
 
   def createSlider(self):
     slider = QtGui.QSlider()
@@ -328,10 +332,13 @@ class MainWindow(QtGui.QMainWindow):
     Try to subscribe to the topics of the master_discovery node. If it fails, the
     own local monitoring of the ROS master state will be enabled.
     '''
-    result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
-    result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
-    self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
-    if not result_1 or not result_2:
+    if not self.restricted_to_one_master:
+      result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
+      result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
+      self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
+      if not result_1 or not result_2:
+        self._setLocalMonitoring(True)
+    else:
       self._setLocalMonitoring(True)
 
   def _setLocalMonitoring(self, on):
@@ -382,6 +389,9 @@ class MainWindow(QtGui.QMainWindow):
     @param minfo: the ROS master Info
     @type minfo: L{master_discovery_fkie.MasterInfo}
     '''
+    # use no discovery services, if roscore is running on a remote host
+    if self.restricted_to_one_master:
+      return False
     for service in minfo.services.keys():
       if service.endswith('list_masters'):
         return True
@@ -458,7 +468,7 @@ class MainWindow(QtGui.QMainWindow):
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
 #          print master.master_state.name, cputime
           if not master.master_info is None:
-            if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)):
+            if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
               self._local_tries = 0
               if new_info:
                 has_discovery_service = self.hasDiscoveryService(minfo)
@@ -477,7 +487,7 @@ class MainWindow(QtGui.QMainWindow):
         except Exception, e:
           rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, str(e))
       # update the buttons, whether master is synchronized or not
-      if not self.currentMaster is None and not self.currentMaster.master_info is None:
+      if not self.currentMaster is None and not self.currentMaster.master_info is None and not self.restricted_to_one_master:
         self.ui.syncButton.setEnabled(True)
         self.ui.syncButton.setChecked(not self.currentMaster.master_info.getNodeEndsWith('master_sync') is None)
 #    cputimes_m = os.times()
@@ -569,12 +579,17 @@ class MainWindow(QtGui.QMainWindow):
         self.currentMaster.stop_nodes([node])
 
   def on_master_timecheck(self):
-    if not self.currentMaster is None:
+    if not self.currentMaster is None and not self.currentMaster.master_state is None:
       master = self.getMaster(self.currentMaster.master_state.uri)
+      name = master.master_state.name
+      if self.restricted_to_one_master:
+        name = ''.join([name, ' <span style=" color:red;">(restricted)</span>'])
+        if not self.ui.masternameLabel.toolTip():
+          self.ui.masternameLabel.setToolTip('The multicore options are disabled, because the roscore is running on remote host!')
       if not master.master_info is None:
-        self.showMasterName(master.master_state.name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
+        self.showMasterName(name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
       elif not master.master_state is None:
-        self.showMasterName(master.master_state.name, 'Try to get info!!! Currently not received!!!', master.master_state.online)
+        self.showMasterName(name, 'Try to get info!!! Currently not received!!!', master.master_state.online)
     else:
       self.showMasterName('No robot selected', None, False)
     if (time.time() - self._refresh_time > 15.0):
@@ -660,7 +675,7 @@ class MainWindow(QtGui.QMainWindow):
           self.currentMaster = self.getMaster(item.master.uri)
           self.stackedLayout.setCurrentWidget(self.currentMaster)
           self.on_master_timecheck()
-          if not self.currentMaster.master_info is None:
+          if not self.currentMaster.master_info is None and not self.restricted_to_one_master:
             node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
             self.ui.syncButton.setEnabled(True)
             self.ui.syncButton.setChecked(not node is None)

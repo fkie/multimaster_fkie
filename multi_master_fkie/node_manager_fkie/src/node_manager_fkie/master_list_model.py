@@ -265,11 +265,11 @@ class MasterModel(QtGui.QStandardItemModel):
         doAddItem = False
         break
       elif (masterItem > master.name):
-        root.insertRow(i, MasterItem.getItemList(master, (master.uri == self._masteruri)))
+        root.insertRow(i, MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri)))))
         doAddItem = False
         break
     if doAddItem:
-      root.appendRow(MasterItem.getItemList(master, (master.uri == self._masteruri)))
+      root.appendRow(MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri)))))
 
   def updateMasterStat(self, master, quality):
     '''

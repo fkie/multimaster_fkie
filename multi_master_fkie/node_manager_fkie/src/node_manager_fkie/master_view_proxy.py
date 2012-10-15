@@ -108,7 +108,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.rosconfigs = dict() # [launch file path] = LaunchConfig()
     self.__in_question = []
     '''@ivar: stored the question dialogs for changed files '''
-    self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'master_discovery', 'master_sync', 'default_cfg']
+    self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'master_discovery', 'master_sync', 'default_cfg', 'zeroconf']
     ''' @todo: detect the names of master_discovery and master_sync ndoes'''
     
     self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog

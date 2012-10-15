@@ -327,14 +327,13 @@ def main(name, anonymous=False):
     _name_resolution = NameResolution()
     _history = History()
 
+    # test where the roscore is running (local or remote)
     masteruri = masteruri_from_ros()
     __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
-    if not is_local(_name_resolution.getHostname(masteruri)):
-      rospy.logerr("Node manager can only run with roscore on the same host!!! exit now!")
-      exit(-1)
+    local_master = is_local(_name_resolution.getHostname(masteruri))
   
     #start the gui
-    main_form = main_window.MainWindow(args)
+    main_form = main_window.MainWindow(args, not local_master)
 
   if not rospy.is_shutdown():
     os.chdir(PACKAGE_DIR) # change path to be able to the images of descriptions

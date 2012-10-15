@@ -302,14 +302,14 @@ class OwnMasterMonitoring(QtCore.QObject):
                                           mon_state.timestamp, 
                                           True, 
                                           rospy.get_name(), 
-                                          ''.join(['http://', str(self._local_addr),':',str(self._master_monitor.rpcport)])))
+                                          ''.join(['http://localhost:',str(self._master_monitor.rpcport)])))
             self.state_signal.emit(state)
           # adapt the check rate to the CPU usage time
           cputimes = os.times()
           cputime = cputimes[0] + cputimes[1] - cputime_init
-          if current_check_hz*cputime > 0.4:
+          if current_check_hz*cputime > 0.20:
             current_check_hz = float(current_check_hz)/2.0
-          elif current_check_hz*cputime < 0.20 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
+          elif current_check_hz*cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
             current_check_hz = float(current_check_hz)*2.0
       except MasterConnectionException, e:
         rospy.logwarn("Error while master check loop: %s", str(e))
