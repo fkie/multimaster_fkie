@@ -229,8 +229,10 @@ class MasterViewProxy(QtGui.QWidget):
 
     # creates a start menu
     start_menu = QtGui.QMenu(self)
-    self.forceStartNodesAct = QtGui.QAction("&Force Start Node", self, statusTip="Force the start of selected node", triggered=self.on_force_start_nodes)
+    self.forceStartNodesAct = QtGui.QAction("&Force start node", self, statusTip="Force the start of selected node", triggered=self.on_force_start_nodes)
     start_menu.addAction(self.forceStartNodesAct)
+    self.startNodesAtHostAct = QtGui.QAction("&Start node on host", self, statusTip="start node on other host", triggered=self.on_start_nodes_at_host)
+    start_menu.addAction(self.startNodesAtHostAct)
     self.masterTab.startButton.setMenu(start_menu)
 
 
@@ -436,9 +438,10 @@ class MasterViewProxy(QtGui.QWidget):
       self.masterTab.dynamicConfigButton.setEnabled(len(dyncfgNodes))
     # the configuration is only available, if only one node is selected
     cfg_enable = False
-    if len(selectedNodes) == 1:
+    if len(selectedNodes) >= 1:
       cfg_enable = len(self._getCfgChoises(selectedNodes[0], True)) > 0
-    self.masterTab.editConfigButton.setEnabled(cfg_enable)
+    self.masterTab.editConfigButton.setEnabled(cfg_enable and len(selectedNodes) == 1)
+    self.startNodesAtHostAct.setEnabled(cfg_enable)
     self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
     self.masterTab.closeCfgButton.setEnabled(len(self.__configs) > 0)
 
@@ -1018,7 +1021,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.setCursor(cursor)
     self.masterTab.startButton.setEnabled(True)
 
-  def start_node(self, node, force, last_result=None):
+  def start_node(self, node, force, force_host=None, last_result=None):
 
     choice = last_result
     if node is None:
@@ -1041,7 +1044,7 @@ class MasterViewProxy(QtGui.QWidget):
       config = choices[choice]
       if isinstance(config, LaunchConfig):
         try:
-          nm.starter().runNode(node.name, config)
+          nm.starter().runNode(node.name, config, force_host)
         except socket.error, se:
           rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
@@ -1071,15 +1074,17 @@ class MasterViewProxy(QtGui.QWidget):
             return False
     return choice
 
-  def start_nodes(self, nodes, force=False):
+  def start_nodes(self, nodes, force=False, force_host=None):
     '''
     Internal method to start a list with nodes
     @param nodes: the list with nodes to start
     @type nodes: C{[L{NodeItem}, ...]}
     @param force: force the start of the node, also if it is already started.
     @type force: C{bool}
+    @param force_host: force the start of the node at specified host.
+    @type force_host: C{str}
     '''
-    self._tmpObjects.append(ProgressObject('Start nodes', nodes, force, self.start_node, self._tmpObjects))
+    self._tmpObjects.append(ProgressObject('Start nodes', nodes, force, force_host, self.start_node, self._tmpObjects))
 
   def start_nodes_by_name(self, nodes, cfg):
     '''
@@ -1107,6 +1112,26 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     self.start_nodes(selectedNodes, True)
     self.setCursor(cursor)
+    self.masterTab.startButton.setEnabled(True)
+
+  def on_start_nodes_at_host(self):
+    '''
+    Starts the selected nodes on an another host.
+    '''
+    cursor = self.cursor()
+    self.masterTab.startButton.setEnabled(False)
+    history = nm.history().getHostHistory()
+    host, result = QtGui.QInputDialog.getItem(self, self.tr("Select host"),
+                                  self.tr("host:"), list(['localhost'] + history), 0,
+                                  True)
+    progressDialog = None
+    if result and host:
+      if host != 'localhost':
+        nm.history().add2HostHistory(host)
+      self.setCursor(QtCore.Qt.WaitCursor)
+      selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      self.start_nodes(selectedNodes, True, host)
+      self.setCursor(cursor)
     self.masterTab.startButton.setEnabled(True)
 
   def _getDefaultCfgChoises(self, node):
@@ -1170,7 +1195,7 @@ class MasterViewProxy(QtGui.QWidget):
     @param nodes: the list with nodes to stop
     @type nodes: C{[L{master_discovery_fkie.NodeInfo}, ...]}
     '''
-    self._tmpObjects.append(ProgressObject('Stop nodes', nodes, len(nodes)==1, self.stop_node, self._tmpObjects))
+    self._tmpObjects.append(ProgressObject('Stop nodes', nodes, len(nodes)==1, None, self.stop_node, self._tmpObjects))
 
   def stop_nodes_by_name(self, nodes):
     '''
@@ -1214,7 +1239,7 @@ class MasterViewProxy(QtGui.QWidget):
 
   def on_kill_nodes(self):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-    self._tmpObjects.append(ProgressObject('Kill Nodes', selectedNodes, len(selectedNodes)==1, self.kill_node, self._tmpObjects))
+    self._tmpObjects.append(ProgressObject('Kill Nodes', selectedNodes, len(selectedNodes)==1, None, self.kill_node, self._tmpObjects))
 
   def unregister_node(self, node, force=False, last_result=None):
     if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
@@ -1255,7 +1280,7 @@ class MasterViewProxy(QtGui.QWidget):
     
   def on_unregister_nodes(self):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-    self._tmpObjects.append(ProgressObject('Unregister nodes', selectedNodes, len(selectedNodes)==1, self.unregister_node, self._tmpObjects))
+    self._tmpObjects.append(ProgressObject('Unregister nodes', selectedNodes, len(selectedNodes)==1, None, self.unregister_node, self._tmpObjects))
 
   def on_stop_context_toggled(self, state):
     menu = QtGui.QMenu(self)
@@ -1895,7 +1920,7 @@ class ProgressObject(QtGui.QWidget):
   An object to start the selected nodes and show an abortabe progress dialog.
   '''
 
-  def __init__(self, title, nodes, force, callback, parent_list):
+  def __init__(self, title, nodes, force, force_host, callback, parent_list):
     QtGui.QWidget.__init__(self)
     self._pd = QtGui.QProgressDialog(title, "Abort", 0, len(nodes), self)
     self._pd.setWindowModality(QtCore.Qt.WindowModal)
@@ -1903,6 +1928,7 @@ class ProgressObject(QtGui.QWidget):
     self._nodes = nodes
     self._index = 0
     self._force = force
+    self._force_host = force_host
     self._last_result = None
     self._callback = callback
     self._parent_list = parent_list
@@ -1915,7 +1941,11 @@ class ProgressObject(QtGui.QWidget):
     else:
       node = self._nodes[self._index]
       self._pd.setLabelText(node.name)
-      self._last_result = self._callback(node, self._force, self._last_result)
+      self._last_result = None
+      try:
+        self._last_result = self._callback(node, self._force, self._force_host, self._last_result)
+      except TypeError:
+        self._last_result = self._callback(node, self._force, self._last_result)
       if isinstance(self._last_result, bool) and not self._last_result:
         self._finish()
         return

@@ -56,13 +56,15 @@ class StartHandler(object):
     pass
   
   @classmethod
-  def runNode(cls, node, launch_config):
+  def runNode(cls, node, launch_config, force2host=None):
     '''
     Start the node with given name from the given configuration.
     @param node: the name of the node (with name space)
     @type node: C{str}
     @param launch_config: the configuration containing the node
     @type launch_config: L{LaunchConfig} 
+    @param force2host: start the node on given host.
+    @type force2host: L{str} 
     @raise StartException: if the screen is not available on host.
     @raise Exception: on errors while resolving host
     @see: L{node_manager_fkie.is_local()}
@@ -90,11 +92,17 @@ class StartHandler(object):
       #TODO: env-loader support?
 #      if hasattr(machine, "env_loader") and machine.env_loader:
 #        env_loader = machine.env_loader
+    # set the host to the given host
+    if not force2host is None:
+      host = force2host
 
     masteruri = nm.nameres().getUri(host=host)
+    print host, masteruri
     # set the ROS_MASTER_URI
     if masteruri is None:
-      env.append(('ROS_MASTER_URI', nm.masteruri_from_ros()))
+      masteruri = nm.masteruri_from_ros()
+      env.append(('ROS_MASTER_URI', masteruri))
+      print "NONE", host, masteruri
 
     abs_paths = list() # tuples of (parameter name, old value, new value)
     not_found_packages = list() # package names
