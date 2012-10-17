@@ -36,6 +36,7 @@ import fcntl
 import array
 import platform
 
+import rospy
 
 class McastSocket(socket.socket):
   '''
@@ -87,12 +88,12 @@ class McastSocket(socket.socket):
         self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, mreq)
     except socket.error, (errn, msg):
       if errn in [19]:
-        print "socket.error[", errn, "]:", msg, "\nis multicast route set? e.g. sudo route add -net 224.0.0.0 netmask 224.0.0.0 eth0"
-        print "\n\n"
+        rospy.logerror("socket.error[%d]: %s, \nis multicast route set? e.g. sudo route add -net 224.0.0.0 netmask 224.0.0.0 eth0", errn, msg)
       raise
 
     self.addrinfo = addrinfo
     self.group_bin = group_bin
+    self.sock_5_error_printed = []
 
 
   def close(self):
@@ -118,6 +119,25 @@ class McastSocket(socket.socket):
       self.sendto(msg, (self.addrinfo[4][0], self.getsockname()[1]))
     except socket.error, (errn, msg):
       if not errn in [100, 101, 102]:
+        raise
+
+  def send2addr(self, msg, addr):
+    '''
+    Sends the given message to the joined multicast group. Some errors on send 
+    will be ignored (C{ENETRESET}, C{ENETDOWN}, C{ENETUNREACH})
+    @param msg: message to send
+    @type msg: C{str}
+    @param addr: IPv4 or IPv6 address
+    @type addr: C{str}
+    '''
+    try:
+      self.sendto(msg, (addr, self.getsockname()[1]))
+    except socket.error, (errn, msg):
+      if errn in [-5]:
+        if not addr in self.sock_5_error_printed:
+          rospy.logwarn("socket.error[%d]: %s, addr: %s", errn, msg, addr)
+          self.sock_5_error_printed.append(addr)
+      elif not errn in [100, 101, 102]:
         raise
 
   def hasEnabledMulticastIface(self):

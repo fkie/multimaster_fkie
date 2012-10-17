@@ -230,6 +230,7 @@ class Discoverer(threading.Thread):
     # the list with all ROS master neighbors
     self.masters = dict() # (ip, DiscoveredMaster)
     
+    self.static_hosts = []
     if rospy.has_param('~rosmaster_hz'):
       Discoverer.ROSMASTER_HZ = rospy.get_param('~rosmaster_hz')
     if rospy.has_param('~heartbeat_hz'):
@@ -240,6 +241,8 @@ class Discoverer(threading.Thread):
       Discoverer.TIMEOUT_FACTOR = rospy.get_param('~timeout_factor')
     if rospy.has_param('~remove_after'):
       Discoverer.REMOVE_AFTER = rospy.get_param('~remove_after')
+    if rospy.has_param('~static_hosts'):
+      self.static_hosts[len(self.static_hosts):] = rospy.get_param('~static_hosts')
 
     self.current_check_hz = Discoverer.HEARTBEAT_HZ
     # initialize the ROS publishers
@@ -319,9 +322,13 @@ class Discoverer(threading.Thread):
           t = self.master_monitor.getCurrentState().timestamp
         msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), int(t), int((t-(int(t))) * 1000000000), self.master_monitor.rpcport)
         self.msocket.send2group(msg)
+        for a in self.static_hosts:
+          self.msocket.send2addr(msg, a)
       time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
     msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), -1, -1, self.master_monitor.rpcport)
     self.msocket.send2group(msg)
+    for a in self.static_hosts:
+      self.msocket.send2addr(msg, a)
     self.msocket.close()
 
   def checkROSMaster_loop(self):
