@@ -97,12 +97,10 @@ class StartHandler(object):
       host = force2host
 
     masteruri = nm.nameres().getUri(host=host)
-    print host, masteruri
     # set the ROS_MASTER_URI
     if masteruri is None:
       masteruri = nm.masteruri_from_ros()
       env.append(('ROS_MASTER_URI', masteruri))
-      print "NONE", host, masteruri
 
     abs_paths = list() # tuples of (parameter name, old value, new value)
     not_found_packages = list() # package names

@@ -200,6 +200,8 @@ class ParameterDescription(object):
           values.remove(self.widget().itemText(i))
         except:
           pass
+      if self.widget().count() == 0:
+        values.insert(0, '')
       self.widget().addItems(values)
 
 

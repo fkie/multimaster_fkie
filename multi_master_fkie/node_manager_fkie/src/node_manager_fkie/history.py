@@ -68,7 +68,7 @@ class History(QtCore.QObject):
   
   def cachedParamValues(self, key):
     try:
-      return self.PARAM_CACHE[key]
+      return list(self.PARAM_CACHE[key])
     except:
       result = []
       return result
@@ -82,7 +82,7 @@ class History(QtCore.QObject):
     @return: the list with robot names
     @rtype: C{[str]}
     '''
-    return self.HOSTS_CACHE['hosts']
+    return list(self.HOSTS_CACHE['hosts'])
 
   def add2HostHistory(self, host):
     '''
@@ -98,7 +98,7 @@ class History(QtCore.QObject):
     @return: the dictionary with arguments
     @rtype: C{dict(str(name):[str(value), ...], ...)}
     '''
-    return self.ARG_CACHE
+    return list(self.ARG_CACHE)
 
   def addToArgHistory(self, key, value):
     '''

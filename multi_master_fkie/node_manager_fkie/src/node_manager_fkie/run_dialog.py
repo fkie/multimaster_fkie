@@ -65,15 +65,22 @@ class RunDialog(QtGui.QDialog):
     package_label = QtGui.QLabel("Package:", self.content)
     self.package_field = QtGui.QComboBox(self.content)
     self.package_field.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
+    self.package_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
     self.package_field.setEditable(True)
     self.contentLayout.addRow(package_label, self.package_field)
     binary_label = QtGui.QLabel("Binary:", self.content)
     self.binary_field = QtGui.QComboBox(self.content)
-    self.binary_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+#    self.binary_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+    self.binary_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
     self.binary_field.setEditable(True)
     self.contentLayout.addRow(binary_label, self.binary_field)
     ns_name_label = QtGui.QLabel("NS/Name:", self.content)
-    self.ns_field = QtGui.QLineEdit('/', self.content)
+    self.ns_field = QtGui.QComboBox(self.content)
+    self.ns_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.ns_field.setEditable(True)
+    ns_history = nm.history().cachedParamValues('run_dialog/NS')
+    ns_history.insert(0, '/')
+    self.ns_field.addItems(ns_history)
     self.name_field = QtGui.QLineEdit(self.content)
     self.name_field.setEnabled(False)
     horizontalLayout = QtGui.QHBoxLayout()
@@ -81,8 +88,26 @@ class RunDialog(QtGui.QDialog):
     horizontalLayout.addWidget(self.name_field)
     self.contentLayout.addRow(ns_name_label, horizontalLayout)
     args_label = QtGui.QLabel("Args:", self.content)
-    self.args_field = QtGui.QLineEdit(self.content)
+    self.args_field = QtGui.QComboBox(self.content)
+    self.args_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.args_field.setEditable(True)
     self.contentLayout.addRow(args_label, self.args_field)
+    args_history = nm.history().cachedParamValues('run_dialog/Args')
+    args_history.insert(0, '')
+    self.args_field.addItems(args_history)
+    
+    host_label = QtGui.QLabel("Host:", self.content)
+    self.host_field = QtGui.QComboBox(self.content)
+#    self.host_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+    self.host_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.host_field.setEditable(True)
+    host_label.setBuddy(self.host_field)
+    self.contentLayout.addRow(host_label, self.host_field)
+    self.host_history = host_history = nm.history().getHostHistory()
+    if self.host in host_history:
+      host_history.remove(self.host)
+    host_history.insert(0, self.host)
+    self.host_field.addItems(host_history)
     
     self.buttonBox = QtGui.QDialogButtonBox(self)
     self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
@@ -112,8 +137,17 @@ class RunDialog(QtGui.QDialog):
     Runs the selected node, or do nothing. 
     '''
     self.binary = self.binary_field.currentText()
+    self.host = self.host_field.currentText() if self.host_field.currentText() else self.host
+    if not self.host in self.host_history and self.host != 'localhost' and self.host != '127.0.0.1':
+      nm.history().add2HostHistory(self.host)
+    ns = self.ns_field.currentText()
+    if ns and ns != '/':
+      nm.history().addParamCache('run_dialog/NS', ns)
+    args = self.args_field.currentText()
+    if args:
+      nm.history().addParamCache('run_dialog/Args', args)
     if self.package and self.binary:
-      nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', self.ns_field.text(), ' ', self.args_field.text()])).split(' '))
+      nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', ns, ' ', args])).split(' '))
 
   def _getPackages(self, path):
     result = {}
@@ -140,7 +174,6 @@ class RunDialog(QtGui.QDialog):
     return result
 
   def on_package_selected(self, package):
-    print "changed", package
     self.binary_field.clear()
     if self.packages.has_key(package):
       self.binary_field.setEnabled(True)
