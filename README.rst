@@ -4,6 +4,7 @@ FKIE multimaster for ROS
 The ROS stack of multi_master_fkie_ offers a complete solution for using ROS with multicores.
 
 The descriptions of individual packets is on ROS wiki:
+
 * discovery_ -- `discovery using multicast or zeroconf`
 * synchronization_ -- `master synchronization`
 * `node manager GUI`_ -- `A GUI to manage the configuration on local and remote ROS masters`
