@@ -127,6 +127,7 @@ def runNode(package, type, name, args, prefix='', repawn=False):
   '''
   Runs a ROS node. Starts a roscore if needed.
   '''
+  #start roscore, if needed
   try:
     master = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
     master.getUri('remote_nm')
@@ -134,6 +135,17 @@ def runNode(package, type, name, args, prefix='', repawn=False):
     # run a roscore
     cmd_args = [nm.ScreenHandler.getSceenCmd('/roscore'), 'roscore']
     subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])))
+    # wait for roscore to avoid connection problems while init_node
+    result = -1
+    count = 0
+    while result == -1 and count < 30:
+      try:
+        master = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
+        result, uri, msg = master.getUri('remote_nm')
+      except:
+        time.sleep(1)
+        count += 1
+  # start node
   try:
     cmd = roslib.packages.find_node(package, type)
   except roslib.packages.ROSPkgException as e:
@@ -158,7 +170,7 @@ def runNode(package, type, name, args, prefix='', repawn=False):
     elif arg_cwd == 'node':
       cwd = os.path.dirname(cmd[0])
   subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd)
-
+  
 if __name__ == '__main__':
   main()
 
