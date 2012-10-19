@@ -78,6 +78,8 @@ the cache directory to store the results of tests for local hosts.
 @see: L{is_local()}
 '''
 
+HELP_FILE = ''.join([PACKAGE_DIR, os.path.sep, 'README.rst'])
+
 _lock = threading.RLock()
 
 def terminal_cmd(cmd, title):

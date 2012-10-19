@@ -13,6 +13,9 @@ python-paramiko:
 python-psutil:
   ubuntu: python-psutil
 
+python-docutils:
+  ubuntu: python-docutils
+
 pyside-tools:
   ubuntu: pyside-tools
 
@@ -24,4 +27,3 @@ screen:
 
 xterm:
   ubuntu: xterm
-

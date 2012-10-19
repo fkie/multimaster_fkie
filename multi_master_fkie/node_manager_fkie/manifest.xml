@@ -23,6 +23,7 @@
   <rosdep name="python-paramiko" />
   <rosdep name="python-psutil" />
   <rosdep name="pyside-tools" />
+  <rosdep name="python-docutils" />
   <rosdep name="python-pyside.qtuitools" />
   <rosdep name="screen" />
   <rosdep name="xterm" />

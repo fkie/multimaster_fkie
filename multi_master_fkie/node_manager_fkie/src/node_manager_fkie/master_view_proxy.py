@@ -880,7 +880,7 @@ class MasterViewProxy(QtGui.QWidget):
       text = ''.join(['<h3>', topic.name,'</h3>'])
       text = ''.join([text, self._create_html_list('Publisher:', topic.publisherNodes)])
       text = ''.join([text, self._create_html_list('Subscriber:', topic.subscriberNodes)])
-      text = ''.join([text, '<b><u>Type:</u></b> ', str(topic.type)])
+      text = ''.join([text, '<b><u>Type:</u></b> ', str(self._href_from_msgtype(topic.type))])
       text = ''.join([text, '<dl>'])
       try:
         mclass = roslib.message.get_message_class(topic.type)
@@ -905,6 +905,12 @@ class MasterViewProxy(QtGui.QWidget):
         pass
       text = ''.join([text, '</dl>'])
       self.description_signal.emit(topic.name, ''.join(['<div>', text, '</div>']))
+  
+  def _href_from_msgtype(self, type):
+    result = type
+    if type:
+      result = ''.join(['<a href="http://ros.org/doc/api/', type.replace('/', '/html/msg/'), '.html">', type, '</a>'])
+    return result
 
   def on_service_selection_changed(self, selected, deselected):
     '''
@@ -919,7 +925,7 @@ class MasterViewProxy(QtGui.QWidget):
       text = ''.join([text, '<dl><dt><b>URI</b>: ', str(service.uri), '</dt></dl>'])
       try:
         service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
-        text = ''.join([text, '<h4>', service_class._type, '</h4>'])
+        text = ''.join([text, '<h4>', self._href_from_svrtype(service_class._type), '</h4>'])
         text = ''.join([text, '<b><u>', 'Request', ':</u></b>'])
         text = ''.join([text, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
   
@@ -928,6 +934,12 @@ class MasterViewProxy(QtGui.QWidget):
       except:
         pass
       self.description_signal.emit(service.name, ''.join(['<div>', text, '</div>']))
+
+  def _href_from_svrtype(self, type):
+    result = type
+    if type:
+      result = ''.join(['<a href="http://ros.org/doc/api/', type.replace('/', '/html/srv/'), '.html">', type, '</a>'])
+    return result
 
   def on_parameter_selection_changed(self, selected, deselected):
     selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())

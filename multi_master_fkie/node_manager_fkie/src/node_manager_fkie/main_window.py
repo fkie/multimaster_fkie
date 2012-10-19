@@ -163,7 +163,12 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.capabilities_tab.layout().addWidget(self.capabilitiesTable)
     
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.descriptionDock)
+    self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.helpDock)
     self.ui.launchDock.raise_()
+    self.ui.helpDock.setWindowIcon(QtGui.QIcon(':icons/crystal_clear_helpcenter.png'))
+    
+    flags = self.windowFlags()
+    self.setWindowFlags(flags | QtCore.Qt.WindowContextHelpButtonHint)
     
     self.default_load_launch = os.path.abspath(args[1]) if len(args) >= 2 else ''
     if self.default_load_launch:
@@ -194,6 +199,17 @@ class MainWindow(QtGui.QMainWindow):
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
     self._refresh_time = time.time()
+    
+    # set the help text
+    try:
+      from docutils import examples
+      with file(nm.HELP_FILE) as f:
+        self.ui.textBrowser.setText(examples.html_body(unicode(f.read())))
+    except:
+      import traceback
+      msg = ''.join(["Error while generate help: ", str(traceback.format_exc())])
+      rospy.logwarn(msg)
+      self.ui.textBrowser.setText(msg)
 
   def createSlider(self):
     slider = QtGui.QSlider()
