@@ -98,7 +98,7 @@ class History(QtCore.QObject):
     @return: the dictionary with arguments
     @rtype: C{dict(str(name):[str(value), ...], ...)}
     '''
-    return list(self.ARG_CACHE)
+    return dict(self.ARG_CACHE)
 
   def addToArgHistory(self, key, value):
     '''

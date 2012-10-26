@@ -877,9 +877,12 @@ class MainWindow(QtGui.QMainWindow):
         args.append(''.join(['_launch_file:="', os.path.basename(path), '"']))
         nm.starter().runNodeWithoutConfig(nm.nameres().getHost(masteruri=master_proxy.masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().getHost(masteruri=master_proxy.masteruri)), '/default_cfg']), args)
       else:
-        master_proxy.launchfiles = path
-        # update the duplicate nodes
-        self.updateDuplicateNodes()
+        try:
+          master_proxy.launchfiles = path
+          # update the duplicate nodes
+          self.updateDuplicateNodes()
+        except Exception, e:
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", path, str(e)).exec_()
       self.ui.xmlFileView.setEnabled(True)
       self.setCursor(cursor)
     else:
