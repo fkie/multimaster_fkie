@@ -31,9 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import shlex
-import subprocess
-
 import rospy
 
 class ScreenHandlerException(Exception):

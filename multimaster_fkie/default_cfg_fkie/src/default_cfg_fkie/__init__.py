@@ -75,9 +75,9 @@ def main():
   '''
   Creates and runs the ROS node
   '''
-  setTerminalName(NODE_NAME)
-  setProcessName(NODE_NAME)
   rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
   launch_file = rospy.get_param('~launch_file', '')
   package = rospy.get_param('~package', '')
   argv = rospy.get_param('~argv', '')

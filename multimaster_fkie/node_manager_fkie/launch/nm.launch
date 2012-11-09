@@ -1,4 +1,5 @@
 <launch>
   <node launch-prefix="screen -dmS _master_discovery" name="master_discovery" pkg="master_discovery_fkie" type="master_discovery" />
   <node launch-prefix="/usr/bin/screen -dmS _node_manager" name="node_manager" cwd="ROS_HOME" pkg="node_manager_fkie" type="nm" output="screen"/>
+  <node ns="tiderko" launch-prefix="/usr/bin/screen -dmS _node_manager" name="default_cfg" cwd="ROS_HOME" pkg="default_cfg_fkie" type="nm" output="screen"/>
 </launch>

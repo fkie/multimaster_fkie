@@ -77,9 +77,9 @@ def main():
   Creates and runs the ROS node using multicast messages for discovering
   '''
   import master_discovery
-  setTerminalName(NODE_NAME)
-  setProcessName(NODE_NAME)
   rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
   mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
   mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
   rpc_port = rospy.get_param('~rpc_port', RPC_PORT)
@@ -92,9 +92,9 @@ def main_zeroconf():
   Creates and runs the ROS node using zeroconf/avahi for discovering
   '''
   import zeroconf
-  setTerminalName(NODE_NAME)
-  setProcessName(NODE_NAME)
   rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
   rpc_port = rospy.get_param('~rpc_port', RPC_PORT)
   discoverer = zeroconf.Discoverer(rpc_port)
   discoverer.start()

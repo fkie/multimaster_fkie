@@ -276,21 +276,35 @@ class MasterMonitor(object):
       now = time.time()
       threads = []
       try:
-  #      import os
-  #      cputimes = os.times()
-  #      cputime_init = cputimes[0] + cputimes[1]
+#        import os                                ###################
+#        cputimes = os.times()                    ###################
+#        cputime_init = cputimes[0] + cputimes[1] ###################
         self._lock.acquire(True)
         socket.setdefaulttimeout(5)
+#        cputimes2 = os.times()                    ###################
+#        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
         self.__new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
         master = xmlrpclib.ServerProxy(self.getMasteruri())
         # get topic types
         code, message, topicTypes = master.getTopicTypes(self.ros_node_name)
+#        cputimes2 = os.times()                                            ###################
+#        print "Get types: ", (cputimes2[0] + cputimes2[1] - cputime_init2) ###################
+#        cputimes2 = os.times()                    ###################
+#        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
         #convert topicType list to the dict
         topicTypesDict = {}
         for topic, type in topicTypes:
           topicTypesDict[topic] = type
+#        cputimes2 = os.times()                                            ###################
+#        print "Set types: ", (cputimes2[0] + cputimes2[1] - cputime_init2) ###################
+#        cputimes2 = os.times()                    ###################
+#        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
         # get system state
         code, message, state = master.getSystemState(self.ros_node_name)
+#        cputimes2 = os.times()                                            ###################
+#        print "Get state: ", (cputimes2[0] + cputimes2[1] - cputime_init2) ###################
+#        cputimes2 = os.times()                    ###################
+#        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
 
         # add published topics
         for t, l in state[0]:
@@ -300,6 +314,10 @@ class MasterMonitor(object):
             master_state.getNode(n).publishedTopics = t
             master_state.getTopic(t).publisherNodes = n
             master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
+#        cputimes2 = os.times()                                            ###################
+#        print "read pub topics: ", (cputimes2[0] + cputimes2[1] - cputime_init2) ###################
+#        cputimes2 = os.times()                    ###################
+#        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
         # add subscribed topics
         for t, l in state[1]:
           master_state.topics = t
@@ -308,12 +326,16 @@ class MasterMonitor(object):
             master_state.getNode(n).subscribedTopics = t
             master_state.getTopic(t).subscriberNodes = n
             master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
-  #      cputimes = os.times()
-  #      print "Auswertung: ", (cputimes[0] + cputimes[1] - cputime_init)
+#        cputimes2 = os.times()                                            ###################
+#        print "read sub topics: ", (cputimes2[0] + cputimes2[1] - cputime_init2) ###################
+#        cputimes2 = os.times()                    ###################
+#        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
+#        cputimes = os.times()                                            ###################
+#        print "Auswertung: ", (cputimes[0] + cputimes[1] - cputime_init) ###################
   
         # add services
-  #      cputimes = os.times()
-  #      cputime_init = cputimes[0] + cputimes[1]
+#        cputimes = os.times()                    ###################
+#        cputime_init = cputimes[0] + cputimes[1] ###################
   
         services = dict()
         tmp_slist = []
@@ -367,8 +389,9 @@ class MasterMonitor(object):
           import traceback
           traceback.print_exc()
   
-  #      cputimes = os.times()
-  #      print "Nodes+Services:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(nodes)
+#        cputimes = os.times() ###################
+#        print "Nodes+Services:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(nodes) ###################
+
         if nodes:
           # get process id of the nodes
           pidThread = threading.Thread(target = self._getNodePid, args=((nodes,)))
@@ -395,7 +418,11 @@ class MasterMonitor(object):
       finally:
         self._lock.release()
         socket.setdefaulttimeout(None)
-  
+
+#      cputimes = os.times()                    ###################
+#      cputime_init = cputimes[0] + cputimes[1] ###################
+      
+#      print "threads:", len(threads)
       # wait for all threads are finished 
       while threads:
         th = threads.pop()
@@ -404,6 +431,8 @@ class MasterMonitor(object):
           th.join()
   #        print "release"
         del th
+#      cputimes = os.times() ###################
+#      print "Threads:", (cputimes[0] + cputimes[1] - cputime_init) ###################
   #    print "state update of ros master", self.__masteruri, " finished"
 #      return MasterInfo.from_list(master_state.listedState())
       return master_state

@@ -127,7 +127,7 @@ class DefaultCfg(object):
         if param.endswith('robots'):
           if isinstance(p.value, list):
             if len(p.value) > 0 and len(p.value[0]) != 5:
-              print "WRONG format -> ignore", param
+              print "WRONG format, expected: ['host', 'type', 'name', 'images', 'description']  -> ignore", param
             else:
               for entry in p.value:
                 try:
@@ -202,7 +202,7 @@ class DefaultCfg(object):
         if param.endswith('capabilities'):
           if isinstance(p.value, list):
             if len(p.value) > 0 and len(p.value[0]) != 4:
-              print "WRONG format -> ignore", param
+              print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
             else:
               ns = str(roslib.names.namespace(param))
               for m in self.roscfg.machines.keys():
