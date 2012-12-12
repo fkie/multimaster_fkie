@@ -156,7 +156,8 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
     master.getUri('remote_nm')
   except:
     # run a roscore
-    rospy.logwarn("no master found, starting new one")
+    # at this time roscore is available to handle the warning message :/
+#    rospy.logwarn("no master found, starting new one")
     from urlparse import urlparse
     master_port = str(urlparse(masteruri).port)
     new_env = dict(os.environ)
@@ -198,7 +199,7 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
     elif arg_cwd == 'node':
       cwd = os.path.dirname(cmd[0])
   # set the masteruri to launch with other one master
-  new_env = dirt(os.environ)
+  new_env = dict(os.environ)
   new_env['ROS_MASTER_URI'] = masteruri
   subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
   
