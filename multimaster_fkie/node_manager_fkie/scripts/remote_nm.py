@@ -7,6 +7,7 @@ import shlex, subprocess
 import time
 import xmlrpclib
 import roslib; roslib.load_manifest('node_manager_fkie')
+import rospy
 import node_manager_fkie as nm
 
 
@@ -47,7 +48,8 @@ def parse_options(args):
             'package' : '',
             'prefix' : '',
             'pidkill' : '',
-            'node_respawn' : ''}
+            'node_respawn' : '',
+            'masteruri' : ''}
   options = [''.join(['--', v]) for v in result.keys()]
   argv = []
   arg_added = False
@@ -111,7 +113,7 @@ def main(argv=sys.argv):
         if os.path.isfile(roslog):
           os.remove(roslog)
       elif options['node_type'] and options['package'] and options['node_name']:
-        runNode(options['package'], options['node_type'], options['node_name'], args, options['prefix'], options['node_respawn'])
+        runNode(options['package'], options['node_type'], options['node_name'], args, options['prefix'], options['node_respawn'], options['masteruri'])
       elif options['pidkill']:
         import signal
         os.kill(int(options['pidkill']), signal.SIGKILL)
@@ -123,24 +125,50 @@ def main(argv=sys.argv):
   except Exception, e:
     print >> sys.stderr, e
 
-def runNode(package, type, name, args, prefix='', repawn=False):
+def _masteruri_from_ros(self):
+  '''
+  Returns the master URI depending on ROS distribution API.
+  @return: ROS master URI
+  @rtype C{str}
+  '''
+  try:
+    import rospkg.distro
+    distro = rospkg.distro.current_distro_codename()
+    if distro in ['electric', 'diamondback', 'cturtle']:
+      return roslib.rosenv.get_master_uri()
+    else:
+      import rosgraph
+      return rosgraph.rosenv.get_master_uri()
+  except:
+    import os
+    return os.environ['ROS_MASTER_URI']
+
+
+def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
   '''
   Runs a ROS node. Starts a roscore if needed.
   '''
+  if not masteruri: 
+    masteruri = _masteruri_from_ros()
   #start roscore, if needed
   try:
-    master = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
+    master = xmlrpclib.ServerProxy(masteruri)
     master.getUri('remote_nm')
   except:
     # run a roscore
-    cmd_args = [nm.ScreenHandler.getSceenCmd('/roscore'), 'roscore']
-    subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])))
+    rospy.logwarn("no master found, starting new one")
+    from urlparse import urlparse
+    master_port = str(urlparse(masteruri).port)
+    new_env = dict(os.environ)
+    new_env['ROS_MASTER_URI'] = masteruri
+    cmd_args = [nm.ScreenHandler.getSceenCmd(''.join(['/roscore', '--', master_port])), 'roscore', '--port', master_port]
+    subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])), env=new_env)
     # wait for roscore to avoid connection problems while init_node
     result = -1
     count = 0
     while result == -1 and count < 30:
       try:
-        master = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
+        master = xmlrpclib.ServerProxy(masteruri)
         result, uri, msg = master.getUri('remote_nm')
       except:
         time.sleep(1)
@@ -169,7 +197,10 @@ def runNode(package, type, name, args, prefix='', repawn=False):
       cwd = nm.get_ros_home()
     elif arg_cwd == 'node':
       cwd = os.path.dirname(cmd[0])
-  subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd)
+  # set the masteruri to launch with other one master
+  new_env = dirt(os.environ)
+  new_env['ROS_MASTER_URI'] = masteruri
+  subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
   
 if __name__ == '__main__':
   main()
