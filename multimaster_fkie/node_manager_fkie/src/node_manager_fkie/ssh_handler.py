@@ -155,7 +155,7 @@ class SSHhandler(object):
         except Exception, e:
 #          import traceback
 #          print traceback.format_exc()
-          if str(e) in ['Authentication failed.', 'No authentication methods available']:
+          if str(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
             res, user, pw = self._requestPW(user, host)
             if not res:
               return None
