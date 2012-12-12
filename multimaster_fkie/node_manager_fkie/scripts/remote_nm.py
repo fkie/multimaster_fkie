@@ -125,7 +125,7 @@ def main(argv=sys.argv):
   except Exception, e:
     print >> sys.stderr, e
 
-def _masteruri_from_ros(self):
+def _masteruri_from_ros():
   '''
   Returns the master URI depending on ROS distribution API.
   @return: ROS master URI
