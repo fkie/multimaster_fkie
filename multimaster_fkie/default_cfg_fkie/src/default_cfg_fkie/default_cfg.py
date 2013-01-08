@@ -127,11 +127,12 @@ class DefaultCfg(object):
         if param.endswith('robots'):
           if isinstance(p.value, list):
             if len(p.value) > 0 and len(p.value[0]) != 5:
-              print "WRONG format, expected: ['host', 'type', 'name', 'images', 'description']  -> ignore", param
+              print "WRONG format, expected: ['host(ROS master Name)', 'type', 'name', 'images', 'description']  -> ignore", param
             else:
               for entry in p.value:
                 try:
-                  if roslib.network.is_local_address(entry[0]):
+                  print entry[0], rospy.get_param('/mastername', '')
+                  if not entry[0] or entry[0] == rospy.get_param('/mastername', ''):
                     dr.robot_name = self._decode(entry[2])
                     dr.robot_type = entry[1]
                     dr.robot_images = entry[3].split()

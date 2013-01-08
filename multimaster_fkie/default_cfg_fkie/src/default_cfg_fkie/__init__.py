@@ -80,11 +80,9 @@ def main():
   setProcessName(rospy.get_name())
   launch_file = rospy.get_param('~launch_file', '')
   package = rospy.get_param('~package', '')
-  argv = rospy.get_param('~argv', '')
   default_cfg = DefaultCfg()
-#  try:
   try:
-    default_cfg.load(package, launch_file, argv)
+    default_cfg.load(package, launch_file, sys.argv)
   except:
     # on load error the process will be killed to notify user in node_manager
     # about error
