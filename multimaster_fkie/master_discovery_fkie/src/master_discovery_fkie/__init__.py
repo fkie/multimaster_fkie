@@ -43,10 +43,21 @@ import sys
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
+from master_monitor import MasterMonitor
+
 MCAST_GROUP = "226.0.0.0" # ipv6 multicast group ff02::1
 MCAST_PORT = 11511
-RPC_PORT = 11611
-NODE_NAME = "master_discovery"
+
+def getDefaultRPCPort(zeroconf=False):
+  try:
+    masteruri = MasterMonitor._masteruri_from_ros()
+    rospy.loginfo("ROS Master URI: %s", masteruri)
+    from urlparse import urlparse
+    return urlparse(masteruri).port+(600 if zeroconf else 300) 
+  except:
+    import traceback
+    print traceback.format_exc()
+    return 11911 if zeroconf else 11611
 
 def setTerminalName(name):
   '''
@@ -77,12 +88,12 @@ def main():
   Creates and runs the ROS node using multicast messages for discovering
   '''
   import master_discovery
-  rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  rospy.init_node("master_discovery", log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
   mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
   mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
-  rpc_port = rospy.get_param('~rpc_port', RPC_PORT)
+  rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort())
   discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
   discoverer.start()
   rospy.spin()
@@ -92,10 +103,10 @@ def main_zeroconf():
   Creates and runs the ROS node using zeroconf/avahi for discovering
   '''
   import zeroconf
-  rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  rospy.init_node("zeroconf", log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
-  rpc_port = rospy.get_param('~rpc_port', RPC_PORT)
+  rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort(True))
   discoverer = zeroconf.Discoverer(rpc_port)
   discoverer.start()
   rospy.spin()

@@ -34,6 +34,7 @@
 import time
 import threading
 import xmlrpclib
+import random
 
 import roslib; roslib.load_manifest('master_sync_fkie')
 import roslib.message
@@ -89,6 +90,7 @@ class SyncThread(threading.Thread):
     # init thread
     threading.Thread.__init__(self)
     self.masterInfo = MasterInfo(name, uri, discoverer_name, monitoruri, timestamp)
+    self.localMasteruri = self._masteruri_from_ros()
     # synchronization variables 
     self.__cv = threading.Condition()
     self.__stop = False
@@ -104,6 +106,39 @@ class SyncThread(threading.Thread):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_nodes')
     self.start()
 
+  @classmethod
+  def _masteruri_from_ros(cls):
+    '''
+    Returns the master URI depending on ROS distribution API.
+    @return: ROS master URI
+    @rtype C{str}
+    '''
+    try:
+      import rospkg.distro
+      distro = rospkg.distro.current_distro_codename()
+      if distro in ['electric', 'diamondback', 'cturtle']:
+        return roslib.rosenv.get_master_uri()
+      else:
+        import rosgraph
+        return rosgraph.rosenv.get_master_uri()
+    except:
+      import os
+      return os.environ['ROS_MASTER_URI']
+
+  def getSyncInfo(self):
+    if self.__cv.acquire(blocking=True):
+      result_set = set()
+      result_service_set = set()
+      for (t_n, n_n, n_uri) in self.__publishers.keys():
+        result_set.add(n_n)
+      for (t_n, n_n, n_uri) in self.__subscribers.keys():
+        result_set.add(n_n)
+      for (s_n, s_uri, n_n, n_uri) in self.__services.keys():
+        result_set.add(n_n)
+        result_service_set.add(s_n)
+      self.__cv.release()
+      return list(result_set), list(result_service_set)
+    return [], []
 
   def update(self, name, uri, discoverer_name, monitoruri, timestamp):
     '''
@@ -154,13 +189,14 @@ class SyncThread(threading.Thread):
       self.__cv.acquire()
       ''' wait for new sync update '''
       rospy.logdebug("SyncThread[%s]: run waiting timestamp(%s), syncts(%s)", self.masterInfo.name, str(self.masterInfo.timestamp), str(self.masterInfo.syncts))
-      if not (self.masterInfo.syncts == 0.0):
+      if not (self.masterInfo.syncts == 0.0) and self.masterInfo.lastsync != 0.0:
         self.__cv.wait()
       rospy.logdebug("SyncThread[%s]: run notify received", self.masterInfo.name)
       if (not self.__stop):
         rospy.logdebug("SyncThread[%s]: run sync", self.masterInfo.name)
         ''' try to sync ''' 
         try:
+#          print "run sync", self.masterInfo.uri
           # initialize the lists to update topics
           for key in self.__publishers.keys():
             self.__publishers[key] = False
@@ -168,7 +204,8 @@ class SyncThread(threading.Thread):
             self.__subscribers[key] = False
           for key in self.__services.keys():
             self.__services[key] = False
-            
+          
+          time.sleep(random.random())
           #coonect to master_monitor rpc-xml server
           remote_monitor = xmlrpclib.ServerProxy(self.masterInfo.monitoruri)
           remote_state = remote_monitor.masterInfo()
@@ -220,7 +257,7 @@ class SyncThread(threading.Thread):
             for node in nodes:
               serviceuri = self._getServiceUri(service, serviceProviders)
               nodeuri = self._getNodeUri(node, nodeProviders)
-              if serviceuri and (not self._doIgnore(node)):
+              if serviceuri and nodeuri and (not self._doIgnore(node)):
                 # register the node as publisher in local ROS master
                 if not ((service, serviceuri, node, nodeuri) in self.__services):
                   self.__registerService(service, serviceuri, node, nodeuri)
@@ -264,15 +301,18 @@ class SyncThread(threading.Thread):
     return None
 
   def _getNodeUri(self, node, nodes):
-    for (nodename, uri, pid, local) in nodes:
+    for (nodename, uri, masteruri, pid, local) in nodes:
       if (nodename == node) and local == 'local':
-        return uri
+        # the node was registered originally to another ROS master -> do sync
+        if  masteruri != self.localMasteruri:
+          return uri
     return None
 
   def _getServiceUri(self, service, nodes):
-    for (servicename, uri, type, local) in nodes:
+    for (servicename, uri, masteruri, type, local) in nodes:
       if (servicename == service) and local == 'local':
-        return uri
+        if  masteruri != self.localMasteruri:
+          return uri
     return None
 
   def __registerPublisher(self, topic, type, node, nodeuri):

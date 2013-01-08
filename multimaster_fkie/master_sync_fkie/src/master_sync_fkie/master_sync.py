@@ -70,6 +70,9 @@ class Main(object):
       rospy.loginfo("listen for updates on %s", topic_name)
       self.sub_changes[topic_name] = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
     rospy.on_shutdown(self.finish)
+    # initialize the ROS services
+    rospy.Service('~get_sync_info', GetSyncInfo, self.rosservice_get_sync_info)
+
     self.update_timer = None
     self.retrieveMasters()
 
@@ -222,3 +225,20 @@ class Main(object):
       for key, item in self.sub_changes.items():
         item.unregister()
     self.__lock.release()
+    
+  def rosservice_get_sync_info(self, req):
+    '''
+    Callback for the ROS service to get the info to synchronized nodes.
+    '''
+    masters = list()
+    self.__lock.acquire()
+    try:
+      for (mastername, s) in self.masters.iteritems():
+        (nodes, service) = s.getSyncInfo()
+        masters.append(SyncMasterInfo(s.masterInfo.uri, nodes, service))
+    except:
+      import traceback
+      traceback.print_exc()
+    finally:
+      self.__lock.release()
+      return GetSyncInfoResponse(masters)

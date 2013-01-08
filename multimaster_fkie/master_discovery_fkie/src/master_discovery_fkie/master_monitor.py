@@ -44,6 +44,8 @@ import roslib.network
 import rospy
 import rosnode
 
+from master_discovery_fkie.msg import *
+from master_discovery_fkie.srv import *
 from master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
 import interface_finder
 
@@ -91,6 +93,9 @@ class MasterMonitor(object):
     self.ros_node_name = str(rospy.get_name())
     if rospy.has_param('~name'):
       self.__mastername = rospy.get_param('~name')
+    self.__mastername = self.getMastername()
+    rospy.set_param('/mastername', self.__mastername)
+
 
     self.__master_state = None
     '''@ivar: the current state of the ROS master'''
@@ -117,7 +122,8 @@ class MasterMonitor(object):
         import traceback
         print traceback.format_exc()
 
-  def _masteruri_from_ros(self):
+  @classmethod
+  def _masteruri_from_ros(cls):
     '''
     Returns the master URI depending on ROS distribution API.
     @return: ROS master URI
@@ -132,7 +138,8 @@ class MasterMonitor(object):
         import rosgraph
         return rosgraph.rosenv.get_master_uri()
     except:
-      return roslib.rosenv.get_master_uri()
+      import os
+      return os.environ['ROS_MASTER_URI']
 
   def shutdown(self):
     '''
@@ -388,7 +395,6 @@ class MasterMonitor(object):
         except:
           import traceback
           traceback.print_exc()
-  
 #        cputimes = os.times() ###################
 #        print "Nodes+Services:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(nodes) ###################
 
@@ -437,6 +443,46 @@ class MasterMonitor(object):
 #      return MasterInfo.from_list(master_state.listedState())
       return master_state
   
+  def updateSyncInfo(self):
+    '''
+    This method can be called to update the origin ROS master URI of the nodes
+    and services in new master_state. This is only need, if a synchronization is 
+    running. The synchronization service will be detect automatically by searching
+    for the service ending with C{get_sync_info}. The method will be called by 
+    C{checkState()}.
+    '''
+    with self._create_access_lock:
+      master_state = self.__new_master_state
+      sync_info = None
+      # get synchronization info, if sync node is running
+      # to determine the origin ROS MASTER URI of the nodes
+      for name, service in master_state.services.items():
+        if service.name.endswith('get_sync_info'):
+          if interface_finder.hostFromUri(self.getMasteruri()) == interface_finder.hostFromUri(service.uri):
+            socket.setdefaulttimeout(2)
+            get_sync_info = rospy.ServiceProxy(service.name, GetSyncInfo)
+            try:
+              sync_info = get_sync_info()
+            except rospy.ServiceException, e:
+              rospy.logwarn("ERROR Service call 'get_sync_info' failed: %s", str(e))
+            finally:
+              socket.setdefaulttimeout(None)
+
+      #update the origin ROS MASTER URI of the nodes, if sync node is running
+      if sync_info:
+        for m in sync_info.hosts:
+          for n in m.nodes:
+            try:
+              master_state.getNode(n).masteruri = m.masteruri
+            except:
+              pass
+          for s in m.services:
+            try:
+              master_state.getService(s).masteruri = m.masteruri
+            except:
+              pass
+
+    
   def getMasteruri(self):
     '''
     Requests the ROS master URI from the ROS master through the RPC interface and 
@@ -460,6 +506,13 @@ class MasterMonitor(object):
     if self.__mastername is None:
       try:
         self.__mastername = interface_finder.hostFromUri(self.getMasteruri())
+        try:
+          from urlparse import urlparse
+          master_port = urlparse(self.__masteruri).port
+          if master_port != 11311:
+            self.__mastername = '--'.join([self.__mastername, str(master_port)])
+        except:
+          pass
       except:
         pass
     return self.__mastername
@@ -487,6 +540,7 @@ class MasterMonitor(object):
     with self._create_access_lock:
       with self._state_access_lock:
         if s != self.__master_state:
+          self.updateSyncInfo()
           self.__master_state = self.__new_master_state
           result = True
         self.__master_state.check_ts = self.__new_master_state.timestamp

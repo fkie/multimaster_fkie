@@ -209,8 +209,8 @@ class Discoverer(threading.Thread):
   (Default: 5 sec are used to determine the link qaulity)'''
   TIMEOUT_FACTOR = 1.4
   ''' @ivar: the timeout is defined by calculated measurement duration multiplied by TIMEOUT_FAKTOR. ''' 
-  ROSMASTER_HZ = 2
-  ''' @ivar: the test rate of ROS master state in Hz (Deafult: 2 Hz). '''
+  ROSMASTER_HZ = 1
+  ''' @ivar: the test rate of ROS master state in Hz (Default: 1 Hz). '''
   REMOVE_AFTER = 300
   ''' @ivar: remove an offline host after this time in [sec] (Default: 300 sec). '''
   
@@ -398,11 +398,12 @@ class Discoverer(threading.Thread):
           (version, msg_tuple) = self.msg2masterState(msg)
           if (version == Discoverer.VERSION):
             (r, version, rate, secs, nsecs, monitor_port) = msg_tuple
+            master_key = (address, monitor_port)
             # remove master if sec and nsec are -1
             if secs == -1:
               self.__lock.acquire(True)
-              if self.masters.has_key(address[0]):
-                master = self.masters[address[0]]
+              if self.masters.has_key(master_key):
+                master = self.masters[master_key]
                 if not master.mastername is None:
                   self.publish_masterstate(MasterState(MasterState.STATE_REMOVED, 
                                                  ROSMaster(str(master.mastername), 
@@ -411,18 +412,18 @@ class Discoverer(threading.Thread):
                                                            False, 
                                                            master.discoverername, 
                                                            master.monitoruri)))
-                del self.masters[address[0]]
+                del self.masters[master_key]
               self.__lock.release()
             # update the timestamp of existing master
-            elif self.masters.has_key(address[0]):
+            elif self.masters.has_key(master_key):
               self.__lock.acquire(True)
-              self.masters[address[0]].addHeartbeat(float(secs)+float(nsecs)/1000000000.0, float(rate)/10.0)
+              self.masters[master_key].addHeartbeat(float(secs)+float(nsecs)/1000000000.0, float(rate)/10.0)
               self.__lock.release()
             # or create a new master
             else:
 #                print "create new masterstate", ''.join(['http://', address[0],':',str(monitor_port)])
               self.__lock.acquire(True)
-              self.masters[address[0]] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
+              self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                           heartbeat_rate=float(rate)/10.0,
                                                           timestamp=float(secs)+float(nsecs)/1000000000.0,
                                                           callback_master_state=self.publish_masterstate)

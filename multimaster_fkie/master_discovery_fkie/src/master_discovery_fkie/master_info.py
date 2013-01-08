@@ -35,7 +35,6 @@ import time
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
-
 class NodeInfo(object):
   '''
   The NodeInfo class stores informations about a ROS node.
@@ -52,6 +51,7 @@ class NodeInfo(object):
     '''
     self.__name = name
     self.__masteruri = masteruri
+    self.__org_masteruri = masteruri
     self.__uri = None
     self.pid = None
     '''@ivar: the process id of the node. Invalid id has a C{None} value'''
@@ -82,15 +82,7 @@ class NodeInfo(object):
     Sets the URI of the RPC API of the node.
     '''
     self.__uri = uri
-    if not self.__masteruri is None:
-      from urlparse import urlparse
-      om = urlparse(self.__masteruri)
-      on = urlparse(uri if not uri is None else '')
-      self.__local = False
-      try:
-        self.__local = (om.hostname == on.hostname)
-      except:
-        pass
+    self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
 
   @property
   def masteruri(self):
@@ -98,7 +90,15 @@ class NodeInfo(object):
     Returns the URI of the ROS master where the node is registered.
     @rtype: C{str}
     '''
-    return self.__masteruri
+    return self.__org_masteruri
+
+  @masteruri.setter
+  def masteruri(self, uri):
+    '''
+    Sets the ROS master URI.
+    '''
+    self.__org_masteruri = uri
+    self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
 
   @property
   def isLocal(self):
@@ -203,6 +203,21 @@ class NodeInfo(object):
     result._publishedTopics = list(self._publishedTopics)
     result._subscribedTopics = list(self._subscribedTopics)
     result._services = list(self._services)
+    return result
+
+  @staticmethod
+  def local_(masteruri, org_masteruri, uri):
+    result = False
+    try:
+      from urlparse import urlparse
+      om = urlparse(masteruri)
+      on = urlparse(uri)
+      try:
+        result = (om.hostname == on.hostname) and (masteruri == org_masteruri)
+      except:
+        pass
+    except:
+      pass
     return result
 
 
@@ -310,6 +325,7 @@ class ServiceInfo(object):
     '''
     self.__name = name
     self.__masteruri = masteruri
+    self.__org_masteruri = masteruri
     self.__uri = None
     self.__local = False
     self.type = None
@@ -343,15 +359,27 @@ class ServiceInfo(object):
     @type uri: C{str}
     '''
     self.__uri = uri
-    from urlparse import urlparse
-    om = urlparse(self.__masteruri)
-    os = urlparse(uri) if not uri is None else None
-    self.__local = False
-    try:
-      self.__local = (om.hostname == os.hostname)
-    except:
-      pass
-    
+    self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+
+  @property
+  def masteruri(self):
+    '''
+    Returns the URI of the ROS master of the service
+    @rtype: C{str}
+    '''
+    return self.__org_masteruri
+  
+  @masteruri.setter
+  def masteruri(self, uri):
+    '''
+    Sets the uri of the origin ROS master and determine whether this service
+    and the ROS master are running on the same machine.
+    @param uri: The URI of the ROS master
+    @type uri: C{str}
+    '''
+    self.__org_masteruri = uri
+    self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+
   @property
   def isLocal(self):
     '''
@@ -524,14 +552,16 @@ class MasterInfo(object):
       result.topics = topic
       result.getTopic(topic).type = type
     # set the node informations
-    for nodename, uri, pid, local in nodes:
+    for nodename, uri, masteruri, pid, local in nodes:
       result.nodes = nodename
       result.getNode(nodename).uri = uri
+      result.getNode(nodename).masteruri = masteruri
       result.getNode(nodename).pid = pid
     # set the service informations
-    for servicename, uri, type, local in serviceProvider:
+    for servicename, uri, masteruri, type, local in serviceProvider:
       result.services = servicename
       result.getService(servicename).uri = uri
+      result.getService(servicename).masteruri = masteruri
       result.getService(servicename).type = type
     return result
 
@@ -798,11 +828,11 @@ class MasterInfo(object):
                
                - C{nodes} is a list of (the pid of remote Nodes will not be resolved)
                  
-                 C{[nodename, XML-RPC URI, pid, E{lb} local, remote E{rb}]}
+                 C{[nodename, XML-RPC URI, origin ROS_MASTER_URI, pid, E{lb} local, remote E{rb}]}
                
                - C{serviceProvider} is a list of (the type, serviceClass and args of remote Services will not be resolved)
                  
-                 C{[service, XML-RPC URI, type, E{lb} local, remote E{rb}]}
+                 C{[service, XML-RPC URI, origin ROS_MASTER_URI, type, E{lb} local, remote E{rb}]}
                
     @rtype: C{(float, 
                str,
@@ -811,8 +841,8 @@ class MasterInfo(object):
                [ [str,[str] ] ], 
                [ [str,[str] ] ], 
                [ [str,str] ], 
-               [ [str,str,int,str] ], 
-               [ [str,str,str,str] ])}
+               [ [str,str,str,int,str] ], 
+               [ [str,str,str,str,str] ])}
     '''
     stamp = str(self.timestamp)
     publishers = []
@@ -831,9 +861,9 @@ class MasterInfo(object):
       topicTypes.append((name, topic.type))
     for name, service in self.services.items():
       services.append((name, service.serviceProvider))
-      serviceProvider.append((name, service.uri, service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
+      serviceProvider.append((name, service.uri, str(service.masteruri), service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
     for name, node in self.nodes.items():
-      nodes.append((name, node.uri, node.pid, 'local' if node.isLocal else 'remote'))
+      nodes.append((name, node.uri, str(node.masteruri), node.pid, 'local' if node.isLocal else 'remote'))
 
     return (stamp, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
   
