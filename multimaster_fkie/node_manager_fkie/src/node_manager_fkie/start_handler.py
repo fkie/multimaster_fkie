@@ -33,6 +33,7 @@
 import os, shlex, subprocess
 import socket
 import types
+import time
 
 import roslib
 import rospy
@@ -56,7 +57,7 @@ class StartHandler(object):
     pass
   
   @classmethod
-  def runNode(cls, node, launch_config, force2host=None):
+  def runNode(cls, node, launch_config, force2host=None, masteruri=None):
     '''
     Start the node with given name from the given configuration.
     @param node: the name of the node (with name space)
@@ -65,6 +66,8 @@ class StartHandler(object):
     @type launch_config: L{LaunchConfig} 
     @param force2host: start the node on given host.
     @type force2host: L{str} 
+    @param masteruri: force the masteruri.
+    @type masteruri: L{str} 
     @raise StartException: if the screen is not available on host.
     @raise Exception: on errors while resolving host
     @see: L{node_manager_fkie.is_local()}
@@ -96,7 +99,8 @@ class StartHandler(object):
     if not force2host is None:
       host = force2host
 
-    masteruri = nm.nameres().getUri(host=host)
+    if masteruri is None:
+      masteruri = nm.nameres().masteruri(n.machine_name)
     # set the ROS_MASTER_URI
     if masteruri is None:
       masteruri = nm.masteruri_from_ros()
@@ -163,13 +167,19 @@ class StartHandler(object):
           cwd = os.path.dirname(cmd_type)
 #      else:
 #        cwd = LaunchConfig.packageName(os.path.dirname(cmd_type))
+      cls._prepareROSMaster(masteruri)
       node_cmd = [nm.RESPAWN_SCRIPT if n.respawn else '', prefix, cmd_type]
       cmd_args = [nm.screen().getSceenCmd(node)]
       cmd_args[len(cmd_args):] = node_cmd
       cmd_args.append(str(n.args))
       cmd_args[len(cmd_args):] = args
       rospy.loginfo("RUN: %s", ' '.join(cmd_args))
-      ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd)
+      if not masteruri is None:
+        new_env=dict(os.environ)
+        new_env['ROS_MASTER_URI'] = masteruri
+        ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
+      else:
+        ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
@@ -194,6 +204,9 @@ class StartHandler(object):
                   '--node_type', str(n.type),
                   '--node_name', str(node),
                   '--node_respawn true' if n.respawn else '']
+      if not masteruri is None:
+        startcmd.append('--masteruri')
+        startcmd.append(masteruri)
       if prefix:
         startcmd[len(startcmd):] = ['--prefix', prefix]
       
@@ -264,7 +277,7 @@ class StartHandler(object):
       param_server_multi = xmlrpclib.MultiCall(param_server)
       for p in params.itervalues():
         # suppressing this as it causes too much spam
-        value, is_abs_path, found, package = cls._resolve_abs_paths(p.value, nm.nameres().getHost(masteruri=masteruri))
+        value, is_abs_path, found, package = cls._resolve_abs_paths(p.value, nm.nameres().address(masteruri))
         if is_abs_path:
           abs_paths.append((p.key, p.value, value))
           if not found and package:
@@ -319,7 +332,7 @@ class StartHandler(object):
       return value, False, False, ''
 
   @classmethod
-  def runNodeWithoutConfig(cls, host, package, type, name, args=[]):
+  def runNodeWithoutConfig(cls, host, package, type, name, args=[], masteruri=None):
     '''
     Start a node with using a launch configuration.
     @param host: the host or ip to run the node
@@ -336,12 +349,11 @@ class StartHandler(object):
     @see: L{node_manager_fkie.is_local()}
     '''
     # create the name with namespace
-    fullname = ''.join(['/', name])
+    args2 = list(args)
+    fullname = roslib.names.ns_join(roslib.names.SEP, name)
     for a in args:
       if a.startswith('__ns:='):
-        fullname = ''.join(['/', a.replace('__ns:=', '').strip('/ '), fullname])
-    fullname = fullname.replace('//', '/')
-    args2 = list(args)
+        fullname = roslib.names.ns_join(a.replace('__ns:=', ''), name)
     args2.append(''.join(['__name:=', name]))
     # run on local host
     if nm.is_local(host):
@@ -375,7 +387,14 @@ class StartHandler(object):
         cmd_type = cmd[0]
       cmd_str = str(' '.join([nm.screen().getSceenCmd(fullname), cmd_type, ' '.join(args2)]))
       rospy.loginfo("Run without config: %s", cmd_str)
-      ps = subprocess.Popen(shlex.split(cmd_str))
+      ps = None
+      if not masteruri is None:
+        cls._prepareROSMaster(masteruri)
+        new_env=dict(os.environ)
+        new_env['ROS_MASTER_URI'] = masteruri
+        ps = subprocess.Popen(shlex.split(cmd_str), env=new_env)
+      else:
+        ps = subprocess.Popen(shlex.split(cmd_str))
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
@@ -387,6 +406,9 @@ class StartHandler(object):
                   '--node_type', str(type),
                   '--node_name', str(fullname)]
       startcmd[len(startcmd):] = args2
+      if not masteruri is None:
+        startcmd.append('--masteruri')
+        startcmd.append(masteruri)
       rospy.loginfo("Run remote on %s: %s", host, ' '.join(startcmd))
       (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, startcmd)
       if ok:
@@ -401,6 +423,39 @@ class StartHandler(object):
         output = stdout.read()
         if output:
           rospy.logdebug("STDOUT while start '%s': %s", name, output)
+      else:
+        rospy.logwarn("ERROR while start '%s': %s", name, stderr)
+        from PySide import QtGui
+        QtGui.QMessageBox.warning(None, 'Error while remote start %s'%str(name),
+                                    str(''.join(['The host "', host, '" reports:\n', stderr])),
+                                    QtGui.QMessageBox.Ok)
+
+  @classmethod
+  def _prepareROSMaster(cls, masteruri):
+    if not masteruri: 
+      masteruri = roslib.rosenv.get_master_uri()
+    #start roscore, if needed
+    try:
+      master = xmlrpclib.ServerProxy(masteruri)
+      master.getUri(rospy.get_name())
+    except:
+      # run a roscore
+      from urlparse import urlparse
+      master_port = str(urlparse(masteruri).port)
+      new_env = dict(os.environ)
+      new_env['ROS_MASTER_URI'] = masteruri
+      cmd_args = [nm.ScreenHandler.getSceenCmd(''.join(['/roscore', '--', master_port])), 'roscore', '--port', master_port]
+      subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])), env=new_env)
+      # wait for roscore to avoid connection problems while init_node
+      result = -1
+      count = 0
+      while result == -1 and count < 2:
+        try:
+          master = xmlrpclib.ServerProxy(masteruri)
+          result, uri, msg = master.getUri(rospy.get_name())
+        except:
+          time.sleep(1)
+          count += 1
 
   def callService(self, service_uri, service, service_type, service_args=[]):
     '''

@@ -526,12 +526,20 @@ class GroupItem(QtGui.QStandardItem):
     @return: the HTML representation of the name of the group
     @rtype: C{str}
     '''
-    ns, sep, name = group_name.rpartition('/')
-    result = ''
-    if sep:
-      result = ''.join(['<div>', '<span style="color:gray;">', ns, sep, '</span><b>[', name, ']</b></div>'])
+    if group_name.rfind('@') > 0:
+      name, sep, host = group_name.rpartition('@')
+      result = ''
+      if sep:
+        result = ''.join(['<div>', name, '<span style="color:gray;">', sep, host, '</span></div>'])
+      else:
+        result = group_name
     else:
-      result = name
+      ns, sep, name = group_name.rpartition('/')
+      result = ''
+      if sep:
+        result = ''.join(['<div>', '<span style="color:gray;">', ns, sep, '</span><b>[', name, ']</b></div>'])
+      else:
+        result = name
     return result
 
   def type(self):
@@ -569,19 +577,19 @@ class HostItem(GroupItem):
   '''
   ITEM_TYPE = QtCore.Qt.UserRole + 26
   
-  def __init__(self, address, local, parent=None):
+  def __init__(self, masteruri, address, local, parent=None):
     '''
     Initialize the HostItem object with given values.
+    @param masteruri: URI of the ROS master assigned to the host
+    @type masteruri: C{str}
     @param address: the address of the host
     @type address: C{str}
     @param local: is this host the localhost where the node_manager is running.
     @type local: C{bool}
     '''
-    name = nm.nameres().getName(host=address)
-    if not name:
-      name = address
-    GroupItem.__init__(self, NodeItem.toHTML(name), parent)
-    self.address = address
+    name = self.hostNameFrom(masteruri, address)
+    GroupItem.__init__(self, name, parent)
+    self.id = (unicode(masteruri), unicode(address))
     if QtCore.QFile.exists(''.join([nm.ROBOTS_DIR, name, '.png'])):
       self.setIcon(QtGui.QIcon(''.join([nm.ROBOTS_DIR, name, '.png'])))
     else:
@@ -590,6 +598,21 @@ class HostItem(GroupItem):
       else:
         self.setIcon(QtGui.QIcon(':/icons/remote.png'))
     self.descr_type = self.descr_name = self.descr = ''
+  
+  @classmethod
+  def hostNameFrom(cls, masteruri, address):
+    '''
+    Returns the name generated from masteruri and address
+    @param masteruri: URI of the ROS master assigned to the host
+    @type masteruri: C{str}
+    @param address: the address of the host
+    @type address: C{str}
+    '''
+    name = nm.nameres().mastername(masteruri, address)
+    if not name:
+      name = address
+    return '@'.join([name, nm.nameres().hostname(address)])
+    
   
   def updateTooltip(self):
     '''
@@ -619,6 +642,8 @@ class HostItem(GroupItem):
           import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
           tooltip = ''.join([tooltip, '<br>'])
+    tooltip = ''.join([tooltip, '<h4>ROS Master URI: ', self.id[0], '</h4>'])
+    tooltip = ''.join([tooltip, '<h4>Host: ', self.id[1], '</h4>'])
     # get sensors
     capabilities = []
     for j in range(self.rowCount()):
@@ -643,9 +668,11 @@ class HostItem(GroupItem):
     Compares the address of the host.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.address.lower() == item.lower()
-    elif not (item is None):
-      return self.address.lower() == item.name.lower()
+      return str(self.id).lower() == item.lower()
+    elif isinstance(item, tuple):
+      return str(self.id).lower() == str(item).lower()
+    elif isinstance(item, HostItem):
+      return str(self.id).lower() == str(item.id).lower()
     return False
 
   def __gt__(self, item):
@@ -653,9 +680,11 @@ class HostItem(GroupItem):
     Compares the address of the host.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.address.lower() > item.lower()
-    elif not (item is None):
-      return self.address.lower() > item.name.lower()
+      return str(self.id).lower() > item.lower()
+    elif isinstance(item, tuple):
+      return str(self.id).lower() > str(item).lower()
+    elif isinstance(item, HostItem):
+      return str(self.id).lower() > str(item.id).lower()
     return False
 
 
@@ -809,8 +838,7 @@ class NodeItem(QtGui.QStandardItem):
     tooltip = ''.join(['<h4>', self.node_info.name, '</h4><dl>'])
     tooltip = ''.join([tooltip, '<dt><b>URI:</b> ', str(self.node_info.uri), '</dt>'])
     tooltip = ''.join([tooltip, '<dt><b>PID:</b> ', str(self.node_info.pid), '</dt></dl>'])
-    uri = nm.nameres().getUri(host=nm.nameres().getHostname(self.node_info.uri))
-    master_discovered = (not uri is None)
+    master_discovered = nm.nameres().hasMaster(self.node_info.masteruri)
     local = False
     if not self.node_info.uri is None and not self.node_info.masteruri is None:
       local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
@@ -1040,18 +1068,18 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
   
-  def getHostItem(self, address):
+  def getHostItem(self, masteruri, address):
     '''
     Searches for the host item in the model. If no item is found a new one will 
     created and inserted in sorted order.
-    @param address: used in case of creation a new host item 
+    @param masteruri: ROS master URI 
+    @type masteruri: C{str}
+    @param address: the address of the host 
     @type address: C{str}
     @return: the item associated with the given master
     @rtype: L{HostItem}
     '''
-    host = address
-    if not host:
-      host = self.local_addr
+    host = (unicode(masteruri), unicode(address))
     local = (self.local_addr == host)
 
     # find the host item by address
@@ -1060,11 +1088,11 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       if root.child(i) == host:
         return root.child(i)
       elif root.child(i) > host:
-        hostItem = HostItem(address, local)
+        hostItem = HostItem(masteruri, address, local)
         self.insertRow(i, hostItem)
         self.hostInserted.emit(hostItem)
         return hostItem
-    hostItem = HostItem(address, local)
+    hostItem = HostItem(masteruri, address, local)
     self.appendRow(hostItem)
     self.hostInserted.emit(hostItem)
     return hostItem
@@ -1078,30 +1106,32 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     # separate into different hosts
     hosts = dict()
     for (name, node) in nodes.items():
-      host = nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri)
+      host = (node.masteruri, nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri))
       if not hosts.has_key(host):
         hosts[host] = dict()
       hosts[host][name] = node
     # update nodes for each host
-    for (host, nodes_filtered) in hosts.items():
-      hostItem = self.getHostItem(host)
+    for ((masteruri, host), nodes_filtered) in hosts.items():
+      hostItem = self.getHostItem(masteruri, host)
       # rename the host item if needed
-      host_name = nm.nameres().getName(host=host)
-      if host_name and not (hostItem.name == host_name):
-        hostItem.name = host_name
+#      host_name = nm.nameres().getName(host=host)
+#      if host_name and not (hostItem.name == host_name):
+#        hostItem.name = host_name
       hostItem.updateRunningNodeState(nodes_filtered)
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not hosts.has_key(host.address):
+      if not hosts.has_key(host.id):
         host.updateRunningNodeState({})
     self.removeEmptyHosts()
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
 
-  def addCapabilities(self, host_address, cfg, capabilities):
+  def addCapabilities(self, masteruri, host_address, cfg, capabilities):
     '''
     Adds groups to the model
+    @param masteruri: ROS master URI 
+    @type masteruri: C{str}
     @param host_address: the address the host
     @type host_address: C{str}
     @param cfg: the configuration name (launch file name or tupel for default configuration)
@@ -1109,27 +1139,28 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @param capabilities: the structure for capabilities
     @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str])))} 
     '''
-    hostItem = self.getHostItem(host_address)
+    hostItem = self.getHostItem(masteruri, host_address)
     hostItem.addCapabilities(cfg, capabilities, host_address)
     self.removeEmptyHosts()
     
-  def appendConfigNodes(self, host_address, nodes):
+  def appendConfigNodes(self, masteruri, host_address, nodes):
     '''
     Adds nodes to the model. If the node is already in the model, only his 
     configuration list will be extended.
+    @param masteruri: ROS master URI 
+    @type masteruri: C{str}
     @param host_address: the address the host
     @type host_address: C{str}
     @param nodes: a dictionary with node names and their configurations
     @type nodes: C{dict(str : str)} 
     '''
-    hostItem = self.getHostItem(host_address)
+    hostItem = self.getHostItem(masteruri, host_address)
     for (name, cfg) in nodes.items():
       items = hostItem.getNodeItemsByName(name)
       for item in items:
         item.addConfig(cfg)
       if not items:
         # create the new node
-        masteruri = nm.nameres().getUri(host=host_address)
         node_info = NodeInfo(name, masteruri)
         hostItem.addNode(node_info, cfg)
     self.removeEmptyHosts()
@@ -1199,9 +1230,11 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       if not host is None: # should not occur
         host.markNodesAsDuplicateOf(running_nodes)
 
-  def updateHostDescription(self, host, descr_type, descr_name, descr):
+  def updateHostDescription(self, masteruri, host, descr_type, descr_name, descr):
     '''
     Updates the description of a host.
+    @param masteruri: ROS master URI of the host to update
+    @type masteruri: C{str}
     @param host: host to update
     @type host: C{str}
     @param descr_type: the type of the robot
@@ -1213,7 +1246,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):
-      if root.child(i) == host:
+      if root.child(i) == (unicode(masteruri), unicode(host)):
         h = root.child(i)
         h.updateDescription(descr_type, descr_name, descr)
         return h.updateTooltip()

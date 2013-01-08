@@ -96,6 +96,8 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     
     self._discovered = dict()
     
+    self._hosts = dict() # resolution for hostname and address
+    
     self.mutex = threading.RLock()
 #    thread = threading.Thread(target=self._listen)
     self.setDaemon(True)
@@ -116,17 +118,21 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
           hostname = None
           force_update = False
           if not address is None:
-            hostname = nm.nameres().getName(host=str(address[0]))
-            if hostname is None:
-              self.status_text_signal.emit(''.join(['resolve: ', str(address[0])]))
-              try:
-                (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
-                nm.nameres().add(name=hostname, host=str(hostname))
-                nm.nameres().add(name=hostname, host=str(address[0]))
-              except:
-                import traceback
-                print traceback.format_exc()
-                pass
+            try:
+              hostname = self._hosts[address[0]]
+            except:
+              hostname = nm.nameres().hostname(str(address[0]))
+              if hostname is None or hostname == str(address[0]):
+                self.status_text_signal.emit(''.join(['resolve: ', str(address[0])]))
+                try:
+                  (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
+                  nm.nameres().addInfo(None, hostname, hostname)
+                  nm.nameres().addInfo(None, address[0], hostname)
+                except:
+                  import traceback
+                  print traceback.format_exc()
+                  pass
+              self._hosts[address[0]] = hostname
           if not msg is None:
             try:
               (version, msg_tuple) = Discoverer.msg2masterState(msg)
@@ -195,7 +201,6 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
   def on_anchorClicked(self, url):
     self._updateDisplay()
     try:
-      print url.toString()
       self.network_join_request.emit(int(url.toString()))
     except:
       import traceback

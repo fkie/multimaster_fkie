@@ -44,6 +44,25 @@ from parameter_handler import ParameterHandler
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
 
+class MyComboBox(QtGui.QComboBox):
+
+  remove_item_signal = QtCore.Signal(str)
+
+  def keyPressEvent(self, event):
+    key_mod = QtGui.QApplication.keyboardModifiers()
+    if key_mod & QtCore.Qt.ShiftModifier and (event.key() == QtCore.Qt.Key_Delete):
+      try:
+        if self.currentText():
+          for i in range(self.count()):
+            if self.currentText() == self.itemText(i):
+              self.removeItem(i)
+              self.remove_item_signal.emit(self.currentText())
+              self.clearEditText()
+      except:
+        import traceback
+        print traceback.format_exc()
+    QtGui.QComboBox.keyPressEvent(self, event)
+
 class ParameterDescription(object):
   '''
   Used for internal representation of the parameter in dialog.
@@ -161,6 +180,9 @@ class ParameterDescription(object):
   def value(self):
     return self._value
 
+  def removeCachedValue(self, value):
+    nm.history().removeParamCache(self.fullName(), value)
+
   def createTypedWidget(self, parent):
     result = None
     if self.isPrimitiveType():
@@ -172,10 +194,11 @@ class ParameterDescription(object):
           value = str2bool(self.value())
         result.setChecked(value)
       else:
-        result = QtGui.QComboBox(parent=parent)
+        result = MyComboBox(parent=parent)
         result.setObjectName(self.name())
         result.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
         result.setEditable(True)
+        result.remove_item_signal.connect(self.removeCachedValue)
         items = []
         if isinstance(self.value(), list):
           items[len(items):] = self.value()
@@ -473,6 +496,11 @@ class ParameterDialog(QtGui.QDialog):
       self.info_field.setVisible(False)
       if self.filter_frame.isVisible():
         self.filter_field.setFocus()
+
+  def setFocusField(self, field_label):
+    field = self.content.getField(field_label)
+    if not field is None:
+      field.setFocus()
 
   def getKeywords(self):
     '''

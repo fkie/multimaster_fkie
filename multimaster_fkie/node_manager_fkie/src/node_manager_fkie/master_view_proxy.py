@@ -69,13 +69,13 @@ class MasterViewProxy(QtGui.QWidget):
   '''
 
   updateHostRequest = QtCore.Signal(str)
-  host_description_updated = QtCore.Signal(str, str)
-  '''@ivar: the signal is emitted on description changes and contains the host 
-  and description a parameter.'''
+  host_description_updated = QtCore.Signal(str, str, str)
+  '''@ivar: the signal is emitted on description changes and contains the 
+  ROS Master URI, host address and description a parameter.'''
   
-  capabilities_update_signal = QtCore.Signal(str, str, list)
+  capabilities_update_signal = QtCore.Signal(str, str, str, list)
   '''@ivar: the signal is emitted if a description with capabilities is received 
-  and has the host, the name of the default_cfg node and a list with 
+  and has the ROS master URI, host address, the name of the default_cfg node and a list with 
   descriptions (L{default_cfg_fkie.Description}) as parameter.'''
   remove_config_signal  = QtCore.Signal(str)
   '''@ivar: the signal is emitted if a default_cfg was removed'''
@@ -95,10 +95,10 @@ class MasterViewProxy(QtGui.QWidget):
     QtGui.QWidget.__init__(self, parent)
     self.setObjectName(' - '.join(['MasterViewProxy', masteruri]))
     self.masteruri = masteruri
-    self.hostname = masteruri
+    self.mastername = masteruri
     try:
       o = urlparse(self.master.uri)
-      self.hostname = o.hostname
+      self.mastername = o.hostname
     except:
       pass
     self._tmpObjects = []
@@ -126,7 +126,7 @@ class MasterViewProxy(QtGui.QWidget):
     tabLayout.addWidget(self.masterTab)
     
     # setup the node view
-    self.node_tree_model = NodeTreeModel(nm.nameres().getHost(masteruri=self.masteruri), self.masteruri)
+    self.node_tree_model = NodeTreeModel(nm.nameres().address(self.masteruri), self.masteruri)
     self.node_tree_model.hostInserted.connect(self.on_host_inserted)
     self.masterTab.nodeTreeView.setModel(self.node_tree_model)
     for i, (name, width) in enumerate(NodeTreeModel.header):
@@ -315,6 +315,7 @@ class MasterViewProxy(QtGui.QWidget):
       update_nodes = False
       update_others = False
       if (master_info.masteruri == self.masteruri):
+        self.mastername = master_info.mastername
         # store process pid's of remote nodes
         nodepids = []
         if not self.__master_info is None:
@@ -509,16 +510,13 @@ class MasterViewProxy(QtGui.QWidget):
     try:
       # test for requerid args
       launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
-      loaded, req_args = launchConfig.load([])
-      ok = False
-      if not loaded:
-        arg_history = nm.history().getArgHistory()
+      req_args = launchConfig.getArgs()
+      loaded = False
+      if req_args:
         params = dict()
-        for arg in launchConfig.argvToDict(req_args).keys():
-          if arg_history.has_key(arg):
-            params[arg] = ('string', arg_history[arg])
-          else:
-            params[arg] = ('string', '')
+        arg_dict = launchConfig.argvToDict(req_args)
+        for arg in arg_dict.keys():
+          params[arg] = ('string', [arg_dict[arg]])
         inputDia = ParameterDialog(params)
         inputDia.setFilterVisible(False)
         inputDia.setWindowTitle(''.join(['Enter the argv for ', launchfile]))
@@ -527,41 +525,41 @@ class MasterViewProxy(QtGui.QWidget):
           argv = []
           for p,v in params.items():
             if v:
-              nm.history().addToArgHistory(p, v)
               argv.append(''.join([p, ':=', v]))
-          loaded, req_args = launchConfig.load(argv)
+          loaded = launchConfig.load(argv)
         else:
           return
-      if loaded:
-        self.__configs[launchfile] = launchConfig
-        #connect the signal, which is emitted on changes on configuration file 
-        launchConfig.file_changed.connect(self.on_configfile_changed)
-        for name, machine in launchConfig.Roscfg.machines.items():
-          if machine.name:
-            nm.nameres().add(name=machine.name, host=machine.address)
-        self.appendConfigToModel(launchfile, launchConfig.Roscfg)
-        self.masterTab.tabWidget.setCurrentIndex(0)
-        
-        #get the descriptions of capabilities and hosts
-        try:
-          robot_descr = launchConfig.getRobotDescr()
-          capabilities = launchConfig.getCapabilitiesDesrc()
-          for (host, caps) in capabilities.items():
-            host_addr = nm.nameres().getHost(masteruri=self.masteruri) if not host else nm.nameres().getHost(name=host)
-            self.node_tree_model.addCapabilities(host_addr, launchfile, caps)
-          for (host, descr) in robot_descr.items():
-            tooltip = self.node_tree_model.updateHostDescription(host, descr['type'], descr['name'], descr['description'])
-            self.host_description_updated.emit(host, tooltip)
-        except:
-          import traceback
-          print traceback.print_exc()
-        # by this call the name of the host will be updated if a new one is defined in the launch file
-        self.updateRunningNodesInModel(self.__master_info)
-      else:
-        import os
-        err_text = ''.join([os.path.basename(launchfile),' not loaded, invalid args:\n\n', ', '.join([arg.split(':=')[0] for arg in req_args])])
-        rospy.logwarn("Loading launch file: %s", err_text)
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", err_text).exec_()
+      if not loaded:
+        launchConfig.load(req_args)
+      self.__configs[launchfile] = launchConfig
+      #connect the signal, which is emitted on changes on configuration file 
+      launchConfig.file_changed.connect(self.on_configfile_changed)
+      for name, machine in launchConfig.Roscfg.machines.items():
+        if machine.name:
+          nm.nameres().addInfo(machine.name, machine.address, machine.address)
+      self.appendConfigToModel(launchfile, launchConfig.Roscfg)
+      self.masterTab.tabWidget.setCurrentIndex(0)
+      
+      #get the descriptions of capabilities and hosts
+      try:
+        robot_descr = launchConfig.getRobotDescr()
+        capabilities = launchConfig.getCapabilitiesDesrc()
+        for (host, caps) in capabilities.items():
+          if not host:
+            host = nm.nameres().mastername(self.masteruri)
+          host_addr = nm.nameres().address(host)
+          self.node_tree_model.addCapabilities(nm.nameres().masteruri(host), host_addr, launchfile, caps)
+        for (host, descr) in robot_descr.items():
+          if not host:
+            host = nm.nameres().mastername(self.masteruri)
+          host_addr = nm.nameres().address(host)
+          tooltip = self.node_tree_model.updateHostDescription(nm.nameres().masteruri(host), host_addr, descr['type'], descr['name'], descr['description'])
+          self.host_description_updated.emit(self.masteruri, host_addr, tooltip)
+      except:
+        import traceback
+        print traceback.print_exc()
+      # by this call the name of the host will be updated if a new one is defined in the launch file
+      self.updateRunningNodesInModel(self.__master_info)
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:
@@ -598,18 +596,20 @@ class MasterViewProxy(QtGui.QWidget):
     @type rosconfig: L{LaunchConfig}
     '''
     try:
-      hosts = dict() # dict(host : dict(node : [config]) )
+      hosts = dict() # dict(addr : dict(node : [config]) )
       for n in rosconfig.nodes:
-        host = nm.nameres().getHost(masteruri=self.masteruri)
+        addr = nm.nameres().address(self.masteruri)
+        masteruri = self.masteruri
         if n.machine_name and not n.machine_name == 'localhost':
-          host = rosconfig.machines[n.machine_name].address
+          addr = rosconfig.machines[n.machine_name].address
+          masteruri = nm.nameres().masteruri(n.machine_name)
         node = roslib.names.ns_join(n.namespace, n.name)
-        if not hosts.has_key(host):
-          hosts[host] = dict()
-        hosts[host][node] = launchfile
+        if not hosts.has_key((masteruri, addr)):
+          hosts[(masteruri, addr)] = dict()
+        hosts[(masteruri, addr)][node] = launchfile
       # add the configurations for each host separately 
-      for (host, nodes) in hosts.items():
-        self.node_tree_model.appendConfigNodes(host, nodes)
+      for ((masteruri, addr), nodes) in hosts.items():
+        self.node_tree_model.appendConfigNodes(masteruri, addr, nodes)
       self.updateButtons()
     except:
       import traceback
@@ -643,14 +643,14 @@ class MasterViewProxy(QtGui.QWidget):
     removed = list(set([c for c in self.__configs.keys() if isinstance(c, tuple)]) - set(default_cfgs))
     if removed:
       for r in removed:
-        host = nm.nameres().getName(host=nm.nameres().getHostname(r[1]))
+        host = nm.nameres().address(r[1])
         self.node_tree_model.removeConfigNodes(r)
         self.remove_config_signal.emit(r[0])
         del self.__configs[r]
     if len(self.__configs) == 0:
-      host = nm.nameres().getName(host=nm.nameres().getHostname(master_info.masteruri))
-      tooltip = self.node_tree_model.updateHostDescription(host, '', '', '')
-      self.host_description_updated.emit(host, tooltip)
+      address = nm.nameres().address(master_info.masteruri)
+      tooltip = self.node_tree_model.updateHostDescription(master_info.masteruri, address, '', '', '')
+      self.host_description_updated.emit(master_info.masteruri, address, tooltip)
     # request the nodes of new default configurations
     added = list(set(default_cfgs) - set(self.__configs.keys()))
     for (name, uri) in added:
@@ -673,6 +673,10 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     # remove the current state
     masteruri = self.masteruri
+    if not self.__master_info is None:
+      service = self.__master_info.getService(config_name)
+      if not service is None:
+        masteruri = service.masteruri
     key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri)
 #    if self.__configs.has_key(key):
 #      self.node_tree_model.removeConfigNodes(key)
@@ -681,7 +685,8 @@ class MasterViewProxy(QtGui.QWidget):
     for n in nodes:
       node_cfgs[n] = key
     host = nm.nameres().getHostname(service_uri)
-    self.node_tree_model.appendConfigNodes(host, node_cfgs)
+    host_addr = nm.nameres().address(host)
+    self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
     self.__configs[key] = nodes
     self.updateButtons()
 
@@ -699,20 +704,25 @@ class MasterViewProxy(QtGui.QWidget):
     @type items: C{[L{default_cfg_fkie.Description}]}
     '''
     if items:
+      masteruri = self.masteruri
+      if not self.__master_info is None:
+        service = self.__master_info.getService(config_name)
+        if not service is None:
+          masteruri = service.masteruri
       key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri)
       host = nm.nameres().getHostname(service_uri)
-      host_name = nm.nameres().getName(host=host)
+      host_addr = nm.nameres().address(host)
       #add capabilities
       caps = dict()
       for c in items[0].capabilities:
         if not caps.has_key(c.namespace):
           caps[c.namespace] = dict()
         caps[c.namespace][c.name.decode(sys.getfilesystemencoding())] = { 'type' : c.type, 'images' : c.images, 'description' : c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), 'nodes' : list(c.nodes) }
-      self.node_tree_model.addCapabilities(host, key, caps)
+      self.node_tree_model.addCapabilities(masteruri, host_addr, key, caps)
       # set host description
-      tooltip = self.node_tree_model.updateHostDescription(host_name, items[0].robot_type, items[0].robot_name.decode(sys.getfilesystemencoding()), items[0].robot_descr.decode(sys.getfilesystemencoding()))
-      self.host_description_updated.emit(host_name, tooltip)
-      self.capabilities_update_signal.emit(host, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
+      tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, items[0].robot_name.decode(sys.getfilesystemencoding()), items[0].robot_descr.decode(sys.getfilesystemencoding()))
+      self.host_description_updated.emit(masteruri, host_addr, tooltip)
+      self.capabilities_update_signal.emit(masteruri, host_addr, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
 
   def on_default_cfg_err(self, service_uri, service, msg):
     '''
@@ -797,7 +807,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.on_service_call_clicked()
 
   def on_host_inserted(self, item):
-    if item.name == nm.nameres().getName(masteruri=self.masteruri):
+    if item.id == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
       index = self.node_tree_model.indexFromItem(item)
       if index.isValid():
         self.masterTab.nodeTreeView.expand(index)
@@ -1132,18 +1142,25 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     cursor = self.cursor()
     self.masterTab.startButton.setEnabled(False)
-    history = nm.history().getHostHistory()
-    host, result = QtGui.QInputDialog.getItem(self, self.tr("Select host"),
-                                  self.tr("host:"), list(['localhost'] + history), 0,
-                                  True)
+    params = {'Host' : ('string', 'localhost') }
+    dia = ParameterDialog(params)
+    dia.setFilterVisible(False)
+    dia.setWindowTitle('Start node on...')
+    dia.resize(350,120)
+    dia.setFocusField('host')
     progressDialog = None
-    if result and host:
-      if host != 'localhost':
-        nm.history().add2HostHistory(host)
-      self.setCursor(QtCore.Qt.WaitCursor)
-      selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-      self.start_nodes(selectedNodes, True, host)
-      self.setCursor(cursor)
+    if dia.exec_():
+      try:
+        params = dia.getKeywords()
+        host = params['Host']
+        self.setCursor(QtCore.Qt.WaitCursor)
+        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        self.start_nodes(selectedNodes, True, host)
+        self.setCursor(cursor)
+      except Exception, e:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                          'Error while parse parameter',
+                          str(e)).exec_()
     self.masterTab.startButton.setEnabled(True)
 
   def _getDefaultCfgChoises(self, node):
@@ -1191,7 +1208,7 @@ class MasterViewProxy(QtGui.QWidget):
       try:
         socket.setdefaulttimeout(3)
         p = xmlrpclib.ServerProxy(node.uri)
-        p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
+        p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.mastername]))
       except Exception, e:
 #            import traceback
 #            formatted_lines = traceback.format_exc().splitlines()
@@ -1481,7 +1498,7 @@ class MasterViewProxy(QtGui.QWidget):
     for node in selectedNodes:
       # set the parameter in the ROS parameter server
       try:
-        inputDia = MasterParameterDialog(nm.nameres().getUri(host=nm.nameres().getHostname(node.uri if not node.uri is None else self.masteruri)), ''.join([node.name, roslib.names.SEP]), parent=self)
+        inputDia = MasterParameterDialog(node.masteruri if not node.masteruri is None else self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
         inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
         inputDia.show()
       except:
@@ -1531,6 +1548,11 @@ class MasterViewProxy(QtGui.QWidget):
 #        except:
 #          import traceback
 #          print traceback.format_exc()
+      else:
+        # remove from name resolution
+        for name, machine in self.__configs[cfg].Roscfg.machines.items():
+          if machine.name:
+            nm.nameres().removeInfo(machine.name, machine.address)
       del self.__configs[cfg]
     except:
       import traceback

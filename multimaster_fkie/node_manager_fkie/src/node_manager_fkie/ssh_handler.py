@@ -91,6 +91,8 @@ class SSHhandler(object):
         return ssh.exec_command(cmd_str), True
       else:
         return (None, None, None), False
+    except Exception, e:
+      return (None, None, str(e)), False
     finally:
       self.mutex.release()
 
@@ -162,7 +164,7 @@ class SSHhandler(object):
             self.SSH_AUTH[host] = user
           else:
             rospy.logwarn("ssh connection to %s failed: %s", host, str(e))
-            return None
+            raise Exception(' '.join(["ssh connection to", host, "failed:", str(e)]))
         else:
           SSHhandler.SSH_SESSIONS[host] = session
       if not session.get_transport() is None:

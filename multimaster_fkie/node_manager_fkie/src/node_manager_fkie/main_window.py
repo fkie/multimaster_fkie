@@ -55,6 +55,7 @@ from capability_table import CapabilityTable
 from xml_editor import XmlEditor
 from detailed_msg_box import WarningMessageBox
 from network_discovery_dialog import NetworkDiscoveryDialog
+from parameter_dialog import ParameterDialog
 
 import node_manager_fkie as nm
 
@@ -315,7 +316,7 @@ class MainWindow(QtGui.QMainWindow):
             args = list()
             args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(self.default_load_launch))[0])]))
             args.append(''.join(['_launch_file:="', os.path.basename(self.default_load_launch), '"']))
-            nm.starter().runNodeWithoutConfig(nm.nameres().getHost(masteruri=masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().getHost(masteruri=masteruri)), '/default_cfg']), args)
+            nm.starter().runNodeWithoutConfig(nm.nameres().address(masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().mastername(masteruri)), '/default_cfg']), args, masteruri)
 
     return self.masters[masteruri]
 
@@ -324,16 +325,15 @@ class MainWindow(QtGui.QMainWindow):
       if nm.nameres().getHostname(key) == host and not value.master_state is None:
         self._update_handler.requestMasterInfo(value.master_state.uri, value.master_state.monitoruri)
         
-  def on_host_description_updated(self, host, descr):
-    self.master_model.updateDescription(nm.nameres().getName(host=host), descr)
+  def on_host_description_updated(self, masteruri, host, descr):
+    self.master_model.updateDescription(nm.nameres().mastername(masteruri, host), descr)
 
-  def on_capabilities_update(self, host, config_node, descriptions):
+  def on_capabilities_update(self, masteruri, address, config_node, descriptions):
     for d in descriptions:
-      self.capabilitiesTable.updateCapabilities(host, config_node, d)
-    masteruri = nm.nameres().getUri(host=host)
+      self.capabilitiesTable.updateCapabilities(masteruri, config_node, d)
     if not masteruri is None:
       master = self.getMaster(masteruri)
-      self.capabilitiesTable.updateState(host, master.master_info)
+      self.capabilitiesTable.updateState(masteruri, master.master_info)
 
   def on_remove_config(self, cfg):
     self.capabilitiesTable.removeConfig(cfg)
@@ -429,7 +429,9 @@ class MainWindow(QtGui.QMainWindow):
     self._local_tries = 0
     for m in master_list:
       if not m.uri is None:
-        nm.nameres().add(name=m.name, masteruri=m.uri, host=nm.nameres().getHostname(m.uri))
+        host = nm.nameres().getHostname(m.uri)
+        nm.nameres().addMasterEntry(m.uri, m.name, host, host)
+        m.name = nm.nameres().mastername(m.uri)
         master = self.getMaster(m.uri)
         master.master_state = m
         self.master_model.updateMaster(m)
@@ -443,20 +445,24 @@ class MainWindow(QtGui.QMainWindow):
     @param msg: the ROS message with new master state
     @type msg: L{master_discovery_fkie.msg.MasterState}
     '''
+    host=nm.nameres().getHostname(msg.master.uri)
     if msg.state == master_discovery_fkie.msg.MasterState.STATE_CHANGED:
-      nm.nameres().add(name=msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
+      nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
+      msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
       self.master_model.updateMaster(msg.master)
       self.ui.masterListView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
     if msg.state == master_discovery_fkie.msg.MasterState.STATE_NEW:
-      nm.nameres().add(name=msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
+      nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
+      msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
       self.master_model.updateMaster(msg.master)
       self.ui.masterListView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
     if msg.state == master_discovery_fkie.msg.MasterState.STATE_REMOVED:
-      nm.nameres().remove(name=msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
+      nm.nameres().removeMasterEntry(msg.master.uri)
+#      nm.nameres().remove(msg.master.name, masteruri=msg.master.uri, host=nm.nameres().getHostname(msg.master.uri))
       self.master_model.removeMaster(msg.master.name)
       self.ui.masterListView.doItemsLayout()
       self.removeMaster(msg.master.uri)
@@ -469,7 +475,7 @@ class MainWindow(QtGui.QMainWindow):
     @param minfo: the ROS master Info
     @type minfo: L{master_discovery_fkie.MasterInfo}
     '''
-    rospy.loginfo("MASTERINFO from %s received", minfo.mastername)
+    rospy.loginfo("MASTERINFO from %s (%s) received", minfo.mastername, minfo.masteruri)
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
     if self.masters.has_key(minfo.masteruri):
@@ -498,7 +504,7 @@ class MainWindow(QtGui.QMainWindow):
             # update the list view, whether master is synchronized or not
             if master.master_info.masteruri == minfo.masteruri:
               self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
-          self.capabilitiesTable.updateState(nm.nameres().getHost(masteruri=minfo.masteruri), minfo)
+          self.capabilitiesTable.updateState(minfo.masteruri, minfo)
           self.updateDuplicateNodes()
         except Exception, e:
           rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, str(e))
@@ -584,7 +590,7 @@ class MainWindow(QtGui.QMainWindow):
     if not self.currentMaster is None:
       if self.ui.syncButton.isChecked():
         try:
-          nm.starter().runNodeWithoutConfig(nm.nameres().getHostname(self.currentMaster.masteruri), 'master_sync_fkie', 'master_sync', 'master_sync')
+          nm.starter().runNodeWithoutConfig(nm.nameres().getHostname(self.currentMaster.masteruri), 'master_sync_fkie', 'master_sync', 'master_sync', [], self.currentMaster.masteruri)
         except (Exception, nm.StartException), e:
           rospy.logwarn("Error while start master_sync for %s: %s", str(self.currentMaster.masteruri), str(e))
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
@@ -727,38 +733,63 @@ class MainWindow(QtGui.QMainWindow):
     Tries to start the master_discovery node on the machine requested by a dialog.
     '''
     # get the history list
-    history = nm.history().getHostHistory()
-    host, result = QtGui.QInputDialog.getItem(self, self.tr("Launch master_discovery on"),
-                                      self.tr("host[:network(0..99)]:"), list(['localhost'] + history), 0,
-                                      True)
+    params_optional = {'Discovery type': ('string', ['master_discovery', 'zeroconf']),
+                       'ROS Master Name' : ('string', 'autodetect'),
+                       'ROS Master URI' : ('string', 'ROS_MASTER_URI')
+                      }
+    params = {'Host' : ('string', 'localhost'),
+              'Network(0..99)' : ('int', '0'),
+              'Optional Parameter' : ('list', params_optional) }
+    host = "a"
+    dia = ParameterDialog(params)
+    dia.setFilterVisible(False)
+    dia.setWindowTitle('Start discovery')
+    dia.resize(350,200)
+    dia.setFocusField('Host')
     progressDialog = None
-    if result and host:
+    if dia.exec_():
       try:
-        hostname, sep, port = host.partition(':')
-        args = []
-        if not port is None and port and int(port) < 100 and int(port) >= 0:
-          args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
-        else:
-          args.append(''.join(['_mcast_port:=', str(11511)]))
+        params = dia.getKeywords()
+        hostname = params['Host']
+        port = params['Network(0..99)']
         progressDialog = QtGui.QProgressDialog('Start discovering on %s'%hostname, 'wait', 0, 2, parent=self)
         progressDialog.setWindowModality(QtCore.Qt.WindowModal)
-        progressDialog.setValue(0)
         progressDialog.show()
-        nm.starter().runNodeWithoutConfig(hostname, 'master_discovery_fkie', 'master_discovery', 'master_discovery', args)
-        progressDialog.setValue(1)
+        progressDialog.setValue(0)
+        discovery_type = params['Optional Parameter']['Discovery type']
+        mastername = params['Optional Parameter']['ROS Master Name']
+        masteruri = params['Optional Parameter']['ROS Master URI']
+        try:
+          args = []
+          if not port is None and port and int(network) < 100 and int(port) >= 0:
+            args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
+          else:
+            args.append(''.join(['_mcast_port:=', str(11511)]))
+          if not mastername == 'autodetect':
+            args.append(''.join(['_name:=', str(mastername)]))
+          #TODO: remove the name parameter from the ROS parameter server
+          #else:
+          #  param_server = xmlrpclib.ServerProxy(masteruri)
+          #  param_server.deleteParam(rospy.get_name(), /discovery_type/name)
+          progressDialog.setValue(1)
+          nm.starter().runNodeWithoutConfig(hostname, 'master_discovery_fkie', discovery_type, discovery_type, args, None if masteruri == 'ROS_MASTER_URI' else masteruri)
 #        progressDialog.hide()
-        if host != 'localhost':
-          nm.history().add2HostHistory(host)
-        progressDialog.setValue(2)
-      except (Exception, nm.StartException), e:
-        import traceback
-        print traceback.format_exc()
-        rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
+#          if host != 'localhost':
+#            nm.history().add2HostHistory(host)
+          progressDialog.setValue(2)
+        except (Exception, nm.StartException), e:
+          import traceback
+          print traceback.format_exc()
+          rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                            'Error while start master_discovery',
+                            str(e)).exec_()
+          if not progressDialog is None:
+            progressDialog.setValue(progressDialog.maximum())
+      except Exception, e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
-                          'Error while start master_discovery',
+                          'Error while parse parameter',
                           str(e)).exec_()
-        if not progressDialog is None:
-          progressDialog.setValue(progressDialog.maximum())
 
   def _join_network(self, network):
     progressDialog = None
@@ -875,7 +906,32 @@ class MainWindow(QtGui.QMainWindow):
         args = list()
         args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(path))[0])]))
         args.append(''.join(['_launch_file:="', os.path.basename(path), '"']))
-        nm.starter().runNodeWithoutConfig(nm.nameres().getHost(masteruri=master_proxy.masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().getHost(masteruri=master_proxy.masteruri)), '/default_cfg']), args)
+        try:
+          # test for requerid args
+          launchConfig = LaunchConfig(path)
+          req_args = launchConfig.getArgs()
+          loaded = False
+          if req_args:
+            params = dict()
+            arg_dict = launchConfig.argvToDict(req_args)
+            for arg in arg_dict.keys():
+              params[arg] = ('string', [arg_dict[arg]])
+            inputDia = ParameterDialog(params)
+            inputDia.setFilterVisible(False)
+            inputDia.setWindowTitle(''.join(['Enter the argv for ', path]))
+            if inputDia.exec_():
+              params = inputDia.getKeywords()
+              for p,v in params.items():
+                if v:
+                  args.append(''.join([p, ":='", v, "'"]))
+            else:
+              self.ui.xmlFileView.setEnabled(True)
+              self.setCursor(cursor)
+              return
+        except:
+          import traceback
+          print traceback.format_exc()
+        nm.starter().runNodeWithoutConfig(nm.nameres().address(master_proxy.masteruri), 'default_cfg_fkie', 'default_cfg', ''.join([str(nm.nameres().mastername(master_proxy.masteruri)), '/default_cfg']), args, master_proxy.masteruri)
       else:
         try:
           master_proxy.launchfiles = path
@@ -908,16 +964,14 @@ class MainWindow(QtGui.QMainWindow):
   #%%%%%%%%%%%%%              Capabilities handling      %%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  def on_start_nodes(self, host, cfg, nodes):
-    muri = nm.nameres().getUri(host=host)
-    if not muri is None:
-      master = self.getMaster(muri)
+  def on_start_nodes(self, masteruri, cfg, nodes):
+    if not masteruri is None:
+      master = self.getMaster(masteruri)
       master.start_nodes_by_name(nodes, (cfg, ''))
   
-  def on_stop_nodes(self, host, nodes):
-    muri = nm.nameres().getUri(host=host)
-    if not muri is None:
-      master = self.getMaster(muri)
+  def on_stop_nodes(self, masteruri, nodes):
+    if not masteruri is None:
+      master = self.getMaster(masteruri)
       master.stop_nodes_by_name(nodes)
     
   def on_description_update(self, title, text):

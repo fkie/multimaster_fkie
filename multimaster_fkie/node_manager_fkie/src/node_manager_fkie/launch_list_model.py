@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import sys
 
 from PySide import QtCore
 from PySide import QtGui
@@ -99,7 +100,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
       # return the displayed item name
       pathItem, path, pathId = self.items[index.row()]
       if pathId == LaunchListModel.RECENT_FILE:
-        return ''.join([pathItem, '   [', str(LaunchConfig.packageName(os.path.dirname(path))[0]), ']'])
+        return ''.join([pathItem, '   [', str(LaunchConfig.packageName(os.path.dirname(path))[0]), ']']).decode(sys.getfilesystemencoding())
       else:
         return pathItem
     elif role == QtCore.Qt.ToolTipRole:

@@ -37,15 +37,7 @@ import node_manager_fkie as nm
 class History(QtCore.QObject):
   
   HISTORY_LENGTH = 12
-  ''' 
-  the history for each required argument to load a launch file.
-  ''' 
-  ARG_CACHE = dict()
-  ARG_HISTORY_FILE = 'arg.history'
 
-  HOSTS_CACHE = dict()
-  HOSTS_HISTORY_FILE = 'host.history'
-  
   PARAM_CACHE = dict()
   '''
   the cache is used to store and recover the value for last entered parameter in parameter dialog.
@@ -55,16 +47,10 @@ class History(QtCore.QObject):
   
   def __init__(self):
     QtCore.QObject.__init__(self)
-    self.ARG_CACHE = self.loadCache(self.ARG_HISTORY_FILE)
     self.PARAM_CACHE = self.loadCache(self.PARAM_HISTORY_FILE)
-    self.HOSTS_CACHE = self.loadCache(self.HOSTS_HISTORY_FILE)
-    if not self.HOSTS_CACHE.has_key('hosts'):
-      self.HOSTS_CACHE['hosts'] = []
 
   def storeAll(self):
-    self.storeCache(self.ARG_HISTORY_FILE, self.ARG_CACHE, self.HISTORY_LENGTH)
     self.storeCache(self.PARAM_HISTORY_FILE, self.PARAM_CACHE, self.HISTORY_LENGTH)
-    self.storeCache(self.HOSTS_HISTORY_FILE, self.HOSTS_CACHE, self.HISTORY_LENGTH)
   
   def cachedParamValues(self, key):
     try:
@@ -76,39 +62,8 @@ class History(QtCore.QObject):
   def addParamCache(self, key, value):
     self._add2Cache(self.PARAM_CACHE, key, value)
 
-  def getHostHistory(self):
-    '''
-    Read the history of the entered robots from the file stored in ROS_HOME path.
-    @return: the list with robot names
-    @rtype: C{[str]}
-    '''
-    return list(self.HOSTS_CACHE['hosts'])
-
-  def add2HostHistory(self, host):
-    '''
-    Adds a host to the history.
-    @param host: the host name
-    @type host: C{str}
-    '''
-    self._add2Cache(self.HOSTS_CACHE, 'hosts', host)
-
-  def getArgHistory(self):
-    '''
-    Returns the arg history cache.
-    @return: the dictionary with arguments
-    @rtype: C{dict(str(name):[str(value), ...], ...)}
-    '''
-    return dict(self.ARG_CACHE)
-
-  def addToArgHistory(self, key, value):
-    '''
-    Adds an argument the arg cache.
-    @param key: the argument name
-    @type key: C{str}
-    @param value: the argument value
-    @type value: C{str}
-    '''
-    self._add2Cache(self.ARG_CACHE, key, value)
+  def removeParamCache(self, key, value):
+    self._removeFromCache(self.PARAM_CACHE, key, value)
 
   def loadCache(self, file):
     '''
@@ -172,3 +127,15 @@ class History(QtCore.QObject):
       else:
         cache[key].remove(uvalue)
         cache[key].insert(0, uvalue)
+
+  def _removeFromCache(self, cache, key, value):
+    uvalue = unicode(value)
+    if key and uvalue:
+      if cache.has_key(key):
+        value_list = cache[key]
+        try:
+          value_list.remove(uvalue)
+        except:
+          pass
+        if len(value_list) == 0:
+          del cache[key]

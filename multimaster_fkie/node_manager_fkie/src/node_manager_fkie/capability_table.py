@@ -250,14 +250,14 @@ class CapabilityControlWidget(QtGui.QFrame):
   '''
 
   start_nodes_signal = QtCore.Signal(str, str, list)
-  '''@ivar: the signal is emitted to start on host the nodes described in the list, Parameter(host, config, nodes).'''
+  '''@ivar: the signal is emitted to start on host(described by masteruri) the nodes described in the list, Parameter(masteruri, config, nodes).'''
 
   stop_nodes_signal = QtCore.Signal(str, list)
-  '''@ivar: the signal is emitted to stop on host the nodes described in the list.'''
+  '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
-  def __init__(self, host, cfg, nodes, parent=None):
+  def __init__(self, masteruri, cfg, nodes, parent=None):
     QtGui.QFrame.__init__(self, parent)
-    self._host = host
+    self._masteruri = masteruri
     self._nodes = nodes
     self._cfg = cfg
     frame_layout = QtGui.QHBoxLayout(self)
@@ -323,12 +323,12 @@ class CapabilityControlWidget(QtGui.QFrame):
 
 
   def on_on_clicked(self):
-    self.start_nodes_signal.emit(self._host, self._cfg, self._nodes)
+    self.start_nodes_signal.emit(self._masteruri, self._cfg, self._nodes)
     self.on_button.setFlat(True)
     self.off_button.setFlat(False)
     
   def on_off_clicked(self):
-    self.stop_nodes_signal.emit(self._host, self._nodes)
+    self.stop_nodes_signal.emit(self._masteruri, self._nodes)
     self.on_button.setFlat(False)
     self.off_button.setFlat(True)
 
@@ -347,10 +347,10 @@ class CapabilityTable(QtGui.QTableWidget):
   '''
   
   start_nodes_signal = QtCore.Signal(str, str, list)
-  '''@ivar: the signal is emitted to start on host the nodes described in the list, Parameter(host, config, nodes).'''
+  '''@ivar: the signal is emitted to start on host(described by masteruri) the nodes described in the list, Parameter(masteruri, config, nodes).'''
 
   stop_nodes_signal = QtCore.Signal(str, list)
-  '''@ivar: the signal is emitted to stop on host the nodes described in the list.'''
+  '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
   description_requested_signal = QtCore.Signal(str, str)
   '''@ivar: the signal is emitted by click on a header to show a description.'''
@@ -365,33 +365,33 @@ class CapabilityTable(QtGui.QTableWidget):
     self._capabilityHeader.description_requested_signal.connect(self._show_description)
     self.setVerticalHeader(self._capabilityHeader)
 
-  def updateCapabilities(self, host, cfg_name, description):
+  def updateCapabilities(self, masteruri, cfg_name, description):
     '''
     Updates the capabilities view.
-    @param host: the name of updated host.
-    @type host: C{str}
+    @param masteruri: the ROS master URI of updated ROS master.
+    @type masteruri: C{str}
     @param cfg_name: The name of the node provided the capabilities description.
     @type cfg_name: C{str}
     @param description: The capabilities description object.
     @type description: L{default_cfg_fkie.Description}
     '''
-    # if it is a new host add a new column
-    robot_index = self._robotHeader.index(host)
-    robot_name = description.robot_name if description.robot_name else host
+    # if it is a new masteruri add a new column
+    robot_index = self._robotHeader.index(masteruri)
+    robot_name = description.robot_name if description.robot_name else nm.nameres().mastername(masteruri)
     if robot_index == -1:
       # append a new robot
-      robot_index = self._robotHeader.insertSortedItem(host, robot_name)
+      robot_index = self._robotHeader.insertSortedItem(masteruri, robot_name)
       self.insertColumn(robot_index)
 #      robot_index = self.columnCount()-1
 #      self._robotHeader.insertItem(robot_index)
-      self._robotHeader.setDescription(robot_index, cfg_name, host, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
+      self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
       item = QtGui.QTableWidgetItem()
       item.setSizeHint(QtCore.QSize(96,96))
       self.setHorizontalHeaderItem(robot_index, item)
       self.horizontalHeaderItem(robot_index).setText(robot_name)
     else:
       #update
-      self._robotHeader.setDescription(robot_index, cfg_name, host, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
+      self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
     
     #set the capabilities
     for c in description.capabilities:
@@ -410,7 +410,7 @@ class CapabilityTable(QtGui.QTableWidget):
         self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
 
       # add the capability control widget
-      controlWidget = CapabilityControlWidget(host, cfg_name, c.nodes)
+      controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.nodes)
       controlWidget.start_nodes_signal.connect(self._start_nodes)
       controlWidget.stop_nodes_signal.connect(self._stop_nodes)
       self.setCellWidget(cap_index, robot_index, controlWidget)
@@ -455,17 +455,17 @@ class CapabilityTable(QtGui.QTableWidget):
         self.removeRow(c)
         self._capabilityHeader.removeDescription(c)
 
-  def updateState(self, host, master_info):
+  def updateState(self, masteruri, master_info):
     '''
     Updates the run state of the capability.
-    @param host: The host, which sends the master_info
-    @type host: C{str}
+    @param masteruri: The ROS master, which sends the master_info
+    @type masteruri: C{str}
     @param master_info: The state of the ROS master
     @type master_info: L{master_discovery_fkie.MasterInfo}
     '''
-    if master_info is None or host is None:
+    if master_info is None or masteruri is None:
       return
-    robot_index = self._robotHeader.index(host)
+    robot_index = self._robotHeader.index(masteruri)
     if robot_index != -1:
       for c in range(self.rowCount()):
         controlWidget = self.cellWidget(c, robot_index)
@@ -477,7 +477,7 @@ class CapabilityTable(QtGui.QTableWidget):
             node = master_info.getNode(n)
             if not node is None:
               # while a synchronization there are node from other hosts in the master_info -> filter these nodes
-              if not node.uri is None and host == nm.nameres().getHostname(node.uri):
+              if not node.uri is None and masteruri == node.masteruri:
                 if not node.pid is None:
                   running_nodes.append(n)
                 else:
@@ -486,11 +486,11 @@ class CapabilityTable(QtGui.QTableWidget):
               stopped_nodes.append(n)
           controlWidget.setNodeState(running_nodes, stopped_nodes, error_nodes)
 
-  def _start_nodes(self, host, cfg, nodes):
-    self.start_nodes_signal.emit(host, cfg, nodes)
+  def _start_nodes(self, masteruri, cfg, nodes):
+    self.start_nodes_signal.emit(masteruri, cfg, nodes)
 
-  def _stop_nodes(self, host, nodes):
-    self.stop_nodes_signal.emit(host, nodes)
+  def _stop_nodes(self, masteruri, nodes):
+    self.stop_nodes_signal.emit(masteruri, nodes)
 
   def _show_description(self, name, description):
     self.description_requested_signal.emit(name, description)

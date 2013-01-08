@@ -103,11 +103,24 @@ class RunDialog(QtGui.QDialog):
     self.host_field.setEditable(True)
     host_label.setBuddy(self.host_field)
     self.contentLayout.addRow(host_label, self.host_field)
-    self.host_history = host_history = nm.history().getHostHistory()
+    self.host_history = host_history = nm.history().cachedParamValues('/Host')
     if self.host in host_history:
       host_history.remove(self.host)
     host_history.insert(0, self.host)
     self.host_field.addItems(host_history)
+
+    master_label = QtGui.QLabel("ROS Master URI:", self.content)
+    self.master_field = QtGui.QComboBox(self.content)
+    self.master_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.master_field.setEditable(True)
+    master_label.setBuddy(self.host_field)
+    self.contentLayout.addRow(master_label, self.master_field)
+    self.master_history = master_history = nm.history().cachedParamValues('/Optional Parameter/ROS Master URI')
+    self.masteruri = "ROS_MASTER_URI"
+    if self.masteruri in master_history:
+      master_history.remove(self.masteruri)
+    master_history.insert(0, self.masteruri)
+    self.master_field.addItems(master_history)
     
     self.buttonBox = QtGui.QDialogButtonBox(self)
     self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
@@ -138,6 +151,7 @@ class RunDialog(QtGui.QDialog):
     '''
     self.binary = self.binary_field.currentText()
     self.host = self.host_field.currentText() if self.host_field.currentText() else self.host
+    self.masteruri = self.master_field.currentText() if self.master_field.currentText() else self.masteruri
     if not self.host in self.host_history and self.host != 'localhost' and self.host != '127.0.0.1':
       nm.history().add2HostHistory(self.host)
     ns = self.ns_field.currentText()
@@ -147,7 +161,8 @@ class RunDialog(QtGui.QDialog):
     if args:
       nm.history().addParamCache('run_dialog/Args', args)
     if self.package and self.binary:
-      nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', ns, ' ', args])).split(' '))
+      nm.history().addParamCache('/Host', self.host)
+      nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', ns, ' ', args])).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
 
   def _getPackages(self, path):
     result = {}

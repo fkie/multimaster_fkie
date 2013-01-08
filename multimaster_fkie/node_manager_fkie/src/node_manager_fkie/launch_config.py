@@ -37,6 +37,9 @@ from ros import roslaunch
 import rospy
 import roslib
 
+from xml.dom.minidom import parse, parseString 
+from xml.dom import Node as DomNode #avoid aliasing
+
 from PySide import QtCore
 
 import node_manager_fkie as nm
@@ -214,18 +217,18 @@ class LaunchConfig(QtCore.QObject):
       return ''.join([pwd, os.path.sep, path])
     return path
 
-  def getIncludedFiles(self):
+  def getIncludedFiles(self, file):
     '''
     Reads the configuration file and searches for included files. This files
     will be returned in a list.
     @return: the list with all files needed for the configuration
     @rtype: C{[str,...]}
     '''
-    result = set(self.__roscfg.roslaunch_files)
+    result = set([file])
     regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
                    QtCore.QRegExp("\\bfile\\b")]
     lines = []
-    with open(self.__launchFile, 'r') as f:
+    with open(file, 'r') as f:
       lines = f.readlines()
     for line in lines:
       index = self._index(line, regexp_list)
@@ -238,6 +241,8 @@ class LaunchConfig(QtCore.QObject):
             path = self.interpretPath(fileName, os.path.dirname(self.__launchFile))
             if os.path.isfile(path):
               result.add(path)
+              if path.endswith('.launch'):
+                result.update(self.getIncludedFiles(path))
     return list(result)
 
   def load(self, argv):
@@ -245,43 +250,60 @@ class LaunchConfig(QtCore.QObject):
     @param argv: the list with argv parameter needed to load the launch file. 
                  The name and value are separated by C{:=}
     @type argv: C{[str]}
-    @return: a tupel of the laod result and the the list with argv
-    @rtype: C{(bool, [str])}
+    @return True, if the launch file was loaded
+    @rtype boolean
     @raise LaunchConfigException: on load errors
     '''
     import re
-    testarg = argv
-    doTest = True
-    argvAdded = False
-    while doTest:
-      try:
-        roscfg = roslaunch.ROSLaunchConfig()
-        loader = roslaunch.XmlLoader()
-        loader.load(self.Filename, roscfg, verbose=False, argv=testarg)
-        self.__roscfg = roscfg
-        files = self.file_watcher.files()
-        if files:
-          self.file_watcher.removePaths(files)
-        self.file_watcher.addPaths(self.getIncludedFiles())
-        doTest = False
-      except roslaunch.XmlParseException, e:
-        result = list(re.finditer(r"requires the '\w+' arg to be set", str(e)))
-        if not result:
-          message = str(e)
-          # NO environment substitution !!!
-          test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
-          if test:
-            message = ''.join([message, '\n', 'environment substitution is not supported, use "arg" instead!'])
-          raise LaunchConfigException(message)
-        for m in result:
-          argName = m.group(0).split("'")[1]
-          arg = ''.join([argName, ':=', '$[', argName, ']'])
-          if not arg in testarg:
-            testarg.append(''.join([argName, ':=', '$[', argName, ']']))
-            argvAdded = True
-          else:
-            raise LaunchConfigException(e)
-    return not argvAdded, testarg
+    try:
+      roscfg = roslaunch.ROSLaunchConfig()
+      loader = roslaunch.XmlLoader()
+      loader.load(self.Filename, roscfg, verbose=False, argv=argv)
+      self.__roscfg = roscfg
+#      for m, k in self.__roscfg.machines.items():
+#        print m, k
+      files = self.file_watcher.files()
+      if files:
+        self.file_watcher.removePaths(files)
+      self.file_watcher.addPaths(self.getIncludedFiles(self.Filename))
+    except roslaunch.XmlParseException, e:
+      test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
+      message = str(e)
+      if test:
+        message = ''.join([message, '\n', 'environment substitution is not supported, use "arg" instead!'])
+      raise LaunchConfigException(message)
+    return True
+
+  def getArgs(self):
+    '''
+    @return: a list with args being used in the roslaunch file. Only arg tags that are a direct child of <launch> will 
+             be returned
+    @rtype: C{[str]}
+    @raise roslaunch.XmlParseException: on parse errors
+    '''
+    arg_subs = []
+    for filename in self.getIncludedFiles(self.Filename):
+      try: 
+        args = parse(filename).getElementsByTagName('arg') 
+      except Exception as e: 
+        raise roslaunch.XmlParseException("Invalid roslaunch XML syntax: %s"%e) 
+
+      for arg in args:
+       arg_name = arg.getAttribute("name")
+       if not arg_name:
+         raise roslaunch.XmlParseException("arg tag needs a name, xml is %s"%arg.toxml())
+
+       # we only want args at top level:
+       if not arg.parentNode.tagName=="launch":
+         continue 
+
+       arg_default = arg.getAttribute("default")
+       arg_value = arg.getAttribute("value")
+       arg_sub = ''.join([arg_name, ':=', arg_default])
+       if (not arg_value) and not arg_sub in arg_subs:
+         arg_subs.append(arg_sub)
+
+    return arg_subs
 
   def _decode(self, val):
     result = val.replace("\\n ", "\n")
