@@ -36,14 +36,14 @@
 
    <rosparam param="robots" tag="Format: [Name (name of the host), Type, Displayed name, Image, Description in as 'reStructeredText']">
       [
-      ["tiderko", "Workstation", "pc", "images/crystal_clear_app_klaptop.png", "Notebook\n\n|nb|\n\n.. |nb| image:: images/crystal_clear_app_klaptop.png\n"]
+      ["robot", "Workstation", "pc", "images/crystal_clear_app_klaptop.png", "Notebook\n\n|nb|\n\n.. |nb| image:: images/crystal_clear_app_klaptop.png\n"]
       ]
    </rosparam>
 
-  <machine name="robot" address="tiderko" />
-  <machine name="control station" address="tiderko4" />
+  <machine name="robot" address="tiderko4" />
+  <machine name="control station" address="tiderko" />
 
-  <node name="master_sync" pkg="master_sync_fkie" type="master_sync">
+  <!--node name="master_sync" pkg="master_sync_fkie" type="master_sync">
     <param name="capability_group" value="Management"/>
   </node>
   <node name="master_discovery" pkg="master_discovery_fkie" type="master_discovery">
@@ -51,7 +51,7 @@
   </node>
   <node name="node_manager" pkg="node_manager_fkie" type="nm" >
     <param name="capability_group" value="Management"/>
-  </node>
+  </node-->
 
   <group ns="example">
   <node machine="control station" name="hokuyo" pkg="rostopic" type="rostopic" args="pub /description_example/hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
