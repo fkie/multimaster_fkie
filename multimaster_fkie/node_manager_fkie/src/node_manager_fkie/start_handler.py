@@ -424,11 +424,12 @@ class StartHandler(object):
         if output:
           rospy.logdebug("STDOUT while start '%s': %s", name, output)
       else:
-        rospy.logwarn("ERROR while start '%s': %s", name, stderr)
-        from PySide import QtGui
-        QtGui.QMessageBox.warning(None, 'Error while remote start %s'%str(name),
-                                    str(''.join(['The host "', host, '" reports:\n', stderr])),
-                                    QtGui.QMessageBox.Ok)
+        if stderr:
+          rospy.logwarn("ERROR while start '%s': %s", name, stderr)
+          from PySide import QtGui
+          QtGui.QMessageBox.warning(None, 'Error while remote start %s'%str(name),
+                                      str(''.join(['The host "', host, '" reports:\n', stderr])),
+                                      QtGui.QMessageBox.Ok)
 
   @classmethod
   def _prepareROSMaster(cls, masteruri):
