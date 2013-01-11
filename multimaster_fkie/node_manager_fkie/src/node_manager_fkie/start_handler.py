@@ -78,6 +78,9 @@ class StartHandler(object):
     
     env = list(n.env_args)
     prefix = n.launch_prefix if not n.launch_prefix is None else ''
+    if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
+      rospy.loginfo("SCREEN prefix removed before start!")
+      prefix = ''
     args = [''.join(['__ns:=', n.namespace]), ''.join(['__name:=', n.name])]
     if not (n.cwd is None):
       args.append(''.join(['__cwd:=', n.cwd]))
