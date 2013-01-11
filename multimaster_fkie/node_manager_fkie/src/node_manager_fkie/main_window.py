@@ -565,7 +565,13 @@ class MainWindow(QtGui.QMainWindow):
       import os, subprocess
       env = dict(os.environ)
       env["ROS_MASTER_URI"] = str(self.currentMaster.master_state.uri)
-      ps = subprocess.Popen(['rxconsole'], env=env)
+      cmd = 'rxconsole'
+      try:
+        import rqt_console
+        cmd = 'rqt_console'
+      except:
+        pass
+      ps = subprocess.Popen([cmd], env=env)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
@@ -576,7 +582,13 @@ class MainWindow(QtGui.QMainWindow):
       import os, subprocess
       env = dict(os.environ)
       env["ROS_MASTER_URI"] = str(self.currentMaster.master_state.uri)
-      ps = subprocess.Popen(['rxgraph'], env=env)
+      cmd = 'rxgraph'
+      try:
+        import rqt_graph
+        cmd = 'rqt_graph'
+      except:
+        pass
+      ps = subprocess.Popen([cmd], env=env)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
