@@ -882,7 +882,7 @@ class MasterViewProxy(QtGui.QWidget):
     topics_selected = (len(selectedTopics) > 0)
     self.masterTab.echoTopicButton.setEnabled(topics_selected)
     self.masterTab.hzTopicButton.setEnabled(topics_selected)
-    if nm.is_local(nm.nameres().getHostname(self.masteruri)):
+    if self._get_nm_masteruri() == self.masteruri:
       self.masterTab.pubTopicButton.setEnabled(len(selectedTopics) == 1)
       self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
@@ -1066,7 +1066,7 @@ class MasterViewProxy(QtGui.QWidget):
       config = choices[choice]
       if isinstance(config, LaunchConfig):
         try:
-          nm.starter().runNode(node.name, config, force_host)
+          nm.starter().runNode(node.name, config, force_host, self.masteruri)
         except socket.error, se:
           rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
@@ -1594,7 +1594,7 @@ class MasterViewProxy(QtGui.QWidget):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     for topic in selectedTopics:
       try:
-        if nm.is_local(nm.nameres().getHostname(self.masteruri)):
+        if self._get_nm_masteruri() == self.masteruri:
           if self.__echo_topics_dialogs.has_key(topic.name):
             self.__echo_topics_dialogs[topic.name].activateWindow()
           else:
@@ -1817,6 +1817,20 @@ class MasterViewProxy(QtGui.QWidget):
       WarningMessageBox(QtGui.QMessageBox.Warning, "Warning", 
                         'Error while delivering parameter to the ROS parameter server',
                         errmsg).exec_()
+
+
+  def _get_nm_masteruri(self):
+    '''
+    Requests the ROS master URI from the ROS master through the RPC interface and 
+    returns it. The 'materuri' attribute will be set to the requested value.
+    @return: ROS master URI
+    @rtype: C{str} or C{None}
+    '''
+    if not hasattr(self, '_nm_materuri') or self._nm_materuri is None:
+      masteruri = nm.masteruri_from_ros()
+      master = xmlrpclib.ServerProxy(masteruri)
+      code, message, self._nm_materuri = master.getUri(rospy.get_name())
+    return self._nm_materuri
 
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
