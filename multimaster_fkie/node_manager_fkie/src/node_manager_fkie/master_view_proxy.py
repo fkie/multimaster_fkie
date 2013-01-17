@@ -595,25 +595,23 @@ class MasterViewProxy(QtGui.QWidget):
     @param rosconfig: the configuration
     @type rosconfig: L{LaunchConfig}
     '''
-    try:
-      hosts = dict() # dict(addr : dict(node : [config]) )
-      for n in rosconfig.nodes:
-        addr = nm.nameres().address(self.masteruri)
-        masteruri = self.masteruri
-        if n.machine_name and not n.machine_name == 'localhost':
-          addr = rosconfig.machines[n.machine_name].address
-          masteruri = nm.nameres().masteruri(n.machine_name)
-        node = roslib.names.ns_join(n.namespace, n.name)
-        if not hosts.has_key((masteruri, addr)):
-          hosts[(masteruri, addr)] = dict()
-        hosts[(masteruri, addr)][node] = launchfile
-      # add the configurations for each host separately 
-      for ((masteruri, addr), nodes) in hosts.items():
-        self.node_tree_model.appendConfigNodes(masteruri, addr, nodes)
-      self.updateButtons()
-    except:
-      import traceback
-      print traceback.format_exc()
+    hosts = dict() # dict(addr : dict(node : [config]) )
+    for n in rosconfig.nodes:
+      addr = nm.nameres().address(self.masteruri)
+      masteruri = self.masteruri
+      if n.machine_name and not n.machine_name == 'localhost':
+        if not rosconfig.machines.has_key(n.machine_name):
+          raise Exception(''.join(["ERROR: unknown machine [", n.machine_name,"]"]))
+        addr = rosconfig.machines[n.machine_name].address
+        masteruri = nm.nameres().masteruri(n.machine_name)
+      node = roslib.names.ns_join(n.namespace, n.name)
+      if not hosts.has_key((masteruri, addr)):
+        hosts[(masteruri, addr)] = dict()
+      hosts[(masteruri, addr)][node] = launchfile
+    # add the configurations for each host separately 
+    for ((masteruri, addr), nodes) in hosts.items():
+      self.node_tree_model.appendConfigNodes(masteruri, addr, nodes)
+    self.updateButtons()
       
   def removeConfigFromModel(self, launchfile):
     '''
@@ -638,14 +636,16 @@ class MasterViewProxy(QtGui.QWidget):
     for name in self.__master_info.service_names:
       if name.endswith('list_nodes'):
         srv = self.__master_info.getService(name)
-        default_cfgs.append((roslib.names.namespace(name).rstrip(roslib.names.SEP), srv.uri))
+        default_cfgs.append((roslib.names.namespace(name).rstrip(roslib.names.SEP), srv.uri, srv.masteruri))
     # remove the node contained in default configuration form the view
     removed = list(set([c for c in self.__configs.keys() if isinstance(c, tuple)]) - set(default_cfgs))
     if removed:
       for r in removed:
         host = nm.nameres().address(r[1])
         self.node_tree_model.removeConfigNodes(r)
-        self.remove_config_signal.emit(r[0])
+        service = self.__master_info.getService(roslib.names.ns_join(r[0], 'list_nodes'))
+        if r[2] == self.masteruri:
+          self.remove_config_signal.emit(r[0])
         del self.__configs[r]
     if len(self.__configs) == 0:
       address = nm.nameres().address(master_info.masteruri)
@@ -653,7 +653,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.host_description_updated.emit(master_info.masteruri, address, tooltip)
     # request the nodes of new default configurations
     added = list(set(default_cfgs) - set(self.__configs.keys()))
-    for (name, uri) in added:
+    for (name, uri, muri) in added:
       self.default_cfg_handler.requestNodeList(uri, roslib.names.ns_join(name, 'list_nodes'))
       #request the description
       descr_service = self.__master_info.getService(roslib.names.ns_join(name, 'description'))
@@ -677,7 +677,7 @@ class MasterViewProxy(QtGui.QWidget):
       service = self.__master_info.getService(config_name)
       if not service is None:
         masteruri = service.masteruri
-    key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri)
+    key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri, masteruri)
 #    if self.__configs.has_key(key):
 #      self.node_tree_model.removeConfigNodes(key)
     # add the new config
@@ -709,7 +709,7 @@ class MasterViewProxy(QtGui.QWidget):
         service = self.__master_info.getService(config_name)
         if not service is None:
           masteruri = service.masteruri
-      key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri)
+      key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri, masteruri)
       host = nm.nameres().getHostname(service_uri)
       host_addr = nm.nameres().address(host)
       #add capabilities
