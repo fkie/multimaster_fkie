@@ -1,0 +1,44 @@
+<launch> 
+  <arg name="ROBOT_1" value="bar"/>
+  <arg name="ROBOT_2" value="bob"/>
+
+  <include file="$(find node_manager_fkie)/launch/demo_capabilities.launch"/>
+
+  <group ns="$(arg ROBOT_1)">
+    <node name="hokuyo" pkg="rostopic" type="rostopic" args="pub hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+      <param name="capability_group" value="Hokuyo"/>
+    </node>
+  
+    <node name="velodyne" pkg="rostopic" type="rostopic" args="pub velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+      <param name="capability_group" value="Velodyne"/>
+    </node>
+  
+    <node name="velodyne_helper" pkg="rostopic" type="rostopic" args="echo velodyne_scan">
+      <param name="capability_group" value="Velodyne"/>
+    </node>
+  
+    <node name="joy" pkg="rostopic" type="rostopic" args="pub joy std_msgs/String -r 1 'joy'">
+      <param name="capability_group" value="Joystick"/>
+    </node>
+  
+    <node name="joy_mapper" pkg="rostopic" type="rostopic" args="echo joy">
+      <param name="capability_group" value="Joystick"/>
+    </node>
+  
+    <node name="gps" pkg="rostopic" type="rostopic" args="pub gps std_msgs/String -r 1 'gps'">
+      <param name="capability_group" value="GPS"/>
+    </node>
+    <node name="gps_tf" pkg="rostopic" type="rostopic" args="echo gps">
+      <param name="capability_group" value="GPS"/>
+    </node>
+  
+    <node name="base" pkg="rostopic" type="rostopic" args="pub base std_msgs/String -r 1 'base'">
+      <param name="capability_group" value="Base"/>
+    </node>
+  
+    <node name="local_navigation" pkg="rostopic" type="rostopic" args="echo base">
+      <param name="capability_group" value="Local Navigation"/>
+    </node>
+  </group>
+
+</launch>
