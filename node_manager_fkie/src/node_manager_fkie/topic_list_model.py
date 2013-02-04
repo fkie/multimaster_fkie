@@ -281,7 +281,6 @@ class TopicModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(TopicModel.header))
     self.setHorizontalHeaderLabels([label for label, width in TopicModel.header])
-    self._pulishedNewTopics = dict()
 
   def flags(self, index):
     '''
@@ -319,23 +318,6 @@ class TopicModel(QtGui.QStandardItemModel):
     for (name, topic) in topics.items():
       doAddItem = True
       self._update_topic(name, topic, updated)
-#      for i in range(root.rowCount()):
-#        topicItem = root.child(i)
-#        if not name in updated:
-#          res = cmp(topicItem.topic.name.lower(), topic.name.lower())
-#          if res > 0:
-#            new_item_row = TopicItem.getItemList(topic.name, root)
-#            root.insertRow(i, new_item_row)
-#            new_item_row[0].topic = topic
-#            doAddItem = False
-#            break
-#        else:
-#          doAddItem = False
-#          break
-#      if doAddItem:
-#        new_item_row = TopicItem.getItemList(topic.name, root)
-#        root.appendRow(new_item_row)
-#        new_item_row[0].topic = topic
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update topic ", cputime, ", topic count:", len(topics)

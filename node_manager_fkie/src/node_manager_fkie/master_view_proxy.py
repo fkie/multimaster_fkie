@@ -510,11 +510,8 @@ class MasterViewProxy(QtGui.QWidget):
     #load launch config
     try:
       # test for requerid args
-      print 1
       launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
-      print 2
       req_args = launchConfig.getArgs()
-      print 3
       loaded = False
       if req_args:
         params = dict()
