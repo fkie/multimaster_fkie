@@ -283,6 +283,7 @@ class MasterViewProxy(QtGui.QWidget):
     self._shortcut_copy.activated.connect(self.on_copy_service_clicked)
     self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected parameter to clipboard")), self.masterTab.parameterView)
     self._shortcut_copy.activated.connect(self.on_copy_parameter_clicked)
+    
 #    print "================ create", self.objectName()
 #
 #  def __del__(self):
@@ -509,8 +510,11 @@ class MasterViewProxy(QtGui.QWidget):
     #load launch config
     try:
       # test for requerid args
+      print 1
       launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
+      print 2
       req_args = launchConfig.getArgs()
+      print 3
       loaded = False
       if req_args:
         params = dict()
@@ -882,9 +886,7 @@ class MasterViewProxy(QtGui.QWidget):
     topics_selected = (len(selectedTopics) > 0)
     self.masterTab.echoTopicButton.setEnabled(topics_selected)
     self.masterTab.hzTopicButton.setEnabled(topics_selected)
-    if self._get_nm_masteruri() == self.masteruri:
-      self.masterTab.pubTopicButton.setEnabled(len(selectedTopics) == 1)
-      self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
+    self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
       text = ''.join(['<h3>', topic.name,'</h3>'])
@@ -1573,19 +1575,126 @@ class MasterViewProxy(QtGui.QWidget):
 
   def on_topic_pub_clicked(self):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
-    for topic in selectedTopics:
-      try:
-        self.topic_model.publish_topic(topic.name, self.masteruri)
-      except Exception, e:
-        rospy.logwarn("Publish topic '%s' failed: %s", str(topic.name), str(e))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Publish topic error", 
-                          ''.join(['Publish topic ', topic.name, ' failed!']),
-                          str(e)).exec_()
+    if len(selectedTopics) > 0:
+      for topic in selectedTopics:
+        if not self._start_publisher(topic.name, topic.type):
+          break
+    else: # create a new topic
+      # fill the input fields
+      # determine the list all available message types
+      root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+      packages = {}
+      msg_types = []
+      for p in root_paths:
+        ret = self._getPackages(p)
+        packages = dict(ret.items() + packages.items())
+        for (p, direc) in packages.items():
+          import rosmsg
+          for file in rosmsg._list_types('/'.join([direc, 'msg']), 'msg', rosmsg.MODE_MSG):
+            msg_types.append("%s/%s"%(p, file))
+      msg_types.sort()
+      fields = {'Type' : ('string', msg_types), 'Name' : ('string', [''])}
+      
+      #create a dialog
+      dia = ParameterDialog(fields, parent=self)
+      dia.setWindowTitle('Publish to topic')
+      dia.setFilterVisible(False)
+      dia.resize(300, 95)
+      dia.setFocusField('Name')
+      if dia.exec_():
+        params = dia.getKeywords()
+        try:
+          if params['Name'] and params['Type']:
+            try:
+              self._start_publisher(params['Name'], params['Type'])
+            except Exception, e:
+              import traceback
+              print traceback.format_exc()
+              rospy.logwarn("Publish topic '%s' failed: %s", str(params['Name']), str(e))
+              WarningMessageBox(QtGui.QMessageBox.Warning, "Publish topic error", 
+                                ''.join(['Publish topic ', params['Name'], ' failed!']),
+                                str(e)).exec_()
+          else:
+            WarningMessageBox(QtGui.QMessageBox.Warning, "Invalid name or type", 
+                                ''.join(["Can't publish to topic '", params['Name'], "' with type '", params['Type'], "'!"])).exec_()
+        except (KeyError, ValueError), e:
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Warning", 
+                            'Error while add a parameter to the ROS parameter server',
+                            str(e)).exec_()
+
+  def _start_publisher(self, topic_name, topic_type):
+    try:
+      mclass = roslib.message.get_message_class(topic_type)
+      if mclass is None:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error", 
+                          'Error while publish to %s'%topic_name,
+                          ''.join(['invalid message type: ', topic_type,'.\nIf this is a valid message type, perhaps you need to run "rosmake"'])).exec_()
+        return
+      slots = mclass.__slots__
+      types = mclass._slot_types
+      args = ServiceDialog._params_from_slots(slots, types)
+      p = { '! Publish rate' : ('string', ['latch', 'once', '1']), topic_type : ('dict', args) }
+      dia = ParameterDialog(p)
+      dia.setWindowTitle(''.join(['Publish to ', topic_name]))
+      dia.resize(450,300)
+      dia.setFocusField('! Publish rate')
+
+      if dia.exec_():
+        params = dia.getKeywords()
+        rate = params['! Publish rate']
+        opt_str = ''
+        opt_name_suf = '__latch_'
+        if rate == 'latch':
+          opt_str = ''
+        elif rate == 'once' or rate == '-1':
+          opt_str = '--once'
+          opt_name_suf = '__once_'
+        else:
+          try:
+            i = int(rate)
+            if i > 0:
+              opt_str = ''.join(['-r ', rate])
+              opt_name_suf = ''.join(['__', rate, 'Hz_'])
+          except:
+            pass
+        pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(params[topic_type]), '"', opt_str])
+        nm.starter().runNodeWithoutConfig(nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), args=[pub_cmd], masteruri=self.masteruri)
+        return True
+      else:
+        return False
+    except Exception, e:
+      rospy.logwarn("Publish topic '%s' failed: %s", str(topic_name), str(e))
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Publish topic error", 
+                        ''.join(['Publish topic ', topic_name, ' failed!']),
+                        str(e)).exec_()
+      import traceback
+      print traceback.format_exc()
+      return False
+
+  def _getPackages(self, path):
+    result = {}
+    if os.path.isdir(path):
+      fileList = os.listdir(path)
+      if 'manifest.xml' in fileList:
+        return {os.path.basename(path) : path}
+      for f in fileList:
+        ret = self._getPackages(os.path.sep.join([path, f]))
+        result = dict(ret.items() + result.items())
+    return result
+
 
   def on_topic_pub_stop_clicked(self):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
-    for topic in selectedTopics:
-      self.topic_model.publish_stop_topic(topic.name)
+    if not self.master_info is None:
+      nodes2stop = []
+      for topic in selectedTopics:
+        topic_prefix = ''.join(['/rostopic_pub', topic.name, '_'])
+        node_names = self.master_info.node_names
+        for n in node_names:
+          
+          if n.startswith(topic_prefix):
+            nodes2stop.append(n)
+      self.stop_nodes_by_name(nodes2stop)
 
   def _show_topic_output(self, show_hz_only):
     '''

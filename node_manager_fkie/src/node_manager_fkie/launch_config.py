@@ -282,9 +282,11 @@ class LaunchConfig(QtCore.QObject):
     @raise roslaunch.XmlParseException: on parse errors
     '''
     arg_subs = []
+    args = []
     for filename in self.getIncludedFiles(self.Filename):
       try: 
-        args = parse(filename).getElementsByTagName('arg') 
+        if filename.endswith('.launch'):
+          args[len(args):-1] = parse(filename).getElementsByTagName('arg')
       except Exception as e: 
         raise roslaunch.XmlParseException("Invalid roslaunch XML syntax: %s"%e) 
 

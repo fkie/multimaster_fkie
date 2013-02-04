@@ -99,8 +99,6 @@ class TopicItem(QtCore.QObject, QtGui.QStandardItem):
     if self._topic.subscriberNodes != topic_info.subscriberNodes:
       subs_changed = True
       self._topic.subscriberNodes = topic_info.subscriberNodes
-      if not self._publish_thread is None:
-        self._publish_thread._subscriber_count = len(self._topic.subscriberNodes)
     if self._topic.type != topic_info.type:
       self._topic.type = topic_info.type
       type_changed = True
@@ -179,53 +177,7 @@ class TopicItem(QtCore.QObject, QtGui.QStandardItem):
           except ValueError:
             pass
 #          cfg_col.setToolTip(tooltip)
-  
-  def updateIconView(self, icon):
-    if not self._publish_thread is None:
-      self.setIcon(icon)
-    else:
-      self.setIcon(QtGui.QIcon())
 
-  def publish(self, local_masteruri):
-    try:
-      if not self._publish_thread is None:
-        self._publish_thread.finish()
-      
-      mclass = roslib.message.get_message_class(self.topic.type)
-      if mclass is None:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error", 
-                          'Error while publish to %s'%self.topic.name,
-                          ''.join(['invalid message type: ', self.topic.type,'.\nIf this is a valid message type, perhaps you need to run "rosmake"'])).exec_()
-        return
-      slots = mclass.__slots__
-      types = mclass._slot_types
-      args = ServiceDialog._params_from_slots(slots, types)
-      p = { '! Publish rate[Hz]' : ('int', -1) , self.topic.type : ('dict', args) }
-      dia = ParameterDialog(p)
-      dia.setWindowTitle(''.join(['Publish to ', self.topic.name]))
-      dia.resize(450,300)
-
-      if dia.exec_():
-        params = dia.getKeywords()
-        rate = params['! Publish rate[Hz]']
-        self.updateIconView(QtGui.QIcon(':/icons/state_off.png'))
-        self._publish_thread = PublishThread(self.topic.name, mclass, params[self.topic.type], rate, local_masteruri, len(self.topic.subscriberNodes))
-        self._publish_thread.publish_msg.connect(self._on_publishing)
-        self._publish_thread.wait_for_publish_msg.connect(self._on_wait_for_publishing)
-        self._publish_thread.partial_publish_msg.connect(self._on_partial_publishing)
-        self._publish_thread.finished.connect(self._publish_finished)
-        self._publish_thread.error.connect(self.show_error_msg)
-        self._publish_thread.start()
-    except Exception, e:
-      self._publish_thread = None
-      import traceback
-      print traceback.format_exc()
-      raise Exception(e)
-  
-  def publishStop(self):
-    if not self._publish_thread is None:
-      self._publish_thread.finish()
-  
   def _on_wait_for_publishing(self):
     self.updateIconView(QtGui.QIcon(':/icons/state_off.png'))
 
@@ -311,112 +263,6 @@ class TopicItem(QtCore.QObject, QtGui.QStandardItem):
 #      return self.topic.name.lower() > item.topic.name.lower()
 #    return False
 
-class PublishThread(QtCore.QObject, threading.Thread):
-
-  finished = QtCore.Signal()
-  error = QtCore.Signal(str)
-  publish_msg = QtCore.Signal()
-  partial_publish_msg = QtCore.Signal()
-  wait_for_publish_msg = QtCore.Signal()
-
-
-  def __init__(self, topic_name, topic_class, args, rate, masteruri, subscriber_count):
-    '''
-    Create a thread to publish messages to the topic.
-    @param topic_name: the name of the topic
-    @type topic_name: C{str}
-    @param topic_class: the class of the topic
-    @type topic_class: C{Class}
-    @param args: arguments to create a message
-    @type args: C{str}
-    @param rate: the publishing rate. -1 to publish once
-    @type rate: C{int}
-    @param masteruri: ROS bug workaround to unregister a publisher
-    @type masteruri: C{str}
-
-    '''
-    QtCore.QObject.__init__(self)
-    threading.Thread.__init__(self)
-    self.setObjectName(''.join(['PablishTread - ', topic_name]))
-    self._running = True
-    self._topic_name = topic_name
-    self._topic_class = topic_class
-    self._args = args
-    if type(args) != list:
-      self._args = [args]
-    self._rate = rate
-    self._masteruri = masteruri
-    self._subscriber_count = subscriber_count
-    self._pub = None
-    self.setDaemon(True)
-
-  def run(self):
-    self.wait_for_publish_msg.emit()
-    self._pub = rospy.Publisher(self._topic_name, self._topic_class)
-    max_wait_secs = 25
-    secs_waited = 0
-    # publish message
-    while (not rospy.is_shutdown()) and self._running:
-      try:
-        while self._pub.get_num_connections() < self._subscriber_count and secs_waited < max_wait_secs: 
-          time.sleep(1)
-          secs_waited +=1
-        if self._pub.get_num_connections() < self._subscriber_count:
-          self.partial_publish_msg.emit()
-        else:
-          self.publish_msg.emit()
-        msg = self._topic_class()
-        #create message
-        try:
-          now = rospy.get_rostime() 
-          import std_msgs.msg
-          keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
-          genpy.message.fill_message_args(msg, self._args, keys=keys)
-        except (genpy.MessageException, ValueError), e:
-          import traceback
-          print traceback.format_exc()
-          self.error.emit(''.join([str(e), "\n\nArgs are: [", str(genpy.message.get_printable_message_args(msg)), ']']))
-          self._internal_finish()
-          return
-        self._pub.publish(msg)
-        if self._rate > 0:
-          r = rospy.Rate(float(self._rate))
-          r.sleep()
-        else:
-          break
-      except rospy.ROSSerializationException as e:
-        import rosmsg
-        # we could just print the message definition, but rosmsg is more readable
-        self.error.emit(''.join(["Unable to publish message. One of the fields has an incorrect type:\n",
-                                "  ", str(e), "\n\nmsg file:\n", str(rosmsg.get_msg_text(msg_class._type))]))
-        self._internal_finish()
-        return
-    self._internal_finish()
-
-  def finish(self):
-    self._running = False
-
-  def _internal_finish(self):
-    time.sleep(2)
-    if not self._pub is None:
-      self._pub.unregister()
-      # the unregister method is buggy @see https://code.ros.org/trac/ros/ticket/3900
-      # workaround: (does not work :( )
-#      import socket
-#      try:
-#        import xmlrpclib
-#        socket.setdefaulttimeout(3)
-#        master = xmlrpclib.ServerProxy(self._masteruri)
-#        master.unregisterPublisher(rospy.get_name(), self._topic_name, rospy.get_node_uri())
-#      except Exception, e:
-#        print e
-#      finally:
-#        socket.setdefaulttimeout(None)
-      
-#    if not self._pub is None:
-#      del self._pub
-    self.finished.emit()
-
 
 class TopicModel(QtGui.QStandardItemModel):
   '''
@@ -435,6 +281,7 @@ class TopicModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(TopicModel.header))
     self.setHorizontalHeaderLabels([label for label, width in TopicModel.header])
+    self._pulishedNewTopics = dict()
 
   def flags(self, index):
     '''
@@ -471,41 +318,49 @@ class TopicModel(QtGui.QStandardItemModel):
 #    cputime_init = cputimes[0] + cputimes[1]
     for (name, topic) in topics.items():
       doAddItem = True
-      for i in range(root.rowCount()):
-        topicItem = root.child(i)
-        if not name in updated:
-          res = cmp(topicItem.topic.name.lower(), topic.name.lower())
-          if res > 0:
-            new_item_row = TopicItem.getItemList(topic.name, root)
-            root.insertRow(i, new_item_row)
-            new_item_row[0].topic = topic
-            doAddItem = False
-            break
-        else:
-          doAddItem = False
-          break
-      if doAddItem:
-        new_item_row = TopicItem.getItemList(topic.name, root)
-        root.appendRow(new_item_row)
-        new_item_row[0].topic = topic
+      self._update_topic(name, topic, updated)
+#      for i in range(root.rowCount()):
+#        topicItem = root.child(i)
+#        if not name in updated:
+#          res = cmp(topicItem.topic.name.lower(), topic.name.lower())
+#          if res > 0:
+#            new_item_row = TopicItem.getItemList(topic.name, root)
+#            root.insertRow(i, new_item_row)
+#            new_item_row[0].topic = topic
+#            doAddItem = False
+#            break
+#        else:
+#          doAddItem = False
+#          break
+#      if doAddItem:
+#        new_item_row = TopicItem.getItemList(topic.name, root)
+#        root.appendRow(new_item_row)
+#        new_item_row[0].topic = topic
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update topic ", cputime, ", topic count:", len(topics)
 
-  def publish_topic(self, topic_name, local_masteruri):
-    item = self._get_topic(topic_name)
-    if not topic_name is None:
-      item.publish(local_masteruri)
-
-  def publish_stop_topic(self, topic_name):
-    item = self._get_topic(topic_name)
-    if not topic_name is None:
-      item.publishStop()
-
-  def _get_topic(self, topic_name):
+  def _update_topic(self, name, topic=None, updated=None):
+    new_item_row = None
     root = self.invisibleRootItem()
+    doAddItem = True
     for i in range(root.rowCount()):
       topicItem = root.child(i)
-      if cmp(topicItem.topic.name.lower(), topic_name.lower()) == 0:
-        return topicItem
-    return None
+      if updated is None or not name in updated:
+        res = cmp(topicItem.topic.name.lower(), name.lower())
+        if res > 0:
+          new_item_row = TopicItem.getItemList(name, root)
+          root.insertRow(i, new_item_row)
+          if not topic is None:
+            new_item_row[0].topic = topic
+          doAddItem = False
+          break
+      else:
+        doAddItem = False
+        break
+    if doAddItem:
+      new_item_row = TopicItem.getItemList(name, root)
+      root.appendRow(new_item_row)
+      if not topic is None:
+        new_item_row[0].topic = topic
+    return new_item_row

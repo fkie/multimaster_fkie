@@ -466,7 +466,7 @@ p, li { white-space: pre-wrap; }
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_5">
+            <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,0,0,0,0">
              <property name="margin">
               <number>0</number>
              </property>
@@ -474,6 +474,12 @@ p, li { white-space: pre-wrap; }
               <widget class="QToolButton" name="echoTopicButton">
                <property name="enabled">
                 <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
                <property name="toolTip">
                 <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -502,6 +508,12 @@ p, li { white-space: pre-wrap; }
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="toolTip">
                 <string>shows only the receive rate of the topic</string>
                </property>
@@ -518,13 +530,22 @@ p, li { white-space: pre-wrap; }
               </widget>
              </item>
              <item>
+              <widget class="Line" name="line">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QToolButton" name="pubTopicButton">
-               <property name="enabled">
-                <bool>false</bool>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
                <property name="toolTip">
-                <string>starts a publisher for selected topic
-(Only to local ROS master. Use sync to publish to remote topics!)</string>
+                <string>starts a publisher for selected topic or creates a new topic, if no selected</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -540,11 +561,15 @@ p, li { white-space: pre-wrap; }
              </item>
              <item>
               <widget class="QToolButton" name="pubStopTopicButton">
-               <property name="enabled">
-                <bool>false</bool>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
                <property name="toolTip">
-                <string>stops a running publisher of selected topic</string>
+                <string>stops a running publisher of selected topic
+Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -565,7 +590,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>20</width>
+                 <width>16</width>
                  <height>40</height>
                 </size>
                </property>
