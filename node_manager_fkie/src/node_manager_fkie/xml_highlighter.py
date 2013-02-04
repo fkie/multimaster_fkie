@@ -65,7 +65,8 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
                 "\\buser=", "\\bpassword=", "\\btimeout=", "\\bros-root=",
                 "\\bros-package-path=", "\\bfile=", "\\bclear_params=", "\\bfrom=",
                 "\\bto=", "\\bvalue=", "\\btextfile=", "\\bbinfile=",
-                "\\bcommand=", "\\btest-name=", "\\btime-limit=", "\\bretry="]
+                "\\bcommand=", "\\btest-name=", "\\btime-limit=", "\\bretry=",
+                "\\if=", "\\unless="]
     for attr in attrList:
       r.setPattern(attr)
       self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
