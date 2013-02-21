@@ -773,7 +773,7 @@ class MainWindow(QtGui.QMainWindow):
         masteruri = params['Optional Parameter']['ROS Master URI']
         try:
           args = []
-          if not port is None and port and int(network) < 100 and int(port) >= 0:
+          if not port is None and port and int(port) < 100 and int(port) >= 0:
             args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
           else:
             args.append(''.join(['_mcast_port:=', str(11511)]))
@@ -792,7 +792,7 @@ class MainWindow(QtGui.QMainWindow):
         except (Exception, nm.StartException), e:
           import traceback
           print traceback.format_exc()
-          rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
+          rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                             'Error while start master_discovery',
                             str(e)).exec_()
