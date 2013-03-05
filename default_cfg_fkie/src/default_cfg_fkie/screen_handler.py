@@ -43,7 +43,7 @@ class ScreenHandler(object):
   start of the ROS nodes.
   '''
 
-  LOG_PATH = ''.join([os.environ['HOME'], '/', '.ros/log/'])
+  LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), '/']) if os.environ.get('ROS_LOG_DIR') else ''.join([os.environ['HOME'], '/', '.ros/log/'])
   SCREEN = "/usr/bin/screen"
   SLASH_SEP = '_'
   
