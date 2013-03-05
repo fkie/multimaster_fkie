@@ -286,7 +286,9 @@ class MasterViewProxy(QtGui.QWidget):
     
 #    print "================ create", self.objectName()
 #
-#  def __del__(self):
+  def __del__(self):
+    for ps in self.__echo_topics_dialogs.values():
+      ps.terminate()
 #    print "*********** destroy", self.objectName()
 
   @property
@@ -1700,22 +1702,23 @@ class MasterViewProxy(QtGui.QWidget):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     for topic in selectedTopics:
       try:
-        if self._get_nm_masteruri() == self.masteruri:
-          if self.__echo_topics_dialogs.has_key(topic.name):
-            self.__echo_topics_dialogs[topic.name].activateWindow()
-          else:
-            topicDia = EchoDialog(topic.name, topic.type, show_hz_only, self)
-            self.__echo_topics_dialogs[topic.name] = topicDia
-            topicDia.finished_signal.connect(self._topic_dialog_closed)
-            topicDia.show()
-        else:
+#        if self._get_nm_masteruri() == self.masteruri:
+#          if self.__echo_topics_dialogs.has_key(topic.name):
+#            self.__echo_topics_dialogs[topic.name].activateWindow()
+#          else:
+#            topicDia = EchoDialog(topic.name, topic.type, show_hz_only, self)
+#            self.__echo_topics_dialogs[topic.name] = topicDia
+#            topicDia.finished_signal.connect(self._topic_dialog_closed)
+#            topicDia.show()
+#        else:
           # connect to topic on remote host
           import os, shlex, subprocess
           env = dict(os.environ)
           env["ROS_MASTER_URI"] = str(self.masteruri)
-          cmd = ' '.join(['rosrun', 'node_manager_fkie', 'nm', '-t', topic.name, topic.type, '--hz' if show_hz_only else ''])
+          cmd = ' '.join(['rosrun', 'node_manager_fkie', 'nm', '-t', topic.name, topic.type, '--hz' if show_hz_only else '', ''.join(['__name:=echo_','hz_' if show_hz_only else '',str(nm.nameres().getHostname(self.masteruri)), topic.name])])
           rospy.loginfo("Echo topic: %s", cmd)
           ps = subprocess.Popen(shlex.split(cmd), env=env, close_fds=True)
+          self.__echo_topics_dialogs[topic.name] = ps
           # wait for process to avoid 'defunct' processes
           thread = threading.Thread(target=ps.wait)
           thread.setDaemon(True)

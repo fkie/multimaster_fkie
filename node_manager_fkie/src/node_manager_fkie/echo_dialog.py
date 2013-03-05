@@ -220,6 +220,9 @@ class EchoDialog(QtGui.QDialog):
     self._print_status()
 
   def _on_calc_hz(self):
+    if rospy.is_shutdown():
+      self.close()
+      return
     if self.msg_tn == self.last_printed_tn:
       self._rate_message = 'no new messages'
       return

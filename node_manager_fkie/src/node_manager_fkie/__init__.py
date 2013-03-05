@@ -241,11 +241,11 @@ def finish(*arg):
   global _ssh_handler
   if not _ssh_handler is None:
     _ssh_handler.close()
-  global _history
-  _history.storeAll()
   global main_form
   import main_window
   if isinstance(main_form, main_window.MainWindow):
+    global _history
+    _history.storeAll()
     main_form.finish()
   global app
   if not app is None:
