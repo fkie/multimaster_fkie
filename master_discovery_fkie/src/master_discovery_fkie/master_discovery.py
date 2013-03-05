@@ -256,12 +256,20 @@ class Discoverer(threading.Thread):
     if (local_addr in ['localhost', '127.0.0.1']):
       sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!", local_addr)
     
+    self.mcast_port = mcast_port
+    self.mcast_group = mcast_group
     rospy.loginfo("Start broadcasting at ('%s', %d)", mcast_group, mcast_port)
-    # create the multicast socket and join the multicast group
-    self.msocket = msocket = McastSocket(mcast_port, mcast_group)
-#    msocket.settimeout(3.0)
-    if not msocket.hasEnabledMulticastIface():
-      sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast")
+    self._init_mcast_socket(True)
+#    # create the multicast socket and join the multicast group
+#    self.msocket = msocket = McastSocket(mcast_port, mcast_group)
+##    msocket.settimeout(3.0)
+#    if not msocket.hasEnabledMulticastIface():
+#      sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast")
+#
+    # create a thread to handle the received multicast messages
+    self._recvThread = threading.Thread(target = self.recv_loop)
+    self._recvThread.setDaemon(True)
+    self._recvThread.start()
     
     # create a thread to monitor the ROS master state
     self.master_monitor = MasterMonitor(monitor_port)
@@ -269,11 +277,6 @@ class Discoverer(threading.Thread):
     self._masterMonitorThread.setDaemon(True)
     self._masterMonitorThread.start()
 
-    # create a thread to handle the received multicast messages
-    self._recvThread = threading.Thread(target = self.recv_loop)
-    self._recvThread.setDaemon(True)
-    self._recvThread.start()
-    
     # create a timer monitor the offline ROS master and calculate the link qualities
     try:
       self._statsTimer = threading.Timer(1, self.timed_stats_calculation)
@@ -282,6 +285,14 @@ class Discoverer(threading.Thread):
       rospy.logwarn("ROS Timer is not available! Statistic calculation and timeouts are deactivated!")
     # set the callback to finish all running threads
     rospy.on_shutdown(self.finish)
+
+  def _init_mcast_socket(self, doexit_on_error=False):
+    rospy.loginfo("Init multicast socket")
+    # create the multicast socket and join the multicast group
+    self.msocket = msocket = McastSocket(self.mcast_port, self.mcast_group)
+#    msocket.settimeout(3.0)
+    if not msocket.hasEnabledMulticastIface() and doexit_on_error:
+      sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast")
 
   def finish(self, *arg):
     '''
@@ -321,9 +332,12 @@ class Discoverer(threading.Thread):
         if not self.master_monitor.getCurrentState() is None:
           t = self.master_monitor.getCurrentState().timestamp
         msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), int(t), int((t-(int(t))) * 1000000000), self.master_monitor.rpcport)
-        self.msocket.send2group(msg)
-        for a in self.static_hosts:
-          self.msocket.send2addr(msg, a)
+        try:
+          self.msocket.send2group(msg)
+          for a in self.static_hosts:
+            self.msocket.send2addr(msg, a)
+        except:
+          self._init_mcast_socket()
       time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
     msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), -1, -1, self.master_monitor.rpcport)
     self.msocket.send2group(msg)
@@ -356,9 +370,10 @@ class Discoverer(threading.Thread):
         try_count = 0
       except MasterConnectionException, e:
         try_count = try_count + 1
-        if try_count > 5:
+        if try_count == 5:
           rospy.logerr("Communication with ROS Master failed: %s", e)
-          rospy.signal_shutdown("ROS Master not reachable")
+#          rospy.signal_shutdown("ROS Master not reachable")
+#          time.sleep(3)
       # remove offline hosts
       self.__lock.acquire(True)
       current_time = time.time()
