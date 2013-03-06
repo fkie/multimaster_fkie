@@ -104,6 +104,13 @@ class SyncThread(threading.Thread):
     self.ignore = ['/rosout', rospy.get_name(), self.masterInfo.discoverer_name, '/default_cfg', '/node_manager', '/zeroconf']
     if rospy.has_param('~ignore_nodes'):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_nodes')
+    rospy.loginfo("ignore_nodes: " + str(self.ignore))
+
+    self.sync_nodes = []
+    if rospy.has_param('~sync_nodes'): 
+        self.sync_nodes[len(self.sync_nodes):] = rospy.get_param('~sync_nodes')
+    rospy.loginfo("sync_nodes: " + str(self.sync_nodes))
+
     self.start()
 
   @classmethod
@@ -289,10 +296,18 @@ class SyncThread(threading.Thread):
       self.__unregisterService(service, serviceuri, node)
 
   def _doIgnore(self, node):
-    for n in self.ignore:
-      if node.startswith(n):
-        return True
-    return False
+    if len(self.sync_nodes) > 0:
+      for n in self.sync_nodes:
+        if node.startswith(n):
+          #rospy.loginfo("Allowing node" + node)
+          return False
+        #rospy.loginfo("Denying node" + node)
+      return True
+    else:
+      for n in self.ignore:
+        if node.startswith(n):
+          return True
+      return False
     
   def _getTopicType(self, topic, topicTypes):
     for (topicname, type) in topicTypes:
