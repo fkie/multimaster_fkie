@@ -244,6 +244,8 @@ class Discoverer(threading.Thread):
     if rospy.has_param('~static_hosts'):
       self.static_hosts[len(self.static_hosts):] = rospy.get_param('~static_hosts')
 
+    rospy.loginfo("Static hosts: " + str(self.static_hosts))
+
     self.current_check_hz = Discoverer.HEARTBEAT_HZ
     # initialize the ROS publishers
     self.pubchanges = rospy.Publisher("~changes", MasterState)
@@ -335,13 +337,18 @@ class Discoverer(threading.Thread):
         try:
           self.msocket.send2group(msg)
           for a in self.static_hosts:
-            self.msocket.send2addr(msg, a)
-        except:
+            try:
+              self.msocket.send2addr(msg, a)
+            except socket.gaierror as e:
+              rospy.logwarn("send to static host: " + str(a) + " failed: " + str(e))
+        except Exception as e:
+          rospy.logwarn(e)
           self._init_mcast_socket()
       time.sleep(1.0/Discoverer.HEARTBEAT_HZ)
     msg = struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION, int(Discoverer.HEARTBEAT_HZ*10), -1, -1, self.master_monitor.rpcport)
     self.msocket.send2group(msg)
     for a in self.static_hosts:
+      rospy.loginfo("send Discoverer.HEARTBEAT_FMT to static host: " + str(a))
       self.msocket.send2addr(msg, a)
     self.msocket.close()
 
