@@ -288,7 +288,10 @@ class MasterViewProxy(QtGui.QWidget):
 #
   def __del__(self):
     for ps in self.__echo_topics_dialogs.values():
-      ps.terminate()
+      try:
+        ps.terminate()
+      except:
+        pass
 #    print "*********** destroy", self.objectName()
 
   @property
@@ -1656,7 +1659,11 @@ class MasterViewProxy(QtGui.QWidget):
               opt_name_suf = ''.join(['__', rate, 'Hz_'])
           except:
             pass
-        pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(params[topic_type]), '"', opt_str])
+        # remove empty lists
+        topic_params = self._rem_empty_lists(params[topic_type])
+        print params[topic_type]
+        print topic_params
+        pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
         nm.starter().runNodeWithoutConfig(nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), args=[pub_cmd], masteruri=self.masteruri)
         return True
       else:
@@ -1669,6 +1676,15 @@ class MasterViewProxy(QtGui.QWidget):
       import traceback
       print traceback.format_exc()
       return False
+
+  def _rem_empty_lists(self, param_dict):
+    result = dict()
+    for key, value in param_dict.iteritems():
+      if isinstance(value, dict):
+        result[key] = self._rem_empty_lists(value)
+      elif not (isinstance(value, list) and not value):
+        result[key] = value
+    return result
 
   def _getPackages(self, path):
     result = {}

@@ -76,7 +76,7 @@ class ParameterDescription(object):
       self._type = 'list'
     self._value = value
     self._widget = widget
-    self._base_type, self._is_array_type, array_length = roslib.msgs.parse_type(self._type)
+    self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
     self._is_primitive_type =  self._base_type in roslib.msgs.PRIMITIVE_TYPES or self._base_type in ['int', 'float', 'time', 'duration']
     self._is_time_type = self._base_type in ['time', 'duration']
   
@@ -102,6 +102,9 @@ class ParameterDescription(object):
   def isArrayType(self):
     return self._is_array_type
 
+  def arrayLength(self):
+    return self._array_length
+
   def isPrimitiveType(self):
     return self._is_primitive_type
 
@@ -123,6 +126,7 @@ class ParameterDescription(object):
     self.setValue(result)
 
   def setValue(self, value):
+    error_str = ''
     try:
       if isinstance(value, (dict, list)):
         self._value = value
@@ -137,6 +141,8 @@ class ParameterDescription(object):
             self._value = map(str2bool, value.split(','))
           else:
             self._value = [ s.encode(sys.getfilesystemencoding()) for s in value.split(',')]
+          if self.arrayLength() != len(self._value):
+            raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
         else:
           if 'int' in self.baseType():
             self._value = int(value)
