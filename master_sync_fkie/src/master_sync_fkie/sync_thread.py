@@ -106,10 +106,17 @@ class SyncThread(threading.Thread):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_nodes')
     rospy.loginfo("ignore_nodes: " + str(self.ignore))
 
+    #if ~sync_nodes is set, only nodes in that list will be synchronized (whitelist). The values in ~ignore_nodes will then be ignored.
     self.sync_nodes = []
     if rospy.has_param('~sync_nodes'): 
         self.sync_nodes[len(self.sync_nodes):] = rospy.get_param('~sync_nodes')
     rospy.loginfo("sync_nodes: " + str(self.sync_nodes))
+
+	#if ~sync_topics is set, sync only topics specified here (whitelist). ~ignore_nodes/~sync_nodes work independent of that.
+    self.sync_topics = []
+    if rospy.has_param('~sync_topics'): 
+        self.sync_topics[len(self.sync_topics):] = rospy.get_param('~sync_topics')
+    rospy.loginfo("sync_topics: " + str(self.sync_topics))
 
     self.start()
 
@@ -227,7 +234,7 @@ class SyncThread(threading.Thread):
           serviceProviders = remote_state[8]
           # sync the publishers
           for (topic, nodes) in publishers:
-            if not (topic in ['/rosout', 'rosout_agg']):
+            if not (topic in ['/rosout', 'rosout_agg']) and ((len(self.sync_topics) == 0) or (topic in self.sync_topics)):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders)
@@ -244,7 +251,7 @@ class SyncThread(threading.Thread):
   
           # sync the subscribers
           for (topic, nodes) in subscribers:
-            if not (topic in ['/rosout', 'rosout_agg']):
+            if not (topic in ['/rosout', 'rosout_agg']) and ((len(self.sync_topics) == 0) or (topic in self.sync_topics)):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders)
