@@ -111,6 +111,12 @@ class SyncThread(threading.Thread):
         self.sync_nodes[len(self.sync_nodes):] = rospy.get_param('~sync_nodes')
     rospy.loginfo("sync_nodes: " + str(self.sync_nodes))
 
+
+    self.sync_topcis = []
+    if rospy.has_param('~sync_topics'): 
+        self.sync_topcis[len(self.sync_topcis):] = rospy.get_param('~sync_topcis')
+    rospy.loginfo("sync_topcis: " + str(self.sync_topcis))
+
     self.start()
 
   @classmethod
@@ -227,7 +233,7 @@ class SyncThread(threading.Thread):
           serviceProviders = remote_state[8]
           # sync the publishers
           for (topic, nodes) in publishers:
-            if not (topic in ['/rosout', 'rosout_agg']):
+            if not (topic in ['/rosout', 'rosout_agg']) and ((len(self.sync_topics) == 0) or (topic in self.sync_topics)):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders)
@@ -244,7 +250,7 @@ class SyncThread(threading.Thread):
   
           # sync the subscribers
           for (topic, nodes) in subscribers:
-            if not (topic in ['/rosout', 'rosout_agg']):
+            if not (topic in ['/rosout', 'rosout_agg']) and ((len(self.sync_topics) == 0) or (topic in self.sync_topics)):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders)
