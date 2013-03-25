@@ -106,12 +106,13 @@ class SyncThread(threading.Thread):
       self.ignore[len(self.ignore):] = rospy.get_param('~ignore_nodes')
     rospy.loginfo("ignore_nodes: " + str(self.ignore))
 
+    #if ~sync_nodes is set, only nodes in that list will be synchronized (whitelist). The values in ~ignore_nodes will then be ignored.
     self.sync_nodes = []
     if rospy.has_param('~sync_nodes'): 
         self.sync_nodes[len(self.sync_nodes):] = rospy.get_param('~sync_nodes')
     rospy.loginfo("sync_nodes: " + str(self.sync_nodes))
 
-
+	#if ~sync_topics is set, sync only topics specified here (whitelist). ~ignore_nodes/~sync_nodes work independent of that.
     self.sync_topics = []
     if rospy.has_param('~sync_topics'): 
         self.sync_topics[len(self.sync_topics):] = rospy.get_param('~sync_topics')
