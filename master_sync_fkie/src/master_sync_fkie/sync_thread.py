@@ -112,10 +112,10 @@ class SyncThread(threading.Thread):
     rospy.loginfo("sync_nodes: " + str(self.sync_nodes))
 
 
-    self.sync_topcis = []
+    self.sync_topics = []
     if rospy.has_param('~sync_topics'): 
-        self.sync_topcis[len(self.sync_topcis):] = rospy.get_param('~sync_topcis')
-    rospy.loginfo("sync_topcis: " + str(self.sync_topcis))
+        self.sync_topics[len(self.sync_topics):] = rospy.get_param('~sync_topics')
+    rospy.loginfo("sync_topics: " + str(self.sync_topics))
 
     self.start()
 
