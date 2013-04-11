@@ -1045,7 +1045,7 @@ class MainWindow(QtGui.QMainWindow):
       QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
       #todo: except errors on determination of the defaul_cfg name
       key_mod = QtGui.QApplication.keyboardModifiers()
-      if (key_mod & QtCore.Qt.ControlModifier) or force_as_default:
+      if (key_mod & QtCore.Qt.ShiftModifier) or force_as_default:
         args = list()
         args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(path))[0])]))
         args.append(''.join(['_launch_file:="', os.path.basename(path), '"']))
@@ -1136,7 +1136,7 @@ class MainWindow(QtGui.QMainWindow):
     on_launch_selection_clicked()
     '''
     key_mod = QtGui.QApplication.keyboardModifiers()
-    if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
+    if (key_mod & QtCore.Qt.ShiftModifier):
       self.ui.loadXmlAsDefaultButton.showMenu()
     else:
       indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
