@@ -23,6 +23,10 @@ def _get_optparse():
                      help='Shows the screen log of the given node')
   parser.add_option('--show_ros_log', metavar='show_ros_log', default='',
                      help='Shows the ros log of the given node')
+  parser.add_option('--ros_log_path', metavar='ros_log_path', default=-1,
+                     help='request for the path of the ros logs')
+  parser.add_option('--ros_logs', metavar='ros_logs', default=-1,
+                     help='request for the list of available log nodes')
   parser.add_option('--delete_logs', metavar='delete_logs', default='',
                      help='Delete the log files of the given node')
   parser.add_option('--node', metavar='node', default='',
@@ -35,6 +39,10 @@ def _get_optparse():
                      help='Prefix used to run a node')
   parser.add_option('--pidkill', metavar='pidkill', default=-1,
                      help='kill the process with given pid')
+  parser.add_option('--node_respawn', metavar='node_respawn', default=-1,
+                     help='respawn the node, if it terminate unexpectedly')
+  parser.add_option('--masteruri', metavar='masteruri', default=-1,
+                     help='the ROS MASTER URI for started node')
 #  parser.add_option('--has_log', action="store_true", default=False,
 #                   help='Tests whether the screen log file is available')
   return parser
@@ -42,6 +50,8 @@ def _get_optparse():
 def parse_options(args):
   result = {'show_screen_log' : '',
             'show_ros_log' : '',
+            'ros_log_path' : '',
+            'ros_logs' : '',
             'delete_logs' : '',
             'node_type' : '',
             'node_name' : '',
@@ -102,6 +112,11 @@ def main(argv=sys.argv):
         logfile = nm.ScreenHandler.getROSLogFile(node=options['show_ros_log'])
         p = subprocess.Popen(shlex.split(' '.join([nm.LESS, str(logfile)])))
         p.wait()
+      elif options['ros_log_path']:
+        if options['ros_log_path'] == '[]':
+          print nm.get_ros_home()
+        else:
+          print nm.ScreenHandler.getScreenLogFile(node=options['ros_log_path'])
       elif options['delete_logs']:
         logfile = nm.ScreenHandler.getScreenLogFile(node=options['delete_logs'])
         pidfile = nm.ScreenHandler.getScreenPidFile(node=options['delete_logs'])
@@ -125,55 +140,14 @@ def main(argv=sys.argv):
   except Exception, e:
     print >> sys.stderr, e
 
-def _masteruri_from_ros():
-  '''
-  Returns the master URI depending on ROS distribution API.
-  @return: ROS master URI
-  @rtype C{str}
-  '''
-  try:
-    import rospkg.distro
-    distro = rospkg.distro.current_distro_codename()
-    if distro in ['electric', 'diamondback', 'cturtle']:
-      return roslib.rosenv.get_master_uri()
-    else:
-      import rosgraph
-      return rosgraph.rosenv.get_master_uri()
-  except:
-    import os
-    return os.environ['ROS_MASTER_URI']
-
-
 def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
   '''
   Runs a ROS node. Starts a roscore if needed.
   '''
   if not masteruri: 
-    masteruri = _masteruri_from_ros()
+    masteruri = nm.masteruri_from_ros()
   #start roscore, if needed
-  try:
-    master = xmlrpclib.ServerProxy(masteruri)
-    master.getUri('remote_nm')
-  except:
-    # run a roscore
-    # at this time roscore is available to handle the warning message :/
-#    rospy.logwarn("no master found, starting new one")
-    from urlparse import urlparse
-    master_port = str(urlparse(masteruri).port)
-    new_env = dict(os.environ)
-    new_env['ROS_MASTER_URI'] = masteruri
-    cmd_args = [nm.ScreenHandler.getSceenCmd(''.join(['/roscore', '--', master_port])), 'roscore', '--port', master_port]
-    subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])), env=new_env)
-    # wait for roscore to avoid connection problems while init_node
-    result = -1
-    count = 0
-    while result == -1 and count < 30:
-      try:
-        master = xmlrpclib.ServerProxy(masteruri)
-        result, uri, msg = master.getUri('remote_nm')
-      except:
-        time.sleep(1)
-        count += 1
+  nm.StartHandler._prepareROSMaster(masteruri)
   # start node
   try:
     cmd = roslib.packages.find_node(package, type)

@@ -87,9 +87,10 @@ class McastSocket(socket.socket):
         mreq = group_bin + struct.pack('@I', 0)
         self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, mreq)
     except socket.error, (errn, msg):
+      err = str(msg)
       if errn in [19]:
-        rospy.logerror("socket.error[%d]: %s, \nis multicast route set? e.g. sudo route add -net 224.0.0.0 netmask 224.0.0.0 eth0", errn, msg)
-      raise
+        err = ''.join(["socket.error[", str(errn), "]: ", msg, ",\nis multicast route set? e.g. sudo route add -net 224.0.0.0 netmask 224.0.0.0 eth0"])
+      raise Exception(err)
 
     self.addrinfo = addrinfo
     self.group_bin = group_bin

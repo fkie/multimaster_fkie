@@ -6,7 +6,7 @@
      the running ROS master master_discovery node will be used.
 
   </description>
-  <author>Alexander Tiderko, Timo Röhling</author>
+  <author>Alexander Tiderko, Timo Roehling</author>
   <license>BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/node_manager_fkie</url>
@@ -18,6 +18,7 @@
   <depend package="rosservice"/>
   <depend package="dynamic_reconfigure"/>
   <depend package="master_discovery_fkie"/>
+  <depend package="master_sync_fkie"/>
   <depend package="default_cfg_fkie"/>
   <rosdep name="python-pyside" />
   <rosdep name="python-paramiko" />

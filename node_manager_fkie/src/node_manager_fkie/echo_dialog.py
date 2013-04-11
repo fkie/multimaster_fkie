@@ -111,6 +111,11 @@ class EchoDialog(QtGui.QDialog):
       # add spacer
       spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
       hLayout.addItem(spacerItem)
+      # add clear button
+      cancelButton = QtGui.QToolButton(self)
+      cancelButton.setText('clear')
+      cancelButton.clicked.connect(self.on_clear_btn_clicked)
+      hLayout.addWidget(cancelButton)
       self.verticalLayout.addWidget(options)
     
     self.display = QtGui.QTextEdit(self)
@@ -169,6 +174,9 @@ class EchoDialog(QtGui.QDialog):
   def on_no_arr_checkbox_toggled(self, state):
     self.field_filter_fn = self.create_field_filter(self.no_str_checkbox.isChecked(), state)
 
+  def on_clear_btn_clicked(self):
+    self.display.clear()
+    
   def _msg_handle(self, data):
     self.msg_signal.emit(roslib.message.strify_message(data, field_filter=self.field_filter_fn))
 

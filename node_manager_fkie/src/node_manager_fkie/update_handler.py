@@ -58,8 +58,15 @@ class UpdateHandler(QtCore.QObject):
     self.__updateThreads = {}
     self.__requestedUpdates = {}
     self._lock = threading.RLock()
+    
+  def stop(self):
+    print "  Shutdown update threads..."
+    self.__requestedUpdates.clear()
+    for key, thread in self.__updateThreads.iteritems():
+      thread.join(3)
+    print "  Update threads are off!"
 
-  def requestMasterInfo(self, masteruri, monitoruri):
+  def requestMasterInfo(self, masteruri, monitoruri, delayed_exec=0.0):
     '''
     This method starts a thread to get the informations about the ROS master by
     the given RCP uri of the master_discovery node. If all informations are
@@ -73,19 +80,19 @@ class UpdateHandler(QtCore.QObject):
     @type masteruri: C{str}
     @param monitoruri: the URI of the monitor RPC interface of the master_discovery node
     @type monitoruri: C{str}
+    @param delayed_exec: Delay the execution of the request for given seconds.
+    @type delayed_exec: C{float}
     '''
-    try:
-      self._lock.acquire(True)
-      if (self.__updateThreads.has_key(masteruri)):
-        self.__requestedUpdates[masteruri] = monitoruri
-      else:
-        self.__create_update_thread(monitoruri, masteruri)
-#        from urlparse import urlparse
-#        om = urlparse(masteruri)
-    except:
-      pass
-    finally:
-      self._lock.release()
+    with self._lock:
+      try:
+        if (self.__updateThreads.has_key(masteruri)):
+          self.__requestedUpdates[masteruri] = (monitoruri, delayed_exec)
+        else:
+          self.__create_update_thread(monitoruri, masteruri, delayed_exec)
+  #        from urlparse import urlparse
+  #        om = urlparse(masteruri)
+      except:
+        pass
 
   def _on_master_info(self, minfo):
     self.master_info_signal.emit(minfo)
@@ -96,25 +103,22 @@ class UpdateHandler(QtCore.QObject):
     self.__handle_requests(masteruri)
     
   def __handle_requests(self, masteruri):
-    self._lock.acquire(True)
-    try:
-      thread = self.__updateThreads.pop(masteruri)
-      del thread
-      monitoruri = self.__requestedUpdates.pop(masteruri)
-    except KeyError:
-#      import traceback
-#      print traceback.format_exc()
-      pass
-    except:
-      import traceback
-      print traceback.format_exc()
-    else:
-      self.__create_update_thread(monitoruri, masteruri)
-    finally:
-      self._lock.release()
+    with self._lock:
+      try:
+        thread = self.__updateThreads.pop(masteruri)
+        del thread
+        monitoruri, delayed_exec = self.__requestedUpdates.pop(masteruri)
+        self.__create_update_thread(monitoruri, masteruri, delayed_exec)
+      except KeyError:
+  #      import traceback
+  #      print traceback.format_exc()
+        pass
+      except:
+        import traceback
+        print traceback.format_exc()
 
-  def __create_update_thread(self, monitoruri, masteruri):
-    upthread = UpdateThread(monitoruri, masteruri)
+  def __create_update_thread(self, monitoruri, masteruri, delayed_exec):
+    upthread = UpdateThread(monitoruri, masteruri, delayed_exec)
     self.__updateThreads[masteruri] = upthread
     upthread.update_signal.connect(self._on_master_info)
     upthread.error_signal.connect(self._on_error)

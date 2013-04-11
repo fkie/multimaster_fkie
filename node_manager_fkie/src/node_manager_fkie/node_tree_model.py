@@ -608,10 +608,19 @@ class HostItem(GroupItem):
     @param address: the address of the host
     @type address: C{str}
     '''
+    #'print "hostNameFrom - mastername"
     name = nm.nameres().mastername(masteruri, address)
     if not name:
       name = address
-    return '@'.join([name, nm.nameres().hostname(address)])
+    #'print "hostNameFrom - hostname"
+    hostname = nm.nameres().hostname(address)
+    if hostname is None:
+      hostname = str(address)
+    result = '@'.join([name, hostname])
+    if nm.nameres().getHostname(masteruri) != hostname:
+      result = ''.join([result, '[', masteruri,']'])
+    #'print "- hostNameFrom"
+    return result
     
   
   def updateTooltip(self):
@@ -837,25 +846,34 @@ class NodeItem(QtGui.QStandardItem):
     '''
     tooltip = ''.join(['<h4>', self.node_info.name, '</h4><dl>'])
     tooltip = ''.join([tooltip, '<dt><b>URI:</b> ', str(self.node_info.uri), '</dt>'])
-    tooltip = ''.join([tooltip, '<dt><b>PID:</b> ', str(self.node_info.pid), '</dt></dl>'])
+    tooltip = ''.join([tooltip, '<dt><b>PID:</b> ', str(self.node_info.pid), '</dt>'])
+    tooltip = ''.join([tooltip, '<dt><b>ORG.MASTERURI:</b> ', str(self.node_info.masteruri), '</dt></dl>'])
+    #'print "updateDispayedName - hasMaster"
     master_discovered = nm.nameres().hasMaster(self.node_info.masteruri)
     local = False
-    if not self.node_info.uri is None and not self.node_info.masteruri is None:
-      local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
+#    if not self.node_info.uri is None and not self.node_info.masteruri is None:
+#      local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
     if not self.node_info.pid is None:
       self._state = NodeItem.STATE_RUN
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
       self.setToolTip('')
-    elif not local and not master_discovered and not self.node_info.uri is None:
+    elif not self.node_info.uri is None and not self.node_info.isLocal:
       self._state = NodeItem.STATE_RUN
-      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+      self.setIcon(QtGui.QIcon(':/icons/state_unknown.png'))
       tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
       tooltip = ''.join([tooltip, '</dl>'])
       self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+#    elif not self.node_info.isLocal and not master_discovered and not self.node_info.uri is None:
+##    elif not local and not master_discovered and not self.node_info.uri is None:
+#      self._state = NodeItem.STATE_RUN
+#      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+#      tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
+#      tooltip = ''.join([tooltip, '</dl>'])
+#      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
     elif not self.node_info.uri is None:
       self._state = NodeItem.STATE_WARNING
       self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
-      if not local and master_discovered:
+      if not self.node_info.isLocal and master_discovered:
         tooltip = ''.join(['<h4>', self.node_info.name, ' is not local, however the ROS master on this host is discovered, but no information about this node received!', '</h4>'])
         tooltip = ''.join([tooltip, '</dl>'])
         self.setToolTip(''.join(['<div>', tooltip, '</div>']))
@@ -869,6 +887,8 @@ class NodeItem(QtGui.QStandardItem):
       self._state = NodeItem.STATE_OFF
       self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
       self.setToolTip('')
+    #'print "- updateDispayedName"
+
     # removed common tooltip for clarity !!!
 #    self.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
@@ -1079,6 +1099,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @return: the item associated with the given master
     @rtype: L{HostItem}
     '''
+    if masteruri is None:
+      return None
     host = (unicode(masteruri), unicode(address))
     local = (self.local_addr == host)
 
@@ -1114,10 +1136,11 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     for ((masteruri, host), nodes_filtered) in hosts.items():
       hostItem = self.getHostItem(masteruri, host)
       # rename the host item if needed
-#      host_name = nm.nameres().getName(host=host)
-#      if host_name and not (hostItem.name == host_name):
-#        hostItem.name = host_name
-      hostItem.updateRunningNodeState(nodes_filtered)
+      if not hostItem is None:
+#        host_name = nm.nameres().getName(host=host)
+#        if host_name and not (hostItem.name == host_name):
+#          hostItem.name = host_name
+        hostItem.updateRunningNodeState(nodes_filtered)
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
@@ -1140,7 +1163,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str])))} 
     '''
     hostItem = self.getHostItem(masteruri, host_address)
-    hostItem.addCapabilities(cfg, capabilities, host_address)
+    if not hostItem is None:
+      hostItem.addCapabilities(cfg, capabilities, host_address)
     self.removeEmptyHosts()
     
   def appendConfigNodes(self, masteruri, host_address, nodes):
@@ -1155,14 +1179,15 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @type nodes: C{dict(str : str)} 
     '''
     hostItem = self.getHostItem(masteruri, host_address)
-    for (name, cfg) in nodes.items():
-      items = hostItem.getNodeItemsByName(name)
-      for item in items:
-        item.addConfig(cfg)
-      if not items:
-        # create the new node
-        node_info = NodeInfo(name, masteruri)
-        hostItem.addNode(node_info, cfg)
+    if not hostItem is None:
+      for (name, cfg) in nodes.items():
+        items = hostItem.getNodeItemsByName(name)
+        for item in items:
+          item.addConfig(cfg)
+        if not items:
+          # create the new node
+          node_info = NodeInfo(name, masteruri)
+          hostItem.addNode(node_info, cfg)
     self.removeEmptyHosts()
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())

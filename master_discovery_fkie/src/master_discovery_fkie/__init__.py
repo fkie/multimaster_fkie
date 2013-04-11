@@ -35,7 +35,7 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE"
 __license__ = "BSD"
-__version__ = "0.1"
+__version__ = "0.2"
 __date__ = "2012-02-01"
 
 import sys
@@ -94,9 +94,16 @@ def main():
   mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
   mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
   rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort())
-  discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
-  discoverer.start()
-  rospy.spin()
+  try:
+    discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
+    discoverer.start()
+    rospy.spin()
+  except Exception as e:
+    rospy.logerr("Error while start master_discovery: %s", str(e))
+    import os, signal
+    os.kill(os.getpid(), signal.SIGKILL)
+    import time
+    time.sleep(10)
 
 def main_zeroconf():
   '''

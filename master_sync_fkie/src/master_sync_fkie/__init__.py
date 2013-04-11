@@ -34,7 +34,7 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE"
 __license__ = "BSD"
-__version__ = "0.1"
+__version__ = "0.2"
 __date__ = "2012-02-01"
 
 
@@ -81,7 +81,8 @@ def main():
   setProcessName(rospy.get_name())
   # time to initialize the topics to receive these in rxconsole
   discoverer = master_sync.Main()
-  rospy.spin()
+  if not rospy.is_shutdown():
+    rospy.spin()
 
 
 #if __name__ == '__main__':

@@ -76,6 +76,8 @@ class MasterMonitor(object):
   @group RPC-methods: getListedMasterInfo, getMasterContacts
   '''
 
+  MAX_PING_SEC = 10.0
+
   def __init__(self, rpcport=11611):
     '''
     Initialize method. Creates an XML-RPC server on given port and starts this
@@ -90,6 +92,8 @@ class MasterMonitor(object):
     self.__new_master_state = None
     self.__masteruri_rpc = None
     self.__mastername = None
+    self.__cached_nodes = dict()
+    self.__cached_services = dict()
     self.ros_node_name = str(rospy.get_name())
     if rospy.has_param('~name'):
       self.__mastername = rospy.get_param('~name')
@@ -160,7 +164,14 @@ class MasterMonitor(object):
       if not uri is None:
         pid = None
         try:
-          socket.setdefaulttimeout(3)
+#          print "_getNodePid _lock try..", threading.current_thread()
+          with self._lock:
+            if self.__cached_nodes.has_key(nodename):
+              if time.time() - self.__cached_nodes[nodename][2] < self.MAX_PING_SEC:
+#                print "_getNodePid _lock RETe", threading.current_thread()
+                return
+#          print "_getNodePid _lock RET", threading.current_thread()
+          socket.setdefaulttimeout(0.7)
           node = xmlrpclib.ServerProxy(uri)
           pid = _succeed(node.getPid(self.ros_node_name))
         except (Exception, socket.error):
@@ -169,11 +180,22 @@ class MasterMonitor(object):
           master = xmlrpclib.ServerProxy(self.getMasteruri())
     #      print "request again nodeuri for", nodename
           code, message, new_uri = master.lookupNode(self.ros_node_name, nodename)
+#          print "_getNodePid _lock try..", threading.current_thread()
           with self._lock:
             self.__new_master_state.getNode(nodename).uri = None if (code == -1) else new_uri
+            try:
+#              print "remove cached node", nodename
+              del self.__cached_nodes[nodename]
+            except:
+              pass
+#          print "_getNodePid _lock RET", threading.current_thread()
         else:
+#          print "_getNodePid _lock try..", threading.current_thread()
           with self._lock:
+#            print "get info about node", nodename, uri
             self.__new_master_state.getNode(nodename).pid = pid
+            self.__cached_nodes[nodename] = (uri, pid, time.time())
+#          print "_getNodePid _lock RET", threading.current_thread()
         finally:
           socket.setdefaulttimeout(None)
 
@@ -186,6 +208,10 @@ class MasterMonitor(object):
     @type uri: C{str}
     '''
     for (service, uri) in services.items():
+      with self._lock:
+        if self.__cached_services.has_key(service):
+          if time.time() - self.__cached_services[service][2] < self.MAX_PING_SEC:
+            return
       if not uri is None:
         type = dest_addr = dest_port = None
         try:
@@ -204,14 +230,33 @@ class MasterMonitor(object):
                     'callerid':self.ros_node_name, 'service':service}
           roslib.network.write_ros_handshake_header(s, header)
           type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
+#          print "_getServiceInfo _lock try..", threading.current_thread()
           with self._lock:
+#            print "get info about service", service, uri
             self.__new_master_state.getService(service).type = type['type']
+            self.__cached_services[service] = (uri, type['type'], time.time())
+#          print "_getServiceInfo _lock RET", threading.current_thread()
         except socket.error:
-          pass
+#          print "_getServiceInfo _lock try..", threading.current_thread()
+          with self._lock:
+            try:
+#              print "delete socket service", service, uri
+              del self.__cached_services[service]
+            except:
+              pass
     #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
+#          print "_getServiceInfo _lock RET", threading.current_thread()
         except:
 #          import traceback
 #          print traceback.format_exc()
+#          print "_getServiceInfo _lock try..", threading.current_thread()
+          with self._lock:
+            try:
+#              print "delete service", service, uri
+              del self.__cached_services[service]
+            except:
+              pass
+#          print "_getServiceInfo _lock RET", threading.current_thread()
           pass
         finally:
           if s is not None:
@@ -223,7 +268,7 @@ class MasterMonitor(object):
     Returns a extended roscore state. 
     @return: complete roscore state as
              
-             C{(stamp, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)}
+             C{(stamp, stamp_local, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)}
              
                - C{publishers} is of the form
                  
@@ -249,7 +294,8 @@ class MasterMonitor(object):
                  
                  C{[service, XML-RPC URI, type, E{lb} local, remote E{rb}]}
                
-    @rtype: C{(float, 
+    @rtype: C{(float,
+               float,
                str,
                str,
                [ [str,[str] ] ], 
@@ -259,34 +305,50 @@ class MasterMonitor(object):
                [ [str,str,int,str] ], 
                [ [str,str,str,str] ])}
     '''
-    with self._state_access_lock:
-      result = (str(time.time()), self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
-      if not (self.__master_state is None):
-        try:
+    #'print "MASTERINFO ===================="
+    t = str(time.time())
+    result = (t, t, self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
+    if not (self.__master_state is None):
+      try:
+        #'print "getListedMasterInfo _state_access_lock try...", threading.current_thread()
+        with self._state_access_lock:
+          #'print "  getListedMasterInfo _state_access_lock locked", threading.current_thread()
           result = self.__master_state.listedState()
-        except:
-          import traceback
-          print traceback.format_exc()
-      return result
+        #'print "getListedMasterInfo _state_access_lock RET", threading.current_thread()
+      except:
+        import traceback
+        print traceback.format_exc()
+    #'print "MASTERINFO <<<<<<<<<<<<<<<<<<<<<"
+    return result
 
   def getCurrentState(self):
+    #'print "getCurrentState _state_access_lock try...", threading.current_thread()
     with self._state_access_lock:
+      #'print "  getCurrentState _state_access_lock locked", threading.current_thread()
       return self.__master_state
+    #'print "getCurrentState _state_access_lock RET", threading.current_thread()
     
-  def updateState(self):
+  def updateState(self, clear_cache=False):
     '''
     Gets state from the ROS master through his RPC interface.
     @rtype: L{MasterInfo}
     @raise MasterConnectionException: if not complete information was get from the ROS master.
     '''
+    #'print "updateState _create_access_lock try...", threading.current_thread()
     with self._create_access_lock:
+      #'print "  updateState _create_access_lock locked", threading.current_thread()
       now = time.time()
       threads = []
       try:
 #        import os                                ###################
 #        cputimes = os.times()                    ###################
 #        cputime_init = cputimes[0] + cputimes[1] ###################
+        #'print "  updateState _lock try...", threading.current_thread()
         self._lock.acquire(True)
+        #'print "    updateState _lock locked", threading.current_thread()
+        if clear_cache:
+          self.__cached_nodes = dict()
+          self.__cached_services = dict()
         socket.setdefaulttimeout(5)
 #        cputimes2 = os.times()                    ###################
 #        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
@@ -343,7 +405,7 @@ class MasterMonitor(object):
         # add services
 #        cputimes = os.times()                    ###################
 #        cputime_init = cputimes[0] + cputimes[1] ###################
-  
+
         services = dict()
         tmp_slist = []
         # multi-call style xmlrpc to lock up the service uri
@@ -355,8 +417,15 @@ class MasterMonitor(object):
             master_state.getNode(n).services = t
             service = master_state.getService(t)
             service.serviceProvider = n
-            tmp_slist.append(service)
-            param_server_multi.lookupService(self.ros_node_name, t)
+            if self.__cached_services.has_key(service.name):
+              service.uri = self.__cached_services[service.name][0]
+              service.type = self.__cached_services[service.name][1]
+              if service.isLocal and time.time() - self.__cached_services[service.name][2] > self.MAX_PING_SEC:
+                services[service.name] = service.uri
+            else:
+              #'print "request service:", service.name
+              tmp_slist.append(service)
+              param_server_multi.lookupService(self.ros_node_name, t)
   #          code, message, service.uri = master.lookupService(rospy.get_name(), t)
   #          if (code == -1):
   #            service.uri = None
@@ -368,7 +437,11 @@ class MasterMonitor(object):
             if code == 1:
               service.uri = uri
               if service.isLocal:
+#                print "service local: ", service.uri, service.masteruri
                 services[service.name] = uri
+              else:
+                self.__cached_services[service.name] = (uri, None, time.time())
+
         except:
           import traceback
           traceback.print_exc()
@@ -384,14 +457,23 @@ class MasterMonitor(object):
           param_server_multi = xmlrpclib.MultiCall(master)
           tmp_nlist = []
           for name, node in master_state.nodes.items():
-            tmp_nlist.append(node)
-            param_server_multi.lookupNode(self.ros_node_name, name)
+            if self.__cached_nodes.has_key(node.name):
+              node.uri = self.__cached_nodes[node.name][0]
+              node.pid = self.__cached_nodes[node.name][1]
+              if node.isLocal and time.time() - self.__cached_nodes[node.name][2] > self.MAX_PING_SEC:
+                nodes[node.name] = node.uri
+            else:
+              #'print "request node:", node.name
+              tmp_nlist.append(node)
+              param_server_multi.lookupNode(self.ros_node_name, name)
           r = param_server_multi()
           for (code, msg, uri), node in zip(r, tmp_nlist):
             if code == 1:
               node.uri = uri
               if node.isLocal:
                 nodes[node.name] = uri
+              else:
+                self.__cached_nodes[node.name] = (uri, None, time.time())
         except:
           import traceback
           traceback.print_exc()
@@ -423,6 +505,7 @@ class MasterMonitor(object):
         raise MasterConnectionException(formatted_lines[-1])
       finally:
         self._lock.release()
+        #'print "  updateState _lock RET", threading.current_thread()
         socket.setdefaulttimeout(None)
 
 #      cputimes = os.times()                    ###################
@@ -441,6 +524,8 @@ class MasterMonitor(object):
 #      print "Threads:", (cputimes[0] + cputimes[1] - cputime_init) ###################
   #    print "state update of ros master", self.__masteruri, " finished"
 #      return MasterInfo.from_list(master_state.listedState())
+      #'print "updateState _create_access_lock RET", threading.current_thread()
+
       return master_state
   
   def updateSyncInfo(self):
@@ -451,7 +536,10 @@ class MasterMonitor(object):
     for the service ending with C{get_sync_info}. The method will be called by 
     C{checkState()}.
     '''
+    #'print "updateSyncInfo _create_access_lock try...", threading.current_thread()
+
     with self._create_access_lock:
+      #'print "  updateSyncInfo _create_access_lock locked", threading.current_thread()
       master_state = self.__new_master_state
       sync_info = None
       # get synchronization info, if sync node is running
@@ -459,7 +547,7 @@ class MasterMonitor(object):
       for name, service in master_state.services.items():
         if service.name.endswith('get_sync_info'):
           if interface_finder.hostFromUri(self.getMasteruri()) == interface_finder.hostFromUri(service.uri):
-            socket.setdefaulttimeout(2)
+            socket.setdefaulttimeout(3)
             get_sync_info = rospy.ServiceProxy(service.name, GetSyncInfo)
             try:
               sync_info = get_sync_info()
@@ -481,6 +569,8 @@ class MasterMonitor(object):
               master_state.getService(s).masteruri = m.masteruri
             except:
               pass
+      #'print "updateSyncInfo _create_access_lock RET", threading.current_thread()
+
 
     
   def getMasteruri(self):
@@ -523,34 +613,58 @@ class MasterMonitor(object):
     @return: (timestamp of the ROS master state, ROS master URI, master name, name of this service, URI of this RPC server)
     @rtype: C{(str, str, str, str, str)}
     '''
-    with self._state_access_lock:
-      t = 0
-      if not self.__master_state is None:
+    #'print "MASTERCONTACTS ===================="
+    t = 0
+    if not self.__master_state is None:
+      #'print "getMasterContacts _state_access_lock try...", threading.current_thread()
+      with self._state_access_lock:
+        #'print "  getMasterContacts _state_access_lock locked", threading.current_thread()
         t = self.__master_state.timestamp
-      return (str(t), str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
+      #'print "getMasterContacts _state_access_lock RET", threading.current_thread()
+    #'print "MASTERCONTACTS <<<<<<<<<<<<<<<<<<<<"
+    return (str(t), str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
   
-  def checkState(self):
+  def checkState(self, clear_cache=False):
     '''
-    Gets the state from the ROS master and compares it to the stored state. 
+    Gets the state from the ROS master and compares it to the stored state.
+    @param clear_cache Clears cache for ROS nodes and sevices. Is neaded on changes on remote hosts. 
     @return: True if the ROS master state is changed
     @rtype: C{boolean}
     '''
     result = False
-    s = self.updateState()
+    s = self.updateState(clear_cache)
+    #'print "checkState _create_access_lock try...", threading.current_thread()
     with self._create_access_lock:
+      #'print "  checkState _create_access_lock locked", threading.current_thread()
+      #'print "  checkState _state_access_lock try...", threading.current_thread()
+      do_update = False
       with self._state_access_lock:
+        #'print "    checkState _state_access_lock locked", threading.current_thread()
         if s != self.__master_state:
-          self.updateSyncInfo()
+          do_update = True
+      if do_update:
+        self.updateSyncInfo()
+        with self._state_access_lock:
+          # test for local changes
+          ts_local = self.__new_master_state.timestamp_local
+          if not self.__master_state is None and not self.__master_state.has_local_changes(s):
+            ts_local = self.__master_state.timestamp_local
           self.__master_state = self.__new_master_state
+          self.__master_state.timestamp_local = ts_local
           result = True
-        self.__master_state.check_ts = self.__new_master_state.timestamp
-        return result
+      self.__master_state.check_ts = self.__new_master_state.timestamp
+      #'print "  checkState _state_access_lock RET", threading.current_thread()
+      #'print "checkState _create_access_lock RET", threading.current_thread()
+      return result
 
   def reset(self):
     '''
     Sets the master state to None. 
     '''
+    #'print "reset _state_access_lock try...", threading.current_thread()
     with self._state_access_lock:
+      #'print "  reset _state_access_lock locked", threading.current_thread()
       if not self.__master_state is None:
         del self.__master_state
       self.__master_state = None
+      #'print "reset _state_access_lock RET", threading.current_thread()

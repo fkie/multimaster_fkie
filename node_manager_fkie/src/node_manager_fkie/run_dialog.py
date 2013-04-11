@@ -36,6 +36,7 @@ from PySide import QtCore
 import os
 
 import node_manager_fkie as nm
+from detailed_msg_box import WarningMessageBox
 
 
 class RunDialog(QtGui.QDialog):
@@ -89,7 +90,8 @@ class RunDialog(QtGui.QDialog):
     self.contentLayout.addRow(ns_name_label, horizontalLayout)
     args_label = QtGui.QLabel("Args:", self.content)
     self.args_field = QtGui.QComboBox(self.content)
-    self.args_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.args_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToMinimumContentsLength)
+#    self.args_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
     self.args_field.setEditable(True)
     self.contentLayout.addRow(args_label, self.args_field)
     args_history = nm.history().cachedParamValues('run_dialog/Args')
@@ -162,7 +164,12 @@ class RunDialog(QtGui.QDialog):
       nm.history().addParamCache('run_dialog/Args', args)
     if self.package and self.binary:
       nm.history().addParamCache('/Host', self.host)
-      nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', ns, ' ', args])).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
+      try:
+        nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', ns, ' ', args])).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
+      except Exception as e:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Run node", 
+                          ''.join(['Run node ', str(self.binary), '[', str(self.package), '] failed!']),
+                          str(e)).exec_()
 
   def _getPackages(self, path):
     result = {}

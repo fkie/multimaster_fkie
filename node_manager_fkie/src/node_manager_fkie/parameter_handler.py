@@ -92,12 +92,11 @@ class ParameterHandler(QtCore.QObject):
     @param ns: the namespace of delivered parameter (Default: /)
     @type ns: C{str}
     '''
-    self._lock.acquire(True)
-    reqthread = RequestListThread(masteruri, ns)
-    reqthread.parameter_list_signal.connect(self._on_param_list)
-    self.__requestListThreads.append(reqthread)
-    reqthread.start()
-    self._lock.release()
+    with self._lock:
+      reqthread = RequestListThread(masteruri, ns)
+      reqthread.parameter_list_signal.connect(self._on_param_list)
+      self.__requestListThreads.append(reqthread)
+      reqthread.start()
   
   def requestParameterValues(self, masteruri, params):
     '''
@@ -111,12 +110,11 @@ class ParameterHandler(QtCore.QObject):
     @param params: List with parameter names
     @type params: C{[str]}
     '''
-    self._lock.acquire(True)
-    reqthread = RequestValuesThread(masteruri, params)
-    reqthread.parameter_values_signal.connect(self._on_param_values)
-    self.__requestValuesThreads.append(reqthread)
-    reqthread.start()
-    self._lock.release()
+    with self._lock:
+      reqthread = RequestValuesThread(masteruri, params)
+      reqthread.parameter_values_signal.connect(self._on_param_values)
+      self.__requestValuesThreads.append(reqthread)
+      reqthread.start()
   
   def deliverParameter(self, masteruri, params):
     '''
@@ -130,47 +128,43 @@ class ParameterHandler(QtCore.QObject):
     @param params: The dictinary the parameter name and their value, see U{http://www.ros.org/wiki/ROS/Parameter%20Server%20API#setParam}
     @type params: C{dict(str:value)}
     '''
-    self._lock.acquire(True)
-    reqthread = DeliverValuesThread(masteruri, params)
-    reqthread.result_signal.connect(self._on_set_result)
-    self.__deliveryThreads.append(reqthread)
-    reqthread.start()
-    self._lock.release()
+    with self._lock:
+      reqthread = DeliverValuesThread(masteruri, params)
+      reqthread.result_signal.connect(self._on_set_result)
+      self.__deliveryThreads.append(reqthread)
+      reqthread.start()
 
 
 
   def _on_param_list(self, masteruri, code, msg, params):
     self.parameter_list_signal.emit(masteruri, code, msg, params)
-    self._lock.acquire(True)
-    try:
-      thread = self.__requestListThreads.pop(0)
-      del thread
-    except KeyError:
-      pass
-    self._lock.release()
+    with self._lock:
+      try:
+        thread = self.__requestListThreads.pop(0)
+        del thread
+      except KeyError:
+        pass
 
   def _on_param_values(self, masteruri, code, msg, values):
     self.parameter_values_signal.emit(masteruri, code, msg, values)
-    self._lock.acquire(True)
-    try:
-      thread = self.__requestValuesThreads.pop(0)
-      del thread
-    except KeyError:
-      pass
-    self._lock.release()
+    with self._lock:
+      try:
+        thread = self.__requestValuesThreads.pop(0)
+        del thread
+      except KeyError:
+        pass
 
 
   
   
   def _on_set_result(self, masteruri, code, msg, values):
     self.delivery_result_signal.emit(masteruri, code, msg, values)
-    self._lock.acquire(True)
-    try:
-      thread = self.__deliveryThreads.pop(0)
-      del thread
-    except KeyError:
-      pass
-    self._lock.release()
+    with self._lock:
+      try:
+        thread = self.__deliveryThreads.pop(0)
+        del thread
+      except KeyError:
+        pass
 
 
 

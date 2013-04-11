@@ -111,51 +111,50 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
       address = None
       status_text = ''.join(['listen on network: ', str(index), ' (', str(self._networks_count), ')'])
       self.status_text_signal.emit(status_text)
-      self.mutex.acquire(True)
-      while True:
-        try:
-          (msg, address) = self.sockets[index].recvfrom(1024)
-          hostname = None
-          force_update = False
-          if not address is None:
-            try:
-              hostname = self._hosts[address[0]]
-            except:
-              hostname = nm.nameres().hostname(str(address[0]))
-              if hostname is None or hostname == str(address[0]):
-                self.status_text_signal.emit(''.join(['resolve: ', str(address[0])]))
-                try:
-                  (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
-                  nm.nameres().addInfo(None, hostname, hostname)
-                  nm.nameres().addInfo(None, address[0], hostname)
-                except:
-                  import traceback
-                  print traceback.format_exc()
-                  pass
-              self._hosts[address[0]] = hostname
-          if not msg is None:
-            try:
-              (version, msg_tuple) = Discoverer.msg2masterState(msg)
-              if not self._discovered.has_key(index):
-                self._discovered[index] = dict()
-                force_update = True
-              self._discovered[index][address] = (hostname, time.time())
-            except Exception, e:
-              import traceback
-              print traceback.format_exc()
-              pass
-          if force_update:
-            self._updateDisplay()
-        except socket.timeout:
-  #        rospy.logwarn("TIMOUT ignored")
-          break
-        except socket.error:
-          import traceback
-          rospy.logwarn("socket error: %s", traceback.format_exc())
-          break
-        except:
-          break
-      self.mutex.release()
+      with self.mutex:
+        while True:
+          try:
+            (msg, address) = self.sockets[index].recvfrom(1024)
+            hostname = None
+            force_update = False
+            if not address is None:
+              try:
+                hostname = self._hosts[address[0]]
+              except:
+                hostname = nm.nameres().hostname(str(address[0]))
+                if hostname is None or hostname == str(address[0]):
+                  self.status_text_signal.emit(''.join(['resolve: ', str(address[0])]))
+                  try:
+                    (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
+                    nm.nameres().addInfo(None, hostname, hostname)
+                    nm.nameres().addInfo(None, address[0], hostname)
+                  except:
+                    import traceback
+                    print traceback.format_exc()
+                    pass
+                self._hosts[address[0]] = hostname
+            if not msg is None:
+              try:
+                (version, msg_tuple) = Discoverer.msg2masterState(msg, address)
+                if not self._discovered.has_key(index):
+                  self._discovered[index] = dict()
+                  force_update = True
+                self._discovered[index][address] = (hostname, time.time())
+              except Exception, e:
+                import traceback
+                print traceback.format_exc()
+                pass
+            if force_update:
+              self._updateDisplay()
+          except socket.timeout:
+    #        rospy.logwarn("TIMOUT ignored")
+            break
+          except socket.error:
+            import traceback
+            rospy.logwarn("socket error: %s", traceback.format_exc())
+            break
+          except:
+            break
       index += 1
       if index >= len(self.sockets):
         index = 0
@@ -163,13 +162,12 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
 
   def closeEvent (self, event):
     self._running = False
-    self.mutex.acquire(True)
-    for p in range(len(self.sockets)):
-      try:
-        self.sockets[p].close()
-      except:
-        pass
-    self.mutex.release()
+    with self.mutex:
+      for p in range(len(self.sockets)):
+        try:
+          self.sockets[p].close()
+        except:
+          pass
     QtGui.QDialog.closeEvent(self, event)
 
   def _updateDisplay(self):

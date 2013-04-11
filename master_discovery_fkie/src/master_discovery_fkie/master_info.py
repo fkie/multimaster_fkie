@@ -212,10 +212,7 @@ class NodeInfo(object):
       from urlparse import urlparse
       om = urlparse(masteruri)
       on = urlparse(uri)
-      try:
-        result = (om.hostname == on.hostname) and (masteruri == org_masteruri)
-      except:
-        pass
+      result = (om.hostname == on.hostname) and (masteruri == org_masteruri)
     except:
       pass
     return result
@@ -503,6 +500,7 @@ class MasterInfo(object):
     self.__topiclist = {}
     self.__servicelist = {}
     self.__timestamp = 0
+    self.__timestamp_local = 0
     self.check_ts = 0
     '''@ivar: the last time, when the state of the ROS master retrieved'''
 
@@ -518,14 +516,15 @@ class MasterInfo(object):
     '''
     if l is None:
       return None
-    result = MasterInfo(l[1], l[2])
-    result.timestamp = time.time()
-    publishers = l[3]
-    subscribers = l[4]
-    services = l[5]
-    topicTypes = l[6]
-    nodes = l[7]
-    serviceProvider = l[8]
+    result = MasterInfo(l[2], l[3])
+    result.timestamp = float(l[0])
+    result.timestamp_local = float(l[1])
+    publishers = l[4]
+    subscribers = l[5]
+    services = l[6]
+    topicTypes = l[7]
+    nodes = l[8]
+    serviceProvider = l[9]
     # set the publishers
     for pub, nodelist in publishers:
       result.topics = pub
@@ -601,6 +600,26 @@ class MasterInfo(object):
     '''
     self.__timestamp = ts
     self.check_ts = ts
+    self.__timestamp_local = ts
+
+  @property
+  def timestamp_local(self):
+    '''
+    The timestamp when this MasterInfo was first time filled with the 
+    information. See L{self.check_ts} to get the time, when the information was
+    compared with the data of ROS Master.
+    @rtype: C{float}
+    '''
+    return self.__timestamp_local
+
+  @timestamp_local.setter
+  def timestamp_local(self, ts):
+    '''
+    Sets the timestamp of this instance
+    @param ts: the new timestamp
+    @type ts: C{float}
+    '''
+    self.__timestamp_local = ts
 
   @property
   def nodes(self):
@@ -769,19 +788,23 @@ class MasterInfo(object):
     @return: True, if the states are equal.
     @rtype: C{boolean}
     '''
+#    import os                                ###################
+#    cputimes = os.times()                    ###################
+#    cputime_init = cputimes[0] + cputimes[1] ###################
+#    try:
     if (other is None):
       return False
     if (self.masteruri != other.masteruri):
       return False
     if (set(self.node_uris) ^ set(other.node_uris)):
       return False
-    if (set(self.node_names) ^ set(other.node_names)):
+#    if (set(self.node_names) ^ set(other.node_names)):
+#      return False
+#    if (set(self.service_names) ^ set(other.service_names)):
+#      return False
+    if (set(self.service_uris) ^ set(other.service_uris)):
       return False
     if (set(self.topic_names) ^ set(other.topic_names)):
-      return False
-    if (set(self.service_names) ^ set(other.service_names)):
-      return False
-    if (set(self.service_uris) ^ set(other.service_uris)):
       return False
     # test for changes of each node parameter
     for name in self.node_names:
@@ -790,8 +813,8 @@ class MasterInfo(object):
       if not n1 is None and not n2 is None:
         if n1.pid != n2.pid:
           return False
-        if n1.uri != n2.uri:
-          return False
+#        if n1.uri != n2.uri:
+#          return False
         if set(n1.publishedTopics) ^ set(n2.publishedTopics):
           return False
         if set(n1.subscribedTopics) ^ set(n2.subscribedTopics):
@@ -799,16 +822,82 @@ class MasterInfo(object):
         if set(n1.services) ^ set(n2.services):
           return False
     return True
+#    finally:
+#      cputimes = os.times() ###################
+#      print "EQ:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
+
   
   def __ne__(self, other):
     return not self.__eq__(other)
+  
+  def has_local_changes(self, other):
+    '''
+    Compares the master state with other master state. The timestamp will not be 
+    compared.
+    @param other: the another L{MasterInfo} instance.
+    @type other: L{MasterInfo}
+    @return a tupel with two boolean values (all equal, only local equal)
+    @rtype: (boolean, boolean)
+    '''
+#    import os                                ###################
+#    cputimes = os.times()                    ###################
+#    cputime_init = cputimes[0] + cputimes[1] ###################
+#    try:
+    if (other is None):
+      return True
+    if (self.masteruri != other.masteruri):
+      return True
+    # test for nodes
+    node_names = list((set(self.node_names) | set(other.node_names)))
+    for name in node_names:
+      n1 = self.getNode(name)
+      n2 = other.getNode(name)
+      if not n1 is None and not n2 is None:
+        local = n1.isLocal
+        if local:
+          if n1.pid != n2.pid:
+            return True
+          if n1.uri != n2.uri:
+            return True
+          if set(n1.publishedTopics) ^ set(n2.publishedTopics):
+            return True
+          if set(n1.subscribedTopics) ^ set(n2.subscribedTopics):
+            return True
+          if set(n1.services) ^ set(n2.services):
+            return True
+      elif not n1 is None:
+        if n1.isLocal:
+          return True
+      elif not n2 is None:
+        if n2.isLocal:
+          return True
+
+    # test for services
+    service_names = list(set(self.service_uris) | set(other.service_uris))
+    for name in service_names:
+      s1 = self.getService(name)
+      s2 = other.getService(name)
+      if not s1 is None and not s2 is None:
+        local = s1.isLocal or s2.isLocal
+        if s1.uri != s2.uri:
+          return True
+      elif not s1 is None:
+        if s1.isLocal:
+          return True
+      elif not s2 is None:
+        if s2.isLocal:
+          return True
+    return False
+#    finally:
+#      cputimes = os.times() ###################
+#      print "CHANGES:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
   
   def listedState(self):
     '''
     Returns a extended roscore state. 
     @return: complete roscore state as
              
-             C{(stamp, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)}
+             C{(stamp, stamp_local, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)}
              
                - C{publishers} is of the form
                  
@@ -834,7 +923,8 @@ class MasterInfo(object):
                  
                  C{[service, XML-RPC URI, origin ROS_MASTER_URI, type, E{lb} local, remote E{rb}]}
                
-    @rtype: C{(float, 
+    @rtype: C{(float,
+               float,
                str,
                str,
                [ [str,[str] ] ], 
@@ -845,6 +935,7 @@ class MasterInfo(object):
                [ [str,str,str,str,str] ])}
     '''
     stamp = str(self.timestamp)
+    stamp_local = str(self.timestamp_local)
     publishers = []
     subscribers = []
     services = []
@@ -865,7 +956,7 @@ class MasterInfo(object):
     for name, node in self.nodes.items():
       nodes.append((name, node.uri, str(node.masteruri), node.pid, 'local' if node.isLocal else 'remote'))
 
-    return (stamp, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
+    return (stamp, stamp_local, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
   
 #  def __str__(self):
 #    return str(self.listedState())

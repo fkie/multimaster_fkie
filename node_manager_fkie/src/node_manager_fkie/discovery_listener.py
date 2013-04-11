@@ -70,6 +70,12 @@ class MasterListService(QtCore.QObject):
     self.__serviceThreads = {}
     self._lock = threading.RLock()
 
+  def stop(self):
+    print "  Shutdown discovery listener..."
+    for key, thread in self.__serviceThreads.iteritems():
+      thread.join(3)
+    print "  Discovery listener is off!"
+
   def retrieveMasterList(self, masteruri, wait=False):
     '''
     This method use the service 'list_masters' of the master_discovery to get 
@@ -80,34 +86,31 @@ class MasterListService(QtCore.QObject):
     @param wait: wait for the service
     @type wait: C{boolean}
     '''
-    self._lock.acquire(True)
-    if not (self.__serviceThreads.has_key(masteruri)):
-      upthread = MasterListThread(masteruri, wait)
-      upthread.master_list_signal.connect(self._on_master_list)
-      upthread.err_signal.connect(self._on_err)
-      self.__serviceThreads[masteruri] = upthread
-      upthread.start()
-    self._lock.release()
+    with self._lock:
+      if not (self.__serviceThreads.has_key(masteruri)):
+        upthread = MasterListThread(masteruri, wait)
+        upthread.master_list_signal.connect(self._on_master_list)
+        upthread.err_signal.connect(self._on_err)
+        self.__serviceThreads[masteruri] = upthread
+        upthread.start()
 
   def _on_master_list(self, masteruri, service_name, items):
+    with self._lock:
+      try:
+        thread = self.__serviceThreads.pop(masteruri)
+        del thread
+      except KeyError:
+        pass
     self.masterlist_signal.emit(masteruri, service_name, items)
-    self._lock.acquire(True)
-    try:
-      thread = self.__serviceThreads.pop(masteruri)
-      del thread
-    except KeyError:
-      pass
-    self._lock.release()
 
   def _on_err(self, masteruri, str):
+    with self._lock:
+      try:
+        thread = self.__serviceThreads.pop(masteruri)
+        del thread
+      except KeyError:
+        pass
     self.masterlist_err_signal.emit(masteruri, str)
-    self._lock.acquire(True)
-    try:
-      thread = self.__serviceThreads.pop(masteruri)
-      del thread
-    except KeyError:
-      pass
-    self._lock.release()
 
 
 
@@ -262,6 +265,10 @@ class OwnMasterMonitoring(QtCore.QObject):
   '''@ivar: a signal to inform the receiver about new master state. 
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
   
+  err_signal = QtCore.Signal(str)
+  '''@ivar: a signal to inform about an error. 
+  Parameter: L{str}'''
+  
   ROSMASTER_HZ = 1
   '''@ivar: the rate to test ROS master for changes.'''
   
@@ -273,6 +280,7 @@ class OwnMasterMonitoring(QtCore.QObject):
     '''
     self._master_monitor = MasterMonitor(monitor_port)
     self._do_pause = True
+    self._do_finish = False
 #    self._local_addr = roslib.network.get_local_address()
 #    self._masteruri = roslib.rosenv.get_master_uri()
     self._masteruri = self._master_monitor.getMasteruri()
@@ -281,6 +289,15 @@ class OwnMasterMonitoring(QtCore.QObject):
     self._masterMonitorThread.setDaemon(True)
     self._masterMonitorThread.start()
 
+  def stop(self):
+    '''
+    Stop the local master monitoring
+    '''
+    print "  Shutdown the local master monitoring..."
+    self._do_finish = True
+    self._masterMonitorThread.join(15)
+    print "  Local master monitoring is off!"
+
   def mastermonitor_loop(self):
     '''
     The method test periodically the state of the ROS master. The new state will
@@ -288,7 +305,7 @@ class OwnMasterMonitoring(QtCore.QObject):
     '''
     import os
     current_check_hz = OwnMasterMonitoring.ROSMASTER_HZ
-    while (not rospy.is_shutdown()):
+    while (not rospy is None and not rospy.is_shutdown() and not self._do_finish):
       try:
         if not self._do_pause:
           cputimes = os.times()
@@ -300,6 +317,7 @@ class OwnMasterMonitoring(QtCore.QObject):
                                 ROSMaster(str(self._local_addr), 
                                           str(self._masteruri), 
                                           mon_state.timestamp, 
+                                          mon_state.timestamp_local,
                                           True, 
                                           rospy.get_name(), 
                                           ''.join(['http://localhost:',str(self._master_monitor.rpcport)])))
@@ -312,10 +330,12 @@ class OwnMasterMonitoring(QtCore.QObject):
           elif current_check_hz*cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
             current_check_hz = float(current_check_hz)*2.0
       except MasterConnectionException, e:
-        rospy.logwarn("Error while master check loop: %s", str(e))
+        rospy.logwarn("MasterConnectionError while master check loop: %s", str(e))
+        self.err_signal.emit("Error while master check loop: " + str(e))
       except RuntimeError, e:
         # will thrown on exit of the app while try to emit the signal
-        rospy.logwarn("Error while master check loop: %s", str(e))
+        rospy.logwarn("RuntimeError while master check loop: %s", str(e))
+        self.err_signal.emit("Error while master check loop: " + str(e))
       time.sleep(1.0/current_check_hz)
   
   def pause(self, state):

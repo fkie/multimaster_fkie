@@ -36,6 +36,7 @@
     <file>icons/state_off.png</file>
     <file>icons/state_part.png</file>
     <file>icons/state_run.png</file>
+    <file>icons/state_unknown.png</file>
     <file>icons/stock_connect.png</file>
     <file>icons/stock_connect_green.png</file>
     <file>icons/stock_connect_yellow.png</file>

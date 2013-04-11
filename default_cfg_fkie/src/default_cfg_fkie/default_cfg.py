@@ -93,8 +93,7 @@ class DefaultCfg(object):
     @param argv: the argv needed to load the launch file
     @type argv: C{str}
     '''
-    try:
-      self.__lock.acquire()
+    with self.__lock:
       # shutdown the services to inform the caller about a new configuration.
       if not self.runService is None:
         self.runService.shutdown('reload config')
@@ -170,8 +169,6 @@ class DefaultCfg(object):
 #    except:
 #      import traceback
 #      print traceback.format_exc()
-    finally:
-      self.__lock.release()
 
   def _decode(self, val):
     '''
@@ -261,14 +258,15 @@ class DefaultCfg(object):
       return roslib.rosenv.get_master_uri()
 
   def _timed_service_creation(self):
-    try:
-      self.__lock.acquire()
-      if self.runService is None:
-        self.runService = rospy.Service('~run', Task, self.rosservice_start_node)
-      if self.listService is None:
-        self.listService = rospy.Service('~list_nodes', ListNodes, self.rosservice_list_nodes)
-    finally:
-      self.__lock.release()
+    with self.__lock:
+      try:
+        if self.runService is None:
+          self.runService = rospy.Service('~run', Task, self.rosservice_start_node)
+        if self.listService is None:
+          self.listService = rospy.Service('~list_nodes', ListNodes, self.rosservice_list_nodes)
+      except:
+        import traceback
+        print traceback.format_exc()
 
   def getPath(self, file, package=''):
     '''

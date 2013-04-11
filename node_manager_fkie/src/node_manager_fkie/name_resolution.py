@@ -208,16 +208,19 @@ class NameResolution(object):
         self._masters.append(MasterEntry(None, mastername, address, hostname))
 
   def _validateMastername(self, mastername, masteruri):
-    with self.mutex:
-      mm = self.masteruri(mastername)
-      if mm and mm != masteruri:
-        print "EROROR name", mastername, "bereits fuer", mm, "vergeben!"
-        nr = 2
-        while mm and mm != masteruri:
-          mm = self.masteruri('_'.join([mastername, str(nr)]))
-          nr = nr + 1
-        return '_'.join([mastername, str(nr)])
-      return mastername
+    '''
+    Not thead safe
+    '''
+#    with self.mutex:
+    mm = self.masteruri(mastername)
+    if mm and mm != masteruri:
+      print "EROROR name", mastername, "bereits fuer", mm, "vergeben!"
+      nr = 2
+      while mm and mm != masteruri:
+        mm = self.masteruri('_'.join([mastername, str(nr)]))
+        nr = nr + 1
+      return '_'.join([mastername, str(nr)])
+    return mastername
 
   def hasMaster(self, masteruri):
     with self.mutex:

@@ -59,29 +59,44 @@ class UpdateThread(QtCore.QObject, threading.Thread):
   if an error while retrieving a master info was occurred.
   '''
 
-  def __init__(self, monitoruri, masteruri, parent=None):
+  def __init__(self, monitoruri, masteruri, delayed_exec=0., parent=None):
+    '''
+    @param masteruri: the URI of the remote ROS master
+    @type masteruri: C{str}
+    @param monitoruri: the URI of the monitor RPC interface of the master_discovery node
+    @type monitoruri: C{str}
+    @param delayed_exec: Delay the execution of the request for given seconds.
+    @type delayed_exec: C{float}
+    '''
     QtCore.QObject.__init__(self)
     threading.Thread.__init__(self)
     self._monitoruri = monitoruri
     self._masteruri = masteruri
+    self._delayed_exec = delayed_exec
     self.setDaemon(True)
 
   def run(self):
     '''
     '''
     try:
-      time.sleep(random.random())
-      socket.setdefaulttimeout(6)
+      delay = self._delayed_exec+0.5+random.random()
+      #'print "wait request update", self._monitoruri, delay
+      time.sleep(delay)
+      #'print "request update", self._monitoruri
+      socket.setdefaulttimeout(25)
       remote_monitor = xmlrpclib.ServerProxy(self._monitoruri)
       remote_info = remote_monitor.masterInfo()
       master_info = MasterInfo.from_list(remote_info)
       master_info.check_ts = time.time()
+      #'print "request success", self._monitoruri
       self.update_signal.emit(master_info)
     except:
       import traceback
 #      print traceback.print_exc()
       formatted_lines = traceback.format_exc().splitlines()
       rospy.logwarn("Connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
+      #'print "request failed", self._monitoruri
       self.error_signal.emit(self._masteruri, formatted_lines[-1])
     finally:
-      socket.setdefaulttimeout(None)
+      if not socket is None:
+        socket.setdefaulttimeout(None)

@@ -44,13 +44,26 @@ except Exception, e:
 import rospy
 import node_manager_fkie as nm
 
+class AuthenticationRequest(Exception):
+  ''' '''
+  
+  def __init__(self, user, host, error):
+    Exception.__init__(self)
+    self.user = user
+    self.host = host
+    self.error = error
+  
+  def __str__(self):
+    return "AuthenticationRequest on "  + self.host + " for " + self.user + "::" + repr(self.error)
+
+
 class SSHhandler(object):
   '''
   The class to handle the SSH sessions to the remote hosts.
   '''
   USER_DEFAULT = 'robot'
-  SSH_SESSIONS = {}
-  SSH_AUTH = {}
+  SSH_SESSIONS = {} # host :session
+  SSH_AUTH = {} # host : user
 
 
   def __init__(self):
@@ -67,7 +80,7 @@ class SSHhandler(object):
         s.close()
       del s
 
-  def ssh_exec(self, host, cmd, user=None, pw=None):
+  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=True):
     '''
     Executes a command on remote host. Returns the output channels with 
     execution result or None. The connection will be established using paramiko 
@@ -82,19 +95,23 @@ class SSHhandler(object):
     @rtype: C{tuple(ChannelFile, ChannelFile, ChannelFile), boolean}
     @see: U{http://www.lag.net/paramiko/docs/paramiko.SSHClient-class.html#exec_command}
     '''
-    try:
-      self.mutex.acquire()
-      ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw)
-      if not ssh is None:
-        cmd_str = str(' '.join(cmd))
-        rospy.loginfo("REMOTE execute on %s: %s", host, cmd_str)
-        return ssh.exec_command(cmd_str), True
-      else:
-        return (None, None, None), False
-    except Exception, e:
-      return (None, None, str(e)), False
-    finally:
-      self.mutex.release()
+    with self.mutex:
+      try:
+        ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw, True, auto_pw_request)
+        if not ssh is None:
+          cmd_str = str(' '.join(cmd))
+          rospy.loginfo("REMOTE execute on %s: %s", host, cmd_str)
+          (stdin, stdout, stderr) = ssh.exec_command(cmd_str)
+          stdin.close()
+          output = stdout.read()
+          error = stderr.read()
+          return output, error, True
+        else:
+          return '', '', False
+      except AuthenticationRequest as e:
+        raise
+      except Exception, e:
+        return '', str(e), False
 
     
   def ssh_x11_exec(self, host, cmd, title=None, user=None):
@@ -111,31 +128,31 @@ class SSHhandler(object):
     @return: the result of C{subprocess.Popen(command)} 
     @see: U{http://docs.python.org/library/subprocess.html?highlight=subproces#subprocess}
     '''
-    try:
-      self.mutex.acquire()
-      # workaround: use ssh in a terminal with X11 forward
-      user = self.USER_DEFAULT if user is None else user
-      if self.SSH_AUTH.has_key(host):
-        user = self.SSH_AUTH[host]
-      # generate string for SSH command
-      ssh_str = ' '.join(['/usr/bin/ssh',
-                          '-aqtx',
-                          '-oClearAllForwardings=yes',
-                          '-oConnectTimeout=5',
-                          '-oStrictHostKeyChecking=no',
-                          '-oVerifyHostKeyDNS=no',
-                          '-oCheckHostIP=no',
-                          ''.join([user, '@', host])])
-      if not title is None:
-        cmd_str = nm.terminal_cmd([ssh_str, ' '.join(cmd)], title)
-      else:
-        cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
-      rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
-      return subprocess.Popen(shlex.split(cmd_str))
-    finally:
-      self.mutex.release()
+    with self.mutex:
+      try:
+        # workaround: use ssh in a terminal with X11 forward
+        user = self.USER_DEFAULT if user is None else user
+        if self.SSH_AUTH.has_key(host):
+          user = self.SSH_AUTH[host]
+        # generate string for SSH command
+        ssh_str = ' '.join(['/usr/bin/ssh',
+                            '-aqtx',
+                            '-oClearAllForwardings=yes',
+                            '-oConnectTimeout=5',
+                            '-oStrictHostKeyChecking=no',
+                            '-oVerifyHostKeyDNS=no',
+                            '-oCheckHostIP=no',
+                            ''.join([user, '@', host])])
+        if not title is None:
+          cmd_str = nm.terminal_cmd([ssh_str, ' '.join(cmd)], title)
+        else:
+          cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
+        rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
+        return subprocess.Popen(shlex.split(cmd_str))
+      except:
+        pass
     
-  def _getSSH(self, host, user, pw=None, do_connect=True):
+  def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=True):
     '''
     @return: the paramiko ssh client
     @rtype: L{paramiko.SSHClient} 
@@ -154,14 +171,19 @@ class SSHhandler(object):
       while (session.get_transport() is None or not session.get_transport().authenticated) and do_connect:
         try:
           session.connect(host, username=user, password=pw, timeout=3)
+          self.SSH_AUTH[host] = user
         except Exception, e:
 #          import traceback
 #          print traceback.format_exc()
           if str(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
-            res, user, pw = self._requestPW(user, host)
-            if not res:
-              return None
-            self.SSH_AUTH[host] = user
+            if auto_pw_request:
+              #'print "REQUEST PW-AUTO"
+              res, user, pw = self._requestPW(user, host)
+              if not res:
+                return None
+              self.SSH_AUTH[host] = user
+            else:
+              raise AuthenticationRequest(user, host, str(e))
           else:
             rospy.logwarn("ssh connection to %s failed: %s", host, str(e))
             raise Exception(' '.join(["ssh connection to", host, "failed:", str(e)]))

@@ -141,7 +141,7 @@ class ParameterDescription(object):
             self._value = map(str2bool, value.split(','))
           else:
             self._value = [ s.encode(sys.getfilesystemencoding()) for s in value.split(',')]
-          if self.arrayLength() != len(self._value):
+          if not self.arrayLength() is None and self.arrayLength() != len(self._value):
             raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
         else:
           if 'int' in self.baseType():
@@ -255,6 +255,7 @@ class MainBox(QtGui.QWidget):
     self.setUpdatesEnabled(False)
     try:
       if isinstance(value, list):
+#        self.layout().addRow(QtGui.QPushButton("add to list"))
         for v in value:
           if isinstance(v, dict):
             self._createFieldFromDict(v)

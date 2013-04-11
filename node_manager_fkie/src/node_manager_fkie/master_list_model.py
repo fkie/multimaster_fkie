@@ -53,8 +53,9 @@ class MasterItem(QtGui.QStandardItem):
   def __init__(self, master, local=False, quality=None, parent=None):
     self.name = ''.join([master.name, ' (localhost)']) if local else master.name
     QtGui.QStandardItem.__init__(self, self.name)
+    self.parent_item = None
     self.master = master
-    self.quality = quality
+    self.__quality = quality
     self.descr = ''
     self.ICONS = {'green' : QtGui.QIcon(":/icons/stock_connect_green.png"),
                   'yellow': QtGui.QIcon(":/icons/stock_connect_yellow.png"),
@@ -85,11 +86,21 @@ class MasterItem(QtGui.QStandardItem):
         if ip and not ip in ips:
           self.master_ip = ' '.join([self.master_ip, ip])
           ips.append(ip)
-      self.updateNameView(self.master, self.quality, self)
+#      self.updateNameView(self.master, self.quality, self)
     except:
       import traceback
       print traceback.format_exc()
     
+
+  @property
+  def quality(self):
+    return self.__quality
+  
+  @quality.setter
+  def quality(self, value):
+    if self.__quality != value:
+      self.__quality = value
+      self.updateMasterView(self.parent_item)
 
   def updateMasterView(self, parent):
     '''
@@ -233,8 +244,8 @@ class MasterModel(QtGui.QStandardItemModel):
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
     item = self.itemFromIndex(index)
-    if item and item.master.online:
-      return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+#    if item and item.master.online:
+    return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
     return QtCore.Qt.NoItemFlags
 
   def updateMaster(self, master):
@@ -265,11 +276,15 @@ class MasterModel(QtGui.QStandardItemModel):
         doAddItem = False
         break
       elif (masterItem > master.name):
-        root.insertRow(i, MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri)))))
+        mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
+        root.insertRow(i, mitem)
+        mitem[0].parent_item = root
         doAddItem = False
         break
     if doAddItem:
-      root.appendRow(MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri)))))
+      mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
+      root.appendRow(mitem)
+      mitem[0].parent_item = root
 
   def updateMasterStat(self, master, quality):
     '''
@@ -285,7 +300,6 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i)
       if masterItem.master.name in master:
         masterItem.quality = quality
-        masterItem.updateMasterView(root)
         break
 
   def setChecked(self, master, state):

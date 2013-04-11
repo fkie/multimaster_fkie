@@ -38,10 +38,21 @@ import threading
 import rospy
 
 import node_manager_fkie as nm
-from select_dialog import SelectDialog
+from detailed_msg_box import DetailedError
 
 class ScreenHandlerException(Exception):
   pass
+
+class ScreenSelectionRequest(Exception):
+  ''' '''
+  
+  def __init__(self, choices, error):
+    Exception.__init__(self)
+    self.choices = choices
+    self.error = error
+  
+  def __str__(self):
+    return "ScreenSelectionRequest from "  + self.choices + "::" + repr(self.error)
 
 
 class ScreenHandler(object):
@@ -165,7 +176,26 @@ class ScreenHandler(object):
       return ''.join([cls.LOG_PATH, 'unknown', '.pid'])
 
   @classmethod
-  def getActiveScreens(cls, host, session='', user=None, pwd=None):
+  def getActiveScreens(cls, host, session='', auto_pw_request=True, user=None, pwd=None):
+    '''
+    Returns the list with all compatible screen names. If the session is set to 
+    an empty string all screens will be returned.
+    @param host: the host name or IP to search for the screen session.
+    @type host: C{str}
+    @param session: the name or the suffix of the screen session
+    @type session: C{str} (Default: C{''})
+    @return: the list with session names
+    @rtype: C{[str(session name), ...]}
+    @raise Exception: on errors while resolving host
+    @see: L{node_manager_fkie.is_local()}
+    '''
+    try:
+      return cls._getActiveScreens(host, session, auto_pw_request, user, pwd)
+    except nm.AuthenticationRequest as e:
+      raise nm.InteractionNeededError(e, cls.getActiveScreens, (host, session, auto_pw_request))
+
+  @classmethod
+  def _getActiveScreens(cls, host, session='', auto_pw_request=True, user=None, pwd=None):
     '''
     Returns the list with all compatible screen names. If the session is set to 
     an empty string all screens will be returned.
@@ -184,17 +214,14 @@ class ScreenHandler(object):
       out, out_err = cls.getLocalOutput([cls.SCREEN, '-ls'])
       output = out
     else:
-      (stdin, stdout, stderr), ok = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'])
-      if ok:
-        stdin.close()
-  #        error = stderr.read()
-        output = stdout.read()
-    if not (output is None):
+      output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request)
+    if output:
       splits = output.split()
       for i in splits:
         if i.count('.') > 0 and i.endswith(session) and i.find('._') >= 0:
           result.append(i)
     return result
+
 
   @classmethod
   def openScreenTerminal(cls, host, screen_name, nodename, user=None):
@@ -222,83 +249,103 @@ class ScreenHandler(object):
       thread.start()
     else:
       ps = nm.ssh().ssh_x11_exec(host, [cls.SCREEN, '-x', screen_name], title_opt)
+      rospy.loginfo("Open remote screen terminal: %s", ps)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
       thread.start()
 
   @classmethod
-  def openScreen(cls, host, node, user=None, parent=None):
+  def openScreen(cls, node, host, auto_item_request=True, user=None, pw=None, items=[]):
     '''
     Searches for the screen associated with the given node and open the screen 
     output in a new terminal.
-    @param host: the host name or ip where the screen is running
-    @type host: C{str}
     @param node: the name of the node those screen output to show
     @type node: C{str}
-    @param parent: the parent widget to show a message box, if a user 
-    input is required.
-    @type parent: L{PySide.QtGui.QWidget}
+    @param host: the host name or ip where the screen is running
+    @type host: C{str}
     @raise Exception: on errors while resolving host
-    @see: L{openScreenTerminal()} or L{getActiveScreens()}
+    @see: L{openScreenTerminal()} or L{_getActiveScreens()}
     '''
     if node is None or len(node) == 0:
       return False
-    # get the available screens
-    screens = cls.getActiveScreens(host, cls.createSessionName(node), user=user) #user=user, pwd=pwd
-    if len(screens) == 1:
-      cls.openScreenTerminal(host, screens[0], node, user)
-    else:
-      # create a list to let the user make a choice, which screen must be open
-      choices = {}
-      for s in screens:
-        pid, session_name = cls.splitSessionName(s)
-        choices[''.join([session_name, ' [', pid, ']'])] = s
-      # Open selection
-      if len(choices) > 0:
-        from PySide import QtGui
-        items = SelectDialog.getValue('Show screen', choices.keys(), False)
+    try:
+      if items:
         for item in items:
           #open the selected screen
-          cls.openScreenTerminal(host, choices[item], node, user)
-    return len(screens) > 0
+          cls.openScreenTerminal(host, item, node, user)
+      else:
+        # get the available screens
+        screens = cls._getActiveScreens(host, cls.createSessionName(node), auto_item_request, user, pw)
+        if len(screens) == 1:
+          cls.openScreenTerminal(host, screens[0], node, user)
+        else:
+          # create a list to let the user make a choice, which screen must be open
+          choices = {}
+          for s in screens:
+            pid, session_name = cls.splitSessionName(s)
+            choices[''.join([session_name, ' [', pid, ']'])] = s
+          # Open selection
+          if len(choices) > 0:
+            if len(choices) == 1:
+              cls.openScreenTerminal(host, choices[0], node, user)
+            elif auto_item_request:
+              from select_dialog import SelectDialog
+              items = SelectDialog.getValue('Show screen', choices.keys(), False)
+              for item in items:
+                #open the selected screen
+                cls.openScreenTerminal(host, choices[item], node, user)
+            else:
+              raise ScreenSelectionRequest(choices, 'Show screen')
+          else:
+            raise DetailedError('Show screen', ''.join(['No screen for ', node, ' on ', host, ' found!']))
+        return len(screens) > 0
+    except nm.AuthenticationRequest as e:
+      raise nm.InteractionNeededError(e, cls.openScreen, (node, host, auto_item_request))
+    except ScreenSelectionRequest as e:
+      raise nm.InteractionNeededError(e, cls.openScreen, (node, host, auto_item_request, user, pw))
+
 
   @classmethod
-  def killScreens(cls, host, node, user=None, parent=None):
+  def killScreens(cls, node, host, auto_ok_request=True, user=None, pw=None):
     '''
     Searches for the screen associated with the given node and kill this screens. 
-    @param host: the host name or ip where the screen is running
-    @type host: C{str}
     @param node: the name of the node those screen output to show
     @type node: C{str}
-    @param parent: the parent widget to show a message box, if a user 
-    input is required.
-    @type parent: L{PySide.QtGui.QWidget}
+    @param host: the host name or ip where the screen is running
+    @type host: C{str}
     '''
     if node is None or len(node) == 0:
       return False
-    # get the available screens
-    screens = cls.getActiveScreens(host, cls.createSessionName(node), user=user) #user=user, pwd=pwd
-    if screens:
-      from PySide import QtGui
-      result = QtGui.QMessageBox.question(parent, "Kill SCREENs?", '\n'.join(screens), QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
-      if result & QtGui.QMessageBox.Ok:
-        for s in screens:
-          pid, sep, name = s.partition('.')
-          if pid:
-            try:
-              nm.starter().kill(host, int(pid))
-            except:
-              import traceback
-              rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", str(pid), str(host), str(traceback.format_exc()))
-        if nm.is_local(host):
-          ps = subprocess.Popen([cls.SCREEN, '-wipe'])
-          # wait for process to avoid 'defunct' processes
-          thread = threading.Thread(target=ps.wait)
-          thread.setDaemon(True)
-          thread.start()
-        else:
-          nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
+    try:
+      # get the available screens
+      screens = cls.getActiveScreens(host, cls.createSessionName(node), user=user) #user=user, pwd=pwd
+      if screens:
+        do_kill = True
+        if auto_ok_request:
+          from PySide import QtGui
+          result = QtGui.QMessageBox.question(None, "Kill SCREENs?", '\n'.join(screens), QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
+          if result & QtGui.QMessageBox.Ok:
+            do_kill = True
+        if do_kill:
+          for s in screens:
+            pid, sep, name = s.partition('.')
+            if pid:
+              try:
+                nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
+              except:
+                import traceback
+                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", str(pid), str(host), str(traceback.format_exc()))
+          if nm.is_local(host):
+            ps = subprocess.Popen([cls.SCREEN, '-wipe'])
+            # wait for process to avoid 'defunct' processes
+            thread = threading.Thread(target=ps.wait)
+            thread.setDaemon(True)
+            thread.start()
+          else:
+            output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
+    except nm.AuthenticationRequest as e:
+      raise nm.InteractionNeededError(e, cls.killScreens, (node, host, auto_ok_request))
 
   @classmethod
   def getLocalOutput(cls, cmd):

@@ -1,0 +1,19 @@
+# The ignore_* lists will be processed first.
+ignore_hosts:
+sync_hosts:
+
+ignore_nodes:
+sync_nodes:
+
+ignore_topics:
+sync_topics:
+
+ignore_services:
+  - /*get_loggers
+  - /*set_logger_level
+sync_services:
+
+# The sync_topics_on_demand is only regarded, if sync_nodes or sync_topics are set.
+# In this case the subscribed and published topics are synchronized even if they are
+# not in the sync_* list.
+sync_topics_on_demand: False

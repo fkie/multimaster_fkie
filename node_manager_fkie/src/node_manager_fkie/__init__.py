@@ -34,7 +34,7 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.1"
+__version__ = "0.2"
 __date__ = "2012-02-01"
 
 import os
@@ -50,9 +50,10 @@ import rospy
 #if sys.version_info < PYTHONVER:
 #  print 'For full scope of operation this application requires python version > %s, current: %s' % (str(PYTHONVER), sys.version_info)
 
-from ssh_handler import SSHhandler
-from screen_handler import ScreenHandler
-from start_handler import StartHandler, StartException 
+from ssh_handler import SSHhandler, AuthenticationRequest
+from screen_handler import ScreenHandler, ScreenSelectionRequest
+from start_handler import StartHandler, StartException
+from progress_queue import InteractionNeededError
 from name_resolution import NameResolution
 from history import History
 
@@ -159,24 +160,27 @@ def is_local(hostname):
   '''
   if (hostname is None):
     return True
-
-  if hostname in HOSTS_CACHE:
-    if isinstance(HOSTS_CACHE[hostname], threading.Thread):
-      return False
-    return HOSTS_CACHE[hostname]
+  with _lock:
+    if hostname in HOSTS_CACHE:
+      if isinstance(HOSTS_CACHE[hostname], threading.Thread):
+        return False
+      return HOSTS_CACHE[hostname]
   
   try:
     machine_addr = socket.inet_aton(hostname)
     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
     # check 127/8 and local addresses
     result = machine_addr.startswith('127.') or machine_addr in local_addresses
-    HOSTS_CACHE[hostname] = result
+    with _lock:
+      HOSTS_CACHE[hostname] = result
     return result
   except socket.error:
+    # the hostname must be resolved => do it in a thread
     thread = threading.Thread(target=__is_local, args=((hostname,)))
     thread.daemon = True
     thread.start()
-    HOSTS_CACHE[hostname] = thread
+    with _lock:
+      HOSTS_CACHE[hostname] = thread
   return False
 
 def __is_local(hostname):
@@ -184,14 +188,16 @@ def __is_local(hostname):
   try:
     machine_addr = socket.gethostbyname(hostname)
   except socket.gaierror:
-    HOSTS_CACHE[hostname] = False
+    import traceback
+    print traceback.format_exc()
+    with _lock:
+      HOSTS_CACHE[hostname] = False
     return
   local_addresses = ['localhost'] + roslib.network.get_local_addresses()
   # check 127/8 and local addresses
   result = machine_addr.startswith('127.') or machine_addr in local_addresses
-  _lock.acquire(True)
-  HOSTS_CACHE[hostname] = result
-  _lock.release()
+  with _lock:
+    HOSTS_CACHE[hostname] = result
 
 
 def get_ros_home():
@@ -231,7 +237,7 @@ def masteruri_from_ros():
       import rosgraph
       return rosgraph.rosenv.get_master_uri()
   except:
-    return roslib.rosenv.get_master_uri()
+    return os.environ['ROS_MASTER_URI']
 
 def finish(*arg):
   '''
@@ -284,6 +290,7 @@ def setProcessName(name):
 
 def main(name, anonymous=False):
   global CFG_PATH
+  masteruri = masteruri_from_ros()
   CFG_PATH = ''.join([get_ros_home(), os.sep, 'node_manager', os.sep])
   '''
   Creates and runs the ROS node.
@@ -302,6 +309,8 @@ def main(name, anonymous=False):
   except:
     print >> sys.stderr, "please install 'python-pyside' package!!"
     sys.exit(-1)
+  # start ROS-Master, if not currently running
+  StartHandler._prepareROSMaster(masteruri)
   rospy.init_node(name, anonymous=anonymous, log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
@@ -330,7 +339,7 @@ def main(name, anonymous=False):
     _history = History()
 
     # test where the roscore is running (local or remote)
-    masteruri = masteruri_from_ros()
+    __is_local('localhost') ## fill cache
     __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
     local_master = is_local(_name_resolution.getHostname(masteruri))
   
