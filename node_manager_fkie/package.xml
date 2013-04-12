@@ -26,7 +26,6 @@
   <run_depend>python-pyside</run_depend>
   <run_depend>python-paramiko</run_depend>
   <run_depend>python-psutil</run_depend>
-  <run_depend>pyside-tools</run_depend>
   <run_depend>python-docutils</run_depend>
   <run_depend>python-pyside.qtuitools</run_depend>
   <run_depend>screen</run_depend>
