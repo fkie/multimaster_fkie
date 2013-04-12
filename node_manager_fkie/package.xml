@@ -1,0 +1,39 @@
+<package>
+  <name>node_manager_fkie</name>
+  <description>
+     Graphical interface, written in PySide, to manage the running and 
+     configured ROS nodes on different hosts. For discovering 
+     the running ROS master master_discovery node will be used.
+  </description>
+  <version>0.2.0</version>
+  <license>BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@fkie.fraunhofer.de">Alexander Tiderko</maintainer>
+  <url>http://ros.org/wiki/node_manager_fkie</url>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>master_discovery_fkie</build_depend>
+  <build_depend>master_sync_fkie</build_depend>
+  <build_depend>default_cfg_fkie</build_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>roslib</run_depend>
+  <run_depend>rosgraph</run_depend>
+  <run_depend>roslaunch</run_depend>
+  <run_depend>rosservice</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  
+  <run_depend>python-pyside</run_depend>
+  <run_depend>python-paramiko</run_depend>
+  <run_depend>python-psutil</run_depend>
+  <run_depend>pyside-tools</run_depend>
+  <run_depend>python-docutils</run_depend>
+  <run_depend>python-pyside.qtuitools</run_depend>
+  <run_depend>screen</run_depend>
+  <run_depend>xterm</run_depend>
+  
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
+</package>
