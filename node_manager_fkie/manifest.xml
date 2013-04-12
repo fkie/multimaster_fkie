@@ -22,7 +22,6 @@
   <depend package="default_cfg_fkie"/>
   <rosdep name="python-pyside" />
   <rosdep name="python-paramiko" />
-  <rosdep name="python-psutil" />
   <rosdep name="python-docutils" />
   <rosdep name="python-pyside.qtuitools" />
   <rosdep name="screen" />
