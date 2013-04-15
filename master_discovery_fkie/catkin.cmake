@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(master_discovery_fkie)
 find_package(catkin REQUIRED)
 
-catkin_python_setup()
+find_package(catkin REQUIRED COMPONENTS 
+    genmsg 
+    std_msgs 
+)
 
 #######################################
 ## Declare ROS messages and services ##
@@ -10,6 +13,8 @@ catkin_python_setup()
 
 ## Generate messages in the 'msg' folder
 add_message_files(
+  DIRECTORY msg
+  FILES
   LinkState.msg
   LinkStatesStamped.msg
   MasterState.msg
@@ -20,9 +25,22 @@ add_message_files(
 
 ## Generate services in the 'srv' folder
 add_service_files(
+  DIRECTORY srv
+  FILES
   DiscoverMasters.srv
   GetSyncInfo.srv
 )
 
+generate_messages(DEPENDENCIES
+    std_msgs 
+)
 
-#install(PROGRAMS scripts/myscript DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+catkin_package()
+catkin_python_setup()
+
+install(
+    PROGRAMS 
+        nodes/master_discovery
+        nodes/zeroconf
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )

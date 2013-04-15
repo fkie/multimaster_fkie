@@ -7,7 +7,8 @@ d = generate_distutils_setup(
    ##  don't do this unless you want a globally visible script
    # scripts=['bin/myscript'], 
    packages=['master_discovery_fkie'],
-   package_dir={'': 'src'}
+   package_dir={'': 'src'},
+   requires=['rospy', 'roslib', 'rosgraph', 'master_discovery_fkie']
 )
 
 setup(**d)
