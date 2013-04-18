@@ -27,11 +27,11 @@ add_service_files(
   GetSyncInfo.srv
 )
 
+catkin_python_setup()
+
 generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
-
-catkin_python_setup()
 
 install(
     PROGRAMS 

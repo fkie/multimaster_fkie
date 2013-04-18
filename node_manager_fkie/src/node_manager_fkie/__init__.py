@@ -43,7 +43,9 @@ import signal
 import socket
 import threading
 
-import roslib; roslib.load_manifest('node_manager_fkie')
+PKG_NAME = 'node_manager_fkie'
+
+import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
 
 #PYTHONVER = (2, 7, 1)
@@ -59,8 +61,7 @@ from history import History
 
 # set the cwd to the package of the node_manager_fkie to support the images
 # in HTML descriptions of the robots and capabilities
-
-PACKAGE_DIR = ''.join([roslib.packages.get_dir_pkg(os.path.abspath(os.path.dirname(sys.argv[0])))[0], os.path.sep])
+PACKAGE_DIR = ''.join([roslib.packages.get_pkg_dir(PKG_NAME), os.path.sep])
 ROBOTS_DIR = ''.join([PACKAGE_DIR, os.path.sep, 'images', os.path.sep])
 
 CFG_PATH = ''.join(['.node_manager', os.sep])

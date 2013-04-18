@@ -36,13 +36,14 @@ import copy
 import sys
 import socket
 import time
+import struct
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 import roslib.network
 
-from master_discovery_fkie.msg import *
-from master_discovery_fkie.srv import *
+from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster#, SyncMasterInfo, SyncTopicInfo
+from master_discovery_fkie.srv import DiscoverMasters, DiscoverMastersResponse#, GetSyncInfo
 from master_monitor import MasterMonitor, MasterConnectionException
 from udp import McastSocket
 

@@ -63,8 +63,8 @@ from sync_dialog import SyncDialog
 
 import node_manager_fkie as nm
 
-from master_discovery_fkie.msg import *
-from master_discovery_fkie.srv import *
+from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
+#from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -508,7 +508,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     #'print "*on_master_state_changed"
     host=nm.nameres().getHostname(msg.master.uri)
-    if msg.state == master_discovery_fkie.msg.MasterState.STATE_CHANGED:
+    if msg.state == MasterState.STATE_CHANGED:
       nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
       msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
@@ -516,7 +516,7 @@ class MainWindow(QtGui.QMainWindow):
       self.master_model.updateMaster(msg.master)
       self.ui.masterListView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
-    if msg.state == master_discovery_fkie.msg.MasterState.STATE_NEW:
+    if msg.state == MasterState.STATE_NEW:
       nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
       msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
@@ -524,7 +524,7 @@ class MainWindow(QtGui.QMainWindow):
       self.master_model.updateMaster(msg.master)
       self.ui.masterListView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
-    if msg.state == master_discovery_fkie.msg.MasterState.STATE_REMOVED:
+    if msg.state == MasterState.STATE_REMOVED:
       if msg.master.uri == self.getMasteruri():
         # switch to locale monitoring, if the local master discovering was removed
         self._setLocalMonitoring(True)

@@ -41,8 +41,8 @@ import rospy
 
 from common import masteruri_from_ros, resolve_url, read_interface, create_pattern
 from sync_thread import SyncThread
-from master_discovery_fkie.msg import *
-from master_discovery_fkie.srv import *
+from master_discovery_fkie.msg import MasterState#, LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
 import master_discovery_fkie.interface_finder as interface_finder
 from master_discovery_fkie.master_info import MasterInfo
 
@@ -81,7 +81,16 @@ class Main(object):
     rospy.on_shutdown(self.finish)
     # initialize the ROS services
     rospy.Service('~get_sync_info', GetSyncInfo, self.rosservice_get_sync_info)
+    rospy.on_shutdown(self.finish)
     self.retrieveMasters()
+
+  def finish(self, *arg):
+    '''
+    Callback called on exit of the ros node
+    '''
+    with self.__lock:
+      for (k, v) in self.sub_changes.iteritems():
+        v.unregister()
 
   def handlerMasterStateMsg(self, data):
     '''

@@ -40,8 +40,8 @@ import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 
 try:
-  from master_discovery_fkie.msg import *
-  from master_discovery_fkie.srv import *
+  from master_discovery_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
+  from master_discovery_fkie.srv import DiscoverMasters#, GetSyncInfo
 except ImportError, e:
   import sys
   print >> sys.stderr, "Can't import massages and services of master_discovery_fkie. Is master_discovery_fkie package compiled?"
@@ -163,7 +163,7 @@ class MasterStateTopic(QtCore.QObject):
   A class to receive the ROS master state updates from a ROS topic. The topic
   will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
   '''
-  state_signal = QtCore.Signal(master_discovery_fkie.msg.MasterState)
+  state_signal = QtCore.Signal(MasterState)
   '''@ivar: a signal to inform the receiver about new master state. 
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
 
@@ -182,7 +182,7 @@ class MasterStateTopic(QtCore.QObject):
     self.sub_changes = []
     for topic_name in topic_names:
       rospy.loginfo("listen for updates on %s", topic_name)
-      sub_changes = rospy.Subscriber(topic_name, master_discovery_fkie.msg.MasterState, self.handlerMasterStateMsg)
+      sub_changes = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
       self.sub_changes.append(sub_changes)
       found = True
     return found
@@ -211,7 +211,7 @@ class MasterStatisticTopic(QtCore.QObject):
   A class to receive the connections statistics from a ROS topic. The topic
   will be determine using L{master_discovery_fkie.interface_finder.get_stats_topic()}
   '''
-  stats_signal = QtCore.Signal(master_discovery_fkie.msg.LinkStatesStamped)
+  stats_signal = QtCore.Signal(LinkStatesStamped)
   '''@ivar: a signal with a list of link states to discovered ROS masters.
   Paramter: L{master_discovery_fkie.msg.LinkStatesStamped}'''
 
@@ -231,7 +231,7 @@ class MasterStatisticTopic(QtCore.QObject):
     for topic_name in topic_names:
       pass
       rospy.loginfo("listen for connection statistics on %s", topic_name)
-      sub_stats = rospy.Subscriber(topic_name, master_discovery_fkie.msg.LinkStatesStamped, self.handlerMasterStatsMsg)
+      sub_stats = rospy.Subscriber(topic_name, LinkStatesStamped, self.handlerMasterStatsMsg)
       self.sub_stats.append(sub_stats)
       found = True
     return found
@@ -261,7 +261,7 @@ class OwnMasterMonitoring(QtCore.QObject):
   discovering is available. On changes the 'state_signal' of type 
   L{master_discovery_fkie.msg.MasterState} will be emitted.
   '''
-  state_signal = QtCore.Signal(master_discovery_fkie.msg.MasterState)
+  state_signal = QtCore.Signal(MasterState)
   '''@ivar: a signal to inform the receiver about new master state. 
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
   

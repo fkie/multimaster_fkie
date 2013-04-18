@@ -8,6 +8,18 @@ catkin_package()
 install(
     PROGRAMS 
         nodes/node_manager
-        nodes/remote_nm.py
+        scripts/remote_nm.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
+
+install(
+    DIRECTORY 
+        images
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    )
+
+install(
+   PROGRAMS 
+        ./README.rst
+   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)

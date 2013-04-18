@@ -53,6 +53,10 @@
     <param name="capability_group" value="Management"/>
   </node-->
 
+  <node name="talker" pkg="rostopic" type="rostopic" args="pub /chatter std_msgs/String -r 1 'chatter'">
+  </node>
+
+
   <group ns="example">
   <node machine="control station" name="hokuyo" pkg="rostopic" type="rostopic" args="pub /description_example/hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
     <param name="capability_group" value="Hokuyo"/>
