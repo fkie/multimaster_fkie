@@ -82,10 +82,10 @@ class MasterInfo(object):
   
   @staticmethod
   def timestampToRosTime(timestamp):
-    '''..........................................................................
+    '''
     Converts the string representation of the current timestamp to ROS time and
     returns it.
-    ..........................................................................'''
+    '''
     try:
       if not (timestamp is None):
         return float(timestamp)
@@ -102,13 +102,17 @@ class MasterInfo(object):
 
   @staticmethod
   def MasteruriToAddr(masteruri):
-    '''..........................................................................
-    Returns the host name and port of the masteruri. C{urlparse} is used. 
-    @param masteruri: the URL of the master
-    @type masteruri:  C{str}
-    @return: a tupel of host and port
-    @rtype:  C{(str, str)}
-    ..........................................................................'''
+    '''
+    Returns the host name and port of the masteruri. ``urlparse`` is used. 
+    
+    :param masteruri: the URL of the master
+    
+    :type masteruri:  str
+    
+    :return: a tupel of host and port
+    
+    :rtype:  (str, str)
+    '''
     from urlparse import urlparse
     o = urlparse(masteruri)
     return (o.hostname, o.port)
@@ -125,17 +129,22 @@ class MasterInfo(object):
 
   @staticmethod
   def txtValue(key, txt):
-    '''..........................................................................
-    Returns the host name and port by removing 'http:// at the front of the 
+    '''
+    Returns the host name and port by removing ``http://`` at the front of the 
     masteruri
     
-    @param key: the parameter name stored in the txt value of the avahi info
-    @type key:  C{str}
-    @param txt: avahi txt array
-    @type txt:  C{avahi txt array}
-    @return: the value stored in the txt array for given name
-    @rtype:  C{str} or C{None}
-    ..........................................................................'''
+    :param key: the parameter name stored in the txt value of the avahi info
+    
+    :type key:  str
+    
+    :param txt: avahi txt array
+    
+    :type txt:  ``avahi txt array``
+    
+    :return: the value stored in the txt array for given name
+    
+    :rtype:  str or ``None``
+    '''
     for item in txt:
       valKey = item.split('=')
       if (len(valKey) == 2 and valKey[0].strip() == key.strip()):
@@ -162,21 +171,33 @@ class Zeroconf(threading.Thread):
   the gSignals.
   '''
   def __init__(self, name, service_type = '_ros-master._tcp', host=socket.gethostname(), port=11311, domain='local', txt_array=[]):
-    '''..........................................................................
+    '''
     Initialization method of the Zeroconf class.
-    @param name: the name of the local ROS master
-    @type name:  C{str}
-    @param service_type: the avahi service type
-    @type service_type:  C{str}
-    @param host: the host of the local ROS master
-    @type host: C{str}
-    @param port: the port of the local ROS master
-    @type port: C{int}
-    @param domain: the domain name
-    @type domain: C{str}
-    @param txt_array: (optional) additional information
-    @type txt_array: C{[str]}
-    ..........................................................................'''
+    
+    :param name: the name of the local ROS master
+    
+    :type name:  str
+    
+    :param service_type: the avahi service type
+    
+    :type service_type:  str
+    
+    :param host: the host of the local ROS master
+    
+    :type host: str
+    
+    :param port: the port of the local ROS master
+    
+    :type port: int
+    
+    :param domain: the domain name
+    
+    :type domain: str
+    
+    :param txt_array: (optional) additional information
+    
+    :type txt_array: list of strings
+    '''
     self.masterInfo = MasterInfo(name, service_type, domain, host, port, txt_array)
     
     # FIXME Review thread locking as needed.
@@ -225,9 +246,9 @@ class Zeroconf(threading.Thread):
     print '__avahi_callback_error:', err
 
   def __avahi_callback_print_error(self, *args):
-    '''..........................................................................
+    '''
     This method will be called, if an error occurs while service resolving.
-    ..........................................................................'''
+    '''
     for arg in args:
       print '__avahi_callback_print_error:', arg
       rospy.logdebug('Error while resolving: %s', arg)
@@ -251,10 +272,10 @@ class Zeroconf(threading.Thread):
       self.on_group_failure(error)
 
   def __avahi_callback_service_browser_new(self,interface, protocol, name, stype, domain, flags):
-    '''..........................................................................
+    '''
     This callback will be called, if a new service was registered. The service 
     will the resolved to get more information about the service.
-    ..........................................................................'''
+    '''
     rospy.logdebug("Service Browser - itemNew: %s", name) 
     self.__server.ResolveService(interface, 
                                  protocol, 
@@ -268,16 +289,16 @@ class Zeroconf(threading.Thread):
     # dbus.UInt32(0) & avahi.LOOKUP_RESULT_CACHED,
 
   def __avahi_callback_service_browser_remove(self,interface, protocol, name, stype, domain, flags,*args):
-    '''..........................................................................
+    '''
     This callback will be called, if a service was removed from zeroconf.
-    ..........................................................................'''
+    '''
     self.on_group_removed(name)
 
   def __avahi_callback_service_resolved(self, *args):
-    '''..........................................................................
+    '''
     This callback will be called, if a new service was registered or a resolve 
     request was called. The _master list will be updated.
-    ..........................................................................'''
+    '''
     self.on_resolve_reply(MasterInfo(args[2], args[3], args[4], args[7], args[8], avahi.txt_array_to_string_array(args[9]), args[0], args[1], online=False))
 
   def _removeService(self):
@@ -430,13 +451,17 @@ class Polling(threading.Thread):
   The class to poll the updates of the ROS masters from the avahi daemon.
   '''
   def __init__(self, master_list, master_info, callback, update_hz):
-    '''..........................................................................
+    '''
     Initialize method for the Polling class
-    @param master_info: the information of the master to polling
-    @type master_info:  MasterInfo
-    @param callback: the function to call fn(MasterInfo) periodically. 
-    @type callback:  str
-    ..........................................................................'''
+    
+    :param master_info: the information of the master to polling
+    
+    :type master_info:  MasterInfo
+    
+    :param callback: the function to call fn(MasterInfo) periodically. 
+    
+    :type callback:  str
+    '''
     threading.Thread.__init__(self)
     self.masterList = master_list
     self.masterInfo = master_info
@@ -449,9 +474,9 @@ class Polling(threading.Thread):
     self.__callback = None
   
   def run(self):
-    '''..........................................................................
+    '''
     Callback method of the ROS timer for periodically polling.
-    ..........................................................................'''
+    '''
     self.current_check_hz = self.__update_hz
     while (not (self.__callback is None)) and (not rospy.is_shutdown()):
       cputimes = os.times()
@@ -485,17 +510,23 @@ class MasterList(object):
   change the state of the ROS masters.
   '''
   def __init__(self, local_master_info, callback_update_remote, callback_update_local):
-    '''..........................................................................
+    '''
     Initialization method of the MasterList. 
-    @param local_master_info: the information of the local ROS master
-    @type local_master_info:  MasterInfo
-    @param callback_update_remote: the function fn(MasterInof) for polling the 
+    
+    :param local_master_info: the information of the local ROS master
+    
+    :type local_master_info:  MasterInfo
+    
+    :param callback_update_remote: the function fn(MasterInof) for polling the 
                                    state of remote ROS masters
-    @type callback_update_remote:  str
-    @param callback_update_local: the function fn(MasterInfo) to test the state 
+    
+    :type callback_update_remote:  str
+    
+    :param callback_update_local: the function fn(MasterInfo) to test the state 
                                   of the local ROS master
-    @type callback_update_local:  str
-    ..........................................................................'''
+    
+    :type callback_update_local:  str
+    '''
     # initialize the ROS publishers
     self.pubchanges = rospy.Publisher("~changes", MasterState)
     self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped)
@@ -512,15 +543,19 @@ class MasterList(object):
 
 
   def setMasterOnline(self, name, state):
-    '''..........................................................................
+    '''
     Sets the online state of the ROS master with given name. This method should 
     be used to detect changes of the ROS master states and publish it to the 
     '~masters' topic. 
-    @param name: the name of the ROS master.
-    @type name:  str
-    @param state: the new state of the ROS master (True is online).
-    @type state:  bool
-    ..........................................................................'''
+    
+    :param name: the name of the ROS master.
+    
+    :type name:  str
+    
+    :param state: the new state of the ROS master (True is online).
+    
+    :type state:  bool
+    '''
     try:
       self.__lock.acquire()
       m = self.__masters[name]
@@ -543,10 +578,10 @@ class MasterList(object):
       self.__lock.release()
 
   def checkMastersState(self):
-    '''..........................................................................
+    '''
     Checks the last update time and mark the ROS master offline, if necessary.
     This method will be called on timeout error while resolving service.
-    ..........................................................................'''
+    '''
     try:
       self.__lock.acquire()
       for key in self.__masters.keys():
@@ -560,12 +595,14 @@ class MasterList(object):
       self.__lock.release()
 
   def updateMaster(self, master_info):
-    '''..........................................................................
+    '''
     Sets the new information of the master and synchronize the ROS master if 
     needed.
-    @param master_info: new update information for the master
-    @type master_info: MasterInfo
-    ..........................................................................'''
+    
+    :param master_info: new update information for the master
+    
+    :type master_info: MasterInfo
+    '''
     try:
       self.__lock.acquire()
       if (master_info.name in self.__masters):
@@ -600,12 +637,14 @@ class MasterList(object):
       self.__lock.release()
 
   def removeMaster(self, name):
-    '''..........................................................................
+    '''
     Removes the master from the list and ends the synchronization to the given
     remote master.
-    @param name: the name of the ROS master to remove
-    @type name:  str
-    ..........................................................................'''
+    
+    :param name: the name of the ROS master to remove
+    
+    :type name:  str
+    '''
     try:
       self.__lock.acquire()
       rospy.logdebug("remove master: %s", name)
@@ -631,13 +670,17 @@ class MasterList(object):
       self.__lock.release()
 
   def getMasterInfo(self, name):
-    '''..........................................................................
+    '''
     Returns MasterInfo object for given name or None.
-    @param name:  the name of the ROS master
-    @type name: str
-    @return: the information about the master with given name 
-    @rtype: MasterInfo or None, if master not found
-    ..........................................................................'''
+    
+    :param name:  the name of the ROS master
+    
+    :type name: str
+    
+    :return: the information about the master with given name 
+    
+    :rtype: MasterInfo or None, if master not found
+    '''
     result = None
     try:
       self.__lock.acquire()
@@ -650,9 +693,9 @@ class MasterList(object):
       return result
 
   def removeAll(self):
-    '''..........................................................................
+    '''
     Removes all masters and ends the synchronization to these.
-    ..........................................................................'''
+    '''
     try:
       self.__lock.acquire()
       while self.__pollings:
@@ -705,11 +748,13 @@ class Discoverer(Zeroconf):
   ROSMASTER_HZ = 2 # the test rate of ROS master state in hz
 
   def __init__(self, monitor_port=11611, domain=''):
-    '''..........................................................................
+    '''
     Initialize method of the local master.
-    @param monitor_port: The port of the RPC Server, used to get more information about the ROS master.
-    @type monitor_port:  int
-    ..........................................................................'''
+    
+    :param monitor_port: The port of the RPC Server, used to get more information about the ROS master.
+    
+    :type monitor_port:  int
+    '''
     if rospy.has_param('~rosmaster_hz'):
       Discoverer.ROSMASTER_HZ = rospy.get_param('~rosmaster_hz')
 
@@ -739,10 +784,10 @@ class Discoverer(Zeroconf):
     return self.masterInfo.name
 
   def finish(self, *args):
-    '''..........................................................................
+    '''
     Removes all remote masters and unregister their topics and services. Stops 
     the QMainLoop of avahi.
-    ..........................................................................'''
+    '''
     rospy.logdebug("Stop zeroconf DBusGMainLoop")
     if hasattr(self.master_monitor, 'rpcServer'):
       self.master_monitor.rpcServer.shutdown()
@@ -750,9 +795,9 @@ class Discoverer(Zeroconf):
     self.masters.removeAll()
 
   def __repr__(self):
-    '''..........................................................................
+    '''
     String representation of local ros manager
-    ..........................................................................'''
+    '''
     return ''.join(['Discoverer: ', repr(self.masterInfo)])
 
   def on_server_running(self):
@@ -800,11 +845,12 @@ class Discoverer(Zeroconf):
     self.masters.checkMastersState()
 
   def checkLocalMaster(self, master_info):
-    '''..........................................................................
+    '''
     Compares the current state of the local ROS master. If the state was changed
     the avahi sevice will be updated
-    @param master_info: will not be used, is only for compatibility to the Polling class.
-    ..........................................................................'''
+    
+    :param master_info: will not be used, is only for compatibility to the Polling class.
+    '''
     # get the state of the local ROS master
     try:
       # compare the current system state of ROS master with stored one and update the timestamp if needed
