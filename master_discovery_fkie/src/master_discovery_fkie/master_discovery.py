@@ -58,16 +58,26 @@ class DiscoveredMaster(object):
   def __init__(self, monitoruri, heartbeat_rate=1., timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
     '''
     Initialize method for the DiscoveredMaster class.
-    @param monitoruri: The URI of the remote RPC server, which moniter the ROS master
-    @type monitoruri:  C{str}
-    @param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
-    @type heartbeat_rate:  C{float} (Default: C{1.})
-    @param timestamp: The timestamp of the state of the remoter ROS master
-    @type timestamp:  C{float} (Default: c{0})
-    @param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
-    @type timestamp_local:  C{float} (Default: c{0})
-    @param callback_master_state: the callback method to publish the changes of the ROS masters
-    @type callback_master_state: C{<method>(master_discovery_fkie/MasterState)}  (Default: C{None})
+    
+    :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
+    
+    :type monitoruri:  str
+    
+    :param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
+    
+    :type heartbeat_rate:  float (Default: `1.``)
+    
+    :param timestamp: The timestamp of the state of the remoter ROS master
+    
+    :type timestamp:  float (Default: ``0``)
+    
+    :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
+    
+    :type timestamp_local:  float (Default: ``0``)
+    
+    :param callback_master_state: the callback method to publish the changes of the ROS masters
+    
+    :type callback_master_state: `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_}  (Default: ``None``)
     '''
     self.masteruri = None
     self.mastername = None
@@ -89,13 +99,22 @@ class DiscoveredMaster(object):
     '''
     Adds a new heartbeat measurement. If it is a new timestamp a ROS message 
     about the change of this ROS master will be published into ROS network.
-    @param timestamp: The new timestamp of the ROS master state
-    @type timestamp:  C{float}
-    @param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
-    @type timestamp_local:  C{float} (Default: c{0})
-    @param rate: The remote rate, which is used to send the heartbeat messages. 
-    @type rate:  C{float}
-    @return: True, on changes
+    
+    :param timestamp: The new timestamp of the ROS master state
+    
+    :type timestamp:  float
+    
+    :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
+    
+    :type timestamp_local:  float (Default: ``0``)
+    
+    :param rate: The remote rate, which is used to send the heartbeat messages. 
+    
+    :type rate:  float
+    
+    :return: ``True`` on changes
+    
+    :rtype: bool
     '''
     cur_time = time.time()
     self.heartbeats.append(cur_time)
@@ -126,10 +145,14 @@ class DiscoveredMaster(object):
   def removeHeartbeats(self, timestamp):
     '''
     Removes all hearbeat measurements, which are older as the given timestamp.
-    @param timestamp: heartbeats older this timestamp will be removed.
-    @type timestamp:  C{float}
-    @return: the count of removed heartbeats
-    @rtype: C{int}
+    
+    :param timestamp: heartbeats older this timestamp will be removed.
+    
+    :type timestamp:  float
+    
+    :return: the count of removed heartbeats
+    
+    :rtype: int
     '''
     do_remove = True
     removed = 0
@@ -160,7 +183,7 @@ class DiscoveredMaster(object):
     '''
     Connects to the remote RPC server of the discoverer node and gets the 
     information about the Master URI, name of the service, and other. The 
-    getMasterInfo() method will be used. On problems the connection will be 
+    ``getMasterInfo()`` method will be used. On problems the connection will be 
     reestablished until the information will be get successful.
     '''
     if not (self.monitoruri is None):
@@ -201,46 +224,59 @@ class Discoverer(threading.Thread):
   '''
 
   VERSION = 2
-  '''@ivar: the version of the packet format described by L{HEARTBEAT_FMT}'''
-  '''
-  Version 1: 'cBBiiH'
-    one character 'R'
-    unsigned char: version of the hearbeat message
-    unsigned char: rate of the heartbeat message in HZ*10. Maximal rate: 25.5 Hz -> value 255
-    int: secs of the ROS Master state
-    int: nsecs of the ROS Master state
-    unsigned short: the port number of the RPC Server of the remote ROS-Core monitor
-    int: secs of the ROS Master state (only local changes)
-    int: nsecs of the ROS Master state (only local changes)
-  Version 2: 'cBBiiH'
-    Version 1
-    int: secs of the ROS Master state (only local changes). Changes while sync will be ignored.
-    int: nsecs of the ROS Master state (only local changes). Changes while sync will be ignored.
+  '''the version of the packet format described by ``HEARTBEAT_FMT``
+
+      :Version 1: 'cBBiiH'
+
+      ::
+
+        one character 'R'
+        unsigned char: version of the hearbeat message
+        unsigned char: rate of the heartbeat message in HZ*10. Maximal rate: 25.5 Hz -> value 255
+        int: secs of the ROS Master state
+        int: nsecs of the ROS Master state
+        unsigned short: the port number of the RPC Server of the remote ROS-Core monitor
+        int: secs of the ROS Master state (only local changes)
+        int: nsecs of the ROS Master state (only local changes)
+
+      :Version 2: 'cBBiiH'
+
+      ::
+
+        ``Version 1``
+        int: secs of the ROS Master state (only local changes). Changes while sync will be ignored.
+        int: nsecs of the ROS Master state (only local changes). Changes while sync will be ignored.
   '''
   HEARTBEAT_FMT = 'cBBiiHii'
-  ''' @ivar: packet format description, see: U{http://docs.python.org/library/struct.html} '''
+  ''' packet format description, see: http://docs.python.org/library/struct.html '''
   HEARTBEAT_HZ = 2
-  ''' @ivar: the send rate of the heartbeat packets in hz (Default: 2 Hz)'''
+  ''' the send rate of the heartbeat packets in hz (Default: 2 Hz)'''
   MEASUREMENT_INTERVALS = 5
-  ''' @ivar: the count of intervals (1 sec) used for a quality calculation. If 
-  HEARTBEAT_HZ is smaller then 1, MEASUREMENT_INTERVALS will be divided by HEARTBEAT_HZ value. 
-  (Default: 5 sec are used to determine the link qaulity)'''
+  ''' the count of intervals (1 sec) used for a quality calculation. If 
+      HEARTBEAT_HZ is smaller then 1, MEASUREMENT_INTERVALS will be divided by HEARTBEAT_HZ value. 
+      (Default: 5 sec are used to determine the link qaulity)'''
   TIMEOUT_FACTOR = 1.4
-  ''' @ivar: the timeout is defined by calculated measurement duration multiplied by TIMEOUT_FAKTOR. ''' 
+  ''' the timeout is defined by calculated measurement duration multiplied by TIMEOUT_FAKTOR. ''' 
   ROSMASTER_HZ = 1
-  ''' @ivar: the test rate of ROS master state in Hz (Default: 1 Hz). '''
+  ''' the test rate of ROS master state in Hz (Default: 1 Hz). '''
   REMOVE_AFTER = 300
-  ''' @ivar: remove an offline host after this time in [sec] (Default: 300 sec). '''
+  ''' remove an offline host after this time in [sec] (Default: 300 sec). '''
   
   def __init__(self, mcast_port, mcast_group, monitor_port):
     '''
     Initialize method for the Discoverer class
-    @param mcast_port: The port used to publish and receive the multicast messages.
-    @type mcast_port:  int
-    @param mcast_group: The IPv4 or IPv6 multicast group used for discovering over nodes.
-    @type mcast_group:  str
-    @param monitor_port: The port of the RPC Server, used to get more information about the ROS master.
-    @type monitor_port:  int
+    
+    :param mcast_port: The port used to publish and receive the multicast messages.
+    
+    :type mcast_port:  int
+    
+    :param mcast_group: The IPv4 or IPv6 multicast group used for discovering over nodes.
+    
+    :type mcast_group:  str
+    
+    :param monitor_port: The port of the RPC Server, used to get more information about the ROS master.
+    
+    :type monitor_port:  int
     '''
     threading.Thread.__init__(self)
     self.do_finish = False
@@ -319,7 +355,7 @@ class Discoverer(threading.Thread):
 
   def finish(self, *arg):
     '''
-    Callback called on exit of the ros node to publish the empty list of 
+    Callback called on exit of the ros node and publish the empty list of 
     ROSMasters.
     '''
     # publish all master as removed
@@ -380,6 +416,7 @@ class Discoverer(threading.Thread):
     '''
     The method test periodically the state of the ROS master. The new state will
     be published as heartbeat messages.
+    :see: :mod:`master_discovery_fkie.master_monitor.MasterMonitor.checkState()`
     '''
     import os
     try_count = 0
@@ -484,11 +521,13 @@ class Discoverer(threading.Thread):
   @classmethod
   def msg2masterState(cls, msg, address):
     '''
-    @return: parses the hearbeat message and return a tuple of
+    :return: parses the hearbeat message and return a tuple of
             version and values corresponding with current version of message.
-            @see L{Discoverer.HEARTBEAT_FMT}
-    @raise Exception on invalid message
-    @rtype: C{(unsigned char, tuple corresponding to L{Discoverer.HEARTBEAT_FMT})}
+            :see: :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`
+    
+    :raise: Exception on invalid message
+    
+    :rtype: (``unsigned char``, tuple corresponding to :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`)
     '''
     if len(msg) > 2:
       (r,) = struct.unpack('c', msg[0])
@@ -512,7 +551,6 @@ class Discoverer(threading.Thread):
     This method will be called by a timer and has two jobs:
      1. set the masters offline, if no heartbeat messages are received a long time
      2. calculate the quality of known links
-    @see: L{float}
     '''
     result = LinkStatesStamped()
     current_time = time.time()
@@ -553,8 +591,10 @@ class Discoverer(threading.Thread):
   def publish_masterstate(self, master_state):
     '''
     Publishes the given state to the ROS network. This method is thread safe.
-    @param master_state: the master state to publish
-    @type master_state:  L{master_discovery_fkie.MasterState}
+    
+    :param master_state: the master state to publish
+    
+    :type master_state:  `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_
     '''
     with self.__lock:
       try:
@@ -566,8 +606,10 @@ class Discoverer(threading.Thread):
   def publish_stats(self, stats):
     '''
     Publishes the link quality states to the ROS network.This method is thread safe.
-    @param stats: the link quality states to publish
-    @type stats:  L{master_discovery_fkie.LinkStatesStamped}
+    
+    :param stats: the link quality states to publish
+    
+    :type stats:  `master_discovery_fkie.msg.LinkStatesStamped <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/LinkStatesStamped.html>`_
     '''
     with self.__lock:
       try:

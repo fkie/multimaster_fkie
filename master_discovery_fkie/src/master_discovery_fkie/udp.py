@@ -112,9 +112,11 @@ class McastSocket(socket.socket):
   def send2group(self, msg):
     '''
     Sends the given message to the joined multicast group. Some errors on send 
-    will be ignored (C{ENETRESET}, C{ENETDOWN}, C{ENETUNREACH})
-    @param msg: message to send
-    @type msg: C{str}
+    will be ignored (``ENETRESET``, ``ENETDOWN``, ``ENETUNREACH``)
+    
+    :param msg: message to send
+    
+    :type msg: str
     '''
     try:
       self.sendto(msg, (self.addrinfo[4][0], self.getsockname()[1]))
@@ -125,11 +127,15 @@ class McastSocket(socket.socket):
   def send2addr(self, msg, addr):
     '''
     Sends the given message to the joined multicast group. Some errors on send 
-    will be ignored (C{ENETRESET}, C{ENETDOWN}, C{ENETUNREACH})
-    @param msg: message to send
-    @type msg: C{str}
-    @param addr: IPv4 or IPv6 address
-    @type addr: C{str}
+    will be ignored (``ENETRESET``, ``ENETDOWN``, ``ENETUNREACH``)
+    
+    :param msg: message to send
+    
+    :type msg: str
+    
+    :param addr: IPv4 or IPv6 address
+    
+    :type addr: str
     '''
     try:
       self.sendto(msg, (addr, self.getsockname()[1]))
@@ -145,8 +151,10 @@ class McastSocket(socket.socket):
     '''
     Test all enabled interfaces for a MULTICAST flag. If no enabled interfaces 
     has a multicast support, False will be returned.
-    @return: C{True}, if any interfaces with multicast support are enabled.
-    @rtype: C{boolean}
+    
+    :return: ``True``, if any interfaces with multicast support are enabled.
+    
+    :rtype: bool
     '''
     SIOCGIFFLAGS = 0x8913
     IFF_MULTICAST = 0x1000 # Supports multicast.
@@ -168,10 +176,11 @@ class McastSocket(socket.socket):
     Used to get a list of the up interfaces and associated IP addresses
     on this machine (linux only).
   
-    @return:
+    :return:
         List of interface tuples.  Each tuple consists of
-        (interface name, interface IP)
-    @rtype: C{[(str, str)]}
+        ``(interface name, interface IP)``
+    
+    :rtype: list of ``(str, str)``
     '''
     SIOCGIFCONF = 0x8912
     MAXBYTES = 8096

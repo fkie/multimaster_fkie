@@ -42,19 +42,23 @@ class NodeInfo(object):
   def __init__(self, name, masteruri):
     '''
     Creates a new NodeInfo for a node with given name.
-    @param name: the name of the node
-    @type name: C{str} 
-    @param masteruri: the URI of the ROS master, where the node is registered. 
-    This masteruri will be used to determine, whether the ROS master and the 
-    node are running on the same machine.
-    @type masteruri: C{str}
+    
+    :param name: the name of the node
+    
+    :type name: str
+    
+    :param masteruri: the URI of the ROS master, where the node is registered. 
+                      This masteruri will be used to determine, whether the ROS master and the 
+                      node are running on the same machine.
+    
+    :type masteruri: str
     '''
     self.__name = name
     self.__masteruri = masteruri
     self.__org_masteruri = masteruri
     self.__uri = None
     self.pid = None
-    '''@ivar: the process id of the node. Invalid id has a C{None} value'''
+    '''the process id of the node. Invalid id has a ``None`` value'''
     self.__local = False
     self._publishedTopics = []
     self._subscribedTopics = []
@@ -63,16 +67,18 @@ class NodeInfo(object):
   @property
   def name(self):
     '''
-    Returns the name of the node.
-    @rtype: C{str}
+    :return: the name of the node.
+    
+    :rtype: str
     '''
     return self.__name
 
   @property
   def uri(self):
     '''
-    Returns the URI of the RPC API of the node.
-    @rtype: C{str}
+    :return: the URI of the RPC API of the node.
+    
+    :rtype: str
     '''
     return self.__uri
 
@@ -87,8 +93,9 @@ class NodeInfo(object):
   @property
   def masteruri(self):
     '''
-    Returns the URI of the ROS master where the node is registered.
-    @rtype: C{str}
+    :return: the URI of the ROS master where the node is registered.
+    
+    :rtype: str
     '''
     return self.__org_masteruri
 
@@ -103,16 +110,18 @@ class NodeInfo(object):
   @property
   def isLocal(self):
     '''
-    Returns C{True} if the node and the ROS master are running on the same machine.
-    @rtype: C{boolean}
+    :return: ``True`` if the node and the ROS master are running on the same machine.
+    
+    :rtype: bool
     '''
     return self.__local
 
   @property
   def publishedTopics(self):
     '''
-    Returns the list of all published topics by this node.
-    @rtype: C{[str, ...]}
+    :return: the list of all published topics by this node.
+    
+    :rtype: list of strings
     '''
     return self._publishedTopics
   
@@ -120,8 +129,10 @@ class NodeInfo(object):
   def publishedTopics(self, name):
     '''
     Append a new published topic to this node.
-    @param name: the name of the topic
-    @type name: C{str} 
+    
+    :param name: the name of the topic
+    
+    :type name: str 
     '''
     try:
       if isinstance(name, list):
@@ -139,8 +150,9 @@ class NodeInfo(object):
   @property
   def subscribedTopics(self):
     '''
-    Returns the list of all subscribed topics by this node.
-    @rtype: C{[str, ...]}
+    :return: the list of all subscribed topics by this node.
+    
+    :rtype: list of strings
     '''
     return self._subscribedTopics
   
@@ -148,8 +160,10 @@ class NodeInfo(object):
   def subscribedTopics(self, name):
     '''
     Append a new subscribed topic to this node.
-    @param name: the name of the topic
-    @type name: C{str} 
+    
+    :param name: the name of the topic
+    
+    :type name: str 
     '''
     try:
       if isinstance(name, list):
@@ -167,8 +181,9 @@ class NodeInfo(object):
   @property
   def services(self):
     '''
-    Returns the list of all services provided by this node.
-    @rtype: C{[str, ...]}
+    :return: the list of all services provided by this node.
+    
+    :rtype: list of strings
     '''
     return self._services
   
@@ -176,8 +191,10 @@ class NodeInfo(object):
   def services(self, name):
     '''
     Append a new service to this node.
-    @param name: the name of the topic
-    @type name: C{str} 
+    
+    :param name: the name of the topic
+    
+    :type name: str 
     '''
     try:
       if isinstance(name, list):
@@ -194,8 +211,9 @@ class NodeInfo(object):
   
   def copy(self):
     '''
-    Creates a copy this object and returns it.
-    @rtype: L{NodeInfo} 
+    Creates a copy of this object and returns it.
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.NodeInfo` 
     '''
     result = NodeInfo(self.name, self.masteruri)
     result.uri = ''.join([self.uri]) if not self.uri is None else None
@@ -207,6 +225,23 @@ class NodeInfo(object):
 
   @staticmethod
   def local_(masteruri, org_masteruri, uri):
+    '''
+    Test the node whether it's run on the same machineas the ROS master and ``masteruri`` and ``org_masteruri`` are equal.
+    
+    :param masteruri: The URI of the ROS master currently tested.
+
+    :type masteruri: str
+
+    :param org_masteruri: The URI of the ROS master, where the node was originally registered.
+
+    :type org_masteruri: str
+
+    :param uri: The URI of the node.
+
+    :type uri: str
+
+    :rtype: bool
+    '''
     result = False
     try:
       from urlparse import urlparse
@@ -225,28 +260,32 @@ class TopicInfo(object):
   def __init__(self, name):
     '''
     Creates a new TopicInfo for a topic with given name.
-    @param name: the name of the topic
-    @type name: C{str} 
+    
+    :param name: the name of the topic
+    
+    :type name: str 
     '''
     self.__name = name
     self.type = None
-    '''@ivar: the type of the topic. (Default: None)'''
+    '''the type of the topic. (Default: ``None``)'''
     self._publisherNodes = []
     self._subscriberNodes = []
 
   @property
   def name(self):
     '''
-    Returns the name of the topic.
-    @rtype: C{str}
+    :return: the name of the topic.
+    
+    :rtype: str
     '''
     return self.__name
 
   @property
   def publisherNodes(self):
     '''
-    Returns the list with node names witch are publishing to this topic.
-    @rtype: C{[str,...]}
+    :return: the list with node names witch are publishing to this topic.
+    
+    :rtype: list of strings
     '''
     return list(self._publisherNodes)
   
@@ -271,8 +310,9 @@ class TopicInfo(object):
   @property
   def subscriberNodes(self):
     '''
-    Returns the list with node names witch are subscribed to this topic.
-    @rtype: C{[str,...]}
+    :return: the list with node names witch are subscribed to this topic.
+    
+    :rtype: list of strings
     '''
     return list(self._subscriberNodes)
   
@@ -297,7 +337,8 @@ class TopicInfo(object):
   def copy(self):
     '''
     Creates a copy this object and returns it.
-    @rtype: L{TopicInfo} 
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.TopicInfo` 
     '''
     result = TopicInfo(self.name)
     result.type = self.type
@@ -313,12 +354,15 @@ class ServiceInfo(object):
   def __init__(self, name, masteruri):
     '''
     Creates a new instance of the ServiceInfo. 
-    @param name: the name of the service
-    @type name: C{str}
-    @param masteruri: the URI of the ROS master, where the service is registered. 
-    This masteruri will be used to determine, whether the ROS master and the 
-    service are running on the same machine.
-    @type masteruri: C{str}
+    :param name: the name of the service
+    
+    :type name: str
+    
+    :param masteruri: the URI of the ROS master, where the service is registered. 
+                      This masteruri will be used to determine, whether the ROS master and the 
+                      service are running on the same machine.
+    
+    :type masteruri: str
     '''
     self.__name = name
     self.__masteruri = masteruri
@@ -326,7 +370,7 @@ class ServiceInfo(object):
     self.__uri = None
     self.__local = False
     self.type = None
-    '''@ivar: the type of the service. (Default: None)'''
+    '''the type of the service. (Default: ``None``)'''
     self.__service_class = None
     self.args = None
     self.__serviceProvider = []
@@ -334,16 +378,18 @@ class ServiceInfo(object):
   @property
   def name(self):
     '''
-    Returns the name of the service.
-    @rtype: C{str}
+    :return: the name of the service.
+    
+    :rtype: str
     '''
     return self.__name
 
   @property
   def uri(self):
     '''
-    Returns the URI of the RPC API of the service
-    @rtype: C{str}
+    :return: the URI of the RPC API of the service
+    
+    :rtype: str
     '''
     return self.__uri
 
@@ -352,8 +398,10 @@ class ServiceInfo(object):
     '''
     Sets the uri of the service RPC interface and determine whether this service
     and the ROS master are running on the same machine.
-    @param uri: The URI of the service RPC interface
-    @type uri: C{str}
+    
+    :param uri: The URI of the service RPC interface
+    
+    :type uri: str
     '''
     self.__uri = uri
     self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
@@ -361,8 +409,9 @@ class ServiceInfo(object):
   @property
   def masteruri(self):
     '''
-    Returns the URI of the ROS master of the service
-    @rtype: C{str}
+    :return: the URI of the ROS master of the service
+    
+    :rtype: str
     '''
     return self.__org_masteruri
   
@@ -371,8 +420,10 @@ class ServiceInfo(object):
     '''
     Sets the uri of the origin ROS master and determine whether this service
     and the ROS master are running on the same machine.
-    @param uri: The URI of the ROS master
-    @type uri: C{str}
+    
+    :param uri: The URI of the ROS master
+    
+    :type uri: str
     '''
     self.__org_masteruri = uri
     self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
@@ -380,17 +431,19 @@ class ServiceInfo(object):
   @property
   def isLocal(self):
     '''
-    Returns C{True}, if this service and the master are on the same machine. This 
-    will be determine on setting the uri-parameter.
-    @rtype: C{boolean}
+    :return: ``True``, if this service and the master are on the same machine. 
+             This will be determine on setting the uri-parameter.
+    
+    :rtype: bool
     '''
     return self.__local
 
   @property
   def serviceProvider(self):
     '''
-    Return the list of the node names, which provide this service.
-    @rtype: C{[str, ...]}
+    :return: the list of the node names, which provide this service.
+    
+    :rtype: list of strings
     '''
     return self.__serviceProvider
   
@@ -398,8 +451,10 @@ class ServiceInfo(object):
   def serviceProvider(self, name):
     '''
     Adds a new service provider, if no one with given name exists. 
-    @param name: name of the new service provider
-    @type name: C{str}
+    
+    :param name: name of the new service provider
+    
+    :type name: str
     '''
     try:
       self.__serviceProvider.index(name)
@@ -414,13 +469,17 @@ class ServiceInfo(object):
   def get_service_class(self, allow_get_type=False):
     '''
     Get the service class using the type of the service. NOTE: this
-    method is from 'rosservice' and changed to avoid a probe call to the service.
-    @param allow_get_type: allow to connect to service and get the type if the 
-    type is not valid (in case of other host e.g.)
-    @type allow_get_type: C{boolean}
-    @return: service class
-    @rtype: ServiceDefinition: service class
-    @raise ROSServiceException: if service class cannot be retrieved
+    method is from `rosservice` and changed to avoid a probe call to the service.
+    
+    :param allow_get_type: allow to connect to service and get the type if the type is not valid (in case of other host)
+    
+    :type allow_get_type: bool
+    
+    :return: service class
+    
+    :rtype: ServiceDefinition: service class
+    
+    :raise: ``ROSServiceException``, if service class cannot be retrieved
     '''
     if not self.__service_class is None:
       return self.__service_class
@@ -484,11 +543,15 @@ class MasterInfo(object):
     '''
     Creates a new instance of the MasterInfo. The mastername will be extracted 
     from the masterui, if no name is given.
-    @param masteruri: The URI of the corresponding master
-    @type masteruri: str
-    @param mastername: The name of the ROS master. If no one is given, it will be 
-    extracted from the masteruri.
-    @type mastername: str or None (Default: None)
+    
+    :param masteruri: The URI of the corresponding master
+    
+    :type masteruri: str
+    
+    :param mastername: The name of the ROS master. If no one is given, it will be 
+                       extracted from the masteruri.
+    
+    :type mastername: str or ``None`` (Default: ``None``)
     '''
     self.__masteruri = masteruri
     self.__mastername = mastername
@@ -502,17 +565,20 @@ class MasterInfo(object):
     self.__timestamp = 0
     self.__timestamp_local = 0
     self.check_ts = 0
-    '''@ivar: the last time, when the state of the ROS master retrieved'''
+    '''the last time, when the state of the ROS master retrieved'''
 
   @staticmethod
   def from_list(l):
     '''
     Creates a new instance of the MasterInfo from given list.
-    @see: L{listedState()}
-    @param l: the list returned by listedState()
-    @type l: list
-    @return: the new instance of the MasterInfo filled from list.
-    @rtype: MasterInfo
+    
+    :param l: the list returned by :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()`
+    
+    :type l: list
+    
+    :return: the new instance of the MasterInfo filled from list.
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.MasterInfo`
     '''
     if l is None:
       return None
@@ -567,27 +633,30 @@ class MasterInfo(object):
   @property
   def mastername(self):
     '''
-    Returns the name of the ROS master. In most cases the ROS master name is the
-    name of the host, where the ROS master running. Although it can differ.
-    @rtype: C{str}
+    :return: the name of the ROS master. In most cases the ROS master name is the
+             name of the host, where the ROS master running. Although it can differ.
+    
+    :rtype: str
     '''
     return self.__mastername
 
   @property
   def masteruri(self):
     '''
-    Returns the URI of the ROS master.
-    @rtype: C{str}
+    :return: the URI of the ROS master.
+    
+    :rtype: str
     '''
     return self.__masteruri
 
   @property
   def timestamp(self):
     '''
-    The timestamp when this MasterInfo was first time filled with the 
-    information. See L{self.check_ts} to get the time, when the information was
-    compared with the data of ROS Master.
-    @rtype: C{float}
+    :return: The timestamp when this MasterInfo was first time filled with the 
+             information. See :mod:`master_discovery_fkie.master_info.MasterInfo.check_ts()`
+             to get the time, when the information was compared with the data of ROS Master.
+    
+    :rtype: float
     '''
     return self.__timestamp
 
@@ -595,8 +664,10 @@ class MasterInfo(object):
   def timestamp(self, ts):
     '''
     Sets the timestamp of this instance
-    @param ts: the new timestamp
-    @type ts: C{float}
+    
+    :param ts: the new timestamp
+    
+    :type ts: float
     '''
     self.__timestamp = ts
     self.check_ts = ts
@@ -605,10 +676,13 @@ class MasterInfo(object):
   @property
   def timestamp_local(self):
     '''
-    The timestamp when this MasterInfo was first time filled with the 
-    information. See L{self.check_ts} to get the time, when the information was
-    compared with the data of ROS Master.
-    @rtype: C{float}
+    :return: The timestamp when this MasterInfo was first time filled with the 
+             information. See :mod:`master_discovery_fkie.master_info.MasterInfo.check_ts()`
+             to get the time, when the information was compared with the data of ROS Master.
+             This timestamp is only updated, not synchronized nodes, topics or services are
+             changed.
+    
+    :rtype: float
     '''
     return self.__timestamp_local
 
@@ -616,26 +690,32 @@ class MasterInfo(object):
   def timestamp_local(self, ts):
     '''
     Sets the timestamp of this instance
-    @param ts: the new timestamp
-    @type ts: C{float}
+    
+    :param ts: the new timestamp
+    
+    :type ts: float
     '''
     self.__timestamp_local = ts
 
   @property
   def nodes(self):
     '''
-    Returns the dictionary with node names and corresponding instances of L{NodeInfo}.
-    @rtype: C{dict(str:L{NodeInfo}, ...)}
+    :return: the dictionary with ``node names`` and corresponding instances of ``NodeInfo``.
+    
+    :rtype: dict of (str : :mod:`master_discovery_fkie.master_info.NodeInfo`)
     '''
     return self.__nodelist
 
   @nodes.setter
   def nodes(self, name):
     '''
-    Adds a new L{NodeInfo} with given name. 
-    @note: If the NodeInfo already exists, do nothing.
-    @param name: the name of new L{NodeInfo}
-    @type name: C{str}
+    Adds a new :mod:`master_discovery_fkie.master_info.NodeInfo` with given name. 
+    
+    :note: If the NodeInfo already exists, do nothing.
+    
+    :param name: the name of new :mod:`master_discovery_fkie.master_info.NodeInfo`
+    
+    :type name: str
     '''
     if (name is None) or not name:
       return None
@@ -645,8 +725,9 @@ class MasterInfo(object):
   @property
   def node_names(self):
     '''
-    Returns the list with node names
-    @rtype: C{[str, ...]}
+    :return: the list with node names
+    
+    :rtype: list of strings
     '''
 #    @return: the list with node names
     return self.__nodelist.keys()
@@ -654,8 +735,9 @@ class MasterInfo(object):
   @property
   def node_uris(self):
     '''
-    Returns the list with node URI's.
-    @rtype: C{[str, ...]}
+    :return: the list with node URI's.
+    
+    :rtype: list of strings
     '''
     uris = []
     for node in self.__nodelist.itervalues():
@@ -665,18 +747,21 @@ class MasterInfo(object):
   @property
   def topics(self):
     '''
-    Returns the dictionary with topic names and corresponding L{TopicInfo} instances.
-    @rtype: C{dict(str:L{TopicInfo}, ...)}
+    :return: the dictionary with ``topic names`` and corresponding ``TopicInfo`` instances.
+    
+    :rtype: dict of (str : :mod:`master_discovery_fkie.master_info.TopicInfo`)
     '''
     return self.__topiclist
 
   @topics.setter
   def topics(self, name):
     '''
-    Adds a new TopicInfo with given name. If the L{TopicInfo} already exists, do
+    Adds a new TopicInfo with given name. If the ``TopicInfo`` already exists, do
     nothing.
-    @param name: the name of new L{TopicInfo}
-    @type name: C{str}
+    
+    :param name: the name of new :mod:`master_discovery_fkie.master_info.TopicInfo`
+    
+    :type name: str
     '''
     if (name is None) or not name:
       return None
@@ -686,26 +771,30 @@ class MasterInfo(object):
   @property
   def topic_names(self):
     '''
-    Returns the list with topic names.
-    @rtype: C{[str, ...]}
+    :return: the list with topic names.
+    
+    :rtype: list of strings
     '''
     return self.__topiclist.keys()
 
   @property
   def services(self):
     '''
-    Returns the dictionary with service names and corresponding L{ServiceInfo} instances.
-    @rtype: C{dict(str:L{ServiceInfo}, ...)}
+    :return: the dictionary with ``service names`` and corresponding ``ServiceInfo`` instances.
+    
+    :rtype: dict of (str : :mod:`master_discovery_fkie.master_info.ServiceInfo`)
     '''
     return self.__servicelist
 
   @services.setter
   def services(self, name):
     '''
-    Adds a new L{ServiceInfo} with given name. If the L{ServiceInfo} already exists, do
+    Adds a new :mod:`master_discovery_fkie.master_info.ServiceInfo` with given name. If the ServiceInfo already exists, do
     nothing.
-    @param name: the name of new L{ServiceInfo}
-    @type name: C{str}
+    
+    :param name: the name of new :mod:`master_discovery_fkie.master_info.ServiceInfo`
+    
+    :type name: str
     '''
     if (name is None) or not name:
       return None
@@ -715,16 +804,18 @@ class MasterInfo(object):
   @property
   def service_names(self):
     '''
-    Returns the list with service names.
-    @rtype: C{[str, ...]}
+    :return: the list with service names.
+    
+    :rtype: list of strings
     '''
     return self.__servicelist.keys()
 
   @property
   def service_uris(self):
     '''
-    Returns the list with service URI's.
-    @rtype: C{[str, ...]}
+    :return: the list with service URI's.
+    
+    :rtype: list of strings
     '''
     uris = []
     for service in self.__servicelist.itervalues():
@@ -733,10 +824,13 @@ class MasterInfo(object):
 
   def getNode(self, name):
     '''
-    @param name: the name of the node
-    @type name: str
-    @return: the instance of the L{NodeInfo} with given name
-    @rtype: L{NodeInfo} or C{None}
+    :param name: the name of the node
+    
+    :type name: str
+    
+    :return: the instance of the :mod:`master_discovery_fkie.master_info.NodeInfo` with given name
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.NodeInfo` or ``None``
     '''
     if (name is None) or not name:
       return None
@@ -744,11 +838,15 @@ class MasterInfo(object):
 
   def getNodeEndsWith(self, suffix):
     '''
-    Returns the node, which name ends with given suffix
-    @param suffix: the end of the name
-    @type suffix: C{str}
-    @return: the instance of the L{NodeInfo} with with given suffix
-    @rtype: L{NodeInfo} or C{None}
+    Returns the node, which name ends with given suffix. On more then one node, only the fist found will be returned.
+    
+    :param suffix: the end of the name
+    
+    :type suffix: str
+    
+    :return: the instance of the :mod:`master_discovery_fkie.master_info.NodeInfo` with with given suffix
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.NodeInfo` or ``None``
     '''
     if (suffix is None) or not suffix:
       return None
@@ -759,10 +857,15 @@ class MasterInfo(object):
 
   def getTopic(self, name):
     '''
-    @param name: the name of the topic
-    @type name: C{str}
-    @return: the instance of the L{TopicInfo} with given name
-    @rtype: L{NodeInfo} or C{None}
+    Returns the topics with given name.
+    
+    :param name: the name of the topic
+    
+    :type name: str
+    
+    :return: the instance of the :mod:`master_discovery_fkie.master_info.TopicInfo` with given name.
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.TopicInfo` or ``None``
     '''
     if (name is None) or not name:
       return None
@@ -770,10 +873,15 @@ class MasterInfo(object):
 
   def getService(self, name):
     '''
-    @param name: the name of the service
-    @type name: C{str}
-    @return: the instance of the L{ServiceInfo} with given name
-    @rtype: L{ServiceInfo} or C{None}
+    Returns the service with given name.
+    
+    :param name: the name of the service
+    
+    :type name: str
+    
+    :return: the instance of the :mod:`master_discovery_fkie.master_info.ServiceInfo` with given name
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.ServiceInfo` or ``None``
     '''
     if (name is None) or not name:
       return None
@@ -783,10 +891,14 @@ class MasterInfo(object):
     '''
     Compares the master state with other master state. The timestamp will not be 
     compared.
-    @param other: the another L{MasterInfo} instance.
-    @type other: L{MasterInfo}
-    @return: True, if the states are equal.
-    @rtype: C{boolean}
+    
+    :param other: the another MasterInfo instance.
+    
+    :type other: :mod:`master_discovery_fkie.master_info.MasterInfo`
+    
+    :return: ``True``, if the states are equal.
+    
+    :rtype: boolean
     '''
 #    import os                                ###################
 #    cputimes = os.times()                    ###################
@@ -834,10 +946,14 @@ class MasterInfo(object):
     '''
     Compares the master state with other master state. The timestamp will not be 
     compared.
-    @param other: the another L{MasterInfo} instance.
-    @type other: L{MasterInfo}
-    @return a tupel with two boolean values (all equal, only local equal)
-    @rtype: (boolean, boolean)
+    
+    :param other: the another ``MasterInfo`` instance.
+    
+    :type other: :mod:`master_discovery_fkie.master_info.MasterInfo`
+    
+    :return: a tupel with two boolean values (all equal, only local equal)
+    
+    :rtype: (bool, bool)
     '''
 #    import os                                ###################
 #    cputimes = os.times()                    ###################
@@ -894,45 +1010,47 @@ class MasterInfo(object):
   
   def listedState(self):
     '''
-    Returns a extended roscore state. 
-    @return: complete roscore state as
+    Returns a extended ROS Master State. 
+    
+    :return: complete ROS Master State as
              
-             C{(stamp, stamp_local, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)}
+             ``(stamp, stamp_local, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)``
              
-               - C{publishers} is of the form
+               - ``publishers`` is of the form
                  
-                 C{[ [topic1, [topic1Publisher1...topic1PublisherN]] ... ]}
+                 ``[ [topic1, [topic1Publisher1...topic1PublisherN]] ... ]``
                
-               - C{subscribers} is of the form
+               - ``subscribers`` is of the form
                  
-                 C{[ [topic1, [topic1Subscriber1...topic1SubscriberN]] ... ]}
+                 ``[ [topic1, [topic1Subscriber1...topic1SubscriberN]] ... ]``
                
-               - C{services} is of the form
+               - ``services`` is of the form
                  
-                 C{[ [service1, [service1Provider1...service1ProviderN]] ... ]}
+                 ``[ [service1, [service1Provider1...service1ProviderN]] ... ]``
                
-               - C{topicTypes} is a list of 
+               - ``topicTypes`` is a list of 
                  
-                 C{[ [topicName1, topicType1], ... ]}
+                 ``[ [topicName1, topicType1], ... ]``
                
-               - C{nodes} is a list of (the pid of remote Nodes will not be resolved)
+               - ``nodes`` is a list of (the pid of remote Nodes will not be resolved)
                  
-                 C{[nodename, XML-RPC URI, origin ROS_MASTER_URI, pid, E{lb} local, remote E{rb}]}
+                 ``[nodename, XML-RPC URI, origin ROS_MASTER_URI, pid, {local, remote}]``
                
-               - C{serviceProvider} is a list of (the type, serviceClass and args of remote Services will not be resolved)
+               - ``serviceProvider`` is a list of (the type, serviceClass and args of remote Services will not be resolved)
                  
-                 C{[service, XML-RPC URI, origin ROS_MASTER_URI, type, E{lb} local, remote E{rb}]}
+                 ``[service, XML-RPC URI, origin ROS_MASTER_URI, type, {local, remote}]``
                
-    @rtype: C{(float,
-               float,
-               str,
-               str,
-               [ [str,[str] ] ], 
-               [ [str,[str] ] ], 
-               [ [str,[str] ] ], 
-               [ [str,str] ], 
-               [ [str,str,str,int,str] ], 
-               [ [str,str,str,str,str] ])}
+    
+    :rtype: (``float``,
+             ``float``,
+             ``str``,
+             ``str``,
+             ``[ [str,[str] ] ]``, 
+             ``[ [str,[str] ] ]``, 
+             ``[ [str,[str] ] ]``, 
+             ``[ [str,str] ]``, 
+             ``[ [str,str,str,int,str] ]``, 
+             ``[ [str,str,str,str,str] ])``
     '''
     stamp = str(self.timestamp)
     stamp_local = str(self.timestamp_local)

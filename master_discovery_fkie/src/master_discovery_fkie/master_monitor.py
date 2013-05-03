@@ -51,7 +51,7 @@ import interface_finder
 
 class MasterConnectionException(Exception):
   '''
-  The default exception class.
+  The exception class to handle the connection problems with ROS Master.
   '''
   pass
 
@@ -69,21 +69,27 @@ class MasterMonitor(object):
   This class provides methods to get the state from the ROS master using his 
   RPC API and test for changes. Furthermore an XML-RPC server will be created
   to offer the complete current state of the ROS master by one method call.
-  @see: L{getState()}
-  RPC Methods:
-  @see: L{getListedMasterInfo()} or L{getMasterContacts()} as RPC: C{masterInfo()} and 
-  C{masterContacts()}
-  @group RPC-methods: getListedMasterInfo, getMasterContacts
+
+  :see: :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getCurrentState()`, respectively
+        :mod:`master_discovery_fkie.master_monitor.MasterMonitor.updateState()`
+  
+  :RPC Methods:
+      :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getListedMasterInfo()` or 
+      :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getMasterContacts()` as RPC: 
+      ``masterInfo()`` and ``masterContacts()``
   '''
 
   MAX_PING_SEC = 10.0
+  ''' The time to update the node URI, ID or service URI (Default: ``10.0``)'''
 
   def __init__(self, rpcport=11611):
     '''
     Initialize method. Creates an XML-RPC server on given port and starts this
     in its own thread.
-    @param rpcport: the port number for the XML-RPC server
-    @type rpcport:  C{int}
+    
+    :param rpcport: the port number for the XML-RPC server
+    
+    :type rpcport:  int
     '''
     self._state_access_lock = threading.RLock()
     self._create_access_lock = threading.RLock()
@@ -102,9 +108,9 @@ class MasterMonitor(object):
 
 
     self.__master_state = None
-    '''@ivar: the current state of the ROS master'''
+    '''the current state of the ROS master'''
     self.rpcport = rpcport
-    '''@ivar: the port number of the RPC server'''
+    '''the port number of the RPC server'''
     
     # Create an XML-RPC server
     ready = False
@@ -129,9 +135,9 @@ class MasterMonitor(object):
   @classmethod
   def _masteruri_from_ros(cls):
     '''
-    Returns the master URI depending on ROS distribution API.
-    @return: ROS master URI
-    @rtype C{str}
+    :return: the master URI depending on ROS distribution API.
+
+    :rtype: str
     '''
     try:
       import rospkg.distro
@@ -151,14 +157,21 @@ class MasterMonitor(object):
     '''
     if hasattr(self, 'rpcServer'):
       self.rpcServer.shutdown()
+      del self.rpcServer.socket
+      del self.rpcServer
 
   def _getNodePid(self, nodes):
     '''
     Gets process id of the node.
-    @param nodename: the name of the node
-    @type nodename: C{str}
-    @param uri: the uri of the node
-    @type uri: C{str}
+    This method blocks until the info is retrieved or socket timeout is reached (0.7 seconds).
+    
+    :param nodename: the name of the node
+    
+    :type nodename: str
+    
+    :param uri: the uri of the node
+    
+    :type uri: str
     '''
     for (nodename, uri) in nodes.items():
       if not uri is None:
@@ -201,11 +214,16 @@ class MasterMonitor(object):
 
   def _getServiceInfo(self, services):
     '''
-    Gets service info through the RPC interface of the service.
-    @param service: the name of the service
-    @type service: C{str}
-    @param uri: the uri of the service
-    @type uri: C{str}
+    Gets service info through the RPC interface of the service. 
+    This method blocks until the info is retrieved or socket timeout is reached (0.5 seconds).
+    
+    :param service: the name of the service
+    
+    :type service: str
+    
+    :param uri: the uri of the service
+    
+    :type uri: str
     '''
     for (service, uri) in services.items():
       with self._lock:
@@ -265,45 +283,9 @@ class MasterMonitor(object):
 
   def getListedMasterInfo(self):
     '''
-    Returns a extended roscore state. 
-    @return: complete roscore state as
-             
-             C{(stamp, stamp_local, masteruri, name, publishers, subscribers, services, topicTypes, nodes, serviceProvider)}
-             
-               - C{publishers} is of the form
-                 
-                 C{[ [topic1, [topic1Publisher1...topic1PublisherN]] ... ]}
-               
-               - C{subscribers} is of the form
-                 
-                 C{[ [topic1, [topic1Subscriber1...topic1SubscriberN]] ... ]}
-               
-               - C{services} is of the form
-                 
-                 C{[ [service1, [service1Provider1...service1ProviderN]] ... ]}
-               
-               - C{topicTypes} is a list of 
-                 
-                 C{[[topicName1, topicType1], ... ]}
-               
-               - C{nodes} is a list of (the pid of remote Nodes will not be resolved)
-                 
-                 C{[nodename, XML-RPC URI, pid, E{lb} local, remote E{rb}]}
-               
-               - C{serviceProvider} is a list of (the type, serviceClass and args of remote Services will not be resolved)
-                 
-                 C{[service, XML-RPC URI, type, E{lb} local, remote E{rb}]}
-               
-    @rtype: C{(float,
-               float,
-               str,
-               str,
-               [ [str,[str] ] ], 
-               [ [str,[str] ] ], 
-               [ [str,[str] ] ], 
-               [ [str,str] ], 
-               [ [str,str,int,str] ], 
-               [ [str,str,str,str] ])}
+    :return: a extended ROS Master State.
+    
+    :rtype:  :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()` for result type 
     '''
     #'print "MASTERINFO ===================="
     t = str(time.time())
@@ -322,6 +304,11 @@ class MasterMonitor(object):
     return result
 
   def getCurrentState(self):
+    '''
+    :return: The current ROS Master State
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.MasterInfo` or ``None``
+    '''
     #'print "getCurrentState _state_access_lock try...", threading.current_thread()
     with self._state_access_lock:
       #'print "  getCurrentState _state_access_lock locked", threading.current_thread()
@@ -330,9 +317,18 @@ class MasterMonitor(object):
     
   def updateState(self, clear_cache=False):
     '''
-    Gets state from the ROS master through his RPC interface.
-    @rtype: L{MasterInfo}
-    @raise MasterConnectionException: if not complete information was get from the ROS master.
+    Gets state from the ROS Master through his RPC interface.
+    
+    :param clear_cache: The URI of nodes and services will be cached to reduce the load.
+                        If remote hosted nodes or services was restarted, the cache must 
+                        be cleared! The local nodes will be updated periodically after
+                        :mod:`master_discovery_fkie.master_monitor.MasterMonitor.MAX_PING_SEC`.
+    
+    :type clear_cache: bool (Default: ``False``) 
+    
+    :rtype: :mod:`master_discovery_fkie.master_info.MasterInfo`
+    
+    :raise: ``MasterConnectionException``, if not complete information was get from the ROS master.
     '''
     #'print "updateState _create_access_lock try...", threading.current_thread()
     with self._create_access_lock:
@@ -531,10 +527,10 @@ class MasterMonitor(object):
   def updateSyncInfo(self):
     '''
     This method can be called to update the origin ROS master URI of the nodes
-    and services in new master_state. This is only need, if a synchronization is 
+    and services in new ``master_state``. This is only need, if a synchronization is 
     running. The synchronization service will be detect automatically by searching
-    for the service ending with C{get_sync_info}. The method will be called by 
-    C{checkState()}.
+    for the service ending with ``get_sync_info``. The method will be called by 
+    :mod:`master_discovery_fkie.master_monitor.MasterMonitor.checkState()`.
     '''
     #'print "updateSyncInfo _create_access_lock try...", threading.current_thread()
 
@@ -577,8 +573,10 @@ class MasterMonitor(object):
     '''
     Requests the ROS master URI from the ROS master through the RPC interface and 
     returns it.
-    @return: ROS master URI
-    @rtype: C{str} or C{None}
+    
+    :return: ROS master URI
+    
+    :rtype: str or ``None``
     '''
     code = -1
     if self.__masteruri_rpc is None:
@@ -590,8 +588,10 @@ class MasterMonitor(object):
     '''
     Returns the name of the master. If no name is set, the hostname of the 
     ROS master URI will be extracted.
-    @return: the name of the ROS master
-    @rtype: C{str} or C{None}
+    
+    :return: the name of the ROS master
+    
+    :rtype: str or ``None``
     '''
     if self.__mastername is None:
       try:
@@ -610,8 +610,9 @@ class MasterMonitor(object):
   def getMasterContacts(self):
     '''
     The RPC method called by XML-RPC server to request the master contact information.
-    @return: (timestamp of the ROS master state, ROS master URI, master name, name of this service, URI of this RPC server)
-    @rtype: C{(str, str, str, str, str)}
+    
+    :return: (``timestamp of the ROS master state``, ``ROS master URI``, ``master name``, ``name of this service``, ``URI of this RPC server``)
+    :rtype: (str, str, str, str, str)
     '''
     #'print "MASTERCONTACTS ===================="
     t = 0
@@ -627,9 +628,17 @@ class MasterMonitor(object):
   def checkState(self, clear_cache=False):
     '''
     Gets the state from the ROS master and compares it to the stored state.
-    @param clear_cache Clears cache for ROS nodes and sevices. Is neaded on changes on remote hosts. 
-    @return: True if the ROS master state is changed
-    @rtype: C{boolean}
+    
+    :param clear_cache: The URI of nodes and services will be cached to reduce the load.
+                        If remote hosted nodes or services was restarted, the cache must 
+                        be cleared! The local nodes will be updated periodically after
+                        :mod:`master_discovery_fkie.master_monitor.MasterMonitor.MAX_PING_SEC`.
+    
+    :type clear_cache: bool (Default: ``False``) 
+
+    :return: ``True`` if the ROS master state is changed
+    
+    :rtype: bool
     '''
     result = False
     s = self.updateState(clear_cache)
@@ -659,7 +668,7 @@ class MasterMonitor(object):
 
   def reset(self):
     '''
-    Sets the master state to None. 
+    Sets the master state to ``None``. 
     '''
     #'print "reset _state_access_lock try...", threading.current_thread()
     with self._state_access_lock:
