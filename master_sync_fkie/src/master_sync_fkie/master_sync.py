@@ -41,8 +41,8 @@ import rospy
 
 from common import masteruri_from_ros, resolve_url, read_interface, create_pattern
 from sync_thread import SyncThread
-from master_discovery_fkie.msg import MasterState#, LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
-from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
+from multimaster_msgs_fkie.msg import MasterState#, LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
 import master_discovery_fkie.interface_finder as interface_finder
 from master_discovery_fkie.master_info import MasterInfo
 

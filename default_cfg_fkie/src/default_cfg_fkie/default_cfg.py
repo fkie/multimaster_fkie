@@ -45,8 +45,8 @@ from ros import roslaunch
 import rosgraph.masterapi
 
 
-from default_cfg_fkie.msg import Capability
-from default_cfg_fkie.srv import ListDescription, ListNodes, LoadLaunch, Task, ListDescriptionResponse, ListNodesResponse
+from multimaster_msgs_fkie.msg import Capability
+from multimaster_msgs_fkie.srv import ListDescription, ListNodes, LoadLaunch, Task, ListDescriptionResponse, ListNodesResponse
 from screen_handler import ScreenHandler, ScreenHandlerException
 
 class LoadException(Exception):

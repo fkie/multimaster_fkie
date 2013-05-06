@@ -63,7 +63,7 @@ from sync_dialog import SyncDialog
 
 import node_manager_fkie as nm
 
-from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
 #from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
 
 

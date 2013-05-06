@@ -40,11 +40,11 @@ import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 
 try:
-  from master_discovery_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
-  from master_discovery_fkie.srv import DiscoverMasters#, GetSyncInfo
+  from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
+  from multimaster_msgs_fkie.srv import DiscoverMasters#, GetSyncInfo
 except ImportError, e:
   import sys
-  print >> sys.stderr, "Can't import massages and services of master_discovery_fkie. Is master_discovery_fkie package compiled?"
+  print >> sys.stderr, "Can't import massages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
   raise ImportError(str(e))
 
 import master_discovery_fkie.interface_finder as interface_finder

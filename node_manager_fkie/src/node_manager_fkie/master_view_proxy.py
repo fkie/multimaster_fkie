@@ -1135,7 +1135,7 @@ class MasterViewProxy(QtGui.QWidget):
           raise DetailedError("Start error", ''.join(['Error while start ', node.name]), str(e))
       elif isinstance(config, (str, unicode)):
         # start with default configuration
-        from default_cfg_fkie.srv import Task
+        from multimaster_msgs_fkie.srv import Task
         try:
           nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
         except (Exception, nm.StartException) as e:

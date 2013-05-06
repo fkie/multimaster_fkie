@@ -1,6 +1,13 @@
-cmake_minimum_required(VERSION 2.4)
-if(CATKIN_TOPLEVEL)
-include(catkin.cmake)
-else()
-include(rosbuild.cmake)
-endif()
+cmake_minimum_required(VERSION 2.8.3)
+project(default_cfg_fkie)
+find_package(catkin REQUIRED COMPONENTS multimaster_msgs_fkie)
+
+catkin_python_setup()
+
+catkin_package(CATKIN_DEPENDS multimaster_msgs_fkie)
+
+install(
+    PROGRAMS 
+        nodes/default_cfg
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )

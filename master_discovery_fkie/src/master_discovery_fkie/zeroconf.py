@@ -48,8 +48,8 @@ import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 from std_msgs.msg import String
 
-from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster#, SyncMasterInfo, SyncTopicInfo
-from master_discovery_fkie.srv import DiscoverMasters, DiscoverMastersResponse#, GetSyncInfo
+from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster#, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.srv import DiscoverMasters, DiscoverMastersResponse#, GetSyncInfo
 from master_monitor import MasterMonitor
 
 
@@ -567,6 +567,7 @@ class MasterList(object):
                                             ROSMaster(str(m.name), 
                                                       m.getMasterUri(), 
                                                       m.getRosTimestamp(), 
+                                                      m.getRosTimestamp(), 
                                                       state, 
                                                       m.getTXTValue('zname', ''), 
                                                       m.getTXTValue('rpcuri', ''))))
@@ -613,6 +614,7 @@ class MasterList(object):
                                               ROSMaster(str(master_info.name), 
                                                         master_info.getMasterUri(), 
                                                         master_info.getRosTimestamp(), 
+                                                        master_info.getRosTimestamp(),
                                                         True, 
                                                         master_info.getTXTValue('zname', ''), 
                                                         master_info.getTXTValue('rpcuri', ''))))
@@ -626,6 +628,7 @@ class MasterList(object):
         self.pubchanges.publish(MasterState(MasterState.STATE_NEW, 
                                             ROSMaster(str(master_info.name), 
                                                       master_info.getMasterUri(), 
+                                                      master_info.getRosTimestamp(),
                                                       master_info.getRosTimestamp(), 
                                                       True, 
                                                       master_info.getTXTValue('zname', ''), 
@@ -657,6 +660,7 @@ class MasterList(object):
         self.pubchanges.publish(MasterState(MasterState.STATE_REMOVED, 
                                             ROSMaster(str(r.name), 
                                                       r.getMasterUri(), 
+                                                      r.getRosTimestamp(), 
                                                       r.getRosTimestamp(), 
                                                       False, 
                                                       r.getTXTValue('zname', ''), 
@@ -706,7 +710,8 @@ class MasterList(object):
         self.pubchanges.publish(MasterState(MasterState.STATE_REMOVED, 
                                             ROSMaster(str(master.name), 
                                                       master.getMasterUri(), 
-                                                      master.getRosTimestamp(), 
+                                                      master.getRosTimestamp(),
+                                                      master.getRosTimestamp(),  
                                                       False, 
                                                       master.getTXTValue('zname', ''), 
                                                       master.getTXTValue('rpcuri', ''))))
@@ -726,7 +731,8 @@ class MasterList(object):
       for key, master in self.__masters.iteritems():
         masters.append(ROSMaster(str(master.name), 
                                  master.getMasterUri(), 
-                                 master.getRosTimestamp(), 
+                                 master.getRosTimestamp(),
+                                 master.getRosTimestamp(),  
                                  master.online, 
                                  master.getTXTValue('zname', ''), 
                                  master.getTXTValue('rpcuri', '')))

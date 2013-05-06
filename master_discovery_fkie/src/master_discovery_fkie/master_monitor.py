@@ -44,8 +44,8 @@ import roslib.network
 import rospy
 import rosnode
 
-from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
-from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
+from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo
 from master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
 import interface_finder
 

@@ -13,6 +13,7 @@
   
   <buildtool_depend>catkin</buildtool_depend>
   
+  <run_depend>multimaster_msgs_fkie</run_depend>
   <run_depend>default_cfg_fkie</run_depend>
   <run_depend>master_discovery_fkie</run_depend>
   <run_depend>master_sync_fkie</run_depend>

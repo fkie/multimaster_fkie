@@ -43,13 +43,12 @@ import sys
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
-from master_monitor import MasterMonitor
-
 MCAST_GROUP = "226.0.0.0" # ipv6 multicast group ff02::1
 MCAST_PORT = 11511
 
 def getDefaultRPCPort(zeroconf=False):
   try:
+    from master_monitor import MasterMonitor
     masteruri = MasterMonitor._masteruri_from_ros()
     rospy.loginfo("ROS Master URI: %s", masteruri)
     from urlparse import urlparse
