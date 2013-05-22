@@ -42,7 +42,6 @@ from SocketServer import ThreadingMixIn
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.network
 import rospy
-import rosnode
 
 from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
 from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
@@ -58,7 +57,7 @@ class MasterConnectionException(Exception):
 def _succeed(args):
     code, msg, val = args
     if code != 1:
-        raise rosnode.ROSNodeException("remote call failed: %s"%msg)
+        raise Exception("remote call failed: %s"%msg)
     return val
 
 class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
