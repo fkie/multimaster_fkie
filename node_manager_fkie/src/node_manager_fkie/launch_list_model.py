@@ -33,10 +33,11 @@
 import os
 import sys
 
-from PySide import QtCore
-from PySide import QtGui
+from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 
 import node_manager_fkie as nm
+from common import is_package, package_name
 from launch_config import LaunchConfig
 
 class LaunchListModel(QtCore.QAbstractListModel):
@@ -100,7 +101,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
       # return the displayed item name
       pathItem, path, pathId = self.items[index.row()]
       if pathId == LaunchListModel.RECENT_FILE:
-        return ''.join([pathItem, '   [', str(LaunchConfig.packageName(os.path.dirname(path))[0]), ']']).decode(sys.getfilesystemencoding())
+        return ''.join([pathItem, '   [', str(package_name(os.path.dirname(path))[0]), ']']).decode(sys.getfilesystemencoding())
       else:
         return pathItem
     elif role == QtCore.Qt.ToolTipRole:
@@ -276,7 +277,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
         if self._containsLaunches(path):
           if 'stack.xml' in fileList:
             return LaunchListModel.STACK
-          elif 'manifest.xml' in fileList:
+          elif is_package(fileList):
             return LaunchListModel.PACKAGE
           else:
             return LaunchListModel.FOLDER

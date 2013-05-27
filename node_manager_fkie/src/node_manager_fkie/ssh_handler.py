@@ -197,12 +197,13 @@ class SSHhandler(object):
     '''
     Open the dialog to input the user name and password to open an SSH connection. 
     '''
-    from PySide import QtCore
-    from PySide import QtUiTools
+    from python_qt_binding import QtCore
+    from python_qt_binding import loadUi
     result = False
     pw = None
-    loader = QtUiTools.QUiLoader()
-    pwInput = loader.load(":/forms/PasswordInput.ui")
+    pwInput = QtGui.QDialog()
+    ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'PasswordInput.ui')
+    loadUi(ui_file, pwInput)
     pwInput.setWindowTitle(''.join(['Enter the password for user ', user, ' on ', host]))
     pwInput.userLine.setText(str(user))
     pwInput.pwLine.setText("")

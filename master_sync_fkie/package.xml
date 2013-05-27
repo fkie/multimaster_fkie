@@ -5,7 +5,7 @@
      discovered by master_discovery_fkie node. The registration
      of topics and services is only perform by local ROS master.
   </description>
-  <version>0.2.2</version>
+  <version>0.3.0</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
@@ -13,11 +13,13 @@
   
   <buildtool_depend>catkin</buildtool_depend>
   
+  <build_depend>multimaster_msgs_fkie</build_depend>
   <build_depend>master_discovery_fkie</build_depend>
 
   <run_depend>rospy</run_depend>
   <run_depend>roslib</run_depend>
   <run_depend>rosgraph</run_depend>
+  <run_depend>multimaster_msgs_fkie</run_depend>
   <run_depend>master_discovery_fkie</run_depend>
 
   <export>

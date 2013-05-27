@@ -5,7 +5,7 @@
      configured ROS nodes on different hosts. For discovering 
      the running ROS master master_discovery node will be used.
   </description>
-  <version>0.2.2</version>
+  <version>0.3.0</version>
   <license>BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</license>
   <author>Alexander Tiderko</author>
   <author>Timo Roehling</author>
@@ -14,29 +14,33 @@
   
   <buildtool_depend>catkin</buildtool_depend>
   
+  <build_depend>multimaster_msgs_fkie</build_depend>
   <build_depend>master_discovery_fkie</build_depend>
   <build_depend>master_sync_fkie</build_depend>
   <build_depend>default_cfg_fkie</build_depend>
 
+
+  <run_depend>multimaster_msgs_fkie</run_depend>
   <run_depend>master_discovery_fkie</run_depend>
   <run_depend>master_sync_fkie</run_depend>
   <run_depend>default_cfg_fkie</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>roslib</run_depend>
+  <run_depend>rosmsg</run_depend>
   <run_depend>rosgraph</run_depend>
   <run_depend>roslaunch</run_depend>
   <run_depend>rosservice</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
   
-  <run_depend>python-pyside</run_depend>
+  <run_depend>python_qt_binding</run_depend>
   <run_depend>python-paramiko</run_depend>
   <run_depend>python-docutils</run_depend>
-  <run_depend>python-pyside.qtuitools</run_depend>
   <run_depend>screen</run_depend>
   <run_depend>xterm</run_depend>
   
   <export>
     <rosdoc config="rosdoc.yaml" />
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
   </export>
 
 </package>

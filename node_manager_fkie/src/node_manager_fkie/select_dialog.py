@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from PySide import QtCore, QtGui
+from python_qt_binding import QtCore, QtGui
 
 import roslib
 import rospy
@@ -69,7 +69,10 @@ class SelectDialog(QtGui.QDialog):
       hLayout.setContentsMargins(1, 1, 1, 1)
       self.select_all_checkbox = QtGui.QCheckBox('all')
   #    self.select_all_checkbox.setTristate(True)
-      self.select_all_checkbox.setCheckState(QtCore.Qt.CheckState.Checked)
+      try:
+        self.select_all_checkbox.setCheckState(QtCore.Qt.CheckState.Checked)#PySide
+      except:
+        self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)  #PyQt4
       self.select_all_checkbox.toggled.connect(self._on_select_all_checkbox_toggled)
       hLayout.addWidget(self.select_all_checkbox)
       # add spacer
@@ -159,7 +162,10 @@ class MainBox(QtGui.QWidget):
           checkbox.setObjectName(v)
           self.box_group.addButton(checkbox)
           self.layout().addRow(checkbox)
-          checkbox.setCheckState(QtCore.Qt.CheckState.Checked)
+          try:
+            checkbox.setCheckState(QtCore.Qt.CheckState.Checked)#PySide
+          except:
+            checkbox.setCheckState(QtCore.Qt.Checked)#PyQt4
     finally:
       self.setUpdatesEnabled(True)
 
@@ -176,4 +182,7 @@ class MainBox(QtGui.QWidget):
     for i in range(self.layout().count()):
       item = self.layout().itemAt(i).widget()
       if isinstance(item, QtGui.QCheckBox):
-        item.setCheckState(QtCore.Qt.CheckState.Checked if state else QtCore.Qt.CheckState.Unchecked)
+        try:
+          item.setCheckState(QtCore.Qt.CheckState.Checked if state else QtCore.Qt.CheckState.Unchecked)#PySide
+        except:
+          item.setCheckState(QtCore.Qt.Checked if state else QtCore.Qt.Unchecked)#PyQt4

@@ -34,12 +34,12 @@ import os
 import time
 import threading
 
-from PySide import QtCore
+from python_qt_binding import QtCore
 import rospy
 import node_manager_fkie as nm
 try:
 #  from default_cfg_fkie.msg import Capability
-  from default_cfg_fkie.srv import ListDescription, ListNodes#, LoadLaunch, Task
+  from multimaster_msgs_fkie.srv import ListDescription, ListNodes#, LoadLaunch, Task
 except ImportError, e:
   import sys
   print >> sys.stderr, "Can't import services of default_cfg_fkie. Is default_cfg_fkie package compiled?"

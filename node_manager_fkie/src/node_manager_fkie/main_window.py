@@ -38,32 +38,34 @@ import threading
 
 from datetime import datetime
 
-from PySide import QtGui
-from PySide import QtCore
-from PySide import QtUiTools
+from python_qt_binding import QtGui
+from python_qt_binding import QtCore
+#from python_qt_binding import QtUiTools
+from python_qt_binding import loadUi
 
 import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 
 import gui_resources
-from discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
-from update_handler import UpdateHandler
-from launch_list_model import LaunchListModel 
-from master_view_proxy import MasterViewProxy
-from launch_config import LaunchConfig, LaunchConfigException
-from capability_table import CapabilityTable
-from xml_editor import XmlEditor
-from detailed_msg_box import WarningMessageBox
-from network_discovery_dialog import NetworkDiscoveryDialog
-from parameter_dialog import ParameterDialog
-from progress_queue import ProgressQueue, ProgressThread
-from screen_handler import ScreenHandler
-from sync_dialog import SyncDialog
+from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
+from .update_handler import UpdateHandler
+from .launch_list_model import LaunchListModel 
+from .master_view_proxy import MasterViewProxy
+from .launch_config import LaunchConfig, LaunchConfigException
+from .capability_table import CapabilityTable
+from .xml_editor import XmlEditor
+from .detailed_msg_box import WarningMessageBox
+from .network_discovery_dialog import NetworkDiscoveryDialog
+from .parameter_dialog import ParameterDialog
+from .progress_queue import ProgressQueue, ProgressThread
+from .screen_handler import ScreenHandler
+from .sync_dialog import SyncDialog
+from common import masteruri_from_ros
 
 
 import node_manager_fkie as nm
 
-from master_discovery_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
 #from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
 
 
@@ -85,9 +87,13 @@ class MainWindow(QtGui.QMainWindow):
     self.__current_master_label_name = None
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
-    loader = QtUiTools.QUiLoader()
+#    loader = QtUiTools.QUiLoader()
     self.setObjectName('MainWindow')
-    self.ui = mainWindow = loader.load(":/forms/MainWindow.ui")
+    self.ui = mainWindow = QtGui.QMainWindow()
+#    self.ui = mainWindow = loader.load(":/forms/MainWindow.ui")
+    ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MainWindow.ui')
+    #/home/tiderko/ros/src/multimaster_fkie/node_manager_fkie/src/node_manager_fkie/
+    loadUi(ui_file, self.ui)
     self.ui.setObjectName('MainUI')
     self.ui.masterInfoFrame.setEnabled(False)
     self.ui.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
@@ -321,7 +327,7 @@ class MainWindow(QtGui.QMainWindow):
     @rtype: C{str} or C{None}
     '''
     if not hasattr(self, 'materuri') or self.materuri is None:
-      masteruri = nm.masteruri_from_ros()
+      masteruri = masteruri_from_ros()
       master = xmlrpclib.ServerProxy(masteruri)
       code, message, self.materuri = master.getUri(rospy.get_name())
       nm.is_local(nm.nameres().getHostname(self.materuri))
@@ -617,7 +623,7 @@ class MainWindow(QtGui.QMainWindow):
     @type stats: C{[L{master_discovery_fkie.msg.LinkState}]}
     '''
     #'print "+on_conn_stats_updated"
-    for stat in stats:
+    for stat in stats.links:
       self.master_model.updateMasterStat(stat.destination, stat.quality)
     #'print "++on_conn_stats_updated"
 
@@ -699,6 +705,9 @@ class MainWindow(QtGui.QMainWindow):
     key_mod = QtGui.QApplication.keyboardModifiers()
     if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
       self.ui.syncButton.showMenu()
+      if not self.currentMaster.master_info is None:
+        node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
+        self.ui.syncButton.setChecked(not node is None)
     else:
       self.ui.syncButton.setEnabled(False)
       if not self.currentMaster is None:

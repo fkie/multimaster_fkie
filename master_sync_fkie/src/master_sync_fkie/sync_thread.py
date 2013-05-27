@@ -44,7 +44,7 @@ import rospy
 import rosgraph.masterapi
 
 from common import masteruri_from_ros, resolve_url, read_interface, create_pattern
-from master_discovery_fkie.msg import SyncTopicInfo, SyncMasterInfo
+from multimaster_msgs_fkie.msg import SyncTopicInfo, SyncMasterInfo
 
 class MasterInfo(object):
   '''

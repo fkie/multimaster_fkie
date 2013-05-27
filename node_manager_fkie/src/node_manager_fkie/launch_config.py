@@ -38,11 +38,12 @@ import rospy
 import roslib
 
 from xml.dom.minidom import parse, parseString 
-from xml.dom import Node as DomNode #avoid aliasing
+#from xml.dom import Node as DomNode #avoid aliasing
 
-from PySide import QtCore
+from python_qt_binding import QtCore
 
 import node_manager_fkie as nm
+from common import package_name
 
 class LaunchConfigException(Exception):
   pass
@@ -76,7 +77,7 @@ class LaunchConfig(QtCore.QObject):
     '''
     QtCore.QObject.__init__(self)
     self.__launchFile = launch_file
-    self.__package = self.packageName(os.path.dirname(self.__launchFile))[0] if package is None else package 
+    self.__package = package_name(os.path.dirname(self.__launchFile))[0] if package is None else package 
     self.__masteruri = masteruri if not masteruri is None else 'localhost'
     self.__roscfg = None
     self.argv = argv
@@ -158,21 +159,6 @@ class LaunchConfig(QtCore.QObject):
     '''
     return self.__package
   
-  @classmethod
-  def packageName(cls, dir):
-    '''
-    Returns for given directory a tuple of package name and package path or None values.
-    @rtype: C{(name, path)}
-    '''
-    if not (dir is None) and dir and dir != os.path.sep and os.path.isdir(dir):
-      package = os.path.basename(dir)
-      fileList = os.listdir(dir)
-      for file in fileList:
-        if file == 'manifest.xml':
-            return (package, dir)
-      return cls.packageName(os.path.dirname(dir))
-    return (None, None)
-
   def _index(self, text, regexp_list):
     '''
     Searches in the given text for key indicates the including of a file and 
@@ -283,7 +269,9 @@ class LaunchConfig(QtCore.QObject):
     '''
     arg_subs = []
     args = []
-    for filename in self.getIncludedFiles(self.Filename):
+#    for filename in self.getIncludedFiles(self.Filename):
+    # get only the args in the top launch file
+    for filename in [self.Filename]:
       try: 
         if filename.endswith('.launch'):
           args[len(args):-1] = parse(filename).getElementsByTagName('arg')

@@ -41,6 +41,7 @@ import threading
 import xmlrpclib
 
 import node_manager_fkie as nm
+from common import get_ros_home, masteruri_from_ros
 try:
   from launch_config import LaunchConfig
 except:
@@ -109,7 +110,7 @@ class StartHandler(object):
       masteruri = nm.nameres().masteruri(n.machine_name)
     # set the ROS_MASTER_URI
     if masteruri is None:
-      masteruri = nm.masteruri_from_ros()
+      masteruri = masteruri_from_ros()
       env.append(('ROS_MASTER_URI', masteruri))
 
     abs_paths = list() # tuples of (parameter name, old value, new value)
@@ -153,7 +154,7 @@ class StartHandler(object):
       if len(cmd) > 1:
         # Open selection for executables
         try:
-          from PySide import QtGui
+          from python_qt_binding import QtGui
           item, result = QtGui.QInputDialog.getItem(None, ' '.join(['Multiple executables', n.type, 'in', n.package]),
                                             'Select an executable',
                                             cmd, 0, False)
@@ -167,10 +168,10 @@ class StartHandler(object):
       else:
         cmd_type = cmd[0]
       # determine the current working path, Default: the package of the node
-      cwd = nm.get_ros_home()
+      cwd = get_ros_home()
       if not (n.cwd is None):
         if n.cwd == 'ROS_HOME':
-          cwd = nm.get_ros_home()
+          cwd = get_ros_home()
         elif n.cwd == 'node':
           cwd = os.path.dirname(cmd_type)
 #      else:
@@ -380,7 +381,7 @@ class StartHandler(object):
       if len(cmd) > 1:
         # Open selection for executables
 #        try:
-#          from PySide import QtGui
+#          from python_qt_binding import QtGui
 #          item, result = QtGui.QInputDialog.getItem(None, ' '.join(['Multiple executables', type, 'in', package]),
 #                                            'Select an executable',
 #                                            cmd, 0, False)
@@ -426,7 +427,7 @@ class StartHandler(object):
           if error:
             rospy.logwarn("ERROR while start '%s': %s", name, error)
             raise StartException(''.join(['The host "', host, '" reports:\n', error]))
-  #          from PySide import QtGui
+  #          from python_qt_binding import QtGui
   #          QtGui.QMessageBox.warning(None, 'Error while remote start %s'%str(name),
   #                                      str(''.join(['The host "', host, '" reports:\n', error])),
   #                                      QtGui.QMessageBox.Ok)

@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from PySide import QtCore
-from PySide import QtGui
+from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 
 import threading
 
@@ -54,7 +54,7 @@ class MasterItem(QtGui.QStandardItem):
     self.name = ''.join([master.name, ' (localhost)']) if local else master.name
     QtGui.QStandardItem.__init__(self, self.name)
     self.parent_item = None
-    self.master = master
+    self._master = master
     self.__quality = quality
     self.descr = ''
     self.ICONS = {'green' : QtGui.QIcon(":/icons/stock_connect_green.png"),
@@ -67,6 +67,9 @@ class MasterItem(QtGui.QStandardItem):
     self.master_ip = None
     self._threaded_get_ip()
     self.updateNameView(master, quality, self)
+  
+  def init_master(self, master):
+    self._master = master
 
   def _threaded_get_ip(self):
     thread = threading.Thread(target=self.__get_ip)
@@ -91,11 +94,18 @@ class MasterItem(QtGui.QStandardItem):
       import traceback
       print traceback.format_exc()
     
+  @property
+  def master(self):
+    return self._master
+
+  @master.setter
+  def master(self, value):
+    self._master = value
 
   @property
   def quality(self):
     return self.__quality
-  
+
   @quality.setter
   def quality(self, value):
     if self.__quality != value:
@@ -197,6 +207,7 @@ class MasterItem(QtGui.QStandardItem):
     '''
     items = []
     item = MasterItem(master, local)
+    item.init_master(master)
     items.append(item)
     return items
 
@@ -232,6 +243,7 @@ class MasterModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(MasterModel.header))
     self._masteruri = local_masteruri
+    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
 
   def flags(self, index):
     '''
@@ -262,6 +274,7 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i)
       if masterItem.master.uri == master.uri and masterItem.master.name != master.name:
         root.removeRow(i)
+        del self.pyqt_workaround[masterItem.master.name]
         break
     
     # update or add a the item
@@ -283,6 +296,7 @@ class MasterModel(QtGui.QStandardItemModel):
         break
     if doAddItem:
       mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
+      self.pyqt_workaround[master.name] = mitem[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
       root.appendRow(mitem)
       mitem[0].parent_item = root
 
@@ -330,6 +344,7 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i)
       if masterItem.master.name == master:
         root.removeRow(i)
+        del self.pyqt_workaround[master]
         break
 
   def updateDescription(self, master, descr):
@@ -342,7 +357,7 @@ class MasterModel(QtGui.QStandardItemModel):
     @type descr: C{str}
     '''
     root = self.invisibleRootItem()
-    for i in reversed(range(root.rowCount())):
+    for i in range(root.rowCount()):
       masterItem = root.child(i)
-      if masterItem.master.name == master:
+      if masterItem and masterItem.master.name == master:
         masterItem.updateDescription(descr)

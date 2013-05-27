@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import threading
-from PySide import QtCore
+from python_qt_binding import QtCore
 
 from master_discovery_fkie.master_info import MasterInfo
 from update_thread import UpdateThread

@@ -323,7 +323,7 @@ class ScreenHandler(object):
       if screens:
         do_kill = True
         if auto_ok_request:
-          from PySide import QtGui
+          from python_qt_binding import QtGui
           result = QtGui.QMessageBox.question(None, "Kill SCREENs?", '\n'.join(screens), QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
           if result & QtGui.QMessageBox.Ok:
             do_kill = True

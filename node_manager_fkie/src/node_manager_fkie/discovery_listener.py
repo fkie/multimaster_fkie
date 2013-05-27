@@ -34,17 +34,17 @@ import threading
 import time
 import socket
 
-from PySide import QtCore
+from python_qt_binding import QtCore
 
 import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 
 try:
-  from master_discovery_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
-  from master_discovery_fkie.srv import DiscoverMasters#, GetSyncInfo
+  from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
+  from multimaster_msgs_fkie.srv import DiscoverMasters#, GetSyncInfo
 except ImportError, e:
   import sys
-  print >> sys.stderr, "Can't import massages and services of master_discovery_fkie. Is master_discovery_fkie package compiled?"
+  print >> sys.stderr, "Can't import massages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
   raise ImportError(str(e))
 
 import master_discovery_fkie.interface_finder as interface_finder
@@ -252,7 +252,7 @@ class MasterStatisticTopic(QtCore.QObject):
     @param msg: the received message
     @type msg: L{master_discovery_fkie.LinkStatesStamped}
     '''
-    self.stats_signal.emit(msg.links)
+    self.stats_signal.emit(msg)
 
 
 class OwnMasterMonitoring(QtCore.QObject):
@@ -278,7 +278,7 @@ class OwnMasterMonitoring(QtCore.QObject):
     @param monitor_port: the port of the XML-RPC Server created by monitoring class.
     @type monitor_port: C{int}
     '''
-    self._master_monitor = MasterMonitor(monitor_port)
+    self._master_monitor = MasterMonitor(monitor_port, False)
     self._do_pause = True
     self._do_finish = False
 #    self._local_addr = roslib.network.get_local_address()
@@ -296,6 +296,7 @@ class OwnMasterMonitoring(QtCore.QObject):
     print "  Shutdown the local master monitoring..."
     self._do_finish = True
     self._masterMonitorThread.join(15)
+    self._master_monitor.shutdown()
     print "  Local master monitoring is off!"
 
   def mastermonitor_loop(self):

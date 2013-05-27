@@ -31,13 +31,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-from PySide import QtGui
-from PySide import QtCore
-from PySide import QtUiTools
+from python_qt_binding import QtGui
+from python_qt_binding import QtCore
 
 import roslib
 import rospy
 from xml_highlighter import XmlHighlighter
+
+from common import package_name
 
 class Editor(QtGui.QTextEdit):
   '''
@@ -633,19 +634,8 @@ class XmlEditor(QtGui.QDialog):
 
   def __getTabName(self, file):
     base = os.path.basename(file).replace('.launch', '')
-    package = self.__getPackageName(os.path.dirname(file))
+    (package, path) = package_name(os.path.dirname(file))
     return ''.join([str(base), ' [', str(package),']'])
-
-  def __getPackageName(self, dir):
-    if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
-      package = os.path.basename(dir)
-      fileList = os.listdir(dir)
-      for file in fileList:
-        if file == 'manifest.xml':
-            return package
-      return self.__getPackageName(os.path.dirname(dir))
-    return None
-
 
   def on_find_dialog_clicked(self, button):
     '''

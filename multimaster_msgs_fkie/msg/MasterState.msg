@@ -1,5 +1,5 @@
 string state
-master_discovery_fkie/ROSMaster master
+multimaster_msgs_fkie/ROSMaster master
 
 string STATE_NEW='new'
 string STATE_REMOVED='removed'

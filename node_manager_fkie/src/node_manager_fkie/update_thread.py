@@ -35,7 +35,7 @@ import socket
 import threading
 import xmlrpclib
 import random
-from PySide import QtCore
+from python_qt_binding import QtCore
 
 #import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy

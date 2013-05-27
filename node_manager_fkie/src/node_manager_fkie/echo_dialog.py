@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from PySide import QtCore, QtGui
+from python_qt_binding import QtCore, QtGui
 
 import time
 import math

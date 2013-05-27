@@ -30,9 +30,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from PySide import QtGui
-from PySide import QtCore
-from PySide import QtUiTools
+from python_qt_binding import QtGui
+from python_qt_binding import QtCore
+from python_qt_binding import loadUi
 
 import os
 import sys
@@ -60,6 +60,7 @@ from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 from detailed_msg_box import WarningMessageBox, DetailedError
 from progress_queue import ProgressQueue, ProgressThread
+from common import masteruri_from_ros, get_packages
 
 
 
@@ -122,8 +123,9 @@ class MasterViewProxy(QtGui.QWidget):
     self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
     self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
     
-    loader = QtUiTools.QUiLoader()
-    self.masterTab = loader.load(":/forms/MasterTab.ui")
+    self.masterTab = QtGui.QWidget()
+    ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MasterTab.ui')
+    loadUi(ui_file, self.masterTab)
     tabLayout = QtGui.QVBoxLayout(self)
     tabLayout.setContentsMargins(0, 0, 0, 0)
     tabLayout.addWidget(self.masterTab)
@@ -1135,7 +1137,7 @@ class MasterViewProxy(QtGui.QWidget):
           raise DetailedError("Start error", ''.join(['Error while start ', node.name]), str(e))
       elif isinstance(config, (str, unicode)):
         # start with default configuration
-        from default_cfg_fkie.srv import Task
+        from multimaster_msgs_fkie.srv import Task
         try:
           nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
         except (Exception, nm.StartException) as e:
@@ -1757,7 +1759,7 @@ class MasterViewProxy(QtGui.QWidget):
       packages = {}
       msg_types = []
       for p in root_paths:
-        ret = self._getPackages(p)
+        ret = get_packages(p)
         packages = dict(ret.items() + packages.items())
         for (p, direc) in packages.items():
           import rosmsg
@@ -1859,18 +1861,6 @@ class MasterViewProxy(QtGui.QWidget):
       elif not (isinstance(value, list) and not value):
         result[key] = value
     return result
-
-  def _getPackages(self, path):
-    result = {}
-    if os.path.isdir(path):
-      fileList = os.listdir(path)
-      if 'manifest.xml' in fileList:
-        return {os.path.basename(path) : path}
-      for f in fileList:
-        ret = self._getPackages(os.path.sep.join([path, f]))
-        result = dict(ret.items() + result.items())
-    return result
-
 
   def on_topic_pub_stop_clicked(self):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
@@ -2126,7 +2116,7 @@ class MasterViewProxy(QtGui.QWidget):
     @rtype: C{str} or C{None}
     '''
     if not hasattr(self, '_nm_materuri') or self._nm_materuri is None:
-      masteruri = nm.masteruri_from_ros()
+      masteruri = masteruri_from_ros()
       master = xmlrpclib.ServerProxy(masteruri)
       code, message, self._nm_materuri = master.getUri(rospy.get_name())
     return self._nm_materuri

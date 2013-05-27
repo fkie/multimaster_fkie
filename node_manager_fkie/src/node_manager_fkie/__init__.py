@@ -34,7 +34,7 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __date__ = "2012-02-01"
 
 import os
@@ -58,6 +58,7 @@ from start_handler import StartHandler, StartException
 from progress_queue import InteractionNeededError
 from name_resolution import NameResolution
 from history import History
+from common import get_ros_home, masteruri_from_ros
 
 # set the cwd to the package of the node_manager_fkie to support the images
 # in HTML descriptions of the robots and capabilities
@@ -200,46 +201,6 @@ def __is_local(hostname):
   with _lock:
     HOSTS_CACHE[hostname] = result
 
-
-def get_ros_home():
-  '''
-  Returns the ROS HOME depending on ROS distribution API.
-  @return: ROS HOME path
-  @rtype: C{str}
-  '''
-  try:
-    import rospkg.distro
-    distro = rospkg.distro.current_distro_codename()
-    if distro in ['electric', 'diamondback', 'cturtle']:
-      import roslib.rosenv
-      return roslib.rosenv.get_ros_home()
-    else:
-      import rospkg
-      return rospkg.get_ros_home()
-  except:
-#    import traceback
-#    print traceback.format_exc()
-    import roslib.rosenv
-    return roslib.rosenv.get_ros_home()
-
-
-def masteruri_from_ros():
-  '''
-  Returns the master URI depending on ROS distribution API.
-  @return: ROS master URI
-  @rtype: C{str}
-  '''
-  try:
-    import rospkg.distro
-    distro = rospkg.distro.current_distro_codename()
-    if distro in ['electric', 'diamondback', 'cturtle']:
-      return roslib.rosenv.get_master_uri()
-    else:
-      import rosgraph
-      return rosgraph.rosenv.get_master_uri()
-  except:
-    return os.environ['ROS_MASTER_URI']
-
 def finish(*arg):
   '''
   Callback called on exit of the ros node.
@@ -248,11 +209,12 @@ def finish(*arg):
   global _ssh_handler
   if not _ssh_handler is None:
     _ssh_handler.close()
+  global _history
+  if not _history is None:
+    _history.storeAll()
   global main_form
   import main_window
   if isinstance(main_form, main_window.MainWindow):
-    global _history
-    _history.storeAll()
     main_form.finish()
   global app
   if not app is None:
@@ -284,12 +246,7 @@ def setProcessName(name):
     pass
 
 
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%                 MAIN                               %%%%%%%%
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-def main(name, anonymous=False):
+def init_cfg_path():
   global CFG_PATH
   masteruri = masteruri_from_ros()
   CFG_PATH = ''.join([get_ros_home(), os.sep, 'node_manager', os.sep])
@@ -298,6 +255,35 @@ def main(name, anonymous=False):
   '''
   if not os.path.isdir(CFG_PATH):
     os.makedirs(CFG_PATH)
+  # start ROS-Master, if not currently running
+  StartHandler._prepareROSMaster(masteruri)
+
+def init_globals():
+  masteruri = masteruri_from_ros()
+  # initialize the global handler 
+  global _ssh_handler
+  global _screen_handler
+  global _start_handler
+  global _name_resolution
+  global _history
+  _ssh_handler = SSHhandler()
+  _screen_handler = ScreenHandler()
+  _start_handler = StartHandler()
+  _name_resolution = NameResolution()
+  _history = History()
+
+  # test where the roscore is running (local or remote)
+  __is_local('localhost') ## fill cache
+  __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
+  return is_local(_name_resolution.getHostname(masteruri))
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%                 MAIN                               %%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+def main(name, anonymous=False):
+  init_cfg_path()
 
   args = rospy.myargv(argv=sys.argv)
   # decide to show main or echo dialog
@@ -306,12 +292,10 @@ def main(name, anonymous=False):
     anonymous = True
 
   try:
-    from PySide.QtGui import QApplication
+    from python_qt_binding.QtGui import QApplication
   except:
     print >> sys.stderr, "please install 'python-pyside' package!!"
     sys.exit(-1)
-  # start ROS-Master, if not currently running
-  StartHandler._prepareROSMaster(masteruri)
   rospy.init_node(name, anonymous=anonymous, log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
@@ -327,23 +311,8 @@ def main(name, anonymous=False):
     show_hz_only = (len(args) > 4 and args[4] == '--hz')
     main_form = echo_dialog.EchoDialog(args[2], args[3], show_hz_only)
   else:
-    # initialize the global handler 
-    global _ssh_handler
-    global _screen_handler
-    global _start_handler
-    global _name_resolution
-    global _history
-    _ssh_handler = SSHhandler()
-    _screen_handler = ScreenHandler()
-    _start_handler = StartHandler()
-    _name_resolution = NameResolution()
-    _history = History()
+    local_master = init_globals()
 
-    # test where the roscore is running (local or remote)
-    __is_local('localhost') ## fill cache
-    __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
-    local_master = is_local(_name_resolution.getHostname(masteruri))
-  
     #start the gui
     main_form = main_window.MainWindow(args, not local_master)
 
