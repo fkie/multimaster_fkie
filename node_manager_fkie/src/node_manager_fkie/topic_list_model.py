@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from PySide import QtCore
-from PySide import QtGui
+from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 
 import os
 import time
@@ -47,7 +47,7 @@ from detailed_msg_box import WarningMessageBox
 from parameter_dialog import ParameterDialog, ServiceDialog
 
 
-class TopicItem(QtCore.QObject, QtGui.QStandardItem):
+class TopicItem(QtGui.QStandardItem):
   '''
   The topic item stored in the topic model. This class stores the topic as
   L{master_discovery_fkie.TopicInfo}. The name of the topic represented in HTML.
@@ -65,16 +65,15 @@ class TopicItem(QtCore.QObject, QtGui.QStandardItem):
     @param name: the topic name
     @type name: C{str}
     '''
-    QtCore.QObject.__init__(self)
     QtGui.QStandardItem.__init__(self, self.toHTML(name))
     self.parent_item = parent
-    self._topic = TopicInfo(name)
+    self.__topic = TopicInfo(name)
     self._first_call = True
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
     self._publish_thread = None
 
 #  def __del__(self):
-#    print "delete TOPIC", self._topic.name
+#    print "delete TOPIC", self.__topic.name
 
   @property
   def topic(self):
@@ -82,7 +81,7 @@ class TopicItem(QtCore.QObject, QtGui.QStandardItem):
     Returns the TopicInfo instance of this topic.
     @rtype: L{master_discovery_fkie.TopicInfo}
     '''
-    return self._topic
+    return self.__topic
 
   @topic.setter
   def topic(self, topic_info):
@@ -93,18 +92,18 @@ class TopicItem(QtCore.QObject, QtGui.QStandardItem):
     pubs_changed = False
     subs_changed = False
     type_changed = False
-    if self._topic.publisherNodes != topic_info.publisherNodes:
+    if self.__topic.publisherNodes != topic_info.publisherNodes:
       pubs_changed = True
-      self._topic.publisherNodes = topic_info.publisherNodes
-    if self._topic.subscriberNodes != topic_info.subscriberNodes:
+      self.__topic.publisherNodes = topic_info.publisherNodes
+    if self.__topic.subscriberNodes != topic_info.subscriberNodes:
       subs_changed = True
-      self._topic.subscriberNodes = topic_info.subscriberNodes
-    if self._topic.type != topic_info.type:
-      self._topic.type = topic_info.type
+      self.__topic.subscriberNodes = topic_info.subscriberNodes
+    if self.__topic.type != topic_info.type:
+      self.__topic.type = topic_info.type
       type_changed = True
     # update the tooltip and icon
 #    if pubs_changed or subs_changed:
-#      self._topic = topic_info.copy()
+#      self.__topic = topic_info.copy()
     if pubs_changed or self._first_call:
       self.updatePublisherView()
     if subs_changed or self._first_call:
@@ -281,6 +280,7 @@ class TopicModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(TopicModel.header))
     self.setHorizontalHeaderLabels([label for label, width in TopicModel.header])
+    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
 
   def flags(self, index):
     '''
@@ -309,6 +309,7 @@ class TopicModel(QtGui.QStandardItemModel):
       topicItem = root.child(i)
       if not topicItem.topic.name in topic_names:
         root.removeRow(i)
+        del self.pyqt_workaround[topicItem.topic.name] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
       else:
         topicItem.topic = topics[topicItem.topic.name]
         updated.append(topicItem.topic.name)
@@ -335,6 +336,7 @@ class TopicModel(QtGui.QStandardItemModel):
           root.insertRow(i, new_item_row)
           if not topic is None:
             new_item_row[0].topic = topic
+          self.pyqt_workaround[name] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
           doAddItem = False
           break
       else:
@@ -345,4 +347,5 @@ class TopicModel(QtGui.QStandardItemModel):
       root.appendRow(new_item_row)
       if not topic is None:
         new_item_row[0].topic = topic
+      self.pyqt_workaround[name] = new_item_row[0]
     return new_item_row

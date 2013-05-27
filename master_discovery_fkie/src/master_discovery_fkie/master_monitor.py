@@ -42,7 +42,6 @@ from SocketServer import ThreadingMixIn
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.network
 import rospy
-import rosnode
 
 from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
 from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo
@@ -58,7 +57,7 @@ class MasterConnectionException(Exception):
 def _succeed(args):
     code, msg, val = args
     if code != 1:
-        raise rosnode.ROSNodeException("remote call failed: %s"%msg)
+        raise Exception("remote call failed: %s"%msg)
     return val
 
 class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
@@ -82,7 +81,7 @@ class MasterMonitor(object):
   MAX_PING_SEC = 10.0
   ''' The time to update the node URI, ID or service URI (Default: ``10.0``)'''
 
-  def __init__(self, rpcport=11611):
+  def __init__(self, rpcport=11611, do_retry=True):
     '''
     Initialize method. Creates an XML-RPC server on given port and starts this
     in its own thread.
@@ -90,6 +89,10 @@ class MasterMonitor(object):
     :param rpcport: the port number for the XML-RPC server
     
     :type rpcport:  int
+    
+    :param do_retry: retry to create XML-RPC server
+    
+    :type do_retry: bool
     '''
     self._state_access_lock = threading.RLock()
     self._create_access_lock = threading.RLock()
@@ -113,8 +116,8 @@ class MasterMonitor(object):
     '''the port number of the RPC server'''
     
     # Create an XML-RPC server
-    ready = False
-    while not ready and (not rospy.is_shutdown()):
+    self.ready = False
+    while not self.ready and (not rospy.is_shutdown()):
       try:
         self.rpcServer = RPCThreading(('', rpcport), logRequests=False, allow_none=True)
         rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
@@ -124,13 +127,17 @@ class MasterMonitor(object):
         self._rpcThread = threading.Thread(target = self.rpcServer.serve_forever)
         self._rpcThread.setDaemon(True)
         self._rpcThread.start()
-        ready = True
+        self.ready = True
       except socket.error:
+        if not do_retry:
+          raise Exception(''.join(["Error while start RPC-XML server on port ", str(rpcport), ". Is a Node Manager already running?"]))
         rospy.logwarn(''.join(["Error while start RPC-XML server on port ", str(rpcport), ". Try again..."]))
         time.sleep(1)
       except:
         import traceback
         print traceback.format_exc()
+        if not do_retry:
+          raise
 
   @classmethod
   def _masteruri_from_ros(cls):

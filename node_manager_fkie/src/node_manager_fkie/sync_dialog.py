@@ -30,13 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from PySide import QtGui
-from PySide import QtCore
+from python_qt_binding import QtGui
+from python_qt_binding import QtCore
 
 import os
 import threading
 
 import node_manager_fkie as nm
+from common import is_package
 from detailed_msg_box import WarningMessageBox
 
 
@@ -317,7 +318,7 @@ class SyncDialog(QtGui.QDialog):
       # set package, if it is currently None and one found
       if not package:
         # detect package
-        if 'manifest.xml' in fileList:
+        if is_package(fileList):
           package = os.path.basename(path)
       for f in fileList:
         ret = self._getInterfaces(os.path.sep.join([path, f]), package)

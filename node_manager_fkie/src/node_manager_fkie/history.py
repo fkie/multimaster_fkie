@@ -30,7 +30,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import os
-from PySide import QtCore
+from python_qt_binding import QtCore
+
+import rospy
 
 import node_manager_fkie as nm
 
@@ -105,15 +107,24 @@ class History(QtCore.QObject):
     '''
     if not os.path.isdir(nm.CFG_PATH):
       os.makedirs(nm.CFG_PATH)
+    ignored = dict()
     with open(''.join([nm.CFG_PATH, file]), 'w') as f:
       for key in cache.keys():
         count = 0
         for value in cache[key]:
           if count < history_len:
-            f.write(''.join([key, ':=', value, '\n']))
+            try:
+              f.write(''.join([key, ':=', value, '\n']))
+            except UnicodeEncodeError, e:
+              ignored[key] = (value, str(e))
+            except:
+              import traceback
+              rospy.logwarn("Storing history aborted: %s", str(traceback.format_exc))
             count += 1
           else:
             break
+    if ignored:
+      rospy.logwarn("Error while storing follow keys: %s", str(ignored))
 
   def _add2Cache(self, cache, key, value):
     uvalue = unicode(value)

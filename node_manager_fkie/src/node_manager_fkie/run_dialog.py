@@ -30,12 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from PySide import QtGui
-from PySide import QtCore
+from python_qt_binding import QtGui
+from python_qt_binding import QtCore
 
 import os
 
 import node_manager_fkie as nm
+from common import get_packages
 from detailed_msg_box import WarningMessageBox
 
 
@@ -60,7 +61,7 @@ class RunDialog(QtGui.QDialog):
     self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
     self.packages = {}
     for p in self.root_paths:
-      ret = self._getPackages(p)
+      ret = get_packages(p)
       self.packages = dict(ret.items() + self.packages.items())
 
     package_label = QtGui.QLabel("Package:", self.content)
@@ -91,7 +92,7 @@ class RunDialog(QtGui.QDialog):
     args_label = QtGui.QLabel("Args:", self.content)
     self.args_field = QtGui.QComboBox(self.content)
     self.args_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToMinimumContentsLength)
-#    self.args_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.args_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
     self.args_field.setEditable(True)
     self.contentLayout.addRow(args_label, self.args_field)
     args_history = nm.history().cachedParamValues('run_dialog/Args')
@@ -170,17 +171,6 @@ class RunDialog(QtGui.QDialog):
         WarningMessageBox(QtGui.QMessageBox.Warning, "Run node", 
                           ''.join(['Run node ', str(self.binary), '[', str(self.package), '] failed!']),
                           str(e)).exec_()
-
-  def _getPackages(self, path):
-    result = {}
-    if os.path.isdir(path):
-      fileList = os.listdir(path)
-      if 'manifest.xml' in fileList:
-        return {os.path.basename(path) : path}
-      for f in fileList:
-        ret = self._getPackages(os.path.sep.join([path, f]))
-        result = dict(ret.items() + result.items())
-    return result
 
   def _getBinaries(self, path):
     result = {}

@@ -34,7 +34,7 @@ import os
 import time
 import threading
 
-from PySide import QtCore
+from python_qt_binding import QtCore
 import rospy
 import node_manager_fkie as nm
 try:

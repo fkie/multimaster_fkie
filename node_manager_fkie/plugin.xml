@@ -1,0 +1,12 @@
+<library path="src">
+  <class name="Node Manager FKIE" type="node_manager_fkie.rqt_node_manager.NodeManager" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      A Python GUI plugin for managing the ROS nodes and multimaster.
+    </description>
+    <qtgui>
+      <label>Node Manager FKIE</label>
+      <icon type="theme">applications-other</icon>
+      <statustip>A Python GUI plugin for managing the ROS node and multimaster.</statustip>
+    </qtgui>
+  </class>
+</library> 

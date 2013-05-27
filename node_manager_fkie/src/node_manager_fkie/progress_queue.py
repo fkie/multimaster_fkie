@@ -35,8 +35,8 @@ import socket
 import threading
 import xmlrpclib
 import random
-from PySide import QtCore
-from PySide import QtGui
+from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 
 import rospy
 
@@ -60,6 +60,7 @@ class InteractionNeededError(Exception):
 class ProgressQueue(QtCore.QObject):
   
   def __init__(self, progress_frame, progress_bar, progress_cancel_button):
+    QtCore.QObject.__init__(self)
     self.__progress_queue = []
     self._progress_frame = progress_frame
     self._progress_bar = progress_bar
@@ -99,7 +100,7 @@ class ProgressQueue(QtCore.QObject):
 
   def _progress_thread_finished(self, id):
     try:
-      #'print "PG finished", id
+      #print "PG finished", id
       val = self._progress_bar.value()
       self.__progress_queue[val+1].start()
       self._progress_bar.setValue(val+1)
@@ -190,9 +191,9 @@ class ProgressThread(QtCore.QObject, threading.Thread):
       if not self._target is None:
         #'print "PG call "
         #'print "  .. ", self._target
-        #'print "  -- args:", self._args
+        #print "  -- args:", self._args
         self._target(*self._args)
-        #'print "PG call finished"
+        #print "PG call finished"
         self.finished_signal.emit(self._id)
       else:
         self.error_signal.emit(self._id, 'No target specified')
