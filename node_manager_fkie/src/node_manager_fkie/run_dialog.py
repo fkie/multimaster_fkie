@@ -45,7 +45,7 @@ class RunDialog(QtGui.QDialog):
   A dialog to run a ROS node without configuration
   '''
 
-  def __init__(self, host, parent=None):
+  def __init__(self, host, masteruri=None, parent=None):
     QtGui.QDialog.__init__(self, parent)
     self.host = host
     self.setWindowTitle('Run')
@@ -119,7 +119,7 @@ class RunDialog(QtGui.QDialog):
     master_label.setBuddy(self.host_field)
     self.contentLayout.addRow(master_label, self.master_field)
     self.master_history = master_history = nm.history().cachedParamValues('/Optional Parameter/ROS Master URI')
-    self.masteruri = "ROS_MASTER_URI"
+    self.masteruri = "ROS_MASTER_URI" if masteruri is None else masteruri
     if self.masteruri in master_history:
       master_history.remove(self.masteruri)
     master_history.insert(0, self.masteruri)
@@ -194,6 +194,14 @@ class RunDialog(QtGui.QDialog):
       self.name_field.setEnabled(True)
       path = self.packages[package]
       binaries = self._getBinaries(path).keys()
+      try:
+        # find binaries in catkin workspace
+        from catkin.find_in_workspaces import find_in_workspaces as catkin_find
+        search_paths = catkin_find(search_dirs=['libexec', 'share'], project=package, first_matching_workspace_only=True)
+        for p in search_paths:
+          binaries += self._getBinaries(p).keys()
+      except:
+        pass
       binaries.sort()
       self.binary_field.addItems(binaries)
       self.package = package

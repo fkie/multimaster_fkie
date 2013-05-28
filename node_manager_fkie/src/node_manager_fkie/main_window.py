@@ -190,6 +190,8 @@ class MainWindow(QtGui.QMainWindow):
     self.capabilitiesTable.description_requested_signal.connect(self.on_description_update_cap)
     self.ui.capabilities_tab.layout().addWidget(self.capabilitiesTable)
     
+    self.ui.descriptionTextEdit.setOpenLinks(False)
+    self.ui.descriptionTextEdit.anchorClicked.connect(self.on_description_anchorClicked)
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.descriptionDock)
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.helpDock)
     self.ui.launchDock.raise_()
@@ -644,7 +646,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     from run_dialog import RunDialog
     if not self.currentMaster is None:
-      dia = RunDialog(nm.nameres().getHostname(self.currentMaster.masteruri))
+      dia = RunDialog(nm.nameres().getHostname(self.currentMaster.masteruri), self.currentMaster.masteruri)
       if dia.exec_():
         dia.runSelected()
   
@@ -1183,4 +1185,17 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.descriptionDock.setWindowTitle(title)
     self.ui.descriptionTextEdit.setText(text)
 
-  
+  def on_description_anchorClicked(self, url):
+    if url.toString().startswith('topic://'):
+      if not self.currentMaster is None:
+        self.currentMaster.show_topic_output(url.encodedPath(), False)
+    elif url.toString().startswith('topichz://'):
+      if not self.currentMaster is None:
+        self.currentMaster.show_topic_output(url.encodedPath(), True)
+    elif url.toString().startswith('service://'):
+      if not self.currentMaster is None:
+        self.currentMaster.service_call(url.encodedPath())
+    elif url.toString().startswith('launch://'):
+      self._editor_dialog_open([str(url.encodedPath())], '')
+    else:
+      QtGui.QDesktopServices.openUrl(url)

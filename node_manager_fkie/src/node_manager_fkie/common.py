@@ -1,5 +1,9 @@
 import os
 
+MANIFEST_FILE = 'manifest.xml'
+PACKAGE_FILE = 'package.xml'
+
+
 def get_ros_home():
   '''
   Returns the ROS HOME depending on ROS distribution API.
@@ -43,7 +47,7 @@ def get_packages(path):
   result = {}
   if os.path.isdir(path):
     fileList = os.listdir(path)
-    if 'manifest.xml' in fileList or 'package.xml' in fileList:
+    if MANIFEST_FILE in fileList or PACKAGE_FILE in fileList:
       return {os.path.basename(path) : path}
     for f in fileList:
       ret = get_packages(os.path.sep.join([path, f]))
@@ -59,10 +63,10 @@ def package_name(dir):
     package = os.path.basename(dir)
     fileList = os.listdir(dir)
     for file in fileList:
-      if file == 'manifest.xml' or file == 'package.xml':
+      if file == MANIFEST_FILE or file == PACKAGE_FILE:
         return (package, dir)
     return package_name(os.path.dirname(dir))
   return (None, None)
 
 def is_package(file_list):
-  return ('manifest.xml' in file_list or 'package.xml' in file_list)
+  return (MANIFEST_FILE in file_list or PACKAGE_FILE in file_list)

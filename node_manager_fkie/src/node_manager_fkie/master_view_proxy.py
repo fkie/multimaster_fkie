@@ -864,7 +864,13 @@ class MasterViewProxy(QtGui.QWidget):
   def on_node_expanded(self, index):
     pass
 
-  def _create_html_list(self, title, items):
+  def _create_html_list(self, title, items, type=None):
+    '''
+    
+    :param type: LAUNCH, TOPIC, NODE, SERVICE
+    
+    :type type: str
+    '''
     result = ''
     if items:
       result = ''.join([result, '<b><u>', title,'</u></b>'])
@@ -872,7 +878,15 @@ class MasterViewProxy(QtGui.QWidget):
         result = ''.join([result, ' [', str(len(items)),']'])
       result = ''.join([result, '<ul>'])
       for i in items:
-        result = ''.join([result, '<li>', i, '</li>'])
+        item = i
+        if type == 'TOPIC':
+#          item = ''.join([i, ' <a href="topic://', str(i),'">[echo] <a href="topichz://', str(i),'">[hz] ', '</a>'])
+          item = ''.join([' <a href="topic://', str(i),'">', i, '</a>'])
+        elif type == 'SERVICE':
+          item = ''.join(['<a href="service://', str(i),'">', i, '</a>'])
+        elif type == 'LAUNCH':
+          item = ''.join(['<a href="launch://', str(i),'">', i, '</a>'])
+        result = ''.join([result, '<li>', item, '</li>'])
       result = ''.join([result, '</ul>'])
     return result
 
@@ -907,9 +921,9 @@ class MasterViewProxy(QtGui.QWidget):
           text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
           text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
           text = ''.join([text, '</dl>'])
-          text = ''.join([text, self._create_html_list('Published Topics:', node.published)])
-          text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed)])
-          text = ''.join([text, self._create_html_list('Services:', node.services)])
+          text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC')])
+          text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC')])
+          text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE')])
           launches = []
           default_cfgs = []
           for c in node.cfgs:
@@ -917,7 +931,7 @@ class MasterViewProxy(QtGui.QWidget):
               default_cfgs.append(c[0])
             else:
               launches.append(c)
-          text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches)])
+          text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
           text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
           text = ''.join(['<div>', text, '</div>'])
           name = node.name
@@ -942,8 +956,8 @@ class MasterViewProxy(QtGui.QWidget):
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
       text = ''.join(['<h3>', topic.name,'</h3>'])
-      text = ''.join([text, self._create_html_list('Publisher:', topic.publisherNodes)])
-      text = ''.join([text, self._create_html_list('Subscriber:', topic.subscriberNodes)])
+      text = ''.join([text, self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')])
+      text = ''.join([text, self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')])
       text = ''.join([text, '<b><u>Type:</u></b> ', str(self._href_from_msgtype(topic.type))])
       text = ''.join([text, '<dl>'])
       try:
@@ -1881,35 +1895,37 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     for topic in selectedTopics:
-      try:
-#        if self._get_nm_masteruri() == self.masteruri:
-#          if self.__echo_topics_dialogs.has_key(topic.name):
-#            self.__echo_topics_dialogs[topic.name].activateWindow()
-#          else:
-#            topicDia = EchoDialog(topic.name, topic.type, show_hz_only, self)
-#            self.__echo_topics_dialogs[topic.name] = topicDia
-#            topicDia.finished_signal.connect(self._topic_dialog_closed)
-#            topicDia.show()
-#        else:
-          # connect to topic on remote host
-          import os, shlex, subprocess
-          env = dict(os.environ)
-          env["ROS_MASTER_URI"] = str(self.masteruri)
-          cmd = ' '.join(['rosrun', 'node_manager_fkie', 'node_manager', '-t', topic.name, topic.type, '--hz' if show_hz_only else '', ''.join(['__name:=echo_','hz_' if show_hz_only else '',str(nm.nameres().getHostname(self.masteruri)), topic.name])])
-          rospy.loginfo("Echo topic: %s", cmd)
-          ps = subprocess.Popen(shlex.split(cmd), env=env, close_fds=True)
-          self.__echo_topics_dialogs[topic.name] = ps
-          # wait for process to avoid 'defunct' processes
-          thread = threading.Thread(target=ps.wait)
-          thread.setDaemon(True)
-          thread.start()
-      except Exception, e:
-        rospy.logwarn("Echo topic '%s' failed: %s", str(topic.name), str(e))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Echo of topic error", 
-                          ''.join(['Echo of topic ', topic.name, ' failed!']),
-                          str(e)).exec_()
+      self._add_topic_output2queue(topic, show_hz_only)
 
-
+  def show_topic_output(self, topic_name, show_hz_only):
+    '''
+    Shows the topic output in a new window.
+    '''
+    if not self.master_info is None:
+      topic = self.master_info.getTopic(str(topic_name))
+      if not topic is None:
+        self._add_topic_output2queue(topic, show_hz_only)
+  
+  def _add_topic_output2queue(self, topic, show_hz_only):
+    try:
+        # connect to topic on remote host
+        import os, shlex, subprocess
+        env = dict(os.environ)
+        env["ROS_MASTER_URI"] = str(self.masteruri)
+        cmd = ' '.join(['rosrun', 'node_manager_fkie', 'node_manager', '-t', topic.name, topic.type, '--hz' if show_hz_only else '', ''.join(['__name:=echo_','hz_' if show_hz_only else '',str(nm.nameres().getHostname(self.masteruri)), topic.name])])
+        rospy.loginfo("Echo topic: %s", cmd)
+        ps = subprocess.Popen(shlex.split(cmd), env=env, close_fds=True)
+        self.__echo_topics_dialogs[topic.name] = ps
+        # wait for process to avoid 'defunct' processes
+        thread = threading.Thread(target=ps.wait)
+        thread.setDaemon(True)
+        thread.start()
+    except Exception, e:
+      rospy.logwarn("Echo topic '%s' failed: %s", str(topic.name), str(e))
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Echo of topic error", 
+                        ''.join(['Echo of topic ', topic.name, ' failed!']),
+                        str(e)).exec_()
+  
   def _topic_dialog_closed(self, topic_name):
     if self.__echo_topics_dialogs.has_key(topic_name):
       del self.__echo_topics_dialogs[topic_name]
@@ -1920,6 +1936,12 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
     for service in selectedServices:
+      param = ServiceDialog(service, self)
+      param.show()
+
+  def service_call(self, service_name):
+    service = self.master_info.getService(str(service_name))
+    if not service is None:
       param = ServiceDialog(service, self)
       param.show()
 
