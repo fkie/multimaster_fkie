@@ -3,7 +3,7 @@
   <description>
      The package with multimaster messages.
   </description>
-  <version>0.3.1</version>
+  <version>0.3.2</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
