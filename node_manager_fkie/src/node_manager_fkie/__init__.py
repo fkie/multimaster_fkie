@@ -257,9 +257,9 @@ def init_cfg_path():
     os.makedirs(CFG_PATH)
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
+  return masteruri
 
-def init_globals():
-  masteruri = masteruri_from_ros()
+def init_globals(masteruri):
   # initialize the global handler 
   global _ssh_handler
   global _screen_handler
@@ -283,7 +283,7 @@ def init_globals():
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 def main(name, anonymous=False):
-  init_cfg_path()
+  masteruri = init_cfg_path()
 
   args = rospy.myargv(argv=sys.argv)
   # decide to show main or echo dialog
@@ -309,9 +309,9 @@ def main(name, anonymous=False):
   global main_form
   if len(args) >= 4 and args[1] == '-t':
     show_hz_only = (len(args) > 4 and args[4] == '--hz')
-    main_form = echo_dialog.EchoDialog(args[2], args[3], show_hz_only)
+    main_form = echo_dialog.EchoDialog(args[2], args[3], show_hz_only, masteruri)
   else:
-    local_master = init_globals()
+    local_master = init_globals(masteruri)
 
     #start the gui
     main_form = main_window.MainWindow(args, not local_master)

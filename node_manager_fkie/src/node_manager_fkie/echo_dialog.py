@@ -60,7 +60,7 @@ class EchoDialog(QtGui.QDialog):
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
   
-  def __init__(self, topic, type, show_only_rate=False, parent=None):
+  def __init__(self, topic, type, show_only_rate=False, masteruri=None, parent=None):
     '''
     Creates an input dialog.
     @param topic: the name of the topic
@@ -70,15 +70,18 @@ class EchoDialog(QtGui.QDialog):
     @raise Exception: if no topic class was found for the given type
     '''
     QtGui.QDialog.__init__(self, parent=parent)
-    self.setObjectName(' - '.join(['EchoDialog', topic]))
+    masteruri_str = '' if masteruri is None else ''.join([' [', str(masteruri), ']'])
+    self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
-    self.setWindowTitle(''.join(['Echo of ' if not show_only_rate else 'Hz of ', topic]))
+    self.setWindowTitle(''.join(['Echo of ' if not show_only_rate else 'Hz of ', topic, masteruri_str]))
     self.resize(728,512)
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
-    
+    self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run_echo.png")
+    self.setWindowIcon(self.mIcon)
+        
     self.topic = topic
     self.show_only_rate = show_only_rate
     self.lock = threading.Lock()

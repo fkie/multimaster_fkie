@@ -26,8 +26,8 @@ class NodeManager(Plugin):
         if not args.quiet:
             print 'arguments: ', args
             print 'unknowns: ', unknowns
-        node_manager_fkie.init_cfg_path()
-        node_manager_fkie.init_globals()
+        masteruri = node_manager_fkie.init_cfg_path()
+        node_manager_fkie.init_globals(masteruri)
         # Create QWidget
         try:
           self._widget = MainWindow()
