@@ -21,6 +21,7 @@ install(
 install(
    PROGRAMS 
         ./README.rst
+        ./plugin.xml
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
