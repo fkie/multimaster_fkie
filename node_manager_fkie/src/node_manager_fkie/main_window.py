@@ -60,8 +60,7 @@ from .parameter_dialog import ParameterDialog
 from .progress_queue import ProgressQueue, ProgressThread
 from .screen_handler import ScreenHandler
 from .sync_dialog import SyncDialog
-from common import masteruri_from_ros
-
+from common import masteruri_from_ros, package_name
 
 import node_manager_fkie as nm
 
@@ -372,7 +371,7 @@ class MainWindow(QtGui.QMainWindow):
           try:
             if os.path.isfile(self.default_load_launch):
               args = list()
-              args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(self.default_load_launch))[0])]))
+              args.append(''.join(['_package:=', str(package_name(os.path.dirname(self.default_load_launch))[0])]))
               args.append(''.join(['_launch_file:="', os.path.basename(self.default_load_launch), '"']))
               host = nm.nameres().address(masteruri)
               node_name = ''.join([str(nm.nameres().mastername(masteruri)), roslib.names.SEP, 
@@ -1058,7 +1057,7 @@ class MainWindow(QtGui.QMainWindow):
       key_mod = QtGui.QApplication.keyboardModifiers()
       if (key_mod & QtCore.Qt.ShiftModifier) or force_as_default:
         args = list()
-        args.append(''.join(['_package:=', str(LaunchConfig.packageName(os.path.dirname(path))[0])]))
+        args.append(''.join(['_package:=', str(package_name(os.path.dirname(path))[0])]))
         args.append(''.join(['_launch_file:="', os.path.basename(path), '"']))
         try:
           # test for requerid args

@@ -60,7 +60,7 @@ from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 from detailed_msg_box import WarningMessageBox, DetailedError
 from progress_queue import ProgressQueue, ProgressThread
-from common import masteruri_from_ros, get_packages
+from common import masteruri_from_ros, get_packages, package_name
 
 
 
@@ -1706,7 +1706,7 @@ class MasterViewProxy(QtGui.QWidget):
         if nm.nameres().getHostname(path[1]) == nm.nameres().getHostname(self.masteruri):
           choices[''.join(['[', path[0], ']'])] = path
       else:
-        choices[''.join([os.path.basename(path), '   [', str(LaunchConfig.packageName(os.path.dirname(path))[0]), ']'])] = path
+        choices[''.join([os.path.basename(path), '   [', str(package_name(os.path.dirname(path))[0]), ']'])] = path
     cfgs = []
     
 #    if len(choices) > 1:

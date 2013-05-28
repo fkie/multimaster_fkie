@@ -209,10 +209,12 @@ class SyncDialog(QtGui.QDialog):
       self.interface_field.addItems(self._interfaces_files.keys())
 
   def _on_interface_selected(self, interface):
-    if self._interfaces_files.has_key(interface):
+    if self._interfaces_files and self._interfaces_files.has_key(interface):
       self._sync_args = []
       self._sync_args.append(''.join(['_interface_url:=', interface]))
       self.toolButton_EditInterface.setEnabled(True)
+    else:
+      self.toolButton_EditInterface.setEnabled(False)
 
   def accept(self):
     if self.textedit.isVisible():

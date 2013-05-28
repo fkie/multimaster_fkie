@@ -41,7 +41,7 @@ import threading
 import xmlrpclib
 
 import node_manager_fkie as nm
-from common import get_ros_home, masteruri_from_ros
+from common import get_ros_home, masteruri_from_ros, package_name
 try:
   from launch_config import LaunchConfig
 except:
@@ -174,8 +174,6 @@ class StartHandler(object):
           cwd = get_ros_home()
         elif n.cwd == 'node':
           cwd = os.path.dirname(cmd_type)
-#      else:
-#        cwd = LaunchConfig.packageName(os.path.dirname(cmd_type))
       cls._prepareROSMaster(masteruri)
       node_cmd = [nm.RESPAWN_SCRIPT if n.respawn else '', prefix, cmd_type]
       cmd_args = [nm.screen().getSceenCmd(node)]
@@ -321,7 +319,7 @@ class StartHandler(object):
       else:
 #        print "ABS PATH:", value, os.path.dirname(value)
         dir = os.path.dirname(value) if os.path.isfile(value) else value
-        package, package_path = LaunchConfig.packageName(dir)
+        package, package_path = package_name(dir)
         if package:
           output, error, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package])
           if ok:
