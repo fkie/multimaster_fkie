@@ -750,6 +750,10 @@ class Discoverer(Zeroconf):
   Furthermore the informations of the local ROS master will be stored and a 
   method to check the state of the local ROS master and update it in avahi if 
   needed. A list with all remote ROS masters is managed by MasterList.
+
+  :param monitor_port: The port of the RPC Server, used to get more information about the ROS master.
+  
+  :type monitor_port:  int
   '''
   ROSMASTER_HZ = 2 # the test rate of ROS master state in hz
 

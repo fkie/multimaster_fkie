@@ -43,8 +43,11 @@ import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.network
 import rospy
 
-from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
-from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo
+try: # to avoid the problems with autodoc on ros.org/wiki site
+  from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+  from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo
+except:
+  pass
 from master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
 import interface_finder
 
@@ -68,6 +71,14 @@ class MasterMonitor(object):
   This class provides methods to get the state from the ROS master using his 
   RPC API and test for changes. Furthermore an XML-RPC server will be created
   to offer the complete current state of the ROS master by one method call.
+
+  :param rpcport: the port number for the XML-RPC server
+  
+  :type rpcport:  int
+  
+  :param do_retry: retry to create XML-RPC server
+  
+  :type do_retry: bool
 
   :see: :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getCurrentState()`, respectively
         :mod:`master_discovery_fkie.master_monitor.MasterMonitor.updateState()`

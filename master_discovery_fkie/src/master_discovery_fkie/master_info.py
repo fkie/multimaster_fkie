@@ -38,6 +38,16 @@ import rospy
 class NodeInfo(object):
   '''
   The NodeInfo class stores informations about a ROS node.
+
+  :param name: the name of the node
+  
+  :type name: str
+  
+  :param masteruri: the URI of the ROS master, where the node is registered. 
+                    This masteruri will be used to determine, whether the ROS master and the 
+                    node are running on the same machine.
+  
+  :type masteruri: str
   '''
   def __init__(self, name, masteruri):
     '''
@@ -256,6 +266,10 @@ class NodeInfo(object):
 class TopicInfo(object):
   '''
   The TopicInfo class stores informations about a ROS topic.
+
+  :param name: the name of the topic
+  
+  :type name: str 
   '''
   def __init__(self, name):
     '''
@@ -350,10 +364,21 @@ class TopicInfo(object):
 class ServiceInfo(object):
   '''
   The ServiceInfo class stores informations about a ROS service.
+
+  :param name: the name of the service
+  
+  :type name: str
+  
+  :param masteruri: the URI of the ROS master, where the service is registered. 
+                    This masteruri will be used to determine, whether the ROS master and the 
+                    service are running on the same machine.
+  
+  :type masteruri: str
   '''
   def __init__(self, name, masteruri):
     '''
     Creates a new instance of the ServiceInfo. 
+    
     :param name: the name of the service
     
     :type name: str
@@ -538,6 +563,15 @@ class MasterInfo(object):
   '''
   The MasterInfo class stores informations about a ROS master.
   Not thread safe!
+
+  :param masteruri: The URI of the corresponding master
+  
+  :type masteruri: str
+  
+  :param mastername: The name of the ROS master. If no one is given, it will be 
+                     extracted from the masteruri.
+  
+  :type mastername: str or ``None`` (Default: ``None``)
   '''
   def __init__(self, masteruri, mastername = None):
     '''

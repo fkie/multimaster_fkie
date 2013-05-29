@@ -42,6 +42,22 @@ class McastSocket(socket.socket):
   '''
   The McastSocket class enables the send and receive UDP messages to a multicast 
   group.
+  
+  :param port: the port to bind the socket
+  
+  :type port: int
+  
+  :param mgroup: the multicast group to join
+  
+  :type mgroup: str
+  
+  :param reuse: allows the reusing of the port
+  
+  :type reuse: boolean (Default: True)
+  
+  :param ttl: time to leave
+  
+  :type ttl: int (Default: 20)
   '''
 
   def __init__(self, port, mgroup, reuse=True, ttl=20):

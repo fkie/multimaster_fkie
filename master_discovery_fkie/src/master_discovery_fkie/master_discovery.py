@@ -42,11 +42,13 @@ import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 import roslib.network
 
-from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster#, SyncMasterInfo, SyncTopicInfo
-from multimaster_msgs_fkie.srv import DiscoverMasters, DiscoverMastersResponse#, GetSyncInfo
+try: # to avoid the problems with autodoc on ros.org/wiki site
+  from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster#, SyncMasterInfo, SyncTopicInfo
+  from multimaster_msgs_fkie.srv import DiscoverMasters, DiscoverMastersResponse#, GetSyncInfo
+except:
+  pass
 from master_monitor import MasterMonitor, MasterConnectionException
 from udp import McastSocket
-
 
 class DiscoveredMaster(object):
   '''
@@ -54,6 +56,26 @@ class DiscoveredMaster(object):
   received heartbeat messages of the remote node. On first contact a theaded 
   connection to remote discoverer will be established to get additional 
   information about the ROS master.
+
+  :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
+  
+  :type monitoruri:  str
+  
+  :param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
+  
+  :type heartbeat_rate:  float (Default: `1.``)
+  
+  :param timestamp: The timestamp of the state of the remoter ROS master
+  
+  :type timestamp:  float (Default: ``0``)
+  
+  :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
+  
+  :type timestamp_local:  float (Default: ``0``)
+  
+  :param callback_master_state: the callback method to publish the changes of the ROS masters
+  
+  :type callback_master_state: `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_}  (Default: ``None``)
   '''
   def __init__(self, monitoruri, heartbeat_rate=1., timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
     '''
@@ -221,6 +243,18 @@ class DiscoveredMaster(object):
 class Discoverer(threading.Thread):
   '''
   The class to publish the current state of the ROS master.
+
+  :param mcast_port: The port used to publish and receive the multicast messages.
+  
+  :type mcast_port:  int
+  
+  :param mcast_group: The IPv4 or IPv6 multicast group used for discovering over nodes.
+  
+  :type mcast_group:  str
+  
+  :param monitor_port: The port of the RPC Server, used to get more information about the ROS master.
+  
+  :type monitor_port:  int
   '''
 
   VERSION = 2
