@@ -9,6 +9,7 @@ install(
     PROGRAMS 
         nodes/node_manager
         scripts/remote_nm.py
+        scripts/respawn
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
