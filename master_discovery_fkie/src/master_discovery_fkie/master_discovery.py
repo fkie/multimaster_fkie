@@ -270,10 +270,8 @@ class Discoverer(threading.Thread):
         int: secs of the ROS Master state
         int: nsecs of the ROS Master state
         unsigned short: the port number of the RPC Server of the remote ROS-Core monitor
-        int: secs of the ROS Master state (only local changes)
-        int: nsecs of the ROS Master state (only local changes)
 
-      :Version 2: 'cBBiiH'
+      :Version 2: 'cBBiiHii'
 
       ::
 
