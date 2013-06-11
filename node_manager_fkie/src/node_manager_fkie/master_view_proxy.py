@@ -116,6 +116,7 @@ class MasterViewProxy(QtGui.QWidget):
     
     self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog
     '''@ivar: stores the open EchoDialogs '''
+    self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
 
     self.default_cfg_handler = DefaultConfigHandler()
@@ -144,6 +145,7 @@ class MasterViewProxy(QtGui.QWidget):
     sm = self.masterTab.nodeTreeView.selectionModel()
     sm.selectionChanged.connect(self.on_node_selection_changed)
     self.masterTab.nodeTreeView.activated.connect(self.on_node_activated)
+    self.masterTab.nodeTreeView.clicked.connect(self.on_node_clicked)
 #    self.masterTab.nodeTreeView.setAcceptDrops(True)
 #    self.masterTab.nodeTreeWidget.setSortingEnabled(True)
 
@@ -160,6 +162,7 @@ class MasterViewProxy(QtGui.QWidget):
     sm = self.masterTab.topicsView.selectionModel()
     sm.selectionChanged.connect(self.on_topic_selection_changed)
     self.masterTab.topicsView.activated.connect(self.on_topic_activated)
+    self.masterTab.topicsView.clicked.connect(self.on_topic_clicked)
     self.masterTab.topicsView.setSortingEnabled(True)
 #    self.topic_proxyModel.filterAcceptsRow = _filterTopicsAcceptsRow
 
@@ -178,6 +181,7 @@ class MasterViewProxy(QtGui.QWidget):
     sm = self.masterTab.servicesView.selectionModel()
     sm.selectionChanged.connect(self.on_service_selection_changed)
     self.masterTab.servicesView.activated.connect(self.on_service_activated)
+    self.masterTab.servicesView.clicked.connect(self.on_service_clicked)
     self.masterTab.servicesView.setSortingEnabled(True)
 #    self.service_proxyModel.filterAcceptsRow = _filterServiceAcceptsRow
     
@@ -836,6 +840,11 @@ class MasterViewProxy(QtGui.QWidget):
     else:
       self.on_log_clicked()
 
+  def on_node_clicked(self, index):
+    self.__last_info_type = 'Node'
+    self.on_node_selection_changed(None, None, True)
+
+
   def on_topic_activated(self, index):
     '''
     @param index: The index of the activated topic
@@ -843,12 +852,20 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     self.on_topic_echo_clicked()
 
+  def on_topic_clicked(self, index):
+    self.__last_info_type = 'Topic'
+    self.on_topic_selection_changed(None, None, True)
+
   def on_service_activated(self, index):
     '''
     @param index: The index of the activated service
     @type index: L{PySide.QtCore.QModelIndex}
     '''
     self.on_service_call_clicked()
+
+  def on_service_clicked(self, index):
+    self.__last_info_type = 'Service'
+    self.on_service_selection_changed(None, None, True)
 
   def on_host_inserted(self, item):
     if item.id == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
@@ -890,7 +907,7 @@ class MasterViewProxy(QtGui.QWidget):
       result = ''.join([result, '</ul>'])
     return result
 
-  def on_node_selection_changed(self, selected, deselected):
+  def on_node_selection_changed(self, selected, deselected, force_emit=False):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of host, group or node. 
@@ -936,12 +953,12 @@ class MasterViewProxy(QtGui.QWidget):
           text = ''.join(['<div>', text, '</div>'])
           name = node.name
 
-    if self.__last_info_text != text:
+    if self.__last_info_type == 'Node' and (self.__last_info_text != text or force_emit):
       self.__last_info_text = text
       self.description_signal.emit(name, text)
     self.updateButtons()
 
-  def on_topic_selection_changed(self, selected, deselected):
+  def on_topic_selection_changed(self, selected, deselected, force_emit=False):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected topic
@@ -983,9 +1000,9 @@ class MasterViewProxy(QtGui.QWidget):
         pass
       text = ''.join([text, '</dl>'])
       info_text = ''.join(['<div>', text, '</div>'])
-      if self.__last_info_text != info_text:
+      if self.__last_info_type == 'Topic' and (self.__last_info_text != info_text or force_emit):
         self.__last_info_text = info_text
-      self.description_signal.emit(topic.name, info_text)
+        self.description_signal.emit(topic.name, info_text)
   
   def _href_from_msgtype(self, type):
     result = type
@@ -993,7 +1010,7 @@ class MasterViewProxy(QtGui.QWidget):
       result = ''.join(['<a href="http://ros.org/doc/api/', type.replace('/', '/html/msg/'), '.html">', type, '</a>'])
     return result
 
-  def on_service_selection_changed(self, selected, deselected):
+  def on_service_selection_changed(self, selected, deselected, force_emit=False):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected service
@@ -1017,7 +1034,7 @@ class MasterViewProxy(QtGui.QWidget):
       except:
         pass
       info_text = ''.join(['<div>', text, '</div>'])
-      if self.__last_info_text != info_text:
+      if self.__last_info_type == 'Service' and (self.__last_info_text != info_text or force_emit):
         self.__last_info_text = info_text
         self.description_signal.emit(service.name, info_text)
 

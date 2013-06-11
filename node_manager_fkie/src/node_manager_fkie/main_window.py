@@ -1179,12 +1179,13 @@ class MainWindow(QtGui.QMainWindow):
       master.stop_nodes_by_name(nodes)
     
   def on_description_update(self, title, text):
-    self.ui.descriptionDock.setWindowTitle(title)
-    self.ui.descriptionTextEdit.setText(text)
-    if text:
-      self.ui.descriptionDock.raise_()
-    else:
-      self.ui.launchDock.raise_()
+    if self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy):
+      self.ui.descriptionDock.setWindowTitle(title)
+      self.ui.descriptionTextEdit.setText(text)
+      if text:
+        self.ui.descriptionDock.raise_()
+      else:
+        self.ui.launchDock.raise_()
 
   def on_description_update_cap(self, title, text):
     self.ui.descriptionDock.setWindowTitle(title)
