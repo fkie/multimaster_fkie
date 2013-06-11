@@ -974,9 +974,15 @@ class MainWindow(QtGui.QMainWindow):
     Tries to load the launch file, if one was activated.
     '''
     item, path, id = activated.model().items[activated.row()]
-    file = activated.model().getFilePath(item)
-    if not file is None:
-      self.loadLaunchFile(path)
+    try:
+      file = activated.model().getFilePath(item)
+      if not file is None:
+        self.loadLaunchFile(path)
+    except Exception, e:
+      rospy.logwarn("Error while load launch file %s: %s", str(item), str(e))
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
+                        ''.join(['Error while load launch file:\n', item]),
+                        str(e)).exec_()
 
   def on_xmlFileView_selection_changed(self, selected, deselected):
     '''

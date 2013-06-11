@@ -162,7 +162,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @param item: the list item
     @type item: C{str}
     @return: path of the launch file or None
-    @rtype: C{str} or C{None}
+    @rtype: C{str
+    @raise Exception if no path to given item was found
     '''
     for pathItem, path, id in self.items:
       if item == pathItem:
@@ -173,8 +174,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
         else:
           root_path, items = self._moveDown(path)
         self._setNewList((root_path, items))
-    return None
-
+    raise Exception(''.join(["No path to file '", str(item), "' found!"]))
 
   def setPath(self, path):
     '''
