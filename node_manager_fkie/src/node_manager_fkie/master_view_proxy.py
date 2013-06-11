@@ -1417,12 +1417,12 @@ class MasterViewProxy(QtGui.QWidget):
         for p in node.published:
           rospy.loginfo("unregister publisher '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
           master_multi.unregisterPublisher(node.name, p, node.uri)
-        for s in node.subscribed:
-          rospy.loginfo("unregister subscriber '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
-          master_multi.unregisterSubscriber(node.name, s, node.uri)
+        for t in node.subscribed:
+          rospy.loginfo("unregister subscriber '%s' [%s] from ROS master: %s", t, node.name, node.masteruri)
+          master_multi.unregisterSubscriber(node.name, t, node.uri)
         if not self.master_state is None:
           for s in node.services:
-            rospy.loginfo("unregister service '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
+            rospy.loginfo("unregister service '%s' [%s] from ROS master: %s", s, node.name, node.masteruri)
             service = self.master_info.getService(s)
             if not (service is None):
               master_multi.unregisterService(node.name, s, service.uri)
