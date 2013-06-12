@@ -798,7 +798,7 @@ class MainWindow(QtGui.QMainWindow):
         if self.__icons[name] != self.__current_icon:
           icon = self.__icons[name]
           self.__current_icon = icon
-          self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
+          self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.imageLabel.size()))
           self.ui.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', nm.ROBOTS_DIR, name, '.png', '" alt="', name,'"></body></html>']))
       elif self.__icons['default_pc'] != self.__current_icon:
         icon = self.__icons['default_pc']
