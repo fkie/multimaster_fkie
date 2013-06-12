@@ -199,6 +199,8 @@ class SSHhandler(object):
     '''
     from python_qt_binding import QtCore
     from python_qt_binding import loadUi
+    from python_qt_binding import QtGui
+    import os
     result = False
     pw = None
     pwInput = QtGui.QDialog()
