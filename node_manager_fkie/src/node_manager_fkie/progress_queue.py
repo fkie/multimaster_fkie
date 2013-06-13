@@ -115,8 +115,11 @@ class ProgressQueue(QtCore.QObject):
       #'print "PG finished delete all ok"
 
   def _progress_thread_error(self, id, title, msg, detailed_msg):
+    btns = (QtGui.QMessageBox.Ignore)
+    if len(self.__progress_queue) > 1:
+      btns = (QtGui.QMessageBox.Ignore|QtGui.QMessageBox.Abort)
     res = WarningMessageBox(QtGui.QMessageBox.Warning, title, msg, detailed_msg,
-                            buttons=(QtGui.QMessageBox.Ignore|QtGui.QMessageBox.Abort) ).exec_()
+                            buttons=btns ).exec_()
     if res == QtGui.QMessageBox.Abort:
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
