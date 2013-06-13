@@ -136,7 +136,7 @@ class SyncThread(threading.Thread):
         for (s_n, s_uri, n_n, n_uri) in self.__services:
           result_service_set.add(s_n)
           result_set.add(n_n)
-        self.__sync_info = SyncMasterInfo(self.masterInfo.name, list(result_set), result_publisher, result_subscriber, list(result_service_set)) 
+        self.__sync_info = SyncMasterInfo(self.masterInfo.uri, list(result_set), result_publisher, result_subscriber, list(result_service_set)) 
       return self.__sync_info
 
   def update(self, name, uri, discoverer_name, monitoruri, timestamp):
