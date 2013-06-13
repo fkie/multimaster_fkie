@@ -136,7 +136,7 @@ class SyncThread(threading.Thread):
         for (s_n, s_uri, n_n, n_uri) in self.__services:
           result_service_set.add(s_n)
           result_set.add(n_n)
-        self.__sync_info = SyncMasterInfo(self.masterInfo.name, list(result_set), result_publisher, result_subscriber, list(result_service_set)) 
+        self.__sync_info = SyncMasterInfo(self.masterInfo.uri, list(result_set), result_publisher, result_subscriber, list(result_service_set)) 
       return self.__sync_info
 
   def update(self, name, uri, discoverer_name, monitoruri, timestamp):
@@ -257,7 +257,7 @@ class SyncThread(threading.Thread):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders)
-                if topictype and nodeuri and not self._doIgnoreNT(node, topic):
+                if topictype and nodeuri and not self._doIgnoreNT(node, topic, topictype):
                   # register the nodes only once
                   if not ((topic, node, nodeuri) in self.__publisher):
                     publisher_to_register.append((topic, topictype, node, nodeuri))
@@ -278,7 +278,7 @@ class SyncThread(threading.Thread):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders)
-                if topictype and nodeuri and not self._doIgnoreNT(node, topic):
+                if topictype and nodeuri and not self._doIgnoreNT(node, topic, topictype):
                   # register the node as subscriber in local ROS master
                   if not ((topic, node, nodeuri) in self.__subscriber):
                     subscriber_to_register.append((topic, topictype, node, nodeuri))
@@ -387,7 +387,10 @@ class SyncThread(threading.Thread):
       rospy.logwarn("SyncThread[%s] ERROR while ending: %s", self.masterInfo.name, traceback.format_exc())
     socket.setdefaulttimeout(None)
 
-  def _doIgnoreNT(self, node, topic):
+  def _doIgnoreNT(self, node, topic, topictype):
+    # do not sync the bond message of the nodelets!!
+    if topictype in ['bond/Status']:
+      return True
     if self._re_ignore_nodes.match(node):
       return True
     if self._re_ignore_topics.match(topic):
@@ -451,5 +454,5 @@ class SyncThread(threading.Thread):
     self._re_sync_nodes = create_pattern('sync_nodes', data, interface_file, [])
     self._re_ignore_topics = create_pattern('ignore_topics', data, interface_file, ['/rosout', '/rosout_agg'])
     self._re_sync_topics = create_pattern('sync_topics', data, interface_file, [])
-    self._re_ignore_services = create_pattern('ignore_services', data, interface_file, [])
+    self._re_ignore_services = create_pattern('ignore_services', data, interface_file, ['*/get_loggers, */set_logger_level'])
     self._re_sync_services = create_pattern('sync_services', data, interface_file, [])    
