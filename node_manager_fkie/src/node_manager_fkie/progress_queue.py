@@ -158,6 +158,18 @@ class ProgressQueue(QtCore.QObject):
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
+    elif isinstance(req.request, nm.BinarySelectionRequest):
+      from select_dialog import SelectDialog
+      items = SelectDialog.getValue('Multiple executables', req.request.choices, True)
+      if not items:
+        self._progress_thread_finished(id)
+        return
+      res = items[0]
+      pt = ProgressThread(id, descr, req.method, (req.args+(res,)))
+      pt.finished_signal.connect(self._progress_thread_finished)
+      pt.error_signal.connect(self._progress_thread_error)
+      pt.request_interact_signal.connect(self._on_request_interact)
+      pt.start()
 
 
 

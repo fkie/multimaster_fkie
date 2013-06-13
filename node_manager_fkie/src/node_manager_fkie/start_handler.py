@@ -51,6 +51,19 @@ except:
 class StartException(Exception):
   pass
 
+class BinarySelectionRequest(Exception):
+  ''' '''
+  
+  def __init__(self, choices, error):
+    Exception.__init__(self)
+    self.choices = choices
+    self.error = error
+  
+  def __str__(self):
+    return "BinarySelectionRequest from "  + self.choices + "::" + repr(self.error)
+
+
+
 class StartHandler(object):
   '''
   This class contains the methods to run the nodes on local and remote machines
@@ -60,7 +73,7 @@ class StartHandler(object):
     pass
   
   @classmethod
-  def runNode(cls, node, launch_config, force2host=None, masteruri=None, auto_pw_request=False, user=None, pw=None):
+  def runNode(cls, node, launch_config, force2host=None, masteruri=None, auto_pw_request=False, user=None, pw=None, item=None):
     '''
     Start the node with given name from the given configuration.
     @param node: the name of the node (with name space)
@@ -71,6 +84,8 @@ class StartHandler(object):
     @type force2host: L{str} 
     @param masteruri: force the masteruri.
     @type masteruri: L{str} 
+    @param auto_pw_request: opens question dialog directly, use True only if the method is called from the main GUI thread
+    @type auto_pw_request: bool
     @raise StartException: if the screen is not available on host.
     @raise Exception: on errors while resolving host
     @see: L{node_manager_fkie.is_local()}
@@ -139,34 +154,42 @@ class StartHandler(object):
 
     if nm.is_local(host): 
       nm.screen().testScreen()
-      try:
-        cmd = roslib.packages.find_node(n.package, n.type)
-      except (Exception, roslib.packages.ROSPkgException) as e:
-        # multiple nodes, invalid package
-        raise StartException(''.join(["Can't find resource: ", str(e)]))
-      # handle diferent result types str or array of string
-      import types
-      if isinstance(cmd, types.StringTypes):
-        cmd = [cmd]
-      cmd_type = ''
-      if cmd is None or len(cmd) == 0:
-        raise StartException(' '.join([n.type, 'in package [', n.package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
-      if len(cmd) > 1:
-        # Open selection for executables
-        try:
-          from python_qt_binding import QtGui
-          item, result = QtGui.QInputDialog.getItem(None, ' '.join(['Multiple executables', n.type, 'in', n.package]),
-                                            'Select an executable',
-                                            cmd, 0, False)
-          if result:
-            #open the selected screen
-            cmd_type = item
-          else:
-            return
-        except:
-          raise StartException('Multiple executables with same name in package found!')
+      if item:
+        cmd_type = item
       else:
-        cmd_type = cmd[0]
+        try:
+          cmd = roslib.packages.find_node(n.package, n.type)
+        except (Exception, roslib.packages.ROSPkgException) as e:
+          # multiple nodes, invalid package
+          raise StartException(''.join(["Can't find resource: ", str(e)]))
+        # handle diferent result types str or array of string
+        import types
+        if isinstance(cmd, types.StringTypes):
+          cmd = [cmd]
+        cmd_type = ''
+        if cmd is None or len(cmd) == 0:
+          raise StartException(' '.join([n.type, 'in package [', n.package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
+        if len(cmd) > 1:
+          if auto_pw_request:
+            # Open selection for executables, only if the method is called from the main GUI thread
+            try:
+              from python_qt_binding import QtGui
+              item, result = QtGui.QInputDialog.getItem(None, ' '.join(['Multiple executables', n.type, 'in', n.package]),
+                                                'Select an executable',
+                                                cmd, 0, False)
+              if result:
+                #open the selected screen
+                cmd_type = item
+              else:
+                return
+            except:
+              raise StartException('Multiple executables with same name in package found!')
+          else:
+            err = BinarySelectionRequest(cmd, 'Multiple executables')
+            raise nm.InteractionNeededError(err, 
+                                            cls.runNode, (node, launch_config, force2host, masteruri, auto_pw_request, user, pw))
+        else:
+          cmd_type = cmd[0]
       # determine the current working path, Default: the package of the node
       cwd = get_ros_home()
       if not (n.cwd is None):

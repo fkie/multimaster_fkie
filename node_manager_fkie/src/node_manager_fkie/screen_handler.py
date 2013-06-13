@@ -256,7 +256,7 @@ class ScreenHandler(object):
       thread.start()
 
   @classmethod
-  def openScreen(cls, node, host, auto_item_request=True, user=None, pw=None, items=[]):
+  def openScreen(cls, node, host, auto_item_request=False, user=None, pw=None, items=[]):
     '''
     Searches for the screen associated with the given node and open the screen 
     output in a new terminal.

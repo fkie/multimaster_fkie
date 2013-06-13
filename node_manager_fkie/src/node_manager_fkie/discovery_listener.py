@@ -229,7 +229,6 @@ class MasterStatisticTopic(QtCore.QObject):
     self.sub_stats = []
     topic_names = interface_finder.get_stats_topic(masteruri, wait)
     for topic_name in topic_names:
-      pass
       rospy.loginfo("listen for connection statistics on %s", topic_name)
       sub_stats = rospy.Subscriber(topic_name, LinkStatesStamped, self.handlerMasterStatsMsg)
       self.sub_stats.append(sub_stats)

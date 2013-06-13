@@ -54,7 +54,7 @@ import rospy
 
 from ssh_handler import SSHhandler, AuthenticationRequest
 from screen_handler import ScreenHandler, ScreenSelectionRequest
-from start_handler import StartHandler, StartException
+from start_handler import StartHandler, StartException, BinarySelectionRequest
 from progress_queue import InteractionNeededError
 from name_resolution import NameResolution
 from history import History

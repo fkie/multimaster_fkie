@@ -1160,6 +1160,8 @@ class MasterViewProxy(QtGui.QWidget):
                               ''.join(['Error while start ', node.name, '\n\nStart canceled!']),
                               str(se))
           return False
+        except nm.InteractionNeededError as ie:
+          raise
         except (Exception, nm.StartException) as e:
           print type(e)
           import traceback
