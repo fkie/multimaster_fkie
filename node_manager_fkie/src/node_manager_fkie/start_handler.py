@@ -339,7 +339,7 @@ class StartHandler(object):
       return value, False, False, ''
 
   @classmethod
-  def runNodeWithoutConfig(cls, host, package, type, name, args=[], masteruri=None, auto_pw_request=True, user=None, pw=None):
+  def runNodeWithoutConfig(cls, host, package, type, name, args=[], masteruri=None, auto_pw_request=False, user=None, pw=None):
     '''
     Start a node with using a launch configuration.
     @param host: the host or ip to run the node
@@ -584,7 +584,7 @@ class StartHandler(object):
     return result
 
   @classmethod
-  def copylogPath2Clipboards(self, host, nodes=[], auto_pw_request=True, user=None, pw=None):
+  def copylogPath2Clipboards(cls, host, nodes=[], auto_pw_request=False, user=None, pw=None):
     if nm.is_local(host):
       if len(nodes) == 1:
         return nm.screen().getScreenLogFile(node=nodes[0])
@@ -599,7 +599,7 @@ class StartHandler(object):
         else:
           raise StartException(str(''.join(['Get log path from "', host, '" failed:\n', error])))
       except nm.AuthenticationRequest as e:
-        raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
+        raise nm.InteractionNeededError(e, cls.copylogPath2Clipboards, (host, nodes, auto_pw_request))
 
   @classmethod
   def openLog(cls, nodename, host):
@@ -656,7 +656,7 @@ class StartHandler(object):
 
 
   @classmethod
-  def deleteLog(cls, nodename, host, auto_pw_request=True, user=None, pw=None):
+  def deleteLog(cls, nodename, host, auto_pw_request=False, user=None, pw=None):
     '''
     Deletes the log file associated with the given node.
     @param nodename: the name of the node (with name space)
@@ -682,8 +682,8 @@ class StartHandler(object):
         output, error, ok = nm.ssh().ssh_exec(host, [nm.STARTER_SCRIPT, '--delete_logs', nodename], user, pw, auto_pw_request)
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
-
-  def kill(self, host, pid, auto_pw_request=True, user=None, pw=None):
+  
+  def kill(self, host, pid, auto_pw_request=False, user=None, pw=None):
     '''
     Kills the process with given process id on given host.
     @param host: the name or address of the host, where the process must be killed.
@@ -697,9 +697,9 @@ class StartHandler(object):
     try:
       self._kill_wo(host, pid, auto_pw_request, user, pw)
     except nm.AuthenticationRequest as e:
-      raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
+      raise nm.InteractionNeededError(e, self.kill, (host, pid, auto_pw_request))
 
-  def _kill_wo(self, host, pid, auto_pw_request=True, user=None, pw=None):
+  def _kill_wo(self, host, pid, auto_pw_request=False, user=None, pw=None):
     rospy.loginfo("kill %s on %s", str(pid), host)
     if nm.is_local(host): 
       import signal

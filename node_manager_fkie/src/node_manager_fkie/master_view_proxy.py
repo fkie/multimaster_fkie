@@ -1396,7 +1396,11 @@ class MasterViewProxy(QtGui.QWidget):
       # kill the node
       if not pid is None:
         try:
-          nm.starter().kill(self.getHostFromNode(node), pid, False)
+          self._progress_queue.add2queue(str(self._progress_queue.count()), 
+                                         'Kill nodes', 
+                                         nm.starter().kill, 
+                                         (self.getHostFromNode(node), pid, False))
+          self._progress_queue.start()
         except Exception as e:
           rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
           raise DetailedError("Kill error", 
@@ -1609,7 +1613,9 @@ class MasterViewProxy(QtGui.QWidget):
       nodenames.append(n.name)
     try:
       host = nm.nameres().getHostname(self.masteruri)
-      path_on_host = nm.starter().copylogPath2Clipboards(host, nodenames)
+      socket.setdefaulttimeout(3)
+      path_on_host = nm.starter().copylogPath2Clipboards(host, nodenames, True)
+      socket.setdefaulttimeout(None)
       user = nm.ssh().USER_DEFAULT
       try:
         user = nm.ssh().SSH_AUTH[host]
