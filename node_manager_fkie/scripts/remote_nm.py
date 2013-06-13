@@ -85,7 +85,7 @@ def packageName(dir):
     package = os.path.basename(dir)
     fileList = os.listdir(dir)
     for file in fileList:
-      if file == 'manifest.xml':
+      if file == 'manifest.xml' or file == 'package.xml':
           return package
     return packageName(os.path.dirname(dir))
   return None
