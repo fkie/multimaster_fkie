@@ -32,9 +32,6 @@
 
 from python_qt_binding import QtCore, QtGui
 
-import roslib
-import rospy
-from parameter_dialog import ScrollArea
 
 class SelectDialog(QtGui.QDialog):
   '''

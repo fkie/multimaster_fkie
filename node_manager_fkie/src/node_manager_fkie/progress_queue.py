@@ -30,11 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import time
-import socket
 import threading
-import xmlrpclib
-import random
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 

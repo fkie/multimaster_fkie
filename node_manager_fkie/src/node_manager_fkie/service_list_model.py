@@ -33,10 +33,6 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-import os
-
-import roslib
-
 import node_manager_fkie as nm
 
 class ServiceItem(QtGui.QStandardItem):
@@ -70,7 +66,7 @@ class ServiceItem(QtGui.QStandardItem):
         self.updateTypeView(self.service, child)
 
   def type(self):
-    return TopicItem.ITEM_TYPE
+    return ServiceItem.ITEM_TYPE
 
   @classmethod
   def toHTML(cls, service_name):
@@ -199,8 +195,9 @@ class ServiceModel(QtGui.QStandardItemModel):
     service_names = services.keys()
     root = self.invisibleRootItem()
     updated = []
-    cputimes = os.times()
-    cputime_init = cputimes[0] + cputimes[1]
+#    import os
+#    cputimes = os.times()
+#    cputime_init = cputimes[0] + cputimes[1]
     # remove or update the items
     for i in reversed(range(root.rowCount())):
       serviceItem = root.child(i)

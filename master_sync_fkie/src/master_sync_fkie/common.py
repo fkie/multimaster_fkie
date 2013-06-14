@@ -30,8 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import sys
-import time
 import re
 import os
 
@@ -56,7 +54,6 @@ def masteruri_from_ros():
       import rosgraph
       return rosgraph.rosenv.get_master_uri()
   except:
-    import os
     return os.environ['ROS_MASTER_URI']
 
 def resolve_url(interface_url):

@@ -36,6 +36,7 @@ def masteruri_from_ros():
     import rospkg.distro
     distro = rospkg.distro.current_distro_codename()
     if distro in ['electric', 'diamondback', 'cturtle']:
+      import roslib.rosenv
       return roslib.rosenv.get_master_uri()
     else:
       import rosgraph

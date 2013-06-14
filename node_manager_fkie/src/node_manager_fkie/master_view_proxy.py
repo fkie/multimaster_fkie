@@ -516,7 +516,7 @@ class MasterViewProxy(QtGui.QWidget):
     @return: C{True} if the given launch file is open
     @rtype: C{boolean}
     '''
-    return launchfiles.has_key(path)
+    return self.launchfiles.has_key(path)
 
   @property
   def launchfiles(self):
@@ -685,9 +685,9 @@ class MasterViewProxy(QtGui.QWidget):
     removed = list(set([c for c in self.__configs.keys() if isinstance(c, tuple)]) - set(default_cfgs))
     if removed:
       for r in removed:
-        host = nm.nameres().address(r[1])
+#        host = nm.nameres().address(r[1])
         self.node_tree_model.removeConfigNodes(r)
-        service = self.__master_info.getService(roslib.names.ns_join(r[0], 'list_nodes'))
+#        service = self.__master_info.getService(roslib.names.ns_join(r[0], 'list_nodes'))
         if r[2] == self.masteruri:
           self.remove_config_signal.emit(r[0])
         del self.__configs[r]
@@ -984,7 +984,7 @@ class MasterViewProxy(QtGui.QWidget):
           for f in mclass.__slots__:
             idx = mclass.__slots__.index(f)
             idtype = mclass._slot_types[idx]
-            base_type = roslib.msgs.base_msg_type(idtype)
+#            base_type = roslib.msgs.base_msg_type(idtype)
 #            primitive = "unknown"
 #            if base_type in roslib.msgs.PRIMITIVE_TYPES:
 #              primitive = "primitive"
@@ -1174,7 +1174,7 @@ class MasterViewProxy(QtGui.QWidget):
         try:
           nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
         except (Exception, nm.StartException) as e:
-          socket_error =  (str(e).find("timeout") or str(e).find("113"))
+#          socket_error =  (str(e).find("timeout") or str(e).find("113"))
           rospy.logwarn("Error while call a service of node '%s': %s", node.name, str(e))
           raise DetailedError("Service error", 
                               ''.join(['Error while call a service of node ', node.name, '[', self.master_info.getService(config).uri, ']']),
@@ -1267,7 +1267,6 @@ class MasterViewProxy(QtGui.QWidget):
     dia.setWindowTitle('Start node on...')
     dia.resize(350,120)
     dia.setFocusField('host')
-    progressDialog = None
     if dia.exec_():
       try:
         params = dia.getKeywords()
@@ -2183,9 +2182,9 @@ class MasterViewProxy(QtGui.QWidget):
     if not root.isValid():
       return
     self.masterTab.nodeTreeView.expand(root)
-    firstChild = root.child(0, 0)
+#    firstChild = root.child(0, 0)
     last_row_index = len(self.node_tree_model.header)-1
-    lastChild = root.child(0, last_row_index)
+#    lastChild = root.child(0, last_row_index)
     i = 0
     selection = QtGui.QItemSelection()
     while root.child(i, 0).isValid():
@@ -2224,7 +2223,7 @@ class MasterViewProxy(QtGui.QWidget):
     for node in selectedNodes:
       try:
         result = ' '.join([result, node.name])
-      except Exception, e:
+      except Exception:
         pass
     QtGui.QApplication.clipboard().setText(result.strip())
 
@@ -2234,7 +2233,7 @@ class MasterViewProxy(QtGui.QWidget):
     for topic in selectedTopics:
       try:
         result = ' '.join([result, topic.name, topic.type])
-      except Exception, e:
+      except Exception:
         pass
     QtGui.QApplication.clipboard().setText(result.strip())
 
@@ -2244,7 +2243,7 @@ class MasterViewProxy(QtGui.QWidget):
     for service in selectedServices:
       try:
         result = ' '.join([result, service.name, service.type])
-      except Exception, e:
+      except Exception:
         pass
     QtGui.QApplication.clipboard().setText(result.strip())
 
@@ -2254,7 +2253,7 @@ class MasterViewProxy(QtGui.QWidget):
     for (key, value) in selectedParameter:
       try:
         result = ' '.join([result, key, str(value)])
-      except Exception, e:
+      except Exception:
         pass
     QtGui.QApplication.clipboard().setText(result.strip())
 

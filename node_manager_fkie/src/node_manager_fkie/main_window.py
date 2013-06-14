@@ -32,7 +32,6 @@
 
 import os
 import time
-import sys
 import xmlrpclib
 import threading
 
@@ -901,7 +900,6 @@ class MainWindow(QtGui.QMainWindow):
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
               'Optional Parameter' : ('list', params_optional) }
-    host = "a"
     dia = ParameterDialog(params)
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
@@ -960,7 +958,7 @@ class MainWindow(QtGui.QMainWindow):
                                      (str(hostname), 'master_discovery_fkie', 'master_discovery', 'master_discovery', args, None, False))
       self._progress_queue.start()
     except (Exception, nm.StartException), e:
-      rospy.logwarn("Error while start master_discovery for %s: %s", str(host), str(e))
+      rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
       WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                         'Error while start master_discovery',
                         str(e)).exec_()
@@ -1069,7 +1067,6 @@ class MainWindow(QtGui.QMainWindow):
           # test for requerid args
           launchConfig = LaunchConfig(path)
           req_args = launchConfig.getArgs()
-          loaded = False
           if req_args:
             params = dict()
             arg_dict = launchConfig.argvToDict(req_args)
@@ -1132,7 +1129,6 @@ class MainWindow(QtGui.QMainWindow):
         dia.setWindowTitle('Start node on...')
         dia.resize(350,120)
         dia.setFocusField('host')
-        progressDialog = None
         if dia.exec_():
           try:
             params = dia.getKeywords()

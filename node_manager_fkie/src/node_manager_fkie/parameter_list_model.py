@@ -33,7 +33,6 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-import roslib
 
 class ParameterValueItem(QtGui.QStandardItem):
   '''

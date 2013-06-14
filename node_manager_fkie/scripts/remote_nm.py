@@ -5,7 +5,6 @@ import sys
 import shlex, subprocess
 
 import time
-import xmlrpclib
 import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 import node_manager_fkie as nm

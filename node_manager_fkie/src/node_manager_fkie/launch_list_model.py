@@ -38,7 +38,6 @@ from python_qt_binding import QtGui
 
 import node_manager_fkie as nm
 from common import is_package, package_name
-from launch_config import LaunchConfig
 
 class LaunchListModel(QtCore.QAbstractListModel):
   '''

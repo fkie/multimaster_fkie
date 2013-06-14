@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import rospy
 
 class ScreenHandlerException(Exception):
   pass

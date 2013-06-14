@@ -42,10 +42,6 @@ import xmlrpclib
 
 import node_manager_fkie as nm
 from common import get_ros_home, masteruri_from_ros, package_name
-try:
-  from launch_config import LaunchConfig
-except:
-  pass
 
 
 class StartException(Exception):
@@ -163,7 +159,6 @@ class StartHandler(object):
           # multiple nodes, invalid package
           raise StartException(''.join(["Can't find resource: ", str(e)]))
         # handle diferent result types str or array of string
-        import types
         if isinstance(cmd, types.StringTypes):
           cmd = [cmd]
         cmd_type = ''
@@ -286,7 +281,6 @@ class StartHandler(object):
     """
     import roslaunch
     import roslaunch.launch
-    import xmlrpclib
     param_server = xmlrpclib.ServerProxy(masteruri)
     p = None
     abs_paths = list() # tuples of (parameter name, old value, new value)
@@ -527,9 +521,9 @@ class StartHandler(object):
     '''
     rospy.loginfo("Call service %s[%s]: %s, %s", str(service), str(service_uri), str(service_type), str(service_args))
     from rospy.core import parse_rosrpc_uri, is_shutdown
-    from rospy.msg import args_kwds_to_message
+#    from rospy.msg import args_kwds_to_message
     from rospy.exceptions import TransportInitError, TransportException
-    from rospy.impl.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, DEFAULT_BUFF_SIZE
+    from rospy.impl.tcpros_base import TCPROSTransport, DEFAULT_BUFF_SIZE#,TCPROSTransportProtocol
     from rospy.impl.tcpros_service import TCPROSServiceClient
     from rospy.service import ServiceException
     request = service_type._request_class()

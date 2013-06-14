@@ -30,13 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
 import threading
 import xmlrpclib
 
 from python_qt_binding import QtCore
 import rospy
-import node_manager_fkie as nm
 
 class ParameterHandler(QtCore.QObject):
   '''

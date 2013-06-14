@@ -33,10 +33,6 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-import os
-import time
-import threading
-
 import rospy
 import roslib
 import roslib.message
@@ -317,7 +313,7 @@ class TopicModel(QtGui.QStandardItemModel):
 #    cputimes = os.times()
 #    cputime_init = cputimes[0] + cputimes[1]
     for (name, topic) in topics.items():
-      doAddItem = True
+#      doAddItem = True
       self._update_topic(name, topic, updated)
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init

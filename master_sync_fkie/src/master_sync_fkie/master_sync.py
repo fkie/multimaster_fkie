@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import threading
-import sys
 import time
 import xmlrpclib
 import socket
@@ -83,14 +82,6 @@ class Main(object):
     rospy.Service('~get_sync_info', GetSyncInfo, self.rosservice_get_sync_info)
     rospy.on_shutdown(self.finish)
     self.retrieveMasters()
-
-  def finish(self, *arg):
-    '''
-    Callback called on exit of the ros node
-    '''
-    with self.__lock:
-      for (k, v) in self.sub_changes.iteritems():
-        v.unregister()
 
   def handlerMasterStateMsg(self, data):
     '''
@@ -241,6 +232,8 @@ class Main(object):
     '''
     rospy.loginfo("Stop synchronization...")
     with self.__lock:
+      for (k, v) in self.sub_changes.iteritems():
+        v.unregister()
       self.own_state_getter = None
       if not self.update_timer is None:
         self.update_timer.cancel()
@@ -260,7 +253,7 @@ class Main(object):
 #          rospy.loginfo("    %s", str(key))
 #          item.unregister()
     rospy.loginfo("Synchronization is now off")
-    
+
   def rosservice_get_sync_info(self, req):
     '''
     Callback for the ROS service to get the info to synchronized nodes.

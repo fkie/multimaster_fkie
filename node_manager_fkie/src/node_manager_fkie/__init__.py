@@ -39,7 +39,6 @@ __date__ = "2012-02-01"
 
 import os
 import sys
-import signal
 import socket
 import threading
 

@@ -31,8 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding import QtGui
-from python_qt_binding import QtCore
-
 
 class DetailedError(Exception):
   ''' '''
@@ -43,7 +41,7 @@ class DetailedError(Exception):
     self.detailed_text = detailed_text
   
   def __str__(self):
-    return repr(self.text) + ":::" + detailed_text
+    return repr(self.text) + ":::" + self.detailed_text
   
 
 class WarningMessageBox(QtGui.QMessageBox):

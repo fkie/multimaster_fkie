@@ -36,7 +36,6 @@ import threading
 import xmlrpclib
 import random
 import socket
-import re
 
 import roslib; roslib.load_manifest('master_sync_fkie')
 import roslib.message
@@ -237,8 +236,8 @@ class SyncThread(threading.Thread):
             remote_state = remote_monitor.masterInfo()
             stamp = float(remote_state[0])
             stamp_local = float(remote_state[1])
-            remote_masteruri = remote_state[2]
-            remote_mastername = remote_state[3]
+#            remote_masteruri = remote_state[2]
+#            remote_mastername = remote_state[3]
             publishers = remote_state[4]
             subscribers = remote_state[5]
             rservices = remote_state[6]

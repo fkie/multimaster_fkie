@@ -32,7 +32,6 @@
 
 import threading
 import xmlrpclib
-import copy
 import sys
 import socket
 import time

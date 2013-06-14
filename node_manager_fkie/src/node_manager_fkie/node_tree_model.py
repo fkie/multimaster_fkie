@@ -30,8 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from urlparse import urlparse
-
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
@@ -173,9 +171,9 @@ class GroupItem(QtGui.QStandardItem):
         for ns, groups in self._capcabilities[cfg].items():
           for group, descr in groups.items():
             if node_name in descr['nodes']:
-              if not result.has_key(c):
-                result[c] = []
-              result[c].append(roslib.ns_join(ns, group))
+              if not result.has_key(group):
+                result[group] = []
+              result[group].append(roslib.ns_join(ns, group))
     except:
       pass
 #      import traceback

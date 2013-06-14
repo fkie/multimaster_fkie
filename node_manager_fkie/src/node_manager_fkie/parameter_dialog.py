@@ -212,7 +212,7 @@ class ParameterDescription(object):
           if not self.value() is None and self.value():
             items.append(unicode(self.value()))
           elif self.isTimeType():
-            items.append(now)
+            items.append('now')
         result.addItems(items)
     else:
       if self.isArrayType():
@@ -649,7 +649,6 @@ class MasterParameterDialog(ParameterDialog):
     @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
     '''
     if code == 1:
-      values = dict()
       dia_params = dict()
       for p, (code_n, msg_n, val) in params.items():
         if code_n != 1:
