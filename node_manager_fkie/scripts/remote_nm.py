@@ -176,7 +176,8 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
   new_env = dict(os.environ)
   new_env['ROS_MASTER_URI'] = masteruri
   subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
-  
+  if len(cmd) > 1:
+    rospy.logwarn('Multiple executables are found! The first one was started! Exceutables:\n%s', str(cmd))
 if __name__ == '__main__':
   main()
 
