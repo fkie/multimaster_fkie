@@ -415,6 +415,8 @@ class DefaultCfg(object):
     popen_cmd = shlex.split(str(' '.join(cmd_args)))
     rospy.loginfo("run node '%s as': %s", node, str(' '.join(popen_cmd)))
     subprocess.Popen(popen_cmd, cwd=cwd)
+    if len(cmd) > 1:
+      raise StartException('Multiple executables are found! The first one was started! Exceutables:\n' + str(cmd))
 
   def get_ros_home(self):
     '''
