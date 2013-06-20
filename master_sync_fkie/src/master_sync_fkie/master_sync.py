@@ -38,7 +38,7 @@ import socket
 import roslib; roslib.load_manifest('master_sync_fkie')
 import rospy
 
-from common import masteruri_from_ros, resolve_url, read_interface, create_pattern
+from common import masteruri_from_ros, resolve_url, read_interface, create_pattern, is_empty_pattern
 from sync_thread import SyncThread
 from multimaster_msgs_fkie.msg import MasterState#, LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
 from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
@@ -168,7 +168,8 @@ class Main(object):
     try:
       with self.__lock:
         if (masteruri != self.materuri):
-          if not self._re_ignore_hosts.match(mastername) or self._re_sync_hosts.match(mastername): # do not sync to the master, if it is in ignore list
+          if (is_empty_pattern(self._re_ignore_hosts) or not self._re_ignore_hosts.match(mastername)
+              or (not is_empty_pattern(self._re_sync_hosts) and not self._re_sync_hosts.match(mastername) is None)): # do not sync to the master, if it is in ignore list
     #        print "--update:", ros_master.uri, mastername
             if (mastername in self.masters):
               # updates only, if local changes are occured

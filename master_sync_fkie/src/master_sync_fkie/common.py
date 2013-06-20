@@ -36,6 +36,7 @@ import os
 import roslib; roslib.load_manifest('master_sync_fkie')
 import rospy
 
+EMPTY_PATTERN = re.compile(r'\b', re.I)
 
 def masteruri_from_ros():
   '''
@@ -145,4 +146,7 @@ def create_pattern(param, data, has_interface, default=[]):
   def_list[:] = [''.join([n.strip().replace('*','.*'), '\Z']) for n in def_list]
   if def_list:
     return re.compile(r'|'.join(def_list), re.I)
-  return re.compile(r'\b', re.I)
+  return EMPTY_PATTERN
+
+def is_empty_pattern(re_object):
+  return re_object == EMPTY_PATTERN

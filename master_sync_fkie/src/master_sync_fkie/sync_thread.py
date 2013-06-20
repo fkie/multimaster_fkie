@@ -42,7 +42,7 @@ import roslib.message
 import rospy
 import rosgraph.masterapi
 
-from common import masteruri_from_ros, resolve_url, read_interface, create_pattern
+from common import masteruri_from_ros, resolve_url, read_interface, create_pattern, is_empty_pattern
 from multimaster_msgs_fkie.msg import SyncTopicInfo, SyncMasterInfo
 
 class MasterInfo(object):
@@ -407,10 +407,9 @@ class SyncThread(threading.Thread):
         for n in nodes:
           n2 = self.__own_state.getNode(n)
           if not n2 is None and n2.isLocal:
-            return False
-      return True
+            return True
     # there are no sync nodes and topic lists defined => return False (=>sync the given topic)
-    return not self._re_sync_nodes.match('node node') or not self._re_sync_topics.match('topic topic')
+    return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_topics)
 
   def _doIgnoreNS(self, node, service):
     if self._re_ignore_nodes.match(node):
@@ -421,7 +420,7 @@ class SyncThread(threading.Thread):
       return False
     if self._re_sync_services.match(service):
       return False
-    return not self._re_sync_nodes.match('node node') or not self._re_sync_services.match('service service')
+    return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_services)
 
   def _getTopicType(self, topic, topicTypes):
     for (topicname, type) in topicTypes:
