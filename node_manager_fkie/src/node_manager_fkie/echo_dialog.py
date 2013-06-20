@@ -43,7 +43,9 @@ import threading
 
 class EchoDialog(QtGui.QDialog):
   
-  MESSAGE_HZ_LIMIT = 100
+  MESSAGE_HZ_LIMIT = 10
+  MAX_DISPLAY_MSGS = 25
+  STATISTIC_QUEUE_LEN = 5000
 
   '''
   This dialog shows the output of a topic.
@@ -94,13 +96,11 @@ class EchoDialog(QtGui.QDialog):
 
     self._rate_message = ''
 
-    self.message_ignored_count = 0
-    self.ts_first_msg = 0
-    self.message_interval_count = 0
-    self.message_interval_count_last = 0
-    
+    self._last_received_ts = 0
+    self.receiving_hz = self.MESSAGE_HZ_LIMIT
+
     self.field_filter_fn = None
-    
+
     options = QtGui.QWidget(self)
     if not show_only_rate:
       hLayout = QtGui.QHBoxLayout(options)
@@ -114,13 +114,23 @@ class EchoDialog(QtGui.QDialog):
       # add spacer
       spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
       hLayout.addItem(spacerItem)
-      # add stop button
-      self.combobox = QtGui.QComboBox(self)
-      self.combobox.addItems(['25', '50', '100'])
-      self.combobox.activated[str].connect(self.on_combobox_activated)
-      self.combobox.setEditable(True)
-      hLayout.addWidget(self.combobox)
-      # add stop button
+      # add combobox for displaying frequency of messages
+      self.combobox_displ_hz = QtGui.QComboBox(self)
+      self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0.1', '1', '50', '100'])
+      self.combobox_displ_hz.activated[str].connect(self.on_combobox_hz_activated)
+      self.combobox_displ_hz.setEditable(True)
+      hLayout.addWidget(self.combobox_displ_hz)
+      displ_hz_label = QtGui.QLabel('Hz', self)
+      hLayout.addWidget(displ_hz_label)
+      # add combobox for count of displayed messages
+      self.combobox_msgs_count = QtGui.QComboBox(self)
+      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '50', '100'])
+      self.combobox_msgs_count.activated[str].connect(self.on_combobox_count_activated)
+      self.combobox_msgs_count.setEditable(True)
+      hLayout.addWidget(self.combobox_msgs_count)
+      displ_count_label = QtGui.QLabel('displayed count', self)
+      hLayout.addWidget(displ_count_label)
+      # add topic control button for unsubscribe and subscribe
       self.topic_control_button = QtGui.QToolButton(self)
       self.topic_control_button.setText('stop')
       self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
@@ -137,7 +147,7 @@ class EchoDialog(QtGui.QDialog):
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display);
     self.display.document().setMaximumBlockCount(500)
-    self.max_displayed_msgs = 25
+    self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
     self._blocks_in_msg = None
 
     self.status_label = QtGui.QLabel('0 messages', self)
@@ -163,8 +173,9 @@ class EchoDialog(QtGui.QDialog):
 #    self.close()
 
   def closeEvent (self, event):
-    self.sub.unregister()
-    del self.sub
+    if not self.sub is None:
+      self.sub.unregister()
+      del self.sub
     self.finished_signal.emit(self.topic)
     if self.parent() is None:
       QtGui.QApplication.quit()
@@ -192,17 +203,27 @@ class EchoDialog(QtGui.QDialog):
   def on_no_arr_checkbox_toggled(self, state):
     self.field_filter_fn = self.create_field_filter(self.no_str_checkbox.isChecked(), state)
 
-  def on_combobox_activated(self, count_txt):
+  def on_combobox_hz_activated(self, hz_txt):
+    try:
+      self.receiving_hz = int(hz_txt)
+    except ValueError:
+      try:
+        self.receiving_hz = float(hz_txt)
+      except ValueError:
+        self.combobox_displ_hz.setEditText(str(self.receiving_hz))
+
+  def on_combobox_count_activated(self, count_txt):
     try:
       self.max_displayed_msgs = int(count_txt)
       self._blocks_in_msg = None
     except ValueError:
-      self.combobox.setEditText(str(self.max_displayed_msgs))
+      self.combobox_msgs_count.setEditText(str(self.max_displayed_msgs))
 
   def on_clear_btn_clicked(self):
     self.display.clear()
-    self.message_count = 0
-    del self.times[:]
+    with self.lock:
+      self.message_count = 0
+      del self.times[:]
 
   def on_topic_control_btn_clicked(self):
     if self.sub is None:
@@ -226,7 +247,6 @@ class EchoDialog(QtGui.QDialog):
     '''
     current_time = time.time()
     with self.lock:
-      current_time = time.time()
       # time reset
       if self.msg_t0 < 0 or self.msg_t0 > current_time:
         self.msg_t0 = current_time
@@ -237,10 +257,16 @@ class EchoDialog(QtGui.QDialog):
         self.msg_tn = current_time
 
       #only keep statistics for the last 5000 messages so as not to run out of memory
-      if len(self.times) > 5000:
+      if len(self.times) > self.STATISTIC_QUEUE_LEN:
         self.times.pop(0)
 
     self.message_count += 1
+    # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
+    if self._last_received_ts != 0:
+      if current_time - self._last_received_ts < 1.0 / self.receiving_hz:
+        return 
+    self._last_received_ts = current_time
+
     if not self.show_only_rate:
       txt = ''.join(['<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier,monospace; padding:10px;">------------------------------\n\n', msg,'</pre>'])
       # set the count of the displayed messages on receiving the first message
