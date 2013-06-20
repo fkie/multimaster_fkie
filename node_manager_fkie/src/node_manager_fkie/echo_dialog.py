@@ -114,25 +114,40 @@ class EchoDialog(QtGui.QDialog):
       # add spacer
       spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
       hLayout.addItem(spacerItem)
+      # add stop button
+      self.combobox = QtGui.QComboBox(self)
+      self.combobox.addItems(['25', '50', '100'])
+      self.combobox.activated[str].connect(self.on_combobox_activated)
+      self.combobox.setEditable(True)
+      hLayout.addWidget(self.combobox)
+      # add stop button
+      self.topic_control_button = QtGui.QToolButton(self)
+      self.topic_control_button.setText('stop')
+      self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
+      self.topic_control_button.clicked.connect(self.on_topic_control_btn_clicked)
+      hLayout.addWidget(self.topic_control_button)
       # add clear button
-      cancelButton = QtGui.QToolButton(self)
-      cancelButton.setText('clear')
-      cancelButton.clicked.connect(self.on_clear_btn_clicked)
-      hLayout.addWidget(cancelButton)
+      clearButton = QtGui.QToolButton(self)
+      clearButton.setText('clear')
+      clearButton.clicked.connect(self.on_clear_btn_clicked)
+      hLayout.addWidget(clearButton)
       self.verticalLayout.addWidget(options)
     
     self.display = QtGui.QTextEdit(self)
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display);
+    self.display.document().setMaximumBlockCount(500)
+    self.max_displayed_msgs = 25
+    self._blocks_in_msg = None
 
     self.status_label = QtGui.QLabel('0 messages', self)
     self.verticalLayout.addWidget(self.status_label)
 
     # subscribe to the topic
-    msg_class = roslib.message.get_message_class(type)
-    if not msg_class:
+    self.__msg_class = roslib.message.get_message_class(type)
+    if not self.__msg_class:
       raise Exception("Cannot load message class for [%s]. Are your messages built?"%type)
-    self.sub = rospy.Subscriber(topic, msg_class, self._msg_handle)
+    self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
     self.msg_signal.connect(self._append_message)
     
     self.print_hz_timer = QtCore.QTimer()
@@ -177,9 +192,29 @@ class EchoDialog(QtGui.QDialog):
   def on_no_arr_checkbox_toggled(self, state):
     self.field_filter_fn = self.create_field_filter(self.no_str_checkbox.isChecked(), state)
 
+  def on_combobox_activated(self, count_txt):
+    try:
+      self.max_displayed_msgs = int(count_txt)
+      self._blocks_in_msg = None
+    except ValueError:
+      self.combobox.setEditText(str(self.max_displayed_msgs))
+
   def on_clear_btn_clicked(self):
     self.display.clear()
-    
+    self.message_count = 0
+    del self.times[:]
+
+  def on_topic_control_btn_clicked(self):
+    if self.sub is None:
+      self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
+      self.topic_control_button.setText('stop')
+      self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
+    else:
+      self.sub.unregister()
+      self.sub = None
+      self.topic_control_button.setText('play')
+      self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
+
   def _msg_handle(self, data):
     self.msg_signal.emit(roslib.message.strify_message(data, field_filter=self.field_filter_fn))
 
@@ -205,29 +240,15 @@ class EchoDialog(QtGui.QDialog):
       if len(self.times) > 5000:
         self.times.pop(0)
 
-    
-    
     self.message_count += 1
-#    if not self.ts_first_msg:
-#      self.ts_first_msg = time.time()
-#    elif int(current_time) - int(self.ts_first_msg) > 0:
-#      self.message_interval_count_last = self.message_interval_count
-#      self.message_interval_count = 0
-#      self.ts_first_msg = current_time
-#    self.message_interval_count += 1
-#    if self.message_interval_count > self.MESSAGE_HZ_LIMIT:
-#      self.message_ignored_count += 1
-#    status_text = ' '.join([str(self.message_count), 'messages'])
-#    # show rate of last second
-#    if self.message_interval_count_last > 0:
-#      status_text = ' '.join([status_text, ', rate: ', str(self.message_interval_count_last),'Hz'])
-#    # show the info, what no more then the limit messages is displayed
-#    if self.message_ignored_count > 0:
-#      status_text = ' '.join([status_text, ', skipped: ', str(self.message_ignored_count), ' (maximum displayed: ', str(self.MESSAGE_HZ_LIMIT),'Hz)'])
-#    self.status_label.setText(status_text)
-#    # append message only if the limit is not reached
     if not self.show_only_rate:
-      self.display.append(''.join(['<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier,monospace; padding:10px;">\n', msg,'\n</pre><hr>']))
+      txt = ''.join(['<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier,monospace; padding:10px;">------------------------------\n\n', msg,'</pre>'])
+      # set the count of the displayed messages on receiving the first message
+      if self._blocks_in_msg is None:
+        td = QtGui.QTextDocument(txt)
+        self._blocks_in_msg = td.blockCount()
+        self.display.document().setMaximumBlockCount(self._blocks_in_msg*self.max_displayed_msgs)
+      self.display.append(txt)
     self._print_status()
 
   def _on_calc_hz(self):
@@ -256,7 +277,8 @@ class EchoDialog(QtGui.QDialog):
       self._print_status()
       if self.show_only_rate:
         self.display.append(self._rate_message)
-
+#        status_label = QtGui.QLabel(self._rate_message, self)
+#        self.contentLayout.addWidget(status_label)
 
   def _print_status(self):
     status_text = ' '.join([str(self.message_count), 'messages', ', ' if self._rate_message else '', self._rate_message])
