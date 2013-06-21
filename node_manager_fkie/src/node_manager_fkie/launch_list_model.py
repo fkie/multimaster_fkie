@@ -170,13 +170,12 @@ class LaunchListModel(QtCore.QAbstractListModel):
           root_path, items = self._moveUp(os.path.dirname(path))
         elif os.path.isfile(path):
           return path
+        elif id == LaunchListModel.RECENT_FILE or id == LaunchListModel.LAUNCH_FILE:
+          raise Exception(''.join(["No path to file '", str(item), "' found!"]))
         else:
           root_path, items = self._moveDown(path)
         self._setNewList((root_path, items))
-    if id == LaunchListModel.RECENT_FILE or id == LaunchListModel.LAUNCH_FILE:
-      raise Exception(''.join(["No path to file '", str(item), "' found!"]))
-    else:
-      return None
+    return None
 
 
   def setPath(self, path):
