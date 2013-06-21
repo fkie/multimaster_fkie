@@ -67,9 +67,10 @@ class Editor(QtGui.QTextEdit):
     self.regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
                         QtCore.QRegExp("\\bfile\\b")]
     self.filename = filename
-    file = QtCore.QFile(filename);
-    if file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
-      self.setText(unicode(file.readAll(), "utf-8"))
+    if self.filename:
+      file = QtCore.QFile(filename);
+      if file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
+        self.setText(unicode(file.readAll(), "utf-8"))
 
     self.path = '.'
 
@@ -499,7 +500,7 @@ class XmlEditor(QtGui.QDialog):
         self.files.append(filename)
         editor.setCurrentPath(os.path.basename(filename))
         editor.load_request_signal.connect(self.on_load_request)
-  
+
         hl = XmlHighlighter(editor.document())
         editor.textChanged.connect(self.on_editor_textChanged)
         editor.cursorPositionChanged.connect(self.on_editor_positionChanged)

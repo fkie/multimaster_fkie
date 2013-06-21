@@ -88,6 +88,9 @@ class ProgressQueue(QtCore.QObject):
   def start(self):
     if not self._progress_frame.isVisible() and self.__progress_queue:
       self._progress_frame.setVisible(True)
+      self._progress_bar.setToolTip(self.__progress_queue[0].descr)
+      dscr_len = self._progress_bar.size().width()/10
+      self._progress_bar.setFormat(''.join(['%v/%m - ', self.__progress_queue[0].descr[0:dscr_len]]))
       self._progress_bar.setValue(0)
       self.__progress_queue[0].start()
 
@@ -98,6 +101,10 @@ class ProgressQueue(QtCore.QObject):
     try:
       #print "PG finished", id
       val = self._progress_bar.value()
+      th = self.__progress_queue[val+1]
+      self._progress_bar.setToolTip(th.descr)
+      dscr_len = self._progress_bar.size().width()/10
+      self._progress_bar.setFormat(''.join(['%v/%m - ', th.descr[0:dscr_len]]))
       self.__progress_queue[val+1].start()
       self._progress_bar.setValue(val+1)
       #'print "PG finished ok", id
@@ -190,7 +197,7 @@ class ProgressThread(QtCore.QObject, threading.Thread):
     QtCore.QObject.__init__(self)
     threading.Thread.__init__(self)
     self._id = id
-    self._descr = descr
+    self.descr = descr
     self._target = target
     self._args = args
     self.setDaemon(True)
@@ -209,7 +216,7 @@ class ProgressThread(QtCore.QObject, threading.Thread):
       else:
         self.error_signal.emit(self._id, 'No target specified')
     except InteractionNeededError as e:
-      self.request_interact_signal.emit(self._id, self._descr, e)
+      self.request_interact_signal.emit(self._id, self.descr, e)
     except DetailedError as e:
       self.error_signal.emit(self._id, e.title, e.value, e.detailed_text)
     except:
@@ -221,5 +228,5 @@ class ProgressThread(QtCore.QObject, threading.Thread):
       while not last_line and len(formatted_lines) > index:
         index += 1
         last_line = formatted_lines[-index]
-      rospy.logwarn("%s failed:\n\t%s", str(self._descr), last_line)
-      self.error_signal.emit(self._id, 'Progress Job Error', str(self._descr)+" failed:\n"+last_line, traceback.format_exc())
+      rospy.logwarn("%s failed:\n\t%s", str(self.descr), last_line)
+      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr)+" failed:\n"+last_line, traceback.format_exc())

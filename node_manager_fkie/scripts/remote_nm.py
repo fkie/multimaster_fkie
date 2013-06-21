@@ -33,7 +33,7 @@ def _get_optparse():
   parser.add_option('--node_name', metavar='node_name', default='',
                      help='The name of the node (with namespace)')
   parser.add_option('--package', metavar='package', default='',
-                     help='Package containing the node')
+                     help='Package containing the node. If no node_name specified returns the package path or raise an exception, if the package was not found.')
   parser.add_option('--prefix', metavar='prefix', default='',
                      help='Prefix used to run a node')
   parser.add_option('--pidkill', metavar='pidkill', default=-1,
@@ -74,20 +74,6 @@ def parse_options(args):
     else:
       argv.append(a)
   return result, argv
-
-def packageName(dir):
-  '''
-  Returns for given directory the package name or None
-  @rtype: C{str} or C{None}
-  '''
-  if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
-    package = os.path.basename(dir)
-    fileList = os.listdir(dir)
-    for file in fileList:
-      if file == 'manifest.xml' or file == 'package.xml':
-          return package
-    return packageName(os.path.dirname(dir))
-  return None
 
 def getCwdArg(arg, argv):
   for a in argv:
@@ -131,6 +117,8 @@ def main(argv=sys.argv):
       elif options['pidkill']:
         import signal
         os.kill(int(options['pidkill']), signal.SIGKILL)
+      elif options['package']:
+        print roslib.packages.get_pkg_dir(options['package'])
     else:
       parser = _get_optparse()
       parser.print_help()

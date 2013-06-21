@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import sys
 import shlex
 import subprocess
@@ -80,7 +81,34 @@ class SSHhandler(object):
         s.close()
       del s
 
-  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=True):
+  def transfer(self, host, local_file, remote_file, user=None, pw=None, auto_pw_request=False):
+    '''
+    Copies a file to a remote location using paramiko sfpt.
+    @param host: the host
+    @type host: C{str}
+    @param local_file: the local file
+    @type local_file: str
+    @param remote_file: the remote file name
+    @type remote_file: str
+    @param user: user name
+    @param pw: the password
+    '''
+    with self.mutex:
+      try:
+        ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw, True, auto_pw_request)
+        if not ssh is None:
+          sftp = ssh.open_sftp()
+          try:
+            sftp.mkdir(os.path.dirname(remote_file))
+          except:
+            pass
+          sftp.put(local_file, remote_file)
+      except AuthenticationRequest as e:
+        raise
+      except Exception, e:
+        raise
+
+  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False):
     '''
     Executes a command on remote host. Returns the output channels with 
     execution result or None. The connection will be established using paramiko 
@@ -152,7 +180,7 @@ class SSHhandler(object):
       except:
         pass
     
-  def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=True):
+  def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=False):
     '''
     @return: the paramiko ssh client
     @rtype: L{paramiko.SSHClient} 

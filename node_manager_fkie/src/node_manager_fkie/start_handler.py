@@ -41,7 +41,7 @@ import threading
 import xmlrpclib
 
 import node_manager_fkie as nm
-from common import get_ros_home, masteruri_from_ros, package_name
+from common import get_ros_home, masteruri_from_ros, package_name, package_name
 
 
 class StartException(Exception):
@@ -59,6 +59,7 @@ class BinarySelectionRequest(Exception):
     return "BinarySelectionRequest from "  + self.choices + "::" + repr(self.error)
 
 
+CACHED_PKG_PATH = dict() # {host : {pkg: path}}
 
 class StartHandler(object):
   '''
@@ -732,3 +733,36 @@ class StartHandler(object):
           raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))
         if output:
           rospy.logdebug("STDOUT while kill %s on %s: %s", str(pid), host, output)
+
+  @classmethod
+  def transfer_files(cls, host, file, auto_pw_request=False, user=None, pw=None):
+    '''
+    Copies the given file to the remote host. Uses caching of remote paths.
+    '''
+    # get package of the file
+    (pkg_name, pkg_path) = package_name(os.path.dirname(file))
+    if not pkg_name is None:
+      # get the subpath of the file
+      subfile_path = file.replace(pkg_path, '')
+      # get the path of the package on the remote machine
+      try:
+        output = ''
+        error = ''
+        ok = True
+        if CACHED_PKG_PATH.has_key(host) and CACHED_PKG_PATH[host].has_key(pkg_name):
+          output = CACHED_PKG_PATH[host][pkg_name]
+        else:
+          if not CACHED_PKG_PATH.has_key(host):
+            CACHED_PKG_PATH[host] = dict()
+          output, error, ok = nm.ssh().ssh_exec(host, [nm.STARTER_SCRIPT, '--package', pkg_name], user, pw, auto_pw_request)
+        if ok:
+          if error:
+            rospy.logwarn("ERROR while transfer %s to %s: %s", file, host, error)
+            raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))
+          if output:
+            CACHED_PKG_PATH[host][pkg_name] = output
+            nm.ssh().transfer(host, file, os.path.join(output.strip(), subfile_path.strip(os.sep)))
+          else:
+            raise StartException("Remote host no returned any answer. Is there the new version of node_manager installed?")
+      except nm.AuthenticationRequest as e:
+        raise nm.InteractionNeededError(e, cls.transfer_files, (host, file, auto_pw_request))

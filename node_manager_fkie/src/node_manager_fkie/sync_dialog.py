@@ -39,6 +39,66 @@ import threading
 import node_manager_fkie as nm
 from common import is_package
 from detailed_msg_box import WarningMessageBox
+from xml_editor import Editor
+
+class SyncHighlighter(QtGui.QSyntaxHighlighter):
+  '''
+  Enabled the syntax highlightning for the sync interface.
+  '''
+
+  def __init__(self, parent=None):
+    QtGui.QSyntaxHighlighter.__init__(self, parent)
+    self.rules = []
+    self.commentStart = QtCore.QRegExp("#")
+    self.commentEnd = QtCore.QRegExp("\n")
+    self.commentFormat = QtGui.QTextCharFormat()
+    f = QtGui.QTextCharFormat()
+    r = QtCore.QRegExp()
+    r.setMinimal(True)
+    f.setFontWeight(QtGui.QFont.Normal)
+    f.setForeground (QtCore.Qt.darkBlue)
+    tagList = ["\\bignore_hosts\\b", "\\bsync_hosts\\b",
+               "\\bignore_nodes\\b", "\\bsync_nodes\\b",
+               "\\bignore_topics\\b", "\\bsync_topics\\b",
+               "\\bignore_services\\b", "\\bsync_services\\b",
+               "\\bsync_topics_on_demand\\b", "\\bremap\\b"]
+    for tag in tagList:
+      r.setPattern(tag)
+      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+
+    f.setForeground(QtCore.Qt.darkGreen)
+    f.setFontWeight(QtGui.QFont.Bold)
+    attrList = ["\\b\\*|\\*\\B|\\/\\*"]
+    for attr in attrList:
+      r.setPattern(attr)
+      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+
+#    f.setForeground(QtCore.Qt.red)
+#    f.setFontWeight(QtGui.QFont.Bold)
+#    attrList = ["\\s\\*"]
+#    for attr in attrList:
+#      r.setPattern(attr)
+#      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+
+    self.commentFormat.setFontItalic(True)
+    self.commentFormat.setForeground(QtCore.Qt.darkGray)
+
+
+  def highlightBlock(self, text):
+    for pattern, format in self.rules:
+      index = pattern.indexIn(text)
+      while index >= 0:
+        length = pattern.matchedLength()
+        self.setFormat(index, length, format)
+        index = pattern.indexIn(text, index + length)
+
+    self.setCurrentBlockState(0)
+    startIndex = 0
+    if self.previousBlockState() != 1:
+      startIndex = self.commentStart.indexIn(text)
+      if startIndex >= 0:
+        commentLength = len(text) - startIndex
+        self.setFormat(startIndex, commentLength, self.commentFormat)
 
 
 class SyncDialog(QtGui.QDialog):
@@ -120,10 +180,11 @@ class SyncDialog(QtGui.QDialog):
     self.toolButton_CreateInterface.clicked.connect(self._on_create_interface_clicked)
     self.toolButton_CreateInterface.setVisible(False)
 
-    self.textedit = QtGui.QTextEdit(self)
+    self.textedit = Editor('', self)
+    hl = SyncHighlighter(self.textedit.document())
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
     self.textedit.setSizePolicy(sizePolicy)
-    self.textedit.setObjectName("textedit")
+    self.textedit.setObjectName("syncedit")
     self.verticalLayout.addWidget(self.textedit)
     self.textedit.setVisible(False)
 
@@ -131,6 +192,7 @@ class SyncDialog(QtGui.QDialog):
     self._fill_interface_thread = None
     self._interfaces_files = None
     self._sync_args = []
+    self._interface_filename = None
     
     self.buttonBox = QtGui.QDialogButtonBox(self)
     self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel)
@@ -145,6 +207,11 @@ class SyncDialog(QtGui.QDialog):
   @property
   def sync_args(self):
     return self._sync_args
+
+  @property
+  def interface_filename(self):
+    return self._interface_filename
+
   
   def _on_sync_all_clicked(self):
     self.setResult(QtGui.QDialog.Accepted)
@@ -159,6 +226,7 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_sync_topics:=', '[]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
+    self._interface_filename = None
     self.accept()
 
   def _on_sync_topics_on_demand_clicked(self):
@@ -173,6 +241,7 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_sync_topics:=', '[/only_on_demand]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[/*]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
+    self._interface_filename = None
     self.accept()
 
   def _on_select_interface_clicked(self):
@@ -230,6 +299,7 @@ class SyncDialog(QtGui.QDialog):
           fileName, selectedFilter = QtGui.QFileDialog.getSaveFileName(self, 'Save sync interface', '/home', "Sync Files (*.sync)")
         if fileName:
           with open(fileName, 'w+') as f: 
+            self._interface_filename = fileName
             iface = f.write(self.textedit.toPlainText())
             if self._new_iface:
               self.interface_field.clear()
@@ -244,6 +314,7 @@ class SyncDialog(QtGui.QDialog):
     elif self.interface_field.isVisible():
       interface = self.interface_field.currentText()
       if self._interfaces_files and self._interfaces_files.has_key(interface):
+        self._interface_filename = self._interfaces_files[interface]
         self._sync_args = []
         self._sync_args.append(''.join(['_interface_url:=', interface]))
         QtGui.QDialog.accept(self)
@@ -267,6 +338,14 @@ class SyncDialog(QtGui.QDialog):
     self.toolButton_EditInterface.setVisible(False)
     self.textedit.setVisible(True)
     self.textedit.setText("# The ignore_* lists will be processed first.\n"
+                          "# For ignore/sync nodes, topics or services\n"
+                          "# use follow declaration:\n"
+                          "#{param name}: \n"
+                          "#   - {ros name}\n"
+                          "# or for selected hosts:\n"
+                          "#   - {host name}:\n"
+                          "#     - {ros name}\n\n"
+                          "# you can use follow wildcard: '*', but not as a first character\n"
                           "ignore_hosts:\n"
                           "sync_hosts:\n\n"
                           "ignore_nodes:\n"
@@ -280,7 +359,7 @@ class SyncDialog(QtGui.QDialog):
                           "# The sync_topics_on_demand is only regarded, if sync_nodes or sync_topics are set.\n"
                           "# In this case the subscribed and published topics are synchronized even if they are\n"
                           "# not in the sync_* list.\n"
-                          "sync_topics_on_demand: False\n"
+                          "sync_topics_on_demand: False\n\n"
                           )
     self.resize(350,300)
 

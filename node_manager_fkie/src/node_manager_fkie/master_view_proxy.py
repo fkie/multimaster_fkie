@@ -1220,7 +1220,7 @@ class MasterViewProxy(QtGui.QWidget):
     for node in nodes:
       if node.name in cfg_nodes:
         self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                       'Start nodes', 
+                                       ''.join(['start ', node.node_info.name]), 
                                        self.start_node, 
                                        (node.node_info, force, cfg_nodes[node.node_info.name], force_host))
     self._progress_queue.start()
@@ -1361,7 +1361,7 @@ class MasterViewProxy(QtGui.QWidget):
     # put into the queue and start the que handling
     for node in nodes:
       self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                     'Stop nodes', 
+                                     ''.join(['stop ', node.name]), 
                                      self.stop_node, 
                                      (node, (len(nodes)==1)))
     self._progress_queue.start()
@@ -1398,7 +1398,7 @@ class MasterViewProxy(QtGui.QWidget):
       if not pid is None:
         try:
           self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                         'Kill nodes', 
+                                         ''.join(['kill ', node.name, '(', str(pid), ')']), 
                                          nm.starter().kill, 
                                          (self.getHostFromNode(node), pid, False))
           self._progress_queue.start()
@@ -1416,7 +1416,7 @@ class MasterViewProxy(QtGui.QWidget):
     # put into the queue and start the que handling
     for node in selectedNodes:
       self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                     'Kill nodes', 
+                                     ''.join(['kill ', node.name]), 
                                      self.kill_node, 
                                      (node, (len(selectedNodes)==1)))
     self._progress_queue.start()
@@ -1466,7 +1466,7 @@ class MasterViewProxy(QtGui.QWidget):
     # put into the queue and start the que handling
     for node in selectedNodes:
       self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                     'Unregister nodes', 
+                                     ''.join(['unregister node ', node.name]), 
                                      self.unregister_node, 
                                      (node, (len(selectedNodes)==1)))
     self._progress_queue.start()
@@ -1521,7 +1521,7 @@ class MasterViewProxy(QtGui.QWidget):
           if ret:
             for node in selectedNodes:
               self._progress_queue.add2queue(str(self._progress_queue.count()),
-                                             'Show IO',
+                                             ''.join(['show IO of ', node.name]),
                                              nm.screen().openScreen,
                                              (node.name, self.getHostFromNode(node), False))
             self._progress_queue.start()
@@ -1540,7 +1540,7 @@ class MasterViewProxy(QtGui.QWidget):
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       for node in selectedNodes:
         self._progress_queue.add2queue(str(self._progress_queue.count()),
-                                       'Kill screen',
+                                       ''.join(['kill screen of ', node.name]),
                                        nm.screen().killScreens,
                                        (node.name, self.getHostFromNode(node), False))
       self._progress_queue.start()
@@ -1595,7 +1595,7 @@ class MasterViewProxy(QtGui.QWidget):
         if ret:
           for node in selectedNodes:
             self._progress_queue.add2queue(str(self._progress_queue.count()),
-                                           'Show log',
+                                           ''.join(['show log of ', node.name]),
                                            nm.starter().openLog,
                                            (node.name, self.getHostFromNode(node)))
           self._progress_queue.start()
@@ -1651,7 +1651,7 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     for node in selectedNodes:
       self._progress_queue.add2queue(str(self._progress_queue.count()),
-                                     'Delete Log',
+                                     ''.join(['delete Log of ', node.name]),
                                      nm.starter().deleteLog,
                                      (node.name, self.getHostFromNode(node), False))
     self._progress_queue.start()
@@ -1875,7 +1875,7 @@ class MasterViewProxy(QtGui.QWidget):
         pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
 #        nm.starter().runNodeWithoutConfig(nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), args=[pub_cmd], masteruri=self.masteruri)
         self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                 'Start publisher', 
+                                 ''.join(['start publisher for ', topic_name]), 
                                  nm.starter().runNodeWithoutConfig, 
                                  (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), [pub_cmd], self.masteruri))
         self._progress_queue.start()

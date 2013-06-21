@@ -149,6 +149,9 @@ class MainWindow(QtGui.QMainWindow):
     sm.selectionChanged.connect(self.on_xmlFileView_selection_changed)
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.ui.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
+    self.ui.newXmlButton.clicked.connect(self.on_new_xml_clicked)
+    self.ui.newXmlButton.setVisible(False)
+    self.ui.transferButton.clicked.connect(self.on_transfer_file_clicked)
     self.ui.loadXmlButton.clicked.connect(self.on_load_xml_clicked)
     self.ui.loadXmlAsDefaultButton.clicked.connect(self.on_load_as_default)
 
@@ -204,7 +207,6 @@ class MainWindow(QtGui.QMainWindow):
     start_menu.addAction(self.loadDeafaultAtHostAct)
     self.ui.loadXmlAsDefaultButton.setMenu(start_menu)
 
-    
     self.default_load_launch = os.path.abspath(args[1]) if len(args) >= 2 else ''
     if self.default_load_launch:
       if os.path.isdir(self.default_load_launch):
@@ -377,7 +379,7 @@ class MainWindow(QtGui.QMainWindow):
                                     os.path.basename(self.default_load_launch).replace('.launch',''), 
                                     roslib.names.SEP, 'default_cfg'])
               self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
-                                             'Start default config '+str(host), 
+                                             'start default config '+str(host), 
                                              nm.starter().runNodeWithoutConfig, 
                                              (host, 'default_cfg_fkie', 'default_cfg', node_name, args, masteruri, False))
               self._progress_queue_cfg.start()
@@ -689,13 +691,23 @@ class MainWindow(QtGui.QMainWindow):
       if self._sync_dialog.exec_():
         try:
           host = nm.nameres().getHostname(self.currentMaster.masteruri)
+          if not self._sync_dialog.interface_filename is None:
+            # copy the interface file to remote machine
+            self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
+                                           'Transfer sync interface '+str(host), 
+                                           nm.starter().transfer_files, 
+                                           (str(host), self._sync_dialog.interface_filename))
           self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
                                          'Start sync on '+str(host), 
                                          nm.starter().runNodeWithoutConfig, 
                                          (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, str(self.currentMaster.masteruri), True))
           self._progress_queue_sync.start()
         except:
-          pass
+          import traceback
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Start sync error", 
+                            "Error while start sync node",
+                            str(traceback.format_exc())).exec_()
+          
     self.ui.syncButton.setEnabled(True)
 
   def on_sync_released(self):
@@ -726,7 +738,7 @@ class MainWindow(QtGui.QMainWindow):
           try:
             host = nm.nameres().getHostname(self.currentMaster.masteruri)
             self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
-                                           'Start sync on '+str(host), 
+                                           'start sync on '+str(host), 
                                            nm.starter().runNodeWithoutConfig, 
                                            (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(self.currentMaster.masteruri), False))
             self._progress_queue_sync.start()
@@ -929,7 +941,7 @@ class MainWindow(QtGui.QMainWindow):
           args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
           #TODO: remove the name parameter from the ROS parameter server
           self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                         'Start discovering on '+str(hostname), 
+                                         'start discovering on '+str(hostname), 
                                          nm.starter().runNodeWithoutConfig, 
                                          (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False))
           self._progress_queue.start()
@@ -953,7 +965,7 @@ class MainWindow(QtGui.QMainWindow):
       if network < 100 and network >= 0:
         args.append(''.join(['_mcast_port:=', str(11511 + int(network))]))
       self._progress_queue.add2queue(str(self._progress_queue.count()), 
-                                     'Start discovering on '+str(hostname), 
+                                     'start discovering on '+str(hostname), 
                                      nm.starter().runNodeWithoutConfig, 
                                      (str(hostname), 'master_discovery_fkie', 'master_discovery', 'master_discovery', args, None, False))
       self._progress_queue.start()
@@ -991,6 +1003,7 @@ class MainWindow(QtGui.QMainWindow):
       isfile = self.ui.xmlFileView.model().isLaunchFile(index.row())
       self.ui.editXmlButton.setEnabled(isfile)
       self.ui.loadXmlButton.setEnabled(isfile)
+      self.ui.transferButton.setEnabled(isfile)
       self.ui.loadXmlAsDefaultButton.setEnabled(isfile)
 
   def on_refresh_xml_clicked(self):
@@ -1000,6 +1013,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.xmlFileView.model().reloadCurrentPath()
     self.ui.editXmlButton.setEnabled(False)
     self.ui.loadXmlButton.setEnabled(False)
+    self.ui.transferButton.setEnabled(False)
     self.ui.loadXmlAsDefaultButton.setEnabled(False)
     
   def on_edit_xml_clicked(self):
@@ -1012,6 +1026,52 @@ class MainWindow(QtGui.QMainWindow):
       path = self.ui.xmlFileView.model().getFilePath(pathItem)
       if not path is None:
         self._editor_dialog_open([path], '')
+
+  def on_new_xml_clicked(self):
+    '''
+    Creates a new launch file.
+    '''
+    print "NOT implemented"
+
+  def on_transfer_file_clicked(self):
+    '''
+    Copies the selected file to 
+    '''
+    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
+    for index in indexes:
+      pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
+      print pathItem, path, pathId
+      path = self.ui.xmlFileView.model().getFilePath(pathItem)
+      if not path is None:
+        host = nm.nameres().getHostname(self.currentMaster.masteruri) if not self.currentMaster is None else 'localhost'
+        params = {'Host' : ('string', host),
+                  'recursive' : ('bool', 'False') }
+        dia = ParameterDialog(params)
+        dia.setFilterVisible(False)
+        dia.setWindowTitle('Transfer file')
+        dia.resize(350,120)
+        dia.setFocusField('Host')
+        if dia.exec_():
+          try:
+            params = dia.getKeywords()
+            host = params['Host']
+            rospy.loginfo("TRANSFER the launch file to host %s: %s", str(host), path)
+            recursive = params['recursive']
+            self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
+                                           'transfer files to '+str(host), 
+                                           nm.starter().transfer_files, 
+                                           (str(host), path))
+            if recursive:
+              for f in LaunchConfig.getIncludedFiles(path):
+                self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
+                                               'transfer files to '+str(host), 
+                                               nm.starter().transfer_files, 
+                                               (str(host), f))
+            self._progress_queue_cfg.start()
+          except Exception, e:
+            WarningMessageBox(QtGui.QMessageBox.Warning, "Transfer error", 
+                             'Error while parse parameter',
+                              str(e)).exec_()
 
   def _editor_dialog_open(self, files, search_text):
     if files:
@@ -1095,7 +1155,7 @@ class MainWindow(QtGui.QMainWindow):
                              os.path.basename(path).replace('.launch','').replace(' ', '_'), 
                              roslib.names.SEP, 'default_cfg'])
         self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
-                                       'Start default config '+str(hostname), 
+                                       'start default config '+str(hostname), 
                                        nm.starter().runNodeWithoutConfig, 
                                        (str(hostname), 'default_cfg_fkie', 'default_cfg', node_name, args, master_proxy.masteruri, False))
         self._progress_queue_cfg.start()
@@ -1128,7 +1188,7 @@ class MainWindow(QtGui.QMainWindow):
         dia.setFilterVisible(False)
         dia.setWindowTitle('Start node on...')
         dia.resize(350,120)
-        dia.setFocusField('host')
+        dia.setFocusField('Host')
         if dia.exec_():
           try:
             params = dia.getKeywords()

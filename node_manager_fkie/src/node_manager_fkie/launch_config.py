@@ -159,7 +159,8 @@ class LaunchConfig(QtCore.QObject):
     '''
     return self.__package
   
-  def _index(self, text, regexp_list):
+  @classmethod
+  def _index(cls, text, regexp_list):
     '''
     Searches in the given text for key indicates the including of a file and 
     return their index.
@@ -176,7 +177,8 @@ class LaunchConfig(QtCore.QObject):
         return index
     return -1
 
-  def interpretPath(self, path, pwd='.'):
+  @classmethod
+  def interpretPath(cls, path, pwd='.'):
     '''
     Tries to determine the path of the included file. The statement of 
     $(find 'package') will be resolved.
@@ -203,7 +205,8 @@ class LaunchConfig(QtCore.QObject):
       return ''.join([pwd, os.path.sep, path])
     return path
 
-  def getIncludedFiles(self, file):
+  @classmethod
+  def getIncludedFiles(cls, file):
     '''
     Reads the configuration file and searches for included files. This files
     will be returned in a list.
@@ -217,18 +220,18 @@ class LaunchConfig(QtCore.QObject):
     with open(file, 'r') as f:
       lines = f.readlines()
     for line in lines:
-      index = self._index(line, regexp_list)
+      index = cls._index(line, regexp_list)
       if index > -1:
         startIndex = line.find('"', index)
         if startIndex > -1:
           endIndex = line.find('"', startIndex+1)
           fileName = line[startIndex+1:endIndex]
           if len(fileName) > 0:
-            path = self.interpretPath(fileName, os.path.dirname(self.__launchFile))
+            path = cls.interpretPath(fileName, os.path.dirname(file))
             if os.path.isfile(path):
               result.add(path)
               if path.endswith('.launch'):
-                result.update(self.getIncludedFiles(path))
+                result.update(cls.getIncludedFiles(path))
     return list(result)
 
   def load(self, argv):
