@@ -185,8 +185,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @param path: new path
     @type path: C{str}
     '''
-    if self._is_in_ros_packages(path):
-      self._setNewList(self._moveDown(path))
+#    if self._is_in_ros_packages(path):
+    self._setNewList(self._moveDown(path))
 
   def add2LoadHistory(self, file):
     try:
@@ -230,6 +230,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @return: C{True}, if the path is in the ROS_PACKAGE_PATH
     @rtype: C{boolean}
     '''
+    #TODO fix for paths with symbolic links
     for p in self.root_paths:
       if path.startswith(p):
         return True

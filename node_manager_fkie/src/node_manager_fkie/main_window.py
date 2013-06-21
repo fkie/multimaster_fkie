@@ -150,7 +150,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.ui.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
     self.ui.newXmlButton.clicked.connect(self.on_new_xml_clicked)
-    self.ui.newXmlButton.setVisible(False)
+    #self.ui.newXmlButton.setVisible(False)
     self.ui.transferButton.clicked.connect(self.on_transfer_file_clicked)
     self.ui.loadXmlButton.clicked.connect(self.on_load_xml_clicked)
     self.ui.loadXmlAsDefaultButton.clicked.connect(self.on_load_as_default)
@@ -1031,7 +1031,35 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Creates a new launch file.
     '''
-    print "NOT implemented"
+    (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
+                                                 "New launch file", 
+                                                 "/home", 
+                                                 "Config files (*.launch *.yaml);;All files (*)")
+    if fileName:
+      try:
+        (pkg, pkg_path) = package_name(os.path.dirname(fileName))
+        if pkg is None:
+          WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
+                         'The new file is not in a ROS package').exec_()
+          return
+        self.ui.xmlFileView.model().setPath(os.path.dirname(fileName))
+        with open(fileName, 'w+') as f:
+          f.write("<launch>\n"
+                  "  <arg name=\"robot_ns\" default=\"my_robot\"/>\n"
+                  "  <group ns=\"$(arg robot_ns)\">\n"
+                  "    <param name=\"tf_prefix\" value=\"$(arg robot_ns)\"/>\n"
+                  "\n"
+                  "    <node pkg=\"my_pkg\" type=\"my_node\" name=\"my_name\" >\n"
+                  "      <param name=\"capability_group\" value=\"MY_GROUP\"/>\n"
+                  "    </node>\n"
+                  "  </group>\n"
+                  "</launch>\n"
+                  )
+        self._editor_dialog_open([fileName], '')
+      except EnvironmentError as e:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
+                         'Error while create a new file',
+                          str(e)).exec_()
 
   def on_transfer_file_clicked(self):
     '''
