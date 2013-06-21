@@ -446,11 +446,13 @@ class SyncThread(threading.Thread):
   def _loadInterface(self):
     interface_file = resolve_url(rospy.get_param('~interface_url', ''))
     data = read_interface(interface_file) if interface_file else {}
+    print "DATA:", data
     # set the pattern for ignore and sync lists
     self._re_ignore_nodes = create_pattern('ignore_nodes', data, interface_file, 
-                                          ['/rosout', rospy.get_name().replace('/', '/*')+'*', self.masterInfo.discoverer_name.replace('/', '/*')+'*', '/*node_manager', '/*zeroconf'])
-    self._re_sync_nodes = create_pattern('sync_nodes', data, interface_file, [])
-    self._re_ignore_topics = create_pattern('ignore_topics', data, interface_file, ['/rosout', '/rosout_agg'])
-    self._re_sync_topics = create_pattern('sync_topics', data, interface_file, [])
-    self._re_ignore_services = create_pattern('ignore_services', data, interface_file, ['*/get_loggers, */set_logger_level'])
-    self._re_sync_services = create_pattern('sync_services', data, interface_file, [])    
+                                          ['/rosout', rospy.get_name().replace('/', '/*')+'*', self.masterInfo.discoverer_name.replace('/', '/*')+'*', '/*node_manager', '/*zeroconf'],
+                                          self.masterInfo.name)
+    self._re_sync_nodes = create_pattern('sync_nodes', data, interface_file, [], self.masterInfo.name)
+    self._re_ignore_topics = create_pattern('ignore_topics', data, interface_file, ['/rosout', '/rosout_agg'], self.masterInfo.name)
+    self._re_sync_topics = create_pattern('sync_topics', data, interface_file, [], self.masterInfo.name)
+    self._re_ignore_services = create_pattern('ignore_services', data, interface_file, ['*/get_loggers, */set_logger_level'], self.masterInfo.name)
+    self._re_sync_services = create_pattern('sync_services', data, interface_file, [], self.masterInfo.name)

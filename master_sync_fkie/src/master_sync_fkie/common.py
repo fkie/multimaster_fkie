@@ -116,7 +116,7 @@ def read_interface(interface_file):
         raise ValueError("file %s contains invalid YAML:\n%s"%(interface_file, str(e))) 
   return data
   
-def create_pattern(param, data, has_interface, default=[]):
+def create_pattern(param, data, has_interface, default=[], mastername=''):
   '''
   Create and compile the regular expression for given parameter. The data is
   taken from `data`. If the data was read from the interface file, then you have
@@ -137,11 +137,33 @@ def create_pattern(param, data, has_interface, default=[]):
   @rtype: The result of `re.compile()`
   '''
   def_list = default
-  if has_interface:
+  if has_interface: # read the parameter from the sync interface data
     if data.has_key(param) and data[param]:
-      def_list[len(def_list):] = data[param]
-  else:
-    def_list[len(def_list):] = rospy.get_param('~'+param, [])
+      for item in data[param]:
+        if isinstance(item, dict):
+          # this are mastername specific remapings
+          if mastername and item.has_key(mastername):
+            if isinstance(item[mastername], list):
+              def_list[len(def_list):] = item[mastername]
+            else:
+              def_list.append(item[host])
+        elif isinstance(item, list):
+          def_list[len(def_list):] = item
+        else:
+          def_list.append(item)
+  else: # reads the patterns from the ROS parameter server
+    rp = rospy.get_param('~'+param, [])
+    if isinstance(rp, list):
+      def_list[len(def_list):] = rp
+    else:
+      def_list.append(rp)
+    # reads the mastername specific parameters
+    if mastername:
+      rph = rospy.get_param('~'+roslib.names.ns_join(mastername, param), [])
+      if isinstance(rp, list):
+        def_list[len(def_list):] = rph
+      else:
+        def_list.append(rph)
   rospy.loginfo("%s: %s", param, str(def_list))
   def_list[:] = [''.join([n.strip().replace('*','.*'), '\Z']) for n in def_list]
   if def_list:
