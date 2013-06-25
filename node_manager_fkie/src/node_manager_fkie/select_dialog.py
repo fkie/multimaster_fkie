@@ -61,17 +61,15 @@ class SelectDialog(QtGui.QDialog):
     
     # add select all option
     if not exclusive:
+      self._ignore_next_toggle = False
       options = QtGui.QWidget(self)
       hLayout = QtGui.QHBoxLayout(options)
       hLayout.setContentsMargins(1, 1, 1, 1)
       self.select_all_checkbox = QtGui.QCheckBox('all')
-  #    self.select_all_checkbox.setTristate(True)
-      try:
-        self.select_all_checkbox.setCheckState(QtCore.Qt.CheckState.Checked)#PySide
-      except:
-        self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)  #PyQt4
+#      self.select_all_checkbox.setTristate(True)
       self.select_all_checkbox.toggled.connect(self._on_select_all_checkbox_toggled)
       hLayout.addWidget(self.select_all_checkbox)
+      self.content.toggled.connect(self._on_main_toggle)
       # add spacer
       spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
       hLayout.addItem(spacerItem)
@@ -89,14 +87,22 @@ class SelectDialog(QtGui.QDialog):
     # set the input fields
     if input:
       self.content.createFieldsFromValues(input, exclusive)
+      if len(input) == 1:
+        self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)
 
 #    print '=============== create', self.objectName()
 #
 #  def __del__(self):
 #    print "************ destroy", self.objectName()
 
+  def _on_main_toggle(self, state):
+    self._ignore_next_toggle = state != self.select_all_checkbox.checkState()
+    self.select_all_checkbox.setCheckState(state)
+
   def _on_select_all_checkbox_toggled(self, state):
-    self.content.setState(state)
+    if not self._ignore_next_toggle:
+      self.content.setState(state)
+    self._ignore_next_toggle = False
 
   def _on_filter_changed(self):
     self.content.filter(self.filter_field.text())
@@ -141,6 +147,9 @@ class MainBox(QtGui.QWidget):
   '''
   A widget with entries.
   '''
+  
+  toggled = QtCore.Signal(QtCore.Qt.CheckState)
+  
   def __init__(self, parent=None):
     QtGui.QWidget.__init__(self, parent)
     self.setObjectName("MainBox")
@@ -156,15 +165,19 @@ class MainBox(QtGui.QWidget):
       if isinstance(values, list):
         for v in values:
           checkbox = QtGui.QCheckBox(v)
+          checkbox.toggled.connect(self._on_checkbox_toggled)
           checkbox.setObjectName(v)
           self.box_group.addButton(checkbox)
           self.layout().addRow(checkbox)
-          try:
-            checkbox.setCheckState(QtCore.Qt.CheckState.Checked)#PySide
-          except:
-            checkbox.setCheckState(QtCore.Qt.Checked)#PyQt4
     finally:
       self.setUpdatesEnabled(True)
+
+  def _on_checkbox_toggled(self):
+    l = self.getSelected()
+    if len(l) == self.layout().count():
+      self.toggled.emit(QtCore.Qt.Checked)
+    else:
+      self.toggled.emit(QtCore.Qt.Unchecked)
 
   def getSelected(self):
     result = list()
@@ -179,7 +192,4 @@ class MainBox(QtGui.QWidget):
     for i in range(self.layout().count()):
       item = self.layout().itemAt(i).widget()
       if isinstance(item, QtGui.QCheckBox):
-        try:
-          item.setCheckState(QtCore.Qt.CheckState.Checked if state else QtCore.Qt.CheckState.Unchecked)#PySide
-        except:
-          item.setCheckState(QtCore.Qt.Checked if state else QtCore.Qt.Unchecked)#PyQt4
+        item.setCheckState(QtCore.Qt.Checked if state else QtCore.Qt.Unchecked)
