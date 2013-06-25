@@ -89,10 +89,10 @@ def resolve_url(interface_url):
       else:
         pkg_dir = roslib.packages.get_pkg_dir(pkg_name)
         filename = os.path.join(pkg_dir, pkg_path)
-    elif interface_url != '.':
-      raise ValueError('unsupported interface URL: ' + interface_url)
+    else:
+      filename = interface_url
     if filename and not os.path.exists(filename):
-      raise ValueError('Interface file not found: ' + filename)
+      raise ValueError('unsupported interface URL or interface file not found: ' + filename)
   return filename
 
 def read_interface(interface_file):

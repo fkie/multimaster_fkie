@@ -64,6 +64,7 @@ from common import masteruri_from_ros, package_name
 import node_manager_fkie as nm
 
 from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from master_discovery_fkie.common import resolve_url
 #from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
 
 
@@ -207,7 +208,7 @@ class MainWindow(QtGui.QMainWindow):
     start_menu.addAction(self.loadDeafaultAtHostAct)
     self.ui.loadXmlAsDefaultButton.setMenu(start_menu)
 
-    self.default_load_launch = os.path.abspath(args[1]) if len(args) >= 2 else ''
+    self.default_load_launch = os.path.abspath(resolve_url(args[1])) if len(args) >= 2 else ''
     if self.default_load_launch:
       if os.path.isdir(self.default_load_launch):
         self.ui.xmlFileView.model().setPath(self.default_load_launch)
