@@ -764,7 +764,7 @@ class MainWindow(QtGui.QMainWindow):
         self.showMasterName(masteruri, name, 'Try to get info!!!', master.master_state.online)
     else:
       self.showMasterName('', 'No robot selected', None, False)
-    if (time.time() - self._refresh_time > 15.0):
+    if (time.time() - self._refresh_time > 30.0):
       masteruri = self.getMasteruri()
       if not masteruri is None:
         master = self.getMaster(masteruri)

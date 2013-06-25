@@ -61,7 +61,7 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
                "\\bignore_nodes\\b", "\\bsync_nodes\\b",
                "\\bignore_topics\\b", "\\bsync_topics\\b",
                "\\bignore_services\\b", "\\bsync_services\\b",
-               "\\bsync_topics_on_demand\\b", "\\bremap\\b"]
+               "\\bsync_topics_on_demand\\b", "\\bsync_remote_nodes\\b"]
     for tag in tagList:
       r.setPattern(tag)
       self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
@@ -226,6 +226,7 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_sync_topics:=', '[]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
+    self._sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
     self._interface_filename = None
     self.accept()
 
@@ -241,6 +242,7 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_sync_topics:=', '[/only_on_demand]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[/*]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
+    self._sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
     self._interface_filename = None
     self.accept()
 
@@ -356,10 +358,12 @@ class SyncDialog(QtGui.QDialog):
                           "  - /*get_loggers\n"
                           "  - /*set_logger_level\n"
                           "sync_services:\n\n"
-                          "# The sync_topics_on_demand is only regarded, if sync_nodes or sync_topics are set.\n"
-                          "# In this case the subscribed and published topics are synchronized even if they are\n"
-                          "# not in the sync_* list.\n"
+                          "# If sync_topics_on_demand is True the local subscribed and published topics\n"
+                          "# are synchronized with remote even if they are not in the sync_* list.\n"
                           "sync_topics_on_demand: False\n\n"
+                          "# The nodes which are running not at the same host as the ROS master are not\n"
+                          "# synchronized by default. Use sync_remote_nodes to sync these nodes also.\n"
+                          "sync_remote_nodes: False\n\n"
                           )
     self.resize(350,300)
 

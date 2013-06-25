@@ -1,3 +1,25 @@
+`Common Methods` --- Module
+=============================
+
+This module offers common methods to find ROS_MASTER_URI, resolve URI to find a 
+resource or create a regular expression pattern.
+
+.. automodule:: master_discovery_fkie.common
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+`Filter Interface` --- Module
+=============================
+
+This module offers a Filter class to filter out nodes, topics or services from
+MasterInfo.
+
+.. automodule:: master_discovery_fkie.filter_interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 `Interface Finder` --- Module
 =============================
 

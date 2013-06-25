@@ -13,7 +13,10 @@ ignore_services:
   - /*set_logger_level
 sync_services:
 
-# The sync_topics_on_demand is only regarded, if sync_nodes or sync_topics are set.
-# In this case the subscribed and published topics are synchronized even if they are
-# not in the sync_* list.
+# If sync_topics_on_demand is True the local subscribed and published topics
+# are synchronized with remote even if they are not in the sync_* list.
 sync_topics_on_demand: False
+
+# The nodes which are running not at the same host as the ROS master are not
+# synchronized by default. Use sync_remote_nodes to sync these nodes also.
+sync_remote_nodes: False

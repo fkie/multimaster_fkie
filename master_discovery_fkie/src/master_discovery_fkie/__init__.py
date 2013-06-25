@@ -48,8 +48,8 @@ MCAST_PORT = 11511
 
 def getDefaultRPCPort(zeroconf=False):
   try:
-    from master_monitor import MasterMonitor
-    masteruri = MasterMonitor._masteruri_from_ros()
+    from common import masteruri_from_ros
+    masteruri = masteruri_from_ros()
     rospy.loginfo("ROS Master URI: %s", masteruri)
     from urlparse import urlparse
     return urlparse(masteruri).port+(600 if zeroconf else 300) 

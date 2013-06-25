@@ -38,7 +38,7 @@ import socket
 import roslib; roslib.load_manifest('master_sync_fkie')
 import rospy
 
-from common import masteruri_from_ros, resolve_url, read_interface, create_pattern, is_empty_pattern
+from master_discovery_fkie.common import masteruri_from_ros, resolve_url, read_interface, create_pattern, is_empty_pattern
 from sync_thread import SyncThread
 from multimaster_msgs_fkie.msg import MasterState#, LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
 from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
@@ -176,7 +176,7 @@ class Main(object):
               self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
             else:
     #          print "add a sync thread to:", mastername, ros_master.uri
-              self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0)
+              self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__own_state)
               if self.__own_state:
                 self.masters[mastername].setOwnMasterState(MasterInfo.from_list(self.__own_state))
 #              self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
@@ -283,7 +283,7 @@ class Main(object):
     self.__sync_topics_on_demand = False
     if interface_file:
       if data.has_key('sync_topics_on_demand'):
-        self.__sync_topics_on_demand = data['sync_hosts']
+        self.__sync_topics_on_demand = data['sync_topics_on_demand']
     elif rospy.has_param('~sync_topics_on_demand'):
       self.__sync_topics_on_demand = rospy.get_param('~sync_topics_on_demand')
     rospy.loginfo("sync_topics_on_demand: %s", self.__sync_topics_on_demand)

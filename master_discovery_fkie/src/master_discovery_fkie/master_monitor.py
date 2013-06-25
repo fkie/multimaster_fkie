@@ -48,6 +48,8 @@ try: # to avoid the problems with autodoc on ros.org/wiki site
   from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo
 except:
   pass
+from common import masteruri_from_ros
+from filter_interface import FilterInterface
 from master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
 import interface_finder
 
@@ -108,7 +110,7 @@ class MasterMonitor(object):
     self._state_access_lock = threading.RLock()
     self._create_access_lock = threading.RLock()
     self._lock = threading.RLock()
-    self.__masteruri = self._masteruri_from_ros()
+    self.__masteruri = masteruri_from_ros()
     self.__new_master_state = None
     self.__masteruri_rpc = None
     self.__mastername = None
@@ -134,6 +136,7 @@ class MasterMonitor(object):
         rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
         self.rpcServer.register_introspection_functions()
         self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')
+        self.rpcServer.register_function(self.getListedMasterInfoFiltered, 'masterInfoFiltered')
         self.rpcServer.register_function(self.getMasterContacts, 'masterContacts')
         self._rpcThread = threading.Thread(target = self.rpcServer.serve_forever)
         self._rpcThread.setDaemon(True)
@@ -149,25 +152,6 @@ class MasterMonitor(object):
         print traceback.format_exc()
         if not do_retry:
           raise
-
-  @classmethod
-  def _masteruri_from_ros(cls):
-    '''
-    :return: the master URI depending on ROS distribution API.
-
-    :rtype: str
-    '''
-    try:
-      import rospkg.distro
-      distro = rospkg.distro.current_distro_codename()
-      if distro in ['electric', 'diamondback', 'cturtle']:
-        return roslib.rosenv.get_master_uri()
-      else:
-        import rosgraph
-        return rosgraph.rosenv.get_master_uri()
-    except:
-      import os
-      return os.environ['ROS_MASTER_URI']
 
   def shutdown(self):
     '''
@@ -314,6 +298,30 @@ class MasterMonitor(object):
         with self._state_access_lock:
           #'print "  getListedMasterInfo _state_access_lock locked", threading.current_thread()
           result = self.__master_state.listedState()
+        #'print "getListedMasterInfo _state_access_lock RET", threading.current_thread()
+      except:
+        import traceback
+        print traceback.format_exc()
+    #'print "MASTERINFO <<<<<<<<<<<<<<<<<<<<<"
+    return result
+
+  def getListedMasterInfoFiltered(self, filter_list):
+    '''
+    :return: a extended filtered ROS Master State.
+    
+    :rtype:  :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()` for result type 
+    '''
+    #'print "MASTERINFO ===================="
+    t = str(time.time())
+    result = (t, t, self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [] )
+    if not (self.__master_state is None):
+      try:
+        #'print "getListedMasterInfo _state_access_lock try...", threading.current_thread()
+        with self._state_access_lock:
+          #'print "  getListedMasterInfo _state_access_lock locked", threading.current_thread()
+#          print "FILTER_LISTE______*********", filter_list
+          result = self.__master_state.listedState(FilterInterface.from_list(filter_list))
+#          print result
         #'print "getListedMasterInfo _state_access_lock RET", threading.current_thread()
       except:
         import traceback

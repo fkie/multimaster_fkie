@@ -35,6 +35,8 @@ import time
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
+from filter_interface import FilterInterface
+
 class NodeInfo(object):
   '''
   The NodeInfo class stores informations about a ROS node.
@@ -1042,9 +1044,13 @@ class MasterInfo(object):
 #      cputimes = os.times() ###################
 #      print "CHANGES:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
   
-  def listedState(self):
+  def listedState(self, filter_interface=None):
     '''
-    Returns a extended ROS Master State. 
+    Returns a extended ROS Master State.
+    
+    :param filter_interface: The filter used to filter the nodes, topics or serivces out.
+    
+    :type filter_interface: FilterInterface
     
     :return: complete ROS Master State as
              
@@ -1086,6 +1092,7 @@ class MasterInfo(object):
              ``[ [str,str,str,int,str] ]``, 
              ``[ [str,str,str,str,str] ])``
     '''
+    filter = FilterInterface() if filter_interface is None else filter_interface
     stamp = str(self.timestamp)
     stamp_local = str(self.timestamp_local)
     publishers = []
@@ -1094,19 +1101,51 @@ class MasterInfo(object):
     topicTypes = []
     nodes = []
     serviceProvider = []
+    added_nodes = []
+    nodes_last_check = set()
+    # process the node filtering first, but the nodelist to send will be created later
+    for name, node in self.nodes.items():
+      if not filter.is_ignored_node(name):
+        if filter_interface is None or node.isLocal or (filter.sync_remote_nodes() and self.masteruri == str(node.masteruri)):
+          added_nodes.append(name)
+
+    # filter the topics 
     for name, topic in self.topics.items():
-      pn = topic.publisherNodes
+      pn = []
+      for n in topic.publisherNodes:
+        if n in added_nodes:
+          if not filter.is_ignored_topic(n, name, topic.type):
+            pn.append(n)
+            nodes_last_check.add(n)
       if pn:
         publishers.append((name, pn))
-      sn = topic.subscriberNodes
+      sn = []
+      for n in topic.subscriberNodes:
+        if n in added_nodes:
+          if not filter.is_ignored_topic(n, name, topic.type):
+            sn.append(n)
+            nodes_last_check.add(n)
       if sn:
         subscribers.append((name, sn))
-      topicTypes.append((name, topic.type))
+      if pn or sn:
+        topicTypes.append((name, topic.type))
+    
+    # filter the services
     for name, service in self.services.items():
-      services.append((name, service.serviceProvider))
-      serviceProvider.append((name, service.uri, str(service.masteruri), service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
+      srv_prov = []
+      for sp in service.serviceProvider:
+        if sp in added_nodes:
+          if not filter.is_ignored_service(sp, name):
+            srv_prov.append(sp)
+            nodes_last_check.add(sp)
+      if srv_prov:
+        services.append((name, srv_prov))
+        serviceProvider.append((name, service.uri, str(service.masteruri), service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
+    
+    # creates the nodes list
     for name, node in self.nodes.items():
-      nodes.append((name, node.uri, str(node.masteruri), node.pid, 'local' if node.isLocal else 'remote'))
+      if name in nodes_last_check:
+        nodes.append((name, node.uri, str(node.masteruri), node.pid, 'local' if node.isLocal else 'remote'))
 
     return (stamp, stamp_local, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
   

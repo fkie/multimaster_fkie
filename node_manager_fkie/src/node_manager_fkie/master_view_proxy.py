@@ -379,9 +379,10 @@ class MasterViewProxy(QtGui.QWidget):
               n.pid = node.pid
           for servicename, service in master_info.services.items():
             s = self.__master_info.getService(servicename)
-            if not s is None and s.uri != service.uri and not s.isLocal:
+            if not s is None and (s.uri != service.uri or s.type != service.type ) and s.masteruri == service.masteruri:
               update_others = True
               s.uri = service.uri
+              s.type = service.type
 
 #      cputimes = os.times()
 #      cputime_init = cputimes[0] + cputimes[1]

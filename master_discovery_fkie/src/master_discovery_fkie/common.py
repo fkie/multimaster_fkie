@@ -33,18 +33,23 @@
 import re
 import os
 
-import roslib; roslib.load_manifest('master_sync_fkie')
+import roslib; roslib.load_manifest('master_discovery_fkie')
+import roslib.names
 import rospy
 
-EMPTY_PATTERN = re.compile(r'\b', re.I)
+EMPTY_PATTERN = re.compile('\b', re.I)
 
 def masteruri_from_ros():
   '''
   Returns the master URI depending on ROS distribution API.
-  @return: ROS master URI
-  @rtype: C{str}
-  @see: L{rosgraph.rosenv.get_master_uri()} (fuerte)
-  @see: L{roslib.rosenv.get_master_uri()} (prior)
+  
+  :return: ROS master URI
+  
+  :rtype: str
+  
+  :see: rosgraph.rosenv.get_master_uri() (fuerte)
+  
+  :see: roslib.rosenv.get_master_uri() (prior)
   '''
   try:
     import rospkg.distro
@@ -59,11 +64,15 @@ def masteruri_from_ros():
 
 def resolve_url(interface_url):
   '''
-  The supported URL begins with `file:///` or `package://`.
+  The supported URL begins with `file:///`, `package://` or `pkg://`.
   The package URL will be resolved to a valid file path. If the file is in a
-  subdirectory, you can replace the subdirectory by `///`. E.g.: `package://master_discovery_fkie///master_discovery.launch
-  @raise ValueError on invalid URL or not existent file
-  @return the file path
+  subdirectory, you can replace the subdirectory by `///`. 
+  
+  E.g.: `package://master_discovery_fkie///master_discovery.launch`
+  
+  :raise ValueError: on invalid URL or not existent file
+  
+  :return: the file path
   '''
   filename = ''
   if interface_url:
@@ -88,11 +97,16 @@ def resolve_url(interface_url):
 
 def read_interface(interface_file):
   '''
-  The supported URL begins with `file:///` or `package://`.
-  The package URL will be resolved to a valid file path. If the file is in a
-  subdirectory, you can replace the subdirectory by `///`. E.g.: `package://master_discovery_fkie///master_discovery.launch
-  @raise ValueError on error while read interface
-  @return directory with content of the given file
+  Reads the given file. You can use :mod:`master_discovery_fkie.common.resolve_url()`
+  to resolve an URL to a file.
+  
+  :param interface_file: the file containing the interface.
+  
+  :type interface_file: str
+  
+  :raise ValueError: on error while read interface
+  
+  :return: directory with content of the given file
   '''
   data = {}
   with open(interface_file, 'r') as f: 
@@ -122,19 +136,29 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
   taken from `data`. If the data was read from the interface file, then you have
   to set the `has_interface` to True. If `has_interface` is False, the data will 
   be ignored and the parameter will be read from ROS parameter server.
-  If resulting value is an empty list, `\b` (@see http://docs.python.org/2/library/re.html)
-  will be added to the pattern.
-  @param param: parameter name
-  @type param: C{str}
-  @param data: The dictionary, which can contain the parameter name and value. 
-               The `data` will be ignored, if `has_interface` is False.
-  @type data: C{dict}
-  @param has_interface: True, if valid data is available.
-  @type has_interface: C{bool}
-  @param default: Default value will be added to the data
-  @type default: C{list}
-  @return: the compiled regular expression
-  @rtype: The result of `re.compile()`
+  If resulting value is an empty list, `\\\\b` (http://docs.python.org/2/library/re.html)
+  will be added to the pattern as `EMPTY_PATTERN`.
+  
+  :param param: parameter name
+  
+  :type param: str
+    
+  :param data: The dictionary, which can contain the parameter name and value. 
+               The `data` will be ignored, if `has_interface` is `False`.
+  
+  :type data: dict
+  
+  :param has_interface: `True`, if valid data is available.
+  
+  :type has_interface: bool
+  
+  :param default: Default value will be added to the data
+  
+  :type default: list
+  
+  :return: the compiled regular expression
+  
+  :rtype: The result of `re.compile()`
   '''
   def_list = default
   if has_interface: # read the parameter from the sync interface data
@@ -164,11 +188,15 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
         def_list[len(def_list):] = rph
       else:
         def_list.append(rph)
+  def_list = list(set(def_list))
   rospy.loginfo("%s: %s", param, str(def_list))
   def_list[:] = [''.join([n.strip().replace('*','.*'), '\Z']) for n in def_list]
   if def_list:
-    return re.compile(r'|'.join(def_list), re.I)
+    return re.compile('|'.join(def_list), re.I)
   return EMPTY_PATTERN
 
 def is_empty_pattern(re_object):
+  '''
+  Returns the value of `EMPTY_PATTERN`.
+  '''
   return re_object == EMPTY_PATTERN

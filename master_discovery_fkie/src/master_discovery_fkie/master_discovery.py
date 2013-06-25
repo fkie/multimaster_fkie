@@ -447,7 +447,7 @@ class Discoverer(threading.Thread):
     '''
     The method test periodically the state of the ROS master. The new state will
     be published as heartbeat messages.
-    :see: :mod:`master_discovery_fkie.master_monitor.MasterMonitor.checkState()`
+    :mod:`master_discovery_fkie.master_monitor.MasterMonitor.checkState()`
     '''
     import os
     try_count = 0
@@ -554,7 +554,7 @@ class Discoverer(threading.Thread):
     '''
     :return: parses the hearbeat message and return a tuple of
             version and values corresponding with current version of message.
-            :see: :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`
+            :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`
     
     :raise: Exception on invalid message
     
