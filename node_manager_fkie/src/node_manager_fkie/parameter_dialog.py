@@ -33,6 +33,7 @@
 from python_qt_binding import QtCore, QtGui
 
 import sys
+import time
 import threading
 
 import roslib
@@ -47,6 +48,8 @@ def str2bool(v):
 class MyComboBox(QtGui.QComboBox):
 
   remove_item_signal = QtCore.Signal(str)
+  
+  parameter_description = None
 
   def keyPressEvent(self, event):
     key_mod = QtGui.QApplication.keyboardModifiers()
@@ -80,12 +83,17 @@ class ParameterDescription(object):
     self._is_primitive_type =  self._base_type in roslib.msgs.PRIMITIVE_TYPES or self._base_type in ['int', 'float', 'time', 'duration']
     self._is_time_type = self._base_type in ['time', 'duration']
   
+  def __repr__(self):
+    return ''.join([self._name, ' [', self._type, ']'])
+  
   def name(self):
     return self._name
   
   def setWidget(self, widget):
     self._widget = widget
-    self.addCachedValuesToWidget()
+    if not widget is None:
+      widget.parameter_description = self
+      self.addCachedValuesToWidget()
   
   def widget(self):
     return self._widget
@@ -157,10 +165,13 @@ class ParameterDescription(object):
             if value == 'now':
               self._value = 'now'
             else:
-              val = float(value)
-              secs = int(val)
-              nsecs = int((val - secs) * 1000000000)
-              self._value = {'secs': secs, 'nsecs': nsecs}
+              try:
+                val = float(value)
+                secs = int(val)
+                nsecs = int((val - secs) * 1000000000)
+                self._value = {'secs': secs, 'nsecs': nsecs}
+              except:
+                self._value = {'secs': 0, 'nsecs': 0}
           else:
             self._value = value.encode(sys.getfilesystemencoding())
       else:
@@ -184,6 +195,14 @@ class ParameterDescription(object):
     return self._value
 
   def value(self):
+    if not self.isPrimitiveType() and not self.widget() is None:
+      return self.widget().value()
+    elif self.isPrimitiveType():
+      self.updateValueFromField()
+      if self.isTimeType() and self._value == 'now':
+        # FIX: rostopic does not support 'now' values in sub-headers
+        t = time.time()
+        return {'secs': int(t), 'nsecs': int((t-int(t))*1000000)}
     return self._value
 
   def removeCachedValue(self, value):
@@ -192,12 +211,12 @@ class ParameterDescription(object):
   def createTypedWidget(self, parent):
     result = None
     if self.isPrimitiveType():
+      value = self._value
       if 'bool' in self.baseType():
         result = QtGui.QCheckBox(parent=parent)
         result.setObjectName(self.name())
-        value = self.value()
         if not isinstance(value, bool):
-          value = str2bool(self.value())
+          value = str2bool(value)
         result.setChecked(value)
       else:
         result = MyComboBox(parent=parent)
@@ -206,11 +225,11 @@ class ParameterDescription(object):
         result.setEditable(True)
         result.remove_item_signal.connect(self.removeCachedValue)
         items = []
-        if isinstance(self.value(), list):
-          items[len(items):] = self.value()
+        if isinstance(value, list):
+          items[len(items):] = value
         else:
-          if not self.value() is None and self.value():
-            items.append(unicode(self.value()))
+          if not value is None and value:
+            items.append(unicode(value))
           elif self.isTimeType():
             items.append('now')
         result.addItems(items)
@@ -239,56 +258,100 @@ class MainBox(QtGui.QWidget):
   '''
   Groups the parameter without visualization of the group. It is the main widget.
   '''
-  def __init__(self, name, type, parent=None):
+  def __init__(self, name, type, collapsible=True, parent=None):
     QtGui.QWidget.__init__(self, parent)
     self.setObjectName(name)
     self.name = name
     self.type = type
-    self.createLayout()
-  
-  def createLayout(self):
+    self.params = []
+    self.collapsed = False
+    self.parameter_description = None
+    vLayout = QtGui.QVBoxLayout()
+    vLayout.setSpacing(0)
+    self.options_layout = QtGui.QHBoxLayout()
+    self.param_widget = QtGui.QFrame()
+    self.name_label = QtGui.QLabel(name)
+    font = self.name_label.font()
+    font.setBold(True)
+    self.name_label.setFont(font)
+    self.type_label = QtGui.QLabel(''.join([' (', type, ')']))
+
+    if collapsible:
+      self.hide_button = QtGui.QPushButton('-')
+      self.hide_button.setFlat(True)
+      self.hide_button.setMaximumSize(20,20)
+      self.hide_button.clicked.connect(self._on_hide_clicked)
+      self.options_layout.addWidget(self.hide_button)
+      self.options_layout.addWidget(self.name_label)
+      self.options_layout.addWidget(self.type_label)
+      self.options_layout.addStretch()
+ 
+      vLayout.addLayout(self.options_layout)
+
+      self.param_widget.setFrameShape(QtGui.QFrame.Box)
+      self.param_widget.setFrameShadow(QtGui.QFrame.Raised)
+
     boxLayout = QtGui.QFormLayout()
     boxLayout.setVerticalSpacing(0)
-    self.setLayout(boxLayout)
-  
+    self.param_widget.setLayout(boxLayout)
+    vLayout.addWidget(self.param_widget)
+    self.setLayout(vLayout)
+    if type in ['std_msgs/Header']:
+      self.setCollapsed(True)
+
+  def setCollapsed(self, value):
+    self.collapsed = value
+    self.param_widget.setVisible(not value)
+    self.hide_button.setText('+' if self.collapsed else '-')
+
+  def _on_hide_clicked(self):
+    self.setCollapsed(not self.collapsed)
+#    self.param_widget.setVisible(not self.param_widget.isVisible())
+#    vis = self.param_widget.isVisible()
+#    self.hide_button.setText('-' if vis else '+')
+
   def createFieldFromValue(self, value):
     self.setUpdatesEnabled(False)
     try:
-      if isinstance(value, list):
-#        self.layout().addRow(QtGui.QPushButton("add to list"))
-        for v in value:
-          if isinstance(v, dict):
-            self._createFieldFromDict(v)
-            line = QtGui.QFrame()
-            line.setFrameShape(QtGui.QFrame.HLine)
-            line.setFrameShadow(QtGui.QFrame.Sunken)
-            line.setObjectName("__line__")
-            self.layout().addRow(line)
-          #@TODO add an ADD button
-      elif isinstance(value, dict):
-          self._createFieldFromDict(value)
+      if isinstance(value, dict):
+        self._createFieldFromDict(value)
     finally:
       self.setUpdatesEnabled(True)
-        
-  def _createFieldFromDict(self, value):
-    for name, (_type, val) in sorted(value.iteritems(), key=lambda (k,v): (k.lower(),v)):
-      if not hasattr(self, 'params'):
-        self.params = []
+
+  def _createFieldFromDict(self, value, layout=None):
+    if layout is None:
+      layout = self.param_widget.layout()
+    # sort the items: 1. header, 2. all premitives (sorted), 3. list, dict (sorted)
+    all_params = []
+    primitives = []
+    komplex = []
+    for name, (_type, val) in value.items():
+      if _type in ['std_msgs/Header']:
+        all_params.append((name, _type, val))
+      elif isinstance(val, (dict, list)):
+        komplex.append((name, _type, val))
+      else:
+        primitives.append((name, _type, val))
+    all_params.extend(sorted(primitives))
+    all_params.extend(sorted(komplex))
+    
+    # create widgets
+    for name, _type, val in all_params:
       field = self.getField(name)
       if field is None:
         param_desc = ParameterDescription(name, _type, val)
-        self.params.append(param_desc)
         field = param_desc.createTypedWidget(self)
         param_desc.setWidget(field)
+        self.params.append(param_desc)
         if isinstance(field, (GroupBox, ArrayBox)):
           field.createFieldFromValue(val)
-          self.layout().addRow(field)
+          layout.addRow(field)
         else:
           label_name = name if _type == 'string' else ''.join([name, ' (', _type, ')'])
           label = QtGui.QLabel(label_name, self)
           label.setObjectName(''.join([name, '_label']))
           label.setBuddy(field)
-          self.layout().addRow(label, field)
+          layout.addRow(label, field)
       else:
         if isinstance(field, (GroupBox, ArrayBox)):
           field.createFieldFromValue(val)
@@ -296,19 +359,9 @@ class MainBox(QtGui.QWidget):
           raise Exception(''.join(["Parameter with name '", name, "' already exists!"]))
 
   def value(self):
-    if isinstance(self, ArrayBox):
-      result = list()
-      result_dict = dict()
-      result.append(result_dict)
-    else:
-      result = result_dict = dict()
-    if hasattr(self, 'params'):
-      for param in self.params:
-        if param.isPrimitiveType():
-          param.updateValueFromField()
-          result_dict[param.name()] = param.value()
-        elif isinstance(param.widget(), (GroupBox, GroupBox)):
-          result_dict[param.name()] = param.widget().value()
+    result = dict()
+    for param in self.params:
+      result[param.name()] = param.value()
     return result
 
   def getField(self, name):
@@ -316,6 +369,19 @@ class MainBox(QtGui.QWidget):
       if child.objectName() == name:
         return child
     return None
+  
+  def removeAllFields(self):
+    '''
+    Remove the references between parameter and corresponding widgets 
+    (ComboBox, CheckBox, ..) and remove these widgets from layouts.
+    '''
+    for child in self.param_widget.children():
+      if isinstance(child, MyComboBox):
+        child.parameter_description.setWidget(None)
+        self.params.remove(child.parameter_description)
+      elif isinstance(child, MainBox):
+        child.removeAllFields()
+        self.param_widget.layout().removeWidget(child)
 
   def filter(self, arg):
     '''
@@ -323,25 +389,28 @@ class MainBox(QtGui.QWidget):
     @param arg: the filter text
     @type art: C{str}
     '''
-    for child in self.children():
-      if isinstance(child, (GroupBox, ArrayBox)):
-        child.filter(arg)
-        show_group = False
+    result = False
+    for child in self.param_widget.children():
+      if isinstance(child, (MainBox, GroupBox, ArrayBox)):
+        show = not (child.objectName().lower().find(arg.lower()) == -1)
+        show = show or child.filter(arg)
         # hide group, if no parameter are visible
-        for cchild in child.children():
-          if isinstance(cchild, (QtGui.QWidget)) and cchild.objectName() != '__line__' and cchild.isVisible():
-            show_group = True
-            break
-        child.setVisible(show_group)
-      elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)):
+        child.setVisible(show)
+        if show:
+          child.setCollapsed(False)
+          result = True
+      elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)) and  not isinstance(child, (QtGui.QFrame)):
         label = child.parentWidget().layout().labelForField(child)
         if not label is None:
-          show = not (child.objectName().lower().find(arg.lower()) == -1)
+          show = not (child.objectName().lower().find(arg.lower()) == -1) or not (child.currentText().lower().find(arg.lower()) == -1)
           # set the parent group visible if it is not visible
           if show and not child.parentWidget().isVisible():
             child.parentWidget().setVisible(show)
           label.setVisible(show)
           child.setVisible(show)
+          if show:
+            result = True
+    return result
 
   def setVisible(self, arg):
     if arg and not self.parentWidget() is None and not self.parentWidget().isVisible():
@@ -350,29 +419,118 @@ class MainBox(QtGui.QWidget):
 
 
 
-class GroupBox(QtGui.QGroupBox, MainBox):
+class GroupBox(MainBox):
   '''
   Groups the parameter of a dictionary, struct or class using the group box for 
   visualization.
   '''
   def __init__(self, name, type, parent=None):
-    QtGui.QGroupBox.__init__(self, ''.join([name, ' (', type, ')']), parent)
+    MainBox.__init__(self, name, type, True, parent)
     self.setObjectName(name)
-    self.name = name
-    self.type = type
-    self.setAlignment(QtCore.Qt.AlignLeft)
-    self.createLayout()
 
 
 
-class ArrayBox(GroupBox):
+class ArrayEntry(MainBox):
+  '''
+  A part of the ArrayBox to represent the elements of a list.
+  '''
+  def __init__(self, index, type, parent=None):
+#    QtGui.QFrame.__init__(self, parent)
+    MainBox.__init__(self, ''.join(['#',str(index)]), type, True, parent)
+    self.index = index
+    self.setObjectName(''.join(['[', str(index), ']']))
+    self.param_widget.setFrameShape(QtGui.QFrame.Box)
+    self.param_widget.setFrameShadow(QtGui.QFrame.Plain)
+    self.type_label.setVisible(False)
+#    boxLayout = QtGui.QFormLayout()
+#    boxLayout.setVerticalSpacing(0)
+#    label = QtGui.QLabel(''.join(['[', str(index), ']']))
+#    self.param_widget.layout().addRow(label)
+#    self.setLayout(boxLayout)
+
+  def value(self):
+    result = dict()
+    for param in self.params:
+      result[param.name()] = param.value()
+    return result
+
+
+class ArrayBox(MainBox):
   '''
   Groups the parameter of a list.
   '''
   def __init__(self, name, type, parent=None):
-    GroupBox.__init__(self, name, type, parent)
-    self.setFlat(True)
+    MainBox.__init__(self, name, type, True, parent)
+    self._dynamic_value = None
+    self._dynamic_widget = None
+    self._dynamic_items_count = 0
+    
+  def addDynamicBox(self):
+    self._dynamic_items_count = 0
+    addButton = QtGui.QPushButton("+")
+    addButton.setMaximumSize(25,25)
+    addButton.clicked.connect(self._on_add_dynamic_entry)
+    self.options_layout.addWidget(addButton)
+    self.count_label = QtGui.QLabel('0')
+    self.options_layout.addWidget(self.count_label)
+    remButton = QtGui.QPushButton("-")
+    remButton.setMaximumSize(25,25)
+    remButton.clicked.connect(self._on_rem_dynamic_entry)
+    self.options_layout.addWidget(remButton)
+  
+  def _on_add_dynamic_entry(self):
+    self.setUpdatesEnabled(False)
+    try:
+      if not self._dynamic_value is None:
+        for v in self._dynamic_value:
+          if isinstance(v, dict):
+            entry_frame = ArrayEntry(self._dynamic_items_count, self.type)
+            self.param_widget.layout().addRow(entry_frame)
+            entry_frame._createFieldFromDict(v)
+            self._dynamic_items_count += 1
+            self.count_label.setText(str(self._dynamic_items_count))
+    finally:
+      self.setUpdatesEnabled(True)
 
+  def _on_rem_dynamic_entry(self):
+    if self._dynamic_items_count > 0:
+      self._dynamic_items_count -= 1
+      item = self.param_widget.layout().takeAt(self._dynamic_items_count)
+      self.param_widget.layout().removeItem(item)
+      try:
+        # remove the referenced parameter, too
+        for child in item.widget().children():
+          if isinstance(child, MyComboBox):
+            child.parameter_description.setWidget(None)
+            self.params.remove(child.parameter_description)
+          elif isinstance(child, MainBox):
+            child.removeAllFields()
+            self.param_widget.layout().removeWidget(child)
+            child.parameter_description.setWidget(None)
+            self.params.remove(child.parameter_description)
+        item.widget().setParent(None)
+        del item
+      except:
+        import traceback
+        print traceback.format_exc()
+      self.count_label.setText(str(self._dynamic_items_count))
+
+  def createFieldFromValue(self, value):
+    self.setUpdatesEnabled(False)
+    try:
+      if isinstance(value, list):
+        self.addDynamicBox()
+        self._dynamic_value = value
+    finally:
+      self.setUpdatesEnabled(True)
+
+  def value(self):
+    result = list()
+    for i in range(self.param_widget.layout().rowCount()):
+      item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
+      if item and isinstance(item.widget(), ArrayEntry):
+        result.append(item.widget().value())
+    return result
 
 
 class ScrollArea(QtGui.QScrollArea):
@@ -423,7 +581,7 @@ class ParameterDialog(QtGui.QDialog):
     self.scrollArea = scrollArea = ScrollArea(self);
     scrollArea.setObjectName("scrollArea")
     scrollArea.setWidgetResizable(True)
-    self.content = MainBox('/', 'str', self)
+    self.content = MainBox('/', 'str', False, self)
     scrollArea.setWidget(self.content)
     self.verticalLayout.addWidget(scrollArea)
 
@@ -465,8 +623,9 @@ class ParameterDialog(QtGui.QDialog):
       self.filter_field.setFocus()
 #    print '=============== create', self.objectName()
 #
-#  def __del__(self):
+  def __del__(self):
 #    print "************ destroy", self.objectName()
+    self.content.removeAllFields()
 
   def _on_filter_changed(self):
     self.content.filter(self.filter_field.text())
@@ -601,6 +760,8 @@ class MasterParameterDialog(ParameterDialog):
   def _on_add_parameter(self):
     params_arg = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool']), 'value' : ('string', '') }
     dia = ParameterDialog(params_arg)
+    dia.setWindowTitle('Add new parameter')
+    dia.resize(360,150)
     dia.setFilterVisible(False)
     if dia.exec_():
       try:
