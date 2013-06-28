@@ -301,6 +301,9 @@ class MasterViewProxy(QtGui.QWidget):
     self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected parameter to clipboard")), self.masterTab.parameterView)
     self._shortcut_copy.activated.connect(self.on_copy_parameter_clicked)
     
+    caps = {'': {'SYSTEM': {'images': [], 'nodes': [ '/rosout', '/master_discovery', '/zeroconf', '/master_sync', '/node_manager', ''.join(['*', roslib.names.SEP, 'default_cfg'])], 'type': '', 'description': 'This group contains the system management nodes.'} } }
+    self.node_tree_model.set_std_capablilities(caps)
+
 #    print "================ create", self.objectName()
 #
 #  def __del__(self):
@@ -363,9 +366,9 @@ class MasterViewProxy(QtGui.QWidget):
               node.pid = pid
               node.masteruri = muri
         # request master info updates for new remote nodes
-        nodepids2 = [(n.name, n.pid, n.uri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
+        nodepids2 = [(n.name, n.pid, n.uri, n.masteruri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
         node2update = list(set(nodepids2)-set(nodepids))
-        hosts2update = list(set([nm.nameres().getHostname(uri) for nodename, pid, uri in node2update]))
+        hosts2update = list(set([nm.nameres().getHostname(uri) for nodename, pid, uri, muri in node2update]))
         for host in hosts2update:
           self.updateHostRequest.emit(host)
         update_nodes = True
@@ -1294,11 +1297,12 @@ class MasterViewProxy(QtGui.QWidget):
   def _getCfgChoises(self, node, ignore_defaults=False):
     result = {}
     for c in node.cfgs:
-      if not isinstance(c, tuple):
-        launch = self.launchfiles[c]
-        result[''.join([str(launch.LaunchName), ' [', str(launch.PackageName), ']'])] = self.launchfiles[c]
-      elif not ignore_defaults:
-        result[' '.join(['[default]', c[0]])] = roslib.names.ns_join(c[0], 'run')
+      if c:
+        if not isinstance(c, tuple):
+          launch = self.launchfiles[c]
+          result[''.join([str(launch.LaunchName), ' [', str(launch.PackageName), ']'])] = self.launchfiles[c]
+        elif not ignore_defaults:
+          result[' '.join(['[default]', c[0]])] = roslib.names.ns_join(c[0], 'run')
     return result
 
   def _getUserCfgChoice(self, choices, nodename):

@@ -33,6 +33,7 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
+import re
 import roslib
 import rospy
 import node_manager_fkie as nm
@@ -68,6 +69,7 @@ class GroupItem(QtGui.QStandardItem):
     ''' 
      @ivar: dict(config : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
     '''
+    self._re_cap_nodes = dict()
   
   @property
   def name(self):
@@ -87,6 +89,42 @@ class GroupItem(QtGui.QStandardItem):
     self._name = new_name
     self.setText(GroupItem.toHTML(self._name))
   
+  def is_in_cap_group(self, nodename, config, ns, groupname):
+    '''
+    Returns `True` if the group contains the node.
+    @param nodename: the name of the node to test
+    @type nodename: str
+    @param config: the configuration name
+    @type config: str
+    @param ns: namespace
+    @type ns: str
+    @param groupname: the group name
+    @type groupname: str
+    @return: `True`, if the nodename is in the group
+    @rtype: bool
+    '''
+    try:
+      if self._re_cap_nodes[(config, ns, groupname)].match(nodename):
+        return True
+    except:
+      pass
+    return False
+
+  def _create_cap_nodes_pattern(self, config, cap):
+    for ns, groups in cap.items():
+      for groupname, descr in groups.items():
+        try:
+          nodes = descr['nodes']
+          def_list = [''.join([n.strip().replace('*','.*'), '\Z']) for n in nodes]
+          if def_list:
+            self._re_cap_nodes[(config, ns, groupname)] = re.compile('|'.join(def_list), re.I)
+          else:
+            self._re_cap_nodes[(config, ns, groupname)] = re.compile('\b', re.I)
+        except:
+          import traceback
+          print traceback.format_exc()
+
+
   def addCapabilities(self, config, capabilities, masteruri):
     '''
     Add new capabilities. Based on this capabilities the node are grouped. The 
@@ -98,7 +136,8 @@ class GroupItem(QtGui.QStandardItem):
     @param capabilities: The capabilities, which defines groups and containing nodes.
     @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str])))}
     '''
-    self._capcabilities[config] = capabilities 
+    self._capcabilities[config] = capabilities
+    self._create_cap_nodes_pattern(config, capabilities)
     # update the view
     for ns, groups in capabilities.items():
       for group, descr in groups.items():
@@ -116,7 +155,7 @@ class GroupItem(QtGui.QStandardItem):
           # move the nodes from host to the group
           for i in reversed(range(self.rowCount())):
             item = self.child(i)
-            if isinstance(item, NodeItem) and item.name in nodes:
+            if isinstance(item, NodeItem) and self.is_in_cap_group(item.name, config, ns, group):
               row = self.takeRow(i)
               groupItem._addRow_sorted(row)
 #              row[0].parent_item = groupItem
@@ -133,7 +172,8 @@ class GroupItem(QtGui.QStandardItem):
               if items:
                 # copy the state of the existing node
                 groupItem.addNode(items[0].node_info, config)
-              else:
+              elif config:
+#              else:
                 groupItem.addNode(NodeInfo(node_name, masteruri), config)
           groupItem.updateIcon()
 #          groupItem.updateTooltip()
@@ -155,25 +195,25 @@ class GroupItem(QtGui.QStandardItem):
       #todo update view?
       pass
 
-  def getCapabilityGroups(self, node_name, cfg=''):
+  def getCapabilityGroups(self, node_name):
     '''
     Returns the names of groups, which contains the given node.
     @param node_name: The name of the node
     @type node_name: C{str}
-    @param cfg: The name of configuration, which describes the node.
-    @type cfg: C{str}
+    @param config: The name of configuration, which describes the node.
+    @type config: C{str}
     @return: The name of the configuration containing this new capabilities.
     @rtype: C{dict(config : [str])}
     '''
     result = dict() # dict(config : [group names])
     try:
-      if cfg:
-        for ns, groups in self._capcabilities[cfg].items():
+      for cfg, cap in self._capcabilities.items():
+        for ns, groups in cap.items():
           for group, descr in groups.items():
-            if node_name in descr['nodes']:
-              if not result.has_key(group):
-                result[group] = []
-              result[group].append(roslib.ns_join(ns, group))
+            if self.is_in_cap_group(node_name, cfg, ns, group):
+              if not result.has_key(cfg):
+                result[cfg] = []
+              result[cfg].append(roslib.names.ns_join(ns, group))
     except:
       pass
 #      import traceback
@@ -270,20 +310,19 @@ class GroupItem(QtGui.QStandardItem):
     @param cfg: The configuration, which describes the node
     @type cfg: C{str}
     '''
-    groups = self.getCapabilityGroups(node.name, cfg)
+    groups = self.getCapabilityGroups(node.name)
     if groups:
       for c, group_list in groups.items():
         for group_name in group_list:
           # insert in the group
           groupItem = self.getGroupItem(group_name)
-          groupItem.addNode(node)
+          groupItem.addNode(node, cfg)
     else:
       # insert in order
       new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
       self._addRow_sorted(new_item_row)
       new_item_row[0].node_info = node
-#      new_item_row[0].parent_item = self
-      if cfg:
+      if cfg or cfg == '':
         new_item_row[0].addConfig(cfg)
 
   def _addRow_sorted(self, row):
@@ -308,6 +347,7 @@ class GroupItem(QtGui.QStandardItem):
     for group in groups:
       group.clearUp(fixed_node_names)
 
+    removed = False
     # move running nodes without configuration to the upper layer, remove not running and duplicate nodes
     for i in reversed(range(self.rowCount())):
       item = self.child(i)
@@ -315,20 +355,26 @@ class GroupItem(QtGui.QStandardItem):
         # set the running state of the node to None
         if not fixed_node_names is None and not item.name in fixed_node_names:
           item.node_info = NodeInfo(item.name, item.node_info.masteruri)
-        if not item.is_valid():
+        if not (item.has_configs() or item.is_running()):
+          removed = True
           self.removeRow(i)
         elif not isinstance(self, HostItem):
-          if item.state == NodeItem.STATE_RUN and len(item.cfgs) == 0:
+          has_launches = NodeItem.has_launch_cfgs(item.cfgs)
+          has_defaults = NodeItem.has_default_cfgs(item.cfgs)
+          has_std_cfg = item.has_std_cfg()
+          if item.state == NodeItem.STATE_RUN and not (has_launches or has_defaults or has_std_cfg):
             # if it is in a group, is running, but has no configuration, move it to the host
             if not self.parent_item is None and isinstance(self.parent_item, HostItem):
               items_in_host = self.parent_item.getNodeItemsByName(item.name, False)
               if len(items_in_host) == 0:
                 row = self.takeRow(i)
                 self.parent_item._addRow_sorted(row)
-#                row[0].parent_item = self.parent_item
               else:
                 #remove item
+                removed = True
                 self.removeRow(i)
+    if removed:
+      self.updateIcon()
 
     # remove empty groups 
     for i in reversed(range(self.rowCount())):
@@ -389,6 +435,9 @@ class GroupItem(QtGui.QStandardItem):
         item.has_running = (item.node_info.uri is None and not item.name in ignore and item.name in running_nodes)
 
   def updateIcon(self):
+    if isinstance(self, HostItem):
+      # skip the icon update on a host item
+      return
     has_running = False
     has_off = False
     has_duplicate = False
@@ -448,7 +497,7 @@ class GroupItem(QtGui.QStandardItem):
           from docutils import examples
           if self.descr:
             tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-            tooltip = ''.join([tooltip, examples.html_body(self.descr)])
+            tooltip = ''.join([tooltip, examples.html_body(unicode(self.descr))])
         except:
           import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
@@ -535,9 +584,9 @@ class GroupItem(QtGui.QStandardItem):
       ns, sep, name = group_name.rpartition('/')
       result = ''
       if sep:
-        result = ''.join(['<div>', '<span style="color:gray;">', ns, sep, '</span><b>[', name, ']</b></div>'])
+        result = ''.join(['<div>', '<b>{</b><span style="color:gray;">', ns, sep, '</span><b>', name, '}</b></div>'])
       else:
-        result = name
+        result = ''.join(['<div>', '<b>{', name, '}</b></div>'])
     return result
 
   def type(self):
@@ -734,6 +783,7 @@ class NodeItem(QtGui.QStandardItem):
 #                  'default_cfg' : QtGui.QIcon(':/icons/default_cfg.png')
 #                  }
     self._cfgs = []
+    self._std_config = None # it's config with empty name. for default proposals
     self._has_running = False
     self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     self._state = NodeItem.STATE_OFF
@@ -741,14 +791,6 @@ class NodeItem(QtGui.QStandardItem):
   @property
   def state(self):
     return self._state
-  
-  def is_valid(self):
-    '''
-    Returns C{True} if the node has no configuration and is not running, so the pid 
-    and node URI are C{None}
-    @rtype: C{bool}
-    '''
-    return not (self._node_info.pid is None and self._node_info.uri is None and len(self._cfgs) == 0)
 
   @property
   def name(self):
@@ -801,7 +843,7 @@ class NodeItem(QtGui.QStandardItem):
       self._node_info.uri = node_info.uri
       run_changed = True
     # update the tooltip and icon
-    if run_changed and self.is_valid():
+    if run_changed and (self.is_running() or self.has_configs):
       self.updateDispayedName()
 #      self.updateDisplayedURI()
       if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
@@ -828,11 +870,11 @@ class NodeItem(QtGui.QStandardItem):
   def has_running(self, state):
     '''
     Sets however other node with the same name are running or not (on other hosts)
-    and updates the view oth this item.
+    and updates the view of this item.
     '''
     if self._has_running != state:
       self._has_running = state
-      if self.is_valid():
+      if self.has_configs() or self.is_running():
         self.updateDispayedName()
       if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
         self.parent_item.updateIcon()
@@ -854,6 +896,7 @@ class NodeItem(QtGui.QStandardItem):
     if not self.node_info.pid is None:
       self._state = NodeItem.STATE_RUN
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+#      self.setIcon(ICONS['run'])
       self.setToolTip('')
     elif not self.node_info.uri is None and not self.node_info.isLocal:
       self._state = NodeItem.STATE_RUN
@@ -913,7 +956,9 @@ class NodeItem(QtGui.QStandardItem):
     @param cfg: the loaded configuration, which contains this node.
     @type cfg: C{str}
     '''
-    if not cfg in self._cfgs:
+    if cfg == '':
+      self._std_config = cfg
+    elif cfg and not cfg in self._cfgs:
       self._cfgs.append(cfg)
       self.updateDisplayedConfig()
 
@@ -925,7 +970,7 @@ class NodeItem(QtGui.QStandardItem):
     '''
     if cfg in self._cfgs:
       self._cfgs.remove(cfg)
-    if self.is_valid():
+    if self.has_configs() or self.is_running():
       self.updateDisplayedConfig()
 
   def updateDisplayedConfig(self):
@@ -988,6 +1033,15 @@ class NodeItem(QtGui.QStandardItem):
 #    items.append(uriitem)
     return items
 
+  def has_configs(self):
+    return not (len(self._cfgs) == 0)# and self._std_config is None)
+  
+  def is_running(self):
+    return not (self._node_info.pid is None and self._node_info.uri is None)
+
+  def has_std_cfg(self):
+    return self._std_config == ''
+  
   @classmethod
   def has_launch_cfgs(cls, cfgs):
     for c in cfgs:
@@ -1076,6 +1130,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     self.setColumnCount(len(NodeTreeModel.header))
     self.setHorizontalHeaderLabels([label for label, width in NodeTreeModel.header])
     self._local_host_address = host_address
+    self._std_capabilities = {}
 
   @property
   def local_addr(self):
@@ -1111,10 +1166,12 @@ class NodeTreeModel(QtGui.QStandardItemModel):
         hostItem = HostItem(masteruri, address, local)
         self.insertRow(i, hostItem)
         self.hostInserted.emit(hostItem)
+        hostItem.addCapabilities('', self._std_capabilities, masteruri)
         return hostItem
     hostItem = HostItem(masteruri, address, local)
     self.appendRow(hostItem)
     self.hostInserted.emit(hostItem)
+    hostItem.addCapabilities('', self._std_capabilities, masteruri)
     return hostItem
 
   def updateModelData(self, nodes):
@@ -1135,9 +1192,6 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       hostItem = self.getHostItem(masteruri, host)
       # rename the host item if needed
       if not hostItem is None:
-#        host_name = nm.nameres().getName(host=host)
-#        if host_name and not (hostItem.name == host_name):
-#          hostItem.name = host_name
         hostItem.updateRunningNodeState(nodes_filtered)
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
@@ -1147,6 +1201,15 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     self.removeEmptyHosts()
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
+
+  def set_std_capablilities(self, capabilities):
+    '''
+    Sets the default capabilities description, which is assigned to each new
+    host.
+    @param capabilities: the structure for capabilities
+    @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str])))} 
+    '''
+    self._std_capabilities = capabilities
 
   def addCapabilities(self, masteruri, host_address, cfg, capabilities):
     '''
