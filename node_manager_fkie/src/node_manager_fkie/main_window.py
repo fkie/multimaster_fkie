@@ -1102,14 +1102,20 @@ class MainWindow(QtGui.QMainWindow):
                              'Error while parse parameter',
                               str(e)).exec_()
 
-  def _editor_dialog_open(self, files, search_text):
+  def _editor_dialog_open(self, files, search_text, trynr=1):
     if files:
       path = files[0]
       if self.editor_dialogs.has_key(path):
         last_path = files[-1]
-        self.editor_dialogs[path].on_load_request(last_path, search_text)
-        self.editor_dialogs[path].raise_()
-        self.editor_dialogs[path].activateWindow()
+        try:
+          self.editor_dialogs[path].on_load_request(last_path, search_text)
+          self.editor_dialogs[path].raise_()
+          self.editor_dialogs[path].activateWindow()
+        except:
+          if trynr > 1:
+            raise
+          del self.editor_dialogs[path]
+          self._editor_dialog_open(files, search_text, 2)
       else:
         editor = XmlEditor(files, search_text, self)
         self.editor_dialogs[path] = editor
