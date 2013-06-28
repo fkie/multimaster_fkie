@@ -482,10 +482,10 @@ class StartHandler(object):
       subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])), env=new_env)
       # wait for roscore to avoid connection problems while init_node
       result = -1
-      count = 0
-      while result == -1 and count < 3:
+      count = 1
+      while result == -1 and count < 11:
         try:
-          print "  retry connect to ROS master"
+          print "  retry connect to ROS master", count, '/', 10
           master = xmlrpclib.ServerProxy(masteruri)
           result, uri, msg = master.getUri(rospy.get_name())
         except:
