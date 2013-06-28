@@ -258,6 +258,11 @@ class FilterInterface(object):
       print traceback.format_exc()
     return None
 
+def _to_str(re_object):
+  if is_empty_pattern(re_object):
+    return ''
+  return re_object.pattern
+
 def _from_str(str):
   if str:
     return re.compile(str, re.I)

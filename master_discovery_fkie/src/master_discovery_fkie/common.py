@@ -91,6 +91,8 @@ def resolve_url(interface_url):
         filename = os.path.join(pkg_dir, pkg_path)
     else:
       filename = interface_url
+    if filename == '.':
+      filename = ''
     if filename and not os.path.exists(filename):
       raise ValueError('unsupported interface URL or interface file not found: ' + filename)
   return filename
