@@ -34,6 +34,7 @@ from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 
 import os
+import threading
 
 import node_manager_fkie as nm
 from common import get_packages
@@ -57,12 +58,7 @@ class RunDialog(QtGui.QDialog):
     self.contentLayout.setVerticalSpacing(0)
     self.verticalLayout.addWidget(self.content)
 
-    # fill the input fields
-    self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-    self.packages = {}
-    for p in self.root_paths:
-      ret = get_packages(p)
-      self.packages = dict(ret.items() + self.packages.items())
+    self.packages = None
 
     package_label = QtGui.QLabel("Package:", self.content)
     self.package_field = QtGui.QComboBox(self.content)
@@ -131,23 +127,38 @@ class RunDialog(QtGui.QDialog):
     self.buttonBox.setObjectName("buttonBox")
     self.verticalLayout.addWidget(self.buttonBox)
     
+    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
+    self.package = ''
+    self.binary = ''
+    
+    if self.packages is None:
+      self.package_field.addItems(['packages searching...'])
+      self.package_field.setCurrentIndex(0)
+      self._fill_packages_thread = threading.Thread(target=self._fill_packages)
+      self._fill_packages_thread.start()
+
     QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
     QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
     QtCore.QMetaObject.connectSlotsByName(self)
     self.package_field.activated[str].connect(self.on_package_selected)
     self.package_field.textChanged.connect(self.on_package_selected)
     self.binary_field.activated[str].connect(self.on_binary_selected)
-    
-    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
-    self.package = ''
-    self.binary = ''
 
+  def _fill_packages(self):
+    # fill the input fields
+    self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+    self.packages = {}
+    for p in self.root_paths:
+      ret = get_packages(p)
+      self.packages = dict(ret.items() + self.packages.items())
     packages = self.packages.keys()
     packages.sort()
+    self.package_field.clear()
+    self.package_field.clearEditText()
     self.package_field.addItems(packages)
-    if packages:
-      self.on_package_selected(packages[0])
-    
+#    if packages:
+#      self.on_package_selected(packages[0])
+
   def runSelected(self):
     '''
     Runs the selected node, or do nothing. 
@@ -187,7 +198,7 @@ class RunDialog(QtGui.QDialog):
 
   def on_package_selected(self, package):
     self.binary_field.clear()
-    if self.packages.has_key(package):
+    if self.packages and self.packages.has_key(package):
       self.binary_field.setEnabled(True)
       self.args_field.setEnabled(True)
       self.ns_field.setEnabled(True)

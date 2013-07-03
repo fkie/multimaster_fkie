@@ -662,6 +662,7 @@ class MainWindow(QtGui.QMainWindow):
         cmd = 'rqt_console'
       except:
         pass
+      rospy.loginfo("start rxconsole: %s", cmd)
       ps = subprocess.Popen([cmd], env=env)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
@@ -679,6 +680,7 @@ class MainWindow(QtGui.QMainWindow):
         cmd = 'rqt_graph'
       except:
         pass
+      rospy.loginfo("start rxgraph: %s", cmd)
       ps = subprocess.Popen([cmd], env=env)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
