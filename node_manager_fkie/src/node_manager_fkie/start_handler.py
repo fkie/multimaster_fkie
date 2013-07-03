@@ -491,7 +491,7 @@ class StartHandler(object):
         except:
           time.sleep(1)
           count += 1
-      if count >= 3:
+      if count >= 11:
         raise StartException('Cannot connect to the ROS-Master: '+  str(masteruri))
     finally:
       socket.setdefaulttimeout(None)
