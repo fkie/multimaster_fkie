@@ -95,6 +95,9 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.rxconsoleButton.clicked.connect(self.on_show_rxconsole_clicked)
     self.ui.rxgraphButton.clicked.connect(self.on_show_rxgraph_clicked)
     self.ui.syncButton.released.connect(self.on_sync_released)
+    self.ui.actionSave_Config.triggered.connect(self.saveFileDialog)
+    self.ui.actionLoad_Config.triggered.connect(self.loadFileDialog)
+
     # creates a default config menu
     sync_menu = QtGui.QMenu(self)
     self.syncDialogAct = QtGui.QAction("&Open sync dialog", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_S), statusTip="Opens a sync dialog with additional sync options", triggered=self.on_sync_dialog_released)
@@ -248,6 +251,51 @@ class MainWindow(QtGui.QMainWindow):
 
     self._con_tries = dict()
     self._subscribe()
+
+  def loadFileDialog(self):
+    path, _ = QtGui.QFileDialog.getOpenFileName(self, "Load File", os.getcwd())
+    if(path != ''):
+      self.loadLaunchFile(path)
+    
+
+  def saveFileDialog(self):
+    """
+    Opens a file dialog and sets the label to the chosen path
+   """
+    path, _ = QtGui.QFileDialog.getSaveFileName(self, "Save File", os.getcwd())
+    if(path != ''):
+      master_proxy = self.stackedLayout.currentWidget()
+      f = open(path, 'w')
+      names = master_proxy.launchfiles.keys()
+      for name in names:
+          f2 = open (name,'r')
+          f.write(f2.read())
+          f2.close()
+      f.close()
+      f = open(path, 'r')
+      launch_text = f.read()
+      Lines = launch_text.splitlines()
+      launch_tags_counter = 0
+      for line in Lines:
+        if (line.find("launch>") > 0):
+          launch_tags_counter = launch_tags_counter + 1
+      f.close()
+    
+      f = open(path, 'w')
+      counter = 0
+      for line in Lines:
+        if (line.find("launch>") > 0):
+          counter = counter + 1
+          if (counter > 1) and (counter < launch_tags_counter):
+            pass
+          else:
+            f.write(line)
+            f.write('\n')
+        else:
+          f.write(line)
+          f.write('\n')
+      f.close()
+
 
   def createSlider(self):
     slider = QtGui.QSlider()

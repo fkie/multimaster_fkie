@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>908</width>
-    <height>641</height>
+    <height>708</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -373,9 +373,17 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>908</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionSave_Config"/>
+    <addaction name="actionLoad_Config"/>
+   </widget>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QDockWidget" name="networkDock">
    <property name="sizePolicy">
@@ -948,6 +956,16 @@ p, li { white-space: pre-wrap; }
     </layout>
    </widget>
   </widget>
+  <action name="actionSave_Config">
+   <property name="text">
+    <string>Save Config</string>
+   </property>
+  </action>
+  <action name="actionLoad_Config">
+   <property name="text">
+    <string>Load Config</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="GUI.qrc"/>
