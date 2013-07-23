@@ -53,9 +53,6 @@ class LaunchConfig(QtCore.QObject):
   '''
   A class to handle the ROS configuration stored in launch file.
   '''
-  file_changed = QtCore.Signal(str, str)
-  '''@ivar: a signal to inform the receiver about the changes on
-  launch file or included file. ParameterB{:} (changed file, launch file)'''
   
   def __init__(self, launch_file, package=None, masteruri=None, argv=[]):
     '''
@@ -84,25 +81,15 @@ class LaunchConfig(QtCore.QObject):
     self.__reqTested = False
     self.global_param_done = [] # masteruri's where the global parameters are registered 
     self.hostname = nm.nameres().getHostname(self.__masteruri)
-    self.file_watcher = QtCore.QFileSystemWatcher()
-    self.file_watcher.fileChanged.connect(self.on_file_changed)
-    self.changed = {}
+    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.getIncludedFiles(self.Filename))
+
 
   def __del__(self):
     # Delete to avoid segfault if the LaunchConfig class is destroyed recently 
     # after creation and xmlrpclib.ServerProxy process a method call.
-    del self.file_watcher
-
-  def on_file_changed(self, file):
-    '''
-    callback method, which is called by L{QtCore.QFileSystemWatcher} if the 
-    launch file or included files are changed. In this case 
-    L{LaunchConfig.file_changed} signal will be emitted.
-    '''
-    # to avoid to handle from QFileSystemWatcher fired the signal two times 
-    if (not self.changed.has_key(file) or (self.changed.has_key(file) and self.changed[file] + 0.05 < time.time())):
-      self.changed[file] = time.time()
-      self.file_changed.emit(file, self.__launchFile)
+#    del self.file_watcher
+    print "DELETE"
+    nm.file_watcher().rem(self.__masteruri, self.__launchFile)
 
   @property
   def masteruri(self):
@@ -253,17 +240,14 @@ class LaunchConfig(QtCore.QObject):
       self.__roscfg = roscfg
 #      for m, k in self.__roscfg.machines.items():
 #        print m, k
-      files = self.file_watcher.files()
-      if files:
-        self.file_watcher.removePaths(files)
-      self.file_watcher.addPaths(self.getIncludedFiles(self.Filename))
+      nm.file_watcher().add(self.__masteruri, self.__launchFile, self.getIncludedFiles(self.Filename))
     except roslaunch.XmlParseException, e:
       test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
       message = str(e)
       if test:
         message = ''.join([message, '\n', 'environment substitution is not supported, use "arg" instead!'])
       raise LaunchConfigException(message)
-    return True
+    return True, self.argv
 
   def getArgs(self):
     '''

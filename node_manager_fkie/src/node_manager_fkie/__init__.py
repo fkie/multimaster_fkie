@@ -57,6 +57,7 @@ from start_handler import StartHandler, StartException, BinarySelectionRequest
 from progress_queue import InteractionNeededError
 from name_resolution import NameResolution
 from history import History
+from file_watcher import FileWatcher
 from common import get_ros_home, masteruri_from_ros
 
 # set the cwd to the package of the node_manager_fkie to support the images
@@ -105,6 +106,7 @@ _screen_handler = None
 _start_handler = None
 _name_resolution = None
 _history = None
+_file_watcher = None
 app = None
 
 def ssh():
@@ -149,6 +151,15 @@ def history():
   '''
   global _history
   return _history
+
+def file_watcher():
+  '''
+  @return: The history of entered parameter.
+  @rtype: L{History}
+  '''
+  global _file_watcher
+  return _file_watcher
+
 
 def is_local(hostname):
   '''
@@ -265,11 +276,13 @@ def init_globals(masteruri):
   global _start_handler
   global _name_resolution
   global _history
+  global _file_watcher
   _ssh_handler = SSHhandler()
   _screen_handler = ScreenHandler()
   _start_handler = StartHandler()
   _name_resolution = NameResolution()
   _history = History()
+  _file_watcher = FileWatcher()
 
   # test where the roscore is running (local or remote)
   __is_local('localhost') ## fill cache

@@ -548,6 +548,7 @@ class MasterViewProxy(QtGui.QWidget):
       # close the configuration
       stored_argv = self.__configs[launchfile].argv
       self.removeConfigFromModel(launchfile)
+      del self.__configs[launchfile]
 #      # remove machine entries
 #      try:
 #        for name, machine in self.__configs[launchfile].Roscfg.machines.items():
@@ -559,7 +560,7 @@ class MasterViewProxy(QtGui.QWidget):
     #load launch config
     try:
       # test for requerid args
-      launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
+      self.__configs[launchfile] = launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
       loaded = False
       if stored_argv is None:
         req_args = launchConfig.getArgs()
@@ -582,9 +583,6 @@ class MasterViewProxy(QtGui.QWidget):
             return
       if not loaded or not stored_argv is None:
         launchConfig.load(req_args if stored_argv is None else stored_argv)
-      self.__configs[launchfile] = launchConfig
-      #connect the signal, which is emitted on changes on configuration file 
-      launchConfig.file_changed.connect(self.on_configfile_changed)
       for name, machine in launchConfig.Roscfg.machines.items():
         if machine.name:
           nm.nameres().addInfo(machine.name, machine.address, machine.address)
@@ -793,27 +791,6 @@ class MasterViewProxy(QtGui.QWidget):
 #    QtGui.QMessageBox.warning(self, 'Error while call %s'%service,
 #                              str(msg),
 #                              QtGui.QMessageBox.Ok)
-  
-  def on_configfile_changed(self, changed, config):
-    '''
-    Signal hander to handle the changes of a loaded configuration file
-    @param changed: the changed file
-    @type changed: C{str}
-    @param config: the main configuration file to load
-    @type config: C{str}
-    '''
-    name = self.masteruri
-    if not self.__master_info is None:
-      name = self.__master_info.mastername
-    if not config in self.__in_question:
-      self.__in_question.append(config)
-      ret = QtGui.QMessageBox.question(self, ''.join([name, ' - configuration update']),
-                                       ' '.join(['The configuration file', changed, 'was changed!\n\nReload the configuration', os.path.basename(config), 'for', name,'?']),
-                                       QtGui.QMessageBox.No | QtGui.QMessageBox.Yes, QtGui.QMessageBox.Yes)
-      self.__in_question.remove(config)
-      if ret == QtGui.QMessageBox.Yes:
-        self.launchfiles = config
-
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%   Handling of the view activities                  %%%%%%%%
@@ -1771,9 +1748,12 @@ class MasterViewProxy(QtGui.QWidget):
 #          print traceback.format_exc()
       else:
         # remove from name resolution
-        for name, machine in self.__configs[cfg].Roscfg.machines.items():
-          if machine.name:
-            nm.nameres().removeInfo(machine.name, machine.address)
+        try:
+          for name, machine in self.__configs[cfg].Roscfg.machines.items():
+            if machine.name:
+              nm.nameres().removeInfo(machine.name, machine.address)
+        except:
+          pass
       del self.__configs[cfg]
     except:
       import traceback

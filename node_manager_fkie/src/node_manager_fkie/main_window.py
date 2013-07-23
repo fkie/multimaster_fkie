@@ -59,7 +59,8 @@ from .parameter_dialog import ParameterDialog
 from .progress_queue import ProgressQueue, ProgressThread
 from .screen_handler import ScreenHandler
 from .sync_dialog import SyncDialog
-from common import masteruri_from_ros, package_name
+from .common import masteruri_from_ros, package_name
+from .select_dialog import SelectDialog
 
 import node_manager_fkie as nm
 
@@ -180,6 +181,9 @@ class MainWindow(QtGui.QMainWindow):
     self.stats_topic = MasterStatisticTopic()
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
     
+    nm.file_watcher().file_changed.connect(self.on_configfile_changed)
+    self.__in_question = list()
+
     ############################################################################
     ############################################################################
     ############################################################################
@@ -1256,6 +1260,24 @@ class MainWindow(QtGui.QMainWindow):
           rospy.loginfo("LOAD the launch file as default: %s", path)
           self.loadLaunchFile(path, True)
 
+  def on_configfile_changed(self, changed, affected):
+    '''
+    Signal hander to handle the changes of a loaded configuration file
+    @param changed: the changed file
+    @type changed: C{str}
+    @param affected: the list of tuples with masteruri and launchfile, which are affected by file change
+    @type affected: list
+    '''
+    if not changed in self.__in_question:
+      choices = dict()
+      for (muri, lfile) in affected:
+        master = self.getMaster(muri)
+        if not master is None:
+          master.launchfile = lfile
+          choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
+      cfgs = SelectDialog.getValue(''.join(['Update configurations -- ', os.path.basename(changed)]), choices.keys(), False, self)
+      for c in cfgs:
+        choices[c][0].launchfiles = choices[c][1]
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Capabilities handling      %%%%%%%%%%%%%%%%%%%
