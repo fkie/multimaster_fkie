@@ -1,5 +1,5 @@
 <launch>
-  <node launch-prefix="screen -dmS _master_sync" name="master_sync" pkg="master_sync_fkie" type="master_sync" respawn="false" output="screen">
+  <node launch-prefixs="screen -dmS _master_sync" name="master_sync" pkg="master_sync_fkie" type="master_sync" respawn="false" output="screen">
     <rosparam param="ignore_nodes">[]</rosparam>
     <rosparam param="ignore_hosts">[]</rosparam>
   </node>

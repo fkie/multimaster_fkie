@@ -628,10 +628,10 @@ class MasterViewProxy(QtGui.QWidget):
 #      print "ERRORS:", launchConfig.Roscfg.config_errors
 #        
 #      print "M:", launchConfig.Roscfg.m
-    except Exception, e:
+    except Exception as e:
       import os
       err_text = ''.join([os.path.basename(launchfile),' loading failed!'])
-      err_details = '\n\n'.join([err_text, str(e)])
+      err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
       rospy.logwarn("Loading launch file: %s", err_details)
       WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
 

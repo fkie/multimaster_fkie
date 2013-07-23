@@ -1,3 +1,4 @@
+#          raise Exception(''.join(["No path to file '", str(item), "' found!"]))
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2012, Fraunhofer FKIE/US, Alexander Tiderko
@@ -363,7 +364,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
         line = f.readline()
         while line:
           if line:
-            result.append(line.strip())
+            if os.path.isfile(line.strip()):
+              result.append(line.strip())
           line = f.readline()
       f.closed
     return result

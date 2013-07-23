@@ -142,6 +142,7 @@ class LaunchConfig(QtCore.QObject):
         return roslib.packages.find_resource(self.PackageName, self.LaunchName).pop()
       except Exception:
         raise LaunchConfigException(''.join(['launch file ', self.LaunchName, ' not found!']))
+    raise LaunchConfigException(''.join(['launch file ', self.__launchFile, ' not found!']))
 
   @property
   def LaunchName(self):
