@@ -543,8 +543,10 @@ class MasterViewProxy(QtGui.QWidget):
     @type launchfile: C{str}
     '''
 #    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
+    stored_argv = None
     if self.__configs.has_key(launchfile):
       # close the configuration
+      stored_argv = self.__configs[launchfile].argv
       self.removeConfigFromModel(launchfile)
 #      # remove machine entries
 #      try:
@@ -558,27 +560,28 @@ class MasterViewProxy(QtGui.QWidget):
     try:
       # test for requerid args
       launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
-      req_args = launchConfig.getArgs()
       loaded = False
-      if req_args:
-        params = dict()
-        arg_dict = launchConfig.argvToDict(req_args)
-        for arg in arg_dict.keys():
-          params[arg] = ('string', [arg_dict[arg]])
-        inputDia = ParameterDialog(params)
-        inputDia.setFilterVisible(False)
-        inputDia.setWindowTitle(''.join(['Enter the argv for ', launchfile]))
-        if inputDia.exec_():
-          params = inputDia.getKeywords()
-          argv = []
-          for p,v in params.items():
-            if v:
-              argv.append(''.join([p, ':=', v]))
-          loaded = launchConfig.load(argv)
-        else:
-          return
-      if not loaded:
-        launchConfig.load(req_args)
+      if stored_argv is None:
+        req_args = launchConfig.getArgs()
+        if req_args:
+          params = dict()
+          arg_dict = launchConfig.argvToDict(req_args)
+          for arg in arg_dict.keys():
+            params[arg] = ('string', [arg_dict[arg]])
+          inputDia = ParameterDialog(params)
+          inputDia.setFilterVisible(False)
+          inputDia.setWindowTitle(''.join(['Enter the argv for ', launchfile]))
+          if inputDia.exec_():
+            params = inputDia.getKeywords()
+            argv = []
+            for p,v in params.items():
+              if v:
+                argv.append(''.join([p, ':=', v]))
+            loaded = launchConfig.load(argv)
+          else:
+            return
+      if not loaded or not stored_argv is None:
+        launchConfig.load(req_args if stored_argv is None else stored_argv)
       self.__configs[launchfile] = launchConfig
       #connect the signal, which is emitted on changes on configuration file 
       launchConfig.file_changed.connect(self.on_configfile_changed)

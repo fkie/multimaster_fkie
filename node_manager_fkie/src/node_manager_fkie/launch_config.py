@@ -248,6 +248,7 @@ class LaunchConfig(QtCore.QObject):
     try:
       roscfg = roslaunch.ROSLaunchConfig()
       loader = roslaunch.XmlLoader()
+      self.argv = argv
       loader.load(self.Filename, roscfg, verbose=False, argv=argv)
       self.__roscfg = roscfg
 #      for m, k in self.__roscfg.machines.items():
