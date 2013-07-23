@@ -1,7 +1,7 @@
-/bin
 /build
-/html
-/msg_gen
-/srv_gen
-*~
-*.pyc
+/.cproject
+/bin
+/.project
+/lib
+/.settings
+/.pydevproject

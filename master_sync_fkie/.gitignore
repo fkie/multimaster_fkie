@@ -1,7 +1,8 @@
-/bin
+/epydoc.prj
 /build
-/html
-/msg_gen
-/srv_gen
-*~
-*.pyc
+/.cproject
+/bin
+/.project
+/.settings
+/lib
+/.pydevproject
