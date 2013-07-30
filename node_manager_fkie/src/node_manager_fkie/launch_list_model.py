@@ -73,7 +73,11 @@ class LaunchListModel(QtCore.QAbstractListModel):
 
   def _getRootItems(self):
     result = list(self.load_history)
-    result[len(result):] = self.root_paths
+    for p in self.root_paths:
+      path = p
+      if os.path.basename(p) == 'src':
+        path = os.path.dirname(p)
+      result.append(path)
     return result
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
