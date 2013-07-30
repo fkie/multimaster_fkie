@@ -85,6 +85,10 @@ class MainWindow(QtGui.QMainWindow):
     self.__icons = {'default_pc' : QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png']))} # (masnter name : QIcon)
     self.__current_icon = None
     self.__current_master_label_name = None
+    try:
+      self.__current_path = os.environ('HOME')
+    except:
+      self.__current_path = os.getcwd()
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
 #    loader = QtUiTools.QUiLoader()
@@ -152,6 +156,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.ui.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
     self.ui.newXmlButton.clicked.connect(self.on_new_xml_clicked)
+    self.ui.openXmlButton.clicked.connect(self.on_open_xml_clicked)
     #self.ui.newXmlButton.setVisible(False)
     self.ui.transferButton.clicked.connect(self.on_transfer_file_clicked)
     self.ui.loadXmlButton.clicked.connect(self.on_load_xml_clicked)
@@ -1041,7 +1046,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
                                                  "New launch file", 
-                                                 "/home", 
+                                                 self.__current_path, 
                                                  "Config files (*.launch *.yaml);;All files (*)")
     if fileName:
       try:
@@ -1068,6 +1073,15 @@ class MainWindow(QtGui.QMainWindow):
         WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
                          'Error while create a new file',
                           str(e)).exec_()
+
+  def on_open_xml_clicked(self):
+    (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
+                                                 "Load launch file", 
+                                                 self.__current_path, 
+                                                 "Config files (*.launch);;All files (*)")
+    if fileName:
+      self.__current_path = os.path.dirname(fileName)
+      self.loadLaunchFile(fileName)
 
   def on_transfer_file_clicked(self):
     '''

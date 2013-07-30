@@ -34,6 +34,7 @@ from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 from python_qt_binding import loadUi
 
+import re
 import os
 import sys
 import socket
@@ -103,6 +104,11 @@ class MasterViewProxy(QtGui.QWidget):
       self.mastername = o.hostname
     except:
       pass
+    try:
+      self.current_path = os.environ('HOME')
+    except:
+      self.current_path = os.getcwd()
+
     self._tmpObjects = []
     self.__master_state = None
     self.__master_info = None
@@ -216,6 +222,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.dynamicConfigButton.clicked.connect(self.on_dynamic_config_clicked)
     self.masterTab.editConfigButton.clicked.connect(self.on_edit_config_clicked)
     self.masterTab.editRosParamButton.clicked.connect(self.on_edit_rosparam_clicked)
+    self.masterTab.saveButton.clicked.connect(self.on_save_clicked)
     self.masterTab.closeCfgButton.clicked.connect(self.on_close_clicked)
 
     self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
@@ -492,6 +499,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.editConfigButton.setEnabled(cfg_enable and len(selectedNodes) == 1)
     self.startNodesAtHostAct.setEnabled(cfg_enable)
     self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
+    self.masterTab.saveButton.setEnabled(len(self.launchfiles) > 1)
     self.masterTab.closeCfgButton.setEnabled(len(self.__configs) > 0)
 
 
@@ -1703,6 +1711,31 @@ class MasterViewProxy(QtGui.QWidget):
         import traceback
         rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), str(traceback.format_exc()))
 
+  def on_save_clicked(self):
+    (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
+                                                 "New launch file", 
+                                                 self.current_path, 
+                                                 "Config files (*.launch);;All files (*)")
+    if fileName:
+      self.current_path = os.path.dirname(fileName)
+      try:
+        (pkg, pkg_path) = package_name(os.path.dirname(fileName))
+        if pkg is None:
+          ret = WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
+                                  'The new file is not in a ROS package', buttons=QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel).exec_()
+          if ret == QtGui.QMessageBox.Cancel:
+            return
+        with open(fileName, 'w+') as f:
+          f.write("<launch>\n")
+          for lfile in self.launchfiles.keys():
+            with open(lfile, 'r') as lf:
+              f.write(re.sub('<\/?launch\ *\t*>', '', lf.read()))
+          f.write("</launch>\n")
+      except EnvironmentError as e:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
+                         'Error while create a new file',
+                          str(e)).exec_()
+
   def on_close_clicked(self):
     '''
     Closes the open launch configurations. If more then one configuration is 
@@ -1832,7 +1865,7 @@ class MasterViewProxy(QtGui.QWidget):
       slots = mclass.__slots__
       types = mclass._slot_types
       args = ServiceDialog._params_from_slots(slots, types)
-      p = { '! Publish rate' : ('string', ['latch', 'once', '1']), topic_type : ('dict', args) }
+      p = { '! Publish rate' : ('string', ['once', 'latch', '1']), topic_type : ('dict', args) }
       dia = ParameterDialog(p)
       dia.setWindowTitle(''.join(['Publish to ', topic_name]))
       dia.resize(450,300)
