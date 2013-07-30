@@ -324,6 +324,7 @@ class MainWindow(QtGui.QMainWindow):
       for key, master in self.masters.iteritems():
         master.stop()
       self.own_master_monitor.stop()
+      self.master_timecheck_timer.stop()
       print "Mainwindow finished!"
 
   def getMasteruri(self):
