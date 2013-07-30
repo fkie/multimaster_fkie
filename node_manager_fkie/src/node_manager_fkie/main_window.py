@@ -1290,7 +1290,7 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs = SelectDialog.getValue(''.join(['Update configurations -- ', os.path.basename(changed)]), choices.keys(), False, self)
+      cfgs = SelectDialog.getValue(''.join(['Update configurations -- ', os.path.basename(changed)]), choices.keys(), False, True, self)
       for c in cfgs:
         choices[c][0].launchfiles = choices[c][1]
 

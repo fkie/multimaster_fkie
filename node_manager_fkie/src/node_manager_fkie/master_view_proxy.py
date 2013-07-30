@@ -105,9 +105,9 @@ class MasterViewProxy(QtGui.QWidget):
     except:
       pass
     try:
-      self.current_path = os.environ('HOME')
+      self.__current_path = os.environ('HOME')
     except:
-      self.current_path = os.getcwd()
+      self.__current_path = os.getcwd()
 
     self._tmpObjects = []
     self.__master_state = None
@@ -1551,7 +1551,7 @@ class MasterViewProxy(QtGui.QWidget):
       sel_screen = []
       try:
         screens = nm.screen().getActiveScreens(host, auto_pw_request=True)
-        sel_screen = SelectDialog.getValue('Open screen', screens, False, self)
+        sel_screen = SelectDialog.getValue('Open screen', screens, False, False, self)
       except Exception, e:
         rospy.logwarn("Error while get screen list: %s", str(e))
         WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error", 
@@ -1714,10 +1714,10 @@ class MasterViewProxy(QtGui.QWidget):
   def on_save_clicked(self):
     (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
                                                  "New launch file", 
-                                                 self.current_path, 
+                                                 self.__current_path, 
                                                  "Config files (*.launch);;All files (*)")
     if fileName:
-      self.current_path = os.path.dirname(fileName)
+      self.__current_path = os.path.dirname(fileName)
       try:
         (pkg, pkg_path) = package_name(os.path.dirname(fileName))
         if pkg is None:
@@ -1752,7 +1752,7 @@ class MasterViewProxy(QtGui.QWidget):
     cfgs = []
     
 #    if len(choices) > 1:
-    cfgs = SelectDialog.getValue('Close configurations', choices.keys(), False, self)
+    cfgs = SelectDialog.getValue('Close configurations', choices.keys(), False, False, self)
 #    elif len(choices) == 1:
 #      cfgs = choices.values()[0]
 

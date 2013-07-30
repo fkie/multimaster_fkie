@@ -38,7 +38,7 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, parent=None):
+  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, parent=None):
     '''
     Creates an input dialog.
     @param input: a list with strings
@@ -87,7 +87,7 @@ class SelectDialog(QtGui.QDialog):
     # set the input fields
     if input:
       self.content.createFieldsFromValues(input, exclusive)
-      if len(input) == 1:
+      if len(input) == 1 or preselect_all:
         self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)
 
 #    print '=============== create', self.objectName()
@@ -111,8 +111,8 @@ class SelectDialog(QtGui.QDialog):
     return self.content.getSelected()
 
   @staticmethod
-  def getValue(title, input=list(), exclusive=False, parent=None):
-    selectDia = SelectDialog(input, exclusive=exclusive, parent=parent)
+  def getValue(title, input=list(), exclusive=False, preselect_all=False, parent=None):
+    selectDia = SelectDialog(input, exclusive=exclusive, preselect_all=preselect_all, parent=parent)
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():

@@ -88,7 +88,6 @@ class LaunchConfig(QtCore.QObject):
     # Delete to avoid segfault if the LaunchConfig class is destroyed recently 
     # after creation and xmlrpclib.ServerProxy process a method call.
 #    del self.file_watcher
-    print "DELETE"
     nm.file_watcher().rem(self.__masteruri, self.__launchFile)
 
   @property
