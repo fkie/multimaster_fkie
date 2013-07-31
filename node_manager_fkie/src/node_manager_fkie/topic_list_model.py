@@ -305,7 +305,10 @@ class TopicModel(QtGui.QStandardItemModel):
       topicItem = root.child(i)
       if not topicItem.topic.name in topic_names:
         root.removeRow(i)
-        del self.pyqt_workaround[topicItem.topic.name] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        try:
+          del self.pyqt_workaround[topicItem.topic.name] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        except:
+          pass
       else:
         topicItem.topic = topics[topicItem.topic.name]
         updated.append(topicItem.topic.name)

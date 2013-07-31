@@ -172,6 +172,7 @@ class ServiceModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(ServiceModel.header))
     self.setHorizontalHeaderLabels([label for label, width in ServiceModel.header])
+    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
 
   def flags(self, index):
     '''
@@ -203,6 +204,10 @@ class ServiceModel(QtGui.QStandardItemModel):
       serviceItem = root.child(i)
       if not serviceItem.service.name in service_names:
         root.removeRow(i)
+        try:
+          del self.pyqt_workaround[serviceItem.service.name]
+        except:
+          pass
       else:
         serviceItem.service = services[serviceItem.service.name]
         updated.append(serviceItem.service.name)
@@ -214,14 +219,18 @@ class ServiceModel(QtGui.QStandardItemModel):
           serviceItem = root.child(i)
           if not name in updated:
             if cmp(serviceItem.service.name.lower(), service.name.lower()) > 0:
-              root.insertRow(i, ServiceItem.getItemList(service))
+              service_item_row = ServiceItem.getItemList(service)
+              root.insertRow(i, service_item_row)
+              self.pyqt_workaround[name] = service_item_row
               doAddItem = False
               break
           else:
             doAddItem = False
             break
         if doAddItem:
-          root.appendRow(ServiceItem.getItemList(service))
+          service_item_row = ServiceItem.getItemList(service)
+          root.appendRow(service_item_row)
+          self.pyqt_workaround[name] = service_item_row
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update services ", cputime, ', service count:', len(services)

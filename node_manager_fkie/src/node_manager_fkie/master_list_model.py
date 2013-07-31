@@ -274,7 +274,10 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i)
       if masterItem.master.uri == master.uri and masterItem.master.name != master.name:
         root.removeRow(i)
-        del self.pyqt_workaround[masterItem.master.name]
+        try:
+          del self.pyqt_workaround[masterItem.master.name]
+        except:
+          pass
         break
     
     # update or add a the item
@@ -344,7 +347,10 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i)
       if masterItem.master.name == master:
         root.removeRow(i)
-        del self.pyqt_workaround[master]
+        try:
+          del self.pyqt_workaround[master]
+        except:
+          pass
         break
 
   def updateDescription(self, master, descr):
