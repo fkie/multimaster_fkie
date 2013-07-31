@@ -576,7 +576,7 @@ class ParameterDialog(QtGui.QDialog):
     self.filter_visible = True
 
     self.verticalLayout.addWidget(self.filter_frame)
-    
+
     # create area for the parameter
     self.scrollArea = scrollArea = ScrollArea(self);
     scrollArea.setObjectName("scrollArea")
@@ -636,6 +636,12 @@ class ParameterDialog(QtGui.QDialog):
     '''
     self.filter_visible = val
     self.filter_frame.setVisible(val&self.scrollArea.isHidden())
+
+  def add_warning(self, message):
+    label = QtGui.QLabel()
+    label.setWordWrap(True)
+    label.setText(''.join(["<font color='red'>Warning!\n", message, "</font>"]))
+    self.verticalLayout.insertWidget(1, label)
 
   def setText(self, text):
     '''

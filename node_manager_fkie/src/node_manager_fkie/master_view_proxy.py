@@ -1706,6 +1706,8 @@ class MasterViewProxy(QtGui.QWidget):
       try:
         inputDia = MasterParameterDialog(node.masteruri if not node.masteruri is None else self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
         inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
+        if node.has_launch_cfgs(node.cfgs):
+          inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded as not 'default' and the parameter in the launch file will be reloaded on start of the ROS node.")
         inputDia.show()
       except:
         import traceback
