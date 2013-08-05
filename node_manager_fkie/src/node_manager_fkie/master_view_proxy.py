@@ -1858,6 +1858,7 @@ class MasterViewProxy(QtGui.QWidget):
 
   def _start_publisher(self, topic_name, topic_type):
     try:
+      topic_name = roslib.names.ns_join(roslib.names.SEP, topic_name)
       mclass = roslib.message.get_message_class(topic_type)
       if mclass is None:
         WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error", 
