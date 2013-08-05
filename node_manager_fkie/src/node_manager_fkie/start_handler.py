@@ -285,9 +285,9 @@ class StartHandler(object):
     param_server = xmlrpclib.ServerProxy(masteruri)
     p = None
     abs_paths = list() # tuples of (parameter name, old value, new value)
-    not_found_packages = list() # pacakges names
+    not_found_packages = list() # packages names
     try:
-      socket.setdefaulttimeout(6)
+      socket.setdefaulttimeout(6+len(clear_params))
       # multi-call style xmlrpc
       param_server_multi = xmlrpclib.MultiCall(param_server)
 
@@ -301,6 +301,7 @@ class StartHandler(object):
 #          raise StartException("Failed to clear parameter: %s"%(msg))
 
       # multi-call objects are not reusable
+      socket.setdefaulttimeout(6+len(params))
       param_server_multi = xmlrpclib.MultiCall(param_server)
       for p in params.itervalues():
         # suppressing this as it causes too much spam
