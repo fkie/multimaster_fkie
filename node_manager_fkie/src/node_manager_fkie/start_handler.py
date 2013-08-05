@@ -740,6 +740,9 @@ class StartHandler(object):
     Copies the given file to the remote host. Uses caching of remote paths.
     '''
     # get package of the file
+    if nm.is_local(host):
+      #it's local -> no copy needed
+      return
     (pkg_name, pkg_path) = package_name(os.path.dirname(file))
     if not pkg_name is None:
       # get the subpath of the file
@@ -764,5 +767,7 @@ class StartHandler(object):
             nm.ssh().transfer(host, file, os.path.join(output.strip(), subfile_path.strip(os.sep)))
           else:
             raise StartException("Remote host no returned any answer. Is there the new version of node_manager installed?")
+        else:
+          raise StartException("Can't get path from remote host. Is there the new version of node_manager installed?")
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.transfer_files, (host, file, auto_pw_request))
