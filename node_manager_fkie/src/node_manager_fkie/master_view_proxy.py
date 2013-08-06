@@ -463,6 +463,15 @@ class MasterViewProxy(QtGui.QWidget):
       self.node_tree_model.updateModelData(master_info.nodes)
       self.updateButtons()
 
+  def getNode(self, node_name):
+    '''
+    @param node_name: The name of the node.
+    @type node_name: str
+    @return: The list the nodes with given name.
+    @rtype: []
+    '''
+    return self.node_tree_model.getNode(node_name)
+
   def updateButtons(self):
     '''
     Updates the enable state of the buttons depending of the selection and 

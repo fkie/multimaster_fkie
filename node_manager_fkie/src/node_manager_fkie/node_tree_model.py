@@ -1288,6 +1288,21 @@ class NodeTreeModel(QtGui.QStandardItemModel):
             return True
     return False
 
+  def getNode(self, node_name):
+    '''
+    Since the same node can be included by different groups, this method searches
+    for all nodes with given name and returns these items.
+    @param node_name: The name of the node
+    @type node_name: C{str}
+    @return: The list with node items.
+    @rtype: C{[L{PySide.QtGui.QStandardItem}]}
+    '''
+    for i in reversed(range(self.invisibleRootItem().rowCount())):
+      host = self.invisibleRootItem().child(i)
+      if not host is None: # should not occur
+        return host.getNodeItemsByName(node_name)
+    return []
+
   def getRunningNodes(self):
     '''
     Returns a list with all known running nodes.

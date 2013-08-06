@@ -737,6 +737,16 @@ class MainWindow(QtGui.QMainWindow):
       self.ui.syncButton.setEnabled(False)
       if not self.currentMaster is None:
         if self.ui.syncButton.isChecked():
+          # ask the user to start the master_sync with loaded launch file
+          if not self.currentMaster.master_info is None:
+            node = self.currentMaster.getNode('/master_sync')
+            if node:
+              ret = QtGui.QMessageBox.question(self, 'Start synchronization','Start the synchronization using loaded configuration?\n `No` starts the master_sync with default parameter.', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+              if ret == QtGui.QMessageBox.Yes:
+                self.currentMaster.start_nodes([node[0]])
+                return
+
+          # start the master sync with default settings
           sync_args = []
           sync_args.append(''.join(['_interface_url:=', "'.'"]))
           sync_args.append(''.join(['_sync_topics_on_demand:=', 'False']))
