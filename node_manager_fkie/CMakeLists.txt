@@ -20,7 +20,7 @@ install(
     )
 
 install(
-   PROGRAMS 
+   FILES 
         ./README.rst
         ./plugin.xml
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
@@ -28,7 +28,7 @@ install(
 
 
 install(
-   PROGRAMS
+   FILES
         ./src/node_manager_fkie/MainWindow.ui
         ./src/node_manager_fkie/MasterTab.ui
         ./src/node_manager_fkie/PasswordInput.ui
