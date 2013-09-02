@@ -30,6 +30,7 @@ class NodeManager(Plugin):
         # Create QWidget
         try:
           self._widget = MainWindow()
+          self._widget.read_view_history()
         except Exception, e:
           msgBox = QMessageBox()
           msgBox.setText(str(e))

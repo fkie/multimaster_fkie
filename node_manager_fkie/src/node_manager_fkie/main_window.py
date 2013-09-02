@@ -82,6 +82,7 @@ class MainWindow(QtGui.QMainWindow):
     QtGui.QMainWindow.__init__(self)
     restricted_to_one_master = False
     self._finished = False
+    self._history_selected_robot = ''
     self.__icons = {'default_pc' : QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png']))} # (masnter name : QIcon)
     self.__current_icon = None
     self.__current_master_label_name = None
@@ -236,6 +237,9 @@ class MainWindow(QtGui.QMainWindow):
 
     self.editor_dialogs  = dict() # [file] = XmlEditor
     '''@ivar: stores the open XmlEditor '''
+    
+    
+    self.ui.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
 
     # since the is_local method is threaded for host names, call it to cache the localhost
     nm.is_local("localhost")
@@ -267,42 +271,51 @@ class MainWindow(QtGui.QMainWindow):
     self._con_tries = dict()
     self._subscribe()
 
-  def createSlider(self):
-    slider = QtGui.QSlider()
-    palette = QtGui.QPalette()
-    brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Button, brush)
-    brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Button, brush)
-    brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Button, brush)
-    #red
-    palette = QtGui.QPalette()
-    brush = QtGui.QBrush(QtGui.QColor(212, 0, 0))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Button, brush)
-    brush = QtGui.QBrush(QtGui.QColor(212, 0, 0))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Button, brush)
-    brush = QtGui.QBrush(QtGui.QColor(212, 0, 0))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Button, brush)
+  def on_hide_docks_toggled(self, checked):
+    if self.ui.dockWidgetArea(self.ui.launchDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.ui.launchDock.setVisible(not checked)
+    if self.ui.dockWidgetArea(self.ui.descriptionDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.ui.descriptionDock.setVisible(not checked)
+    if self.ui.dockWidgetArea(self.ui.helpDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.ui.helpDock.setVisible(not checked)
+    if self.ui.dockWidgetArea(self.ui.networkDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.ui.networkDock.setVisible(not checked)
+    self.ui.hideDocksButton.setArrowType(QtCore.Qt.RightArrow if checked else QtCore.Qt.LeftArrow)
+    historyFile = os.path.join(nm.CFG_PATH, 'view.history')
+    with open(historyFile, 'w') as f:
+      f.write(''.join(['selected_robot:=', self._history_selected_robot, '\n']))
+      f.write(''.join(['show_left_docks:=', 'false' if checked else 'true', '\n']))
+      f.write(''.join(['area_launch_dock:=', str(self.ui.dockWidgetArea(self.ui.launchDock)), '\n']))
+      f.write(''.join(['area_descr_dock:=', str(self.ui.dockWidgetArea(self.ui.descriptionDock)), '\n']))
 
-    slider.setPalette(palette)
-    slider.setMinimum(1)
-    slider.setMaximum(2)
-    slider.setPageStep(1)
-    slider.setOrientation(QtCore.Qt.Horizontal)
-#    slider.setInvertedAppearance(True)
-#    slider.setInvertedControls(True)
-#    slider.setTickPosition(QtGui.QSlider.TicksBelow)
-    slider.actionTriggered .connect(self.was)
-    return slider
-
-
+  def read_view_history(self):
+    show_left_docks = True
+    area_launch_dock = 1
+    area_descr_dock = 1
+    historyFile = os.path.join(nm.CFG_PATH, 'view.history')
+    with open(historyFile, 'r') as f:
+      line = f.readline()
+      while line:
+        if line:
+          line = line.strip()
+          if line:
+            key, sep, value = line.partition(':=')
+            if sep:
+              if key == 'selected_robot':
+                self._history_selected_robot = value
+              if key == 'show_left_docks':
+                show_left_docks = (value=='true')
+              if key == 'area_launch_dock':
+                area_launch_dock = int(value)
+              if key == 'area_descr_dock':
+                area_descr_dock = int(value)
+        line = f.readline()
+    if area_launch_dock != QtCore.Qt.LeftDockWidgetArea:
+      self.ui.addDockWidget(area_launch_dock, self.ui.launchDock)
+    if area_descr_dock != QtCore.Qt.LeftDockWidgetArea:
+      self.ui.addDockWidget(area_descr_dock, self.ui.descriptionDock)
+    self.ui.hideDocksButton.setChecked(not show_left_docks)
+    self.on_hide_docks_toggled(not show_left_docks)
 
   def on_currentChanged_tab(self, index):
     pass
@@ -458,9 +471,10 @@ class MainWindow(QtGui.QMainWindow):
       for uri in self.masters.keys():
         master = self.masters[uri]
         if nm.is_local(nm.nameres().getHostname(uri)):
-          self.currentMaster = master
-          self.stackedLayout.setCurrentWidget(master)
-          self.on_master_timecheck()
+          if not self._history_selected_robot or master.mastername == self._history_selected_robot:
+            self.currentMaster = master
+            self.stackedLayout.setCurrentWidget(master)
+            self.on_master_timecheck()
         else:
           if not master.master_state is None:
             self.master_model.removeMaster(master.master_state.name)
@@ -587,16 +601,20 @@ class MainWindow(QtGui.QMainWindow):
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
 #          print master.master_state.name, cputime
           if not master.master_info is None:
-            if nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
+            if self._history_selected_robot == minfo.mastername and self._history_selected_robot == master.mastername and self.currentMaster != master:
+              self.currentMaster = master
+              self.stackedLayout.setCurrentWidget(master)
+              self.on_master_timecheck()
+            elif nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
               if new_info:
                 has_discovery_service = self.hasDiscoveryService(minfo)
                 if not self.own_master_monitor.isPaused() and has_discovery_service:
                   self._subscribe()
-                elif self.currentMaster is None:
+                elif self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
                   self.currentMaster = master
                   self.stackedLayout.setCurrentWidget(master)
                   self.on_master_timecheck()
-  
+
             # update the list view, whether master is synchronized or not
             if master.master_info.masteruri == minfo.masteruri:
               self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
@@ -889,6 +907,7 @@ class MainWindow(QtGui.QMainWindow):
         item = self.master_model.itemFromIndex(selected)
         if not item is None:
           self.currentMaster = self.getMaster(item.master.uri)
+          self._history_selected_robot = item.master.name
           self.stackedLayout.setCurrentWidget(self.currentMaster)
           self.on_master_timecheck()
           if not self.currentMaster.master_info is None and not self.restricted_to_one_master:
