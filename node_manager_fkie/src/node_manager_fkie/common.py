@@ -3,6 +3,11 @@ import os
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
 
+try:
+  from catkin_pkg.package import parse_package
+  CATKIN_SUPPORTED = True
+except ImportError:
+  CATKIN_SUPPORTED = False
 
 def get_ros_home():
   '''
@@ -48,8 +53,15 @@ def get_packages(path):
   result = {}
   if os.path.isdir(path):
     fileList = os.listdir(path)
-    if MANIFEST_FILE in fileList or PACKAGE_FILE in fileList:
+    if MANIFEST_FILE in fileList:
       return {os.path.basename(path) : path}
+    if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
+      try:
+        pkg = parse_package(path)
+        return {pkg.name : path}
+      except:
+        pass
+      return {}
     for f in fileList:
       ret = get_packages(os.path.sep.join([path, f]))
       result = dict(ret.items() + result.items())
@@ -64,10 +76,16 @@ def package_name(dir):
     package = os.path.basename(dir)
     fileList = os.listdir(dir)
     for file in fileList:
-      if file == MANIFEST_FILE or file == PACKAGE_FILE:
+      if file == MANIFEST_FILE:
         return (package, dir)
+      if CATKIN_SUPPORTED and file == PACKAGE_FILE:
+        try:
+          pkg = parse_package(os.path.join([dir, file]))
+          return (pkg.name, dir)
+        except:
+          return (None,None)
     return package_name(os.path.dirname(dir))
   return (None, None)
 
 def is_package(file_list):
-  return (MANIFEST_FILE in file_list or PACKAGE_FILE in file_list)
+  return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))
