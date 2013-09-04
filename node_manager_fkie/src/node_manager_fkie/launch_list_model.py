@@ -143,6 +143,13 @@ class LaunchListModel(QtCore.QAbstractListModel):
     '''
     Reloads the current path.
     '''
+    # clear the cache for package names
+    try:
+      from common import PACKAGE_CACHE
+      PACKAGE_CACHE.clear()
+    except:
+      import traceback
+      print traceback.format_exc()
     if self.currentPath is None:
       self._setNewList(self._moveUp(self.currentPath))
     else:
