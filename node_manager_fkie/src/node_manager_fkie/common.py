@@ -9,6 +9,8 @@ try:
 except ImportError:
   CATKIN_SUPPORTED = False
 
+PACKAGE_CACHE = {}
+
 def get_ros_home():
   '''
   Returns the ROS HOME depending on ROS distribution API.
@@ -63,28 +65,34 @@ def get_packages(path):
         pass
       return {}
     for f in fileList:
-      ret = get_packages(os.path.sep.join([path, f]))
+      ret = get_packages(os.path.join(path, f))
       result = dict(ret.items() + result.items())
   return result
 
 def package_name(dir):
   '''
   Returns for given directory a tuple of package name and package path or None values.
+  The results are cached!
   @rtype: C{(name, path)}
   '''
   if not (dir is None) and dir and dir != os.path.sep and os.path.isdir(dir):
+    if PACKAGE_CACHE.has_key(dir):
+      return PACKAGE_CACHE[dir]
     package = os.path.basename(dir)
     fileList = os.listdir(dir)
     for file in fileList:
       if file == MANIFEST_FILE:
+        PACKAGE_CACHE[dir] = (package, dir)
         return (package, dir)
       if CATKIN_SUPPORTED and file == PACKAGE_FILE:
         try:
-          pkg = parse_package(os.path.join([dir, file]))
+          pkg = parse_package(os.path.join(dir, file))
+          PACKAGE_CACHE[dir] = (pkg.name, dir)
           return (pkg.name, dir)
         except:
           return (None,None)
-    return package_name(os.path.dirname(dir))
+    PACKAGE_CACHE[dir] = package_name(os.path.dirname(dir))
+    return PACKAGE_CACHE[dir]
   return (None, None)
 
 def is_package(file_list):
