@@ -77,9 +77,9 @@ class FileWatcher(QtCore.QObject):
 
   def add(self, masteruri, launch_file, files):
     if self.launches.has_key((masteruri, launch_file)):
-      self.launches[(masteruri, launch_file)].extend(files)
+      self.launches[(masteruri, launch_file)].extend([os.path.normpath(f) for f in files])
     else:
-      self.launches[(masteruri, launch_file)] = files
+      self.launches[(masteruri, launch_file)] = [os.path.normpath(f) for f in files]
     self.update_files()
 
   def rem(self, masteruri, launch_file=''):

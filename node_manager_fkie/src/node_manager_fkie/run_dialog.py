@@ -189,7 +189,7 @@ class RunDialog(QtGui.QDialog):
       fileList = os.listdir(path)
       for f in fileList:
         if f and f[0] != '.' and not f in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
-          ret = self._getBinaries(os.path.sep.join([path, f]))
+          ret = self._getBinaries(os.path.join(path, f))
           result = dict(ret.items() + result.items())
     elif os.path.isfile(path) and os.access(path, os.X_OK):
       # create a selection for binaries

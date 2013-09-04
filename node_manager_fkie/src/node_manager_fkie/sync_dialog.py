@@ -406,7 +406,7 @@ class SyncDialog(QtGui.QDialog):
         if is_package(fileList):
           package = os.path.basename(path)
       for f in fileList:
-        ret = self._getInterfaces(os.path.sep.join([path, f]), package)
+        ret = self._getInterfaces(os.path.join(path, f), package)
         result = dict(ret.items() + result.items())
     elif package and os.path.isfile(path) and path.endswith('.sync'):
       # create a selection for binaries
