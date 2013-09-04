@@ -9,9 +9,10 @@ tracks:
     - git-bloom-generate -y rosdebian --prefix release/:{ros_distro} :{ros_distro}
       -i :{release_inc}
     devel_branch: hydro-devel
+    last_version: 0.3.3
     name: upstream
     patches: null
-    release_inc: -1
+    release_inc: '0'
     release_repo_url: null
     release_tag: :{version}
     ros_distro: hydro
