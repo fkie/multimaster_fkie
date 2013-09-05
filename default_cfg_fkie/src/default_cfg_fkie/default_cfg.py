@@ -210,21 +210,21 @@ class DefaultCfg(object):
                     result[m][ns] = dict()
                   result[m][ns][self._decode(entry[0])] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3]), 'nodes' : [] }
       # get the capability nodes
-      for item in self.Roscfg.nodes:
+      for item in self.roscfg.nodes:
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
         machine_name = item.machine_name if not item.machine_name is None and not item.machine_name == 'localhost' else ''
         added = False
         cap_param = roslib.names.ns_join(node_fullname, 'capability_group')
         cap_ns = node_fullname
         #find the capability group parameter in namespace
-        while not self.Roscfg.params.has_key(cap_param) and cap_param.count(roslib.names.SEP) > 1:
+        while not self.roscfg.params.has_key(cap_param) and cap_param.count(roslib.names.SEP) > 1:
           cap_ns = roslib.names.namespace(cap_ns).rstrip(roslib.names.SEP)
           if not cap_ns:
             cap_ns = roslib.names.SEP
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
         # if the parameter group parameter found, assign node to the group
-        if self.Roscfg.params.has_key(cap_param):
-          p = self.Roscfg.params[cap_param]
+        if self.roscfg.params.has_key(cap_param):
+          p = self.roscfg.params[cap_param]
           if not result.has_key(machine_name):
             result[machine_name] = dict()
           for (ns, groups) in result[machine_name].items():
@@ -233,7 +233,7 @@ class DefaultCfg(object):
               added = True
               break
           if not added:
-            ns = ''.join([item.namespace])
+            ns = str(item.namespace)
             # add new group in the namespace of the node
             if not result[machine_name].has_key(ns):
               result[machine_name][ns] = dict()
