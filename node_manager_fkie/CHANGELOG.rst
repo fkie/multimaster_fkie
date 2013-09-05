@@ -2,6 +2,14 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.4 (2013-09-05)
+------------------
+* node_manager_fkie: fixed file paths (removed warnings in file_watcher)
+* node_manager_fkie: clear cached package names on refreshing launch file view
+* node_manager_fkie: capability_group parameter can now be defined in a namespace
+* node_manager_fkie: fixed pakage_name result
+  added caching for package_name results
+
 0.3.3 (2013-09-04)
 ------------------
 * node_manager_fkie: Parse package.xml for name
