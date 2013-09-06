@@ -2,6 +2,11 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.5 (2013-09-06)
+------------------
+* node_manager_fkie: fixed launch selection for favirites with same launch file name
+* node_manager_fkie: fixed process id view of nodes for multiple sync hosts
+
 0.3.4 (2013-09-05)
 ------------------
 * node_manager_fkie: fixed file paths (removed warnings in file_watcher)

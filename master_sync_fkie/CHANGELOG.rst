@@ -2,6 +2,10 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.5 (2013-09-06)
+------------------
+* master_sync_fkie: fixed a brocken connection after desync
+
 0.3.4 (2013-09-05)
 ------------------
 
