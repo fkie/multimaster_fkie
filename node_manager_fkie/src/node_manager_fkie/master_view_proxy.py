@@ -384,7 +384,7 @@ class MasterViewProxy(QtGui.QWidget):
         if not (self.__master_info is None or master_info is None):
           for nodename, node in master_info.nodes.items():
             n = self.__master_info.getNode(nodename)
-            if not n is None and n.pid != node.pid and not n.isLocal:
+            if not n is None and n.pid != node.pid and not n.isLocal and node.isLocal:
               update_nodes = True
               n.pid = node.pid
           for servicename, service in master_info.services.items():
