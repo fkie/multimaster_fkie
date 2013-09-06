@@ -392,10 +392,10 @@ class SyncThread(threading.Thread):
       own_master = xmlrpclib.ServerProxy(self.localMasteruri)
       own_master_multi = xmlrpclib.MultiCall(own_master)
       #end routine if the master was removed
-      for topic, node, uri in self.__publisher:
-        own_master_multi.unregisterPublisher(node, topic, uri)
       for topic, node, uri in self.__subscriber:
         own_master_multi.unregisterSubscriber(node, topic, uri)
+      for topic, node, uri in self.__publisher:
+        own_master_multi.unregisterPublisher(node, topic, uri)
       for service, serviceuri, node, uri in self.__services:
         own_master_multi.unregisterService(node, service, serviceuri)
       rospy.logdebug("SyncThread[%s] execute a MultiCall", self.masterInfo.name)
