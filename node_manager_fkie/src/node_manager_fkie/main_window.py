@@ -1027,7 +1027,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     item, path, id = activated.model().items[activated.row()]
     try:
-      file = activated.model().getFilePath(item)
+      file = activated.model().expandItem(item, path)
       if not file is None:
         self.loadLaunchFile(path)
     except Exception, e:
@@ -1065,7 +1065,8 @@ class MainWindow(QtGui.QMainWindow):
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().getFilePath(pathItem)
+      print "XML_click", pathItem, path, pathId
+      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
         self._editor_dialog_open([path], '')
 
@@ -1119,8 +1120,7 @@ class MainWindow(QtGui.QMainWindow):
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      print pathItem, path, pathId
-      path = self.ui.xmlFileView.model().getFilePath(pathItem)
+      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
         host = nm.nameres().getHostname(self.currentMaster.masteruri) if not self.currentMaster is None else 'localhost'
         params = {'Host' : ('string', host),
@@ -1184,7 +1184,7 @@ class MainWindow(QtGui.QMainWindow):
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().getFilePath(pathItem)
+      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
         self.loadLaunchFile(path)
 
@@ -1266,7 +1266,7 @@ class MainWindow(QtGui.QMainWindow):
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().getFilePath(pathItem)
+      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
         params = {'Host' : ('string', 'localhost') }
         dia = ParameterDialog(params)
@@ -1299,7 +1299,7 @@ class MainWindow(QtGui.QMainWindow):
       indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
       for index in indexes:
         pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-        path = self.ui.xmlFileView.model().getFilePath(pathItem)
+        path = self.ui.xmlFileView.model().expandItem(pathItem, path)
         if not path is None:
           rospy.loginfo("LOAD the launch file as default: %s", path)
           self.loadLaunchFile(path, True)

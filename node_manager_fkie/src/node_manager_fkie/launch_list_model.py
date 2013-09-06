@@ -166,26 +166,28 @@ class LaunchListModel(QtCore.QAbstractListModel):
       return not path is None and os.path.isfile(path) and path.endswith('.launch')
     return False
 
-  def getFilePath(self, item):
+  def expandItem(self, path_item, path):
     '''
-    Returns for the given item the file path if this is a file. Otherwise the 
+    Returns for the given item and path the file path if this is a file. Otherwise the 
     folder will be expanded and None will be returned.
-    @param item: the list item
-    @type item: C{str}
+    @param path_item: the list item
+    @type path_item: C{str}
+    @param path: the real path of the item
+    @type path: C{str}
     @return: path of the launch file or None
     @rtype: C{str
     @raise Exception if no path to given item was found
     '''
-    for pathItem, path, id in self.items:
-      if item == pathItem:
-        if item == '..':
-          root_path, items = self._moveUp(os.path.dirname(path))
-        elif os.path.isfile(path):
-          return path
+    for pathItem, p, id in self.items:
+      if path_item == pathItem and p == path:
+        if path_item == '..':
+          root_path, items = self._moveUp(os.path.dirname(p))
+        elif os.path.isfile(p):
+          return p
         elif id == LaunchListModel.RECENT_FILE or id == LaunchListModel.LAUNCH_FILE:
-          raise Exception(''.join(["No path to file '", str(item), "' found!"]))
+          raise Exception(''.join(["Invalid file path: ", str(path)]))
         else:
-          root_path, items = self._moveDown(path)
+          root_path, items = self._moveDown(p)
         self._setNewList((root_path, items))
     return None
 
