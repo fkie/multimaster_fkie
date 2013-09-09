@@ -1065,7 +1065,6 @@ class MainWindow(QtGui.QMainWindow):
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      print "XML_click", pathItem, path, pathId
       path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
         self._editor_dialog_open([path], '')
