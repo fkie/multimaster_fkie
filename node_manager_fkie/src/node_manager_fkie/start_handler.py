@@ -130,7 +130,7 @@ class StartHandler(object):
     # set the global parameter
     if not masteruri is None and not masteruri in launch_config.global_param_done:
       global_node_names = cls.getGlobalParams(launch_config.Roscfg)
-      rospy.loginfo("Register global parameter:\n%s", '\n'.join(global_node_names))
+      rospy.loginfo("Register global parameter:\n  %s", '\n  '.join(global_node_names))
       abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, global_node_names, [])
       launch_config.global_param_done.append(masteruri)
 
@@ -144,8 +144,9 @@ class StartHandler(object):
       clear_params = []
       for cparam in launch_config.Roscfg.clear_params:
         if cparam.startswith(nodens):
-          clear_params.append(param)
-      rospy.loginfo("Register parameter:\n%s", '\n'.join(params))
+          clear_params.append(cparam)
+      rospy.loginfo("Delete parameter:\n  %s", '\n  '.join(clear_params))
+      rospy.loginfo("Register parameter:\n  %s", '\n  '.join(params))
       abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, params, clear_params)
     #'print "RUN prepared", node, time.time()
 
@@ -296,8 +297,9 @@ class StartHandler(object):
       for p in clear_params:
         param_server_multi.deleteParam(rospy.get_name(), p)
       r = param_server_multi()
-#      for code, msg, _ in r:
-#        if code != 1:
+      for code, msg, _ in r:
+        if code != 1:
+          rospy.logwarn("Failed to clear parameter: %s", msg)
 #          raise StartException("Failed to clear parameter: %s"%(msg))
 
       # multi-call objects are not reusable
