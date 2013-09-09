@@ -560,11 +560,13 @@ class MasterViewProxy(QtGui.QWidget):
     @type launchfile: C{str}
     '''
 #    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
+    stored_roscfg = None
     stored_argv = None
     if self.__configs.has_key(launchfile):
       # close the configuration
       stored_argv = self.__configs[launchfile].argv
       self.removeConfigFromModel(launchfile)
+      stored_roscfg = self.__configs[launchfile].Roscfg
       del self.__configs[launchfile]
 #      # remove machine entries
 #      try:
@@ -626,6 +628,31 @@ class MasterViewProxy(QtGui.QWidget):
         print traceback.print_exc()
       # by this call the name of the host will be updated if a new one is defined in the launch file
       self.updateRunningNodesInModel(self.__master_info)
+
+      # detect files changes
+      if stored_roscfg and self.__configs[launchfile].Roscfg:
+        stored_values = [(name, str(p.value)) for name, p in stored_roscfg.params.items()]
+        new_values = [(name, str(p.value)) for name, p in self.__configs[launchfile].Roscfg.params.items()]
+        # detect changes parameter
+        paramset = set(name for name, value in (set(new_values) - set(stored_values)))
+        # detect new parameter
+        paramset |= (set(self.__configs[launchfile].Roscfg.params.keys()) - set(stored_roscfg.params.keys()))
+        # detect removed parameter 
+        paramset |= (set(stored_roscfg.params.keys()) - set(self.__configs[launchfile].Roscfg.params.keys()))
+        # detect new nodes
+        stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
+        new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in self.__configs[launchfile].Roscfg.nodes]
+        nodes2start = set(new_nodes) - set(stored_nodes)
+        # determine the nodes of the changed parameter
+        for p in paramset:
+          for n in new_nodes:
+            if p.startswith(n):
+              nodes2start.add(n)
+        # restart nodes
+        if nodes2start:
+          restart = SelectDialog.getValue('The parameter/nodes are changed. Restart follow nodes?', list(nodes2start), False, True, self)
+          self.start_nodes_by_name(restart, launchfile, True)
+
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:
@@ -652,6 +679,9 @@ class MasterViewProxy(QtGui.QWidget):
       err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
       rospy.logwarn("Loading launch file: %s", err_details)
       WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
+    except:
+      import traceback
+      print traceback.print_exc()
 
   def appendConfigToModel(self, launchfile, rosconfig):
     '''
@@ -1226,7 +1256,7 @@ class MasterViewProxy(QtGui.QWidget):
                                        (node.node_info, force, cfg_nodes[node.node_info.name], force_host))
     self._progress_queue.start()
 
-  def start_nodes_by_name(self, nodes, cfg):
+  def start_nodes_by_name(self, nodes, cfg, force=False):
     '''
     Start nodes given in a list by their names.
     @param nodes: a list with full node names
@@ -1239,7 +1269,7 @@ class MasterViewProxy(QtGui.QWidget):
         node_item = NodeItem(node_info)
         node_item.addConfig(cfg)
         result.append(node_item)
-    self.start_nodes(result)
+    self.start_nodes(result, force)
 
   def on_force_start_nodes(self):
     '''
