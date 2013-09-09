@@ -187,7 +187,7 @@ class LaunchConfig(QtCore.QObject):
         script = path[startIndex+1:endIndex].split()
         if len(script) == 2 and (script[0] == 'find'):
           pkg = roslib.packages.get_pkg_dir(script[1])
-          return os.path.join(pkg, path[endIndex+1:])
+          return os.path.join(pkg, path[endIndex+1:].strip(os.path.sep))
     elif len(path) > 0 and path[0] != os.path.sep:
       return os.path.join(pwd, path)
     return path
