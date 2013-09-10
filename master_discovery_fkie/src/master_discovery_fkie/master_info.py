@@ -1017,6 +1017,9 @@ class MasterInfo(object):
             return True
           if set(n1.services) ^ set(n2.services):
             return True
+        # after local start of asynchronized node. The next check of master state return the local node.
+        elif n2.isLocal:
+          return True
       elif not n1 is None:
         if n1.isLocal:
           return True
