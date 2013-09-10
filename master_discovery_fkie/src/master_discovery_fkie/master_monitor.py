@@ -560,6 +560,15 @@ class MasterMonitor(object):
     '''
     #'print "updateSyncInfo _create_access_lock try...", threading.current_thread()
 
+    def getNodeuri(nodename, publisher, subscriber):
+      for p in publisher:
+        if nodename == p.node:
+          return p.nodeuri
+      for p in subscriber:
+        if nodename == p.node:
+          return p.nodeuri
+      return None
+
     with self._create_access_lock:
       #'print "  updateSyncInfo _create_access_lock locked", threading.current_thread()
       master_state = self.__new_master_state
@@ -583,9 +592,13 @@ class MasterMonitor(object):
         for m in sync_info.hosts:
           for n in m.nodes:
             try:
-              master_state.getNode(n).masteruri = m.masteruri
+              # set the sync node only if it has the same uri
+              if master_state.getNode(n).uri == getNodeuri(n, m.publisher, m.subscriber):
+                master_state.getNode(n).masteruri = m.masteruri
             except:
               pass
+#              import traceback
+#              print traceback.format_exc()
           for s in m.services:
             try:
               master_state.getService(s).masteruri = m.masteruri
