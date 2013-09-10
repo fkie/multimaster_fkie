@@ -281,11 +281,11 @@ class SyncThread(threading.Thread):
                   if not ((topic, node, nodeuri) in self.__publisher):
                     publisher_to_register.append((topic, topictype, node, nodeuri))
                   publisher.append((topic, node, nodeuri))
-            # unregister not updated subscriber
+            # unregister not updated publishers
             for (topic, node, nodeuri) in set(self.__publisher)-set(publisher):
               own_master_multi.unregisterPublisher(node, topic, nodeuri)
               handler.append(('upub', topic, node, nodeuri))
-            #register new subscriber
+            #register new publishers
             for (topic, topictype, node, nodeuri) in publisher_to_register:
               own_master_multi.registerPublisher(node, topic, topictype, nodeuri)
               handler.append(('pub', topic, topictype, node, nodeuri))
