@@ -382,17 +382,23 @@ class MasterViewProxy(QtGui.QWidget):
         update_others = True
       else:
         if not (self.__master_info is None or master_info is None):
+          # update the process id of the remote nodes
           for nodename, node in master_info.nodes.items():
             n = self.__master_info.getNode(nodename)
             if not n is None and n.pid != node.pid and not n.isLocal and node.isLocal:
               update_nodes = True
               n.pid = node.pid
+          # update the service information of the remote services
           for servicename, service in master_info.services.items():
             s = self.__master_info.getService(servicename)
             if not s is None and (s.uri != service.uri or s.type != service.type ) and s.masteruri == service.masteruri:
               update_others = True
               s.uri = service.uri
               s.type = service.type
+          # remove remote node information, if node is not more running
+          for nodename, node in self.__master_info.nodes.items():
+            if not node.isLocal and node.masteruri == master_info.masteruri and master_info.getNode(nodename) is None:
+              node.masteruri = self.masteruri
 
 #      cputimes = os.times()
 #      cputime_init = cputimes[0] + cputimes[1]
