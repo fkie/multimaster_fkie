@@ -116,7 +116,10 @@ class MainWindow(QtGui.QMainWindow):
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("Node Manager")
     self.setCentralWidget(mainWindow)
-    self.resize(1024,768)
+    screen_size = QtGui.QApplication.desktop().availableGeometry()
+    w = 1024 if screen_size.width() >= 1024 else screen_size.width()
+    h = 768 if screen_size.height() >= 768 else screen_size.height()
+    self.resize(w, h)
     
     # init the stack layout which contains the information about different ros master
     self.stackedLayout = QtGui.QStackedLayout()
