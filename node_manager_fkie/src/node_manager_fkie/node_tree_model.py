@@ -37,7 +37,8 @@ import re
 import roslib
 import rospy
 import node_manager_fkie as nm
-from master_discovery_fkie.master_info import NodeInfo 
+from master_discovery_fkie.master_info import NodeInfo
+from parameter_handler import ParameterHandler
 
 
 ################################################################################
@@ -115,7 +116,7 @@ class GroupItem(QtGui.QStandardItem):
       for groupname, descr in groups.items():
         try:
           nodes = descr['nodes']
-          def_list = [''.join([n.strip().replace('*','.*'), '\Z']) for n in nodes]
+          def_list = [n.strip().replace('*','.*') for n in nodes]
           if def_list:
             self._re_cap_nodes[(config, ns, groupname)] = re.compile('|'.join(def_list), re.I)
           else:
@@ -141,6 +142,7 @@ class GroupItem(QtGui.QStandardItem):
     # update the view
     for ns, groups in capabilities.items():
       for group, descr in groups.items():
+        group_changed = False
         # create nodes for each group
         nodes = descr['nodes']
         if nodes:
@@ -158,24 +160,28 @@ class GroupItem(QtGui.QStandardItem):
             if isinstance(item, NodeItem) and self.is_in_cap_group(item.name, config, ns, group):
               row = self.takeRow(i)
               groupItem._addRow_sorted(row)
+              group_changed = True
 #              row[0].parent_item = groupItem
-              groupItem.updateDisplayedConfig()
 
           # create new or update existing items in the group
           for node_name in nodes:
-            items = groupItem.getNodeItemsByName(node_name)
-            if items:
-              for item in items:
-                item.addConfig(config)
-            else:
-              items = self.getNodeItemsByName(node_name)
+            # do not add nodes with * in the name
+            if not re.search(r"\*", node_name):
+              items = groupItem.getNodeItemsByName(node_name)
               if items:
-                # copy the state of the existing node
-                groupItem.addNode(items[0].node_info, config)
-              elif config:
-#              else:
-                groupItem.addNode(NodeInfo(node_name, masteruri), config)
-          groupItem.updateIcon()
+                for item in items:
+                  item.addConfig(config)
+              else:
+                items = self.getNodeItemsByName(node_name)
+                if items:
+                  # copy the state of the existing node
+                  groupItem.addNode(items[0].node_info, config)
+                elif config:
+                  groupItem.addNode(NodeInfo(node_name, masteruri), config)
+                group_changed = True
+          if group_changed:
+            groupItem.updateDisplayedConfig()
+            groupItem.updateIcon()
 #          groupItem.updateTooltip()
 
   def remCapablities(self, config):
@@ -241,9 +247,11 @@ class GroupItem(QtGui.QStandardItem):
         return [item]
     return result
 
-  def getNodeItems(self):
+  def getNodeItems(self, recursive=True):
     '''
     Returns all nodes in this group and subgroups.
+    @param recursive: returns the nodes of the subgroups
+    @type recursive: bool
     @return: The list with node items.
     @rtype: C{[L{PySide.QtGui.QStandardItem}]}
     '''
@@ -251,7 +259,8 @@ class GroupItem(QtGui.QStandardItem):
     for i in range(self.rowCount()):
       item = self.child(i)
       if isinstance(item, GroupItem):
-        result[len(result):] = item.getNodeItems()
+        if recursive:
+          result[len(result):] = item.getNodeItems()
       elif isinstance(item, NodeItem):
         result.append(item)
     return result
@@ -346,7 +355,6 @@ class GroupItem(QtGui.QStandardItem):
     groups = self.getGroupItems()
     for group in groups:
       group.clearUp(fixed_node_names)
-
     removed = False
     # move running nodes without configuration to the upper layer, remove not running and duplicate nodes
     for i in reversed(range(self.rowCount())):
@@ -365,8 +373,8 @@ class GroupItem(QtGui.QStandardItem):
           if item.state == NodeItem.STATE_RUN and not (has_launches or has_defaults or has_std_cfg):
             # if it is in a group, is running, but has no configuration, move it to the host
             if not self.parent_item is None and isinstance(self.parent_item, HostItem):
-              items_in_host = self.parent_item.getNodeItemsByName(item.name, False)
-              if len(items_in_host) == 0:
+              items_in_host = self.parent_item.getNodeItemsByName(item.name, True)
+              if len(items_in_host) == 1:
                 row = self.takeRow(i)
                 self.parent_item._addRow_sorted(row)
               else:
@@ -380,7 +388,6 @@ class GroupItem(QtGui.QStandardItem):
     for i in reversed(range(self.rowCount())):
       item = self.child(i)
       if isinstance(item, GroupItem):
-        # remove empty groups
         if item.rowCount() == 0:
           self.removeRow(i)
 
@@ -532,7 +539,8 @@ class GroupItem(QtGui.QStandardItem):
       # get nodes
       cfgs = []
       for j in range(self.rowCount()):
-        cfgs[len(cfgs):] = self.child(j).cfgs
+        if self.child(j).cfgs:
+          cfgs[len(cfgs):] = self.child(j).cfgs
       if cfgs:
         cfgs = list(set(cfgs))
       cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
@@ -635,6 +643,10 @@ class HostItem(GroupItem):
     @type local: C{bool}
     '''
     name = self.hostNameFrom(masteruri, address)
+    self._hostname = nm.nameres().mastername(masteruri, address)
+    self._masteruri = masteruri
+    if self._hostname is None:
+      self._hostname = str(address)
     GroupItem.__init__(self, name, parent)
     self.id = (unicode(masteruri), unicode(address))
     if QtCore.QFile.exists(''.join([nm.ROBOTS_DIR, name, '.png'])):
@@ -646,6 +658,14 @@ class HostItem(GroupItem):
         self.setIcon(QtGui.QIcon(':/icons/remote.png'))
     self.descr_type = self.descr_name = self.descr = ''
   
+  @property
+  def hostname(self):
+    return self._hostname
+
+  @property
+  def masteruri(self):
+    return self._masteruri
+
   @classmethod
   def hostNameFrom(cls, masteruri, address):
     '''
@@ -968,10 +988,16 @@ class NodeItem(QtGui.QStandardItem):
     @param cfg: the loaded configuration, which contains this node.
     @type cfg: C{str}
     '''
+    result = False
+    if cfg == '':
+      self._std_config = None
+      result = True
     if cfg in self._cfgs:
       self._cfgs.remove(cfg)
-    if self.has_configs() or self.is_running():
+      result = True
+    if result and (self.has_configs() or self.is_running()):
       self.updateDisplayedConfig()
+    return result
 
   def updateDisplayedConfig(self):
     '''
@@ -980,7 +1006,8 @@ class NodeItem(QtGui.QStandardItem):
     if not self.parent_item is None:
       cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
       if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
-        cfg_col.setText(str(''.join(['[',str(len(self._cfgs)),']'])) if len(self._cfgs) > 1 else "")
+        cfg_count = len(self._cfgs)
+        cfg_col.setText(str(''.join(['[',str(cfg_count),']'])) if cfg_count > 1 else "")
         # set tooltip
         # removed tooltip for clarity !!!
 #        tooltip = ''
@@ -1006,8 +1033,9 @@ class NodeItem(QtGui.QStandardItem):
           cfg_col.setIcon(QtGui.QIcon(':/icons/default_cfg.png'))
         else:
           cfg_col.setIcon(QtGui.QIcon())
-        if isinstance(self.parent_item, GroupItem):
-          self.parent_item.updateDisplayedConfig()
+#      the update of the group will be perform in node_tree_model to reduce calls
+#        if isinstance(self.parent_item, GroupItem):
+#          self.parent_item.updateDisplayedConfig()
 
   def type(self):
     return NodeItem.ITEM_TYPE
@@ -1130,7 +1158,14 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     self.setColumnCount(len(NodeTreeModel.header))
     self.setHorizontalHeaderLabels([label for label, width in NodeTreeModel.header])
     self._local_host_address = host_address
-    self._std_capabilities = {}
+    self._std_capabilities = {'': {'SYSTEM': {'images': [], 'nodes': [ '/rosout', '/master_discovery', '/zeroconf', '/master_sync', '/node_manager'], 'type': '', 'description': 'This group contains the system management nodes.'} } }
+
+    #create a handler to request the parameter
+    self.parameterHandler = ParameterHandler()
+#    self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
+    self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
+#    self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
+
 
   @property
   def local_addr(self):
@@ -1141,6 +1176,17 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
   
+  def _set_std_capabilities(self, host_item):
+    if not host_item is None:
+      cap = self._std_capabilities
+      s = roslib.names.SEP
+      hostname = roslib.names.SEP.join(['', host_item.hostname, '*', 'default_cfg'])
+      if not hostname in cap['']['SYSTEM']['nodes']:
+        cap['']['SYSTEM']['nodes'].append(hostname)
+      host_item.addCapabilities('', cap, host_item.masteruri)
+      return cap
+    return dict(self._std_capabilities)
+
   def getHostItem(self, masteruri, address):
     '''
     Searches for the host item in the model. If no item is found a new one will 
@@ -1166,12 +1212,12 @@ class NodeTreeModel(QtGui.QStandardItemModel):
         hostItem = HostItem(masteruri, address, local)
         self.insertRow(i, hostItem)
         self.hostInserted.emit(hostItem)
-        hostItem.addCapabilities('', self._std_capabilities, masteruri)
+        self._set_std_capabilities(hostItem)
         return hostItem
     hostItem = HostItem(masteruri, address, local)
     self.appendRow(hostItem)
     self.hostInserted.emit(hostItem)
-    hostItem.addCapabilities('', self._std_capabilities, masteruri)
+    self._set_std_capabilities(hostItem)
     return hostItem
 
   def updateModelData(self, nodes):
@@ -1199,8 +1245,93 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       if not hosts.has_key(host.id):
         host.updateRunningNodeState({})
     self.removeEmptyHosts()
+    # request for all nodes in host the parameter capability_group
+    for ((masteruri, host), nodes_filtered) in hosts.items():
+      hostItem = self.getHostItem(masteruri, host)
+      self._requestCapabilityGroupParameter(hostItem)
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
+
+  def _requestCapabilityGroupParameter(self, host_item):
+    if not host_item is None:
+      items = host_item.getNodeItems()
+      params = [roslib.names.ns_join(item.name, 'capability_group') for item in items if not item.has_configs() and item.is_running() and not host_item.is_in_cap_group(item.name, '', '', 'SYSTEM')]
+      self.parameterHandler.requestParameterValues(host_item.masteruri, params)
+
+  def _on_param_values(self, masteruri, code, msg, params):
+    '''
+    Updates the capability groups of nodes from ROS parameter server.
+    @param masteruri: The URI of the ROS parameter server
+    @type masteruri: C{str}
+    @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
+    @type code: C{int}
+    @param msg: The message of the result. 
+    @type msg: C{str}
+    @param params: The dictionary the parameter names and request result.
+    @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
+    '''
+    host = nm.nameres().address(masteruri)
+    hostItem = self.getHostItem(masteruri, host)
+    changed = False
+    if not hostItem is None and code == 1:
+      capabilities = self._set_std_capabilities(hostItem)
+      available_ns = set([''])
+      available_groups = set(['SYSTEM'])
+      # assumption: all parameter are 'capability_group' parameter
+      for p, (code_n, msg_n, val) in params.items():
+        nodename = roslib.names.namespace(p).rstrip(roslib.names.SEP)
+        ns = roslib.names.namespace(nodename).rstrip(roslib.names.SEP)
+        available_ns.add(ns)
+        if code_n == 1:
+          # add group
+          available_groups.add(val)
+          if not capabilities.has_key(ns):
+            capabilities[ns] = dict()
+          if not capabilities[ns].has_key(val):
+            capabilities[ns][val] = {'images': [], 'nodes': [], 'type': '', 'description': 'from ROS parameter server' }
+          if not nodename in capabilities[ns][val]['nodes']:
+            capabilities[ns][val]['nodes'].append(nodename)
+            changed = True
+        else:
+          try:
+            for group, caps in capabilities[ns].items():
+              try:
+                #remove the config from item, if parameter was not foun on the ROS parameter server
+                groupItem = hostItem.getGroupItem(roslib.names.ns_join(ns,group))
+                if not groupItem is None:
+                  nodeItems = groupItem.getNodeItemsByName(nodename, True)
+                  for item in nodeItems:
+                    item.remConfig('')
+                capabilities[ns][group]['nodes'].remove(nodename)
+                # remove the group, if empty
+                if not capabilities[ns][group]['nodes']:
+                  del capabilities[ns][group]
+                  if not capabilities[ns]:
+                    del capabilities[ns]
+                groupItem.updateDisplayedConfig()
+                changed = True
+              except:
+                pass
+          except:
+            pass
+      # clearup namespaces to remove empty groups
+      for ns in capabilities.keys():
+        if ns and not ns in available_ns:
+          del capabilities[ns]
+          changed = True
+        else:
+          for group in capabilities[ns].keys():
+            if group and not group in available_groups:
+              del capabilities[ns][group]
+              changed = True
+      # update the capabilities and the view
+      if changed:
+        if capabilities:
+          hostItem.addCapabilities('', capabilities, hostItem.masteruri)
+        hostItem.clearUp()
+    else:
+      rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", str(masteruri), str(msg))
+
 
   def set_std_capablilities(self, capabilities):
     '''
@@ -1225,7 +1356,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     hostItem = self.getHostItem(masteruri, host_address)
     if not hostItem is None:
-      hostItem.addCapabilities(cfg, capabilities, host_address)
+      # add new capabilities
+      hostItem.addCapabilities(cfg, capabilities, hostItem.masteruri)
     self.removeEmptyHosts()
     
   def appendConfigNodes(self, masteruri, host_address, nodes):
@@ -1241,14 +1373,19 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     hostItem = self.getHostItem(masteruri, host_address)
     if not hostItem is None:
+      groups = set()
       for (name, cfg) in nodes.items():
         items = hostItem.getNodeItemsByName(name)
         for item in items:
           item.addConfig(cfg)
+          if not item.parent_item is None:
+            groups.add(item.parent_item)
         if not items:
           # create the new node
           node_info = NodeInfo(name, masteruri)
           hostItem.addNode(node_info, cfg)
+      for g in groups:
+        g.updateDisplayedConfig()
     self.removeEmptyHosts()
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
@@ -1264,12 +1401,20 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
       items = host.getNodeItems()
+      groups = set()
       for item in items:
-        item.remConfig(cfg)
+        removed = item.remConfig(cfg)
+        if removed and not item.parent_item is None:
+          groups.add(item.parent_item)
+      for g in groups:
+        g.updateDisplayedConfig()
       host.remCapablities(cfg)
       host.clearUp()
       if host.rowCount() == 0:
         self.invisibleRootItem().removeRow(i)
+      elif groups:
+        # request for all nodes in host the parameter capability_group
+        self._requestCapabilityGroupParameter(host)
 
   def removeEmptyHosts(self):
     # remove empty hosts
