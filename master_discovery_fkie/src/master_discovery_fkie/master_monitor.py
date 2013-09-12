@@ -592,9 +592,12 @@ class MasterMonitor(object):
         for m in sync_info.hosts:
           for n in m.nodes:
             try:
+              # TODO: add nodeuri to the nodes (needs changes in the MSG definitions)
               # set the sync node only if it has the same uri
-              if master_state.getNode(n).uri == getNodeuri(n, m.publisher, m.subscriber):
-                master_state.getNode(n).masteruri = m.masteruri
+              nuri = getNodeuri(n, m.publisher, m.subscriber)
+              state_node = master_state.getNode(n)
+              if not state_node is None and (state_node.uri == nuri or nuri is None):
+                state_node.masteruri = m.masteruri
             except:
               pass
 #              import traceback
