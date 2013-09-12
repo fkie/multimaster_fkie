@@ -402,7 +402,7 @@ class MainBox(QtGui.QWidget):
       elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)) and  not isinstance(child, (QtGui.QFrame)):
         label = child.parentWidget().layout().labelForField(child)
         if not label is None:
-          show = not (child.objectName().lower().find(arg.lower()) == -1) or not (child.currentText().lower().find(arg.lower()) == -1)
+          show = not (child.objectName().lower().find(arg.lower()) == -1) or (hasattr(child, 'currentText') and not (child.currentText().lower().find(arg.lower()) == -1))
           # set the parent group visible if it is not visible
           if show and not child.parentWidget().isVisible():
             child.parentWidget().setVisible(show)
