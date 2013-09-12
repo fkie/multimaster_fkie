@@ -582,7 +582,7 @@ class MasterViewProxy(QtGui.QWidget):
     #load launch config
     try:
       # test for requerid args
-      self.__configs[launchfile] = launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
+      launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
       loaded = False
       if stored_argv is None:
         req_args = launchConfig.getArgs()
@@ -602,7 +602,6 @@ class MasterViewProxy(QtGui.QWidget):
                 argv.append(''.join([p, ':=', v]))
             loaded = launchConfig.load(argv)
           else:
-            del self.__configs[launchfile]
             return
       if not loaded or not stored_argv is None:
         launchConfig.load(req_args if stored_argv is None else stored_argv)
@@ -630,6 +629,10 @@ class MasterViewProxy(QtGui.QWidget):
       except:
         import traceback
         print traceback.print_exc()
+
+      # add launch file object to the list
+      self.__configs[launchfile] = launchConfig
+
       # by this call the name of the host will be updated if a new one is defined in the launch file
       self.updateRunningNodesInModel(self.__master_info)
 
