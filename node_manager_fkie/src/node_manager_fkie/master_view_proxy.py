@@ -100,7 +100,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masteruri = masteruri
     self.mastername = masteruri
     try:
-      o = urlparse(self.master.uri)
+      o = urlparse(self.masteruri)
       self.mastername = o.hostname
     except:
       pass
@@ -307,9 +307,6 @@ class MasterViewProxy(QtGui.QWidget):
     self._shortcut_copy.activated.connect(self.on_copy_service_clicked)
     self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected parameter to clipboard")), self.masterTab.parameterView)
     self._shortcut_copy.activated.connect(self.on_copy_parameter_clicked)
-    
-    caps = {'': {'SYSTEM': {'images': [], 'nodes': [ '/rosout', '/master_discovery', '/zeroconf', '/master_sync', '/node_manager', ''.join(['*', roslib.names.SEP, 'default_cfg'])], 'type': '', 'description': 'This group contains the system management nodes.'} } }
-    self.node_tree_model.set_std_capablilities(caps)
 
 #    print "================ create", self.objectName()
 #
@@ -515,8 +512,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.startNodesAtHostAct.setEnabled(cfg_enable)
     self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
     self.masterTab.saveButton.setEnabled(len(self.launchfiles) > 1)
-    self.masterTab.closeCfgButton.setEnabled(len(self.__configs) > 0)
-
+    # enable the close button only for local configurations
+    self.masterTab.closeCfgButton.setEnabled(len([path for path, cfg in self.__configs.items() if (isinstance(path, tuple) and path[2] == self.masteruri) or not isinstance(path, tuple)]) > 0)
 
   def updateTopicsListModel(self, master_info):
     '''
@@ -605,6 +602,7 @@ class MasterViewProxy(QtGui.QWidget):
                 argv.append(''.join([p, ':=', v]))
             loaded = launchConfig.load(argv)
           else:
+            del self.__configs[launchfile]
             return
       if not loaded or not stored_argv is None:
         launchConfig.load(req_args if stored_argv is None else stored_argv)
@@ -654,9 +652,12 @@ class MasterViewProxy(QtGui.QWidget):
           for n in new_nodes:
             if p.startswith(n):
               nodes2start.add(n)
+        # filter out anonymous nodes
+        nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
         # restart nodes
+        print nodes2start
         if nodes2start:
-          restart = SelectDialog.getValue('The parameter/nodes are changed. Restart follow nodes?', list(nodes2start), False, True, self)
+          restart = SelectDialog.getValue('The parameter/nodes are changed. Restart follow nodes?', nodes2start, False, True, self)
           self.start_nodes_by_name(restart, launchfile, True)
 
 #      print "MASTER:", launchConfig.Roscfg.master
@@ -1792,7 +1793,7 @@ class MasterViewProxy(QtGui.QWidget):
 
     for path, cfg in self.__configs.items():
       if isinstance(path, tuple):
-        if nm.nameres().getHostname(path[1]) == nm.nameres().getHostname(self.masteruri):
+        if path[2] == self.masteruri:
           choices[''.join(['[', path[0], ']'])] = path
       else:
         choices[''.join([os.path.basename(path), '   [', str(package_name(os.path.dirname(path))[0]), ']'])] = path
