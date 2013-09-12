@@ -274,16 +274,24 @@ class Main(object):
     interface_file = resolve_url(rospy.get_param('~interface_url', ''))
     if interface_file:
       rospy.loginfo("interface_url: %s", interface_file)
-    data = read_interface(interface_file) if interface_file else {}
-    # set the ignore hosts list
-    self._re_ignore_hosts = create_pattern('ignore_hosts', data, interface_file, [])
-    # set the sync hosts list
-    self._re_sync_hosts = create_pattern('sync_hosts', data, interface_file, [])
-    
-    self.__sync_topics_on_demand = False
-    if interface_file:
-      if data.has_key('sync_topics_on_demand'):
-        self.__sync_topics_on_demand = data['sync_topics_on_demand']
-    elif rospy.has_param('~sync_topics_on_demand'):
-      self.__sync_topics_on_demand = rospy.get_param('~sync_topics_on_demand')
-    rospy.loginfo("sync_topics_on_demand: %s", self.__sync_topics_on_demand)
+    try:
+      data = read_interface(interface_file) if interface_file else {}
+      # set the ignore hosts list
+      self._re_ignore_hosts = create_pattern('ignore_hosts', data, interface_file, [])
+      # set the sync hosts list
+      self._re_sync_hosts = create_pattern('sync_hosts', data, interface_file, [])
+      
+      self.__sync_topics_on_demand = False
+      if interface_file:
+        if data.has_key('sync_topics_on_demand'):
+          self.__sync_topics_on_demand = data['sync_topics_on_demand']
+      elif rospy.has_param('~sync_topics_on_demand'):
+        self.__sync_topics_on_demand = rospy.get_param('~sync_topics_on_demand')
+      rospy.loginfo("sync_topics_on_demand: %s", self.__sync_topics_on_demand)
+    except:
+      import traceback
+      # kill the ros node, to notify the user about the error
+      rospy.logerr("Error on load interface: %s", traceback.format_exc())
+      import os, signal
+      os.kill(os.getpid(), signal.SIGKILL)
+
