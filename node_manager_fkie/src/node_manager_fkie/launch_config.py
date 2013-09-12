@@ -318,23 +318,19 @@ class LaunchConfig(QtCore.QObject):
     @rtype: C{dict(machine : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))}
     '''
     result = dict()
+    capabilies_descr = dict()
     if not self.Roscfg is None:
       # get the capabilities description
       # use two separate loops, to create the description list first
+      # TODO read the group description depending on namespace 
       for param, p in self.Roscfg.params.items():
         if param.endswith('capabilities'):
           if isinstance(p.value, list):
             if len(p.value) > 0 and len(p.value[0]) != 4:
               print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
             else:
-              ns = roslib.names.namespace(param)
-              for m in self.Roscfg.machines.keys():
-                if not result.has_key(m):
-                  result[m] = dict()
-                for entry in p.value:
-                  if not result[m].has_key(ns):
-                    result[m][ns] = dict()
-                  result[m][ns][entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3]), 'nodes' : [] }
+              for entry in p.value:
+                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3])}
       # get the capability nodes
       for item in self.Roscfg.nodes:
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
@@ -348,7 +344,7 @@ class LaunchConfig(QtCore.QObject):
           if not cap_ns:
             cap_ns = roslib.names.SEP
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
-        # if the parameter group parameter found, assign node to the group
+        # if the 'capability_group' parameter found, assign node to the group
         if self.Roscfg.params.has_key(cap_param):
           p = self.Roscfg.params[cap_param]
           if not result.has_key(machine_name):
@@ -364,7 +360,10 @@ class LaunchConfig(QtCore.QObject):
             if not result[machine_name].has_key(ns):
               result[machine_name][ns] = dict()
             if not result[machine_name][ns].has_key(p.value):
-              result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
+              try:
+                result[machine_name][ns][p.value] = { 'type' : capabilies_descr[p.value]['type'], 'images': capabilies_descr[p.value]['images'], 'description' : capabilies_descr[p.value]['description'], 'nodes' : [] }
+              except:
+                result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
             result[machine_name][ns][p.value]['nodes'].append(node_fullname)
     return result
   

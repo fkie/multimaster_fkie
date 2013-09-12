@@ -192,6 +192,7 @@ class DefaultCfg(object):
     @rtype: C{dict(machine : dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str]))))}
     '''
     result = dict()
+    capabilies_descr = dict()
     if not self.roscfg is None:
       # get the capabilities description
       # use two separate loops, to create the description list first
@@ -201,14 +202,8 @@ class DefaultCfg(object):
             if len(p.value) > 0 and len(p.value[0]) != 4:
               print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
             else:
-              ns = str(roslib.names.namespace(param))
-              for m in self.roscfg.machines.keys():
-                if not result.has_key(m):
-                  result[m] = dict()
-                for entry in p.value:
-                  if not result[m].has_key(ns):
-                    result[m][ns] = dict()
-                  result[m][ns][self._decode(entry[0])] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3]), 'nodes' : [] }
+              for entry in p.value:
+                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3])}
       # get the capability nodes
       for item in self.roscfg.nodes:
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
@@ -238,7 +233,10 @@ class DefaultCfg(object):
             if not result[machine_name].has_key(ns):
               result[machine_name][ns] = dict()
             if not result[machine_name][ns].has_key(p.value):
-              result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
+              try:
+                result[machine_name][ns][p.value] = { 'type' : capabilies_descr[p.value]['type'], 'images': capabilies_descr[p.value]['images'], 'description' : capabilies_descr[p.value]['description'], 'nodes' : [] }
+              except:
+                result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
             result[machine_name][ns][p.value]['nodes'].append(node_fullname)
     return result
 
