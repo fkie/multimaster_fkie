@@ -608,6 +608,9 @@ class MasterViewProxy(QtGui.QWidget):
       for name, machine in launchConfig.Roscfg.machines.items():
         if machine.name:
           nm.nameres().addInfo(machine.name, machine.address, machine.address)
+
+      # add launch file object to the list
+      self.__configs[launchfile] = launchConfig
       self.appendConfigToModel(launchfile, launchConfig.Roscfg)
       self.masterTab.tabWidget.setCurrentIndex(0)
       
@@ -629,9 +632,6 @@ class MasterViewProxy(QtGui.QWidget):
       except:
         import traceback
         print traceback.print_exc()
-
-      # add launch file object to the list
-      self.__configs[launchfile] = launchConfig
 
       # by this call the name of the host will be updated if a new one is defined in the launch file
       self.updateRunningNodesInModel(self.__master_info)
