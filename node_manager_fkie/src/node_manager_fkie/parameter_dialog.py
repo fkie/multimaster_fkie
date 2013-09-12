@@ -621,6 +621,7 @@ class ParameterDialog(QtGui.QDialog):
 
     if self.filter_frame.isVisible():
       self.filter_field.setFocus()
+    self.setMinimumSize(350,200)
 #    print '=============== create', self.objectName()
 #
   def __del__(self):
