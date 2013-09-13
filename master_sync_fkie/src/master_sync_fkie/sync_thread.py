@@ -44,7 +44,7 @@ import rosgraph.masterapi
 
 from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.filter_interface import FilterInterface
-from multimaster_msgs_fkie.msg import SyncTopicInfo, SyncMasterInfo
+from multimaster_msgs_fkie.msg import SyncTopicInfo, SyncServiceInfo, SyncMasterInfo
 
 class MasterInfo(object):
   '''
@@ -135,7 +135,7 @@ class SyncThread(threading.Thread):
         result_set = set()
         result_publisher = []
         result_subscriber = []
-        result_service_set = set()
+        result_services = []
         for (t_n, n_n, n_uri) in self.__publisher:
           result_publisher.append(SyncTopicInfo(t_n, n_n, n_uri))
           result_set.add(n_n)
@@ -143,9 +143,9 @@ class SyncThread(threading.Thread):
           result_subscriber.append(SyncTopicInfo(t_n, n_n, n_uri))
           result_set.add(n_n)
         for (s_n, s_uri, n_n, n_uri) in self.__services:
-          result_service_set.add(s_n)
+          result_services.append(SyncServiceInfo(s_n, s_uri, n_n, n_uri))
           result_set.add(n_n)
-        self.__sync_info = SyncMasterInfo(self.masterInfo.uri, list(result_set), result_publisher, result_subscriber, list(result_service_set)) 
+        self.__sync_info = SyncMasterInfo(self.masterInfo.uri, list(result_set), result_publisher, result_subscriber, result_services) 
       return self.__sync_info
 
   def update(self, name, uri, discoverer_name, monitoruri, timestamp):

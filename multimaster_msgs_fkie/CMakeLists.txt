@@ -17,6 +17,7 @@ add_message_files(
   MasterState.msg
   ROSMaster.msg
   SyncMasterInfo.msg
+  SyncServiceInfo.msg
   SyncTopicInfo.msg
 )
 
