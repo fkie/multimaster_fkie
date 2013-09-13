@@ -973,11 +973,24 @@ class MasterViewProxy(QtGui.QWidget):
         if len(selectedNodes) == 1:
           # create description for a node
           node = selectedNodes[0]
-          text = ''.join(['<h3>', node.name,'</h3>'])
+          ns, sep, name = node.name.rpartition(rospy.names.SEP)
+          text = ''.join(['<font size="+1"><b>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</b></font><br>'])
+          text = ''.join([text, '<a href="restart_node://', node.name,'">', 'restart</a> - '])
+          text = ''.join([text, '<a href="kill_node://', node.name,'">', 'kill</a> - '])
+          text = ''.join([text, '<a href="kill_screen://', node.name,'">', 'kill screen</a>  '])
+          text = ''.join([text, '<p>'])
           text = ''.join([text, '<dl>'])
           text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
           text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
           text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
+          if node.node_info.masteruri != self.masteruri and not node.node_info.uri is None:
+            text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
+          if node.node_info.pid is None and not node.node_info.uri is None:
+            if not node.node_info.isLocal:
+              text = ''.join([text, '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'])
+            else:
+              text = ''.join([text, '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'])
+              text = ''.join([text, '<a href="unregister_node://', node.name,'">', 'unregister</a></dt>'])
           text = ''.join([text, '</dl>'])
           text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC')])
           text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC')])
@@ -991,6 +1004,7 @@ class MasterViewProxy(QtGui.QWidget):
               launches.append(c)
           text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
           text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
+          text = ''.join([text, '<dt><a href="copy_log_path://', node.name,'">', 'copy log path to clipboard</a></dt>'])
           text = ''.join(['<div>', text, '</div>'])
           name = node.name
 
@@ -1013,7 +1027,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
-      text = ''.join(['<h3>', topic.name,'</h3>'])
+      ns, sep, name = topic.name.rpartition(rospy.names.SEP)
+      text = ''.join(['<h3>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</h3>'])
       text = ''.join([text, self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')])
       text = ''.join([text, self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')])
       text = ''.join([text, '<b><u>Type:</u></b> ', str(self._href_from_msgtype(topic.type))])
@@ -1062,8 +1077,14 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
     if len(selectedServices) == 1:
       service = selectedServices[0]
-      text = ''.join(['<h3>', service.name,'</h3>'])
-      text = ''.join([text, '<dl><dt><b>URI</b>: ', str(service.uri), '</dt></dl>'])
+      ns, sep, name = service.name.rpartition(rospy.names.SEP)
+      text = ''.join(['<h3>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</h3>'])
+      text = ''.join([text, '<dl>'])
+      text = ''.join([text, '<dt><b>URI</b>: ', str(service.uri), '</dt>'])
+      text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(service.masteruri), '</dt>'])
+      if service.masteruri != self.masteruri:
+        text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
+      text = ''.join([text, '</dl>'])
       try:
         service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
         text = ''.join([text, '<h4>', self._href_from_svrtype(service_class._type), '</h4>'])
@@ -1236,7 +1257,7 @@ class MasterViewProxy(QtGui.QWidget):
     for node in nodes:
       if node.pid is None or (not node.pid is None and force):
         # test for duplicate nodes
-        if self.node_tree_model.isDuplicateNode(node.name):
+        if node.uri is None and self.node_tree_model.isDuplicateNode(node.name):
           ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['Some nodes, e.g. ', node.name, ' are already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
           if ret == QtGui.QMessageBox.No:
             return

@@ -718,8 +718,13 @@ class HostItem(GroupItem):
           import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", str(traceback.format_exc()))
           tooltip = ''.join([tooltip, '<br>'])
-    tooltip = ''.join([tooltip, '<h4>ROS Master URI: ', self.id[0], '</h4>'])
-    tooltip = ''.join([tooltip, '<h4>Host: ', self.id[1], '</h4>'])
+    tooltip = ''.join([tooltip, '<h3>', str(self._hostname), '</h3>'])
+    tooltip = ''.join([tooltip, '<font size="+1"><i>', str(self.id[0]), '</i></font><br>'])
+    tooltip = ''.join([tooltip, '<font size="+1">Host: <b>', str(self.id[1]), '</b></font><br>'])
+    tooltip = ''.join([tooltip, '<a href="open_sync_dialog://', str(self.id[0]).replace('http://', ''),'">', 'open sync dialog</a>'])
+    tooltip = ''.join([tooltip, '<p>'])
+    tooltip = ''.join([tooltip, '<a href="show_all_screens://', str(self.id[0]).replace('http://', ''),'">', 'show all screens</a>'])
+    tooltip = ''.join([tooltip, '<p>'])
     # get sensors
     capabilities = []
     for j in range(self.rowCount()):
@@ -1288,7 +1293,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
           if not capabilities.has_key(ns):
             capabilities[ns] = dict()
           if not capabilities[ns].has_key(val):
-            capabilities[ns][val] = {'images': [], 'nodes': [], 'type': '', 'description': 'from ROS parameter server' }
+            capabilities[ns][val] = {'images': [], 'nodes': [], 'type': '', 'description': 'This group is created from `capability_group` parameter of the node defined in ROS parameter server.' }
           if not nodename in capabilities[ns][val]['nodes']:
             capabilities[ns][val]['nodes'].append(nodename)
             changed = True
