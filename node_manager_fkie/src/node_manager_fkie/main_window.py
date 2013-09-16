@@ -719,7 +719,7 @@ class MainWindow(QtGui.QMainWindow):
       thread.setDaemon(True)
       thread.start()
 
-  def on_sync_dialog_released(self, masteruri=None):
+  def on_sync_dialog_released(self, released=False, masteruri=None):
     self.ui.syncButton.setEnabled(False)
     master = self.currentMaster
     if not masteruri is None:
@@ -794,7 +794,8 @@ class MainWindow(QtGui.QMainWindow):
             pass
         elif not self.currentMaster.master_info is None:
           node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
-          self.currentMaster.stop_nodes([node])
+          if not node is None:
+            self.currentMaster.stop_nodes([node])
       self.ui.syncButton.setEnabled(True)
 
   def on_master_timecheck(self):
@@ -1358,7 +1359,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_description_anchorClicked(self, url):
     if url.toString().startswith('open_sync_dialog://'):
-      self.on_sync_dialog_released(str(url.encodedPath()).replace('open_sync_dialog', 'http'))
+      self.on_sync_dialog_released(False, str(url.encodedPath()).replace('open_sync_dialog', 'http'))
     elif url.toString().startswith('show_all_screens://'):
       master = self.getMaster(str(url.encodedPath()).replace('show_all_screens', 'http'), False)
       if not master is None:
