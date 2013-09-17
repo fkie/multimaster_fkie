@@ -2,6 +2,26 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.6 (2013-09-17)
+------------------
+* node_manager_fkie: added a notifiaction, if `use_sim_time` parameter is set to true
+* node_manager_fkie: added some control elements to node/host description
+* node_manager_fkie: fix load launch file
+* node_manager_fkie: fix filter in paramter dialog
+* node_manager_fkie: fixed do not store the launch file on error
+* node_manager_fkie: the minimum size of the parameter dialog increased
+* node_manager_fkie: update the capability group of the node using the ROS parameter server, if no launch file is loaded
+* node_manager_fkie: fixed cancel loading of the launch file, on cancel input args
+  node_manager_fkie: do not restart anonymous nodes on relaod launch file
+  node_manager_fkie: fixed closing of the remote default configs on same host but other roscore
+* node_manager_fkie: resize the node_manager window on small
+* node_manager_fkie: changed the intepretation of the group description
+* node_manager_fkie: remove not existing remote node information. In case of restarting a ROS node without stopn a running node.
+* node_manager_fkie: fixed buttons description
+* node_manager_fkie: fixed change detection in included files
+* node_manager_fkie: add detection of changes in the reloaded launch file and restart affected nodes
+* node_manager_fkie: fixed clear_params
+
 0.3.5 (2013-09-06)
 ------------------
 * node_manager_fkie: fixed launch selection for favirites with same launch file name

@@ -2,6 +2,13 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.6 (2013-09-17)
+------------------
+* multimaster_fkie: added SyncServiceInfo message to detect changes on services
+* master_discovery_fkie: fixed the origin master uri for services
+* master_discovery_fkie: fixed the result of the synchronized nodes (handle the restart of the nodes without stop the running node)
+* master_discovery_fkie: fixed the test of local changes -> not all changes are propageted to other hosts
+
 0.3.5 (2013-09-06)
 ------------------
 

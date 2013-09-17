@@ -2,6 +2,10 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.6 (2013-09-17)
+------------------
+* default_cfg_fkie: changed the intepretation of the group description
+
 0.3.5 (2013-09-06)
 ------------------
 
