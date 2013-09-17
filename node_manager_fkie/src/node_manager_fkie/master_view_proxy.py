@@ -124,6 +124,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''@ivar: stores the open EchoDialogs '''
     self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
+    self.__use_sim_time = False
 
     self.default_cfg_handler = DefaultConfigHandler()
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -243,6 +244,12 @@ class MasterViewProxy(QtGui.QWidget):
     self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
     self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
     self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
+    #create a handler to request sim paramter
+    self.parameterHandler_sim = ParameterHandler()
+#    self.parameterHandler_sim.parameter_list_signal.connect(self._on_param_list)
+    self.parameterHandler_sim.parameter_values_signal.connect(self._on_sim_param_values)
+#    self.parameterHandler_sim.delivery_result_signal.connect(self._on_delivered_values)
+
 
     # creates a start menu
     start_menu = QtGui.QMenu(self)
@@ -417,9 +424,14 @@ class MasterViewProxy(QtGui.QWidget):
       self.on_node_selection_changed(None, None)
       self.on_topic_selection_changed(None, None)
       self.on_service_selection_changed(None, None)
+      self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time"])
     except:
       import traceback
       print traceback.format_exc()
+
+  @property
+  def use_sim_time(self):
+    return self.__use_sim_time
 
   def markNodesAsDuplicateOf(self, running_nodes):
     '''
@@ -2220,6 +2232,8 @@ class MasterViewProxy(QtGui.QWidget):
           result[p] = val
         else:
           result[p] = ''
+        if p == '/use_sim_time':
+          self.__use_sim_time = (code_n == 1 and val)
       self.parameter_model.updateModelData(result)
     else:
       rospy.logwarn("Error on retrieve parameter from %s: %s", str(masteruri), str(msg))
@@ -2246,6 +2260,25 @@ class MasterViewProxy(QtGui.QWidget):
       WarningMessageBox(QtGui.QMessageBox.Warning, "Warning", 
                         'Error while delivering parameter to the ROS parameter server',
                         errmsg).exec_()
+
+  def _on_sim_param_values(self, masteruri, code, msg, params):
+    '''
+    @param masteruri: The URI of the ROS parameter server
+    @type masteruri: C{str}
+    @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
+    @type code: C{int}
+    @param msg: The message of the result. 
+    @type msg: C{str}
+    @param params: The dictionary the parameter names and request result.
+    @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
+    '''
+    if code == 1:
+      result = {}
+      for p, (code_n, msg_n, val) in params.items():
+        if p == '/use_sim_time':
+          self.__use_sim_time = (code_n == 1 and val)
+    else:
+      rospy.logwarn("Error on retrieve parameter from %s: %s", str(masteruri), str(msg))
 
 
   def _get_nm_masteruri(self):

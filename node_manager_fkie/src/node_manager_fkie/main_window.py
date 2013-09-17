@@ -242,6 +242,7 @@ class MainWindow(QtGui.QMainWindow):
     '''@ivar: stores the open XmlEditor '''
     
     
+    self.ui.simTimeLabel.setVisible(False)
     self.ui.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
 
     # since the is_local method is threaded for host names, call it to cache the localhost
@@ -865,6 +866,10 @@ class MainWindow(QtGui.QMainWindow):
         self.__current_icon = icon
         self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
         self.ui.imageLabel.setToolTip('')
+    # set sim_time info
+    master = self.getMaster(masteruri, False)
+    sim_time_enabled = self.ui.masternameLabel.isEnabled() and not master is None and master.use_sim_time
+    self.ui.simTimeLabel.setVisible(sim_time_enabled)
 #    else:
 #      icon = QtGui.QIcon()
 #      self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
