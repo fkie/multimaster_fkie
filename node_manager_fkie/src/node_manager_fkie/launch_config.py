@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import re
 import sys
 import time
 from ros import roslaunch
@@ -79,6 +80,7 @@ class LaunchConfig(QtCore.QObject):
     self.__roscfg = None
     self.argv = argv
     self.__reqTested = False
+    self.__argv_values = dict()
     self.global_param_done = [] # masteruri's where the global parameters are registered 
     self.hostname = nm.nameres().getHostname(self.__masteruri)
     nm.file_watcher().add(self.__masteruri, self.__launchFile, self.getIncludedFiles(self.Filename))
@@ -179,15 +181,13 @@ class LaunchConfig(QtCore.QObject):
     @rtype: C{str} 
     '''
     path = path.strip()
-    index = path.find('$')
-    if index > -1:
-      startIndex = path.find('(', index)
-      if startIndex > -1:
-        endIndex = path.find(')', startIndex+1)
-        script = path[startIndex+1:endIndex].split()
-        if len(script) == 2 and (script[0] == 'find'):
-          pkg = roslib.packages.get_pkg_dir(script[1])
-          return os.path.join(pkg, path[endIndex+1:].strip(os.path.sep))
+    startIndex = path.find('$(')
+    if startIndex > -1:
+      endIndex = path.find(')', startIndex+2)
+      script = path[startIndex+2:endIndex].split()
+      if len(script) == 2 and (script[0] == 'find'):
+        pkg = roslib.packages.get_pkg_dir(script[1])
+        return os.path.join(pkg, path[endIndex+2:].strip(os.path.sep))
     elif len(path) > 0 and path[0] != os.path.sep:
       return os.path.join(pwd, path)
     return path
@@ -234,8 +234,8 @@ class LaunchConfig(QtCore.QObject):
     try:
       roscfg = roslaunch.ROSLaunchConfig()
       loader = roslaunch.XmlLoader()
-      self.argv = argv
-      loader.load(self.Filename, roscfg, verbose=False, argv=argv)
+      self.argv = self.resolveArgs(argv)
+      loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
       self.__roscfg = roscfg
 #      for m, k in self.__roscfg.machines.items():
 #        print m, k
@@ -248,6 +248,40 @@ class LaunchConfig(QtCore.QObject):
       raise LaunchConfigException(message)
     return True, self.argv
 
+  def resolveArgs(self, argv):
+    argv_dict = self.argvToDict(argv)
+    # replace $(arg ...) in arg values
+    for k, v in argv_dict.items():
+      self._replaceArg(k,argv_dict, self.__argv_values)
+    return ["%s:=%s"%(k,v) for k, v in argv_dict.items()]
+  
+  def _replaceArg(self, arg, argv_defaults, argv_values):
+    '''
+    Replace the arg-tags in the value in given argument recursively.
+    '''
+    rec_inc = 0
+    value = argv_defaults[arg]
+    arg_match = re.search(r"\$\(\s*arg\s*", value)
+    while not arg_match is None:
+      rec_inc += 1
+      endIndex = value.find(')', arg_match.end())
+      if endIndex > -1:
+        arg_name = value[arg_match.end():endIndex].strip()
+        if arg == arg_name:
+          raise LaunchConfigException("Can't resolve the argument `%s` argument: the argument referenced to itself!"%arg_name)
+        if rec_inc > 100:
+          raise LaunchConfigException("Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!"%(arg_name, arg))
+        if argv_defaults.has_key(arg_name):
+          argv_defaults[arg] = value.replace(value[arg_match.start():endIndex+1], argv_defaults[arg_name])
+        elif argv_values.has_key(arg_name):
+          argv_defaults[arg] = value.replace(value[arg_match.start():endIndex+1], argv_values[arg_name])
+        else:
+          raise LaunchConfigException("Can't resolve the argument `%s` in `%s` argument"%(arg_name, arg))
+      else:
+        raise LaunchConfigException("Can't resolve the argument in `%s` argument: `)` not found"%arg)
+      value = argv_defaults[arg]
+      arg_match = re.search(r"\$\(\s*arg\s*", value)
+
   def getArgs(self):
     '''
     @return: a list with args being used in the roslaunch file. Only arg tags that are a direct child of <launch> will 
@@ -255,6 +289,7 @@ class LaunchConfig(QtCore.QObject):
     @rtype: C{[str]}
     @raise roslaunch.XmlParseException: on parse errors
     '''
+    self._argv_values = dict()
     arg_subs = []
     args = []
 #    for filename in self.getIncludedFiles(self.Filename):
@@ -271,7 +306,7 @@ class LaunchConfig(QtCore.QObject):
        if not arg_name:
          raise roslaunch.XmlParseException("arg tag needs a name, xml is %s"%arg.toxml())
 
-       # we only want args at top level:
+       # we only want argsargs at top level:
        if not arg.parentNode.tagName=="launch":
          continue 
 
@@ -280,6 +315,8 @@ class LaunchConfig(QtCore.QObject):
        arg_sub = ''.join([arg_name, ':=', arg_default])
        if (not arg_value) and not arg_sub in arg_subs:
          arg_subs.append(arg_sub)
+       elif arg_value:
+         self.__argv_values[arg_name] = arg_value
 
     return arg_subs
 
@@ -344,18 +381,20 @@ class LaunchConfig(QtCore.QObject):
           if not cap_ns:
             cap_ns = roslib.names.SEP
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
+        if cap_ns == node_fullname:
+          cap_ns = item.namespace.rstrip(roslib.names.SEP)
         # if the 'capability_group' parameter found, assign node to the group
         if self.Roscfg.params.has_key(cap_param):
           p = self.Roscfg.params[cap_param]
           if not result.has_key(machine_name):
             result[machine_name] = dict()
           for (ns, groups) in result[machine_name].items():
-            if groups.has_key(p.value):
+            if ns == cap_ns and groups.has_key(p.value):
               groups[p.value]['nodes'].append(node_fullname)
               added = True
               break
           if not added:
-            ns = ''.join([item.namespace])
+            ns = cap_ns
             # add new group in the namespace of the node
             if not result[machine_name].has_key(ns):
               result[machine_name][ns] = dict()
