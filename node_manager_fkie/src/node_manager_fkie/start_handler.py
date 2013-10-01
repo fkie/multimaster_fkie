@@ -567,7 +567,7 @@ class StartHandler(object):
       transport.connect(dest_addr, dest_port, service_uri, timeout=5)
     except TransportInitError as e:
       # can be a connection or md5sum mismatch
-      raise StartException(''.join(["unable to connect to service: ", e]))
+      raise StartException(''.join(["unable to connect to service: ", str(e)]))
     transport.send_message(request, 0)
     try:
       responses = transport.receive_once()
@@ -580,9 +580,9 @@ class StartHandler(object):
       if is_shutdown():
         raise StartException("node shutdown interrupted service call")
       else:
-        raise StartException("transport error completing service call: %s"%(e))
+        raise StartException("transport error completing service call: %s"%(str(e)))
     except ServiceException, e:
-      raise StartException("Service error: %s"%(e))
+      raise StartException("Service error: %s"%(str(e)))
     finally:
       transport.close()
       transport = None
