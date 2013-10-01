@@ -8,6 +8,7 @@ catkin_package(CATKIN_DEPENDS multimaster_msgs_fkie master_discovery_fkie)
 install(
     PROGRAMS 
         nodes/node_manager
+        nodes/dynamic_reconfigure
         scripts/remote_nm.py
         scripts/respawn
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

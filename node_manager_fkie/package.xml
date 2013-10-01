@@ -31,7 +31,8 @@
   <run_depend>roslaunch</run_depend>
   <run_depend>rosservice</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
-  
+  <run_depend>rqt_reconfigure</run_depend>
+
   <run_depend>python_qt_binding</run_depend>
   <run_depend>python-paramiko</run_depend>
   <run_depend>python-docutils</run_depend>

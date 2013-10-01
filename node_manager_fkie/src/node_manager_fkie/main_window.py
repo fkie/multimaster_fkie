@@ -116,11 +116,7 @@ class MainWindow(QtGui.QMainWindow):
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("Node Manager")
     self.setCentralWidget(mainWindow)
-    screen_size = QtGui.QApplication.desktop().availableGeometry()
-    w = 1024 if screen_size.width() >= 1024 else screen_size.width()
-    h = 768 if screen_size.height() >= 768 else screen_size.height()
-    self.resize(w, h)
-    
+
     # init the stack layout which contains the information about different ros master
     self.stackedLayout = QtGui.QStackedLayout()
     self.stackedLayout.setObjectName('stackedLayout')
@@ -191,7 +187,7 @@ class MainWindow(QtGui.QMainWindow):
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
     
     nm.file_watcher().file_changed.connect(self.on_configfile_changed)
-    self.__in_question = list()
+    self.__in_question = set()
 
     ############################################################################
     ############################################################################
@@ -1234,9 +1230,7 @@ class MainWindow(QtGui.QMainWindow):
             inputDia.setWindowTitle(''.join(['Enter the argv for ', path]))
             if inputDia.exec_():
               params = inputDia.getKeywords()
-              for p,v in params.items():
-                if v:
-                  args.append(''.join([p, ":='", v, "'"]))
+              args.extend(launchConfig.resolveArgs([''.join([p, ":='", v, "'"]) for p,v in params.items() if v]))
             else:
               self.ui.xmlFileView.setEnabled(True)
               self.setCursor(cursor)
@@ -1324,14 +1318,24 @@ class MainWindow(QtGui.QMainWindow):
     @param affected: the list of tuples with masteruri and launchfile, which are affected by file change
     @type affected: list
     '''
-    if not changed in self.__in_question:
+    # create a list of launch files and masters, which are affected by the changed file
+    # and are not currently n question
+    new_affected = list()
+    for (muri, lfile) in affected:
+      if not (muri, lfile) in self.__in_question:
+        self.__in_question.add((muri, lfile))
+        new_affected.append((muri, lfile))
+    # if there are no question to reload the launch file -> ask
+    if new_affected:
       choices = dict()
-      for (muri, lfile) in affected:
+      for (muri, lfile) in new_affected:
         master = self.getMaster(muri)
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
       cfgs = SelectDialog.getValue(''.join(['Update configurations -- ', os.path.basename(changed)]), choices.keys(), False, True, self)
+      for (muri, lfile) in new_affected:
+        self.__in_question.remove((muri, lfile))
       for c in cfgs:
         choices[c][0].launchfiles = choices[c][1]
 

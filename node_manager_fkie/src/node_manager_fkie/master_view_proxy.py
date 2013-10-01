@@ -513,9 +513,14 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.logDeleteButton.setEnabled(has_running or has_stopped)
     # test for available dynamic reconfigure services
     if not self.master_info is None:
-      dyncfgServices = [s[:-len('/set_parameters')] for s in self.master_info.services.keys() if (s.endswith('/set_parameters'))]
-      dyncfgNodes = [s for n in selectedNodes for s in dyncfgServices if s.startswith((n.name))]
-      self.masterTab.dynamicConfigButton.setEnabled(len(dyncfgNodes))
+      dyn_cfg_available = False
+      dyncfgServices = [srv for srv_name, srv in self.master_info.services.items() if (srv_name.endswith('/set_parameters'))]
+      for n in selectedNodes:
+        for srv_name, srv in self.master_info.services.items():
+          if (srv_name.endswith('/set_parameters')) and n.name in srv.serviceProvider:
+            dyn_cfg_available = True
+            break
+      self.masterTab.dynamicConfigButton.setEnabled(dyn_cfg_available)
     # the configuration is only available, if only one node is selected
     cfg_enable = False
     if len(selectedNodes) >= 1:
@@ -670,7 +675,6 @@ class MasterViewProxy(QtGui.QWidget):
         # filter out anonymous nodes
         nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
         # restart nodes
-        print nodes2start
         if nodes2start:
           restart = SelectDialog.getValue('The parameter/nodes are changed. Restart follow nodes?', nodes2start, False, True, self)
           self.start_nodes_by_name(restart, launchfile, True)
@@ -1094,6 +1098,7 @@ class MasterViewProxy(QtGui.QWidget):
       text = ''.join([text, '<dl>'])
       text = ''.join([text, '<dt><b>URI</b>: ', str(service.uri), '</dt>'])
       text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(service.masteruri), '</dt>'])
+      text = ''.join([text, '<dt><b>Provider</b>: ', str(service.serviceProvider), '</dt>'])
       if service.masteruri != self.masteruri:
         text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
       text = ''.join([text, '</dl>'])
@@ -1739,28 +1744,33 @@ class MasterViewProxy(QtGui.QWidget):
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       for n in selectedNodes:
         try:
-          nodes = sorted([s[:-len('/set_parameters')] for s in self.master_info.services.keys() if (s.endswith('/set_parameters') and s.startswith(str(n.name)))])
-          node = None
+          nodes = sorted([srv_name[:-len('/set_parameters')] for srv_name, srv in self.master_info.services.items() if (srv_name.endswith('/set_parameters') and n.name in srv.serviceProvider)])
+          items = []
           if len(nodes) == 1:
-            node = nodes[0]
+            items = nodes
           elif len(nodes) > 1:
-            items = SelectDialog.getValue('Dynamic configuration selection', [i for i in nodes], True)
-            if items:
-              node = items[0]
-          if not node is None:
+            items = SelectDialog.getValue('Dynamic configuration selection', [i for i in nodes])
+            if items is None:
+              items = []
+          if len(items) > 3:
+            ret = QtGui.QMessageBox.question(self, 'Start dynamic reconfigure','It will starts %s dynamic reconfigure nodes?\n\n Are you sure?'%str(len(items)), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if ret != QtGui.QMessageBox.Yes:
+              return
+          for node in items:
 #            self.masterTab.dynamicConfigButton.setEnabled(False)
             import os, subprocess
             env = dict(os.environ)
             env["ROS_MASTER_URI"] = str(self.master_info.masteruri)
-            ps = subprocess.Popen(['rosrun', 'dynamic_reconfigure', 'reconfigure_gui', node], env=env)
+            rospy.loginfo("Start dynamic reconfiguration for '%s'", str(node))
+            ps = subprocess.Popen(['rosrun', 'node_manager_fkie', 'dynamic_reconfigure', node, '__ns:=dynamic_reconfigure'], env=env)
             # wait for process to avoid 'defunct' processes
             thread = threading.Thread(target=ps.wait)
             thread.setDaemon(True)
             thread.start()
         except Exception, e:
-          rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s", str(node), str(e))
+          rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s", str(n.name), str(e))
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start dynamic reconfiguration error", 
-                            ''.join(['Start dynamic reconfiguration for ', str(node), ' failed!']),
+                            ''.join(['Start dynamic reconfiguration for ', str(n.name), ' failed!']),
                             str(e)).exec_()
 
   def on_edit_config_clicked(self):

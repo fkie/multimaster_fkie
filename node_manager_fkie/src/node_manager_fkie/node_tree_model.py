@@ -116,7 +116,6 @@ class GroupItem(QtGui.QStandardItem):
       for groupname, descr in groups.items():
         try:
           nodes = descr['nodes']
-          def_list = [n.strip().replace('*','.*') for n in nodes]
           def_list = ['\A' + n.strip().replace('*','.*') + '\Z' for n in nodes]
           if def_list:
             self._re_cap_nodes[(config, ns, groupname)] = re.compile('|'.join(def_list), re.I)
@@ -172,6 +171,7 @@ class GroupItem(QtGui.QStandardItem):
               if items:
                 for item in items:
                   item.addConfig(config)
+                  group_changed = True
               else:
                 items = self.getNodeItemsByName(node_name)
                 if items:
@@ -1164,7 +1164,15 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     self.setColumnCount(len(NodeTreeModel.header))
     self.setHorizontalHeaderLabels([label for label, width in NodeTreeModel.header])
     self._local_host_address = host_address
-    self._std_capabilities = {'': {'SYSTEM': {'images': [], 'nodes': [ '/rosout', '/master_discovery', '/zeroconf', '/master_sync', '/node_manager'], 'type': '', 'description': 'This group contains the system management nodes.'} } }
+    self._std_capabilities = {'': {'SYSTEM': {'images': [], 
+                                              'nodes': [ '/rosout', 
+                                                         '/master_discovery', 
+                                                         '/zeroconf', 
+                                                         '/master_sync', 
+                                                         '/node_manager', 
+                                                         '/dynamic_reconfigure/*'], 
+                                              'type': '', 
+                                              'description': 'This group contains the system management nodes.'} } }
 
     #create a handler to request the parameter
     self.parameterHandler = ParameterHandler()
@@ -1383,13 +1391,26 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       for (name, cfg) in nodes.items():
         items = hostItem.getNodeItemsByName(name)
         for item in items:
-          item.addConfig(cfg)
           if not item.parent_item is None:
             groups.add(item.parent_item)
+            # only added the config to the node, if the node is in the same group
+            if hostItem.is_in_cap_group(item.name, cfg, rospy.names.namespace(item.name).rstrip(rospy.names.SEP), item.parent_item.name):
+              item.addConfig(cfg)
+            # test for default group
+            elif hostItem.is_in_cap_group(item.name, '', '', item.parent_item.name):
+              item.addConfig(cfg)
+          else:
+            item.addConfig(cfg)
         if not items:
           # create the new node
           node_info = NodeInfo(name, masteruri)
           hostItem.addNode(node_info, cfg)
+          # get the group of the added node to be able to update the group view, if needed 
+          items = hostItem.getNodeItemsByName(name)
+          for item in items:
+            if not item.parent_item is None:
+              groups.add(item.parent_item)
+      # update the changed groups
       for g in groups:
         g.updateDisplayedConfig()
     self.removeEmptyHosts()
