@@ -330,7 +330,12 @@ def main(name, anonymous=False):
 
   if not rospy.is_shutdown():
     os.chdir(PACKAGE_DIR) # change path to be able to the images of descriptions
-    main_form.show()
+    main_form.resize(1024, 768)
+    screen_size = QApplication.desktop().availableGeometry()
+    if main_form.size().width() >= screen_size.width() or main_form.size().height() >= screen_size.height():
+      main_form.showMaximized()
+    else:
+      main_form.show()
     exit_code = -1
     rospy.on_shutdown(finish)
     exit_code = app.exec_()
