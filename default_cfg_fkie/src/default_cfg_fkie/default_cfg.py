@@ -217,18 +217,20 @@ class DefaultCfg(object):
           if not cap_ns:
             cap_ns = roslib.names.SEP
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
-        # if the parameter group parameter found, assign node to the group
+        if cap_ns == node_fullname:
+         cap_ns = item.namespace.rstrip(roslib.names.SEP)        # if the parameter group parameter found, assign node to the group
+        # if the 'capability_group' parameter found, assign node to the group
         if self.roscfg.params.has_key(cap_param):
           p = self.roscfg.params[cap_param]
           if not result.has_key(machine_name):
             result[machine_name] = dict()
           for (ns, groups) in result[machine_name].items():
-            if groups.has_key(p.value):
+            if ns == cap_ns and groups.has_key(p.value):
               groups[p.value]['nodes'].append(node_fullname)
               added = True
               break
           if not added:
-            ns = str(item.namespace)
+            ns = cap_ns
             # add new group in the namespace of the node
             if not result[machine_name].has_key(ns):
               result[machine_name][ns] = dict()
@@ -400,7 +402,15 @@ class DefaultCfg(object):
 #    print 'runNode: ', cmd_args
     popen_cmd = shlex.split(str(' '.join(cmd_args)))
     rospy.loginfo("run node '%s as': %s", node, str(' '.join(popen_cmd)))
-    subprocess.Popen(popen_cmd, cwd=cwd)
+    new_env = dict(os.environ)
+    for k, v in n.env_args:
+      new_env[k] = v
+    ps = subprocess.Popen(popen_cmd, cwd=cwd, env=new_env)
+    # wait for process to avoid 'defunct' processes
+    thread = threading.Thread(target=ps.wait)
+    thread.setDaemon(True)
+    thread.start()
+#    subprocess.Popen(popen_cmd, cwd=cwd)
     if len(cmd) > 1:
       raise StartException('Multiple executables are found! The first one was started! Exceutables:\n' + str(cmd))
 
