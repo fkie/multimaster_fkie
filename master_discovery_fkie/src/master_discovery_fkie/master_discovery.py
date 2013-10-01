@@ -36,6 +36,7 @@ import sys
 import socket
 import time
 import struct
+from urlparse import urlparse
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
@@ -224,16 +225,26 @@ class DiscoveredMaster(object):
 #            self.monitoruri = monitoruri
             self.timestamp = float(timestamp)
             self.online = True
-            #publish new node 
-            if not (self.callback_master_state is None):
-              self.callback_master_state(MasterState(MasterState.STATE_NEW, 
-                                                     ROSMaster(str(self.mastername),
-                                                               self.masteruri,
-                                                               self.timestamp,
-                                                               self.timestamp,
-                                                               self.online,
-                                                               self.discoverername,
-                                                               self.monitoruri)))
+            #resolve the masteruri. Print an error if not reachable
+            try:
+              o = urlparse(self.masteruri)
+              machine_addr = socket.gethostbyname(o.hostname)
+            except socket.gaierror:
+              import traceback
+              print traceback.format_exc()
+              rospy.logwarn("Master discovered with not reachable ROS_MASTER_URI:='%s'. Fix your network settings!", str(self.masteruri))
+              time.sleep(10)
+            else:
+              #publish new node 
+              if not (self.callback_master_state is None):
+                self.callback_master_state(MasterState(MasterState.STATE_NEW, 
+                                                       ROSMaster(str(self.mastername),
+                                                                 self.masteruri,
+                                                                 self.timestamp,
+                                                                 self.timestamp,
+                                                                 self.online,
+                                                                 self.discoverername,
+                                                                 self.monitoruri)))
           else:
             time.sleep(1)
 
