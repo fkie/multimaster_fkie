@@ -1394,7 +1394,9 @@ class NodeTreeModel(QtGui.QStandardItemModel):
           if not item.parent_item is None:
             groups.add(item.parent_item)
             # only added the config to the node, if the node is in the same group
-            if hostItem.is_in_cap_group(item.name, cfg, rospy.names.namespace(item.name).rstrip(rospy.names.SEP), item.parent_item.name):
+            if isinstance(item.parent_item, HostItem):
+              item.addConfig(cfg)
+            elif hostItem.is_in_cap_group(item.name, cfg, rospy.names.namespace(item.name).rstrip(rospy.names.SEP), item.parent_item.name):
               item.addConfig(cfg)
             # test for default group
             elif hostItem.is_in_cap_group(item.name, '', '', item.parent_item.name):
