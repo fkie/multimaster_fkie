@@ -117,6 +117,7 @@ class GroupItem(QtGui.QStandardItem):
         try:
           nodes = descr['nodes']
           def_list = [n.strip().replace('*','.*') for n in nodes]
+          def_list = ['\A' + n.strip().replace('*','.*') + '\Z' for n in nodes]
           if def_list:
             self._re_cap_nodes[(config, ns, groupname)] = re.compile('|'.join(def_list), re.I)
           else:

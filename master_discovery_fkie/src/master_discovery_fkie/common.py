@@ -192,7 +192,7 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
         def_list.append(rph)
   def_list = list(set(def_list))
   rospy.loginfo("%s: %s", param, str(def_list))
-  def_list[:] = [''.join([n.strip().replace('*','.*'), '\Z']) for n in def_list]
+  def_list[:] = [''.join(['\A', n.strip().replace('*','.*'), '\Z']) for n in def_list]
   if def_list:
     return re.compile('|'.join(def_list), re.I)
   return EMPTY_PATTERN
