@@ -4,7 +4,6 @@
     <file>icons/crystal_clear_action_db_add.png</file>
     <file>icons/crystal_clear_action_db_remove.png</file>
     <file>icons/crystal_clear_action_db_update.png</file>
-    <file>icons/crystal_clear_miscellaneous.png</file>
     <file>icons/crystal_clear_button_close.png</file>
     <file>icons/crystal_clear_clicknrun.png</file>
     <file>icons/crystal_clear_dyncfg.png</file>
@@ -17,6 +16,7 @@
     <file>icons/crystal_clear_launch_file_recent.png</file>
     <file>icons/crystal_clear_launch_file_def_cfg.png</file>
     <file>icons/crystal_clear_launch_file_transfer.png</file>
+    <file>icons/crystal_clear_miscellaneous.png</file>
     <file>icons/crystal_clear_package.png</file>
     <file>icons/crystal_clear_prop_run.png</file>
     <file>icons/crystal_clear_prop_run_echo.png</file>

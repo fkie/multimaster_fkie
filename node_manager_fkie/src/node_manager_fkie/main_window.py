@@ -586,7 +586,7 @@ class MainWindow(QtGui.QMainWindow):
     @param minfo: the ROS master Info
     @type minfo: L{master_discovery_fkie.MasterInfo}
     '''
-    rospy.loginfo("MASTERINFO from %s (%s) received", minfo.mastername, minfo.masteruri)
+    rospy.logdebug("MASTERINFO from %s (%s) received", minfo.mastername, minfo.masteruri)
     self._con_tries[minfo.masteruri] = 0
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
