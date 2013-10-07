@@ -780,6 +780,8 @@ class MainWindow(QtGui.QMainWindow):
           sync_args.append(''.join(['_sync_topics:=', '[]']))
           sync_args.append(''.join(['_ignore_services:=', '[]']))
           sync_args.append(''.join(['_sync_services:=', '[]']))
+          sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
+
           try:
             host = nm.nameres().getHostname(self.currentMaster.masteruri)
             self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
