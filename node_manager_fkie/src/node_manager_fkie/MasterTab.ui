@@ -37,21 +37,39 @@
        <height>32</height>
       </size>
      </property>
+     <property name="documentMode">
+      <bool>true</bool>
+     </property>
      <widget class="QWidget" name="tabNodes">
       <attribute name="title">
        <string>Nodes</string>
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout_5">
-       <property name="margin">
-        <number>6</number>
+       <property name="spacing">
+        <number>1</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>3</number>
+       </property>
+       <property name="rightMargin">
+        <number>1</number>
+       </property>
+       <property name="bottomMargin">
+        <number>1</number>
        </property>
        <item>
         <widget class="QFrame" name="frame">
          <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
+          <enum>QFrame::NoFrame</enum>
          </property>
          <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <property name="spacing">
@@ -512,8 +530,17 @@ p, li { white-space: pre-wrap; }
        <string>Topics</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>3</number>
+       </property>
+       <property name="topMargin">
         <number>4</number>
+       </property>
+       <property name="rightMargin">
+        <number>3</number>
+       </property>
+       <property name="bottomMargin">
+        <number>3</number>
        </property>
        <item>
         <widget class="QFrame" name="filter_frame_topic">
@@ -568,7 +595,7 @@ p, li { white-space: pre-wrap; }
              <enum>QFrame::NoFrame</enum>
             </property>
             <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
+             <enum>QFrame::Plain</enum>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,0,0,0,0">
              <property name="margin">
@@ -713,7 +740,16 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
        <string>Services</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>3</number>
+       </property>
+       <property name="topMargin">
+        <number>4</number>
+       </property>
+       <property name="rightMargin">
+        <number>3</number>
+       </property>
+       <property name="bottomMargin">
         <number>4</number>
        </property>
        <item>
@@ -821,7 +857,16 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
        <string>Parameter</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>3</number>
+       </property>
+       <property name="topMargin">
+        <number>4</number>
+       </property>
+       <property name="rightMargin">
+        <number>3</number>
+       </property>
+       <property name="bottomMargin">
         <number>4</number>
        </property>
        <item>
