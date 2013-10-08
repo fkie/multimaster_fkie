@@ -41,6 +41,8 @@ class ParameterValueItem(QtGui.QStandardItem):
   '''
 
   ITEM_TYPE = QtGui.QStandardItem.UserType + 39
+  NAME_ROLE = QtCore.Qt.UserRole + 1
+  VALUE_ROLE = QtCore.Qt.UserRole + 2
 
   def __init__(self, name, value, parent=None):
     '''
@@ -76,6 +78,13 @@ class ParameterValueItem(QtGui.QStandardItem):
   def type(self):
     return ParameterValueItem.ITEM_TYPE
 
+  def data(self, role):
+    if role == self.NAME_ROLE:
+      return self.name
+    elif role == self.VALUE_ROLE:
+      return str(self.value)
+    else:
+      return QtGui.QStandardItem.data(self, role)
 
   def __eq__(self, item):
     '''
@@ -104,6 +113,8 @@ class ParameterNameItem(QtGui.QStandardItem):
   '''
 
   ITEM_TYPE = QtGui.QStandardItem.UserType + 38
+  NAME_ROLE = QtCore.Qt.UserRole + 1
+  VALUE_ROLE = QtCore.Qt.UserRole + 2
 
   def __init__(self, name, value, parent=None):
     '''
@@ -134,6 +145,14 @@ class ParameterNameItem(QtGui.QStandardItem):
 
   def type(self):
     return ParameterValueItem.ITEM_TYPE
+
+  def data(self, role):
+    if role == self.NAME_ROLE:
+      return self.name
+    elif role == self.VALUE_ROLE:
+      return str(self.value)
+    else:
+      return QtGui.QStandardItem.data(self, role)
 
   @classmethod
   def toHTML(cls, key):

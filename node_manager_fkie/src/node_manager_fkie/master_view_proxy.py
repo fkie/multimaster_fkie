@@ -51,7 +51,7 @@ from html_delegate import HTMLDelegate
 from topic_list_model import TopicModel, TopicItem
 from node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
 from service_list_model import ServiceModel, ServiceItem
-from parameter_list_model import ParameterModel, ParameterValueItem
+from parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
 from default_cfg_handler import DefaultConfigHandler
 from launch_config import LaunchConfig, LaunchConfigException
 from master_discovery_fkie.master_info import NodeInfo 
@@ -2203,6 +2203,7 @@ class MasterViewProxy(QtGui.QWidget):
         else:
           value = item.text()
         self.parameterHandler.deliverParameter(self.masteruri, {item.name : value})
+        item.value = value
       except ValueError, e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "Warning", 
                           'Error while add changes to the ROS parameter server',
@@ -2406,9 +2407,8 @@ class TopicsSortFilterProxyModel(QtGui.QSortFilterProxyModel):
     '''
     index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
     index3 = self.sourceModel().index(sourceRow, 3, sourceParent)
-  
     regex = self.filterRegExp()
-    return (regex.indexIn(self.sourceModel().data(index0)) != -1
+    return (regex.indexIn(self.sourceModel().data(index0, TopicItem.NAME_ROLE)) != -1
             or regex.indexIn(self.sourceModel().data(index3)) != -1)
 
 class ServicesSortFilterProxyModel(QtGui.QSortFilterProxyModel):
@@ -2417,11 +2417,10 @@ class ServicesSortFilterProxyModel(QtGui.QSortFilterProxyModel):
     Perform filtering on columns 0 and 1 (Name, Type)
     '''
     index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
-    index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
-  
+#    index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
     regex = self.filterRegExp()
-    return (regex.indexIn(self.sourceModel().data(index0)) != -1
-            or regex.indexIn(self.sourceModel().data(index1)) != -1)
+    return (regex.indexIn(self.sourceModel().data(index0, ServiceItem.NAME_ROLE)) != -1
+            or regex.indexIn(self.sourceModel().data(index0, ServiceItem.TYPE_ROLE)) != -1)
 
 class ParameterSortFilterProxyModel(QtGui.QSortFilterProxyModel):
   def filterAcceptsRow(self, sourceRow, sourceParent):
@@ -2430,7 +2429,6 @@ class ParameterSortFilterProxyModel(QtGui.QSortFilterProxyModel):
     '''
     index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
     index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
-  
     regex = self.filterRegExp()
-    return (regex.indexIn(self.sourceModel().data(index0)) != -1
-            or regex.indexIn(self.sourceModel().data(index1)) != -1)
+    return (regex.indexIn(self.sourceModel().data(index0, ParameterNameItem.NAME_ROLE)) != -1
+            or regex.indexIn(self.sourceModel().data(index1, ParameterValueItem.VALUE_ROLE)) != -1)

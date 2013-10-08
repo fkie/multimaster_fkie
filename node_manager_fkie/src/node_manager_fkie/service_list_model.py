@@ -42,6 +42,9 @@ class ServiceItem(QtGui.QStandardItem):
   '''
 
   ITEM_TYPE = QtGui.QStandardItem.UserType + 37
+  NAME_ROLE = QtCore.Qt.UserRole + 1
+  TYPE_ROLE = QtCore.Qt.UserRole + 2
+  NODENAMES_ROLE = QtCore.Qt.UserRole + 3
 
   def __init__(self, service, parent=None):
     '''
@@ -135,6 +138,16 @@ class ServiceItem(QtGui.QStandardItem):
         tooltip = ''.join(['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
         item.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
+
+  def data(self, role):
+    if role == self.NAME_ROLE:
+      return self.service.name
+    elif role == self.TYPE_ROLE:
+      return str(self.service.get_service_class(False))
+    elif role == self.NODENAMES_ROLE:
+      return str(self.service.serviceProvider)
+    else:
+      return QtGui.QStandardItem.data(self, role)
 
 #  def __eq__(self, item):
 #    '''

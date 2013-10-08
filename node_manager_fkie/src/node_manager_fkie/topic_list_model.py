@@ -50,6 +50,8 @@ class TopicItem(QtGui.QStandardItem):
   '''
   
   ITEM_TYPE = QtGui.QStandardItem.UserType + 36
+  NAME_ROLE = QtCore.Qt.UserRole + 1
+  NODENAMES_ROLE = QtCore.Qt.UserRole + 2
   COL_PUB = 1
   COL_SUB = 2
   COL_TYPE = 3
@@ -210,6 +212,14 @@ class TopicItem(QtGui.QStandardItem):
 
   def type(self):
     return TopicItem.ITEM_TYPE
+
+  def data(self, role):
+    if role == self.NAME_ROLE:
+      return self.topic.name
+    elif role == self.NODENAMES_ROLE:
+      return str(self.topic.publisherNodes)+str(self.topic.subscriberNodes)
+    else:
+      return QtGui.QStandardItem.data(self, role)
 
   @classmethod
   def getItemList(self, name, root):

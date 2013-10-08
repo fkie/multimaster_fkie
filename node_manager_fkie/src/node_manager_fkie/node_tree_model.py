@@ -782,6 +782,7 @@ class NodeItem(QtGui.QStandardItem):
   '''
   
   ITEM_TYPE = QtGui.QStandardItem.UserType + 35
+  NAME_ROLE = QtCore.Qt.UserRole + 1
   COL_CFG = 1
 #  COL_URI = 2
 
@@ -905,6 +906,11 @@ class NodeItem(QtGui.QStandardItem):
       if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
         self.parent_item.updateIcon()
 
+  def data(self, role):
+    if role == self.NAME_ROLE:
+      return self.name
+    else:
+      return QtGui.QStandardItem.data(self, role)
 
   def updateDispayedName(self):
     '''
