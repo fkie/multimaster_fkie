@@ -40,6 +40,46 @@ from socket import getaddrinfo
 
 import node_manager_fkie as nm
 
+class MasterSyncItem(QtGui.QStandardItem):
+  ITEM_TYPE = QtGui.QStandardItem.UserType + 35
+
+  def __init__(self, master, parent=None):
+    self.name = master.name
+    QtGui.QStandardItem.__init__(self, self.name)
+    self.parent_item = None
+    self._master = master
+    self._syncronized = False
+    self.ICONS = {'sync' : QtGui.QIcon(":/icons/crystal_clear_sync.png"),
+                  'not_sync': QtGui.QIcon(":/icons/crystal_clear_not_sync.png") }
+    self.setIcon(self.ICONS['not_sync'])
+
+  @property
+  def master(self):
+    return self._master
+  
+  @property
+  def synchronized(self):
+    return self._syncronized
+
+  @synchronized.setter
+  def synchronized(self, value):
+    if self._syncronized != value:
+      self._syncronized = value
+      self.setIcon(self.ICONS['sync'] if value else self.ICONS['not_sync'])
+
+  def __eq__(self, item):
+    if isinstance(item, str) or isinstance(item, unicode):
+      return self.master.name.lower() == item.lower()
+    elif not (item is None):
+      return self.master.name.lower() == item.master.name.lower()
+    return False
+
+  def __gt__(self, item):
+    if isinstance(item, str) or isinstance(item, unicode):
+      return self.master.name.lower() > item.lower()
+    elif not (item is None):
+      return self.master.name.lower() > item.master.name.lower()
+    return False
 
 
 class MasterItem(QtGui.QStandardItem):
@@ -63,13 +103,9 @@ class MasterItem(QtGui.QStandardItem):
                   'grey'  : QtGui.QIcon(":/icons/stock_connect.png"),
                   'disconnected' : QtGui.QIcon(":/icons/stock_disconnect.png"),
                   'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png') }
-    self.setCheckable(True)
     self.master_ip = None
     self._threaded_get_ip()
     self.updateNameView(master, quality, self)
-  
-  def init_master(self, master):
-    self._master = master
 
   def _threaded_get_ip(self):
     thread = threading.Thread(target=self.__get_ip)
@@ -93,7 +129,7 @@ class MasterItem(QtGui.QStandardItem):
     except:
       import traceback
       print traceback.format_exc()
-    
+
   @property
   def master(self):
     return self._master
@@ -123,7 +159,7 @@ class MasterItem(QtGui.QStandardItem):
     '''
     if not parent is None:
       #update the name decoration
-      child = parent.child(self.row(), 0)
+      child = parent.child(self.row(), MasterModel.COL_NAME)
       if not child is None:
         self.updateNameView(self.master, self.quality, child)
 
@@ -142,8 +178,8 @@ class MasterItem(QtGui.QStandardItem):
     if master.online:
       if not quality is None:
         tooltip = ''.join([tooltip, '<dt>', 'Quality: ', str(quality),' %', '</dt>'])
-      if item.checkState() == QtCore.Qt.Checked:
-        tooltip = ''.join([tooltip, '<dt>', 'synchronized', '</dt>'])
+#      if item.checkState() == QtCore.Qt.Checked:
+#        tooltip = ''.join([tooltip, '<dt>', 'synchronized', '</dt>'])
     else:
       tooltip = ''.join([tooltip, '<dt>', 'offline', '</dt>'])
     tooltip = ''.join([tooltip, '</dl>'])
@@ -206,12 +242,11 @@ class MasterItem(QtGui.QStandardItem):
     @rtype: C{[L{MasterItem} or L{PySide.QtGui.QStandardItem}, ...]}
     '''
     items = []
+    item = MasterSyncItem(master)
+    items.append(item)
     item = MasterItem(master, local)
-    item.init_master(master)
     items.append(item)
     return items
-
-
 
   def __eq__(self, item):
     if isinstance(item, str) or isinstance(item, unicode):
@@ -233,8 +268,10 @@ class MasterModel(QtGui.QStandardItemModel):
   '''
   The model to manage the list with masters in ROS network.
   '''
-  header = [('Name', -1)]
+  header = [('Sync', 22), ('Name', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
+  COL_SYNC = 0
+  COL_NAME = 1
 
   def __init__(self, local_masteruri=None):
     '''
@@ -255,10 +292,10 @@ class MasterModel(QtGui.QStandardItemModel):
     '''
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
-    item = self.itemFromIndex(index)
+#    item = self.itemFromIndex(index)
 #    if item and item.master.online:
     return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-    return QtCore.Qt.NoItemFlags
+#    return QtCore.Qt.NoItemFlags
 
   def updateMaster(self, master):
     '''
@@ -279,12 +316,12 @@ class MasterModel(QtGui.QStandardItemModel):
         except:
           pass
         break
-    
+
     # update or add a the item
     root = self.invisibleRootItem()
     doAddItem = True
     for i in range(root.rowCount()):
-      masterItem = root.child(i)
+      masterItem = root.child(i, self.COL_NAME)
       if (masterItem == master.name):
         # update item
         masterItem.master = master
@@ -294,14 +331,14 @@ class MasterModel(QtGui.QStandardItemModel):
       elif (masterItem > master.name):
         mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
         root.insertRow(i, mitem)
-        mitem[0].parent_item = root
+        mitem[self.COL_NAME].parent_item = root
         doAddItem = False
         break
     if doAddItem:
       mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
-      self.pyqt_workaround[master.name] = mitem[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+      self.pyqt_workaround[master.name] = mitem  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
       root.appendRow(mitem)
-      mitem[0].parent_item = root
+      mitem[self.COL_NAME].parent_item = root
 
   def updateMasterStat(self, master, quality):
     '''
@@ -314,7 +351,7 @@ class MasterModel(QtGui.QStandardItemModel):
     '''
     root = self.invisibleRootItem()
     for i in reversed(range(root.rowCount())):
-      masterItem = root.child(i)
+      masterItem = root.child(i, self.COL_NAME)
       if masterItem.master.name in master:
         masterItem.quality = quality
         break
@@ -330,9 +367,9 @@ class MasterModel(QtGui.QStandardItemModel):
     '''
     root = self.invisibleRootItem()
     for i in reversed(range(root.rowCount())):
-      masterItem = root.child(i)
-      if masterItem.master.name in master:
-        masterItem.setCheckState(QtCore.Qt.Checked if state else QtCore.Qt.Unchecked)
+      masterItem = root.child(i, self.COL_SYNC)
+      if masterItem.master.name == master:
+        masterItem.synchronized = state
         break
 
   def removeMaster(self, master):
@@ -344,7 +381,7 @@ class MasterModel(QtGui.QStandardItemModel):
     '''
     root = self.invisibleRootItem()
     for i in reversed(range(root.rowCount())):
-      masterItem = root.child(i)
+      masterItem = root.child(i, self.COL_NAME)
       if masterItem.master.name == master:
         root.removeRow(i)
         try:
@@ -364,6 +401,6 @@ class MasterModel(QtGui.QStandardItemModel):
     '''
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):
-      masterItem = root.child(i)
+      masterItem = root.child(i, self.COL_NAME)
       if masterItem and masterItem.master.name == master:
         masterItem.updateDescription(descr)
