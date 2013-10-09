@@ -91,7 +91,7 @@ class StartHandler(object):
     n = launch_config.getNode(node)
     if n is None:
       raise StartException(''.join(["Node '", node, "' not found!"]))
-    
+
     env = list(n.env_args)
     prefix = n.launch_prefix if not n.launch_prefix is None else ''
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
@@ -100,7 +100,7 @@ class StartHandler(object):
     args = [''.join(['__ns:=', n.namespace]), ''.join(['__name:=', n.name])]
     if not (n.cwd is None):
       args.append(''.join(['__cwd:=', n.cwd]))
-    
+
     # add remaps
     for remap in n.remap_args:
       args.append(''.join([remap[0], ':=', remap[1]]))
@@ -202,6 +202,7 @@ class StartHandler(object):
       cmd_args[len(cmd_args):] = args
       rospy.loginfo("RUN: %s", ' '.join(cmd_args))
       new_env = dict(os.environ)
+      new_env['ROS_MASTER_URI'] = masteruri
       for k, v in env:
         new_env[k] = v
       ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
@@ -235,7 +236,7 @@ class StartHandler(object):
           env_command = "env "+' '.join(["%s=%s"%(k,v) for (k, v) in new_env.items()])
         except nm.AuthenticationRequest as e:
           raise nm.InteractionNeededError(e, cls.runNode, (node, launch_config, force2host, masteruri, auto_pw_request))
-      
+
       startcmd = [env_command, nm.STARTER_SCRIPT, 
                   '--package', str(n.package),
                   '--node_type', str(n.type),
@@ -246,7 +247,7 @@ class StartHandler(object):
         startcmd.append(masteruri)
       if prefix:
         startcmd[len(startcmd):] = ['--prefix', prefix]
-      
+
       #rename the absolute paths in the args of the node
       node_args = []
       try:
@@ -257,7 +258,7 @@ class StartHandler(object):
             abs_paths.append(('ARGS', a, a_value))
             if not found and package:
               not_found_packages.append(package)
-  
+
         startcmd[len(startcmd):] = node_args
         startcmd[len(startcmd):] = args
         rospy.loginfo("Run remote on %s: %s", host, str(' '.join(startcmd)))
