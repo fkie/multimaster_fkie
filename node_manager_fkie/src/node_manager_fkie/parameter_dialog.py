@@ -32,6 +32,7 @@
 
 from python_qt_binding import QtCore, QtGui
 
+import os
 import sys
 import time
 import threading
@@ -41,6 +42,7 @@ import rospy
 import node_manager_fkie as nm
 
 from parameter_handler import ParameterHandler
+from detailed_msg_box import WarningMessageBox
 
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
@@ -71,7 +73,7 @@ class ParameterDescription(object):
   Used for internal representation of the parameter in dialog.
   '''
   def __init__(self, name, msg_type, value=None, widget=None):
-    self._name = name
+    self._name = str(name)
     self._type = msg_type
     if isinstance(self._type, dict):
       self._type = 'dict'
@@ -131,9 +133,9 @@ class ParameterDescription(object):
       result = field.text()
     elif isinstance(field, QtGui.QComboBox):
       result = field.currentText()
-    self.setValue(result)
+    self.updateValue(result)
 
-  def setValue(self, value):
+  def updateValue(self, value):
     error_str = ''
     try:
       if isinstance(value, (dict, list)):
@@ -141,14 +143,15 @@ class ParameterDescription(object):
       elif value:
         nm.history().addParamCache(self.fullName(), value)
         if self.isArrayType():
+          value = value.lstrip('[').rstrip(']').split(',')
           if 'int' in self.baseType():
-            self._value = map(int, value.split(','))
+            self._value = map(int, value)
           elif 'float' in self.baseType():
-            self._value = map(float, value.split(','))
+            self._value = map(float, value)
           elif 'bool' in self.baseType():
-            self._value = map(str2bool, value.split(','))
+            self._value = map(str2bool, value)
           else:
-            self._value = [ s.encode(sys.getfilesystemencoding()) for s in value.split(',')]
+            self._value = map(str, value)#[ s.encode(sys.getfilesystemencoding()) for s in value]
           if not self.arrayLength() is None and self.arrayLength() != len(self._value):
             raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
         else:
@@ -166,10 +169,13 @@ class ParameterDescription(object):
               self._value = 'now'
             else:
               try:
-                val = float(value)
-                secs = int(val)
-                nsecs = int((val - secs) * 1000000000)
-                self._value = {'secs': secs, 'nsecs': nsecs}
+                val = eval(value)
+                if isinstance(val, dict):
+                  self._value = val
+                else:
+                  secs = int(val)
+                  nsecs = int((val - secs) * 1000000000)
+                  self._value = {'secs': secs, 'nsecs': nsecs}
               except:
                 self._value = {'secs': 0, 'nsecs': 0}
           else:
@@ -364,10 +370,35 @@ class MainBox(QtGui.QWidget):
       result[param.name()] = param.value()
     return result
 
+  def set_values(self, values):
+    '''
+    Sets the values for existing fields.
+    :param values: the dictionary with values to set.
+    :type values: dict
+    :raise Exception: on errors
+    '''
+    if isinstance(values, dict):
+      for param, value in values.items():
+        field = self.getField(param)
+        if not field is None:
+          if isinstance(field, (GroupBox, ArrayBox)):
+            field.set_values(value)
+          else:
+            if isinstance(field, QtGui.QCheckBox):
+              field.setChecked(value)
+            elif isinstance(field, QtGui.QLineEdit):
+              #avoid ' or " that escapes the string values
+              field.setText(', '.join([str(v) for v in value]) if isinstance(value, list) else str(value))
+            elif isinstance(field, QtGui.QComboBox):
+              field.setEditText(', '.join([str(v) for v in value]) if isinstance(value, list) else str(value))
+    elif isinstance(values, list):
+      raise Exception("Setting 'list' values in MainBox or GroupBox not supported!!!")
+
   def getField(self, name):
     for child in self.children():
-      if child.objectName() == name:
-        return child
+      for c in child.children():
+        if c.objectName() == name:
+          return c
     return None
   
   def removeAllFields(self):
@@ -525,6 +556,9 @@ class ArrayBox(MainBox):
       self.setUpdatesEnabled(True)
 
   def value(self):
+    '''
+    Goes through the list and creates dictionary with values of each element.
+    '''
     result = list()
     for i in range(self.param_widget.layout().rowCount()):
       item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
@@ -532,6 +566,31 @@ class ArrayBox(MainBox):
         result.append(item.widget().value())
     return result
 
+  def set_values(self, values):
+    '''
+    Create a list of the elements and sets their values.
+    :param values: The list of dictionaries with parameter values
+    :type values: list
+    '''
+    if isinstance(values, list):
+      count_entries = 0
+      #determine the count of existing elements
+      for i in range(self.param_widget.layout().rowCount()):
+        item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
+        if item and isinstance(item.widget(), ArrayEntry):
+          count_entries += 1
+      # create the list of the elements of the length of values
+      if count_entries < len(values):
+        for i in range(len(values) - count_entries):
+          self._on_add_dynamic_entry()
+      elif count_entries > len(values):
+        for i in range(count_entries - len(values)):
+          self._on_rem_dynamic_entry()
+      # set the values
+      for i in range(self.param_widget.layout().rowCount()):
+        item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
+        if item and isinstance(item.widget(), ArrayEntry):
+          item.widget().set_values(values[i])
 
 class ScrollArea(QtGui.QScrollArea):
   '''
@@ -560,6 +619,11 @@ class ParameterDialog(QtGui.QDialog):
     '''
     QtGui.QDialog.__init__(self, parent=parent)
     self.setObjectName(' - '.join(['ParameterDialog', str(params)]))
+
+    try:
+      self.__current_path = os.environ('HOME')
+    except:
+      self.__current_path = os.getcwd()
 
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
@@ -628,6 +692,20 @@ class ParameterDialog(QtGui.QDialog):
 #    print "************ destroy", self.objectName()
     self.content.removeAllFields()
 
+  def showLoadSaveButtons(self):
+    self.load_button = QtGui.QPushButton()
+    self.load_button.setIcon(QtGui.QIcon(':/icons/load.png'))
+    self.load_button.clicked.connect(self._load_parameter)
+    self.load_button.setToolTip('Load parameters from YAML file')
+    self.load_button.setFlat(True)
+    self.buttonBox.addButton(self.load_button, QtGui.QDialogButtonBox.ActionRole)
+    self.save_button = QtGui.QPushButton()
+    self.save_button.clicked.connect(self._save_parameter)
+    self.save_button.setIcon(QtGui.QIcon(':/icons/save.png'))
+    self.save_button.setToolTip('Save parameters to YAML file')
+    self.save_button.setFlat(True)
+    self.buttonBox.addButton(self.save_button, QtGui.QDialogButtonBox.ActionRole)
+
   def _on_filter_changed(self):
     self.content.filter(self.filter_field.text())
 
@@ -682,6 +760,46 @@ class ParameterDialog(QtGui.QDialog):
     '''
     return self.content.value()
 
+  def _save_parameter(self):
+    try:
+      import yaml
+      (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
+                                               "Save parameter", 
+                                               self.__current_path, 
+                                               "YAML files (*.yaml);;All files (*)")
+      if fileName:
+        self.__current_path = os.path.dirname(fileName)
+        print "VALUES:",self.content.value()
+        text = yaml.dump(self.content.value(), default_flow_style=False)
+        with open(fileName, 'w+') as f:
+          f.write(text)
+    except Exception as e:
+      import traceback
+      print traceback.format_exc()
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error", 
+                       'Error while save parameter',
+                        str(e)).exec_()
+
+  def _load_parameter(self):
+    try:
+      import yaml
+      (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
+                                                   "Load parameter", 
+                                                   self.__current_path, 
+                                                   "YAML files (*.yaml);;All files (*)")
+      if fileName:
+        self.__current_path = os.path.dirname(fileName)
+        with open(fileName, 'r') as f:
+#          print yaml.load(f.read())
+          self.content.set_values(yaml.load(f.read()))
+    except Exception as e:
+      import traceback
+      print traceback.format_exc()
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Load parameter Error", 
+                       'Error while load parameter',
+                        str(e)).exec_()
+
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -729,9 +847,13 @@ class MasterParameterDialog(ParameterDialog):
     self.mIcon = QtGui.QIcon(":/icons/default_cfg.png")
     self.setWindowIcon(self.mIcon)
     self.resize(450,300)
-    self.add_new_button = QtGui.QPushButton(self.tr("&Add"))
+    self.add_new_button = QtGui.QPushButton()
+    self.add_new_button.setIcon(QtGui.QIcon(':/icons/crystal_clear_add.png'))
     self.add_new_button.clicked.connect(self._on_add_parameter)
+    self.add_new_button.setToolTip('Adds a new parameter to the list')
+    self.add_new_button.setFlat(True)
     self.buttonBox.addButton(self.add_new_button, QtGui.QDialogButtonBox.ActionRole)
+    self.showLoadSaveButtons()
 #    self.apply_button = QtGui.QPushButton(self.tr("&Ok"))
 #    self.apply_button.clicked.connect(self._on_apply)
 #    self.buttonBox.addButton(self.apply_button, QtGui.QDialogButtonBox.ApplyRole)
@@ -755,6 +877,8 @@ class MasterParameterDialog(ParameterDialog):
           self.is_send = True
           self.setText('Send the parameter into server...')
           self.parameterHandler.deliverParameter(self.masteruri, ros_params)
+        else:
+          self.close()
       except Exception, e:
         QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
     elif self.masteruri is None:
@@ -917,6 +1041,7 @@ class ServiceDialog(ParameterDialog):
       self.hide_button.clicked.connect(self._on_hide_output)
       self.buttonBox.addButton(self.hide_button, QtGui.QDialogButtonBox.ActionRole)
       self.hide_button.setVisible(False)
+      self.showLoadSaveButtons()
 
   def _on_hide_output(self):
     self.setInfoActive(not self.info_field.isVisible())

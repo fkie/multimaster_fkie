@@ -4,6 +4,7 @@
     <file>icons/crystal_clear_action_db_add.png</file>
     <file>icons/crystal_clear_action_db_remove.png</file>
     <file>icons/crystal_clear_action_db_update.png</file>
+    <file>icons/crystal_clear_add.png</file>
     <file>icons/crystal_clear_button_close.png</file>
     <file>icons/crystal_clear_clicknrun.png</file>
     <file>icons/crystal_clear_dyncfg.png</file>
@@ -37,6 +38,7 @@
     <file>icons/deleket_deviantart_refresh.png</file>
     <file>icons/deleket_deviantart_stop.png</file>
     <file>icons/imacadam_stop.png</file>
+    <file>icons/load.png</file>
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
     <file>icons/state_off.png</file>

@@ -238,6 +238,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.getParameterButton.clicked.connect(self.on_get_parameter_clicked)
     self.masterTab.addParameterButton.clicked.connect(self.on_add_parameter_clicked)
     self.masterTab.deleteParameterButton.clicked.connect(self.on_delete_parameter_clicked)
+    self.masterTab.saveParameterButton.clicked.connect(self.on_save_parameter_clicked)
 
     #create a handler to request the parameter
     self.parameterHandler = ParameterHandler()
@@ -1126,6 +1127,7 @@ class MasterViewProxy(QtGui.QWidget):
   def on_parameter_selection_changed(self, selected, deselected):
     selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
     self.masterTab.deleteParameterButton.setEnabled(len(selectedParameter) > 0)
+    self.masterTab.saveParameterButton.setEnabled(len(selectedParameter) > 0)
 
   def hostsFromIndexes(self, indexes, recursive=True):
     result = []
@@ -1920,7 +1922,7 @@ class MasterViewProxy(QtGui.QWidget):
             msg_types.append("%s/%s"%(p, file))
       msg_types.sort()
       fields = {'Type' : ('string', msg_types), 'Name' : ('string', [''])}
-      
+
       #create a dialog
       dia = ParameterDialog(fields, parent=self)
       dia.setWindowTitle('Publish to topic')
@@ -1963,6 +1965,7 @@ class MasterViewProxy(QtGui.QWidget):
       p = { '! Publish rate' : ('string', ['once', 'latch', '1']), topic_type : ('dict', args) }
       dia = ParameterDialog(p)
       dia.setWindowTitle(''.join(['Publish to ', topic_name]))
+      dia.showLoadSaveButtons()
       dia.resize(450,300)
       dia.setFocusField('! Publish rate')
 
@@ -2166,6 +2169,43 @@ class MasterViewProxy(QtGui.QWidget):
       self.on_get_parameter_clicked()
     finally:
       socket.setdefaulttimeout(None)
+
+  def on_save_parameter_clicked(self):
+    '''
+    Stores selected paramter to a file.
+    '''
+    selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+    if selectedParameter:
+      (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
+                                                   "Save parameter", 
+                                                   self.__current_path, 
+                                                   "YAML files (*.yaml);;All files (*)")
+      if fileName:
+        self.__current_path = os.path.dirname(fileName)
+        try:
+          with open(fileName, 'w+') as f:
+            values = dict()
+            #convert ROS namespaces of parameters to YAML namespaces 
+            for (key, value) in selectedParameter:
+              keys = key.strip(rospy.names.SEP).split(rospy.names.SEP)
+              curr_v = values
+              for k in keys:
+                if curr_v.has_key(k):
+                  curr_v = curr_v[k]
+                elif k != keys[-1]:
+                  curr_v[k] = dict()
+                  curr_v = curr_v[k]
+                else:
+                  curr_v[k] = value
+            import yaml
+#            print yaml.dump(values, default_flow_style=False)
+            f.write(yaml.dump(values, default_flow_style=False))
+        except Exception as e:
+          import traceback
+          print traceback.format_exc()
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error", 
+                           'Error while save parameter',
+                            str(e)).exec_()
 
   def _replaceDoubleSlash(self, liste):
     '''
