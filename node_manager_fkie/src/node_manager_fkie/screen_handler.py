@@ -61,7 +61,7 @@ class ScreenHandler(object):
   start of the ROS nodes.
   '''
 
-  LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), '/']) if os.environ.get('ROS_LOG_DIR') else ''.join([os.environ['HOME'], '/', '.ros/log/'])
+  LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
   SCREEN = "/usr/bin/screen"
   SLASH_SEP = '_'
   
@@ -121,11 +121,11 @@ class ScreenHandler(object):
     @rtype: C{str}
     '''
     if not session is None:
-      return ''.join([cls.LOG_PATH, session, '.log'])
+      return os.path.join(cls.LOG_PATH, session+'.log')
     elif not node is None:
-      return ''.join([cls.LOG_PATH, cls.createSessionName(node), '.log'])
+      return os.path.join(cls.LOG_PATH, cls.createSessionName(node)+'.log')
     else:
-      return ''.join([cls.LOG_PATH, 'unknown', '.log'])
+      return os.path.join(cls.LOG_PATH, 'unknown.log')
 
   @classmethod
   def getROSLogFile(cls, node):
@@ -139,7 +139,7 @@ class ScreenHandler(object):
     for the log file (handle the node started using a launch file).
     '''
     if not node is None:
-      return ''.join([cls.LOG_PATH, node.strip('/').replace('/','_'), '.log'])
+      return os.path.join(cls.LOG_PATH, node.strip(rospy.names.SEP).replace(rospy.names.SEP,'_')+'.log')
     else:
       return ''
 
@@ -153,11 +153,11 @@ class ScreenHandler(object):
     @rtype: C{str}
     '''
     if not session is None:
-      return ''.join([cls.LOG_PATH, session, '.conf'])
+      return os.path.join(cls.LOG_PATH, session+'.conf')
     elif not node is None:
-      return ''.join([cls.LOG_PATH, cls.createSessionName(node), '.conf'])
+      return os.path.join(cls.LOG_PATH, cls.createSessionName(node)+'.conf')
     else:
-      return ''.join([cls.LOG_PATH, 'unknown', '.conf'])
+      return os.path.join(cls.LOG_PATH, 'unknown.conf')
 
   @classmethod
   def getScreenPidFile(cls, session=None, node=None):
@@ -169,11 +169,11 @@ class ScreenHandler(object):
     @rtype: C{str}
     '''
     if not session is None:
-      return ''.join([cls.LOG_PATH, session, '.pid'])
+      return os.path.join(cls.LOG_PATH, session+'.pid')
     elif not node is None:
-      return ''.join([cls.LOG_PATH, cls.createSessionName(node), '.pid'])
+      return os.path.join(cls.LOG_PATH, cls.createSessionName(node)+'.pid')
     else:
-      return ''.join([cls.LOG_PATH, 'unknown', '.pid'])
+      return os.path.join(cls.LOG_PATH, 'unknown.pid')
 
   @classmethod
   def getActiveScreens(cls, host, session='', auto_pw_request=True, user=None, pwd=None):

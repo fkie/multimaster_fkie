@@ -475,9 +475,8 @@ class StartHandler(object):
       masteruri = roslib.rosenv.get_master_uri()
     #start roscore, if needed
     try:
-      log_path = nm.ScreenHandler.LOG_PATH
-      if not os.path.isdir(log_path):
-        os.makedirs(log_path)
+      if not os.path.isdir(nm.ScreenHandler.LOG_PATH):
+        os.makedirs(nm.ScreenHandler.LOG_PATH)
       socket.setdefaulttimeout(3)
       master = xmlrpclib.ServerProxy(masteruri)
       master.getUri(rospy.get_name())

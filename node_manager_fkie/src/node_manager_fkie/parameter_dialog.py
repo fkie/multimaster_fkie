@@ -620,10 +620,7 @@ class ParameterDialog(QtGui.QDialog):
     QtGui.QDialog.__init__(self, parent=parent)
     self.setObjectName(' - '.join(['ParameterDialog', str(params)]))
 
-    try:
-      self.__current_path = os.environ('HOME')
-    except:
-      self.__current_path = os.getcwd()
+    self.__current_path = os.path.expanduser('~')
 
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")

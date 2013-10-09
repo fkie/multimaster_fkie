@@ -87,10 +87,7 @@ class MainWindow(QtGui.QMainWindow):
     self.__icons = {'default_pc' : QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png']))} # (masnter name : QIcon)
     self.__current_icon = None
     self.__current_master_label_name = None
-    try:
-      self.__current_path = os.environ('HOME')
-    except:
-      self.__current_path = os.getcwd()
+    self.__current_path = os.path.expanduser('~')
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
 #    loader = QtUiTools.QUiLoader()

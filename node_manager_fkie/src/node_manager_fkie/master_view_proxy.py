@@ -104,10 +104,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.mastername = o.hostname
     except:
       pass
-    try:
-      self.__current_path = os.environ('HOME')
-    except:
-      self.__current_path = os.getcwd()
+    self.__current_path = os.path.expanduser('~')
 
     self._tmpObjects = []
     self.__master_state = None
