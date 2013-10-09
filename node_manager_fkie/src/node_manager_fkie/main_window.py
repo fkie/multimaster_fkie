@@ -34,6 +34,7 @@ import os
 import time
 import xmlrpclib
 import threading
+import getpass
 
 from datetime import datetime
 
@@ -98,6 +99,9 @@ class MainWindow(QtGui.QMainWindow):
     #/home/tiderko/ros/src/multimaster_fkie/node_manager_fkie/src/node_manager_fkie/
     loadUi(ui_file, self.ui)
     self.ui.setObjectName('MainUI')
+    self.ui.user_frame.setVisible(False)
+    self._add_user_to_combo(getpass.getuser())
+    self.ui.userComboBox.editTextChanged.connect(self.on_user_changed)
     self.ui.masterInfoFrame.setEnabled(False)
     self.ui.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
     self.ui.runButton.clicked.connect(self.on_run_node_clicked)
@@ -367,9 +371,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     if self.masters.has_key(masteruri):
       if not self.currentMaster is None and self.currentMaster.masteruri == masteruri:
-        self.currentMaster = None
-        self.stackedLayout.setCurrentIndex(0)
-        self.on_master_timecheck()
+        self.setCurrentMaster(None)
       self.masters[masteruri].stop()
       self.stackedLayout.removeWidget(self.masters[masteruri])
       self.ui.tabPlace.layout().removeWidget(self.masters[masteruri])
@@ -407,7 +409,7 @@ class MainWindow(QtGui.QMainWindow):
               self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
                                              'start default config '+str(host), 
                                              nm.starter().runNodeWithoutConfig, 
-                                             (host, 'default_cfg_fkie', 'default_cfg', node_name, args, masteruri, False))
+                                             (host, 'default_cfg_fkie', 'default_cfg', node_name, args, masteruri, False, self.masters[masteruri].current_user))
               self._progress_queue_cfg.start()
           except Exception as e:
             WarningMessageBox(QtGui.QMessageBox.Warning, "Load default configuration", 
@@ -473,9 +475,7 @@ class MainWindow(QtGui.QMainWindow):
         master = self.masters[uri]
         if nm.is_local(nm.nameres().getHostname(uri)):
           if not self._history_selected_robot or master.mastername == self._history_selected_robot:
-            self.currentMaster = master
-            self.stackedLayout.setCurrentWidget(master)
-            self.on_master_timecheck()
+            self.setCurrentMaster(master)
         else:
           if not master.master_state is None:
             self.master_model.removeMaster(master.master_state.name)
@@ -603,18 +603,14 @@ class MainWindow(QtGui.QMainWindow):
 #          print master.master_state.name, cputime
           if not master.master_info is None:
             if self._history_selected_robot == minfo.mastername and self._history_selected_robot == master.mastername and self.currentMaster != master:
-              self.currentMaster = master
-              self.stackedLayout.setCurrentWidget(master)
-              self.on_master_timecheck()
+              self.setCurrentMaster(master)
             elif nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
               if new_info:
                 has_discovery_service = self.hasDiscoveryService(minfo)
                 if not self.own_master_monitor.isPaused() and has_discovery_service:
                   self._subscribe()
                 elif self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
-                  self.currentMaster = master
-                  self.stackedLayout.setCurrentWidget(master)
-                  self.on_master_timecheck()
+                  self.setCurrentMaster(master)
 
             # update the list view, whether master is synchronized or not
             if master.master_info.masteruri == minfo.masteruri:
@@ -734,11 +730,11 @@ class MainWindow(QtGui.QMainWindow):
             self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
                                            'Transfer sync interface '+str(host), 
                                            nm.starter().transfer_files, 
-                                           (str(host), self._sync_dialog.interface_filename))
+                                           (str(host), self._sync_dialog.interface_filename), False, master.current_user)
           self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
                                          'Start sync on '+str(host), 
                                          nm.starter().runNodeWithoutConfig, 
-                                         (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, str(master.masteruri), True))
+                                         (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, str(master.masteruri), False, master.current_user))
           self._progress_queue_sync.start()
         except:
           import traceback
@@ -793,7 +789,7 @@ class MainWindow(QtGui.QMainWindow):
             self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
                                            'start sync on '+str(host), 
                                            nm.starter().runNodeWithoutConfig, 
-                                           (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(self.currentMaster.masteruri), False))
+                                           (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(self.currentMaster.masteruri), False, self.currentMaster.current_user))
             self._progress_queue_sync.start()
           except:
             pass
@@ -941,10 +937,8 @@ class MainWindow(QtGui.QMainWindow):
 #       if index.row() == selected.row():
     item = self.master_model.itemFromIndex(selected)
     if not item is None:
-      self.currentMaster = self.getMaster(item.master.uri)
       self._history_selected_robot = item.master.name
-      self.stackedLayout.setCurrentWidget(self.currentMaster)
-      self.on_master_timecheck()
+      self.setCurrentMaster(item.master.uri)
       if not self.currentMaster.master_info is None and not self.restricted_to_one_master:
         node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
         self.ui.syncButton.setEnabled(True)
@@ -953,7 +947,45 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.syncButton.setEnabled(False)
       return
     self.ui.launchDock.raise_()
-  
+
+  def setCurrentMaster(self, master):
+    '''
+    Changes the view of the master.
+    :param master: the MasterViewProxy object or masteruri
+    :type master: MasterViewProxy or str
+    '''
+    show_user_field = False
+    if isinstance(master, MasterViewProxy):
+      self.currentMaster = master
+      self.stackedLayout.setCurrentWidget(master)
+      show_user_field = not master.is_local
+      self._add_user_to_combo(self.currentMaster.current_user)
+      self.ui.userComboBox.setEditText(self.currentMaster.current_user)
+    elif master is None:
+      self.currentMaster = None
+      self.stackedLayout.setCurrentIndex(0)
+    else: # it's masteruri
+      self.currentMaster = self.getMaster(master)
+      if not self.currentMaster is None:
+        self.stackedLayout.setCurrentWidget(self.currentMaster)
+        show_user_field = not self.currentMaster.is_local
+        self._add_user_to_combo(self.currentMaster.current_user)
+        self.ui.userComboBox.setEditText(self.currentMaster.current_user)
+      else:
+        self.stackedLayout.setCurrentIndex(0)
+    self.ui.user_frame.setVisible(show_user_field)
+    self.on_master_timecheck()
+
+  def _add_user_to_combo(self, user):
+    for i in range(self.ui.userComboBox.count()):
+      if user.lower() == self.ui.userComboBox.itemText(i).lower():
+        return
+    self.ui.userComboBox.addItem(user)
+
+  def on_user_changed(self, user):
+    if not self.currentMaster is None:
+      self.currentMaster.current_user = user
+
   def on_masterTableView_selection_changed(self, selected, deselected):
     '''
     On selection of a master list.
@@ -990,7 +1022,8 @@ class MainWindow(QtGui.QMainWindow):
     params_optional = {'Discovery type': ('string', ['master_discovery', 'zeroconf']),
                        'ROS Master Name' : ('string', 'autodetect'),
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
-                       'Static hosts' : ('string', '')
+                       'Static hosts' : ('string', ''),
+                       'Username' : ('string', [self.ui.userComboBox.itemText(i) for i in reversed(range(self.ui.userComboBox.count()))])
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
@@ -1009,6 +1042,7 @@ class MainWindow(QtGui.QMainWindow):
         mastername = params['Optional Parameter']['ROS Master Name']
         masteruri = params['Optional Parameter']['ROS Master URI']
         static_hosts = params['Optional Parameter']['Static hosts']
+        username = params['Optional Parameter']['Username']
         if static_hosts:
           static_hosts = static_hosts.replace(' ', '')
           static_hosts = static_hosts.replace('[', '')
@@ -1026,7 +1060,7 @@ class MainWindow(QtGui.QMainWindow):
           self._progress_queue.add2queue(str(self._progress_queue.count()), 
                                          'start discovering on '+str(hostname), 
                                          nm.starter().runNodeWithoutConfig, 
-                                         (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False))
+                                         (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, username))
           self._progress_queue.start()
 
         except (Exception, nm.StartException), e:
@@ -1162,9 +1196,14 @@ class MainWindow(QtGui.QMainWindow):
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
       path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
-        host = nm.nameres().getHostname(self.currentMaster.masteruri) if not self.currentMaster is None else 'localhost'
+        host = 'localhost'
+        username = nm.ssh().USER_DEFAULT
+        if not self.currentMaster is None:
+          host = nm.nameres().getHostname(self.currentMaster.masteruri)
+          username = self.currentMaster.current_user
         params = {'Host' : ('string', host),
-                  'recursive' : ('bool', 'False') }
+                  'recursive' : ('bool', 'False'),
+                  'Username' : ('string', str(username)) }
         dia = ParameterDialog(params)
         dia.setFilterVisible(False)
         dia.setWindowTitle('Transfer file')
@@ -1174,22 +1213,23 @@ class MainWindow(QtGui.QMainWindow):
           try:
             params = dia.getKeywords()
             host = params['Host']
-            rospy.loginfo("TRANSFER the launch file to host %s: %s", str(host), path)
+            rospy.loginfo("TRANSFER the launch file to host %s@%s: %s", str(username), str(host), path)
             recursive = params['recursive']
+            username = params['Username']
             self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
                                            'transfer files to '+str(host), 
                                            nm.starter().transfer_files, 
-                                           (str(host), path))
+                                           (str(host), path, False, username))
             if recursive:
               for f in LaunchConfig.getIncludedFiles(path):
                 self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
                                                'transfer files to '+str(host), 
                                                nm.starter().transfer_files, 
-                                               (str(host), f))
+                                               (str(host), f, False, username))
             self._progress_queue_cfg.start()
           except Exception, e:
             WarningMessageBox(QtGui.QMessageBox.Warning, "Transfer error", 
-                             'Error while parse parameter',
+                             'Error while transfer files',
                               str(e)).exec_()
 
   def _editor_dialog_open(self, files, search_text, trynr=1):
@@ -1280,7 +1320,7 @@ class MainWindow(QtGui.QMainWindow):
         self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
                                        'start default config '+str(hostname), 
                                        nm.starter().runNodeWithoutConfig, 
-                                       (str(hostname), 'default_cfg_fkie', 'default_cfg', node_name, args, master_proxy.masteruri, False))
+                                       (str(hostname), 'default_cfg_fkie', 'default_cfg', node_name, args, master_proxy.masteruri, False, master_proxy.current_user))
         self._progress_queue_cfg.start()
       else:
         try:

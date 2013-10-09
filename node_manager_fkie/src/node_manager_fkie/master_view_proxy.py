@@ -122,6 +122,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
     self.__use_sim_time = False
+    self.__current_user = nm.ssh().USER_DEFAULT
 
     self.default_cfg_handler = DefaultConfigHandler()
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -333,7 +334,19 @@ class MasterViewProxy(QtGui.QWidget):
       except:
         pass
     print "  Master", self.masteruri, " is down!"
-    
+
+  @property
+  def current_user(self):
+    return self.__current_user
+
+  @current_user.setter
+  def current_user(self, user):
+    self.__current_user = user
+
+  @property
+  def is_local(self):
+    return nm.is_local(nm.nameres().getHostname(self.masteruri))
+
   @property
   def master_state(self):
     return self.__master_state
@@ -1231,7 +1244,7 @@ class MasterViewProxy(QtGui.QWidget):
                           ''.join(['Error while start ', node.name, ':\nNo configuration found!']))
       if isinstance(config, LaunchConfig):
         try:
-          nm.starter().runNode(node.name, config, force_host, self.masteruri)
+          nm.starter().runNode(node.name, config, force_host, self.masteruri, user=self.current_user)
         except socket.error as se:
           rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
           raise DetailedError("Start error", 
@@ -1479,7 +1492,7 @@ class MasterViewProxy(QtGui.QWidget):
           self._progress_queue.add2queue(str(self._progress_queue.count()), 
                                          ''.join(['kill ', node.name, '(', str(pid), ')']), 
                                          nm.starter().kill, 
-                                         (self.getHostFromNode(node), pid, False))
+                                         (self.getHostFromNode(node), pid, False, self.current_user))
           self._progress_queue.start()
         except Exception as e:
           rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
@@ -1602,7 +1615,7 @@ class MasterViewProxy(QtGui.QWidget):
               self._progress_queue.add2queue(str(self._progress_queue.count()),
                                              ''.join(['show IO of ', node.name]),
                                              nm.screen().openScreen,
-                                             (node.name, self.getHostFromNode(node), False))
+                                             (node.name, self.getHostFromNode(node), False, self.current_user))
             self._progress_queue.start()
         else:
           self.on_show_all_screens()
@@ -1621,7 +1634,7 @@ class MasterViewProxy(QtGui.QWidget):
         self._progress_queue.add2queue(str(self._progress_queue.count()),
                                        ''.join(['kill screen of ', node.name]),
                                        nm.screen().killScreens,
-                                       (node.name, self.getHostFromNode(node), False))
+                                       (node.name, self.getHostFromNode(node), False, self.current_user))
       self._progress_queue.start()
     finally:
       self.setCursor(cursor)
@@ -1636,7 +1649,7 @@ class MasterViewProxy(QtGui.QWidget):
       host = nm.nameres().getHostname(self.masteruri)
       sel_screen = []
       try:
-        screens = nm.screen().getActiveScreens(host, auto_pw_request=True)
+        screens = nm.screen().getActiveScreens(host, auto_pw_request=True, user=self.current_user)
         sel_screen = SelectDialog.getValue('Open screen', screens, False, False, self)
       except Exception, e:
         rospy.logwarn("Error while get screen list: %s", str(e))
@@ -1645,7 +1658,7 @@ class MasterViewProxy(QtGui.QWidget):
                           str(e)).exec_()
       for screen in sel_screen:
         try:
-          if not nm.screen().openScreenTerminal(host, screen, screen):
+          if not nm.screen().openScreenTerminal(host, screen, screen, self.current_user):
   #          self.masterTab.ioButton.setEnabled(False)
             pass
         except Exception, e:
@@ -1676,7 +1689,7 @@ class MasterViewProxy(QtGui.QWidget):
             self._progress_queue.add2queue(str(self._progress_queue.count()),
                                            ''.join(['show log of ', node.name]),
                                            nm.starter().openLog,
-                                           (node.name, self.getHostFromNode(node)))
+                                           (node.name, self.getHostFromNode(node), self.current_user))
           self._progress_queue.start()
     except Exception, e:
       import traceback
@@ -1696,12 +1709,7 @@ class MasterViewProxy(QtGui.QWidget):
       socket.setdefaulttimeout(3)
       path_on_host = nm.starter().copylogPath2Clipboards(host, nodenames, True)
       socket.setdefaulttimeout(None)
-      user = nm.ssh().USER_DEFAULT
-      try:
-        user = nm.ssh().SSH_AUTH[host]
-      except:
-        pass
-      QtGui.QApplication.clipboard().setText(''.join([user, '@', host, ':', path_on_host]))
+      QtGui.QApplication.clipboard().setText(''.join([self.current_user, '@', host, ':', path_on_host]))
     except Exception as e:
       WarningMessageBox(QtGui.QMessageBox.Warning, "Get log path", 
                         'Error while get log path',
@@ -1732,7 +1740,7 @@ class MasterViewProxy(QtGui.QWidget):
       self._progress_queue.add2queue(str(self._progress_queue.count()),
                                      ''.join(['delete Log of ', node.name]),
                                      nm.starter().deleteLog,
-                                     (node.name, self.getHostFromNode(node), False))
+                                     (node.name, self.getHostFromNode(node), False, self.current_user))
     self._progress_queue.start()
 
   def on_dynamic_config_clicked(self):
@@ -1993,7 +2001,7 @@ class MasterViewProxy(QtGui.QWidget):
         self._progress_queue.add2queue(str(self._progress_queue.count()), 
                                  ''.join(['start publisher for ', topic_name]), 
                                  nm.starter().runNodeWithoutConfig, 
-                                 (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), [pub_cmd], self.masteruri))
+                                 (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), [pub_cmd], self.masteruri, False, self.current_user))
         self._progress_queue.start()
         return True
       else:

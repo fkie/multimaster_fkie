@@ -632,7 +632,7 @@ class StartHandler(object):
         raise nm.InteractionNeededError(e, cls.copylogPath2Clipboards, (host, nodes, auto_pw_request))
 
   @classmethod
-  def openLog(cls, nodename, host):
+  def openLog(cls, nodename, host, user=None):
     '''
     Opens the log file associated with the given node in a new terminal.
     @param nodename: the name of the node (with name space)
@@ -672,12 +672,12 @@ class StartHandler(object):
         found = True
       return found
     else:
-      ps = nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_screen_log', nodename], title_opt)
+      ps = nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_screen_log', nodename], title_opt, user)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
       thread.start()
-      ps = nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'))
+      ps = nm.ssh().ssh_x11_exec(host, [nm.STARTER_SCRIPT, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
@@ -776,7 +776,7 @@ class StartHandler(object):
             raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))
           if output:
             CACHED_PKG_PATH[host][pkg_name] = output
-            nm.ssh().transfer(host, file, os.path.join(output.strip(), subfile_path.strip(os.sep)))
+            nm.ssh().transfer(host, file, os.path.join(output.strip(), subfile_path.strip(os.sep)), user)
           else:
             raise StartException("Remote host no returned any answer. Is there the new version of node_manager installed?")
         else:

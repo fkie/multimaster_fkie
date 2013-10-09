@@ -103,6 +103,7 @@ class SSHhandler(object):
           except:
             pass
           sftp.put(local_file, remote_file)
+          rospy.loginfo("SSH COPY %s -> %s@%s:%s", local_file, ssh._transport.get_username(), host, remote_file)
       except AuthenticationRequest as e:
         raise
       except Exception, e:
@@ -128,7 +129,7 @@ class SSHhandler(object):
         ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           cmd_str = str(' '.join(cmd))
-          rospy.loginfo("REMOTE execute on %s: %s", host, cmd_str)
+          rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
           (stdin, stdout, stderr) = ssh.exec_command(cmd_str)
           stdin.close()
           output = stdout.read()
@@ -190,9 +191,11 @@ class SSHhandler(object):
     @raise socket.error: - if a socket error occurred while connecting
     '''
     session = SSHhandler.SSH_SESSIONS.get(host, paramiko.SSHClient())
-    if session is None or (not session.get_transport() is None and not session.get_transport().is_active()):
+    if session is None or (not session.get_transport() is None and (not session.get_transport().is_active() or session._transport.get_username() != user)):
       t = SSHhandler.SSH_SESSIONS.pop(host)
       del t
+      if self.SSH_AUTH.has_key(host):
+        del self.SSH_AUTH[host]
       session = SSHhandler.SSH_SESSIONS.get(host, paramiko.SSHClient())
     if session._transport is None:
       session.set_missing_host_key_policy(paramiko.AutoAddPolicy())

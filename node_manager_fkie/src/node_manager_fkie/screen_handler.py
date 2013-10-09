@@ -248,7 +248,7 @@ class ScreenHandler(object):
       thread.setDaemon(True)
       thread.start()
     else:
-      ps = nm.ssh().ssh_x11_exec(host, [cls.SCREEN, '-x', screen_name], title_opt)
+      ps = nm.ssh().ssh_x11_exec(host, [cls.SCREEN, '-x', screen_name], title_opt, user)
       rospy.loginfo("Open remote screen terminal: %s", ps)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
