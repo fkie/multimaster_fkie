@@ -769,7 +769,6 @@ class ParameterDialog(QtGui.QDialog):
                                                "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
-        print "VALUES:",self.content.value()
         text = yaml.dump(self.content.value(), default_flow_style=False)
         with open(fileName, 'w+') as f:
           f.write(text)
