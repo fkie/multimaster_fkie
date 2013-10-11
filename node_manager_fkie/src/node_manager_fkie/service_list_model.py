@@ -72,7 +72,7 @@ class ServiceItem(QtGui.QStandardItem):
     return ServiceItem.ITEM_TYPE
 
   @classmethod
-  def toHTML(cls, service_name):
+  def toHTML(cls, service_name, red_color=False):
     '''
     Creates a HTML representation of the service name.
     @param service_name: the service name
@@ -83,7 +83,12 @@ class ServiceItem(QtGui.QStandardItem):
     ns, sep, name = service_name.rpartition('/')
     result = ''
     if sep:
-      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
+      if red_color:
+        result = ''.join(['<div>', '<span style="color:red;">', str(ns), sep, '<b>', name, '</b></span></div>'])
+      else:
+        result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
+    elif red_color:
+      result = ''.join(['<div>', '<span style="color:red;">', name, '</span></div>'])
     else:
       result = name
     return result
@@ -118,8 +123,13 @@ class ServiceItem(QtGui.QStandardItem):
     @type item: L{ServiceItem}
     '''
     try:
-      service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
-      item.setText(cls.toHTML(service_class._type))
+      if service.isLocal and service.type:
+        service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
+        item.setText(cls.toHTML(service_class._type))
+      elif service.type:
+        item.setText(cls.toHTML(service.type))
+      else:
+        item.setText(cls.toHTML('unknown type', True))
       # removed tooltip for clarity !!!
 #      tooltip = ''
 #      tooltip = ''.join([tooltip, '<h4>', service_class._type, '</h4>'])
@@ -132,8 +142,8 @@ class ServiceItem(QtGui.QStandardItem):
 #      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
       item.setToolTip('')
     except:
-#      import traceback
-#      print traceback.format_exc()
+#       import traceback
+#       print traceback.format_exc()
       if not service.isLocal:
         tooltip = ''.join(['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
         item.setToolTip(''.join(['<div>', tooltip, '</div>']))
@@ -199,42 +209,46 @@ class ServiceModel(QtGui.QStandardItemModel):
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-  def updateModelData(self, services):
+  def updateModelData(self, services, added_srvs, updated_srvs, removed_srvs):
     '''
     Updates the service list model. New services will be inserted in sorting 
     order. Not available services removed from the model.
     @param services: The dictionary with services 
     @type services: C{dict(service name : L{master_discovery_fkie.ServiceInfo})}
+    @param added_srvs: the list of new services in the :service: list
+    @type added_srvs: list or set
+    @param updated_srvs: the list of updated services in the :service: list
+    @type updated_srvs: list or set
+    @param removed_srvs: the list of removed services in the :service: list
+    @type removed_srvs: list or set
     '''
-    service_names = services.keys()
     root = self.invisibleRootItem()
-    updated = []
 #    import os
 #    cputimes = os.times()
 #    cputime_init = cputimes[0] + cputimes[1]
-    # remove or update the items
+    # remove items from model
     for i in reversed(range(root.rowCount())):
       serviceItem = root.child(i)
-      if not serviceItem.service.name in service_names:
+      if serviceItem.service.name in removed_srvs:
         root.removeRow(i)
         try:
           del self.pyqt_workaround[serviceItem.service.name]
         except:
           pass
-      else:
-        serviceItem.service = services[serviceItem.service.name]
-        updated.append(serviceItem.service.name)
+      elif serviceItem.service.name in updated_srvs:
+        serviceItem.updateServiceView(root)
     # add new items in sorted order
-    for (name, service) in services.items():
-      if not service is None:
+    for srv_name in added_srvs:
+      try:
         doAddItem = True
+        service = services[srv_name]
         for i in range(root.rowCount()):
-          serviceItem = root.child(i)
-          if not name in updated:
+          if not srv_name in updated_srvs:
+            serviceItem = root.child(i)
             if cmp(serviceItem.service.name.lower(), service.name.lower()) > 0:
               service_item_row = ServiceItem.getItemList(service)
               root.insertRow(i, service_item_row)
-              self.pyqt_workaround[name] = service_item_row
+              self.pyqt_workaround[srv_name] = service_item_row
               doAddItem = False
               break
           else:
@@ -243,7 +257,11 @@ class ServiceModel(QtGui.QStandardItemModel):
         if doAddItem:
           service_item_row = ServiceItem.getItemList(service)
           root.appendRow(service_item_row)
-          self.pyqt_workaround[name] = service_item_row
+          self.pyqt_workaround[srv_name] = service_item_row
+      except:
+        pass
+#        import traceback
+#        print traceback.format_exc()
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update services ", cputime, ', service count:', len(services)

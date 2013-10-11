@@ -267,7 +267,7 @@ class SyncThread(threading.Thread):
 
             own_master = xmlrpclib.ServerProxy(self.localMasteruri)
             own_master_multi = xmlrpclib.MultiCall(own_master)
-            
+
             handler = []
             # sync the publishers
             publisher = []
@@ -289,7 +289,7 @@ class SyncThread(threading.Thread):
             for (topic, topictype, node, nodeuri) in publisher_to_register:
               own_master_multi.registerPublisher(node, topic, topictype, nodeuri)
               handler.append(('pub', topic, topictype, node, nodeuri))
-    
+
             # sync the subscribers
             subscriber = []
             subscriber_to_register = []
@@ -310,7 +310,7 @@ class SyncThread(threading.Thread):
             for (topic, topictype, node, nodeuri) in subscriber_to_register:
               own_master_multi.registerSubscriber(node, topic, topictype, nodeuri)
               handler.append(('sub', topic, topictype, node, nodeuri))
-            
+
             # sync the services
             services = []
             services_to_register = []
@@ -335,6 +335,9 @@ class SyncThread(threading.Thread):
             # exceute the multicall and update the current publicher, subscriber and services
             with self.__lock_info:
               self.__sync_info = None
+              self.__publisher = publisher
+              self.__subscriber = subscriber
+              self.__services = services
               socket.setdefaulttimeout(3)
               result = own_master_multi()
               # Horrible hack: the response from registerSubscriber() can contain a
@@ -348,29 +351,35 @@ class SyncThread(threading.Thread):
               # We create publisher locally as a hack, to get callback set up properly for already registered local publishers
               for h,(code, statusMessage, r) in zip(handler, result):
                 try:
+                  if h[0] == 'sub':
+                    if code == -1:
+                      rospy.logwarn("SyncThread[%s] topic subscription error: %s (%s), %s %s", self.masterInfo.name, h[1], h[2], str(code), str(statusMessage))
+                    else:
+                      rospy.loginfo("SyncThread[%s] topic subscribed: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                   if h[0] == 'sub' and code == 1 and len(r) > 0:
                     topicPub = rospy.Publisher(h[1], roslib.message.get_message_class(h[2]))
                     topicPub.unregister()
                     del topicPub
-                  if h[0] == 'sub':
-                    rospy.loginfo("SyncThread[%s] topic subscribed: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                   elif h[0] == 'pub':
-                    rospy.loginfo("SyncThread[%s] topic advertised: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
+                    if code == -1:
+                      rospy.logwarn("SyncThread[%s] topic advertise error: %s (%s), %s %s", self.masterInfo.name, h[1], h[2], str(code), str(statusMessage))
+                    else:
+                      rospy.loginfo("SyncThread[%s] topic advertised: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                   elif h[0] == 'usub':
                     rospy.loginfo("SyncThread[%s] topic unsubscribed: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                   elif h[0] == 'upub':
                     rospy.loginfo("SyncThread[%s] topic unadvertised: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                   elif h[0] == 'srv':
-                    rospy.loginfo("SyncThread[%s] service registered: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
+                    if code == -1:
+                      rospy.logwarn("SyncThread[%s] service registration error: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
+                    else:
+                      rospy.loginfo("SyncThread[%s] service registered: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                   elif h[0] == 'usrv':
                     rospy.loginfo("SyncThread[%s] service unregistered: %s, %s %s", self.masterInfo.name, h[1], str(code), str(statusMessage))
                 except:
                   import traceback
-                  rospy.logwarn("SyncThread[%s] ERROR while hack subscriber[%s]: %s", self.masterInfo.name, h[1], traceback.format_exc())
-              self.__publisher = publisher
-              self.__subscriber = subscriber
-              self.__services = services
-                
+                  rospy.logerr("SyncThread[%s] ERROR while hack subscriber[%s]: %s", self.masterInfo.name, h[1], traceback.format_exc())
+
               # set the last synchronization time
               self.masterInfo.timestamp = stamp
               self.masterInfo.timestamp_local = stamp_local

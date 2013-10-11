@@ -58,6 +58,7 @@ class ProgressQueue(QtCore.QObject):
   def __init__(self, progress_frame, progress_bar, progress_cancel_button):
     QtCore.QObject.__init__(self)
     self.__progress_queue = []
+    self.__running = False
     self._progress_frame = progress_frame
     self._progress_bar = progress_bar
     self._progress_cancel_button = progress_cancel_button
@@ -86,8 +87,9 @@ class ProgressQueue(QtCore.QObject):
     self._progress_bar.setMaximum(len(self.__progress_queue))
 
   def start(self):
-    if not self._progress_frame.isVisible() and self.__progress_queue:
+    if not self.__running and self.__progress_queue:
       self._progress_frame.setVisible(True)
+      self.__running = True
       self._progress_bar.setToolTip(self.__progress_queue[0].descr)
       dscr_len = self._progress_bar.size().width()/10
       self._progress_bar.setFormat(''.join(['%v/%m - ', self.__progress_queue[0].descr[0:dscr_len]]))
@@ -113,6 +115,7 @@ class ProgressQueue(QtCore.QObject):
       for thread in self.__progress_queue:
         thread.join(1)
       self._progress_frame.setVisible(False)
+      self.__running = False
       #'print "PG finished delete all..."
       self.__progress_queue = []
       #'print "PG finished delete all ok"
@@ -126,6 +129,7 @@ class ProgressQueue(QtCore.QObject):
     if res == QtGui.QMessageBox.Abort:
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
+      self.__running = False
     else:
       self._progress_thread_finished(id)
 
@@ -134,6 +138,7 @@ class ProgressQueue(QtCore.QObject):
 #      self.__progress_queue[self._progress_bar.value()].wait()
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
+      self.__running = False
     except:
       import traceback
       print traceback.format_exc()

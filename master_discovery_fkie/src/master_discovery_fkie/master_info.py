@@ -221,14 +221,18 @@ class NodeInfo(object):
 #  def services(self):
 #    del self._services
   
-  def copy(self):
+  def copy(self, new_masteruri=None):
     '''
     Creates a copy of this object and returns it.
     
+    :param new_masteruri: the masteruri of the new masterinfo
     :rtype: :mod:`master_discovery_fkie.master_info.NodeInfo` 
     '''
-    result = NodeInfo(self.name, self.masteruri)
+    if new_masteruri is None:
+      new_masteruri = self.masteruri
+    result = NodeInfo(self.name, new_masteruri)
     result.uri = ''.join([self.uri]) if not self.uri is None else None
+    result.masteruri = self.masteruri
     result.pid = self.pid
     result._publishedTopics = list(self._publishedTopics)
     result._subscribedTopics = list(self._subscribedTopics)
@@ -400,7 +404,7 @@ class ServiceInfo(object):
     '''the type of the service. (Default: ``None``)'''
     self.__service_class = None
     self.args = None
-    self.__serviceProvider = []
+    self._serviceProvider = []
 
   @property
   def name(self):
@@ -472,7 +476,7 @@ class ServiceInfo(object):
     
     :rtype: list of strings
     '''
-    return self.__serviceProvider
+    return self._serviceProvider
   
   @serviceProvider.setter
   def serviceProvider(self, name):
@@ -484,13 +488,13 @@ class ServiceInfo(object):
     :type name: str
     '''
     try:
-      self.__serviceProvider.index(name)
+      self._serviceProvider.index(name)
     except ValueError:
-      self.__serviceProvider.append(name)
+      self._serviceProvider.append(name)
 
   @serviceProvider.deleter
   def serviceProvider(self):
-    del self.__serviceProvider
+    del self._serviceProvider
 
 
   def get_service_class(self, allow_get_type=False):
@@ -559,6 +563,23 @@ class ServiceInfo(object):
                                              "Have you typed 'make' in [%s]?"%pkg)
     self.__service_class = service_class
     return service_class
+
+  def copy(self, new_masteruri=None):
+    '''
+    Creates a copy of this object and returns it.
+    
+    :param new_masteruri: the masteruri of the new masterinfo
+    :rtype: :mod:`master_discovery_fkie.master_info.NodeInfo` 
+    '''
+    if new_masteruri is None:
+      new_masteruri = self.masteruri
+    result = ServiceInfo(self.name, new_masteruri)
+    result.uri = self.uri
+    result.masteruri = self.masteruri
+    result.type = self.type
+    result.args = self.args
+    result._serviceProvider = list(self.serviceProvider)
+    return result
 
 
 class MasterInfo(object):
@@ -1144,13 +1165,172 @@ class MasterInfo(object):
       if srv_prov:
         services.append((name, srv_prov))
         serviceProvider.append((name, service.uri, str(service.masteruri), service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
-    
+
     # creates the nodes list
     for name, node in self.nodes.items():
       if name in nodes_last_check:
         nodes.append((name, node.uri, str(node.masteruri), node.pid, 'local' if node.isLocal else 'remote'))
 
     return (stamp, stamp_local, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
-  
+
 #  def __str__(self):
 #    return str(self.listedState())
+
+  def updateInfo(self, other):
+    '''
+    Updates the information about nodes, topics and services. If the other 
+    masterinfo is from the same ROS Master all informations are copied. If other
+    contains the info from remote ROS Master, only the informations for 
+    synchronized nodes, topics or services are copied.
+    :param other: the new master information object
+    :type other: MasterInfo
+    :return: The tuple of sets with added, changed and removed nodes, topics and services
+    :rtype: (nodes_added, nodes_changed, nodes_removed, topics_added, topics_changed, topics_removed, services_added, services_changed, services_removed)
+    '''
+    if other is None:
+      return
+
+    topics_added = set()
+    topics_changed = set()
+    topics_removed = set()
+
+    local_info = (self.masteruri == other.masteruri)
+    if local_info:
+      self.timestamp = other.timestamp
+      self.timestamp_local = other.timestamp_local
+      self.check_ts = other.check_ts
+      # update topics
+      own_topics_set = set(self.__topiclist.keys())
+      other_topics_set = set(other.__topiclist.keys())
+      topics_removed = own_topics_set - other_topics_set
+      for t in topics_removed:
+        del self.__topiclist[t]
+      common_topics = own_topics_set & other_topics_set
+      for t in common_topics:
+        own_topic = self.__topiclist[t]
+        other_topic = other.__topiclist[t]
+        if own_topic.type != other_topic.type:
+          topics_changed.add(t)
+          own_topic.type = other_topic.type
+        if set(own_topic._publisherNodes) ^ set(other_topic.publisherNodes):
+          topics_changed.add(t)
+          own_topic._publisherNodes = other_topic.publisherNodes
+        if set(own_topic._subscriberNodes) ^ set(other_topic.subscriberNodes):
+          topics_changed.add(t)
+          own_topic._subscriberNodes = other_topic.subscriberNodes
+      topics_added = other_topics_set - own_topics_set
+      for t in topics_added:
+        self.__topiclist[t] = other.__topiclist[t]
+
+    nodes_changed = set()
+    services_changed = set()
+
+    # UPDATE NODES
+    #get local nodes from other
+    own_remote_nodes = dict()
+    other_local_nodes = dict()
+    for nodename, n in self.nodes.items():
+      if n.masteruri == other.masteruri or self.masteruri == other.masteruri:
+        own_remote_nodes[nodename] = n
+    for nodename, n in other.nodes.items():
+      if n.isLocal or self.masteruri == other.masteruri:
+        other_local_nodes[nodename] = n
+    # remove nodes
+    own_remote_nodes_set = set(own_remote_nodes.keys())
+    other_local_nodes_set = set(other_local_nodes.keys())
+    nodes2remove = own_remote_nodes_set - other_local_nodes_set
+    if nodes2remove:
+      if local_info:
+        for n in nodes2remove:
+          del self.__nodelist[n]
+      else:
+        # if the node is in own master_info, but not in remote, replace only the masteruri. 
+        # perhaps, if will be removed soon by master_sync
+        for n in nodes2remove:
+          own_remote_nodes[n].masteruri = self.masteruri
+    # update nodes
+    nodes2update = own_remote_nodes_set & other_local_nodes_set
+    if nodes2update:
+      for n in nodes2update:
+        own_node = own_remote_nodes[n]
+        other_node = other_local_nodes[n]
+        if other_node.isLocal:
+          if own_node.pid != other_node.pid:
+            nodes_changed.add(n)
+            own_node.pid = other_node.pid
+          if own_node.uri != other_node.uri:
+            nodes_changed.add(n)
+            own_node.uri = other_node.uri
+          # update subscriptions of nodes
+          if set(own_node._publishedTopics) ^ set(other_node.publishedTopics):
+            nodes_changed.add(n)
+            own_node._publishedTopics = other_node.publishedTopics
+          if set(own_node._subscribedTopics) ^ set(other_node.subscribedTopics):
+            nodes_changed.add(n)
+            own_node._subscribedTopics = other_node.subscribedTopics
+          if set(own_node._services) ^ set(other_node.services):
+            nodes_changed.add(n)
+            own_node._services = other_node.services
+    #add new nodes
+    nodes_added = set()
+    if local_info:
+      nodes2add = other_local_nodes_set - own_remote_nodes_set
+      if nodes2add:
+        for n in nodes2add:
+          if not (n in self.__nodelist):
+            nodes_added.add(n)
+            self.__nodelist[n] = other_local_nodes[n].copy(self.masteruri)
+
+    # UPDATE SERVICES
+    own_remote_srvs = dict()
+    other_local_srvs = dict()
+    for srvname, s in self.services.items():
+      if s.masteruri == other.masteruri or self.masteruri == other.masteruri:
+        own_remote_srvs[srvname] = s
+    for srvname, s in other.services.items():
+      if s.isLocal or self.masteruri == other.masteruri:
+        other_local_srvs[srvname] = s
+    own_remote_srvs_set = set(own_remote_srvs.keys())
+    other_local_srvs_set = set(other_local_srvs.keys())
+    # remove services
+    srvs2remove = own_remote_srvs_set - other_local_srvs_set
+    if srvs2remove:
+      if local_info:
+        for s in srvs2remove:
+          del self.__servicelist[s]
+      else:
+        # if the service is in own master_info, but not in remote, replace only the masteruri. 
+        # perhaps, if will be removed soon by master_sync
+        for s in srvs2remove:
+          own_remote_srvs[s].masteruri = self.masteruri
+    # update services
+    srv2update = own_remote_srvs_set & other_local_srvs_set
+    if srv2update:
+      for s in srv2update:
+        own_srv = own_remote_srvs[s]
+        other_srv = other_local_srvs[s]
+        if other_srv.isLocal:
+          if own_srv.type != other_srv.type:
+            services_changed.add(s)
+            own_srv.type = other_srv.type
+          if own_srv.uri != other_srv.uri:
+            services_changed.add(s)
+            own_srv.uri = other_srv.uri
+          if own_srv.args != other_srv.args:
+            services_changed.add(s)
+            own_srv.args = other_srv.args
+          # update provider
+          if set(own_srv._serviceProvider) ^ set(other_srv.serviceProvider):
+            services_changed.add(s)
+            own_srv._serviceProvider = other_srv.serviceProvider
+    #add new services
+    srvs_added = set()
+    if local_info:
+      srv2add = other_local_srvs_set - own_remote_srvs_set
+      if srv2add:
+        for s in srv2add:
+          if not (s in self.__servicelist):
+            srvs_added.add(s)
+            self.__servicelist[s] = other_local_srvs[s].copy(self.masteruri)
+
+    return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)

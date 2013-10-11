@@ -427,20 +427,30 @@ class GroupItem(QtGui.QStandardItem):
         result.append(item.name)
     return result
 
-  def markNodesAsDuplicateOf(self, running_nodes):
+  def markNodesAsDuplicateOf(self, running_nodes, is_sync_running=False):
     '''
     While a synchronization same node on different hosts have the same name, the 
     nodes with the same on other host are marked.
-    @param running_nodes: A list with node names, which are running on other hosts.
-    @type running_nodes: C{[str]}
+    @param running_nodes: The dictionary with names of running nodes and their masteruri
+    @type running_nodes: C{dict(str:str)}
+    @param is_sync_running: If the master_sync is running, the nodes are marked 
+      as ghost nodes. So they are handled as running nodes, but has not run 
+      informations. This nodes are running on remote host, but are not
+      syncronized because of filter or errrors.
+    @type is_sync_running: bool
     '''
     ignore = ['/master_sync', '/master_discovery', '/node_manager']
     for i in range(self.rowCount()):
       item = self.child(i)
       if isinstance(item, GroupItem):
-        item.markNodesAsDuplicateOf(running_nodes)
+        item.markNodesAsDuplicateOf(running_nodes, is_sync_running)
       elif isinstance(item, NodeItem):
-        item.has_running = (item.node_info.uri is None and not item.name in ignore and item.name in running_nodes)
+        if is_sync_running:
+          item.is_ghost = (item.node_info.uri is None and (item.name in running_nodes and running_nodes[item.name] == item.node_info.masteruri))
+        else:
+          if item.is_ghost:
+            item.is_ghost = False
+          item.has_running = (item.node_info.uri is None and not item.name in ignore and (item.name in running_nodes and running_nodes[item.name] == item.node_info.masteruri))
 
   def updateIcon(self):
     if isinstance(self, HostItem):
@@ -449,6 +459,7 @@ class GroupItem(QtGui.QStandardItem):
     has_running = False
     has_off = False
     has_duplicate = False
+    has_ghosts = False
     for i in range(self.rowCount()):
       item = self.child(i)
       if isinstance(item, NodeItem):
@@ -459,10 +470,14 @@ class GroupItem(QtGui.QStandardItem):
           has_off = True
         elif item.state == NodeItem.STATE_RUN:
           has_running = True
+        elif item.state == NodeItem.STATE_GHOST:
+          has_ghosts = True
         elif item.state == NodeItem.STATE_DUPLICATE:
           has_duplicate = True
     if has_duplicate:
       self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
+    elif has_ghosts:
+      self.setIcon(QtGui.QIcon(':/icons/state_ghost.png'))
     elif has_running and has_off:
       self.setIcon(QtGui.QIcon(':/icons/state_part.png'))
     elif not has_running:
@@ -789,7 +804,8 @@ class NodeItem(QtGui.QStandardItem):
   STATE_OFF = 0
   STATE_RUN = 1
   STATE_WARNING = 2
-  STATE_DUPLICATE = 3
+  STATE_GHOST = 3
+  STATE_DUPLICATE = 4
 
   def __init__(self, node_info):
     '''
@@ -811,6 +827,7 @@ class NodeItem(QtGui.QStandardItem):
 #                  }
     self._cfgs = []
     self._std_config = None # it's config with empty name. for default proposals
+    self._is_ghost = False
     self._has_running = False
     self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     self._state = NodeItem.STATE_OFF
@@ -906,6 +923,29 @@ class NodeItem(QtGui.QStandardItem):
       if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
         self.parent_item.updateIcon()
 
+  @property
+  def is_ghost(self):
+    '''
+    Returns C{True}, if there are exists other runnig nodes with the same name. This 
+    variable must be set manually! 
+    @rtype: C{bool}
+    '''
+    return self._is_ghost
+
+  @is_ghost.setter
+  def is_ghost(self, state):
+    '''
+    Sets however other node with the same name is running (on other hosts) and
+    and the host showing this node the master_sync is running, but the node is
+    not synchronized.
+    '''
+    if self._is_ghost != state:
+      self._is_ghost = state
+      if self.has_configs() or self.is_running():
+        self.updateDispayedName()
+      if not self.parent_item is None and not isinstance(self.parent_item, HostItem):
+        self.parent_item.updateIcon()
+
   def data(self, role):
     if role == self.NAME_ROLE:
       return self.name
@@ -950,6 +990,11 @@ class NodeItem(QtGui.QStandardItem):
         tooltip = ''.join(['<h4>', self.node_info.name, ' is not local, however the ROS master on this host is discovered, but no information about this node received!', '</h4>'])
         tooltip = ''.join([tooltip, '</dl>'])
         self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+    elif self.is_ghost:
+      self._state = NodeItem.STATE_GHOST
+      self.setIcon(QtGui.QIcon(':/icons/state_ghost.png'))
+      tooltip = ''.join(['<h4>The node is running, but not synchronized because of filter or errors, see master_sync log.</h4>'])
+      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
     elif self.has_running:
       self._state = NodeItem.STATE_DUPLICATE
       self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
@@ -1222,7 +1267,6 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       return None
     host = (unicode(masteruri), unicode(address))
     local = (self.local_addr == host)
-
     # find the host item by address
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):
@@ -1249,7 +1293,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     # separate into different hosts
     hosts = dict()
     for (name, node) in nodes.items():
-      host = (node.masteruri, nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri))
+      addr = nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri)
+      host = (node.masteruri, addr)
       if not hosts.has_key(host):
         hosts[host] = dict()
       hosts[host][name] = node
@@ -1276,7 +1321,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     if not host_item is None:
       items = host_item.getNodeItems()
       params = [roslib.names.ns_join(item.name, 'capability_group') for item in items if not item.has_configs() and item.is_running() and not host_item.is_in_cap_group(item.name, '', '', 'SYSTEM')]
-      self.parameterHandler.requestParameterValues(host_item.masteruri, params)
+      if params:
+        self.parameterHandler.requestParameterValues(host_item.masteruri, params)
 
   def _on_param_values(self, masteruri, code, msg, params):
     '''
@@ -1496,20 +1542,25 @@ class NodeTreeModel(QtGui.QStandardItemModel):
         running_nodes[len(running_nodes):] = host.getRunningNodes()
     return running_nodes
 
-  def markNodesAsDuplicateOf(self, running_nodes):
+  def markNodesAsDuplicateOf(self, running_nodes, is_sync_running=False):
     '''
     If there are a synchronization running, you have to avoid to running the 
     node with the same name on different hosts. This method helps to find the 
     nodes with same name running on other hosts and loaded by a configuration.
     The nodes loaded by a configuration will be inform about a currently running
     nodes, so a warning can be displayed!
-    @param running_nodes: A list with node names, which are running on other hosts.
-    @type running_nodes: C{[str]}
+    @param running_nodes: The dictionary with names of running nodes and their masteruri
+    @type running_nodes: C{dict(str:str)}
+    @param is_sync_running: If the master_sync is running, the nodes are marked 
+      as ghost nodes. So they are handled as running nodes, but has not run 
+      informations. This nodes are running on remote host, but are not
+      syncronized because of filter or errrors.
+    @type is_sync_running: bool
     '''
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
       if not host is None: # should not occur
-        host.markNodesAsDuplicateOf(running_nodes)
+        host.markNodesAsDuplicateOf(running_nodes, is_sync_running)
 
   def updateHostDescription(self, masteruri, host, descr_type, descr_name, descr):
     '''

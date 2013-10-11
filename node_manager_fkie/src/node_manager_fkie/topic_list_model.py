@@ -57,7 +57,7 @@ class TopicItem(QtGui.QStandardItem):
   COL_TYPE = 3
 
 
-  def __init__(self, name, parent=None):
+  def __init__(self, name, topic=None, parent=None):
     '''
     Initialize the topic item.
     @param name: the topic name
@@ -65,50 +65,20 @@ class TopicItem(QtGui.QStandardItem):
     '''
     QtGui.QStandardItem.__init__(self, self.toHTML(name))
     self.parent_item = parent
-    self.__topic = TopicInfo(name)
-    self._first_call = True
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
     self._publish_thread = None
+    self.topic = TopicInfo(name) if topic is None else topic
 
 #  def __del__(self):
 #    print "delete TOPIC", self.__topic.name
 
-  @property
-  def topic(self):
+  def updateView(self):
     '''
-    Returns the TopicInfo instance of this topic.
-    @rtype: L{master_discovery_fkie.TopicInfo}
+    Updates the view
     '''
-    return self.__topic
-
-  @topic.setter
-  def topic(self, topic_info):
-    '''
-    Sets the TopicInfo and updates the view, if needed.
-    @type topic_info: L{master_discovery_fkie.TopicInfo}
-    '''
-    pubs_changed = False
-    subs_changed = False
-    type_changed = False
-    if self.__topic.publisherNodes != topic_info.publisherNodes:
-      pubs_changed = True
-      self.__topic.publisherNodes = topic_info.publisherNodes
-    if self.__topic.subscriberNodes != topic_info.subscriberNodes:
-      subs_changed = True
-      self.__topic.subscriberNodes = topic_info.subscriberNodes
-    if self.__topic.type != topic_info.type:
-      self.__topic.type = topic_info.type
-      type_changed = True
-    # update the tooltip and icon
-#    if pubs_changed or subs_changed:
-#      self.__topic = topic_info.copy()
-    if pubs_changed or self._first_call:
-      self.updatePublisherView()
-    if subs_changed or self._first_call:
-      self.updateSubscriberView()
-    if type_changed or self._first_call:
-      self.updateTypeView()
-    self._first_call = False
+    self.updatePublisherView()
+    self.updateSubscriberView()
+    self.updateTypeView()
 
   def updatePublisherView(self):
     '''
@@ -147,32 +117,33 @@ class TopicItem(QtGui.QStandardItem):
     if not self.parent_item is None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_TYPE)
       if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
-        cfg_col.setText(str(self.topic.type))
-        if not self.topic.type is None and not cfg_col.toolTip():
-          return
-          # removed tooltip for clarity !!!
-#          tooltip = ''
-          try:
-            mclass = roslib.message.get_message_class(self.topic.type)
-#            tooltip = str(mclass)
-            if not mclass is None:
-#              tooltip = str(mclass.__slots__)
-              for f in mclass.__slots__:
-                idx = mclass.__slots__.index(f)
-                idtype = mclass._slot_types[idx]
-                base_type = roslib.msgs.base_msg_type(idtype)
-                primitive = "unknown"
-                if base_type in roslib.msgs.PRIMITIVE_TYPES:
-                  primitive = "primitive"
-                else:
-                  try:
-                    list_msg_class = roslib.message.get_message_class(base_type)
-                    primitive = "class", list_msg_class.__slots__
-                  except ValueError:
-                    pass
-#                tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
-          except ValueError:
-            pass
+        cfg_col.setText(self.topic.type if self.topic.type and self.topic.type != 'None' else 'unknown type')
+        # removed tooltip for clarity!!!
+#         if not self.topic.type is None and not cfg_col.toolTip():
+#           return
+#           # removed tooltip for clarity !!!
+# #          tooltip = ''
+#           try:
+#             mclass = roslib.message.get_message_class(self.topic.type)
+# #            tooltip = str(mclass)
+#             if not mclass is None:
+# #              tooltip = str(mclass.__slots__)
+#               for f in mclass.__slots__:
+#                 idx = mclass.__slots__.index(f)
+#                 idtype = mclass._slot_types[idx]
+#                 base_type = roslib.msgs.base_msg_type(idtype)
+#                 primitive = "unknown"
+#                 if base_type in roslib.msgs.PRIMITIVE_TYPES:
+#                   primitive = "primitive"
+#                 else:
+#                   try:
+#                     list_msg_class = roslib.message.get_message_class(base_type)
+#                     primitive = "class", list_msg_class.__slots__
+#                   except ValueError:
+#                     pass
+# #                tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
+#           except ValueError:
+#             pass
 #          cfg_col.setToolTip(tooltip)
 
   def _on_wait_for_publishing(self):
@@ -222,7 +193,7 @@ class TopicItem(QtGui.QStandardItem):
       return QtGui.QStandardItem.data(self, role)
 
   @classmethod
-  def getItemList(self, name, root):
+  def getItemList(self, topic, root):
     '''
     Creates the list of the items from topic. This list is used for the 
     visualization of topic data as a table row.
@@ -234,7 +205,7 @@ class TopicItem(QtGui.QStandardItem):
     @rtype: C{[L{TopicItem} or L{PySide.QtGui.QStandardItem}, ...]}
     '''
     items = []
-    item = TopicItem(name, parent=root)
+    item = TopicItem(topic.name, topic, parent=root)
     items.append(item)
     pubItem = QtGui.QStandardItem()
 #    TopicItem.updatePublisherView(topic, pubItem)
@@ -300,61 +271,59 @@ class TopicModel(QtGui.QStandardItemModel):
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-  def updateModelData(self, topics):
+  def updateModelData(self, topics, added_topics, updated_topics, removed_topics):
     '''
     Updates the topics model. New topic will be inserted in sorting order. Not 
     available topics removed from the model.
     @param topics: The dictionary with topics 
     @type topics: C{dict(topic name : L{master_discovery_fkie.TopicInfo}, ...)}
+    @param added_topics: the list of new topics in the :topics: list
+    @type added_topics: list or set
+    @param updated_topics: the list of updated topics in the :topics: list
+    @type updated_topics: list or set
+    @param removed_topics: the list of removed topics in the :topics: list
+    @type removed_topics: list or set
     '''
-    topic_names = topics.keys()
     root = self.invisibleRootItem()
     updated = []
     #remove or update the existing items
     for i in reversed(range(root.rowCount())):
       topicItem = root.child(i)
-      if not topicItem.topic.name in topic_names:
+      if topicItem.topic.name in removed_topics:
         root.removeRow(i)
         try:
           del self.pyqt_workaround[topicItem.topic.name] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
         except:
           pass
-      else:
-        topicItem.topic = topics[topicItem.topic.name]
-        updated.append(topicItem.topic.name)
-    # insert other items in sorted order
+      elif topicItem.topic.name in updated_topics:
+        topicItem.updateView()
 #    cputimes = os.times()
 #    cputime_init = cputimes[0] + cputimes[1]
-    for (name, topic) in topics.items():
-#      doAddItem = True
-      self._update_topic(name, topic, updated)
+    # insert other items in sorted order
+    for topic_name in added_topics:
+      try:
+        doAddItem = True
+        topic = topics[topic_name]
+        for i in range(root.rowCount()):
+          if not topic_name in updated_topics:
+            topicItem = root.child(i)
+            if cmp(topicItem.topic.name.lower(), topic_name.lower()) > 0:
+              new_item_row = TopicItem.getItemList(topic, root)
+              root.insertRow(i, new_item_row)
+              self.pyqt_workaround[topic_name] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+              new_item_row[0].updateView()
+              doAddItem = False
+              break
+          else:
+            doAddItem = False
+            break
+        if doAddItem:
+          new_item_row = TopicItem.getItemList(topic, root)
+          root.appendRow(new_item_row)
+          self.pyqt_workaround[topic_name] = new_item_row[0]
+          new_item_row[0].updateView()
+      except:
+        pass
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update topic ", cputime, ", topic count:", len(topics)
-
-  def _update_topic(self, name, topic=None, updated=None):
-    new_item_row = None
-    root = self.invisibleRootItem()
-    doAddItem = True
-    for i in range(root.rowCount()):
-      topicItem = root.child(i)
-      if updated is None or not name in updated:
-        res = cmp(topicItem.topic.name.lower(), name.lower())
-        if res > 0:
-          new_item_row = TopicItem.getItemList(name, root)
-          root.insertRow(i, new_item_row)
-          if not topic is None:
-            new_item_row[0].topic = topic
-          self.pyqt_workaround[name] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
-          doAddItem = False
-          break
-      else:
-        doAddItem = False
-        break
-    if doAddItem:
-      new_item_row = TopicItem.getItemList(name, root)
-      root.appendRow(new_item_row)
-      if not topic is None:
-        new_item_row[0].topic = topic
-      self.pyqt_workaround[name] = new_item_row[0]
-    return new_item_row

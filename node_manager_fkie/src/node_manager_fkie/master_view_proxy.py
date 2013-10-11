@@ -89,6 +89,9 @@ class MasterViewProxy(QtGui.QWidget):
   request_xml_editor = QtCore.Signal(list, str)
   '''@ivar: the signal to open a xml editor dialog (list with files, search text)'''
 
+  stop_nodes_signal = QtCore.Signal(str, list)
+  '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
+
   def __init__(self, masteruri, parent=None):
     '''
     Creates a new master.
@@ -116,7 +119,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''@ivar: stored the question dialogs for changed files '''
     self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'master_discovery', 'master_sync', 'default_cfg', 'zeroconf']
     ''' @todo: detect the names of master_discovery and master_sync ndoes'''
-    
+
     self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog
     '''@ivar: stores the open EchoDialogs '''
     self.__last_info_type = None # {Node, Topic, Service}
@@ -128,7 +131,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
     self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
     self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
-    
+
     self.masterTab = QtGui.QWidget()
     ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MasterTab.ui')
     loadUi(ui_file, self.masterTab)
@@ -136,7 +139,7 @@ class MasterViewProxy(QtGui.QWidget):
     tabLayout.setContentsMargins(0, 0, 0, 0)
     tabLayout.addWidget(self.masterTab)
     self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton)
-    
+
     # setup the node view
     self.node_tree_model = NodeTreeModel(nm.nameres().address(self.masteruri), self.masteruri)
     self.node_tree_model.hostInserted.connect(self.on_host_inserted)
@@ -189,7 +192,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.servicesView.clicked.connect(self.on_service_clicked)
     self.masterTab.servicesView.setSortingEnabled(True)
 #    self.service_proxyModel.filterAcceptsRow = _filterServiceAcceptsRow
-    
+
     # setup the parameter view
     self.parameter_model = ParameterModel()
     self.parameter_model.itemChanged.connect(self._on_parameter_item_changed)
@@ -207,7 +210,7 @@ class MasterViewProxy(QtGui.QWidget):
     sm = self.masterTab.parameterView.selectionModel()
     sm.selectionChanged.connect(self.on_parameter_selection_changed)
     self.masterTab.parameterView.setSortingEnabled(True)
-    
+
 #    self.parameter_proxyModel.filterAcceptsRow = _filterParameterAcceptsRow
 #    self.masterTab.parameterView.activated.connect(self.on_service_activated)
 
@@ -274,7 +277,7 @@ class MasterViewProxy(QtGui.QWidget):
     screen_menu.addAction(self.showAllScreensAct)
     self.masterTab.ioButton.setMenu(screen_menu)
     self.masterTab.ioButton.setEnabled(True)
-    
+
     # create log menu
     log_menu = QtGui.QMenu(self)
     self.logCopyPathAct = QtGui.QAction("&Copy log path to clipboard", self, statusTip="Copy log path to clipboard", triggered=self.on_log_path_copy)
@@ -371,64 +374,38 @@ class MasterViewProxy(QtGui.QWidget):
     @type master_info: L{master_discovery_fkie.msg.MasterInfo}
     '''
     try:
-      update_nodes = False
-      update_others = False
-      if (master_info.masteruri == self.masteruri):
-        self.mastername = master_info.mastername
-        # store process pid's of remote nodes
-        nodepids = []
-        if not self.__master_info is None:
-          nodepids = [(n.name, n.pid, n.uri, n.masteruri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
-        self.__master_info = master_info
-        # restore process pid's of remote nodes
-        if not self.__master_info is None:
-          for nodename, pid, uri, muri in nodepids:
-            node = self.__master_info.getNode(nodename)
-            if not node is None:
-              node.pid = pid
-              node.masteruri = muri
-        # request master info updates for new remote nodes
-        nodepids2 = [(n.name, n.pid, n.uri, n.masteruri) for nodename, n in self.__master_info.nodes.items() if not n.isLocal]
-        node2update = list(set(nodepids2)-set(nodepids))
-        hosts2update = list(set([nm.nameres().getHostname(uri) for nodename, pid, uri, muri in node2update]))
-        for host in hosts2update:
-          self.updateHostRequest.emit(host)
-        update_nodes = True
-        update_others = True
+      update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
+      if self.__master_info is None:
+        if (master_info.masteruri == self.masteruri):
+          self.__master_info = master_info
+          update_result[0].update(self.__master_info.node_names)
+          update_result[3].update(self.__master_info.topic_names)
+          update_result[6].update(self.__master_info.service_names)
       else:
-        if not (self.__master_info is None or master_info is None):
-          # update the process id of the remote nodes
-          for nodename, node in master_info.nodes.items():
-            n = self.__master_info.getNode(nodename)
-            if not n is None and n.pid != node.pid and not n.isLocal and node.isLocal:
-              update_nodes = True
-              n.pid = node.pid
-          # update the service information of the remote services
-          for servicename, service in master_info.services.items():
-            s = self.__master_info.getService(servicename)
-            if not s is None and (s.uri != service.uri or s.type != service.type ) and s.masteruri == service.masteruri:
-              update_others = True
-              s.uri = service.uri
-              s.type = service.type
-          # remove remote node information, if node is not more running
-          for nodename, node in self.__master_info.nodes.items():
-            if not node.isLocal and node.masteruri == master_info.masteruri and master_info.getNode(nodename) is None:
-              node.masteruri = self.masteruri
-
+        update_result = self.__master_info.updateInfo(master_info)
+#         print "MINFO", self.__master_info.listedState()
+      try:
+        # request the info of new remote nodes
+        hosts2update = set([nm.nameres().getHostname(self.__master_info.getNode(nodename).uri) for nodename in update_result[0]])
+        hosts2update.update([nm.nameres().getHostname(self.__master_info.getService(nodename).uri) for nodename in update_result[6]])
+        for host in hosts2update:
+          if host != nm.nameres().getHostname(self.masteruri):
+            self.updateHostRequest.emit(host)
+      except:
+        pass
 #      cputimes = os.times()
 #      cputime_init = cputimes[0] + cputimes[1]
-      if update_nodes:
-#        print "    updateRunningNodesInModel", time.time()
+      # update nodes in the model
+      if update_result[0] or update_result[1] or update_result[2]:
         self.updateRunningNodesInModel(self.__master_info)
-#        print "    updateRunningNodesInModel total", time.time()
-      if update_others:
-#        print "    updateTopicsListModel", time.time(), "topic count:", len(self.__master_info.topics)
-        self.updateTopicsListModel(self.__master_info)
-#        print "    updateServiceListModel", time.time(), "services count:", len(self.__master_info.services)
-        self.updateServiceListModel(self.__master_info)
-#        print "    updateDefaultConfigs", time.time()
+      # Updates the topic view based on the current master information.
+      if update_result[3] or update_result[4] or update_result[5]:
+        self.topic_model.updateModelData(self.__master_info.topics, update_result[3], update_result[4], update_result[5])
+      # Updates the service view based on the current master information.
+      if update_result[6] or update_result[7] or update_result[8]:
+        self.service_model.updateModelData(self.__master_info.services, update_result[6], update_result[7], update_result[8])
+        # update the default configuration
         self.updateDefaultConfigs(self.__master_info)
-#        print "    updateDefaultConfigs", time.time()
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
@@ -450,7 +427,7 @@ class MasterViewProxy(QtGui.QWidget):
     @param running_nodes: The list with names of running nodes
     @type running_nodes: C{[str]}
     '''
-    self.node_tree_model.markNodesAsDuplicateOf(running_nodes)
+    self.node_tree_model.markNodesAsDuplicateOf(running_nodes, (not self.master_info is None and self.master_info.getNodeEndsWith('master_sync')))
 
   def getRunningNodesIfSync(self):
     '''
@@ -468,14 +445,14 @@ class MasterViewProxy(QtGui.QWidget):
     Returns the list with all running nodes, which are running (has process) on this host.
     The nodes registered on this ROS master, but running on remote hosts are not 
     returned.
-    @return running_nodes: The list with names of running nodes
-    @rtype running_nodes: C{[str]}
+    @return running_nodes: The dictionary with names of running nodes and their masteruri
+    @rtype running_nodes: C{dict(str:str)}
     '''
-    result = []
+    result = dict()
     if not self.master_info is None:
       for name, node in self.master_info.nodes.items():
         if node.isLocal:
-          result.append(node.name)
+          result[node.name] = self.master_info.masteruri
     return result
 
 
@@ -542,24 +519,6 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.saveButton.setEnabled(len(self.launchfiles) > 1)
     # enable the close button only for local configurations
     self.masterTab.closeCfgButton.setEnabled(len([path for path, cfg in self.__configs.items() if (isinstance(path, tuple) and path[2] == self.masteruri) or not isinstance(path, tuple)]) > 0)
-
-  def updateTopicsListModel(self, master_info):
-    '''
-    Updates the topic view based on the current master information.
-    @param master_info: the mater information object
-    @type master_info: L{master_discovery_fkie.msg.MasterInfo}
-    '''
-    if not master_info is None:
-      self.topic_model.updateModelData(master_info.topics)
-
-  def updateServiceListModel(self, master_info):
-    '''
-    Updates the service view based on the current master information.
-    @param master_info: the mater information object
-    @type master_info: L{master_discovery_fkie.msg.MasterInfo}
-    '''
-    if not master_info is None:
-      self.service_model.updateModelData(master_info.services)
 
   def hasLaunchfile(self, path):
     '''
@@ -1010,7 +969,15 @@ class MasterViewProxy(QtGui.QWidget):
           text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
           text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
           text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
-          if node.node_info.masteruri != self.masteruri and not node.node_info.uri is None:
+          if node.is_ghost:
+            if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
+              text = ''.join([text, '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'])
+            else:
+              text = ''.join([text, '<dt><font color="#FF9900"><b>The node is running on remote host, but is not synchronized, because of filter or errors while sync, see log of <i>master_sync</i></b></font></dt>'])
+              text = ''.join([text, '<dt><font color="#FF9900"><i>Are you use the same ROS packages?</i></font></dt>'])
+          if node.has_running and node.node_info.pid is None and node.node_info.uri is None:
+            text = ''.join([text, '<dt><font color="#FF9900"><b>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'])
+          if not node.node_info.uri is None and node.node_info.masteruri != self.masteruri:
             text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
           if node.node_info.pid is None and not node.node_info.uri is None:
             if not node.node_info.isLocal:
@@ -1118,11 +1085,15 @@ class MasterViewProxy(QtGui.QWidget):
         text = ''.join([text, '<h4>', self._href_from_svrtype(service_class._type), '</h4>'])
         text = ''.join([text, '<b><u>', 'Request', ':</u></b>'])
         text = ''.join([text, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
-  
+
         text = ''.join([text, '<b><u>', 'Response', ':</u></b>'])
         text = ''.join([text, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
       except:
-        pass
+        text = ''.join([text, '<h4><font color=red>', 'Unknown service type', '</font></h4>'])
+        if service.isLocal:
+          text = ''.join([text, '<font color=red>', 'Unable to communicate with service, is provider node running?', '</font>'])
+        else:
+          text = ''.join([text, '<font color=red>', 'Try to refresh <b>all</b> hosts. Is provider node running?', '</font>'])
       info_text = ''.join(['<div>', text, '</div>'])
       if self.__last_info_type == 'Service' and (self.__last_info_text != info_text or force_emit):
         self.__last_info_text = info_text
@@ -1284,9 +1255,10 @@ class MasterViewProxy(QtGui.QWidget):
     cfg_choices = dict()
     cfg_nodes = dict()
     for node in nodes:
-      if node.pid is None or (not node.pid is None and force):
+      # do not start node, if it is in ingnore list and multiple nodes are selected
+      if (node.pid is None or (not node.pid is None and force)) and not node.is_ghost:
         # test for duplicate nodes
-        if node.uri is None and self.node_tree_model.isDuplicateNode(node.name):
+        if node.uri is None and node.has_running:
           ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['Some nodes, e.g. ', node.name, ' are already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
           if ret == QtGui.QMessageBox.No:
             return
@@ -1424,6 +1396,7 @@ class MasterViewProxy(QtGui.QWidget):
   def stop_node(self, node, force=False):
     if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
       try:
+        rospy.loginfo("Stop node '%s'[%s]", str(node.name), str(node.uri))
         #'print "STOP set timeout", node
         socket.setdefaulttimeout(10)
         #'print "STOP create xmlrpc", node
@@ -1442,8 +1415,12 @@ class MasterViewProxy(QtGui.QWidget):
                               str(e))
       finally:
         socket.setdefaulttimeout(None)
+    elif not node is None and node.is_ghost:
+      #since for ghost nodes no info is available, emit a signal to handle the
+      # stop message in other master_view_proxy
+      self.stop_nodes_signal.emit(node.masteruri, [node.name])
     return True
-    
+
   def stop_nodes(self, nodes):
     '''
     Internal method to stop a list with nodes

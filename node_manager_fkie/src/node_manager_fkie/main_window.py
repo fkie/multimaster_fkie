@@ -394,6 +394,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].remove_config_signal.connect(self.on_remove_config)
       self.masters[masteruri].description_signal.connect(self.on_description_update)
       self.masters[masteruri].request_xml_editor.connect(self._editor_dialog_open)
+      self.masters[masteruri].stop_nodes_signal.connect(self.on_stop_nodes)
       self.stackedLayout.addWidget(self.masters[masteruri])
       if masteruri == self.getMasteruri():
         if self.default_load_launch:
@@ -422,7 +423,7 @@ class MainWindow(QtGui.QMainWindow):
     for key, value in self.masters.items():
       if nm.nameres().getHostname(key) == host and not value.master_state is None:
         self._update_handler.requestMasterInfo(value.master_state.uri, value.master_state.monitoruri)
-        
+
   def on_host_description_updated(self, masteruri, host, descr):
     self.master_model.updateDescription(nm.nameres().mastername(masteruri, host), descr)
 
@@ -603,7 +604,8 @@ class MainWindow(QtGui.QMainWindow):
 #          print master.master_state.name, cputime
           if not master.master_info is None:
             if self._history_selected_robot == minfo.mastername and self._history_selected_robot == master.mastername and self.currentMaster != master:
-              self.setCurrentMaster(master)
+              if not self.currentMaster is None and not self.currentMaster.is_local:
+                self.setCurrentMaster(master)
             elif nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
               if new_info:
                 has_discovery_service = self.hasDiscoveryService(minfo)
@@ -616,9 +618,10 @@ class MainWindow(QtGui.QMainWindow):
             if master.master_info.masteruri == minfo.masteruri:
               self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
           self.capabilitiesTable.updateState(minfo.masteruri, minfo)
-          self.updateDuplicateNodes()
         except Exception, e:
           rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, str(e))
+      # update the duplicate nodes
+      self.updateDuplicateNodes()
       # update the buttons, whether master is synchronized or not
       if not self.currentMaster is None and not self.currentMaster.master_info is None and not self.restricted_to_one_master:
         self.ui.syncButton.setEnabled(True)
@@ -765,7 +768,8 @@ class MainWindow(QtGui.QMainWindow):
           if not self.currentMaster.master_info is None:
             node = self.currentMaster.getNode('/master_sync')
             if node:
-              ret = QtGui.QMessageBox.question(self, 'Start synchronization','Start the synchronization using loaded configuration?\n `No` starts the master_sync with default parameter.', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+              def_cfg_info = '\nNote: default_cfg parameter will be changed!' if node[0].has_default_cfgs(node[0].cfgs) else ''
+              ret = QtGui.QMessageBox.question(self, 'Start synchronization','Start the synchronization using loaded configuration?\n\n `No` starts the master_sync with default parameter.%s'%def_cfg_info, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
               if ret == QtGui.QMessageBox.Yes:
                 self.currentMaster.start_nodes([node[0]])
                 return
@@ -894,11 +898,10 @@ class MainWindow(QtGui.QMainWindow):
 
   def updateDuplicateNodes(self):
     # update the duplicate nodes
-    running_nodes = []
+    running_nodes = dict()
     for uri, m in self.masters.items():
       if not m.master_state is None and m.master_state.online:
-#        running_nodes[len(running_nodes):] = m.getRunningNodesIfSync()
-        running_nodes[len(running_nodes):] = m.getRunningNodesIfLocal()
+        running_nodes.update(m.getRunningNodesIfLocal())
     for uri, m in self.masters.items():
       if not m.master_state is None:
         m.markNodesAsDuplicateOf(running_nodes)
