@@ -450,7 +450,7 @@ class GroupItem(QtGui.QStandardItem):
         else:
           if item.is_ghost:
             item.is_ghost = False
-          item.has_running = (item.node_info.uri is None and not item.name in ignore and (item.name in running_nodes and running_nodes[item.name] == item.node_info.masteruri))
+          item.has_running = (item.node_info.uri is None and not item.name in ignore and (item.name in running_nodes))
 
   def updateIcon(self):
     if isinstance(self, HostItem):
