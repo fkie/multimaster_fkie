@@ -103,6 +103,7 @@ class MainWindow(QtGui.QMainWindow):
     self._add_user_to_combo(getpass.getuser())
     self.ui.userComboBox.editTextChanged.connect(self.on_user_changed)
     self.ui.masterInfoFrame.setEnabled(False)
+    self.ui.infoButton.clicked.connect(self.on_info_clicked)
     self.ui.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
     self.ui.runButton.clicked.connect(self.on_run_node_clicked)
     self.ui.rxconsoleButton.clicked.connect(self.on_show_rxconsole_clicked)
@@ -662,6 +663,15 @@ class MainWindow(QtGui.QMainWindow):
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Handling of master info frame         %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  def on_info_clicked(self):
+    text = ''.join(['<dl>'])
+    text = ''.join([text, '<dt><b>Maintainer</b>: ', 'Alexander Tiderko ',  '<font color=gray>alexander.tiderko@gmail.com</font>', '</dt>'])
+    text = ''.join([text, '<dt><b>Author</b>: ', 'Alexander Tiderko, Timo Roehling', '</dt>'])
+    text = ''.join([text, '<dt><b>License</b>: ', 'BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License', '</dt>'])
+    text = ''.join([text, '</dl>'])
+    text = ''.join([text, '<dt><b>Version</b>: ', nm.__version__, ' (', nm.__date__,')', '</dt>'])
+    QtGui.QMessageBox.about(self, 'About Node Manager', text)
 
   def on_refresh_master_clicked(self):
     if not self.currentMaster is None:
