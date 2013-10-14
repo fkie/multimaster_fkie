@@ -514,7 +514,7 @@ p, li { white-space: pre-wrap; }
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="syncButton">
+            <widget class="QPushButton" name="syncButton">
              <property name="minimumSize">
               <size>
                <width>40</width>
@@ -528,7 +528,7 @@ p, li { white-space: pre-wrap; }
               </size>
              </property>
              <property name="toolTip">
-              <string>Enables / Disables the synchronisation to other ROS master</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Opens a sync dialog with additional sync options&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="whatsThis">
               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -549,17 +549,17 @@ p, li { white-space: pre-wrap; }
               <iconset resource="GUI.qrc">
                <normaloff>:/icons/crystal_clear_sync.png</normaloff>:/icons/crystal_clear_sync.png</iconset>
              </property>
+             <property name="shortcut">
+              <string>Ctrl+S</string>
+             </property>
              <property name="checkable">
               <bool>true</bool>
              </property>
              <property name="checked">
               <bool>false</bool>
              </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonIconOnly</enum>
+             <property name="flat">
+              <bool>true</bool>
              </property>
             </widget>
            </item>

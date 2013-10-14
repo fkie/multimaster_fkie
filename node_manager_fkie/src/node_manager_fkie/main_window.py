@@ -107,12 +107,12 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.runButton.clicked.connect(self.on_run_node_clicked)
     self.ui.rxconsoleButton.clicked.connect(self.on_show_rxconsole_clicked)
     self.ui.rxgraphButton.clicked.connect(self.on_show_rxgraph_clicked)
-    self.ui.syncButton.released.connect(self.on_sync_released)
+    self.ui.syncButton.released.connect(self.on_sync_dialog_released)
     # creates a default config menu
-    sync_menu = QtGui.QMenu(self)
-    self.syncDialogAct = QtGui.QAction("&Open sync dialog", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_S), statusTip="Opens a sync dialog with additional sync options", triggered=self.on_sync_dialog_released)
-    sync_menu.addAction(self.syncDialogAct)
-    self.ui.syncButton.setMenu(sync_menu)
+#    sync_menu = QtGui.QMenu(self)
+#    self.syncDialogAct = QtGui.QAction("&Open sync dialog", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_S), statusTip="Opens a sync dialog with additional sync options", triggered=self.on_sync_dialog_released)
+#    sync_menu.addAction(self.syncDialogAct)
+#    self.ui.syncButton.setMenu(sync_menu)
 
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run.png")
     self.setWindowIcon(self.mIcon)
@@ -723,7 +723,7 @@ class MainWindow(QtGui.QMainWindow):
     master = self.currentMaster
     if not masteruri is None:
       master = self.getMaster(masteruri, False)
-    if not master is None:
+    if not master is None and self.ui.syncButton.isChecked():
       self._sync_dialog.resize(350,160)
       if self._sync_dialog.exec_():
         try:
@@ -744,7 +744,12 @@ class MainWindow(QtGui.QMainWindow):
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start sync error", 
                             "Error while start sync node",
                             str(traceback.format_exc())).exec_()
-          
+      else:
+        self.ui.syncButton.setChecked(False)
+    elif not master is None and not master.master_info is None:
+      node = master.master_info.getNodeEndsWith('master_sync')
+      if not node is None:
+        master.stop_nodes([node])
     self.ui.syncButton.setEnabled(True)
 
   def on_sync_released(self, external_call=False):
@@ -755,8 +760,8 @@ class MainWindow(QtGui.QMainWindow):
     if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
       if external_call:
         self.on_sync_dialog_released()
-      else:
-        self.ui.syncButton.showMenu()
+#      else:
+#        self.ui.syncButton.showMenu()
       if not self.currentMaster.master_info is None:
         node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
         self.ui.syncButton.setChecked(not node is None)
