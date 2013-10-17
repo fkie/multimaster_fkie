@@ -2,6 +2,33 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.7 (2013-10-17)
+------------------
+* node_manager_fkie: fixed start button description
+* node_manager_fkie: added an info button
+* node_manager_fkie: changed calling of sync dialog
+* node_manager_fkie: showing duplicate nodes fixed
+* multimaster_fkie: fixed problems with resolving service types while sync
+  while synchronization not all topics and services can be synchronized
+  because of filter or errors. A detection for this case was added.
+* node_manager_fkie: added user selection for remote hosts
+* node_manager_fkie: fixed some paths
+* node_manager_fkie: added SAVE and LOAD buttons to parameter dialog
+* node_manager_fkie: fixed start nodes in multimaster on the same host
+* node_manager_fkie: replaced the sync checkbox in masterlist by a sync icon
+* node_manager_fkie: fixed filtering topics, services and parameter
+* node_manager_fkie: buttons resized
+* node_manager_fkie: added missed start parameter to master_sync
+* node_manager_fkie: removed some unneeded borders in gui
+* node_manager_fkie: fix loading launch file
+* node_manager_fkie: fixed parameter groups
+* node_manager_fkie: added new interface of dynamic_reconfigure
+* node_manager_fkie: show node_manager window maximized, if the screen is small
+* node_manager_fkie: fixed raise conditions
+* node_manager_fkie: added filter to selected dialog and changed selection behavior
+* node_manager_fkie: fix node matching
+* node_manager_fkie: fixed absolute path in env of the launch file
+
 0.3.6 (2013-09-17)
 ------------------
 * node_manager_fkie: added a notifiaction, if `use_sim_time` parameter is set to true

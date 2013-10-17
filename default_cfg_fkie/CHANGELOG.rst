@@ -2,6 +2,10 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.7 (2013-10-17)
+------------------
+* default_cfg_fkie: fixed parameter groups
+
 0.3.6 (2013-09-17)
 ------------------
 * default_cfg_fkie: changed the intepretation of the group description

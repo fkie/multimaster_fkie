@@ -2,6 +2,9 @@
 Changelog for package multimaster_msgs_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.7 (2013-10-17)
+------------------
+
 0.3.6 (2013-09-17)
 ------------------
 * multimaster_fkie: added SyncServiceInfo message to detect changes on services

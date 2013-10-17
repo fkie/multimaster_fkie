@@ -2,6 +2,12 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.7 (2013-10-17)
+------------------
+* multimaster_fkie: fixed problems with resolving service types while sync
+  while synchronization not all topics and services can be synchronized
+  because of filter or errors. A detection for this case was added.
+
 0.3.6 (2013-09-17)
 ------------------
 * multimaster_fkie: added SyncServiceInfo message to detect changes on services
