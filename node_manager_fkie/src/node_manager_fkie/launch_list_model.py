@@ -73,11 +73,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
 
   def _getRootItems(self):
     result = list(self.load_history)
-    for p in self.root_paths:
-      path = p
-      if os.path.basename(p) == 'src':
-        path = os.path.dirname(p)
-      result.append(path)
+    result.extend(self.root_paths)
     return result
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -331,6 +327,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
     for file in dirlist:
       item = os.path.normpath(''.join([path, '/', file]))
       pathItem = os.path.basename(item)
+      if pathItem == 'src':
+        pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
       pathId = self._identifyPath(item)
       if (pathId != LaunchListModel.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
@@ -355,6 +353,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
     for file in dirlist:
       item = os.path.normpath(''.join([path, '/', file])) if not path is None else file
       pathItem = os.path.basename(item)
+      if pathItem == 'src':
+        pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
       pathId = self._identifyPath(item)
       if (pathId != LaunchListModel.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
