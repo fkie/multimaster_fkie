@@ -57,7 +57,7 @@ class EchoDialog(QtGui.QDialog):
   dialog was closed.
   '''
   
-  msg_signal = QtCore.Signal(str)
+  msg_signal = QtCore.Signal(str, bool)
   '''
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
@@ -157,12 +157,13 @@ class EchoDialog(QtGui.QDialog):
     self.__msg_class = roslib.message.get_message_class(type)
     if not self.__msg_class:
       raise Exception("Cannot load message class for [%s]. Are your messages built?"%type)
-    self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
-    self.msg_signal.connect(self._append_message)
-    
+
     self.print_hz_timer = QtCore.QTimer()
     self.print_hz_timer.timeout.connect(self._on_calc_hz)
     self.print_hz_timer.start(1000)
+
+    self.msg_signal.connect(self._append_message)
+    self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
 
 #    print "======== create", self.objectName()
 #
@@ -237,9 +238,9 @@ class EchoDialog(QtGui.QDialog):
       self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
 
   def _msg_handle(self, data):
-    self.msg_signal.emit(roslib.message.strify_message(data, field_filter=self.field_filter_fn))
+    self.msg_signal.emit(roslib.message.strify_message(data, field_filter=self.field_filter_fn), (data._connection_header['latching'] != '0'))
 
-  def _append_message(self, msg):
+  def _append_message(self, msg, latched):
     '''
     Adds a label to the dialog's layout and shows the given text.
     @param msg: the text to add to the dialog
@@ -263,7 +264,7 @@ class EchoDialog(QtGui.QDialog):
     self.message_count += 1
     # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
     if self._last_received_ts != 0:
-      if current_time - self._last_received_ts < 1.0 / self.receiving_hz:
+      if not latched and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
         return 
     self._last_received_ts = current_time
 
