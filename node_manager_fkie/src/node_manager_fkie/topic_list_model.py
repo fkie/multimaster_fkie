@@ -307,7 +307,7 @@ class TopicModel(QtGui.QStandardItemModel):
         for i in range(root.rowCount()):
           if not topic_name in updated_topics:
             topicItem = root.child(i)
-            if cmp(topicItem.topic.name.lower(), topic_name.lower()) > 0:
+            if cmp(topicItem.topic.name, topic_name) > 0:
               new_item_row = TopicItem.getItemList(topic, root)
               root.insertRow(i, new_item_row)
               self.pyqt_workaround[topic_name] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass

@@ -245,7 +245,7 @@ class ServiceModel(QtGui.QStandardItemModel):
         for i in range(root.rowCount()):
           if not srv_name in updated_srvs:
             serviceItem = root.child(i)
-            if cmp(serviceItem.service.name.lower(), service.name.lower()) > 0:
+            if cmp(serviceItem.service.name, service.name) > 0:
               service_item_row = ServiceItem.getItemList(service)
               root.insertRow(i, service_item_row)
               self.pyqt_workaround[srv_name] = service_item_row
