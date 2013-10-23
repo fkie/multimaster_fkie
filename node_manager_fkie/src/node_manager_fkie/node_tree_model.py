@@ -1167,9 +1167,9 @@ class NodeItem(QtGui.QStandardItem):
     Compares the name of the node.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.name.lower() == item.lower()
+      return self.name == item
     elif not (item is None):
-      return self.name.lower() == item.name.lower()
+      return self.name == item.name
     return False
 
   def __gt__(self, item):
@@ -1177,9 +1177,9 @@ class NodeItem(QtGui.QStandardItem):
     Compares the name of the node.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return self.name.lower() > item.lower()
+      return self.name > item
     elif not (item is None):
-      return self.name.lower() > item.name.lower()
+      return self.name > item.name
     return False
 
 
