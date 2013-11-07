@@ -743,7 +743,7 @@ class MainWindow(QtGui.QMainWindow):
             self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
                                            'Transfer sync interface '+str(host), 
                                            nm.starter().transfer_files, 
-                                           (str(host), self._sync_dialog.interface_filename), False, master.current_user)
+                                           (str(host), self._sync_dialog.interface_filename, False, master.current_user))
           self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
                                          'Start sync on '+str(host), 
                                          nm.starter().runNodeWithoutConfig, 

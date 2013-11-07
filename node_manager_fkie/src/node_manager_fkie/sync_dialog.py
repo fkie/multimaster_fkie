@@ -52,6 +52,8 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
     self.commentStart = QtCore.QRegExp("#")
     self.commentEnd = QtCore.QRegExp("\n")
     self.commentFormat = QtGui.QTextCharFormat()
+    self.commentFormat.setFontItalic(True)
+    self.commentFormat.setForeground(QtCore.Qt.darkGray)
     f = QtGui.QTextCharFormat()
     r = QtCore.QRegExp()
     r.setMinimal(True)
@@ -79,9 +81,6 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
 #    for attr in attrList:
 #      r.setPattern(attr)
 #      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
-
-    self.commentFormat.setFontItalic(True)
-    self.commentFormat.setForeground(QtCore.Qt.darkGray)
 
 
   def highlightBlock(self, text):

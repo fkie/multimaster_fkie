@@ -37,7 +37,9 @@ from python_qt_binding import QtCore
 import roslib
 import rospy
 from xml_highlighter import XmlHighlighter
+from yaml_highlighter import YamlHighlighter
 
+from master_discovery_fkie.common import resolve_url
 from common import package_name
 
 class Editor(QtGui.QTextEdit):
@@ -65,7 +67,8 @@ class Editor(QtGui.QTextEdit):
     self.setFontFamily("courier new")
     self.setProperty("backgroundVisible", True)
     self.regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
-                        QtCore.QRegExp("\\bfile\\b")]
+                        QtCore.QRegExp("\\bfile\\b"), QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                        QtCore.QRegExp("\\bvalue=.*package:\/\/\\b")]
     self.filename = filename
     if self.filename:
       file = QtCore.QFile(filename);
@@ -122,10 +125,16 @@ class Editor(QtGui.QTextEdit):
         if len(script) == 2 and (script[0] == 'find'):
           pkg = roslib.packages.get_pkg_dir(script[1])
           return os.path.normpath(''.join([pkg, '/', path[endIndex+1:]]))
-    elif len(path) > 0 and path[0] != '/':
-      return os.path.normpath(''.join([self.path, '/', path]))
+    else:
+      try:
+        return resolve_url(path)
+      except ValueError, e:
+        if len(path) > 0 and path[0] != '/':
+          return os.path.normpath(''.join([self.path, '/', path]))
+#    elif len(path) > 0 and path[0] != '/':
+#      return os.path.normpath(''.join([self.path, '/', path]))
     return os.path.normpath(path)
-    
+
   def index(self, text):
     '''
     Searches in the given text for key indicates the including of a file and 
@@ -139,6 +148,11 @@ class Editor(QtGui.QTextEdit):
       index = pattern.indexIn(text)
       if index > -1:
         return index
+    try:
+      print path
+      return resolve_url(path)
+    except:
+      pass
     return -1
 
   def includedFiles(self):
@@ -500,8 +514,11 @@ class XmlEditor(QtGui.QDialog):
         self.files.append(filename)
         editor.setCurrentPath(os.path.basename(filename))
         editor.load_request_signal.connect(self.on_load_request)
-
-        hl = XmlHighlighter(editor.document())
+        
+        if filename.endswith('.launch'):
+          hl = XmlHighlighter(editor.document())
+        else:
+          hl = YamlHighlighter(editor.document())
         editor.textChanged.connect(self.on_editor_textChanged)
         editor.cursorPositionChanged.connect(self.on_editor_positionChanged)
         editor.setFocus(QtCore.Qt.OtherFocusReason)
@@ -621,9 +638,16 @@ class XmlEditor(QtGui.QDialog):
     '''
     Opens a C{goto} dialog.
     '''
-    value, ok = QtGui.QInputDialog.getInt(self, "Goto",
-                                      self.tr("Line number:"), QtGui.QLineEdit.Normal,
-                                      minValue=1, step=1)
+    value = 1
+    ok = False
+    try:
+      value, ok = QtGui.QInputDialog.getInt(self, "Goto",
+                                        self.tr("Line number:"), QtGui.QLineEdit.Normal,
+                                        minValue=1, step=1)
+    except:
+      value, ok = QtGui.QInputDialog.getInt(self, "Goto",
+                                  self.tr("Line number:"), QtGui.QLineEdit.Normal,
+                                  min=1, step=1)
     if ok:
       if value > self.tabWidget.currentWidget().document().blockCount():
         value = self.tabWidget.currentWidget().document().blockCount()
@@ -632,6 +656,7 @@ class XmlEditor(QtGui.QDialog):
         mov = QtGui.QTextCursor.NextBlock if curpos < value else QtGui.QTextCursor.PreviousBlock
         self.tabWidget.currentWidget().moveCursor(mov)
         curpos = self.tabWidget.currentWidget().textCursor().blockNumber()+1
+    self.tabWidget.currentWidget().setFocus(QtCore.Qt.ActiveWindowFocusReason)
 
   def __getTabName(self, file):
     base = os.path.basename(file).replace('.launch', '')
