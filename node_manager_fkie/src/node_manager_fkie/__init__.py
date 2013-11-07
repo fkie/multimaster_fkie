@@ -34,13 +34,14 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 __date__ = "2013-10-15"
 
 import os
 import sys
 import socket
 import threading
+import argparse
 
 PKG_NAME = 'node_manager_fkie'
 
@@ -289,45 +290,60 @@ def init_globals(masteruri):
   __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
   return is_local(_name_resolution.getHostname(masteruri))
 
+def init_arg_parser():
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--version", action="version", version="%s %s" % ( "%(prog)s", __version__))
+  parser.add_argument("-f", "--file", nargs=1, help="loads the given file as default on start")
+
+  group = parser.add_argument_group('echo')
+  group.add_argument("--echo", nargs=2, help="starts an echo dialog instead of node manager", metavar=('name', 'type'))
+  group.add_argument("--hz", action="store_true", help="shows only the Hz value instead of topic content in echo dialog")
+
+  return parser
+
+def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False):
+  name = ''.join([prog_name, '_echo'])
+  rospy.init_node(name, anonymous=True, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
+  import echo_dialog
+  return echo_dialog.EchoDialog(topic_name, topic_type, hz, masteruri)
+
+def init_main_window(prog_name, masteruri, launch_files=[]):
+  rospy.init_node(prog_name, anonymous=False, log_level=rospy.DEBUG)
+  setTerminalName(rospy.get_name())
+  setProcessName(rospy.get_name())
+  import main_window
+  local_master = init_globals(masteruri)
+  return main_window.MainWindow(launch_files, not local_master, launch_files)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%                 MAIN                               %%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-def main(name, anonymous=False):
-  masteruri = init_cfg_path()
-
-  args = rospy.myargv(argv=sys.argv)
-  # decide to show main or echo dialog
-  if len(args) >= 4 and args[1] == '-t':
-    name = ''.join([name, '_echo'])
-    anonymous = True
-
+def main(name):
   try:
     from python_qt_binding.QtGui import QApplication
   except:
-    print >> sys.stderr, "please install 'python-pyside' package!!"
+    print >> sys.stderr, "please install 'python_qt_binding' package!!"
     sys.exit(-1)
-  rospy.init_node(name, anonymous=anonymous, log_level=rospy.DEBUG)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
 
+  masteruri = init_cfg_path()
+  parser = init_arg_parser()
+  args = rospy.myargv(argv=sys.argv)
+  parsed_args = parser.parse_args(args[1:])
   # Initialize Qt
   global app
   app = QApplication(sys.argv)
 
   # decide to show main or echo dialog
-  import main_window, echo_dialog
   global main_form
-  if len(args) >= 4 and args[1] == '-t':
-    show_hz_only = (len(args) > 4 and args[4] == '--hz')
-    main_form = echo_dialog.EchoDialog(args[2], args[3], show_hz_only, masteruri)
+  if parsed_args.echo:
+    main_form = init_echo_dialog(name, masteruri, parsed_args.echo[0], parsed_args.echo[1], parsed_args.hz)
   else:
-    local_master = init_globals(masteruri)
+    main_form = init_main_window(name, masteruri, parsed_args.file)
 
-    #start the gui
-    main_form = main_window.MainWindow(args, not local_master)
-
+  # resize and show the qt window
   if not rospy.is_shutdown():
     os.chdir(PACKAGE_DIR) # change path to be able to the images of descriptions
     main_form.resize(1024, 768)
@@ -339,7 +355,4 @@ def main(name, anonymous=False):
     exit_code = -1
     rospy.on_shutdown(finish)
     exit_code = app.exec_()
-#    finally:
-#      print "final"
-#      sys.exit(exit_code)
-#      print "ex"
+

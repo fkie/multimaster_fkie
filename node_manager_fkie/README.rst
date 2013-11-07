@@ -7,7 +7,7 @@ A GUI to manage the configuration on local and remote ROS masters. For more deta
 .. _roswiki: http://www.ros.org/wiki/node_manager_fkie
 
 
-Shortcats
+Shortcuts
 ---------
 
 ===================== ========

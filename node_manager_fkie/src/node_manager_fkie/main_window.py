@@ -77,7 +77,7 @@ class MainWindow(QtGui.QMainWindow):
   '''
   DELAYED_NEXT_REQ_ON_ERR = 5.0
 
-  def __init__(self, args=[], restricted_to_one_master=False, parent=None):
+  def __init__(self, files=[], restricted_to_one_master=False, parent=None):
     '''
     Creates the window, connects the signals and init the class.
     '''
@@ -222,7 +222,7 @@ class MainWindow(QtGui.QMainWindow):
     start_menu.addAction(self.loadDeafaultAtHostAct)
     self.ui.loadXmlAsDefaultButton.setMenu(start_menu)
 
-    self.default_load_launch = os.path.abspath(resolve_url(args[1])) if len(args) >= 2 else ''
+    self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
     if self.default_load_launch:
       if os.path.isdir(self.default_load_launch):
         self.ui.xmlFileView.model().setPath(self.default_load_launch)
