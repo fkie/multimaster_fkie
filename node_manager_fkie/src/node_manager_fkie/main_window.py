@@ -728,12 +728,12 @@ class MainWindow(QtGui.QMainWindow):
       thread.setDaemon(True)
       thread.start()
 
-  def on_sync_dialog_released(self, released=False, masteruri=None):
+  def on_sync_dialog_released(self, released=False, masteruri=None, external_call=False):
     self.ui.syncButton.setEnabled(False)
     master = self.currentMaster
     if not masteruri is None:
       master = self.getMaster(masteruri, False)
-    if not master is None and self.ui.syncButton.isChecked():
+    if not master is None and (self.ui.syncButton.isChecked() or external_call):
       self._sync_dialog.resize(350,160)
       if self._sync_dialog.exec_():
         try:
@@ -1458,7 +1458,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_description_anchorClicked(self, url):
     if url.toString().startswith('open_sync_dialog://'):
-      self.on_sync_dialog_released(False, str(url.encodedPath()).replace('open_sync_dialog', 'http'))
+      self.on_sync_dialog_released(False, str(url.encodedPath()).replace('open_sync_dialog', 'http'), True)
     elif url.toString().startswith('show_all_screens://'):
       master = self.getMaster(str(url.encodedPath()).replace('show_all_screens', 'http'), False)
       if not master is None:
