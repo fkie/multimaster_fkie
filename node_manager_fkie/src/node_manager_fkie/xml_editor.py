@@ -68,7 +68,8 @@ class Editor(QtGui.QTextEdit):
     self.setProperty("backgroundVisible", True)
     self.regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
                         QtCore.QRegExp("\\bfile\\b"), QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                        QtCore.QRegExp("\\bvalue=.*package:\/\/\\b")]
+                        QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
+                        QtCore.QRegExp("\\bvalue=.*\$\(find\\b")]
     self.filename = filename
     if self.filename:
       file = QtCore.QFile(filename);
