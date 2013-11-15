@@ -266,8 +266,6 @@ def init_cfg_path():
   '''
   if not os.path.isdir(CFG_PATH):
     os.makedirs(CFG_PATH)
-  # start ROS-Master, if not currently running
-  StartHandler._prepareROSMaster(masteruri)
   return masteruri
 
 def init_globals(masteruri):
@@ -302,6 +300,8 @@ def init_arg_parser():
   return parser
 
 def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False):
+  # start ROS-Master, if not currently running
+  StartHandler._prepareROSMaster(masteruri)
   name = ''.join([prog_name, '_echo'])
   rospy.init_node(name, anonymous=True, log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
@@ -310,6 +310,8 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False):
   return echo_dialog.EchoDialog(topic_name, topic_type, hz, masteruri)
 
 def init_main_window(prog_name, masteruri, launch_files=[]):
+  # start ROS-Master, if not currently running
+  StartHandler._prepareROSMaster(masteruri)
   rospy.init_node(prog_name, anonymous=False, log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
