@@ -16,9 +16,6 @@
   
   <build_depend>multimaster_msgs_fkie</build_depend>
   <build_depend>master_discovery_fkie</build_depend>
-  <build_depend>master_sync_fkie</build_depend>
-  <build_depend>default_cfg_fkie</build_depend>
-
 
   <run_depend>multimaster_msgs_fkie</run_depend>
   <run_depend>master_discovery_fkie</run_depend>
