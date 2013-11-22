@@ -1350,14 +1350,15 @@ class NodeTreeModel(QtGui.QStandardItemModel):
         available_ns.add(ns)
         if code_n == 1:
           # add group
-          available_groups.add(val)
-          if not capabilities.has_key(ns):
-            capabilities[ns] = dict()
-          if not capabilities[ns].has_key(val):
-            capabilities[ns][val] = {'images': [], 'nodes': [], 'type': '', 'description': 'This group is created from `capability_group` parameter of the node defined in ROS parameter server.' }
-          if not nodename in capabilities[ns][val]['nodes']:
-            capabilities[ns][val]['nodes'].append(nodename)
-            changed = True
+          if val:
+            available_groups.add(val)
+            if not capabilities.has_key(ns):
+              capabilities[ns] = dict()
+            if not capabilities[ns].has_key(val):
+              capabilities[ns][val] = {'images': [], 'nodes': [], 'type': '', 'description': 'This group is created from `capability_group` parameter of the node defined in ROS parameter server.' }
+            if not nodename in capabilities[ns][val]['nodes']:
+              capabilities[ns][val]['nodes'].append(nodename)
+              changed = True
         else:
           try:
             for group, caps in capabilities[ns].items():
