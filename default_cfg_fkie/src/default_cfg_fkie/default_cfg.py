@@ -220,7 +220,7 @@ class DefaultCfg(object):
         if cap_ns == node_fullname:
          cap_ns = item.namespace.rstrip(roslib.names.SEP)        # if the parameter group parameter found, assign node to the group
         # if the 'capability_group' parameter found, assign node to the group
-        if self.roscfg.params.has_key(cap_param):
+        if self.roscfg.params.has_key(cap_param) and self.roscfg.params[cap_param].value:
           p = self.roscfg.params[cap_param]
           if not result.has_key(machine_name):
             result[machine_name] = dict()
