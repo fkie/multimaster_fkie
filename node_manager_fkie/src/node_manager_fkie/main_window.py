@@ -1491,3 +1491,18 @@ class MainWindow(QtGui.QMainWindow):
       self._editor_dialog_open([str(url.encodedPath())], '')
     else:
       QtGui.QDesktopServices.openUrl(url)
+
+  def keyReleaseEvent(self, event):
+    '''
+    Deletes the selected history launch file.
+    '''
+    if self.ui.xmlFileView.hasFocus() and event.key() == QtCore.Qt.Key_Delete:
+      indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
+      for index in indexes:
+        pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
+        try:
+          self.ui.xmlFileView.model().load_history.remove(path)
+        except:
+          pass
+      self.ui.xmlFileView.model().reloadCurrentPath()
+    QtGui.QMainWindow.keyReleaseEvent(self, event)
