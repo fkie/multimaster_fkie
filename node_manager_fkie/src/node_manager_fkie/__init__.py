@@ -348,9 +348,9 @@ def main(name):
   # resize and show the qt window
   if not rospy.is_shutdown():
     os.chdir(PACKAGE_DIR) # change path to be able to the images of descriptions
-    main_form.resize(1024, 768)
+    main_form.resize(1024, 720)
     screen_size = QApplication.desktop().availableGeometry()
-    if main_form.size().width() >= screen_size.width() or main_form.size().height() >= screen_size.height():
+    if main_form.size().width() >= screen_size.width() or main_form.size().height() >= screen_size.height()-24:
       main_form.showMaximized()
     else:
       main_form.show()
