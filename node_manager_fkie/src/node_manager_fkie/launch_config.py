@@ -202,7 +202,9 @@ class LaunchConfig(QtCore.QObject):
     '''
     result = set([file])
     regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
-                   QtCore.QRegExp("\\bfile\\b")]
+                   QtCore.QRegExp("\\bfile\\b"), QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                   QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
+                   QtCore.QRegExp("\\bvalue=.*\$\(find\\b")]
     lines = []
     with open(file, 'r') as f:
       lines = f.readlines()
