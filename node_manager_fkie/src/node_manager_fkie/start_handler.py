@@ -203,6 +203,9 @@ class StartHandler(object):
       rospy.loginfo("RUN: %s", ' '.join(cmd_args))
       new_env = dict(os.environ)
       new_env['ROS_MASTER_URI'] = masteruri
+      # add the namespace environment parameter to handle some cases, e.g. rqt_cpp plugins
+      if n.namespace:
+        new_env['ROS_NAMESPACE'] = n.namespace
       for k, v in env:
         new_env[k] = v
       ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
@@ -389,9 +392,11 @@ class StartHandler(object):
     # create the name with namespace
     args2 = list(args)
     fullname = roslib.names.ns_join(roslib.names.SEP, name)
+    namespace = ''
     for a in args:
       if a.startswith('__ns:='):
-        fullname = roslib.names.ns_join(a.replace('__ns:=', ''), name)
+        namespace = a.replace('__ns:=', '')
+        fullname = roslib.names.ns_join(namespace, name)
     args2.append(''.join(['__name:=', name]))
     # run on local host
     if nm.is_local(host):
@@ -428,13 +433,15 @@ class StartHandler(object):
       cmd_str = str(' '.join([nm.screen().getSceenCmd(fullname), cmd_type, ' '.join(args2)]))
       rospy.loginfo("Run without config: %s", cmd_str)
       ps = None
+      new_env=dict(os.environ)
+      if namespace:
+        new_env['ROS_NAMESPACE'] = namespace
       if not masteruri is None:
         cls._prepareROSMaster(masteruri)
-        new_env=dict(os.environ)
         new_env['ROS_MASTER_URI'] = masteruri
         ps = subprocess.Popen(shlex.split(cmd_str), env=new_env)
       else:
-        ps = subprocess.Popen(shlex.split(cmd_str))
+        ps = subprocess.Popen(shlex.split(cmd_str), env=new_env)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
