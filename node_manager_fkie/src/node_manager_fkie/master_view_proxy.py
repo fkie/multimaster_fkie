@@ -316,12 +316,13 @@ class MasterViewProxy(QtGui.QWidget):
 #    print "================ create", self.objectName()
 #
 #  def __del__(self):
-#    for ps in self.__echo_topics_dialogs.values():
-#      try:
-#        ps.terminate()
-#      except:
-#        pass
-#    print "*********** destroy", self.objectName()
+#    print "    Destroy mester view proxy", self.objectName(), " ..."
+#     for ps in self.__echo_topics_dialogs.values():
+#       try:
+#         ps.terminate()
+#       except:
+#         pass
+#    print "    ", self.objectName(), "destroyed"
 
   def stop(self):
     print "  Shutdown master", self.masteruri, "..."
@@ -2307,7 +2308,7 @@ class MasterViewProxy(QtGui.QWidget):
         if p == '/use_sim_time':
           self.__use_sim_time = (code_n == 1 and val)
     else:
-      rospy.logwarn("Error on retrieve parameter from %s: %s", str(masteruri), str(msg))
+      rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), str(msg))
 
 
   def _get_nm_masteruri(self):

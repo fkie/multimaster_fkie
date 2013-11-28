@@ -234,10 +234,10 @@ class RequestValuesThread(QtCore.QObject, threading.Thread):
         self.parameter_values_signal.emit(self._masteruri, 1, '', result)
       except:
         import traceback
-        err_msg = ''.join(["Error while retrieve parameter values from ", self._masteruri, ": ", str(traceback.format_exc())])
-        rospy.logwarn(err_msg)
+#        err_msg = ''.join(["Error while retrieve parameter values from ", self._masteruri, ": ", str(traceback.format_exc())])
+#        rospy.logwarn(err_msg)
 #        lines = traceback.format_exc().splitlines()
-        self.parameter_values_signal.emit(self._masteruri, -1, err_msg, result)
+        self.parameter_values_signal.emit(self._masteruri, -1, str(traceback.format_exc()), result)
 
 class DeliverValuesThread(QtCore.QObject, threading.Thread):
   '''

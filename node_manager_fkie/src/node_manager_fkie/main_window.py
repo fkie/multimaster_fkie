@@ -375,6 +375,13 @@ class MainWindow(QtGui.QMainWindow):
       if not self.currentMaster is None and self.currentMaster.masteruri == masteruri:
         self.setCurrentMaster(None)
       self.masters[masteruri].stop()
+      self.masters[masteruri].updateHostRequest.disconnect()
+      self.masters[masteruri].host_description_updated.disconnect()
+      self.masters[masteruri].capabilities_update_signal.disconnect()
+      self.masters[masteruri].remove_config_signal.disconnect()
+      self.masters[masteruri].description_signal.disconnect()
+      self.masters[masteruri].request_xml_editor.disconnect()
+      self.masters[masteruri].stop_nodes_signal.disconnect()
       self.stackedLayout.removeWidget(self.masters[masteruri])
       self.ui.tabPlace.layout().removeWidget(self.masters[masteruri])
       self.masters[masteruri].setParent(None)
@@ -418,7 +425,6 @@ class MainWindow(QtGui.QMainWindow):
             WarningMessageBox(QtGui.QMessageBox.Warning, "Load default configuration", 
                   ''.join(['Load default configuration ', self.default_load_launch, ' failed!']),
                   str(e)).exec_()
-
     return self.masters[masteruri]
 
   def on_host_update_request(self, host):
@@ -644,8 +650,8 @@ class MainWindow(QtGui.QMainWindow):
 #        print "CONNECTION ERROR2222222"
 #        self._setLocalMonitoring(True)
 #      elif not masteruri is None:
-    master = self.getMaster(masteruri)
-    if not master.master_state is None:
+    master = self.getMaster(masteruri, False)
+    if master and not master.master_state is None:
       self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri, self.DELAYED_NEXT_REQ_ON_ERR)
 
   def on_conn_stats_updated(self, stats):
