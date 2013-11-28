@@ -41,6 +41,8 @@ import roslib.message
 import rospy
 import threading
 
+import gui_resources
+
 class EchoDialog(QtGui.QDialog):
   
   MESSAGE_HZ_LIMIT = 10
@@ -83,18 +85,20 @@ class EchoDialog(QtGui.QDialog):
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run_echo.png")
     self.setWindowIcon(self.mIcon)
-        
+
     self.topic = topic
     self.show_only_rate = show_only_rate
-    self.lock = threading.Lock()
-    self.last_printed_tn = 0
+    self.lock = threading.RLock()
+    self.last_printed_count = 0
     self.msg_t0 = -1.
     self.msg_tn = 0
     self.times =[]
-        
+
     self.message_count = 0
 
     self._rate_message = ''
+    self._scrapped_msgs = 0
+    self._scrapped_msgs_sl = 0
 
     self._last_received_ts = 0
     self.receiving_hz = self.MESSAGE_HZ_LIMIT
@@ -116,7 +120,7 @@ class EchoDialog(QtGui.QDialog):
       hLayout.addItem(spacerItem)
       # add combobox for displaying frequency of messages
       self.combobox_displ_hz = QtGui.QComboBox(self)
-      self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0.1', '1', '50', '100'])
+      self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0.1', '1', '50', '100', '1000'])
       self.combobox_displ_hz.activated[str].connect(self.on_combobox_hz_activated)
       self.combobox_displ_hz.setEditable(True)
       hLayout.addWidget(self.combobox_displ_hz)
@@ -124,7 +128,7 @@ class EchoDialog(QtGui.QDialog):
       hLayout.addWidget(displ_hz_label)
       # add combobox for count of displayed messages
       self.combobox_msgs_count = QtGui.QComboBox(self)
-      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '50', '100'])
+      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '50', '100', '1000', '10000'])
       self.combobox_msgs_count.activated[str].connect(self.on_combobox_count_activated)
       self.combobox_msgs_count.setEditable(True)
       hLayout.addWidget(self.combobox_msgs_count)
@@ -142,7 +146,7 @@ class EchoDialog(QtGui.QDialog):
       clearButton.clicked.connect(self.on_clear_btn_clicked)
       hLayout.addWidget(clearButton)
       self.verticalLayout.addWidget(options)
-    
+
     self.display = QtGui.QTextEdit(self)
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display);
@@ -182,7 +186,7 @@ class EchoDialog(QtGui.QDialog):
       QtGui.QApplication.quit()
 #    else:
 #      self.setParent(None)
-  
+
   def create_field_filter(self, echo_nostr, echo_noarr):
     def field_filter(val):
       try:
@@ -224,6 +228,7 @@ class EchoDialog(QtGui.QDialog):
     self.display.clear()
     with self.lock:
       self.message_count = 0
+      self._scrapped_msgs = 0
       del self.times[:]
 
   def on_topic_control_btn_clicked(self):
@@ -265,10 +270,16 @@ class EchoDialog(QtGui.QDialog):
     # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
     if self._last_received_ts != 0:
       if not latched and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
+        self._scrapped_msgs += 1
+        self._scrapped_msgs_sl += 1
         return 
     self._last_received_ts = current_time
 
     if not self.show_only_rate:
+      if self._scrapped_msgs_sl > 0:
+        txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>'%self._scrapped_msgs_sl
+        self.display.append(txt)
+        self._scrapped_msgs_sl = 0
       txt = ''.join(['<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier,monospace; padding:10px;">------------------------------\n\n', msg,'</pre>'])
       # set the count of the displayed messages on receiving the first message
       if self._blocks_in_msg is None:
@@ -282,8 +293,8 @@ class EchoDialog(QtGui.QDialog):
     if rospy.is_shutdown():
       self.close()
       return
-    if self.msg_tn == self.last_printed_tn:
-      self._rate_message = 'no new messages'
+    if self.message_count == self.last_printed_count:
+#      self._rate_message = 'no new messages'
       return
     with self.lock:
       # the code from ROS rostopic
@@ -299,8 +310,10 @@ class EchoDialog(QtGui.QDialog):
       max_delta = max(self.times)
       min_delta = min(self.times)
 
-      self.last_printed_tn = self.msg_tn
+      self.last_printed_count = self.message_count
       self._rate_message = "average rate: %.3f\tmin: %.3fs   max: %.3fs   std dev: %.5fs   window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
+      if self._scrapped_msgs > 0:
+        self._rate_message +=" --- scrapped msgs: %s"%self._scrapped_msgs
       self._print_status()
       if self.show_only_rate:
         self.display.append(self._rate_message)
