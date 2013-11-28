@@ -34,17 +34,18 @@ from python_qt_binding import QtGui
 
 class DetailedError(Exception):
   ''' '''
-  
+
   def __init__(self, title, text, detailed_text=""):
     self.title = title
     self.value = text
     self.detailed_text = detailed_text
-  
+
   def __str__(self):
     return repr(self.text) + ":::" + self.detailed_text
-  
+
 
 class WarningMessageBox(QtGui.QMessageBox):
+
   def __init__(self, icon, title, text, detailed_text="", buttons=QtGui.QMessageBox.Ok):
     QtGui.QMessageBox.__init__(self, icon, title, text, buttons)
     if detailed_text:
@@ -68,6 +69,10 @@ class WarningMessageBox(QtGui.QMessageBox):
       textEdit.setMinimumWidth(0)
       textEdit.setMaximumWidth(600)
       textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
+    ignore_all_btn = QtGui.QPushButton('Do not display this warning again')
+    ignore_all_btn.setFlat(True)
+    self.addButton(ignore_all_btn, QtGui.QMessageBox.ActionRole)
 
 #  def event(self, e):
 #    print "TYPE:", e.type()

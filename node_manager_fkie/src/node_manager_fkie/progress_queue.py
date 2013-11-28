@@ -48,15 +48,16 @@ class InteractionNeededError(Exception):
     self.method = method
     self.request = request
     self.args = args
-  
+
   def __str__(self):
     return "InteractionNeededError"
-  
+
 
 class ProgressQueue(QtCore.QObject):
-  
+
   def __init__(self, progress_frame, progress_bar, progress_cancel_button):
     QtCore.QObject.__init__(self)
+    self.__ignore_err_list = []
     self.__progress_queue = []
     self.__running = False
     self._progress_frame = progress_frame
@@ -64,7 +65,7 @@ class ProgressQueue(QtCore.QObject):
     self._progress_cancel_button = progress_cancel_button
     progress_frame.setVisible(False)
     progress_cancel_button.clicked.connect(self._on_progress_canceled)
-  
+
   def stop(self):
     try:
       val = self._progress_bar.value()
@@ -121,6 +122,9 @@ class ProgressQueue(QtCore.QObject):
       #'print "PG finished delete all ok"
 
   def _progress_thread_error(self, id, title, msg, detailed_msg):
+    if detailed_msg in self.__ignore_err_list:
+      self._progress_thread_finished(id)
+      return
     btns = (QtGui.QMessageBox.Ignore)
     if len(self.__progress_queue) > 1:
       btns = (QtGui.QMessageBox.Ignore|QtGui.QMessageBox.Abort)
@@ -131,6 +135,8 @@ class ProgressQueue(QtCore.QObject):
       self._progress_frame.setVisible(False)
       self.__running = False
     else:
+      if res == 0:
+        self.__ignore_err_list.append(detailed_msg)
       self._progress_thread_finished(id)
 
   def _on_progress_canceled(self):
