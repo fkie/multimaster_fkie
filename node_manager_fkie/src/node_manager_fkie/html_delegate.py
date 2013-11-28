@@ -49,7 +49,7 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
     style = QtGui.QApplication.style() if options.widget is None else options.widget.style()
 
     doc = QtGui.QTextDocument()
-    doc.setHtml(options.text)
+    doc.setHtml(self.toHTML(options.text))
     doc.setTextWidth(option.rect.width())
 
     options.text = ''
@@ -82,3 +82,43 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
     doc.setTextWidth(options.rect.width())
     metric = QtGui.QFontMetrics(doc.defaultFont())
     return QtCore.QSize(doc.idealWidth(), metric.height()+4)
+
+  @classmethod
+  def toHTML(cls, text):
+    '''
+    Creates a HTML representation of the topic name.
+    @param topic_name: the topic name
+    @type topic_name: C{str}
+    @return: the HTML representation of the topic name
+    @rtype: C{str}
+    '''
+    if text.rfind('@') > 0: # handle host names
+      name, sep, host = text.rpartition('@')
+      result = ''
+      if sep:
+        result = ''.join(['<div>', name, '<span style="color:gray;">', sep, host, '</span></div>'])
+      else:
+        result = group_name
+    elif text.find('{') > -1: # handle group names 
+      text = text.strip('{}')
+      ns, sep, name = text.rpartition('/')
+      result = ''
+      if sep:
+        result = ''.join(['<div>', '<b>{</b><span style="color:gray;">', ns, sep, '</span><b>', name, '}</b></div>'])
+      else:
+        result = ''.join(['<div>', '<b>{', name, '}</b></div>'])
+    elif text.find(' ') > -1: # handle all invalid names (used space in the name)
+      ns, sep, name = text.rpartition('/')
+      result = ''
+      if sep:
+        result = ''.join(['<div>', '<span style="color:red;">', str(ns), sep, '<b>', name, '</b></span></div>'])
+      else:
+        result = ''.join(['<div>', '<span style="color:red;">', name, '</span></div>'])
+    else: # handle all ROS names
+      ns, sep, name = text.rpartition('/')
+      result = ''
+      if sep:
+        result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
+      else:
+        result = name
+    return result

@@ -52,7 +52,7 @@ class ServiceItem(QtGui.QStandardItem):
     @param service: the service object to view
     @type service: L{master_discovery_fkie.ServiceInfo}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(service.name))
+    QtGui.QStandardItem.__init__(self, service.name)
     self.service = service
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
 
@@ -70,28 +70,6 @@ class ServiceItem(QtGui.QStandardItem):
 
   def type(self):
     return ServiceItem.ITEM_TYPE
-
-  @classmethod
-  def toHTML(cls, service_name, red_color=False):
-    '''
-    Creates a HTML representation of the service name.
-    @param service_name: the service name
-    @type service_name: C{str}
-    @return: the HTML representation of the service name
-    @rtype: C{str}
-    '''
-    ns, sep, name = service_name.rpartition('/')
-    result = ''
-    if sep:
-      if red_color:
-        result = ''.join(['<div>', '<span style="color:red;">', str(ns), sep, '<b>', name, '</b></span></div>'])
-      else:
-        result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
-    elif red_color:
-      result = ''.join(['<div>', '<span style="color:red;">', name, '</span></div>'])
-    else:
-      result = name
-    return result
 
   @classmethod
   def getItemList(self, service):
@@ -125,11 +103,11 @@ class ServiceItem(QtGui.QStandardItem):
     try:
       if service.isLocal and service.type:
         service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
-        item.setText(cls.toHTML(service_class._type))
+        item.setText(service_class._type)
       elif service.type:
-        item.setText(cls.toHTML(service.type))
+        item.setText(service.type)
       else:
-        item.setText(cls.toHTML('unknown type', True))
+        item.setText('unknown type')
       # removed tooltip for clarity !!!
 #      tooltip = ''
 #      tooltip = ''.join([tooltip, '<h4>', service_class._type, '</h4>'])

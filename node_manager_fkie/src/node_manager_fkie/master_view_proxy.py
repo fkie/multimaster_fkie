@@ -166,7 +166,9 @@ class MasterViewProxy(QtGui.QWidget):
     for i, (name, width) in enumerate(TopicModel.header):
       self.masterTab.topicsView.setColumnWidth(i, width)
     self.topicNameDelegate = HTMLDelegate()
+    self.topicTypeDelegate = HTMLDelegate()
     self.masterTab.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
+    self.masterTab.topicsView.setItemDelegateForColumn(3, self.topicTypeDelegate)
     sm = self.masterTab.topicsView.selectionModel()
     sm.selectionChanged.connect(self.on_topic_selection_changed)
     self.masterTab.topicsView.activated.connect(self.on_topic_activated)
@@ -308,14 +310,8 @@ class MasterViewProxy(QtGui.QWidget):
     self._shortcut_stop = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
     self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected nodes to clipboard")), self.masterTab.nodeTreeView)
-    self._shortcut_copy.activated.connect(self.on_copy_node_clicked)
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected topics to clipboard")), self.masterTab.topicsView)
-    self._shortcut_copy.activated.connect(self.on_copy_topic_clicked)
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected services to clipboard")), self.masterTab.servicesView)
-    self._shortcut_copy.activated.connect(self.on_copy_service_clicked)
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+C", "copy selected parameter to clipboard")), self.masterTab.parameterView)
-    self._shortcut_copy.activated.connect(self.on_copy_parameter_clicked)
+    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
+    self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
 
 #    print "================ create", self.objectName()
 #
@@ -2377,44 +2373,36 @@ class MasterViewProxy(QtGui.QWidget):
     self.masterTab.nodeTreeView.selectionModel().clearSelection()
     self.masterTab.nodeTreeView.collapseAll()
     
-  def on_copy_node_clicked(self):
+  def on_copy_x_pressed(self):
     result = ''
-    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-    for node in selectedNodes:
-      try:
-        result = ' '.join([result, node.name])
-      except Exception:
-        pass
-    QtGui.QApplication.clipboard().setText(result.strip())
-
-  def on_copy_topic_clicked(self):
-    result = ''
-    selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
-    for topic in selectedTopics:
-      try:
-        result = ' '.join([result, topic.name, topic.type])
-      except Exception:
-        pass
-    QtGui.QApplication.clipboard().setText(result.strip())
-
-  def on_copy_service_clicked(self):
-    result = ''
-    selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
-    for service in selectedServices:
-      try:
-        result = ' '.join([result, service.name, service.type])
-      except Exception:
-        pass
-    QtGui.QApplication.clipboard().setText(result.strip())
-
-  def on_copy_parameter_clicked(self):
-    result = ''
-    selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
-    for (key, value) in selectedParameter:
-      try:
-        result = ' '.join([result, key, str(value)])
-      except Exception:
-        pass
+    if self.masterTab.nodeTreeView.hasFocus():
+      selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      for node in selectedNodes:
+        try:
+          result = ' '.join([result, str(node.pid)])
+        except Exception:
+          pass
+    elif self.masterTab.topicsView.hasFocus():
+      selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+      for topic in selectedTopics:
+        try:
+          result = ' '.join([result, topic.type])
+        except Exception:
+          pass
+    elif self.masterTab.servicesView.hasFocus():
+      selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+      for service in selectedServices:
+        try:
+          result = ' '.join([result, service.type])
+        except Exception:
+          pass
+    elif self.masterTab.parameterView.hasFocus():
+      selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+      for (key, value) in selectedParameter:
+        try:
+          result = ' '.join([result, str(value)])
+        except Exception:
+          pass
     QtGui.QApplication.clipboard().setText(result.strip())
 
 

@@ -170,12 +170,12 @@ class MainWindow(QtGui.QMainWindow):
     # stores the widget to a 
     self.masters = dict() # masteruri : MasterViewProxy
     self.currentMaster = None # MasterViewProxy
-    
+
     # initialize the class to get the state of discovering of other ROS master
     self._update_handler = UpdateHandler()
     self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
     self._update_handler.error_signal.connect(self.on_master_info_error)
-    
+
     # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
     self.own_master_monitor = OwnMasterMonitoring()
     self.own_master_monitor.init(22622)
@@ -190,7 +190,7 @@ class MainWindow(QtGui.QMainWindow):
     self.state_topic.state_signal.connect(self.on_master_state_changed)
     self.stats_topic = MasterStatisticTopic()
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
-    
+
     nm.file_watcher().file_changed.connect(self.on_configfile_changed)
     self.__in_question = set()
 
@@ -205,14 +205,16 @@ class MainWindow(QtGui.QMainWindow):
     self.capabilitiesTable.stop_nodes_signal.connect(self.on_stop_nodes)
     self.capabilitiesTable.description_requested_signal.connect(self.on_description_update_cap)
     self.ui.capabilities_tab.layout().addWidget(self.capabilitiesTable)
-    
+
     self.ui.descriptionTextEdit.setOpenLinks(False)
     self.ui.descriptionTextEdit.anchorClicked.connect(self.on_description_anchorClicked)
+    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Shift+C", "copy selected description")), self.ui.descriptionTextEdit)
+    self._shortcut_copy.activated.connect(self.ui.descriptionTextEdit.copy)
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.descriptionDock)
     self.ui.tabifyDockWidget(self.ui.launchDock, self.ui.helpDock)
     self.ui.launchDock.raise_()
     self.ui.helpDock.setWindowIcon(QtGui.QIcon(':icons/crystal_clear_helpcenter.png'))
-    
+
     flags = self.windowFlags()
     self.setWindowFlags(flags | QtCore.Qt.WindowContextHelpButtonHint)
 
@@ -241,8 +243,7 @@ class MainWindow(QtGui.QMainWindow):
 
     self.editor_dialogs  = dict() # [file] = XmlEditor
     '''@ivar: stores the open XmlEditor '''
-    
-    
+
     self.ui.simTimeLabel.setVisible(False)
     self.ui.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
 
@@ -254,7 +255,7 @@ class MainWindow(QtGui.QMainWindow):
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
     self._refresh_time = time.time()
-    
+
     # set the help text
     try:
       from docutils import examples
@@ -265,7 +266,7 @@ class MainWindow(QtGui.QMainWindow):
       msg = ''.join(["Error while generate help: ", str(traceback.format_exc())])
       rospy.logwarn(msg)
       self.ui.textBrowser.setText(msg)
-    
+
     try:
       ScreenHandler.testScreen()
     except Exception as e:

@@ -60,7 +60,7 @@ class GroupItem(QtGui.QStandardItem):
     variable is used to determine the different columns of the NodeItem. 
     @type parent: L{PySide.QtGui.QStandardItem}
     '''
-    QtGui.QStandardItem.__init__(self, GroupItem.toHTML(name))
+    QtGui.QStandardItem.__init__(self, name if name.rfind('@') > 0 else '{' + name + '}')
     self.parent_item = parent
     self._name = name
     self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
@@ -88,7 +88,7 @@ class GroupItem(QtGui.QStandardItem):
     @type new_name: C{str}
     '''
     self._name = new_name
-    self.setText(GroupItem.toHTML(self._name))
+    self.setText('{' + self._name + '}')
   
   def is_in_cap_group(self, nodename, config, ns, groupname):
     '''
@@ -587,31 +587,6 @@ class GroupItem(QtGui.QStandardItem):
           cfg_col.setIcon(QtGui.QIcon(':/icons/default_cfg.png'))
         else:
           cfg_col.setIcon(QtGui.QIcon())
-  
-  @classmethod
-  def toHTML(cls, group_name):
-    '''
-    Creates a HTML representation of the group name.
-    @param group_name: the name of the group
-    @type group_name: C{str}
-    @return: the HTML representation of the name of the group
-    @rtype: C{str}
-    '''
-    if group_name.rfind('@') > 0:
-      name, sep, host = group_name.rpartition('@')
-      result = ''
-      if sep:
-        result = ''.join(['<div>', name, '<span style="color:gray;">', sep, host, '</span></div>'])
-      else:
-        result = group_name
-    else:
-      ns, sep, name = group_name.rpartition('/')
-      result = ''
-      if sep:
-        result = ''.join(['<div>', '<b>{</b><span style="color:gray;">', ns, sep, '</span><b>', name, '}</b></div>'])
-      else:
-        result = ''.join(['<div>', '<b>{', name, '}</b></div>'])
-    return result
 
   def type(self):
     return GroupItem.ITEM_TYPE
@@ -813,7 +788,7 @@ class NodeItem(QtGui.QStandardItem):
     @param node_info: the node information
     @type node_info: L{master_discovery_fkie.NodeInfo}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(node_info.name))
+    QtGui.QStandardItem.__init__(self, node_info.name)
     self.parent_item = None
     self._node_info = node_info.copy()
 #    self.ICONS = {'empty' : QtGui.QIcon(),
@@ -1144,23 +1119,6 @@ class NodeItem(QtGui.QStandardItem):
   @classmethod
   def is_default_cfg(cls, cfg):
     return isinstance(cfg, tuple)
-
-  @classmethod
-  def toHTML(cls, node_name):
-    '''
-    Creates a HTML representation of the node name.
-    @param node_name: the name of the node
-    @type node_name: C{str}
-    @return: the HTML representation of the name of the node
-    @rtype: C{str}
-    '''
-    ns, sep, name = node_name.rpartition('/')
-    result = ''
-    if sep:
-      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
-    else:
-      result = name
-    return result
 
   def __eq__(self, item):
     '''

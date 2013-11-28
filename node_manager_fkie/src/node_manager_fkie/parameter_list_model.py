@@ -124,7 +124,7 @@ class ParameterNameItem(QtGui.QStandardItem):
     @param value: the value of the parameter
     @type value: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(name))
+    QtGui.QStandardItem.__init__(self, name)
     self._name = name
     '''@ivar: the name of parameter '''
     self._value = value
@@ -153,23 +153,6 @@ class ParameterNameItem(QtGui.QStandardItem):
       return str(self.value)
     else:
       return QtGui.QStandardItem.data(self, role)
-
-  @classmethod
-  def toHTML(cls, key):
-    '''
-    Creates a HTML representation of the parameter name.
-    @param key: the parameter name
-    @type key: C{str}
-    @return: the HTML representation of the parameter name
-    @rtype: C{str}
-    '''
-    ns, sep, name = key.rpartition('/')
-    result = ''
-    if sep:
-      result = ''.join(['<html><body>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></body></html>'])
-    else:
-      result = name
-    return result
 
   def __eq__(self, item):
     '''

@@ -63,7 +63,7 @@ class TopicItem(QtGui.QStandardItem):
     @param name: the topic name
     @type name: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, self.toHTML(name))
+    QtGui.QStandardItem.__init__(self, name)
     self.parent_item = parent
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
     self._publish_thread = None
@@ -163,23 +163,6 @@ class TopicItem(QtGui.QStandardItem):
     WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error", 
                   'Error while publish to %s'%self.topic.name,
                   str(msg)).exec_()
-
-  @classmethod
-  def toHTML(cls, topic_name):
-    '''
-    Creates a HTML representation of the topic name.
-    @param topic_name: the topic name
-    @type topic_name: C{str}
-    @return: the HTML representation of the topic name
-    @rtype: C{str}
-    '''
-    ns, sep, name = topic_name.rpartition('/')
-    result = ''
-    if sep:
-      result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
-    else:
-      result = name
-    return result
 
   def type(self):
     return TopicItem.ITEM_TYPE
