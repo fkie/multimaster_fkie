@@ -207,6 +207,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
     if len(self.load_history) > self.RECENT_LENGTH:
       self.load_history.pop(0)
     self._storeLoadHistory(self.load_history)
+    self.reloadCurrentPath()
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Functionality                         %%%%%%%%
