@@ -41,6 +41,7 @@ import socket
 import xmlrpclib
 import threading
 import time
+import getpass
 from urlparse import urlparse
 
 import rospy
@@ -256,38 +257,51 @@ class MasterViewProxy(QtGui.QWidget):
 
 
     # creates a start menu
-    start_menu = QtGui.QMenu(self)
-    self.forceStartNodesAct = QtGui.QAction("&Force start node", self, statusTip="Force the start of selected node", triggered=self.on_force_start_nodes)
-    start_menu.addAction(self.forceStartNodesAct)
-    self.startNodesAtHostAct = QtGui.QAction("&Start node on host(Loaded config needed)", self, statusTip="Start node on other host", triggered=self.on_start_nodes_at_host)
-    start_menu.addAction(self.startNodesAtHostAct)
-    self.masterTab.startButton.setMenu(start_menu)
+#     start_menu = QtGui.QMenu(self)
+#     self.forceStartNodesAct = QtGui.QAction("&Force start node", self, statusTip="Force the start of selected node", triggered=self.on_force_start_nodes)
+#     start_menu.addAction(self.forceStartNodesAct)
+#     self.startNodesAtHostAct = QtGui.QAction("&Start node on host(Loaded config needed)", self, statusTip="Start node on other host", triggered=self.on_start_nodes_at_host)
+#     start_menu.addAction(self.startNodesAtHostAct)
+#     self.masterTab.startButton.setMenu(start_menu)
+
+#     self._shortcut_start_node_force = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Shift+P", "Force the start of selected node")), self)
+#     self._shortcut_start_node_force.activated.connect(self.on_force_start_nodes)
+#     self._shortcut_start_node_at_host = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl++Shift+H", "Start node on other host")), self)
+#     self._shortcut_start_node_at_host.activated.connect(self.on_start_nodes_at_host)
 
     # creates a stop menu
-    stop_menu = QtGui.QMenu(self)
-    self.killNodesAct = QtGui.QAction("&Kill Node", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_Backspace), statusTip="Kill selected node", triggered=self.on_kill_nodes)
-    self.unregNodesAct = QtGui.QAction("&Unregister Nodes", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_Delete), statusTip="Removes the registration of selected nodes from ROS master", triggered=self.on_unregister_nodes)
-    stop_menu.addAction(self.killNodesAct)
-    stop_menu.addAction(self.unregNodesAct)
-    self.masterTab.stopButton.setMenu(stop_menu)
+    self._shortcut_kill_node = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Backspace", "Kill selected node")), self)
+    self._shortcut_kill_node.activated.connect(self.on_kill_nodes)
+    self._shortcut_kill_node = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Delete", "Removes the registration of selected nodes from ROS master")), self)
+    self._shortcut_kill_node.activated.connect(self.on_unregister_nodes)
+#     stop_menu = QtGui.QMenu(self)
+#     self.killNodesAct = QtGui.QAction("&Kill Node", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_Backspace), statusTip="Kill selected node", triggered=self.on_kill_nodes)
+#     self.unregNodesAct = QtGui.QAction("&Unregister Nodes", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_Delete), statusTip="Removes the registration of selected nodes from ROS master", triggered=self.on_unregister_nodes)
+#     stop_menu.addAction(self.killNodesAct)
+#     stop_menu.addAction(self.unregNodesAct)S
+#     self.masterTab.stopButton.setMenu(stop_menu)
 
     # creates a screen menu
-    screen_menu = QtGui.QMenu(self)
-    self.killScreensAct = QtGui.QAction("&Kill Screen", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_Backspace), statusTip="Kill available screens", triggered=self.on_kill_screens)
-    screen_menu.addAction(self.killScreensAct)
-    self.showAllScreensAct = QtGui.QAction("&Show all available screens", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_S), statusTip="Shows all available screens", triggered=self.on_show_all_screens)
-    screen_menu.addAction(self.showAllScreensAct)
-    self.masterTab.ioButton.setMenu(screen_menu)
+#     screen_menu = QtGui.QMenu(self)
+#     self.killScreensAct = QtGui.QAction("&Kill Screen", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_Backspace), statusTip="Kill available screens", triggered=self.on_kill_screens)
+#     screen_menu.addAction(self.killScreensAct)
+#     self.showAllScreensAct = QtGui.QAction("&Show all available screens", self, shortcut=QtGui.QKeySequence(QtCore.Qt.SHIFT + QtCore.Qt.Key_S), statusTip="Shows all available screens", triggered=self.on_show_all_screens)
+#     screen_menu.addAction(self.showAllScreensAct)
+#     self.masterTab.ioButton.setMenu(screen_menu)
     self.masterTab.ioButton.setEnabled(True)
+    self._shortcut_screen_show_all = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Shift+S", "Show all available screens")), self)
+    self._shortcut_screen_show_all.activated.connect(self.on_show_all_screens)
+    self._shortcut_screen_kill = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Shift+Backspace", "Kill Screen")), self)
+    self._shortcut_screen_kill.activated.connect(self.on_kill_screens)
+
 
     # create log menu
-    log_menu = QtGui.QMenu(self)
-    self.logCopyPathAct = QtGui.QAction("&Copy log path to clipboard", self, statusTip="Copy log path to clipboard", triggered=self.on_log_path_copy)
-#    self.logShowSelectedAct = QtGui.QAction("&Select a log to show", self, statusTip="Select a log file to show (only local)", triggered=self.on_log_show_selected)
-    log_menu.addAction(self.logCopyPathAct)
-#    self.logCopyPathAct.setEnabled(nm.is_local(nm.nameres().getHostname(self.masteruri)))
-#    log_menu.addAction(self.logShowSelectedAct)
-    self.masterTab.logButton.setMenu(log_menu)
+#     self._shortcut_log1 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+L", "Copy log path to clipboard")), self)
+#     self._shortcut_log1.activated.connect(self.on_log_path_copy)
+#     log_menu = QtGui.QMenu(self)
+#     self.logCopyPathAct = QtGui.QAction("&Copy log path to clipboard", self, statusTip="Copy log path to clipboard", triggered=self.on_log_path_copy)
+#     log_menu.addAction(self.logCopyPathAct)
+#     self.masterTab.logButton.setMenu(log_menu)
 
     # set the shortcuts
     self._shortcut1 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -511,7 +525,7 @@ class MasterViewProxy(QtGui.QWidget):
     if len(selectedNodes) >= 1:
       cfg_enable = len(self._getCfgChoises(selectedNodes[0], True)) > 0
     self.masterTab.editConfigButton.setEnabled(cfg_enable and len(selectedNodes) == 1)
-    self.startNodesAtHostAct.setEnabled(cfg_enable)
+#    self.startNodesAtHostAct.setEnabled(cfg_enable)
     self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
     self.masterTab.saveButton.setEnabled(len(self.launchfiles) > 1)
     # enable the close button only for local configurations
@@ -938,66 +952,91 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
       return
-    selectedHosts = self.hostsFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+    selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
     name = ''
     text = ''
-    if len(selectedHosts) == 1:
+    selectedHosts = self.hostsFromIndexes(selections)
+    # add host description, if only the one host is selected
+    if len(selectedHosts) == 1 and len(selections) / 2 == 1:
       host = selectedHosts[0]
       name = ' - '.join([host.name, 'Robot'])
       text = host.generateDescription()
+      text = ''.join([text, '<br>'])
     else:
-      selectedGroups = self.groupsFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-      if len(selectedGroups) == 1:
+      # add group description, if only the one group is selected
+      selectedGroups = self.groupsFromIndexes(selections)
+      if len(selectedGroups) == 1 and len(selections) / 2 == 1:
         group = selectedGroups[0]
         name = ' - '.join([group.name, 'Group'])
         text = group.generateDescription()
-      else:
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-        if len(selectedNodes) == 1:
-          # create description for a node
-          node = selectedNodes[0]
-          ns, sep, name = node.name.rpartition(rospy.names.SEP)
-          text = ''.join(['<font size="+1"><b>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</b></font><br>'])
-          text = ''.join([text, '<a href="restart_node://', node.name,'">', 'restart</a> - '])
-          text = ''.join([text, '<a href="kill_node://', node.name,'">', 'kill</a> - '])
-          text = ''.join([text, '<a href="kill_screen://', node.name,'">', 'kill screen</a>  '])
-          text = ''.join([text, '<p>'])
-          text = ''.join([text, '<dl>'])
-          text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
-          text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
-          text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
-          if node.is_ghost:
-            if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
-              text = ''.join([text, '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'])
-            else:
-              text = ''.join([text, '<dt><font color="#FF9900"><b>The node is running on remote host, but is not synchronized, because of filter or errors while sync, see log of <i>master_sync</i></b></font></dt>'])
-              text = ''.join([text, '<dt><font color="#FF9900"><i>Are you use the same ROS packages?</i></font></dt>'])
-          if node.has_running and node.node_info.pid is None and node.node_info.uri is None:
-            text = ''.join([text, '<dt><font color="#FF9900"><b>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'])
-          if not node.node_info.uri is None and node.node_info.masteruri != self.masteruri:
-            text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
-          if node.node_info.pid is None and not node.node_info.uri is None:
-            if not node.node_info.isLocal:
-              text = ''.join([text, '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'])
-            else:
-              text = ''.join([text, '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'])
-              text = ''.join([text, '<a href="unregister_node://', node.name,'">', 'unregister</a></dt>'])
-          text = ''.join([text, '</dl>'])
-          text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC')])
-          text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC')])
-          text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE')])
-          launches = []
-          default_cfgs = []
-          for c in node.cfgs:
-            if isinstance(c, tuple):
-              default_cfgs.append(c[0])
-            else:
-              launches.append(c)
-          text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
-          text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
-          text = ''.join([text, '<dt><a href="copy_log_path://', node.name,'">', 'copy log path to clipboard</a></dt>'])
-          text = ''.join(['<div>', text, '</div>'])
-          name = node.name
+        text = ''.join([text, '<br>'])
+    # add node description for one selected node
+    selectedNodes = self.nodesFromIndexes(selections)
+    if len(selectedNodes) == 1:
+      # create description for a node
+      node = selectedNodes[0]
+      ns, sep, name = node.name.rpartition(rospy.names.SEP)
+      text = ''.join(['<font size="+1"><b>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</b></font><br>'])
+      launches = [c for c in node.cfgs if not isinstance(c, tuple)]
+      default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
+      if launches or default_cfgs:
+        text = ''.join([text, '<a href="restart_node://', node.name,'">', 'restart</a> - '])
+      text = ''.join([text, '<a href="kill_node://', node.name,'">', 'kill</a> - '])
+      text = ''.join([text, '<a href="kill_screen://', node.name,'">', 'kill screen</a><br>'])
+      if launches:
+        text = ''.join([text, '<a href="start_node_at_host://', node.name, '">', 'start@host</a>'])
+      text = ''.join([text, '<p>'])
+      text = ''.join([text, '<dl>'])
+      text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
+      text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
+      text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
+      if node.is_ghost:
+        if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
+          text = ''.join([text, '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'])
+        else:
+          text = ''.join([text, '<dt><font color="#FF9900"><b>The node is running on remote host, but is not synchronized, because of filter or errors while sync, see log of <i>master_sync</i></b></font></dt>'])
+          text = ''.join([text, '<dt><font color="#FF9900"><i>Are you use the same ROS packages?</i></font></dt>'])
+      if node.has_running and node.node_info.pid is None and node.node_info.uri is None:
+        text = ''.join([text, '<dt><font color="#FF9900"><b>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'])
+      if not node.node_info.uri is None and node.node_info.masteruri != self.masteruri:
+        text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
+      if node.node_info.pid is None and not node.node_info.uri is None:
+        if not node.node_info.isLocal:
+          text = ''.join([text, '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'])
+        else:
+          text = ''.join([text, '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'])
+          text = ''.join([text, '<a href="unregister_node://', node.name,'">', 'unregister</a></dt>'])
+      text = ''.join([text, '</dl>'])
+      text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC')])
+      text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC')])
+      text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE')])
+      # set loaunch file paths
+      text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
+      text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
+      text = ''.join([text, '<dt><a href="copy_log_path://', node.name,'">', 'copy log path to clipboard</a></dt>'])
+      text = ''.join(['<div>', text, '</div>'])
+      name = node.name
+    elif len(selectedNodes) > 1:
+#      stoppable_nodes = [sn for sn in selectedNodes if not sn.node_info.uri is None and not self._is_in_ignore_list(sn.name)]
+      restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
+      killable_nodes = [sn for sn in selectedNodes if not sn.node_info.pid is None and not self._is_in_ignore_list(sn.name)]
+      unregisterble_nodes = [sn for sn in selectedNodes if sn.node_info.pid is None and not sn.node_info.uri is None and sn.node_info.isLocal and not self._is_in_ignore_list(sn.name)]
+      # add description for multiple selected nodes
+      if restartable_nodes or killable_nodes or unregisterble_nodes:
+        text = ''.join([text, '<b>Selected nodes:</b><br>'])
+      if restartable_nodes:
+        text = ''.join([text, '<a href="restart_node://all_selected_nodes">', 'restart [', str(len(restartable_nodes)),']</a>'])
+        if killable_nodes or unregisterble_nodes:
+          text = ''.join([text, ' - '])
+      if killable_nodes:
+        text = ''.join([text, '<a href="kill_node://all_selected_nodes">', 'kill [', str(len(killable_nodes)),']</a> - '])
+        text = ''.join([text, '<a href="kill_screen://all_selected_nodes">', 'kill screen [', str(len(killable_nodes)),']</a>'])
+        if unregisterble_nodes:
+          text = ''.join([text, ' - '])
+      if unregisterble_nodes:
+        text = ''.join([text, '<a href="unregister_node://all_selected_nodes">', 'unregister [', str(len(unregisterble_nodes)),']</a>'])
+      if restartable_nodes:
+        text = ''.join([text, '<br><a href="start_node_at_host://all_selected_nodes">', 'start@host [', str(len(restartable_nodes)),']</a>'])
 
     if self.__last_info_type == 'Node' and (self.__last_info_text != text or force_emit):
       self.__last_info_text = text
@@ -1683,7 +1722,7 @@ class MasterViewProxy(QtGui.QWidget):
       socket.setdefaulttimeout(3)
       path_on_host = nm.starter().copylogPath2Clipboards(host, nodenames, True)
       socket.setdefaulttimeout(None)
-      QtGui.QApplication.clipboard().setText(''.join([self.current_user, '@', host, ':', path_on_host]))
+      QtGui.QApplication.clipboard().setText(''.join([getpass.getuser() if self.is_local else self.current_user, '@', host, ':', path_on_host]))
     except Exception as e:
       WarningMessageBox(QtGui.QMessageBox.Warning, "Get log path", 
                         'Error while get log path',
@@ -2006,7 +2045,6 @@ class MasterViewProxy(QtGui.QWidget):
         topic_prefix = ''.join(['/rostopic_pub', topic.name, '_'])
         node_names = self.master_info.node_names
         for n in node_names:
-          
           if n.startswith(topic_prefix):
             nodes2stop.append(n)
       self.stop_nodes_by_name(nodes2stop)

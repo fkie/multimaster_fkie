@@ -1482,9 +1482,15 @@ class MainWindow(QtGui.QMainWindow):
     elif url.toString().startswith('unregister_node://'):
       if not self.currentMaster is None:
         self.currentMaster.on_unregister_nodes()
+    elif url.toString().startswith('start_node://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_start_clicked()
     elif url.toString().startswith('restart_node://'):
       if not self.currentMaster is None:
         self.currentMaster.on_force_start_nodes()
+    elif url.toString().startswith('start_node_at_host://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_start_nodes_at_host()
     elif url.toString().startswith('kill_node://'):
       if not self.currentMaster is None:
         self.currentMaster.on_kill_nodes()

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>661</width>
+    <width>662</width>
     <height>589</height>
    </rect>
   </property>
@@ -162,7 +162,7 @@ p, li { white-space: pre-wrap; }
            <number>0</number>
           </property>
           <item>
-           <widget class="QToolButton" name="startButton">
+           <widget class="QPushButton" name="startButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -172,6 +172,12 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
@@ -180,9 +186,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Start  selected service, hold &lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;  &lt;span style=&quot; font-weight:600;&quot;&gt;Ctrl&lt;/span&gt; to prefer the default configuration&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;  &lt;span style=&quot; font-weight:600;&quot;&gt;Shift&lt;/span&gt; to prefer a loded configuration&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Start</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -194,13 +197,13 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
-            <property name="popupMode">
-             <enum>QToolButton::DelayedPopup</enum>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="stopButton">
+           <widget class="QPushButton" name="stopButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -209,6 +212,12 @@ p, li { white-space: pre-wrap; }
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
             </property>
             <property name="toolTip">
              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -223,9 +232,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;&quot;&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Note:&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; The stop button is disabled on errors&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
-            <property name="text">
-             <string>Stop</string>
-            </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
               <normaloff>:/icons/deleket_deviantart_stop.png</normaloff>:/icons/deleket_deviantart_stop.png</iconset>
@@ -236,8 +242,8 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
-            <property name="popupMode">
-             <enum>QToolButton::DelayedPopup</enum>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -249,7 +255,7 @@ p, li { white-space: pre-wrap; }
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="ioButton">
+           <widget class="QPushButton" name="ioButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -258,6 +264,12 @@ p, li { white-space: pre-wrap; }
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
             </property>
             <property name="toolTip">
              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -269,9 +281,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;&quot;&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Note:&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; if a node was killed on a remote host, it shows still as running. Unregister it manually!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
-            <property name="text">
-             <string>Show I/O Terminal</string>
-            </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
               <normaloff>:/icons/crystal_clear_show_io.png</normaloff>:/icons/crystal_clear_show_io.png</iconset>
@@ -282,13 +291,13 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
-            <property name="popupMode">
-             <enum>QToolButton::DelayedPopup</enum>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="logButton">
+           <widget class="QPushButton" name="logButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -298,11 +307,17 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>Show log file of selected service</string>
             </property>
             <property name="text">
-             <string>View Logfile</string>
+             <string/>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -314,13 +329,13 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
-            <property name="popupMode">
-             <enum>QToolButton::DelayedPopup</enum>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="logDeleteButton">
+           <widget class="QPushButton" name="logDeleteButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -330,11 +345,14 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>Delete log file of selected service</string>
-            </property>
-            <property name="text">
-             <string>Delete Logfile</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -346,6 +364,9 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
@@ -356,7 +377,7 @@ p, li { white-space: pre-wrap; }
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="dynamicConfigButton">
+           <widget class="QPushButton" name="dynamicConfigButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -366,11 +387,14 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>Edit the configuration of the node using dynamic reconfigure</string>
-            </property>
-            <property name="text">
-             <string>Dynamic Configuration</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -382,10 +406,13 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="editRosParamButton">
+           <widget class="QPushButton" name="editRosParamButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -395,11 +422,14 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Edit configuration of selected service in ROS parameter server&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Edit Parameter on ROS parameter server</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -411,10 +441,13 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="editConfigButton">
+           <widget class="QPushButton" name="editConfigButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -424,11 +457,14 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Edit configuration of selected service in launch file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Edit Configuration</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -440,6 +476,9 @@ p, li { white-space: pre-wrap; }
               <height>32</height>
              </size>
             </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
@@ -450,7 +489,7 @@ p, li { white-space: pre-wrap; }
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="saveButton">
+           <widget class="QPushButton" name="saveButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -460,11 +499,14 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stores loaded launch files in a new file.&lt;/p&gt;&lt;p&gt;No sanity check!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>...</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -492,7 +534,7 @@ p, li { white-space: pre-wrap; }
            </spacer>
           </item>
           <item>
-           <widget class="QToolButton" name="closeCfgButton">
+           <widget class="QPushButton" name="closeCfgButton">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -502,11 +544,14 @@ p, li { white-space: pre-wrap; }
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>40</height>
+             </size>
+            </property>
             <property name="toolTip">
              <string>Closes open configurations (Ctrl+F4)</string>
-            </property>
-            <property name="text">
-             <string>Deselect this ROS Master</string>
             </property>
             <property name="icon">
              <iconset resource="GUI.qrc">
@@ -521,6 +566,9 @@ p, li { white-space: pre-wrap; }
             <property name="shortcut">
              <string>Ctrl+F4</string>
             </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
          </layout>
@@ -533,17 +581,20 @@ p, li { white-space: pre-wrap; }
        <string>Topics</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>1</number>
+       </property>
        <property name="leftMargin">
-        <number>3</number>
+        <number>0</number>
        </property>
        <property name="topMargin">
-        <number>4</number>
+        <number>1</number>
        </property>
        <property name="rightMargin">
-        <number>3</number>
+        <number>1</number>
        </property>
        <property name="bottomMargin">
-        <number>3</number>
+        <number>1</number>
        </property>
        <item>
         <widget class="QFrame" name="filter_frame_topic">
@@ -608,7 +659,7 @@ p, li { white-space: pre-wrap; }
               <number>0</number>
              </property>
              <item>
-              <widget class="QToolButton" name="echoTopicButton">
+              <widget class="QPushButton" name="echoTopicButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -618,15 +669,17 @@ p, li { white-space: pre-wrap; }
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
                <property name="toolTip">
-                <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;shows the content of the topic&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the content of the topic&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>Echo Topic</string>
+                <string/>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -638,10 +691,13 @@ p, li { white-space: pre-wrap; }
                  <height>32</height>
                 </size>
                </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="hzTopicButton">
+              <widget class="QPushButton" name="hzTopicButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -651,8 +707,14 @@ p, li { white-space: pre-wrap; }
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
                <property name="toolTip">
-                <string>shows only the receive rate of the topic</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show only the receive rate of the topic&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -664,6 +726,9 @@ p, li { white-space: pre-wrap; }
                  <height>32</height>
                 </size>
                </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
@@ -674,15 +739,21 @@ p, li { white-space: pre-wrap; }
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="pubTopicButton">
+              <widget class="QPushButton" name="pubTopicButton">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
                <property name="toolTip">
-                <string>starts a publisher for selected topic or creates a new topic, if no selected</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Start a publisher for selected topic or creates a new topic, if no selected&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -694,19 +765,27 @@ p, li { white-space: pre-wrap; }
                  <height>32</height>
                 </size>
                </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="pubStopTopicButton">
+              <widget class="QPushButton" name="pubStopTopicButton">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
                <property name="toolTip">
-                <string>stops a running publisher of selected topic
-Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stop a running publisher of selected topic&lt;/p&gt;&lt;p&gt;Publishers are all nodes which starts with &lt;span style=&quot; font-style:italic;&quot;&gt;/rostopic_pub[topicname]&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -717,6 +796,9 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                  <width>32</width>
                  <height>32</height>
                 </size>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -746,17 +828,20 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
        <string>Services</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
+       <property name="spacing">
+        <number>1</number>
+       </property>
        <property name="leftMargin">
-        <number>3</number>
+        <number>0</number>
        </property>
        <property name="topMargin">
-        <number>4</number>
-       </property>
-       <property name="rightMargin">
         <number>3</number>
        </property>
+       <property name="rightMargin">
+        <number>1</number>
+       </property>
        <property name="bottomMargin">
-        <number>4</number>
+        <number>1</number>
        </property>
        <item>
         <widget class="QFrame" name="filter_frame_service">
@@ -821,12 +906,21 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
               <number>0</number>
              </property>
              <item>
-              <widget class="QToolButton" name="callServiceButton">
+              <widget class="QPushButton" name="callServiceButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>Call service</string>
+               </property>
                <property name="text">
-                <string>Call Service</string>
+                <string/>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -837,6 +931,9 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                  <width>32</width>
                  <height>32</height>
                 </size>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -866,17 +963,20 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
        <string>Parameter</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>1</number>
+       </property>
        <property name="leftMargin">
-        <number>3</number>
+        <number>0</number>
        </property>
        <property name="topMargin">
-        <number>4</number>
-       </property>
-       <property name="rightMargin">
         <number>3</number>
        </property>
+       <property name="rightMargin">
+        <number>1</number>
+       </property>
        <property name="bottomMargin">
-        <number>4</number>
+        <number>1</number>
        </property>
        <item>
         <widget class="QFrame" name="filter_frame">
@@ -956,15 +1056,24 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
               <number>0</number>
              </property>
              <item>
-              <widget class="QToolButton" name="getParameterButton">
+              <widget class="QPushButton" name="getParameterButton">
                <property name="enabled">
                 <bool>true</bool>
                </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
                <property name="toolTip">
                 <string>Get the paramter list from the Paramter server</string>
-               </property>
-               <property name="text">
-                <string>Call Service</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -976,12 +1085,30 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                  <height>32</height>
                 </size>
                </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="addParameterButton">
+              <widget class="QPushButton" name="addParameterButton">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>Add a new parameter</string>
+               </property>
                <property name="text">
-                <string>...</string>
+                <string/>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -993,18 +1120,27 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                  <height>32</height>
                 </size>
                </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="deleteParameterButton">
+              <widget class="QPushButton" name="deleteParameterButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
                <property name="toolTip">
-                <string>delete selected parameter from the paramater server</string>
+                <string>Delete selected parameter from the paramater server</string>
                </property>
                <property name="text">
-                <string>Call Service</string>
+                <string/>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -1016,24 +1152,33 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                  <height>32</height>
                 </size>
                </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="saveParameterButton">
+              <widget class="QPushButton" name="saveParameterButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
                </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Saves selected parameter to a file using YAML format&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>...</string>
+                <string/>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
@@ -1044,6 +1189,9 @@ Publishers are all nodes which starts with '/rostopic_pub[topicname]'</string>
                  <width>32</width>
                  <height>32</height>
                 </size>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
