@@ -91,10 +91,11 @@ class FileWatcher(QtCore.QObject):
           if uri == masteruri:
             del self.launches[(uri, file)]
     except:
-      import traceback
-      print traceback.format_exc()
+#      import traceback
+#      print traceback.format_exc()
+      pass
     self.update_files()
-  
+
   def update_files(self):
     result = set()
     for files in self.launches.itervalues():

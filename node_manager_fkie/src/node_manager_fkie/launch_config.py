@@ -216,11 +216,14 @@ class LaunchConfig(QtCore.QObject):
           endIndex = line.find('"', startIndex+1)
           fileName = line[startIndex+1:endIndex]
           if len(fileName) > 0:
-            path = cls.interpretPath(fileName, os.path.dirname(file))
-            if os.path.isfile(path):
-              result.add(path)
-              if path.endswith('.launch'):
-                result.update(cls.getIncludedFiles(path))
+            try:
+              path = cls.interpretPath(fileName, os.path.dirname(file))
+              if os.path.isfile(path):
+                result.add(path)
+                if path.endswith('.launch'):
+                  result.update(cls.getIncludedFiles(path))
+            except:
+              pass
     return list(result)
 
   def load(self, argv):
