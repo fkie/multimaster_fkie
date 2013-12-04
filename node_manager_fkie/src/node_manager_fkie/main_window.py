@@ -1127,10 +1127,13 @@ class MainWindow(QtGui.QMainWindow):
     '''
     item, path, id = activated.model().items[activated.row()]
     try:
+      self.ui.xmlFileView.setEnabled(False)
       file = activated.model().expandItem(item, path)
       if not file is None:
         self.loadLaunchFile(path)
+      self.ui.xmlFileView.setEnabled(True)
     except Exception, e:
+      self.ui.xmlFileView.setEnabled(True)
       rospy.logwarn("Error while load launch file %s: %s", str(item), str(e))
       WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
                         ''.join(['Error while load launch file:\n', item]),
@@ -1174,8 +1177,8 @@ class MainWindow(QtGui.QMainWindow):
     Creates a new launch file.
     '''
     (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
-                                                 "New launch file", 
-                                                 self.__current_path, 
+                                                 "New launch file",
+                                                 self.__current_path if self.ui.xmlFileView.model().currentPath is None else self.ui.xmlFileView.model().currentPath,
                                                  "Config files (*.launch *.yaml);;All files (*)")
     if fileName:
       try:
@@ -1184,7 +1187,6 @@ class MainWindow(QtGui.QMainWindow):
           WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
                          'The new file is not in a ROS package').exec_()
           return
-        self.ui.xmlFileView.model().setPath(os.path.dirname(fileName))
         with open(fileName, 'w+') as f:
           f.write("<launch>\n"
                   "  <arg name=\"robot_ns\" default=\"my_robot\"/>\n"
@@ -1198,6 +1200,8 @@ class MainWindow(QtGui.QMainWindow):
                   "</launch>\n"
                   )
         self._editor_dialog_open([fileName], '')
+        self.__current_path = os.path.dirname(fileName)
+        self.ui.xmlFileView.model().setPath(self.__current_path)
       except EnvironmentError as e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
                          'Error while create a new file',
@@ -1430,7 +1434,7 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs = SelectDialog.getValue(''.join(['Update configurations -- ', os.path.basename(changed)]), choices.keys(), False, True, self)
+      cfgs = SelectDialog.getValue('Reload configurations?', '<b>%s</b> was changed. Select affected configurations to reload:'%os.path.basename(changed), choices.keys(), False, True, self)
       for (muri, lfile) in new_affected:
         self.__in_question.remove((muri, lfile))
       for c in cfgs:

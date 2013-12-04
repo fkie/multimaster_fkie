@@ -106,12 +106,13 @@ class LaunchListModel(QtCore.QAbstractListModel):
         return pathItem
     elif role == QtCore.Qt.ToolTipRole:
       # return the tooltip of the item
-      pathItem, path, pathId = self.items[index.row()]
-      return path
+      pathItem, result, pathId = self.items[index.row()]
+      if pathId == LaunchListModel.RECENT_FILE:
+        result = '\n'.join([result, "Press 'Delete' to remove the entry from the history list"])
+      return result.decode(sys.getfilesystemencoding())
     elif role == QtCore.Qt.DecorationRole:
       # return the showed icon
       pathItem, path, pathId = self.items[index.row()]
-      
       if pathId > LaunchListModel.NOTHING and self.icons.has_key(pathId):
         return self.icons[pathId]
       return None

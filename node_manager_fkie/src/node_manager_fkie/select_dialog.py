@@ -39,7 +39,7 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, parent=None):
+  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', parent=None):
     '''
     Creates an input dialog.
     @param input: a list with strings
@@ -63,6 +63,12 @@ class SelectDialog(QtGui.QDialog):
     self.filter_field.textChanged.connect(self._on_filter_changed)
     self.verticalLayout.addWidget(self.filter_frame)
 
+    if description:
+      self.description_label = QtGui.QLabel(self)
+      self.description_label.setWordWrap(True)
+      self.description_label.setText(description)
+      self.verticalLayout.addWidget(self.description_label)
+
     # create area for the parameter
     self.scrollArea = scrollArea = QtGui.QScrollArea(self);
     self.scrollArea.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -71,7 +77,7 @@ class SelectDialog(QtGui.QDialog):
     self.content = MainBox(self)
     scrollArea.setWidget(self.content)
     self.verticalLayout.addWidget(scrollArea)
-    
+
     # add select all option
     if not exclusive:
       self._ignore_next_toggle = False
@@ -126,8 +132,8 @@ class SelectDialog(QtGui.QDialog):
     return self.content.getSelected()
 
   @staticmethod
-  def getValue(title, input=list(), exclusive=False, preselect_all=False, parent=None):
-    selectDia = SelectDialog(input, exclusive=exclusive, preselect_all=preselect_all, parent=parent)
+  def getValue(title, description='', input=list(), exclusive=False, preselect_all=False, parent=None):
+    selectDia = SelectDialog(input, exclusive=exclusive, preselect_all=preselect_all, description=description, parent=parent)
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():

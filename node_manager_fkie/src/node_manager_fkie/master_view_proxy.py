@@ -657,7 +657,7 @@ class MasterViewProxy(QtGui.QWidget):
         nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
         # restart nodes
         if nodes2start:
-          restart = SelectDialog.getValue('The parameter/nodes are changed. Restart follow nodes?', nodes2start, False, True, self)
+          restart = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, self)
           self.start_nodes_by_name(restart, launchfile, True)
 
 #      print "MASTER:", launchConfig.Roscfg.master
@@ -1406,7 +1406,7 @@ class MasterViewProxy(QtGui.QWidget):
     if len(choices) == 1:
       value = choices.keys()[0]
     elif len(choices) > 0:
-      items = SelectDialog.getValue('Configuration selection', choices.keys(), True)
+      items = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>'%nodename, choices.keys(), True)
       if items:
         value = items[0]
     return value
@@ -1663,7 +1663,7 @@ class MasterViewProxy(QtGui.QWidget):
       sel_screen = []
       try:
         screens = nm.screen().getActiveScreens(host, auto_pw_request=True, user=self.current_user)
-        sel_screen = SelectDialog.getValue('Open screen', screens, False, False, self)
+        sel_screen = SelectDialog.getValue('Open screen', '', screens, False, False, self)
       except Exception, e:
         rospy.logwarn("Error while get screen list: %s", str(e))
         WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error", 
@@ -1737,7 +1737,7 @@ class MasterViewProxy(QtGui.QWidget):
 #    try:
 #      nm.screen().LOG_PATH.
 #      screens = nm.screen().getActiveScreens(host, auto_pw_request=True)
-#      sel_screen = SelectDialog.getValue('Open log', screens, False, self)
+#      sel_screen = SelectDialog.getValue('Open log', '', screens, False, self)
 #    except Exception, e:
 #      rospy.logwarn("Error while get screen list: %s", str(e))
 #      WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error", 
@@ -1769,7 +1769,7 @@ class MasterViewProxy(QtGui.QWidget):
           if len(nodes) == 1:
             items = nodes
           elif len(nodes) > 1:
-            items = SelectDialog.getValue('Dynamic configuration selection', [i for i in nodes])
+            items = SelectDialog.getValue('Dynamic configuration selection', '', [i for i in nodes])
             if items is None:
               items = []
           if len(items) > 3:
@@ -1866,7 +1866,7 @@ class MasterViewProxy(QtGui.QWidget):
     cfgs = []
     
 #    if len(choices) > 1:
-    cfgs = SelectDialog.getValue('Close configurations', choices.keys(), False, False, self)
+    cfgs = SelectDialog.getValue('Close configurations', '', choices.keys(), False, False, self)
 #    elif len(choices) == 1:
 #      cfgs = choices.values()[0]
 
