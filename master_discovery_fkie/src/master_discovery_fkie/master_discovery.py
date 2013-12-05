@@ -303,7 +303,9 @@ class Discoverer(threading.Thread):
   ''' the test rate of ROS master state in Hz (Default: 1 Hz). '''
   REMOVE_AFTER = 300
   ''' remove an offline host after this time in [sec] (Default: 300 sec). '''
-  
+
+  NETPACKET_SIZE = 68
+
   def __init__(self, mcast_port, mcast_group, monitor_port):
     '''
     Initialize method for the Discoverer class
@@ -339,8 +341,6 @@ class Discoverer(threading.Thread):
       Discoverer.REMOVE_AFTER = rospy.get_param('~remove_after')
     if rospy.has_param('~static_hosts'):
       self.static_hosts[len(self.static_hosts):] = rospy.get_param('~static_hosts')
-    if rospy.has_param('~static_hosts'):
-      self.static_hosts[len(self.static_hosts):] = rospy.get_param('~static_hosts')
     self._send_mcast = rospy.get_param('~send_mcast', True)
 
     if not self._send_mcast and not self.static_hosts:
@@ -348,6 +348,7 @@ class Discoverer(threading.Thread):
     rospy.loginfo("Check the ROS Master[Hz]: " + str(Discoverer.ROSMASTER_HZ))
     rospy.loginfo("Heart beat [Hz]: " + str(Discoverer.HEARTBEAT_HZ))
     rospy.loginfo("Static hosts: " + str(self.static_hosts))
+    rospy.loginfo("Approx. network load: %s bytes/s"%str(self.HEARTBEAT_HZ * (self.NETPACKET_SIZE*(len(self.static_hosts) + 1 if self._send_mcast else 0))))
     self.current_check_hz = Discoverer.ROSMASTER_HZ
     self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped)
 
