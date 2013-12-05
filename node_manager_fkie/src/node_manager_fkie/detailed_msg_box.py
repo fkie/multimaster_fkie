@@ -49,20 +49,19 @@ class WarningMessageBox(QtGui.QMessageBox):
   def __init__(self, icon, title, text, detailed_text="", buttons=QtGui.QMessageBox.Ok):
     QtGui.QMessageBox.__init__(self, icon, title, text, buttons)
     if detailed_text:
-#      self.setSizeGripEnabled(True)
       self.setDetailedText(detailed_text)
 #            self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 #            self.setSizeGripEnabled(True)
       horizontalSpacer = QtGui.QSpacerItem(480, 0, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
       layout = self.layout()
       layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
-    self.setEscapeButton(QtGui.QMessageBox.Ok)
-#    self.setMinimumHeight(0)
-#    self.setMaximumHeight(800)
-#    self.setMinimumWidth(0)
-#    self.setMaximumWidth(800)
-#    self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-    textEdit = self.findChild(QtGui.QTextEdit)
+
+    if QtGui.QMessageBox.Abort & buttons:
+      self.setEscapeButton(QtGui.QMessageBox.Abort)
+    if QtGui.QMessageBox.Ignore & buttons:
+      self.setEscapeButton(QtGui.QMessageBox.Ignore)
+
+    self.textEdit = textEdit = self.findChild(QtGui.QTextEdit)
     if textEdit != None :
       textEdit.setMinimumHeight(0)
       textEdit.setMaximumHeight(600)
@@ -70,9 +69,22 @@ class WarningMessageBox(QtGui.QMessageBox):
       textEdit.setMaximumWidth(600)
       textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 
-    ignore_all_btn = QtGui.QPushButton('Do not display this warning again')
-    ignore_all_btn.setFlat(True)
-    self.addButton(ignore_all_btn, QtGui.QMessageBox.ActionRole)
+    self.ignore_all_btn = None
+    self.first = True
+
+  def resizeEvent(self, event):
+    # THIS IS A HACK: add a button to ignore the error messages after the details are showed
+    QtGui.QMessageBox.resizeEvent(self, event)
+    if self.first or self.textEdit is None:
+      self.first = False
+      return
+    if not self.ignore_all_btn:
+      self.ignore_all_btn = QtGui.QPushButton('Don\'t display again')
+#      self.ignore_all_btn.setFlat(True)
+      self.addButton(self.ignore_all_btn, QtGui.QMessageBox.HelpRole)
+    else:
+      self.ignore_all_btn.setVisible(self.textEdit.isVisible())
+    self.first = False
 
 #  def event(self, e):
 #    print "TYPE:", e.type()
