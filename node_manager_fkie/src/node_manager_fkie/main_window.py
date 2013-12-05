@@ -1048,7 +1048,8 @@ class MainWindow(QtGui.QMainWindow):
                        'ROS Master Name' : ('string', 'autodetect'),
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
                        'Static hosts' : ('string', ''),
-                       'Username' : ('string', [self.ui.userComboBox.itemText(i) for i in reversed(range(self.ui.userComboBox.count()))])
+                       'Username' : ('string', [self.ui.userComboBox.itemText(i) for i in reversed(range(self.ui.userComboBox.count()))]),
+                       'Send MCast' : ('bool', True),
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
@@ -1056,7 +1057,7 @@ class MainWindow(QtGui.QMainWindow):
     dia = ParameterDialog(params)
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
-    dia.resize(350,260)
+    dia.resize(350,280)
     dia.setFocusField('Host')
     if dia.exec_():
       try:
@@ -1068,6 +1069,7 @@ class MainWindow(QtGui.QMainWindow):
         masteruri = params['Optional Parameter']['ROS Master URI']
         static_hosts = params['Optional Parameter']['Static hosts']
         username = params['Optional Parameter']['Username']
+        send_mcast = params['Optional Parameter']['Send MCast']
         if static_hosts:
           static_hosts = static_hosts.replace(' ', '')
           static_hosts = static_hosts.replace('[', '')
@@ -1080,6 +1082,7 @@ class MainWindow(QtGui.QMainWindow):
             args.append(''.join(['_mcast_port:=', str(11511)]))
           if not mastername == 'autodetect':
             args.append(''.join(['_name:=', str(mastername)]))
+          args.append('_send_mcast:=%s'%str(send_mcast))
           args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
           #TODO: remove the name parameter from the ROS parameter server
           self._progress_queue.add2queue(str(self._progress_queue.count()), 
@@ -1132,6 +1135,7 @@ class MainWindow(QtGui.QMainWindow):
       if not file is None:
         self.loadLaunchFile(path)
       self.ui.xmlFileView.setEnabled(True)
+      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
     except Exception, e:
       self.ui.xmlFileView.setEnabled(True)
       rospy.logwarn("Error while load launch file %s: %s", str(item), str(e))
