@@ -181,7 +181,7 @@ class Main(object):
                 self.masters[mastername].setOwnMasterState(MasterInfo.from_list(self.__own_state))
 #              self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
 #              self.own_state_getter.start()
-        elif self.__sync_topics_on_demand and self.__timestamp_local != timestamp_local:
+        elif self.__timestamp_local != timestamp_local:
           # get the master info from local discovery master and set it to all sync threads
           self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
           self.own_state_getter.start()
@@ -199,7 +199,7 @@ class Main(object):
       socket.setdefaulttimeout(None)
       with self.__lock:
         for (mastername, s) in self.masters.iteritems():
-          s.setOwnMasterState(own_state)
+          s.setOwnMasterState(own_state, self.__sync_topics_on_demand)
         self.__timestamp_local = own_state.timestamp_local
     except:
       import traceback
@@ -209,7 +209,7 @@ class Main(object):
       if not self.own_state_getter is None:
         self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
         self.own_state_getter.start()
-      
+
   def removeMaster(self, ros_master_name):
     '''
     Removes the master with given name from the synchronization list.

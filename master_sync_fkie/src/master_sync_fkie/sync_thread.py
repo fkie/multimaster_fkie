@@ -180,11 +180,13 @@ class SyncThread(threading.Thread):
         self.__cv.notify()
 #    rospy.logdebug("SyncThread[%s]: update exit", self.masterInfo.name)
 
-  def setOwnMasterState(self, own_state):
+  def setOwnMasterState(self, own_state, sync_on_demand=False):
     '''
     Sets the state of the local ROS master state. If this state is not None, the topics on demand will be synchronized. 
     @param own_state: the state of the local ROS master state
     @type own_state:  C{master_discovery_fkie/MasterInfo}
+    @param sync_on_demand: if True, sync only topic, which are also local exists (Default: False)
+    @type sync_on_demand:  bool
     '''
 #    rospy.logdebug("SyncThread[%s]: setOwnMasterState", self.masterInfo.name)
     with self.__cv:
@@ -192,7 +194,8 @@ class SyncThread(threading.Thread):
       if self.__own_state is None or (self.__own_state.timestamp_local != timestamp_local):
         rospy.logdebug("SyncThread[%s]: local state update notify new timestamp(%s), old(%s)", self.masterInfo.name, str(timestamp_local), str(self.__own_state.timestamp_local if not self.__own_state is None else 'None'))
         self.__own_state = own_state
-        self._filter.update_sync_topics_pattern(self.__own_state.topic_names)
+        if sync_on_demand:
+          self._filter.update_sync_topics_pattern(self.__own_state.topic_names)
         self.masterInfo.syncts = 0.0
         # for congestion avoidance 
         self._ts_last_update_request = time.time()
@@ -297,6 +300,10 @@ class SyncThread(threading.Thread):
               for node in nodes:
                 topictype = self._getTopicType(topic, topicTypes)
                 nodeuri = self._getNodeUri(node, nodeProviders, remote_masteruri)
+                # if remote topictype is None, try to set to the local topic type
+                if not topictype and not self.__own_state is None:
+                  if topic in self.__own_state.topics:
+                    topictype = self.__own_state.topics[topic].type
                 if topictype and nodeuri and not self._doIgnoreNT(node, topic, topictype):
                   # register the node as subscriber in local ROS master
                   if not ((topic, node, nodeuri) in self.__subscriber):
@@ -424,7 +431,7 @@ class SyncThread(threading.Thread):
   def _getTopicType(self, topic, topicTypes):
     for (topicname, type) in topicTypes:
       if (topicname == topic):
-        return type
+        return type.replace('None', '')
     return None
 
   def _getNodeUri(self, node, nodes, remote_masteruri):
