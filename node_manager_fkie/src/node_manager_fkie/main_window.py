@@ -1533,9 +1533,9 @@ class MainWindow(QtGui.QMainWindow):
         if fileName and self.__current_master_label_name:
           p = QtGui.QPixmap(fileName)
           p.save(os.path.join(nm.ROBOTS_DIR, self.__current_master_label_name+'.png'))
-          if self.__icons.has_key(self.__current_master_label_name):
-            del self.__icons[self.__current_master_label_name]
-          self._assigne_icon(self.__current_master_label_name)
+        if self.__icons.has_key(self.__current_master_label_name):
+          del self.__icons[self.__current_master_label_name]
+        self._assigne_icon(self.__current_master_label_name)
       except Exception as e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "Error", 
                           ''.join(['Set robot image for ', str(self.__current_master_label_name), ' failed!']),
