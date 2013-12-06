@@ -255,6 +255,7 @@ class MainWindow(QtGui.QMainWindow):
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
     self._refresh_time = time.time()
+    self._last_time_view_update = time.time()
 
     # set the help text
     try:
@@ -826,27 +827,31 @@ class MainWindow(QtGui.QMainWindow):
       self.ui.syncButton.setEnabled(True)
 
   def on_master_timecheck(self):
-    if not self.currentMaster is None and not self.currentMaster.master_state is None:
-      master = self.getMaster(self.currentMaster.master_state.uri)
-      name = master.master_state.name
-      masteruri = master.master_state.uri
-      if self.restricted_to_one_master:
-        name = ''.join([name, ' <span style=" color:red;">(restricted)</span>'])
-        if not self.ui.masternameLabel.toolTip():
-          self.ui.masternameLabel.setToolTip('The multicore options are disabled, because the roscore is running on remote host!')
-      if not master.master_info is None:
-        self.showMasterName(masteruri, name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
-      elif not master.master_state is None:
-        self.showMasterName(masteruri, name, 'Try to get info!!!', master.master_state.online)
-    else:
-      self.showMasterName('', 'No robot selected', None, False)
-    if (time.time() - self._refresh_time > 30.0):
+    current_time = time.time()
+    if self.isActiveWindow() or current_time - self._last_time_view_update > 5:
+      self._last_time_view_update = current_time
+      if not self.currentMaster is None and not self.currentMaster.master_state is None:
+        master = self.getMaster(self.currentMaster.master_state.uri)
+        name = master.master_state.name
+        masteruri = master.master_state.uri
+        if self.restricted_to_one_master:
+          name = ''.join([name, ' <span style=" color:red;">(restricted)</span>'])
+          if not self.ui.masternameLabel.toolTip():
+            self.ui.masternameLabel.setToolTip('The multicore options are disabled, because the roscore is running on remote host!')
+        if not master.master_info is None:
+          self.showMasterName(masteruri, name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
+          pass
+        elif not master.master_state is None:
+          self.showMasterName(masteruri, name, 'Try to get info!!!', master.master_state.online)
+      else:
+        self.showMasterName('', 'No robot selected', None, False)
+    if (current_time - self._refresh_time > 30.0):
       masteruri = self.getMasteruri()
       if not masteruri is None:
         master = self.getMaster(masteruri)
         if not master is None and not master.master_state is None:
           self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
-        self._refresh_time = time.time()
+        self._refresh_time = current_time
 
 
   def showMasterName(self, masteruri, name, timestamp, online=True):
@@ -857,28 +862,15 @@ class MainWindow(QtGui.QMainWindow):
     try:
       tries = self._con_tries[masteruri]
       if tries > 1:
-        con_err = ''.join(['<span style=" color:red;">connection problems (', str(tries), ' tries)! </span>'])
+        con_err = '<span style=" color:red;">connection problems (%s tries)! </span>'%str(tries)
     except:
       pass
     if self.__current_master_label_name != name:
       self.__current_master_label_name = name
-      self.ui.masternameLabel.setText(''.join(['<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">\n'
-                                               '<html><head><meta name="qrichtext" content="1" />'
-                                               '<style type="text/css">\np, li { white-space: pre-wrap; }\n</style></head>'
-                                               '<body style=" font-family:"Ubuntu"; font-size:11pt; font-weight:400; font-style:normal;">\n'
-                                               '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">'
-                                               '<span style=" font-size:14pt; font-weight:600;">',
-                                               name, 
-                                               '</span></p></body></html>']))
-    self.ui.masterInfoLabel.setText(''.join(['<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">\n'
-                                             '<html><head><meta name="qrichtext" content="1" /></head><body><span>'
-                                             '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">'
-                                             '<span style=" font-size:8pt;">', 
-                                             con_err,
-                                             'updated: ' if not timestamp is None else '', 
-                                             str(timestamp) if not timestamp is None else ' ', 
-                                             '</span></p></body></html>'])
-                                    )
+      self.ui.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>'%name)
+    ts = 'updated: %s'%str(timestamp) if not timestamp is None else ''
+    self.ui.masterInfoLabel.setText('<span style=" font-size:8pt;">%s%s</span>'%(con_err, ts))
+
     # load the robot image, if one exists
     if self.ui.masternameLabel.isEnabled():
       if self.__icons.has_key(name):
@@ -896,10 +888,6 @@ class MainWindow(QtGui.QMainWindow):
     master = self.getMaster(masteruri, False)
     sim_time_enabled = self.ui.masternameLabel.isEnabled() and not master is None and master.use_sim_time
     self.ui.simTimeLabel.setVisible(sim_time_enabled)
-#    else:
-#      icon = QtGui.QIcon()
-#      self.ui.imageLabel.setPixmap(icon.pixmap(label.size()))
-#      self.ui.imageLabel.setToolTip('')
     self.ui.masternameLabel.setEnabled(online)
     self.ui.masterInfoFrame.setEnabled((not timestamp is None))
 
