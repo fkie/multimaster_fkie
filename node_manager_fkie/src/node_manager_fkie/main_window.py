@@ -278,6 +278,8 @@ class MainWindow(QtGui.QMainWindow):
     self._con_tries = dict()
     self._subscribe()
 
+    self.ui.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
+
   def on_hide_docks_toggled(self, checked):
     if self.ui.dockWidgetArea(self.ui.launchDock) == QtCore.Qt.LeftDockWidgetArea:
       self.ui.launchDock.setVisible(not checked)
@@ -877,7 +879,7 @@ class MainWindow(QtGui.QMainWindow):
         if self.__icons[name] != self.__current_icon:
           icon = self.__icons[name]
           self.__current_icon = icon
-          self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.imageLabel.size()))
+          self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
           self.ui.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', nm.ROBOTS_DIR, name, '.png', '" alt="', name,'"></body></html>']))
       elif self.__icons['default_pc'] != self.__current_icon:
         icon = self.__icons['default_pc']
@@ -1515,3 +1517,27 @@ class MainWindow(QtGui.QMainWindow):
           pass
       self.ui.xmlFileView.model().reloadCurrentPath()
     QtGui.QMainWindow.keyReleaseEvent(self, event)
+
+  def image_mouseDoubleClickEvent(self, event):
+    '''
+    Set the robot image
+    '''
+    if self.currentMaster:
+      try:
+        if not os.path.isdir(nm.ROBOTS_DIR):
+          os.makedirs(nm.ROBOTS_DIR)
+        (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
+                                                 "Set robot image",
+                                                 nm.ROBOTS_DIR,
+                                                 "Image files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.xbm);;All files (*)")
+        if fileName and self.__current_master_label_name:
+          p = QtGui.QPixmap(fileName)
+          p.save(os.path.join(nm.ROBOTS_DIR, self.__current_master_label_name+'.png'))
+          if self.__icons.has_key(self.__current_master_label_name):
+            del self.__icons[self.__current_master_label_name]
+          self._assigne_icon(self.__current_master_label_name)
+      except Exception as e:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Error", 
+                          ''.join(['Set robot image for ', str(self.__current_master_label_name), ' failed!']),
+                          str(e)).exec_()
+        rospy.logwarn("Error while set robot image for %s: %s", str(self.__current_master_label_name), str(e))
