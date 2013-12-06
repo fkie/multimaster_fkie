@@ -243,3 +243,19 @@ class ServiceModel(QtGui.QStandardItemModel):
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update services ", cputime, ', service count:', len(services)
+
+  def index_from_names(self, services):
+    '''
+    Returns for given services the list of QModelIndex in this model.
+    :param services: the list of service names
+    :type services: [str, ...]
+    :return: the list of QModelIndex
+    :rtype: [QtCore.QModelIndex, ...]
+    '''
+    result = []
+    root = self.invisibleRootItem()
+    for i in range(root.rowCount()):
+      serviceItem = root.child(i)
+      if serviceItem.service.name in services:
+        result.append(self.index(i, 0))
+    return result

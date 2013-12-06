@@ -952,6 +952,8 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
       return
+    self.masterTab.topicsView.selectionModel().clear()
+    self.masterTab.servicesView.selectionModel().clear()
     selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
     name = ''
     text = ''
@@ -973,8 +975,16 @@ class MasterViewProxy(QtGui.QWidget):
     # add node description for one selected node
     selectedNodes = self.nodesFromIndexes(selections)
     if len(selectedNodes) == 1:
-      # create description for a node
       node = selectedNodes[0]
+      # select the topics of the node in the "Topic" view
+      selected_topics = self.topic_model.index_from_names(node.published, node.subscribed)
+      for s in selected_topics:
+        self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
+      # select the services of the node in the "Services" view
+      selected_services = self.service_model.index_from_names(node.services)
+      for s in selected_services:
+        self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
+      # create description for a node
       ns, sep, name = node.name.rpartition(rospy.names.SEP)
       text = ''.join(['<font size="+1"><b>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</b></font><br>'])
       launches = [c for c in node.cfgs if not isinstance(c, tuple)]
@@ -1048,13 +1058,13 @@ class MasterViewProxy(QtGui.QWidget):
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected topic
     '''
-    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Topics':
-      return
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     topics_selected = (len(selectedTopics) > 0)
     self.masterTab.echoTopicButton.setEnabled(topics_selected)
     self.masterTab.hzTopicButton.setEnabled(topics_selected)
     self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
+    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Topics':
+      return
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
       ns, sep, name = topic.name.rpartition(rospy.names.SEP)
@@ -1101,10 +1111,10 @@ class MasterViewProxy(QtGui.QWidget):
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected service
     '''
-    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Services':
-      return
     selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
     self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
+    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Services':
+      return
     if len(selectedServices) == 1:
       service = selectedServices[0]
       ns, sep, name = service.name.rpartition(rospy.names.SEP)
@@ -2054,8 +2064,13 @@ class MasterViewProxy(QtGui.QWidget):
     Shows the output of the topic in a terminal.
     '''
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
-    for topic in selectedTopics:
-      self._add_topic_output2queue(topic, show_hz_only)
+    ret = True
+    if len(selectedTopics) > 5:
+      ret = QtGui.QMessageBox.question(self, "Show echo", "You are going to open the echo of "+ str(len(selectedTopics)) + " topics at once\nContinue?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
+      ret = (ret == QtGui.QMessageBox.Ok)
+    if ret:
+      for topic in selectedTopics:
+        self._add_topic_output2queue(topic, show_hz_only)
 
   def show_topic_output(self, topic_name, show_hz_only):
     '''

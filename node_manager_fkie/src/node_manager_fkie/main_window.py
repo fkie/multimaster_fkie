@@ -699,7 +699,7 @@ class MainWindow(QtGui.QMainWindow):
       dia = RunDialog(nm.nameres().getHostname(self.currentMaster.masteruri), self.currentMaster.masteruri)
       if dia.exec_():
         dia.runSelected()
-  
+
   def on_show_rxconsole_clicked(self):
     if not self.currentMaster is None:
       import os, subprocess

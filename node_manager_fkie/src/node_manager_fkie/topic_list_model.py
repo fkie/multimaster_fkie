@@ -310,3 +310,25 @@ class TopicModel(QtGui.QStandardItemModel):
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update topic ", cputime, ", topic count:", len(topics)
+
+  def index_from_names(self, publisher, subscriber):
+    '''
+    Returns for given topics the list of QModelIndex in this model.
+    :param publisher: the list of publisher topics
+    :type publisher: [str, ...]
+    :param subscriber: the list of subscriber topics
+    :type subscriber: [str, ...]
+    :return: the list of QModelIndex
+    :rtype: [QtCore.QModelIndex, ...]
+    '''
+    result = []
+    root = self.invisibleRootItem()
+    for i in range(root.rowCount()):
+      topicItem = root.child(i)
+      if topicItem.topic.name in publisher:
+        result.append(self.index(i, 0))
+        result.append(self.index(i, 1)) # select also the publishers column
+      if topicItem.topic.name in subscriber:
+        result.append(self.index(i, 0))
+        result.append(self.index(i, 2)) # select also the subscribers column
+    return result
