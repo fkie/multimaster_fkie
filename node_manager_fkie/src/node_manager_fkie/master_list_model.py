@@ -280,8 +280,7 @@ class MasterModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(MasterModel.header))
     self._masteruri = local_masteruri
-    self.pyqt_workaround_sync = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
-    self.pyqt_workaround_info = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
 
   def flags(self, index):
     '''
@@ -313,8 +312,7 @@ class MasterModel(QtGui.QStandardItemModel):
       if masterItem.master.uri == master.uri and masterItem.master.name != master.name:
         root.removeRow(i)
         try:
-          del self.pyqt_workaround_sync[masterItem.master.name]
-          del self.pyqt_workaround_info[masterItem.master.name]
+          del self.pyqt_workaround[masterItem.master.name]
         except:
           pass
         break
@@ -332,14 +330,14 @@ class MasterModel(QtGui.QStandardItemModel):
         break
       elif (masterItem > master.name):
         mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
+        self.pyqt_workaround[master.name] = mitem  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
         root.insertRow(i, mitem)
         mitem[self.COL_NAME].parent_item = root
         doAddItem = False
         break
     if doAddItem:
       mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
-      self.pyqt_workaround_sync[master.name] = mitem[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
-      self.pyqt_workaround_info[master.name] = mitem[1]  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+      self.pyqt_workaround[master.name] = mitem  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
       root.appendRow(mitem)
       mitem[self.COL_NAME].parent_item = root
 
