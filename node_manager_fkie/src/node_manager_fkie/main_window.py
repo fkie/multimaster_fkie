@@ -85,7 +85,7 @@ class MainWindow(QtGui.QMainWindow):
     restricted_to_one_master = False
     self._finished = False
     self._history_selected_robot = ''
-    self.__icons = {'default_pc' : QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png']))} # (masnter name : QIcon)
+    self.__icons = {'default_pc' : (QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png'])), ':/icons/crystal_clear_miscellaneous.png')} # (masnter name : (QIcon, path))
     self.__current_icon = None
     self.__current_master_label_name = None
     self.__current_path = os.path.expanduser('~')
@@ -385,6 +385,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].description_signal.disconnect()
       self.masters[masteruri].request_xml_editor.disconnect()
       self.masters[masteruri].stop_nodes_signal.disconnect()
+      self.masters[masteruri].robot_icon_updated.disconnect()
       self.stackedLayout.removeWidget(self.masters[masteruri])
       self.ui.tabPlace.layout().removeWidget(self.masters[masteruri])
       self.masters[masteruri].setParent(None)
@@ -407,6 +408,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].description_signal.connect(self.on_description_update)
       self.masters[masteruri].request_xml_editor.connect(self._editor_dialog_open)
       self.masters[masteruri].stop_nodes_signal.connect(self.on_stop_nodes)
+      self.masters[masteruri].robot_icon_updated.connect(self._on_robot_icon_changed)
       self.stackedLayout.addWidget(self.masters[masteruri])
       if masteruri == self.getMasteruri():
         if self.default_load_launch:
@@ -582,12 +584,22 @@ class MainWindow(QtGui.QMainWindow):
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
     #'print "**on_master_state_changed"
-  
-  def _assigne_icon(self, name):
-    icon_path = ''.join([nm.ROBOTS_DIR, name, '.png'])
-    if not self.__icons.has_key(name):
+
+  def _assigne_icon(self, name, path=None):
+    '''
+    Sets the new icon to the given robot. If the path is `None` set search for
+    .png file with robot name.
+    :param name: robot name
+    :type name: str
+    :param path: path of the icon (Default: None)
+    :type path: str
+    '''
+    icon_path = path if path else ''.join([nm.ROBOTS_DIR, name, '.png'])
+    if not self.__icons.has_key(name) or self.__icons[name][1] != path:
       if QtCore.QFile.exists(icon_path):
-        self.__icons[name] = QtGui.QIcon(icon_path)
+        self.__icons[name] = (QtGui.QIcon(icon_path), path)
+      elif self.__icons.has_key(name):
+        del self.__icons[name]
 
   def on_master_monitor_err(self, msg):
     self._con_tries[self.getMasteruri()] += 1
@@ -876,13 +888,13 @@ class MainWindow(QtGui.QMainWindow):
     # load the robot image, if one exists
     if self.ui.masternameLabel.isEnabled():
       if self.__icons.has_key(name):
-        if self.__icons[name] != self.__current_icon:
-          icon = self.__icons[name]
+        if self.__icons[name][0] != self.__current_icon:
+          icon = self.__icons[name][0]
           self.__current_icon = icon
           self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
           self.ui.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', nm.ROBOTS_DIR, name, '.png', '" alt="', name,'"></body></html>']))
-      elif self.__icons['default_pc'] != self.__current_icon:
-        icon = self.__icons['default_pc']
+      elif self.__icons['default_pc'][0] != self.__current_icon:
+        icon = self.__icons['default_pc'][0]
         self.__current_icon = icon
         self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
         self.ui.imageLabel.setToolTip('')
@@ -1351,6 +1363,8 @@ class MainWindow(QtGui.QMainWindow):
           # update the duplicate nodes
           self.updateDuplicateNodes()
         except Exception, e:
+          import traceback
+          print traceback.format_exc()
           WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", path, str(e)).exec_()
       self.ui.xmlFileView.setEnabled(True)
       self.setCursor(cursor)
@@ -1442,12 +1456,12 @@ class MainWindow(QtGui.QMainWindow):
     if not masteruri is None:
       master = self.getMaster(masteruri)
       master.start_nodes_by_name(nodes, (cfg, ''))
-  
+
   def on_stop_nodes(self, masteruri, nodes):
     if not masteruri is None:
       master = self.getMaster(masteruri)
       master.stop_nodes_by_name(nodes)
-    
+
   def on_description_update(self, title, text):
     if self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy):
       self.ui.descriptionDock.setWindowTitle(title)
@@ -1541,3 +1555,11 @@ class MainWindow(QtGui.QMainWindow):
                           ''.join(['Set robot image for ', str(self.__current_master_label_name), ' failed!']),
                           str(e)).exec_()
         rospy.logwarn("Error while set robot image for %s: %s", str(self.__current_master_label_name), str(e))
+
+  def _on_robot_icon_changed(self, masteruri, path):
+    '''
+    One of the robot icons was chagned. Update the icon.
+    '''
+    master = self.getMaster(masteruri, False)
+    if master:
+      self._assigne_icon(master.mastername, resolve_url(path))

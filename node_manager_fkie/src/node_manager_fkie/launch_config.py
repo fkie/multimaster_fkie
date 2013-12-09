@@ -434,3 +434,14 @@ class LaunchConfig(QtCore.QObject):
         return item
     return None
 
+  def get_robot_icon(self):
+    '''
+    Returns the value of the `/robot_icon` parameter or None 
+    '''
+    try:
+      result = self.Roscfg.params['/robot_icon'].value
+      return result
+    except:
+      import traceback
+      print traceback.format_exc()
+    return None

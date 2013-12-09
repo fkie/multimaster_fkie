@@ -86,12 +86,15 @@ class MasterViewProxy(QtGui.QWidget):
 
   description_signal  = QtCore.Signal(str, str)
   '''@ivar: the signal is emitted to show a description (title, description)'''
-  
+
   request_xml_editor = QtCore.Signal(list, str)
   '''@ivar: the signal to open a xml editor dialog (list with files, search text)'''
 
   stop_nodes_signal = QtCore.Signal(str, list)
   '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
+
+  robot_icon_updated = QtCore.Signal(str, str)
+  '''@ivar: the signal is emitted, if the robot icon was changed by a configuration (masteruri, path)'''
 
   def __init__(self, masteruri, parent=None):
     '''
@@ -127,6 +130,9 @@ class MasterViewProxy(QtGui.QWidget):
     self.__last_info_text = None
     self.__use_sim_time = False
     self.__current_user = nm.ssh().USER_DEFAULT
+    self.__robot_icons = []
+    self.__current_robot_icon = None
+    self.__current_parameter_robot_icon = ''
 
     self.default_cfg_handler = DefaultConfigHandler()
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -254,7 +260,6 @@ class MasterViewProxy(QtGui.QWidget):
 #    self.parameterHandler_sim.parameter_list_signal.connect(self._on_param_list)
     self.parameterHandler_sim.parameter_values_signal.connect(self._on_sim_param_values)
 #    self.parameterHandler_sim.delivery_result_signal.connect(self._on_delivered_values)
-
 
     # creates a start menu
 #     start_menu = QtGui.QMenu(self)
@@ -423,7 +428,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.on_node_selection_changed(None, None)
       self.on_topic_selection_changed(None, None)
       self.on_service_selection_changed(None, None)
-      self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time"])
+      self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon"])
     except:
       import traceback
       print traceback.format_exc()
@@ -611,7 +616,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.__configs[launchfile] = launchConfig
       self.appendConfigToModel(launchfile, launchConfig.Roscfg)
       self.masterTab.tabWidget.setCurrentIndex(0)
-      
+
       #get the descriptions of capabilities and hosts
       try:
         robot_descr = launchConfig.getRobotDescr()
@@ -659,7 +664,10 @@ class MasterViewProxy(QtGui.QWidget):
         if nodes2start:
           restart = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, self)
           self.start_nodes_by_name(restart, launchfile, True)
-
+      # set the robot_icon
+      if launchfile in self.__robot_icons:
+        self.__robot_icons.remove(launchfile)
+      self.__robot_icons.insert(0, launchfile)
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:
@@ -689,6 +697,28 @@ class MasterViewProxy(QtGui.QWidget):
     except:
       import traceback
       print traceback.print_exc()
+    self.update_robot_icon()
+
+  def update_robot_icon(self):
+    '''
+    Update the current robot icon. If the icon was changed a `robot_icon_updated` 
+    signal will be emitted.
+    :return: the path to the current robot icon
+    :rtype: str
+    '''
+    for l in self.__robot_icons:
+      try:
+        icon = self.__configs[l].get_robot_icon()
+        if icon:
+          if icon != self.__current_robot_icon:
+            self.__current_robot_icon = icon
+            self.robot_icon_updated.emit(self.masteruri, icon)
+          return icon
+      except:
+        pass
+    self.__current_robot_icon = self.__current_parameter_robot_icon
+    self.robot_icon_updated.emit(self.masteruri, str(self.__current_robot_icon))
+    return self.__current_robot_icon
 
   def appendConfigToModel(self, launchfile, rosconfig):
     '''
@@ -715,7 +745,7 @@ class MasterViewProxy(QtGui.QWidget):
     for ((masteruri, addr), nodes) in hosts.items():
       self.node_tree_model.appendConfigNodes(masteruri, addr, nodes)
     self.updateButtons()
-      
+
   def removeConfigFromModel(self, launchfile):
     '''
     Update the node view after removed configuration.
@@ -763,7 +793,7 @@ class MasterViewProxy(QtGui.QWidget):
       if not descr_service is None:
         self.default_cfg_handler.requestDescriptionList(descr_service.uri, descr_service.name)
     self.updateButtons()
-    
+
   def on_default_cfg_nodes_retrieved(self, service_uri, config_name, nodes):
     '''
     Handles the new list with nodes from default configuration service.
@@ -1884,6 +1914,7 @@ class MasterViewProxy(QtGui.QWidget):
     for c in cfgs:
       self._close_cfg(choices[c])
     self.updateButtons()
+    self.update_robot_icon()
 
   def _close_cfg(self, cfg):
     try:
@@ -2355,14 +2386,21 @@ class MasterViewProxy(QtGui.QWidget):
     @param params: The dictionary the parameter names and request result.
     @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
     '''
+    robot_icon_found = False
     if code == 1:
       result = {}
       for p, (code_n, msg_n, val) in params.items():
         if p == '/use_sim_time':
           self.__use_sim_time = (code_n == 1 and val)
+        elif p == '/robot_icon':
+          robot_icon_found = True
+          self.__current_parameter_robot_icon = val if code_n == 1 else ''
+          self.update_robot_icon()
     else:
       rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), str(msg))
-
+    if not robot_icon_found:
+      self.__current_parameter_robot_icon = ''
+      self.update_robot_icon()
 
   def _get_nm_masteruri(self):
     '''
