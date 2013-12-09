@@ -32,6 +32,7 @@
 
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
+from xmlrpclib import Binary
 
 
 class ParameterValueItem(QtGui.QStandardItem):
@@ -52,7 +53,7 @@ class ParameterValueItem(QtGui.QStandardItem):
     @param value: the value of the parameter
     @type value: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, unicode(value))
+    QtGui.QStandardItem.__init__(self, unicode(value) if not isinstance(value, Binary) else str(value))
     self._name = name
     '''@ivar: the name of parameter '''
     self._value = value
@@ -71,7 +72,7 @@ class ParameterValueItem(QtGui.QStandardItem):
   @value.setter
   def value(self, value):
     self._value = value
-    self.setText(unicode(value))
+    self.setText(unicode(value) if not isinstance(value, Binary) else str(value))
     if isinstance(value, (str, unicode)) and value.find('\n') > -1:
       self.setSizeHint(QtCore.QSize(-1, 45))
 

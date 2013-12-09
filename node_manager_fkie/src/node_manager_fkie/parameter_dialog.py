@@ -36,6 +36,7 @@ import os
 import sys
 import time
 import threading
+from xmlrpclib import Binary
 
 import roslib
 import rospy
@@ -50,7 +51,7 @@ def str2bool(v):
 class MyComboBox(QtGui.QComboBox):
 
   remove_item_signal = QtCore.Signal(str)
-  
+
   parameter_description = None
 
   def keyPressEvent(self, event):
@@ -82,21 +83,24 @@ class ParameterDescription(object):
     self._value = value
     self._widget = widget
     self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
-    self._is_primitive_type =  self._base_type in roslib.msgs.PRIMITIVE_TYPES or self._base_type in ['int', 'float', 'time', 'duration']
+    if msg_type == 'binary':
+      self._base_type = msg_type
+    self._is_primitive_type =  self._base_type in roslib.msgs.PRIMITIVE_TYPES or self._base_type in ['int', 'float', 'time', 'duration', 'binary']
     self._is_time_type = self._base_type in ['time', 'duration']
-  
+    self._is_binary_type = self._base_type in ['binary']
+
   def __repr__(self):
     return ''.join([self._name, ' [', self._type, ']'])
-  
+
   def name(self):
     return self._name
-  
+
   def setWidget(self, widget):
     self._widget = widget
     if not widget is None:
       widget.parameter_description = self
       self.addCachedValuesToWidget()
-  
+
   def widget(self):
     return self._widget
 
@@ -120,10 +124,13 @@ class ParameterDescription(object):
 
   def isTimeType(self):
     return self._is_time_type
-  
+
+  def isBinaryType(self):
+    return self._is_binary_type
+
   def baseType(self):
     return self._base_type
-  
+
   def updateValueFromField(self):
     field = self.widget()
     result = ''
@@ -150,6 +157,8 @@ class ParameterDescription(object):
             self._value = map(float, value)
           elif 'bool' in self.baseType():
             self._value = map(str2bool, value)
+          elif self.isBinaryType():
+            self._value = str(value)
           else:
             self._value = map(str, value)#[ s.encode(sys.getfilesystemencoding()) for s in value]
           if not self.arrayLength() is None and self.arrayLength() != len(self._value):
@@ -164,6 +173,8 @@ class ParameterDescription(object):
               self._value = value
             else:
               self._value = str2bool(value)
+          elif self.isBinaryType():
+            self._value = str(value)
           elif self.isTimeType():
             if value == 'now':
               self._value = 'now'
@@ -191,6 +202,8 @@ class ParameterDescription(object):
             self._value = 0.0
           elif 'bool' in self.baseType():
             self._value = False
+          elif self.isBinaryType():
+            self._value = str(value)
           elif self.isTimeType():
             self._value = {'secs': 0, 'nsecs': 0}
           else:
@@ -235,7 +248,7 @@ class ParameterDescription(object):
           items[len(items):] = value
         else:
           if not value is None and value:
-            items.append(unicode(value))
+            items.append(unicode(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
           elif self.isTimeType():
             items.append('now')
         result.addItems(items)
@@ -291,7 +304,7 @@ class MainBox(QtGui.QWidget):
       self.options_layout.addWidget(self.name_label)
       self.options_layout.addWidget(self.type_label)
       self.options_layout.addStretch()
- 
+
       vLayout.addLayout(self.options_layout)
 
       self.param_widget.setFrameShape(QtGui.QFrame.Box)
@@ -340,7 +353,7 @@ class MainBox(QtGui.QWidget):
         primitives.append((name, _type, val))
     all_params.extend(sorted(primitives))
     all_params.extend(sorted(komplex))
-    
+
     # create widgets
     for name, _type, val in all_params:
       field = self.getField(name)
@@ -367,7 +380,8 @@ class MainBox(QtGui.QWidget):
   def value(self):
     result = dict()
     for param in self.params:
-      result[param.name()] = param.value()
+      if not param.isBinaryType():
+        result[param.name()] = param.value()
     return result
 
   def set_values(self, values):
@@ -400,7 +414,7 @@ class MainBox(QtGui.QWidget):
         if c.objectName() == name:
           return c
     return None
-  
+
   def removeAllFields(self):
     '''
     Remove the references between parameter and corresponding widgets 
@@ -495,7 +509,7 @@ class ArrayBox(MainBox):
     self._dynamic_value = None
     self._dynamic_widget = None
     self._dynamic_items_count = 0
-    
+
   def addDynamicBox(self):
     self._dynamic_items_count = 0
     addButton = QtGui.QPushButton("+")
@@ -508,7 +522,7 @@ class ArrayBox(MainBox):
     remButton.setMaximumSize(25,25)
     remButton.clicked.connect(self._on_rem_dynamic_entry)
     self.options_layout.addWidget(remButton)
-  
+
   def _on_add_dynamic_entry(self):
     self.setUpdatesEnabled(False)
     try:
@@ -596,7 +610,7 @@ class ScrollArea(QtGui.QScrollArea):
   '''
   ScrollArea provides the maximal width of the internal widget.
   '''
-  
+
   def viewportEvent(self, arg):
     if self.widget() and self.viewport().size().width() != self.widget().maximumWidth():
       self.widget().setMaximumWidth(self.viewport().size().width())
@@ -803,7 +817,7 @@ class ParameterDialog(QtGui.QDialog):
   def accept(self):
     self.setResult(QtGui.QDialog.Accepted)
     self.hide()
-  
+
   def reject(self):
     self.setResult(QtGui.QDialog.Rejected)
     self.hide()
@@ -827,7 +841,7 @@ class MasterParameterDialog(ParameterDialog):
   threaded and allows the also threaded changed of ROS parameter assigned to 
   given namespace.
   '''
-  
+
   def __init__(self, masteruri, ns='/', parent=None):
     '''
     @param masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
@@ -876,6 +890,8 @@ class MasterParameterDialog(ParameterDialog):
         else:
           self.close()
       except Exception, e:
+        import traceback
+        print traceback.format_exc()
         QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
     elif self.masteruri is None:
       QtGui.QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QtGui.QMessageBox.Ok)
@@ -906,6 +922,8 @@ class MasterParameterDialog(ParameterDialog):
         else:
           QtGui.QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QtGui.QMessageBox.Ok)
       except ValueError, e:
+        import traceback
+        print traceback.format_exc()
         QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
 
   def _on_param_list(self, masteruri, code, msg, params):
@@ -924,7 +942,7 @@ class MasterParameterDialog(ParameterDialog):
       self.parameterHandler.requestParameterValues(masteruri, params)
     else:
       self.setText(msg)
-      
+
   def _on_param_values(self, masteruri, code, msg, params):
     '''
     @param masteruri: The URI of the ROS parameter server
@@ -951,6 +969,8 @@ class MasterParameterDialog(ParameterDialog):
           type_str = 'float'
         elif isinstance(val, list) or isinstance(val, dict):
           value = unicode(val)
+        elif isinstance(val, Binary):
+          type_str = 'binary'
         param = p.replace(self.ns, '')
         names_sep = param.split(roslib.names.SEP)
         param_name = names_sep.pop()
@@ -971,6 +991,8 @@ class MasterParameterDialog(ParameterDialog):
         self.content.createFieldFromValue(dia_params)
         self.setInfoActive(False)
       except Exception, e:
+        import traceback
+        print traceback.format_exc()
         QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
     else:
       self.setText(msg)
@@ -995,6 +1017,8 @@ class MasterParameterDialog(ParameterDialog):
     else:
       errmsg = msg if msg else 'Unknown error on set parameter'
     if errmsg:
+      import traceback
+      print traceback.format_exc()
       QtGui.QMessageBox.warning(self, self.tr("Warning"), errmsg, QtGui.QMessageBox.Ok)
       self.is_delivered = False
       self.is_send = False
