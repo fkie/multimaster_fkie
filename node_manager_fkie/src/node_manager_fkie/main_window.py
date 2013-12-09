@@ -597,7 +597,7 @@ class MainWindow(QtGui.QMainWindow):
     icon_path = path if path else ''.join([nm.ROBOTS_DIR, name, '.png'])
     if not self.__icons.has_key(name) or self.__icons[name][1] != path:
       if QtCore.QFile.exists(icon_path):
-        self.__icons[name] = (QtGui.QIcon(icon_path), path)
+        self.__icons[name] = (QtGui.QIcon(icon_path), icon_path)
       elif self.__icons.has_key(name):
         del self.__icons[name]
 
@@ -892,7 +892,7 @@ class MainWindow(QtGui.QMainWindow):
           icon = self.__icons[name][0]
           self.__current_icon = icon
           self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
-          self.ui.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', nm.ROBOTS_DIR, name, '.png', '" alt="', name,'"></body></html>']))
+          self.ui.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', self.__icons[name][1], '" alt="', name,'"></body></html>']))
       elif self.__icons['default_pc'][0] != self.__current_icon:
         icon = self.__icons['default_pc'][0]
         self.__current_icon = icon

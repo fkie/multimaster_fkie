@@ -697,9 +697,9 @@ class MasterViewProxy(QtGui.QWidget):
     except:
       import traceback
       print traceback.print_exc()
-    self.update_robot_icon()
+    self.update_robot_icon(True)
 
-  def update_robot_icon(self):
+  def update_robot_icon(self, force=False):
     '''
     Update the current robot icon. If the icon was changed a `robot_icon_updated` 
     signal will be emitted.
@@ -710,7 +710,7 @@ class MasterViewProxy(QtGui.QWidget):
       try:
         icon = self.__configs[l].get_robot_icon()
         if icon:
-          if icon != self.__current_robot_icon:
+          if icon != self.__current_robot_icon or force:
             self.__current_robot_icon = icon
             self.robot_icon_updated.emit(self.masteruri, icon)
           return icon

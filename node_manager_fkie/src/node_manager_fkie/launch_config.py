@@ -439,8 +439,7 @@ class LaunchConfig(QtCore.QObject):
     Returns the value of the `/robot_icon` parameter or None 
     '''
     try:
-      result = self.Roscfg.params['/robot_icon'].value
-      return result
+      return self.Roscfg.params['/robot_icon'].value
     except:
       import traceback
       print traceback.format_exc()
