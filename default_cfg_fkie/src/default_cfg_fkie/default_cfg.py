@@ -381,6 +381,8 @@ class DefaultCfg(object):
     except roslib.packages.ROSPkgException as e:
       # multiple nodes, invalid package
       raise StartException(str(e))
+    except Exception as e:
+      raise StartException(str(e))
     # handle diferent result types str or array of string
     import types
     if isinstance(cmd, types.StringTypes):
