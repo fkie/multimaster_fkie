@@ -2,6 +2,12 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.8 (2013-12-10)
+------------------
+* default_cfg_fkie: fixed forward error to service caller
+* default_cfg_fkie: ignore empty 'capability_group' values
+* multimaster_fkie: catkin_lint inspired fixes, thanks @roehling
+
 0.3.7 (2013-10-17)
 ------------------
 * default_cfg_fkie: fixed parameter groups

@@ -2,6 +2,12 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.8 (2013-12-10)
+------------------
+* master_discovery_fkie: added output info about approx. netload
+* multimaster_fkie: added a possibility to deaktivate the multicast heart bearts
+* master_discovery_fkie: description in der package.xml changed
+
 0.3.7 (2013-10-17)
 ------------------
 * multimaster_fkie: fixed problems with resolving service types while sync

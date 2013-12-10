@@ -2,6 +2,11 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.8 (2013-12-10)
+------------------
+* master_sync_fkie: added sync for subscriber with AnyMsg, e.g relay (topic_tools), if local a publisher with known type is available
+* multimaster_fkie: catkin_lint inspired fixes, thanks @roehling
+
 0.3.7 (2013-10-17)
 ------------------
 * multimaster_fkie: fixed problems with resolving service types while sync

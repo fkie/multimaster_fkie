@@ -2,6 +2,41 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.8 (2013-12-10)
+------------------
+* node_manager_fkie: added support for /robot_icon parameter to show an image of the roboter
+* node_manager_fkie: fixed handling of binary data in ROS parameter server
+* node_manager_fkie: update robot image on cancel file selection dialog
+* node_manager_fkie: can now change the robot image by double-click on robot image
+* node_manager_fkie: added autoselect corresponding topics and services on node selection
+* node_manager_fkie: reduced timestamp updates, if node_manager is not active
+* multimaster_fkie: added a possibility to deaktivate the multicast heart bearts
+* node_manager_fkie: selection dialog extended by an description label
+* node_manager_fkie: handling of included files chagned, to avoid errors if a package was not found
+* node_manager_fkie: buttons of the discovery widged chagned
+* node_manager_fkie: control buttons redesigned
+* node_manager_fkie: added 'Do not display this warning again' button to warning message
+* node_manager_fkie: fixed deleting of not reachable hosts
+* node_manager_fkie: fixed wrong reference in sync_dialog
+* node_manager_fkie: fixed copy mode (Ctrl+C copy now first column, Ctrl+X: type or value)
+* node_manager_fkie: update launch file view after loading launch file
+* node_manager_fkie: fixed echo dialog (icons, additional info)
+* node_manager_fkie: added ROS_NAMESPACE environment parameter to launch process to handle some cases, e.g. rqt_cpp plugins
+* node_manager_fkie: fixed watching for changes in included files
+* node_manager_fkie: Delete key deletes now the selected history launch file
+* node_manager_fkie: reduced window size
+* node_manager_fkie: ignore empty 'capability_group' values
+* multimaster_fkie: catkin_lint inspired fixes, thanks @roehling
+* node_manager_fkie: fixed help call in the console
+* node_manager_fkie: fix detection for included files
+* node_manager_fkie: fixed open sync dialog from info panel
+* node_manager_fkie: added a yaml highlighter
+* node_manager_fkie: argparse integrated
+* node_manager_fkie: fixed lower compare of topic and service names
+* node_manager_fkie: fix - use now sensetive comparison of node names
+* node_manager_fkie: fixed launch file browsing
+* node_manager_fkie: fixed skipped display messages on latched topics
+
 0.3.7 (2013-10-17)
 ------------------
 * node_manager_fkie: fixed start button description
