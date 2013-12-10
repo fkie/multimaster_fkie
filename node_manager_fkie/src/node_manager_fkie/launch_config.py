@@ -441,6 +441,5 @@ class LaunchConfig(QtCore.QObject):
     try:
       return self.Roscfg.params['/robot_icon'].value
     except:
-      import traceback
-      print traceback.format_exc()
+      pass
     return None
