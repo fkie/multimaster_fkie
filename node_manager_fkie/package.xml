@@ -35,6 +35,7 @@
   <run_depend>python-docutils</run_depend>
   <run_depend>screen</run_depend>
   <run_depend>xterm</run_depend>
+  <run_depend>rqt_gui</run_depend>
   
   <export>
     <rosdoc config="rosdoc.yaml" />
