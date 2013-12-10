@@ -69,22 +69,12 @@ class WarningMessageBox(QtGui.QMessageBox):
       textEdit.setMaximumWidth(600)
       textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 
-    self.ignore_all_btn = None
-    self.first = True
+    self.ignore_all_btn = QtGui.QPushButton('Don\'t display again')
+    self.addButton(self.ignore_all_btn, QtGui.QMessageBox.HelpRole)
 
-  def resizeEvent(self, event):
-    # THIS IS A HACK: add a button to ignore the error messages after the details are showed
-    QtGui.QMessageBox.resizeEvent(self, event)
-    if self.first or self.textEdit is None:
-      self.first = False
-      return
-    if not self.ignore_all_btn:
-      self.ignore_all_btn = QtGui.QPushButton('Don\'t display again')
-#      self.ignore_all_btn.setFlat(True)
-      self.addButton(self.ignore_all_btn, QtGui.QMessageBox.HelpRole)
-    else:
-      self.ignore_all_btn.setVisible(self.textEdit.isVisible())
-    self.first = False
+  def paintEvent (self, event):
+    QtGui.QMessageBox.paintEvent(self, event)
+    self.ignore_all_btn.setVisible(self.textEdit.isVisible())
 
 #  def event(self, e):
 #    print "TYPE:", e.type()

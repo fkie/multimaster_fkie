@@ -135,7 +135,7 @@ class ProgressQueue(QtCore.QObject):
       self._progress_frame.setVisible(False)
       self.__running = False
     else:
-      if res == 1: # HACK: the number is returned, if "Don't show again" is pressed, instead 'QtGui.QMessageBox.HelpRole' (4)
+      if res == 1 or res == 0: # HACK: the number is returned, if "Don't show again" is pressed, instead 'QtGui.QMessageBox.HelpRole' (4)
         self.__ignore_err_list.append(detailed_msg)
       self._progress_thread_finished(id)
 
