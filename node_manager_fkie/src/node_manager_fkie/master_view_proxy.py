@@ -46,6 +46,8 @@ from urlparse import urlparse
 
 import rospy
 import roslib
+from rosgraph.names import is_legal_name
+
 
 import node_manager_fkie as nm
 from html_delegate import HTMLDelegate
@@ -1030,6 +1032,8 @@ class MasterViewProxy(QtGui.QWidget):
       text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
       text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
       text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
+      if not is_legal_name(node.name):
+        text = ''.join([text, '<dt><font color="#CC0000"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'])
       if node.is_ghost:
         if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
           text = ''.join([text, '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'])

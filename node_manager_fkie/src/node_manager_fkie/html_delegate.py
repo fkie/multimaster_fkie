@@ -33,6 +33,10 @@
 from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 
+import rospy
+from rosgraph.names import is_legal_name
+
+
 class HTMLDelegate(QtGui.QStyledItemDelegate):
   '''
   A class to display the HTML text in QTreeView.
@@ -107,13 +111,13 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
         result = ''.join(['<div>', '<b>{</b><span style="color:gray;">', ns, sep, '</span><b>', name, '}</b></div>'])
       else:
         result = ''.join(['<div>', '<b>{', name, '}</b></div>'])
-    elif text.find(' ') > -1: # handle all invalid names (used space in the name)
+    elif not is_legal_name(text): # handle all invalid names (used space in the name)
       ns, sep, name = text.rpartition('/')
       result = ''
       if sep:
-        result = ''.join(['<div>', '<span style="color:red;">', str(ns), sep, '<b>', name, '</b></span></div>'])
+        result = ''.join(['<div>', '<span style="color:#CC0000;">', str(ns), sep, '<b>', name, '</b></span></div>'])
       else:
-        result = ''.join(['<div>', '<span style="color:red;">', name, '</span></div>'])
+        result = ''.join(['<div>', '<span style="color:#CC0000;">', name, '</span></div>'])
     else: # handle all ROS names
       ns, sep, name = text.rpartition('/')
       result = ''
