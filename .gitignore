@@ -1,4 +1,11 @@
-.metadata
-.settings
-*.pyc
+.project
+.cproject
+.pydevproject
 .spyder*
+*.pyc
+.settings/
+.metadata/
+build/
+bin/
+msg_gen/
+srv_gen/
