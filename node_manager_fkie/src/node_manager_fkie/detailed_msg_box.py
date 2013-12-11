@@ -74,7 +74,7 @@ class WarningMessageBox(QtGui.QMessageBox):
 
   def paintEvent (self, event):
     QtGui.QMessageBox.paintEvent(self, event)
-    self.ignore_all_btn.setVisible(self.textEdit.isVisible())
+    self.ignore_all_btn.setVisible(self.textEdit.isVisible() if self.textEdit else False)
 
 #  def event(self, e):
 #    print "TYPE:", e.type()
