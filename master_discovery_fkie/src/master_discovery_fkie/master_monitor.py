@@ -127,7 +127,10 @@ class MasterMonitor(object):
     '''the current state of the ROS master'''
     self.rpcport = rpcport
     '''the port number of the RPC server'''
-    
+
+    self._printed_errors = dict()
+    self._last_clearup_ts = time.time()
+
     # Create an XML-RPC server
     self.ready = False
     while not self.ready and (not rospy.is_shutdown()):
@@ -189,7 +192,9 @@ class MasterMonitor(object):
           socket.setdefaulttimeout(0.7)
           node = xmlrpclib.ServerProxy(uri)
           pid = _succeed(node.getPid(self.ros_node_name))
-        except (Exception, socket.error):
+        except (Exception, socket.error) as e:
+          with self._lock:
+            self._limited_log(nodename, "can't get PID: %s"%str(e))
     #      import traceback
     #      print traceback.format_exc()
           master = xmlrpclib.ServerProxy(self.getMasteruri())
@@ -198,6 +203,8 @@ class MasterMonitor(object):
 #          print "_getNodePid _lock try..", threading.current_thread()
           with self._lock:
             self.__new_master_state.getNode(nodename).uri = None if (code == -1) else new_uri
+            if code == -1:
+              self._limited_log(nodename, "can't update contact information. ROS master responds with: %s"%message)
             try:
 #              print "remove cached node", nodename
               del self.__cached_nodes[nodename]
@@ -267,7 +274,9 @@ class MasterMonitor(object):
     #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
 #          print "_getServiceInfo _lock RET", threading.current_thread()
         except:
-#          import traceback
+          import traceback
+          with self._lock:
+            self._limited_log(service, "can't get service type: %s"%traceback.format_exc())
 #          print traceback.format_exc()
 #          print "_getServiceInfo _lock try..", threading.current_thread()
           with self._lock:
@@ -463,7 +472,8 @@ class MasterMonitor(object):
                 services[service.name] = uri
               else:
                 self.__cached_services[service.name] = (uri, None, time.time())
-
+            else:
+              self._limited_log(service.name, "can't get contact information. ROS master responds with: %s"%msg)
         except:
           import traceback
           traceback.print_exc()
@@ -496,6 +506,8 @@ class MasterMonitor(object):
                 nodes[node.name] = uri
               else:
                 self.__cached_nodes[node.name] = (uri, None, time.time())
+            else:
+              self._limited_log(node.name, "can't get contact information. ROS master responds with: %s"%msg)
         except:
           import traceback
           traceback.print_exc()
@@ -507,7 +519,7 @@ class MasterMonitor(object):
           pidThread = threading.Thread(target = self._getNodePid, args=((nodes,)))
           pidThread.start()
           threads.append(pidThread)
-    
+
         master_state.timestamp = now
       except socket.error, e:
         if isinstance(e, tuple):
@@ -542,6 +554,9 @@ class MasterMonitor(object):
           th.join()
   #        print "release"
         del th
+      if time.time() - self._last_clearup_ts > 300:
+        self._last_clearup_ts = time.time()
+        self._clearup_cached_logs()
 #      cputimes = os.times() ###################
 #      print "Threads:", (cputimes[0] + cputimes[1] - cputime_init) ###################
   #    print "state update of ros master", self.__masteruri, " finished"
@@ -549,7 +564,23 @@ class MasterMonitor(object):
       #'print "updateState _create_access_lock RET", threading.current_thread()
 
       return master_state
-  
+
+  def _limited_log(self, provider, msg):
+    if not provider in self._printed_errors:
+      self._printed_errors[provider] = dict()
+    if not msg in self._printed_errors[provider]:
+      self._printed_errors[provider][msg] = time.time()
+      rospy.logwarn("MasterMonitor[%s]: %s"%(provider, msg))
+
+  def _clearup_cached_logs(self, age=300):
+    cts = time.time()
+    for p, msgs in self._printed_errors.items():
+      for msg, ts in msgs.items():
+        if cts - ts > age:
+          del self._printed_errors[p][msg]
+      if not self._printed_errors[p]:
+        del self._printed_errors[p]
+
   def updateSyncInfo(self):
     '''
     This method can be called to update the origin ROS master URI of the nodes
