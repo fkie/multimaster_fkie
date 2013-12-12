@@ -2,6 +2,10 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.9 (2013-12-12)
+------------------
+* multimaster_fkie: moved .gitignore to top level
+
 0.3.8 (2013-12-10)
 ------------------
 * master_sync_fkie: added sync for subscriber with AnyMsg, e.g relay (topic_tools), if local a publisher with known type is available

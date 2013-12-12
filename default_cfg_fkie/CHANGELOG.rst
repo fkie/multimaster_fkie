@@ -2,6 +2,10 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.9 (2013-12-12)
+------------------
+* multimaster_fkie: moved .gitignore to top level
+
 0.3.8 (2013-12-10)
 ------------------
 * default_cfg_fkie: fixed forward error to service caller

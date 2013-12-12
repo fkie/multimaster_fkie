@@ -2,6 +2,11 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.9 (2013-12-12)
+------------------
+* master_discovery_fkie: added warning outputs on errors
+* multimaster_fkie: moved .gitignore to top level
+
 0.3.8 (2013-12-10)
 ------------------
 * master_discovery_fkie: added output info about approx. netload

@@ -2,6 +2,13 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.9 (2013-12-12)
+------------------
+* node_manager_fkie: set node to warning state, if it not renning propertly because of problems with illegal name
+* node_manager_fkie: fixed detailed_msg_box error
+* node_manager_fkie: added highlighting for illegal ros names
+* multimaster_fkie: moved .gitignore to top level
+
 0.3.8 (2013-12-10)
 ------------------
 * node_manager_fkie: added support for /robot_icon parameter to show an image of the roboter
