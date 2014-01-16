@@ -634,7 +634,7 @@ class ParameterDialog(QtGui.QDialog):
     QtGui.QDialog.__init__(self, parent=parent)
     self.setObjectName(' - '.join(['ParameterDialog', str(params)]))
 
-    self.__current_path = os.path.expanduser('~')
+    self.__current_path = nm.CURRENT_DIALOG_PATH
 
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
@@ -780,6 +780,7 @@ class ParameterDialog(QtGui.QDialog):
                                                "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
+        nm.CURRENT_DIALOG_PATH = os.path.dirname(fileName)
         text = yaml.dump(self.content.value(), default_flow_style=False)
         with open(fileName, 'w+') as f:
           f.write(text)
@@ -799,6 +800,7 @@ class ParameterDialog(QtGui.QDialog):
                                                    "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
+        nm.CURRENT_DIALOG_PATH = os.path.dirname(fileName)
         with open(fileName, 'r') as f:
 #          print yaml.load(f.read())
           self.content.set_values(yaml.load(f.read()))
