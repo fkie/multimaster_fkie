@@ -110,7 +110,10 @@ class StartHandler(object):
     env_loader = ''
     if n.machine_name:
       machine = launch_config.Roscfg.machines[n.machine_name]
-      host = machine.address
+      if not machine.address in ['localhost', '127.0.0.1']:
+        host = machine.address
+        if masteruri is None:
+          masteruri = nm.nameres().masteruri(n.machine_name)
       #TODO: env-loader support?
 #      if hasattr(machine, "env_loader") and machine.env_loader:
 #        env_loader = machine.env_loader
@@ -118,8 +121,6 @@ class StartHandler(object):
     if not force2host is None:
       host = force2host
 
-    if masteruri is None:
-      masteruri = nm.nameres().masteruri(n.machine_name)
     # set the ROS_MASTER_URI
     if masteruri is None:
       masteruri = masteruri_from_ros()
