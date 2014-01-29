@@ -131,7 +131,7 @@ class StartHandler(object):
     # set the global parameter
     if not masteruri is None and not masteruri in launch_config.global_param_done:
       global_node_names = cls.getGlobalParams(launch_config.Roscfg)
-      rospy.loginfo("Register global parameter:\n  %s", '\n  '.join(global_node_names))
+      rospy.loginfo("Register global parameter:\n  %s", '\n  '.join("%s%s"%(str(v)[:80],'...' if len(str(v))>80 else'') for v in global_node_names.values()))
       abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, global_node_names, [], user, pw, auto_pw_request)
       launch_config.global_param_done.append(masteruri)
 
@@ -147,7 +147,7 @@ class StartHandler(object):
         if cparam.startswith(nodens):
           clear_params.append(cparam)
       rospy.loginfo("Delete parameter:\n  %s", '\n  '.join(clear_params))
-      rospy.loginfo("Register parameter:\n  %s", '\n  '.join(params))
+      rospy.loginfo("Register parameter:\n  %s", '\n  '.join("%s%s"%(str(v)[:80],'...' if len(str(v))>80 else'') for v in params.values()))
       abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, params, clear_params, user, pw, auto_pw_request)
     #'print "RUN prepared", node, time.time()
 
