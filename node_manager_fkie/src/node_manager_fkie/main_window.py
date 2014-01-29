@@ -756,7 +756,7 @@ class MainWindow(QtGui.QMainWindow):
     if not masteruri is None:
       master = self.getMaster(masteruri, False)
     if not master is None and (self.ui.syncButton.isChecked() or external_call):
-      self._sync_dialog.resize(350,160)
+      self._sync_dialog.resize(350,190)
       if self._sync_dialog.exec_():
         try:
           host = nm.nameres().getHostname(master.masteruri)

@@ -111,7 +111,7 @@ class SyncDialog(QtGui.QDialog):
     self.setWindowTitle('Sync')
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
-    self.resize(350,160)
+    self.resize(350,190)
 
     self.toolButton_SyncAll = QtGui.QToolButton(self)
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -123,6 +123,17 @@ class SyncDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.toolButton_SyncAll)
     self.toolButton_SyncAll.setText(QtGui.QApplication.translate("Form", "Sync All", None, QtGui.QApplication.UnicodeUTF8))
     self.toolButton_SyncAll.clicked.connect(self._on_sync_all_clicked)
+
+    self.toolButton_SyncAllAnyMsg = QtGui.QToolButton(self)
+    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    sizePolicy.setHorizontalStretch(0)
+    sizePolicy.setVerticalStretch(1)
+    sizePolicy.setHeightForWidth(self.toolButton_SyncAllAnyMsg.sizePolicy().hasHeightForWidth())
+    self.toolButton_SyncAllAnyMsg.setSizePolicy(sizePolicy)
+    self.toolButton_SyncAllAnyMsg.setObjectName("toolButton_SyncAllAnyMsg")
+    self.verticalLayout.addWidget(self.toolButton_SyncAllAnyMsg)
+    self.toolButton_SyncAllAnyMsg.setText(QtGui.QApplication.translate("Form", "Sync all (+AnyMsg)", None, QtGui.QApplication.UnicodeUTF8))
+    self.toolButton_SyncAllAnyMsg.clicked.connect(self._on_sync_all_anymsg_clicked)
 
     self.toolButton_SyncTopicOnDemand = QtGui.QToolButton(self)
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -223,6 +234,22 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_sync_nodes:=', '[]']))
     self._sync_args.append(''.join(['_ignore_topics:=', '[]']))
     self._sync_args.append(''.join(['_sync_topics:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_services:=', '[]']))
+    self._sync_args.append(''.join(['_sync_services:=', '[]']))
+    self._sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
+    self._interface_filename = None
+    self.accept()
+
+  def _on_sync_all_anymsg_clicked(self):
+    self._sync_args = []
+    self._sync_args.append(''.join(['_interface_url:=', "'.'"]))
+    self._sync_args.append(''.join(['_sync_topics_on_demand:=', 'True']))
+    self._sync_args.append(''.join(['_ignore_hosts:=', '[]']))
+    self._sync_args.append(''.join(['_sync_hosts:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_nodes:=', '[]']))
+    self._sync_args.append(''.join(['_sync_nodes:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_topics:=', '[]']))
+    self._sync_args.append(''.join(['_sync_topics:=', '[/*]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
     self._sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
