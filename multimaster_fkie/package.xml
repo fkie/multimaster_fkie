@@ -1,9 +1,8 @@
 <package>
   <name>multimaster_fkie</name>
   <description>
-     This package offers a set of ROS nodes to establish and manage a multimaster network. 
-     This requires no or minimal configuration. The changes are automatically detected 
-     and synchronized.
+    The metapackage to combine the nodes required to establish and manage a multimaster network. 
+    This requires no or minimal configuration. The changes are automatically detected and synchronized.
   </description>
   <version>0.3.9</version>
   <license>BSD</license>

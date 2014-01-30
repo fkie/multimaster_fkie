@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS multimaster_msgs_fkie)
 
 catkin_python_setup()
 
-catkin_package(CATKIN_DEPENDS)
+catkin_package(CATKIN_DEPENDS multimaster_msgs_fkie)
 
 install(
     PROGRAMS 
