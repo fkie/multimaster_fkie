@@ -66,30 +66,35 @@ class FileWatcher(QtCore.QObject):
     launch file or included files are changed. In this case 
     L{FileWatcher.file_changed} signal will be emitted.
     '''
-    # to avoid to handle from QFileSystemWatcher fired the signal two times 
+    # to avoid to handle from QFileSystemWatcher fired the signal two times
     if (not self.changed.has_key(file) or (self.changed.has_key(file) and self.changed[file] + 0.05 < time.time())):
       self.changed[file] = time.time()
       changes = []
-      for (uri, lfile), files in self.launches.items():
+      for (uri, lfile, id), files in self.launches.items():
         if file in files:
           changes.append((uri, lfile))
       self.file_changed.emit(file, changes)
 
-  def add(self, masteruri, launch_file, files):
-    if self.launches.has_key((masteruri, launch_file)):
-      self.launches[(masteruri, launch_file)].extend([os.path.normpath(f) for f in files])
+  def add(self, masteruri, launch_file, launch_id, files):
+    if self.launches.has_key((masteruri, launch_file, launch_id)):
+      self.launches[(masteruri, launch_file, launch_id)].extend([os.path.normpath(f) for f in files])
     else:
-      self.launches[(masteruri, launch_file)] = [os.path.normpath(f) for f in files]
+      self.launches[(masteruri, launch_file, launch_id)] = [os.path.normpath(f) for f in files]
     self.update_files()
 
-  def rem(self, masteruri, launch_file=''):
+  def rem(self, masteruri, launch_file='', launch_id=''):
     try:
       if launch_file:
-        del self.launches[(masteruri, launch_file)]
+        if launch_id:
+          del self.launches[(masteruri, launch_file, launch_id)]
+        else:
+          for (uri, file, id), files in self.launches.items():
+            if uri == masteruri and file == launch_file:
+              del self.launches[(uri, file, id)]
       else:
-        for (uri, file), files in self.launches.items():
+        for (uri, file, id), files in self.launches.items():
           if uri == masteruri:
-            del self.launches[(uri, file)]
+            del self.launches[(uri, file, id)]
     except:
 #      import traceback
 #      print traceback.format_exc()

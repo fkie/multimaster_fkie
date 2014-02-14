@@ -150,6 +150,11 @@ class ProgressQueue(QtCore.QObject):
       print traceback.format_exc()
 
   def _on_request_interact(self, id, descr, req):
+    '''
+    If the interaction of the user is needed a message dialog must be exceuted 
+    in the main Qt thread. The requests are done by different request exceptinos.
+    These are handled by this method.
+    '''
     if isinstance(req.request, nm.AuthenticationRequest):
       res, user, pw = nm.ssh()._requestPW(req.request.user, req.request.host)
       if not res:
@@ -184,6 +189,26 @@ class ProgressQueue(QtCore.QObject):
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
+    elif isinstance(req.request, nm.LaunchArgsSelectionRequest):
+      from parameter_dialog import ParameterDialog
+      inputDia = ParameterDialog(req.request.args_dict)
+      inputDia.setFilterVisible(False)
+      inputDia.setWindowTitle(''.join(['Enter the argv for ', req.request.launchfile]))
+      if inputDia.exec_():
+        params = inputDia.getKeywords()
+        argv = []
+        for p,v in params.items():
+          if v:
+            argv.append(''.join([p, ':=', v]))
+        res = argv
+        pt = ProgressThread(id, descr, req.method, (req.args+(argv,)))
+        pt.finished_signal.connect(self._progress_thread_finished)
+        pt.error_signal.connect(self._progress_thread_error)
+        pt.request_interact_signal.connect(self._on_request_interact)
+        pt.start()
+      else:
+        self._progress_thread_finished(id)
+        return
 
 
 

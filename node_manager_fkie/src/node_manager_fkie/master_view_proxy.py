@@ -63,10 +63,26 @@ from select_dialog import SelectDialog
 from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 from detailed_msg_box import WarningMessageBox, DetailedError
-from progress_queue import ProgressQueue, ProgressThread
+from progress_queue import ProgressQueue, ProgressThread, InteractionNeededError
 from common import masteruri_from_ros, get_packages, package_name
 
 
+
+class LaunchArgsSelectionRequest(Exception):
+  ''' Request needed to set the args of a launchfile from another thread.
+  @param args: a dictionary with args and values
+  @type args: dict
+  @param error: an error description
+  @type error: str
+  '''
+  def __init__(self, launchfile, args, error):
+    Exception.__init__(self)
+    self.launchfile = launchfile
+    self.args_dict = args
+    self.error = error
+
+  def __str__(self):
+    return "LaunchArgsSelectionRequest for "  + str(self.args_dict) + "::" + repr(self.error)
 
 
 class MasterViewProxy(QtGui.QWidget):
@@ -97,6 +113,9 @@ class MasterViewProxy(QtGui.QWidget):
 
   robot_icon_updated = QtCore.Signal(str, str)
   '''@ivar: the signal is emitted, if the robot icon was changed by a configuration (masteruri, path)'''
+
+  loaded_config = QtCore.Signal(str, object)
+  '''@ivar: the signal is emitted, after a launchfile is successful loaded (launchfile, LaunchConfig)'''
 
   def __init__(self, masteruri, parent=None):
     '''
@@ -135,6 +154,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.__robot_icons = []
     self.__current_robot_icon = None
     self.__current_parameter_robot_icon = ''
+    # store the running_nodes to update to duplicates after load a launch file
+    self.__running_nodes = dict() # dict (node name : masteruri)
 
     self.default_cfg_handler = DefaultConfigHandler()
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -310,6 +331,8 @@ class MasterViewProxy(QtGui.QWidget):
 #     log_menu.addAction(self.logCopyPathAct)
 #     self.masterTab.logButton.setMenu(log_menu)
 
+    self.loaded_config.connect(self._apply_launch_config)
+
     # set the shortcuts
     self._shortcut1 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+1", "Select first group")), self)
     self._shortcut1.activated.connect(self.on_shortcut1_activated)
@@ -445,6 +468,8 @@ class MasterViewProxy(QtGui.QWidget):
     @param running_nodes: The list with names of running nodes
     @type running_nodes: C{[str]}
     '''
+    # store the running_nodes to update to duplicates after load a launch file
+    self.__running_nodes = running_nodes
     self.node_tree_model.markNodesAsDuplicateOf(running_nodes, (not self.master_info is None and self.master_info.getNodeEndsWith('master_sync')))
 
   def getRunningNodesIfSync(self):
@@ -567,58 +592,78 @@ class MasterViewProxy(QtGui.QWidget):
     @param launchfile: the launch file path
     @type launchfile: C{str}
     '''
-#    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
-    stored_roscfg = None
+    self._progress_queue.add2queue(str(self._progress_queue.count()), 
+                                     ''.join(['Loading ', os.path.basename(launchfile)]), 
+                                     self._load_launchfile, 
+                                     (launchfile,))
+    self._progress_queue.start()
+
+  def _load_launchfile(self, launchfile, argv_forced=[]):
+    '''
+    This method will be called in another thread. The configuration parameter
+    of the launch file will be requested using `LaunchArgsSelectionRequest` and 
+    `InteractionNeededError`. After the file is successful loaded a 
+    `loaded_config` signal will be emitted.
+    '''
     stored_argv = None
     if self.__configs.has_key(launchfile):
-      # close the configuration
+      # close the current loaded configuration with the same name 
       stored_argv = self.__configs[launchfile].argv
-      self.removeConfigFromModel(launchfile)
-      stored_roscfg = self.__configs[launchfile].Roscfg
-      del self.__configs[launchfile]
-#      # remove machine entries
-#      try:
-#        for name, machine in self.__configs[launchfile].Roscfg.machines.items():
-#          if machine.name:
-#            nm.nameres().remove(name=machine.name, host=machine.address)
-#      except:
-#        import traceback
-#        print traceback.format_exc()
-    #load launch config
+    #load launch configuration
     try:
-      # test for requerid args
+      # test for required args
       launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
       loaded = False
+      # if the launch file currently open these args will be used
       if stored_argv is None:
-        req_args = launchConfig.getArgs()
-        if req_args:
-          params = dict()
-          arg_dict = launchConfig.argvToDict(req_args)
-          for arg in arg_dict.keys():
-            params[arg] = ('string', [arg_dict[arg]])
-          inputDia = ParameterDialog(params)
-          inputDia.setFilterVisible(False)
-          inputDia.setWindowTitle(''.join(['Enter the argv for ', launchfile]))
-          if inputDia.exec_():
-            params = inputDia.getKeywords()
-            argv = []
-            for p,v in params.items():
-              if v:
-                argv.append(''.join([p, ':=', v]))
-            loaded = launchConfig.load(argv)
-          else:
-            return
+        if argv_forced:
+          # if the parameter already requested `argv_forced` is filled: load!
+          loaded = launchConfig.load(argv_forced)
+        else:
+          # get the list with needed launch args
+          req_args = launchConfig.getArgs()
+          if req_args:
+            params = dict()
+            arg_dict = launchConfig.argvToDict(req_args)
+            for arg in arg_dict.keys():
+              params[arg] = ('string', [arg_dict[arg]])
+            # request the args: the dialog must run in the main thread of Qt
+            req = LaunchArgsSelectionRequest(launchfile, params, 'Needs input for args')
+            raise nm.InteractionNeededError(req, self._load_launchfile, (launchfile, ))
+      # load the launch file with args of currently open launch file 
       if not loaded or not stored_argv is None:
         launchConfig.load(req_args if stored_argv is None else stored_argv)
+      # update the names of the hosts stored in the launch file
       for name, machine in launchConfig.Roscfg.machines.items():
         if machine.name:
           nm.nameres().addInfo(machine.name, machine.address, machine.address)
+      self.loaded_config.emit(launchfile, launchConfig)
+    except InteractionNeededError:
+      raise
+    except Exception as e:
+      import os
+      err_text = ''.join([os.path.basename(launchfile),' loading failed!'])
+      err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
+      rospy.logwarn("Loading launch file: %s", err_details)
+      raise DetailedError("Loading launch file", err_text, err_details)
+#      WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
+    except:
+      import traceback
+      print traceback.print_exc()
 
+  def _apply_launch_config(self, launchfile, launchConfig):
+#    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
+    stored_roscfg = None
+    if self.__configs.has_key(launchfile):
+      # close the current loaded configuration with the same name 
+      self.removeConfigFromModel(launchfile)
+      stored_roscfg = self.__configs[launchfile].Roscfg
+      del self.__configs[launchfile]
+    try:
       # add launch file object to the list
       self.__configs[launchfile] = launchConfig
       self.appendConfigToModel(launchfile, launchConfig.Roscfg)
       self.masterTab.tabWidget.setCurrentIndex(0)
-
       #get the descriptions of capabilities and hosts
       try:
         robot_descr = launchConfig.getRobotDescr()
@@ -670,6 +715,7 @@ class MasterViewProxy(QtGui.QWidget):
       if launchfile in self.__robot_icons:
         self.__robot_icons.remove(launchfile)
       self.__robot_icons.insert(0, launchfile)
+      self.markNodesAsDuplicateOf(self.__running_nodes)
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:

@@ -83,14 +83,15 @@ class LaunchConfig(QtCore.QObject):
     self.__argv_values = dict()
     self.global_param_done = [] # masteruri's where the global parameters are registered 
     self.hostname = nm.nameres().getHostname(self.__masteruri)
-    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.getIncludedFiles(self.Filename))
+    self.__launch_id = '%.9f'%time.time()
+#    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
 
 
   def __del__(self):
     # Delete to avoid segfault if the LaunchConfig class is destroyed recently 
     # after creation and xmlrpclib.ServerProxy process a method call.
 #    del self.file_watcher
-    nm.file_watcher().rem(self.__masteruri, self.__launchFile)
+    nm.file_watcher().rem(self.__masteruri, self.__launchFile, self.__launch_id)
 
   @property
   def masteruri(self):
@@ -244,7 +245,7 @@ class LaunchConfig(QtCore.QObject):
       self.__roscfg = roscfg
 #      for m, k in self.__roscfg.machines.items():
 #        print m, k
-      nm.file_watcher().add(self.__masteruri, self.__launchFile, self.getIncludedFiles(self.Filename))
+      nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
     except roslaunch.XmlParseException, e:
       test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
       message = str(e)

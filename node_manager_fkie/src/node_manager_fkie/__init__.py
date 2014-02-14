@@ -60,6 +60,7 @@ from name_resolution import NameResolution
 from history import History
 from file_watcher import FileWatcher
 from common import get_ros_home, masteruri_from_ros
+from master_view_proxy import LaunchArgsSelectionRequest
 
 # set the cwd to the package of the node_manager_fkie to support the images
 # in HTML descriptions of the robots and capabilities

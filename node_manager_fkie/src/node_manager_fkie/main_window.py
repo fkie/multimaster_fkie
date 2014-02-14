@@ -1132,14 +1132,14 @@ class MainWindow(QtGui.QMainWindow):
     '''
     item, path, id = activated.model().items[activated.row()]
     try:
-      self.ui.xmlFileView.setEnabled(False)
+#      self.ui.xmlFileView.setEnabled(False)
       file = activated.model().expandItem(item, path)
       if not file is None:
-        self.loadLaunchFile(path)
-      self.ui.xmlFileView.setEnabled(True)
-      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+        self.loadLaunchFile(path, index=activated)
+#      self.ui.xmlFileView.setEnabled(True)
+#      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
     except Exception, e:
-      self.ui.xmlFileView.setEnabled(True)
+#      self.ui.xmlFileView.setEnabled(True)
       rospy.logwarn("Error while load launch file %s: %s", str(item), str(e))
       WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
                         ''.join(['Error while load launch file:\n', item]),
@@ -1301,9 +1301,9 @@ class MainWindow(QtGui.QMainWindow):
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
       path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
-        self.loadLaunchFile(path)
+        self.loadLaunchFile(path, index=index)
 
-  def loadLaunchFile(self, path, force_as_default=False, host=None):
+  def loadLaunchFile(self, path, force_as_default=False, host=None, index=None):
     '''
     Load the launch file. A ROS master mast be selected first.
     @param path: the path of the launch file.
@@ -1313,10 +1313,17 @@ class MainWindow(QtGui.QMainWindow):
     master_proxy = self.stackedLayout.currentWidget()
     if isinstance(master_proxy, MasterViewProxy):
       cursor = self.cursor()
-      self.setCursor(QtCore.Qt.WaitCursor)
-      self.ui.xmlFileView.setEnabled(False)
+#      self.setCursor(QtCore.Qt.WaitCursor)
+#      self.ui.xmlFileView.setEnabled(False)
       self.ui.xmlFileView.model().add2LoadHistory(path)
-      QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
+      try:
+        if index:
+          sm = self.ui.xmlFileView.selectionModel()
+          sm.select(self.ui.xmlFileView.model().createIndex(index.row(), index.column()), QtGui.QItemSelectionModel.Select)
+      except:
+        import traceback
+        print traceback.format_exc()
+#      QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
       #todo: except errors on determination of the defaul_cfg name
       key_mod = QtGui.QApplication.keyboardModifiers()
       if (key_mod & QtCore.Qt.ShiftModifier) or force_as_default:
@@ -1339,8 +1346,8 @@ class MainWindow(QtGui.QMainWindow):
               params = inputDia.getKeywords()
               args.extend(launchConfig.resolveArgs([''.join([p, ":='", v, "'"]) for p,v in params.items() if v]))
             else:
-              self.ui.xmlFileView.setEnabled(True)
-              self.setCursor(cursor)
+#              self.ui.xmlFileView.setEnabled(True)
+#              self.setCursor(cursor)
               return
         except:
           import traceback
@@ -1360,14 +1367,14 @@ class MainWindow(QtGui.QMainWindow):
       else:
         try:
           master_proxy.launchfiles = path
-          # update the duplicate nodes
-          self.updateDuplicateNodes()
+          # update the duplicate nodes: will be updated on master_info receive
+#          self.updateDuplicateNodes()
         except Exception, e:
           import traceback
           print traceback.format_exc()
           WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", path, str(e)).exec_()
-      self.ui.xmlFileView.setEnabled(True)
-      self.setCursor(cursor)
+#      self.ui.xmlFileView.setEnabled(True)
+#      self.setCursor(cursor)
     else:
       QtGui.QMessageBox.information(self, "Load of launch file",
                                     "Select a master first!", )
