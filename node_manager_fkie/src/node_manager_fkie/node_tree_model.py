@@ -447,6 +447,7 @@ class GroupItem(QtGui.QStandardItem):
       elif isinstance(item, NodeItem):
         if is_sync_running:
           item.is_ghost = (item.node_info.uri is None and (item.name in running_nodes and running_nodes[item.name] == item.node_info.masteruri))
+          item.has_running = (item.node_info.uri is None and not item.name in ignore and (item.name in running_nodes and running_nodes[item.name] != item.node_info.masteruri))
         else:
           if item.is_ghost:
             item.is_ghost = False
