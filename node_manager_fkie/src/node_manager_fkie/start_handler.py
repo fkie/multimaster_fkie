@@ -97,7 +97,7 @@ class StartHandler(object):
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
       rospy.loginfo("SCREEN prefix removed before start!")
       prefix = ''
-    args = [''.join(['__ns:=', n.namespace]), ''.join(['__name:=', n.name])]
+    args = [''.join(['__ns:=', n.namespace.rstrip(rospy.names.SEP)]), ''.join(['__name:=', n.name])]
     if not (n.cwd is None):
       args.append(''.join(['__cwd:=', n.cwd]))
 
@@ -137,7 +137,7 @@ class StartHandler(object):
 
     # add params
     if not masteruri is None:
-      nodens = ''.join([n.namespace, n.name, '/'])
+      nodens = ''.join([n.namespace, n.name, rospy.names.SEP])
       params = dict()
       for param, value in launch_config.Roscfg.params.items():
         if param.startswith(nodens):
