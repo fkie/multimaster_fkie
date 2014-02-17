@@ -44,7 +44,8 @@ import threading
 import gui_resources
 
 class EchoDialog(QtGui.QDialog):
-  
+
+  MESSAGE_LINE_LIMIT = 128
   MESSAGE_HZ_LIMIT = 10
   MAX_DISPLAY_MSGS = 25
   STATISTIC_QUEUE_LEN = 5000
@@ -102,6 +103,7 @@ class EchoDialog(QtGui.QDialog):
 
     self._last_received_ts = 0
     self.receiving_hz = self.MESSAGE_HZ_LIMIT
+    self.line_limit = self.MESSAGE_LINE_LIMIT
 
     self.field_filter_fn = None
 
@@ -115,12 +117,20 @@ class EchoDialog(QtGui.QDialog):
       self.no_arr_checkbox = no_arr_checkbox = QtGui.QCheckBox('Hide arrays')
       no_arr_checkbox.toggled.connect(self.on_no_arr_checkbox_toggled)
       hLayout.addWidget(no_arr_checkbox)
+      self.combobox_reduce_ch = QtGui.QComboBox(self)
+      self.combobox_reduce_ch.addItems([str(self.MESSAGE_LINE_LIMIT), '0', '80', '256', '1024'])
+      self.combobox_reduce_ch.activated[str].connect(self.combobox_reduce_ch_activated)
+      self.combobox_reduce_ch.setEditable(True)
+      self.combobox_reduce_ch.setToolTip("Set maximum line width. 0 disables the limit.")
+      hLayout.addWidget(self.combobox_reduce_ch)
+#      reduce_ch_label = QtGui.QLabel('ch', self)
+#      hLayout.addWidget(reduce_ch_label)
       # add spacer
       spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
       hLayout.addItem(spacerItem)
       # add combobox for displaying frequency of messages
       self.combobox_displ_hz = QtGui.QComboBox(self)
-      self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0.1', '1', '50', '100', '1000'])
+      self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0', '0.1', '1', '50', '100', '1000'])
       self.combobox_displ_hz.activated[str].connect(self.on_combobox_hz_activated)
       self.combobox_displ_hz.setEditable(True)
       hLayout.addWidget(self.combobox_displ_hz)
@@ -128,11 +138,12 @@ class EchoDialog(QtGui.QDialog):
       hLayout.addWidget(displ_hz_label)
       # add combobox for count of displayed messages
       self.combobox_msgs_count = QtGui.QComboBox(self)
-      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '50', '100', '1000', '10000'])
+      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '0', '50', '100', '1000', '10000'])
       self.combobox_msgs_count.activated[str].connect(self.on_combobox_count_activated)
       self.combobox_msgs_count.setEditable(True)
+      self.combobox_msgs_count.setToolTip("Set maximum displayed message count. 0 disables the limit.")
       hLayout.addWidget(self.combobox_msgs_count)
-      displ_count_label = QtGui.QLabel('displayed count', self)
+      displ_count_label = QtGui.QLabel('#', self)
       hLayout.addWidget(displ_count_label)
       # add topic control button for unsubscribe and subscribe
       self.topic_control_button = QtGui.QToolButton(self)
@@ -208,6 +219,15 @@ class EchoDialog(QtGui.QDialog):
   def on_no_arr_checkbox_toggled(self, state):
     self.field_filter_fn = self.create_field_filter(self.no_str_checkbox.isChecked(), state)
 
+  def combobox_reduce_ch_activated(self, ch_txt):
+    try:
+      self.line_limit = int(ch_txt)
+    except ValueError:
+      try:
+        self.line_limit = float(ch_txt)
+      except ValueError:
+        self.combobox_reduce_ch.setEditText(str(self.line_limit))
+
   def on_combobox_hz_activated(self, hz_txt):
     try:
       self.receiving_hz = int(hz_txt)
@@ -243,7 +263,16 @@ class EchoDialog(QtGui.QDialog):
       self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
 
   def _msg_handle(self, data):
-    self.msg_signal.emit(roslib.message.strify_message(data, field_filter=self.field_filter_fn), (data._connection_header['latching'] != '0'))
+    msg = roslib.message.strify_message(data, field_filter=self.field_filter_fn), (data._connection_header['latching'] != '0')
+#    print msg
+    if isinstance(msg, tuple):
+      msg = msg[0]
+    if self.line_limit != 0:
+      a = ''
+      for l in msg.splitlines():
+        a = a + (l if len(l)<=self.line_limit else l[0:self.line_limit-3]+'...') + '\n'
+      msg = a
+    self.msg_signal.emit(msg, (data._connection_header['latching'] != '0'))
 
   def _append_message(self, msg, latched):
     '''
@@ -268,7 +297,7 @@ class EchoDialog(QtGui.QDialog):
 
     self.message_count += 1
     # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
-    if self._last_received_ts != 0:
+    if self._last_received_ts != 0 and self.receiving_hz != 0:
       if not latched and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
         self._scrapped_msgs += 1
         self._scrapped_msgs_sl += 1
