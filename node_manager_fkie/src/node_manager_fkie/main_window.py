@@ -1135,7 +1135,7 @@ class MainWindow(QtGui.QMainWindow):
 #      self.ui.xmlFileView.setEnabled(False)
       file = activated.model().expandItem(item, path)
       if not file is None:
-        self.loadLaunchFile(path, index=activated)
+        self.loadLaunchFile(path, row=activated.row())
 #      self.ui.xmlFileView.setEnabled(True)
 #      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
     except Exception, e:
@@ -1291,6 +1291,10 @@ class MainWindow(QtGui.QMainWindow):
     if self.editor_dialogs.has_key(files[0]):
       del self.editor_dialogs[files[0]]
 
+  def _reload_globals_at_next_start(self, file):
+    if not self.currentMaster is None:
+      self.currentMaster.reload_global_parameter_at_next_start(file)
+
   def on_load_xml_clicked(self):
     '''
     Tries to load the selected launch file. The button is only enabled and this
@@ -1301,9 +1305,9 @@ class MainWindow(QtGui.QMainWindow):
       pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
       path = self.ui.xmlFileView.model().expandItem(pathItem, path)
       if not path is None:
-        self.loadLaunchFile(path, index=index)
+        self.loadLaunchFile(path, row=index.row())
 
-  def loadLaunchFile(self, path, force_as_default=False, host=None, index=None):
+  def loadLaunchFile(self, path, force_as_default=False, host=None, row=None):
     '''
     Load the launch file. A ROS master mast be selected first.
     @param path: the path of the launch file.
@@ -1317,12 +1321,11 @@ class MainWindow(QtGui.QMainWindow):
 #      self.ui.xmlFileView.setEnabled(False)
       self.ui.xmlFileView.model().add2LoadHistory(path)
       try:
-        if index:
+        if not row is None:
           sm = self.ui.xmlFileView.selectionModel()
-          sm.select(self.ui.xmlFileView.model().createIndex(index.row(), index.column()), QtGui.QItemSelectionModel.Select)
+          sm.select(self.ui.xmlFileView.model().createIndex(row, 0), QtGui.QItemSelectionModel.Select)
       except:
-        import traceback
-        print traceback.format_exc()
+        pass
 #      QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
       #todo: except errors on determination of the defaul_cfg name
       key_mod = QtGui.QApplication.keyboardModifiers()
@@ -1521,6 +1524,8 @@ class MainWindow(QtGui.QMainWindow):
         self.currentMaster.on_log_path_copy()
     elif url.toString().startswith('launch://'):
       self._editor_dialog_open([str(url.encodedPath())], '')
+    elif url.toString().startswith('reload_globals://'):
+      self._reload_globals_at_next_start(str(url.encodedPath()).replace('reload_globals://', ''))
     else:
       QtGui.QDesktopServices.openUrl(url)
 

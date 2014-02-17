@@ -747,6 +747,13 @@ class MasterViewProxy(QtGui.QWidget):
       print traceback.print_exc()
     self.update_robot_icon(True)
 
+  def reload_global_parameter_at_next_start(self, launchfile):
+    try:
+      self.__configs[launchfile].global_param_done.remove(self.masteruri)
+      self.on_node_selection_changed(None, None, True)
+    except:
+      pass
+
   def update_robot_icon(self, force=False):
     '''
     Update the current robot icon. If the icon was changed a `robot_icon_updated` 
@@ -1019,6 +1026,8 @@ class MasterViewProxy(QtGui.QWidget):
           item = ''.join(['<a href="service://', str(i),'">', i, '</a>'])
         elif type == 'LAUNCH':
           item = ''.join(['<a href="launch://', str(i),'">', i, '</a>'])
+          if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
+            item = ''.join([item, '<br>', '<a href="reload_globals://', str(i),'">', '<font color="#339900">', 'reload global parameter @next start', '</font>', '</a>'])
         result = ''.join([result, '<li>', item, '</li>'])
       result = ''.join([result, '</ul>'])
     return result
