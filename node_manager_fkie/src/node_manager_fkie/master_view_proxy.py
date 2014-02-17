@@ -41,7 +41,9 @@ import socket
 import xmlrpclib
 import threading
 import time
+import uuid
 import getpass
+
 from urlparse import urlparse
 
 import rospy
@@ -592,13 +594,13 @@ class MasterViewProxy(QtGui.QWidget):
     @param launchfile: the launch file path
     @type launchfile: C{str}
     '''
-    self._progress_queue.add2queue(str(self._progress_queue.count()), 
+    self._progress_queue.add2queue(str(uuid.uuid4()), 
                                      ''.join(['Loading ', os.path.basename(launchfile)]), 
                                      self._load_launchfile, 
                                      (launchfile,))
     self._progress_queue.start()
 
-  def _load_launchfile(self, launchfile, argv_forced=[]):
+  def _load_launchfile(self, launchfile, argv_forced=[], pqid=None):
     '''
     This method will be called in another thread. The configuration parameter
     of the launch file will be requested using `LaunchArgsSelectionRequest` and 
@@ -637,7 +639,9 @@ class MasterViewProxy(QtGui.QWidget):
       for name, machine in launchConfig.Roscfg.machines.items():
         if machine.name:
           nm.nameres().addInfo(machine.name, machine.address, machine.address)
-      self.loaded_config.emit(launchfile, launchConfig)
+      # do not load if the loadings process was canceled
+      if self._progress_queue.has_id(pqid):
+        self.loaded_config.emit(launchfile, launchConfig)
     except InteractionNeededError:
       raise
     except Exception as e:
@@ -1417,7 +1421,7 @@ class MasterViewProxy(QtGui.QWidget):
     # put into the queue and start
     for node in nodes:
       if node.name in cfg_nodes:
-        self._progress_queue.add2queue(str(self._progress_queue.count()), 
+        self._progress_queue.add2queue(str(uuid.uuid4()), 
                                        ''.join(['start ', node.node_info.name]), 
                                        self.start_node, 
                                        (node.node_info, force, cfg_nodes[node.node_info.name], force_host))
@@ -1564,7 +1568,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     # put into the queue and start the que handling
     for node in nodes:
-      self._progress_queue.add2queue(str(self._progress_queue.count()), 
+      self._progress_queue.add2queue(str(uuid.uuid4()), 
                                      ''.join(['stop ', node.name]), 
                                      self.stop_node, 
                                      (node, (len(nodes)==1)))
@@ -1601,7 +1605,7 @@ class MasterViewProxy(QtGui.QWidget):
       # kill the node
       if not pid is None:
         try:
-          self._progress_queue.add2queue(str(self._progress_queue.count()), 
+          self._progress_queue.add2queue(str(uuid.uuid4()), 
                                          ''.join(['kill ', node.name, '(', str(pid), ')']), 
                                          nm.starter().kill, 
                                          (self.getHostFromNode(node), pid, False, self.current_user))
@@ -1619,7 +1623,7 @@ class MasterViewProxy(QtGui.QWidget):
 
     # put into the queue and start the que handling
     for node in selectedNodes:
-      self._progress_queue.add2queue(str(self._progress_queue.count()), 
+      self._progress_queue.add2queue(str(uuid.uuid4()), 
                                      ''.join(['kill ', node.name]), 
                                      self.kill_node, 
                                      (node, (len(selectedNodes)==1)))
@@ -1669,7 +1673,7 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     # put into the queue and start the que handling
     for node in selectedNodes:
-      self._progress_queue.add2queue(str(self._progress_queue.count()), 
+      self._progress_queue.add2queue(str(uuid.uuid4()), 
                                      ''.join(['unregister node ', node.name]), 
                                      self.unregister_node, 
                                      (node, (len(selectedNodes)==1)))
@@ -1724,7 +1728,7 @@ class MasterViewProxy(QtGui.QWidget):
             ret = (ret == QtGui.QMessageBox.Ok)
           if ret:
             for node in selectedNodes:
-              self._progress_queue.add2queue(str(self._progress_queue.count()),
+              self._progress_queue.add2queue(str(uuid.uuid4()),
                                              ''.join(['show IO of ', node.name]),
                                              nm.screen().openScreen,
                                              (node.name, self.getHostFromNode(node), False, self.current_user))
@@ -1743,7 +1747,7 @@ class MasterViewProxy(QtGui.QWidget):
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       for node in selectedNodes:
-        self._progress_queue.add2queue(str(self._progress_queue.count()),
+        self._progress_queue.add2queue(str(uuid.uuid4()),
                                        ''.join(['kill screen of ', node.name]),
                                        nm.screen().killScreens,
                                        (node.name, self.getHostFromNode(node), False, self.current_user))
@@ -1798,7 +1802,7 @@ class MasterViewProxy(QtGui.QWidget):
           ret = (ret == QtGui.QMessageBox.Ok)
         if ret:
           for node in selectedNodes:
-            self._progress_queue.add2queue(str(self._progress_queue.count()),
+            self._progress_queue.add2queue(str(uuid.uuid4()),
                                            ''.join(['show log of ', node.name]),
                                            nm.starter().openLog,
                                            (node.name, self.getHostFromNode(node), self.current_user))
@@ -1826,7 +1830,7 @@ class MasterViewProxy(QtGui.QWidget):
       WarningMessageBox(QtGui.QMessageBox.Warning, "Get log path", 
                         'Error while get log path',
                         str(e)).exec_()
-#    self._progress_queue.add2queue(str(self._progress_queue.count()),
+#    self._progress_queue.add2queue(str(uuid.uuid4()),
 #                                   'Get log path',
 #                                   nm.starter().copylogPath2Clipboards,
 #                                   (nm.nameres().getHostname(self.masteruri), nodenames))
@@ -1849,7 +1853,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     for node in selectedNodes:
-      self._progress_queue.add2queue(str(self._progress_queue.count()),
+      self._progress_queue.add2queue(str(uuid.uuid4()),
                                      ''.join(['delete Log of ', node.name]),
                                      nm.starter().deleteLog,
                                      (node.name, self.getHostFromNode(node), False, self.current_user))
@@ -2111,7 +2115,7 @@ class MasterViewProxy(QtGui.QWidget):
 #        print topic_params
         pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
 #        nm.starter().runNodeWithoutConfig(nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), args=[pub_cmd], masteruri=self.masteruri)
-        self._progress_queue.add2queue(str(self._progress_queue.count()), 
+        self._progress_queue.add2queue(str(uuid.uuid4()), 
                                  ''.join(['start publisher for ', topic_name]), 
                                  nm.starter().runNodeWithoutConfig, 
                                  (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), [pub_cmd], self.masteruri, False, self.current_user))

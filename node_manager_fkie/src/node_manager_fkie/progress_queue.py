@@ -100,16 +100,28 @@ class ProgressQueue(QtCore.QObject):
   def count(self):
     return len(self.__progress_queue)
 
+  def has_id(self, id):
+    '''
+    Searches the current and planed threads for given id and returns `True` if 
+    one is found.
+    '''
+    for th in self.__progress_queue:
+      if th.id() == id:
+        return True
+    return False
+
   def _progress_thread_finished(self, id):
     try:
-      #print "PG finished", id
       val = self._progress_bar.value()
-      th = self.__progress_queue[val+1]
+      # be on the safe side that the finished thread is the first thread in the queue (avoid calls from canceled threads)
+      if id == self.__progress_queue[val].id():
+        val = val + 1
+      th = self.__progress_queue[val]
       self._progress_bar.setToolTip(th.descr)
       dscr_len = self._progress_bar.size().width()/10
       self._progress_bar.setFormat(''.join(['%v/%m - ', th.descr[0:dscr_len]]))
-      self.__progress_queue[val+1].start()
-      self._progress_bar.setValue(val+1)
+      self.__progress_queue[val].start()
+      self._progress_bar.setValue(val)
       #'print "PG finished ok", id
     except:
       #'print "PG finished err", id
@@ -142,6 +154,15 @@ class ProgressQueue(QtCore.QObject):
   def _on_progress_canceled(self):
     try:
 #      self.__progress_queue[self._progress_bar.value()].wait()
+      if self.__progress_queue:
+        try:
+          self.__progress_queue[self._progress_bar.value()].finished_signal.disconnect(self._progress_thread_finished)
+          self.__progress_queue[self._progress_bar.value()].error_signal.disconnect(self._progress_thread_error)
+          self.__progress_queue[self._progress_bar.value()].request_interact_signal.disconnect(self._on_request_interact)
+#          self.__progress_queue[self._progress_bar.value()].terminate()
+        except:
+#          print str(self.__progress_queue[self._progress_bar.value()].getName()), 'could not be terminated'
+          pass
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
       self.__running = False
@@ -238,6 +259,9 @@ class ProgressThread(QtCore.QObject, threading.Thread):
     self._args = args
     self.setDaemon(True)
 
+  def id(self):
+    return self._id
+
   def run(self):
     '''
     '''
@@ -246,7 +270,10 @@ class ProgressThread(QtCore.QObject, threading.Thread):
         #'print "PG call "
         #'print "  .. ", self._target
         #print "  -- args:", self._args
-        self._target(*self._args)
+        if 'pqid' in self._target.func_code.co_varnames:
+          self._target(*self._args, pqid=self._id)
+        else:
+          self._target(*self._args)
         #print "PG call finished"
         self.finished_signal.emit(self._id)
       else:

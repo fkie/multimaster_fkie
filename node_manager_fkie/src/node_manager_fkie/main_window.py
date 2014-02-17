@@ -32,6 +32,7 @@
 
 import os
 import time
+import uuid
 import xmlrpclib
 import threading
 import getpass
@@ -421,7 +422,7 @@ class MainWindow(QtGui.QMainWindow):
               node_name = ''.join([str(nm.nameres().mastername(masteruri)), roslib.names.SEP, 
                                     os.path.basename(self.default_load_launch).replace('.launch',''), 
                                     roslib.names.SEP, 'default_cfg'])
-              self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
+              self._progress_queue_cfg.add2queue(str(uuid.uuid4()), 
                                              'start default config '+str(host), 
                                              nm.starter().runNodeWithoutConfig, 
                                              (host, 'default_cfg_fkie', 'default_cfg', node_name, args, masteruri, False, self.masters[masteruri].current_user))
@@ -762,11 +763,11 @@ class MainWindow(QtGui.QMainWindow):
           host = nm.nameres().getHostname(master.masteruri)
           if not self._sync_dialog.interface_filename is None:
             # copy the interface file to remote machine
-            self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
+            self._progress_queue_sync.add2queue(str(uuid.uuid4()),
                                            'Transfer sync interface '+str(host), 
                                            nm.starter().transfer_files, 
                                            (str(host), self._sync_dialog.interface_filename, False, master.current_user))
-          self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
+          self._progress_queue_sync.add2queue(str(uuid.uuid4()), 
                                          'Start sync on '+str(host), 
                                          nm.starter().runNodeWithoutConfig, 
                                          (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, str(master.masteruri), False, master.current_user))
@@ -827,7 +828,7 @@ class MainWindow(QtGui.QMainWindow):
 
           try:
             host = nm.nameres().getHostname(self.currentMaster.masteruri)
-            self._progress_queue_sync.add2queue(str(self._progress_queue_sync.count()), 
+            self._progress_queue_sync.add2queue(str(uuid.uuid4()), 
                                            'start sync on '+str(host), 
                                            nm.starter().runNodeWithoutConfig, 
                                            (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(self.currentMaster.masteruri), False, self.currentMaster.current_user))
@@ -1087,7 +1088,7 @@ class MainWindow(QtGui.QMainWindow):
           args.append('_send_mcast:=%s'%str(send_mcast))
           args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
           #TODO: remove the name parameter from the ROS parameter server
-          self._progress_queue.add2queue(str(self._progress_queue.count()), 
+          self._progress_queue.add2queue(str(uuid.uuid4()), 
                                          'start discovering on '+str(hostname), 
                                          nm.starter().runNodeWithoutConfig, 
                                          (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, username))
@@ -1111,7 +1112,7 @@ class MainWindow(QtGui.QMainWindow):
       args = []
       if network < 100 and network >= 0:
         args.append(''.join(['_mcast_port:=', str(11511 + int(network))]))
-      self._progress_queue.add2queue(str(self._progress_queue.count()), 
+      self._progress_queue.add2queue(str(uuid.uuid4()), 
                                      'start discovering on '+str(hostname), 
                                      nm.starter().runNodeWithoutConfig, 
                                      (str(hostname), 'master_discovery_fkie', 'master_discovery', 'master_discovery', args, None, False))
@@ -1251,13 +1252,13 @@ class MainWindow(QtGui.QMainWindow):
             rospy.loginfo("TRANSFER the launch file to host %s@%s: %s", str(username), str(host), path)
             recursive = params['recursive']
             username = params['Username']
-            self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
+            self._progress_queue_cfg.add2queue(str(uuid.uuid4()), 
                                            'transfer files to '+str(host), 
                                            nm.starter().transfer_files, 
                                            (str(host), path, False, username))
             if recursive:
               for f in LaunchConfig.getIncludedFiles(path):
-                self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
+                self._progress_queue_cfg.add2queue(str(uuid.uuid4()), 
                                                'transfer files to '+str(host), 
                                                nm.starter().transfer_files, 
                                                (str(host), f, False, username))
@@ -1362,7 +1363,7 @@ class MainWindow(QtGui.QMainWindow):
                              roslib.names.SEP, 
                              os.path.basename(path).replace('.launch','').replace(' ', '_'), 
                              roslib.names.SEP, 'default_cfg'])
-        self._progress_queue_cfg.add2queue(str(self._progress_queue_cfg.count()), 
+        self._progress_queue_cfg.add2queue(str(uuid.uuid4()),
                                        'start default config '+str(hostname), 
                                        nm.starter().runNodeWithoutConfig, 
                                        (str(hostname), 'default_cfg_fkie', 'default_cfg', node_name, args, master_proxy.masteruri, False, master_proxy.current_user))
