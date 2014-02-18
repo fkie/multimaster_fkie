@@ -60,7 +60,7 @@ class EchoDialog(QtGui.QDialog):
   dialog was closed.
   '''
   
-  msg_signal = QtCore.Signal(str, bool)
+  msg_signal = QtCore.Signal(object, bool)
   '''
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
@@ -138,7 +138,7 @@ class EchoDialog(QtGui.QDialog):
       hLayout.addWidget(displ_hz_label)
       # add combobox for count of displayed messages
       self.combobox_msgs_count = QtGui.QComboBox(self)
-      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '0', '50', '100', '1000', '10000'])
+      self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '0', '50', '100'])
       self.combobox_msgs_count.activated[str].connect(self.on_combobox_count_activated)
       self.combobox_msgs_count.setEditable(True)
       self.combobox_msgs_count.setToolTip("Set maximum displayed message count. 0 disables the limit.")
@@ -263,22 +263,13 @@ class EchoDialog(QtGui.QDialog):
       self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
 
   def _msg_handle(self, data):
-    msg = roslib.message.strify_message(data, field_filter=self.field_filter_fn), (data._connection_header['latching'] != '0')
-#    print msg
-    if isinstance(msg, tuple):
-      msg = msg[0]
-    if self.line_limit != 0:
-      a = ''
-      for l in msg.splitlines():
-        a = a + (l if len(l)<=self.line_limit else l[0:self.line_limit-3]+'...') + '\n'
-      msg = a
-    self.msg_signal.emit(msg, (data._connection_header['latching'] != '0'))
+    self.msg_signal.emit(data, (data._connection_header['latching'] != '0'))
 
   def _append_message(self, msg, latched):
     '''
     Adds a label to the dialog's layout and shows the given text.
     @param msg: the text to add to the dialog
-    @type msg: C{str}
+    @type msg: message object
     '''
     current_time = time.time()
     with self.lock:
@@ -305,6 +296,16 @@ class EchoDialog(QtGui.QDialog):
     self._last_received_ts = current_time
 
     if not self.show_only_rate:
+      # convert message to string and reduce line width to current limit
+      msg = roslib.message.strify_message(msg, field_filter=self.field_filter_fn)
+      if isinstance(msg, tuple):
+        msg = msg[0]
+      if self.line_limit != 0:
+        a = ''
+        for l in msg.splitlines():
+          a = a + (l if len(l)<=self.line_limit else l[0:self.line_limit-3]+'...') + '\n'
+        msg = a
+      # create a notification about scrapped messages
       if self._scrapped_msgs_sl > 0:
         txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>'%self._scrapped_msgs_sl
         self.display.append(txt)
