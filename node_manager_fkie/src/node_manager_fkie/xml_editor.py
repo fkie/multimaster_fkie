@@ -484,7 +484,7 @@ class XmlEditor(QtGui.QDialog):
     self.searchButton.setShortcut(QtGui.QApplication.translate("XmlEditor", "Ctrl+F", None, QtGui.QApplication.UnicodeUTF8))
     self.searchButton.setToolTip('Open a search dialog (Ctrl+F)')
     self.horizontalLayout.addWidget(self.searchButton)
-    # add the got button
+    # add the goto button
     self.gotoButton = QtGui.QPushButton(self)
     self.gotoButton.setObjectName("gotoButton")
     self.gotoButton.clicked.connect(self.on_shortcut_goto)
@@ -492,6 +492,10 @@ class XmlEditor(QtGui.QDialog):
     self.gotoButton.setShortcut(QtGui.QApplication.translate("XmlEditor", "Ctrl+L", None, QtGui.QApplication.UnicodeUTF8))
     self.gotoButton.setToolTip('Open a goto dialog (Ctrl+L)')
     self.horizontalLayout.addWidget(self.gotoButton)
+    # add a tag button
+    self.tagButton = self._create_tag_button(self)
+    self.horizontalLayout.addWidget(self.tagButton)
+
     # add spacer
     spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
     self.horizontalLayout.addItem(spacerItem)
@@ -769,3 +773,131 @@ class XmlEditor(QtGui.QDialog):
     currentLine = str(self.tabWidget.currentWidget().textCursor().blockNumber()+1)
     self.find_dialog.result_label.setText(''.join(["'", self.find_dialog.search_text, "'", ' found at line: ', currentLine, ' in ', "'", currentTabName,"'"]))
 
+  ##############################################################################
+  # LAUNCH TAG insertion 
+  ##############################################################################
+
+  def _create_tag_button(self, parent=None):
+    btn = QtGui.QPushButton(parent)
+    btn.setObjectName("tagButton")
+    btn.setText(QtGui.QApplication.translate("XmlEditor", "Add tag", None, QtGui.QApplication.UnicodeUTF8))
+    btn.setShortcut(QtGui.QApplication.translate("XmlEditor", "Ctrl+T", None, QtGui.QApplication.UnicodeUTF8))
+    btn.setToolTip('Adds a ROS launch tag to launch file (Ctrl+T)')
+    # creates a tag menu
+    tag_menu = QtGui.QMenu(btn)
+    # group tag
+    add_group_tag_action = QtGui.QAction("<group>", self, statusTip="", triggered=self._on_add_group_tag)
+    tag_menu.addAction(add_group_tag_action)
+    # node tag
+    add_node_tag_action = QtGui.QAction("<node>", self, statusTip="", triggered=self._on_add_node_tag)
+    tag_menu.addAction(add_node_tag_action)
+    # node tag with all attributes
+    add_node_tag_all_action = QtGui.QAction("<node all>", self, statusTip="", triggered=self._on_add_node_tag_all)
+    tag_menu.addAction(add_node_tag_all_action)
+    # include tag with all attributes
+    add_include_tag_all_action = QtGui.QAction("<include>", self, statusTip="", triggered=self._on_add_include_tag_all)
+    tag_menu.addAction(add_include_tag_all_action)
+    # remap
+    add_remap_tag_action = QtGui.QAction("<remap>", self, statusTip="", triggered=self._on_add_remap_tag)
+    tag_menu.addAction(add_remap_tag_action)
+    # env tag
+    add_env_tag_action = QtGui.QAction("<env>", self, statusTip="", triggered=self._on_add_env_tag)
+    tag_menu.addAction(add_env_tag_action)
+    # param tag
+    add_param_tag_action = QtGui.QAction("<param>", self, statusTip="", triggered=self._on_add_param_tag)
+    tag_menu.addAction(add_param_tag_action)
+    # param tag with all attributes
+    add_param_tag_all_action = QtGui.QAction("<param all>", self, statusTip="", triggered=self._on_add_param_tag_all)
+    tag_menu.addAction(add_param_tag_all_action)
+    # rosparam tag with all attributes
+    add_rosparam_tag_all_action = QtGui.QAction("<rosparam>", self, statusTip="", triggered=self._on_add_rosparam_tag_all)
+    tag_menu.addAction(add_rosparam_tag_all_action)
+    # arg tag with default definition
+    add_arg_tag_default_action = QtGui.QAction("<arg default>", self, statusTip="", triggered=self._on_add_arg_tag_default)
+    tag_menu.addAction(add_arg_tag_default_action)
+    # arg tag with value definition
+    add_arg_tag_value_action = QtGui.QAction("<arg value>", self, statusTip="", triggered=self._on_add_arg_tag_value)
+    tag_menu.addAction(add_arg_tag_value_action)
+
+    # test tag
+    add_test_tag_action = QtGui.QAction("<test>", self, statusTip="", triggered=self._on_add_test_tag)
+    tag_menu.addAction(add_test_tag_action)
+    # test tag with all attributes
+    add_test_tag_all_action = QtGui.QAction("<test all>", self, statusTip="", triggered=self._on_add_test_tag_all)
+    tag_menu.addAction(add_test_tag_all_action)
+
+
+    btn.setMenu(tag_menu)
+    return btn
+
+  def _insert_text(self, text):
+    cursor = self.tabWidget.currentWidget().textCursor()
+    if not cursor.isNull():
+      col = cursor.columnNumber()
+      spaces = ''.join([' ' for i in range(col)])
+      cursor.insertText(text.replace('\n','\n%s'%spaces))
+      self.tabWidget.currentWidget().setFocus(QtCore.Qt.OtherFocusReason)
+
+  def _on_add_group_tag(self):
+    self._insert_text('<group ns="namespace" clear_params="true|false">\n'
+                      '</node>')
+
+  def _on_add_node_tag(self):
+    self._insert_text('<node name="NAME" pkg="PKG" type="BIN">\n'
+                      '</node>')
+
+  def _on_add_node_tag_all(self):
+    self._insert_text('<node name="NAME" pkg="PKG" type="BIN"\n'
+                      '      args="arg1" machine="machine-name"\n'
+                      '      respawn="true" required="true"\n'
+                      '      ns="foo" clear_params="true|false"\n'
+                      '      output="log|screen" cwd="ROS_HOME|node"\n'
+                      '      launch-prefix="prefix arguments">\n'
+                      '</node>')
+
+  def _on_add_include_tag_all(self):
+    self._insert_text('<include file="$(find pkg-name)/path/filename.xml"\n'
+                      '         ns="foo" clear_params="true|false"\n'
+                      '</include>')
+
+  def _on_add_remap_tag(self):
+    self._insert_text('<remap from="original" to="new"/>')
+
+  def _on_add_env_tag(self):
+    self._insert_text('<env name="variable" value="value"/>')
+
+  def _on_add_param_tag(self):
+    self._insert_text('<param name="namespace/name" value="value" />')
+
+  def _on_add_param_tag_all(self):
+    self._insert_text('<param name="namespace/name" value="value"\n'
+                      '       type="str|int|double|bool"\n'
+                      '       textfile="$(find pkg-name)/path/file.txt"\n'
+                      '       binfile="$(find pkg-name)/path/file"\n'
+                      '       command="$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'"\n'
+                      '</param>')
+
+  def _on_add_rosparam_tag_all(self):
+    self._insert_text('<rosparam param="param-name"\n'
+                      '       file="$(find pkg-name)/path/foo.yaml"\n'
+                      '       command="load|dump|delete"\n'
+                      '       ns="namespace"\n'
+                      '</rosparam>')
+
+  def _on_add_arg_tag_default(self):
+    self._insert_text('<arg name="foo" default="1" />')
+
+  def _on_add_arg_tag_value(self):
+    self._insert_text('<arg name="foo" value="bar" />')
+
+  def _on_add_test_tag(self):
+    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name"\n'
+                      '</test>')
+
+  def _on_add_test_tag_all(self):
+    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name"\n'
+                      '      args="arg1" time-limit="60.0"\n'
+                      '      ns="foo" clear_params="true|false"\n'
+                      '      cwd="ROS_HOME|node" retry="0"\n'
+                      '      launch-prefix="prefix arguments">\n'
+                      '</test>')
