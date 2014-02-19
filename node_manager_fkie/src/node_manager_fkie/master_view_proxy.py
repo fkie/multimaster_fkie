@@ -2038,10 +2038,10 @@ class MasterViewProxy(QtGui.QWidget):
       for p in root_paths:
         ret = get_packages(p)
         packages = dict(ret.items() + packages.items())
-        for (p, direc) in packages.items():
-          import rosmsg
-          for file in rosmsg._list_types('/'.join([direc, 'msg']), 'msg', rosmsg.MODE_MSG):
-            msg_types.append("%s/%s"%(p, file))
+      for (p, direc) in packages.items():
+        import rosmsg
+        for file in rosmsg._list_types('/'.join([direc, 'msg']), 'msg', rosmsg.MODE_MSG):
+          msg_types.append("%s/%s"%(p, file))
       msg_types.sort()
       fields = {'Type' : ('string', msg_types), 'Name' : ('string', [''])}
 
