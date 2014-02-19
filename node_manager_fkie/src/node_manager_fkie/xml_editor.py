@@ -49,10 +49,14 @@ class Editor(QtGui.QTextEdit):
   launch file is detected, this can be open by STRG+(mouse click) in a new
   editor.
   '''
-  
+
   load_request_signal = QtCore.Signal(str)
   ''' @ivar: A signal for request to open a configuration file'''
-  
+
+  SUBSTITUTION_ARGS = ['env', 'optenv', 'find', 'anon', 'arg']
+  FILE_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.sync', '.test', '.xml']
+  CONTEXT_FILE_EXT = ['.launch', '.test', '.xml']
+
   def __init__(self, filename, parent=None):
     self.parent = parent
     QtGui.QTextEdit.__init__(self, parent)
@@ -156,7 +160,6 @@ class Editor(QtGui.QTextEdit):
       if index > -1:
         return index
     try:
-      print path
       return resolve_url(path)
     except:
       pass
@@ -180,12 +183,8 @@ class Editor(QtGui.QTextEdit):
             try:
               path = self.interpretPath(fileName)
               file = QtCore.QFile(path)
-              if file.exists() and (path.endswith('.launch') or
-                                    path.endswith('.yaml') or
-                                    path.endswith('.conf') or
-                                    path.endswith('.cfg') or
-                                    path.endswith('.iface') or
-                                    path.endswith('.sync')):
+              ext = os.path.splitext(file)
+              if file.exists() and ext[1] in self.FILE_EXT:
                 result.append(path)
             except:
               import traceback
@@ -305,7 +304,13 @@ class Editor(QtGui.QTextEdit):
       self.setMouseTracking(False)
       self.viewport().setCursor(QtCore.Qt.IBeamCursor)
     elif event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_Space:
-      pass
+      ext = os.path.splitext(self.filename)
+      if ext[1] in self.CONTEXT_FILE_EXT:
+        menu = self._create_context_substitution_menu()
+        if menu is None:
+          menu = self._create_context_tag_menu()
+        if menu:
+          menu.exec_(self.mapToGlobal(self.cursorRect().bottomRight()))
     QtGui.QTextEdit.keyReleaseEvent(self, event)
 
   def shiftText(self):
@@ -388,7 +393,6 @@ class Editor(QtGui.QTextEdit):
     e.accept()
 
   def dropEvent(self, e):
-    print e.mimeData().formats()
     cursor = self.cursorForPosition(e.pos())
     if not cursor.isNull():
       text = e.mimeData().text()
@@ -405,6 +409,124 @@ class Editor(QtGui.QTextEdit):
       else:
         cursor.insertText(e.mimeData().text())
     e.accept()
+
+  #############################################################################
+  ########## Ctrl&Space  Context menu                                    ###### 
+  #############################################################################
+
+  def _create_context_tag_menu(self):
+    parent_tag, inblock, attrs = self._get_parent_tag()
+    if not parent_tag:
+      return None
+    menu = QtGui.QMenu(self)
+    menu.triggered.connect(self._context_activated)
+    text = self.toPlainText()
+    pos = self.textCursor().position() - 1
+    try:
+      if not inblock:
+        # create a menu with attributes
+        attributes = sorted(list((set(XmlHighlighter.LAUNCH_ATTR[parent_tag]) - set(attrs))))
+        for attr in attributes:
+          action = menu.addAction(attr.rstrip('='))
+          action.setData('%s"'%attr if text[pos] == ' ' else ' %s"'%attr)
+      else:
+        # create a menu with tags
+        tags = sorted(XmlHighlighter.LAUNCH_CHILDS[parent_tag])
+        if not tags:
+          return None
+        for tag in tags:
+          data = '<%s></%s>'%(tag, tag) if XmlHighlighter.LAUNCH_CHILDS[tag] else '<%s/>'%tag
+          if text[pos] == '<':
+            data = data[1:]
+          action = menu.addAction(tag)
+          action.setData(data)
+    except:
+#      import traceback
+#      print traceback.format_exc()
+      return None
+    return menu
+
+  def _create_context_substitution_menu(self):
+    text = self.toPlainText()
+    pos = self.textCursor().position() - 1
+    try:
+      if text[pos] == '$' or (text[pos] == '(' and text[pos-1] == '$'):
+        menu = QtGui.QMenu(self)
+        menu.triggered.connect(self._context_activated)
+        for arg in self.SUBSTITUTION_ARGS:
+          action = menu.addAction("%s"%arg)
+          action.setData("(%s"%arg if text[pos] == '$' else "%s"%arg)
+        return menu
+    except:
+      pass
+    return None
+
+  def _get_parent_tag(self):
+    text = self.toPlainText()
+    pos = self.textCursor().position() - 1
+    # do not parse, if the menu was requested in a string sequence
+    try:
+      if not (text[pos] in [' ', '<', '>', '"', '\n'] or text[pos+1] in [' ', '<','"', '\n']):
+        return '', False, []
+    except:
+      pass
+    instr = (text[:pos+1].count('"') % 2)
+    # do not parse, if the menu was requested in a string definition
+    if instr:
+      return '', False, []
+    # some parameter definition
+    closed_tags = []
+    current_attr = []
+    tag_reading = True
+    tag = ''
+    attr_reading = False
+    attr = ''
+    closed_gts = False
+    # parse the text from current position to the beginning
+    i = pos
+    while i >= 0:
+      if text[i] == '"':
+        instr = not instr
+      elif not instr:
+        # parse only text which is not in string definitions
+        if text[i] == '=':
+          attr_reading = True
+        elif text[i] in ['<', '/', '>']:
+          if text[i] == '>':
+            closed_gts = True
+            tag = ''
+          elif text[i] == '/' and closed_gts:
+            closed_gts = False
+            closed_tags.append(tag if tag else '/')
+            tag = ''
+          elif text[i] == '<':
+            if closed_tags and (tag == closed_tags[-1] or closed_tags[-1] == '/'):
+              closed_tags.pop()
+              current_attr = []
+              tag = ''
+            elif tag:
+              return tag[::-1], closed_gts, current_attr # reverse the tag
+        # start or end of attribute parsing
+        elif text[i] == ' ':
+          if attr_reading and attr:
+            current_attr.append("%s="%attr[::-1])
+            attr_reading = False
+          attr = ''
+          tag = ''
+          tag_reading = True
+        else:
+          if tag_reading or closed_gts:
+            tag += text[i]
+          if attr_reading:
+            attr += text[i]
+      i -= 1
+    return '', False, []
+
+  def _context_activated(self, arg):
+    cursor = self.textCursor()
+    if not cursor.isNull():
+      cursor.insertText(arg.data())
+
 
 class FindDialog(QtGui.QDialog):
   '''
