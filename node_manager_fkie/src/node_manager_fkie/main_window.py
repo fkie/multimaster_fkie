@@ -157,6 +157,8 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.xmlFileView.setModel(LaunchListModel())
     self.ui.xmlFileView.setAlternatingRowColors(True)
     self.ui.xmlFileView.activated.connect(self.on_launch_selection_activated)
+    self.ui.xmlFileView.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
+    self.ui.xmlFileView.setDragEnabled(True)
     sm = self.ui.xmlFileView.selectionModel()
     sm.selectionChanged.connect(self.on_xmlFileView_selection_changed)
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)

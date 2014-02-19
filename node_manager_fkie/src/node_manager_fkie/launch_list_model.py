@@ -117,8 +117,8 @@ class LaunchListModel(QtCore.QAbstractListModel):
         return self.icons[pathId]
       return None
     else:
-     # We don't care about anything else, so return None
-     return None
+      # We don't care about anything else, so return None
+      return None
 
   def flags(self, index):
     '''
@@ -129,8 +129,22 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @rtype: L{PySide.QtCore.Qt.ItemFlag}
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
-    return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+    return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDragEnabled
 
+  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  #%%%%%%%%%%%%%              Drag operation                        %%%%%%%%
+  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  def mimeTypes(self):
+    return ['text/plain']
+
+  def mimeData(self, indexes):
+    mimeData = QtCore.QMimeData()
+    for index in indexes:
+      if index.isValid():
+        pathItem, path, pathId = self.items[index.row()]
+        mimeData.setData('text/plain', 'file://%s'%path)
+    return mimeData
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              External usage                        %%%%%%%%

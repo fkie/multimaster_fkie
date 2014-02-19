@@ -80,6 +80,8 @@ class Editor(QtGui.QTextEdit):
         self.setText(unicode(file.readAll(), "utf-8"))
 
     self.path = '.'
+    # enables drop events
+    self.setAcceptDrops(True)
 
 #  def __del__(self):
 #    print "********** desctroy:", self.objectName()
@@ -302,6 +304,8 @@ class Editor(QtGui.QTextEdit):
     if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
       self.setMouseTracking(False)
       self.viewport().setCursor(QtCore.Qt.IBeamCursor)
+    elif event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_Space:
+      pass
     QtGui.QTextEdit.keyReleaseEvent(self, event)
 
   def shiftText(self):
@@ -370,6 +374,37 @@ class Editor(QtGui.QTextEdit):
       self.setTextCursor(cursor)
       cursor.endEditBlock()
 
+  #############################################################################
+  ########## Drag&Drop                                                   ###### 
+  #############################################################################
+
+  def dragEnterEvent(self, e):
+    if e.mimeData().hasFormat('text/plain'):
+      e.accept()
+    else:
+      e.ignore()
+
+  def dragMoveEvent(self, e):
+    e.accept()
+
+  def dropEvent(self, e):
+    print e.mimeData().formats()
+    cursor = self.cursorForPosition(e.pos())
+    if not cursor.isNull():
+      text = e.mimeData().text()
+      # the files will be included 
+      if text.startswith('file://'):
+        text = text[7:]
+      if os.path.exists(text) and os.path.isfile(text):
+        # find the package name containing the included file 
+        (package, path) = package_name(os.path.dirname(text))
+        if package:
+          cursor.insertText('<include file="$(find %s)%s" />'%(package, text.replace(path, '')))
+        else:
+          cursor.insertText('<include file="%s" />'%text)
+      else:
+        cursor.insertText(e.mimeData().text())
+    e.accept()
 
 class FindDialog(QtGui.QDialog):
   '''
