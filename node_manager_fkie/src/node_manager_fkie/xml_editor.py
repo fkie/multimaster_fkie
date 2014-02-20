@@ -134,8 +134,11 @@ class Editor(QtGui.QTextEdit):
         endIndex = path.find(')', startIndex+1)
         script = path[startIndex+1:endIndex].split()
         if len(script) == 2 and (script[0] == 'find'):
-          pkg = roslib.packages.get_pkg_dir(script[1])
-          return os.path.normpath(''.join([pkg, '/', path[endIndex+1:]]))
+          try:
+            pkg = roslib.packages.get_pkg_dir(script[1])
+            return os.path.normpath(''.join([pkg, '/', path[endIndex+1:]]))
+          except Exception as e:
+            rospy.logwarn(str(e))
     else:
       try:
         return resolve_url(path)
@@ -183,7 +186,7 @@ class Editor(QtGui.QTextEdit):
             try:
               path = self.interpretPath(fileName)
               file = QtCore.QFile(path)
-              ext = os.path.splitext(file)
+              ext = os.path.splitext(path)
               if file.exists() and ext[1] in self.FILE_EXT:
                 result.append(path)
             except:
