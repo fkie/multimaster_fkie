@@ -327,8 +327,10 @@ class StartHandler(object):
           if not found and package:
             not_found_packages.append(package)
         if p.value is None:
-          raise StartException("The parameter '%s' is invalid!"%(p.value))
-        param_server_multi.setParam(rospy.get_name(), p.key, value if is_abs_path else p.value)
+          rospy.logwarn("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
+          #raise StartException("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
+        else:
+          param_server_multi.setParam(rospy.get_name(), p.key, value if is_abs_path else p.value)
       r  = param_server_multi()
       for code, msg, _ in r:
         if code != 1:

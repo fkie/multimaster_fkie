@@ -90,6 +90,7 @@ class MainWindow(QtGui.QMainWindow):
     self.__current_icon = None
     self.__current_master_label_name = None
     self.__current_path = os.path.expanduser('~')
+    self._changed_files = dict()
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
 #    loader = QtUiTools.QUiLoader()
@@ -1442,11 +1443,22 @@ class MainWindow(QtGui.QMainWindow):
     '''
     # create a list of launch files and masters, which are affected by the changed file
     # and are not currently n question
+    if self.isActiveWindow():
+      self._changed_files[changed] = affected
+      self._check_for_changed_files()
+    else:
+      self._changed_files[changed] = affected
+
+  def _check_for_changed_files(self):
+    '''
+    Check the dictinatry with changed files and notify the masters about changes.
+    '''
     new_affected = list()
-    for (muri, lfile) in affected:
-      if not (muri, lfile) in self.__in_question:
-        self.__in_question.add((muri, lfile))
-        new_affected.append((muri, lfile))
+    for changed, affected in self._changed_files.items():
+      for (muri, lfile) in affected:
+        if not (muri, lfile) in self.__in_question:
+          self.__in_question.add((muri, lfile))
+          new_affected.append((muri, lfile))
     # if there are no question to reload the launch file -> ask
     if new_affected:
       choices = dict()
@@ -1455,11 +1467,22 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs = SelectDialog.getValue('Reload configurations?', '<b>%s</b> was changed. Select affected configurations to reload:'%os.path.basename(changed), choices.keys(), False, True, self)
+      cfgs = SelectDialog.getValue('Reload configurations?', '<b>%s</b> was changed. Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(), False, True, self)
       for (muri, lfile) in new_affected:
         self.__in_question.remove((muri, lfile))
       for c in cfgs:
+        # inform LaunchConfig about changes in included files
+        if not choices[c][0].is_local:
+          choices[c][0].append_changed_includes(choices[c][1], changed)
         choices[c][0].launchfiles = choices[c][1]
+    self._changed_files.clear()
+
+  def changeEvent(self, event):
+    '''
+    Check for changed files, if the main gui is activated.
+    '''
+    QtGui.QMainWindow.changeEvent(self, event)
+    self._check_for_changed_files()
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Capabilities handling      %%%%%%%%%%%%%%%%%%%
