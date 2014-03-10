@@ -39,7 +39,7 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', parent=None):
+  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None):
     '''
     Creates an input dialog.
     @param input: a list with strings
@@ -64,10 +64,19 @@ class SelectDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.filter_frame)
 
     if description:
-      self.description_label = QtGui.QLabel(self)
+      self.description_frame = QtGui.QFrame(self)
+      descriptionLayout = QtGui.QHBoxLayout(self.description_frame)
+      descriptionLayout.setContentsMargins(1, 1, 1, 1)
+      if icon:
+        self.icon_label = QtGui.QLabel(self.description_frame)
+        self.icon_label.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.icon_label.setPixmap(QtGui.QPixmap(icon).scaled(30, 30, QtCore.Qt.KeepAspectRatio))
+        descriptionLayout.addWidget(self.icon_label)
+      self.description_label = QtGui.QLabel(self.description_frame)
       self.description_label.setWordWrap(True)
       self.description_label.setText(description)
-      self.verticalLayout.addWidget(self.description_label)
+      descriptionLayout.addWidget(self.description_label)
+      self.verticalLayout.addWidget(self.description_frame)
 
     # create area for the parameter
     self.scrollArea = scrollArea = QtGui.QScrollArea(self);
@@ -132,8 +141,8 @@ class SelectDialog(QtGui.QDialog):
     return self.content.getSelected()
 
   @staticmethod
-  def getValue(title, description='', input=list(), exclusive=False, preselect_all=False, parent=None):
-    selectDia = SelectDialog(input, exclusive=exclusive, preselect_all=preselect_all, description=description, parent=parent)
+  def getValue(title, description='', input=list(), exclusive=False, preselect_all=False, icon='', parent=None):
+    selectDia = SelectDialog(input, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent)
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():

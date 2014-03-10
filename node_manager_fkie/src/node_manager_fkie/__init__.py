@@ -111,6 +111,7 @@ _start_handler = None
 _name_resolution = None
 _history = None
 _file_watcher = None
+_file_watcher_param = None
 app = None
 
 def ssh():
@@ -158,11 +159,19 @@ def history():
 
 def file_watcher():
   '''
-  @return: The history of entered parameter.
-  @rtype: L{History}
+  @return: The file watcher object with all loaded configuration files.
+  @rtype: L{FileWatcher}
   '''
   global _file_watcher
   return _file_watcher
+
+def file_watcher_param():
+  '''
+  @return: The file watcher object with all configuration files referenced by parameter value.
+  @rtype: L{FileWatcher}
+  '''
+  global _file_watcher_param
+  return _file_watcher_param
 
 
 def is_local(hostname):
@@ -279,12 +288,14 @@ def init_globals(masteruri):
   global _name_resolution
   global _history
   global _file_watcher
+  global _file_watcher_param
   _ssh_handler = SSHhandler()
   _screen_handler = ScreenHandler()
   _start_handler = StartHandler()
   _name_resolution = NameResolution()
   _history = History()
   _file_watcher = FileWatcher()
+  _file_watcher_param = FileWatcher()
 
   # test where the roscore is running (local or remote)
   __is_local('localhost') ## fill cache

@@ -91,6 +91,7 @@ class MainWindow(QtGui.QMainWindow):
     self.__current_master_label_name = None
     self.__current_path = os.path.expanduser('~')
     self._changed_files = dict()
+    self._changed_files_param = dict()
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
 #    loader = QtUiTools.QUiLoader()
@@ -196,6 +197,7 @@ class MainWindow(QtGui.QMainWindow):
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
 
     nm.file_watcher().file_changed.connect(self.on_configfile_changed)
+    nm.file_watcher_param().file_changed.connect(self.on_configparamfile_changed)
     self.__in_question = set()
 
     ############################################################################
@@ -1442,7 +1444,7 @@ class MainWindow(QtGui.QMainWindow):
     @type affected: list
     '''
     # create a list of launch files and masters, which are affected by the changed file
-    # and are not currently n question
+    # and are not currently in question
     if self.isActiveWindow():
       self._changed_files[changed] = affected
       self._check_for_changed_files()
@@ -1451,7 +1453,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def _check_for_changed_files(self):
     '''
-    Check the dictinatry with changed files and notify the masters about changes.
+    Check the dictinary with changed files and notify the masters about changes.
     '''
     new_affected = list()
     for changed, affected in self._changed_files.items():
@@ -1467,15 +1469,67 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs = SelectDialog.getValue('Reload configurations?', '<b>%s</b> was changed. Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(), False, True, self)
+      cfgs = SelectDialog.getValue('Reload configurations?',
+                                   '<b>%s</b> was changed. Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
+                                   False, True,
+                                   ':/icons/crystal_clear_launch_file.png',
+                                   self)
       for (muri, lfile) in new_affected:
         self.__in_question.remove((muri, lfile))
       for c in cfgs:
-        # inform LaunchConfig about changes in included files
-        if not choices[c][0].is_local:
-          choices[c][0].append_changed_includes(choices[c][1], changed)
         choices[c][0].launchfiles = choices[c][1]
     self._changed_files.clear()
+
+  def on_configparamfile_changed(self, changed, affected):
+    '''
+    Signal hander to handle the changes of a configuration file referenced by a paramter value
+    @param changed: the changed file
+    @type changed: C{str}
+    @param affected: the list of tuples with masteruri and launchfile, which are affected by file change
+    @type affected: list
+    '''
+    # create a list of launch files and masters, which are affected by the changed file
+    # and are not currently in question
+    if self.isActiveWindow():
+      self._changed_files_param[changed] = affected
+      self._check_for_changed_files_param()
+    else:
+      self._changed_files_param[changed] = affected
+
+  def _check_for_changed_files_param(self):
+    '''
+    Check the dictinary with changed files and notify about the transfer of changed file.
+    '''
+    new_affected = list()
+    for changed, affected in self._changed_files_param.items():
+      for (muri, lfile) in affected:
+        if not (muri, changed) in self.__in_question:
+          self.__in_question.add((muri, changed))
+          new_affected.append((muri, changed))
+    # if there are no question to reload the launch file -> ask
+    if new_affected:
+      choices = dict()
+      for (muri, lfile) in new_affected:
+        master = self.getMaster(muri)
+        if not master is None:
+          master.launchfile = lfile
+          choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
+      cfgs = SelectDialog.getValue('Transfer configurations?',
+                                   'Configuration files referenced by parameter are changed. Select affected configurations for copy to remote host: (don\'t forget to restart the nodes!)', 
+                                   choices.keys(), False, True,
+                                   ':/icons/crystal_clear_launch_file_transfer.png',
+                                   self)
+      for (muri, lfile) in new_affected:
+        self.__in_question.remove((muri, lfile))
+      for c in cfgs:
+        host = nm.nameres().getHostname(choices[c][0].masteruri)
+        username = choices[c][0].current_user
+        self._progress_queue_cfg.add2queue(str(uuid.uuid4()), 
+                                       'transfer files to '+str(host),
+                                       nm.starter().transfer_files,
+                                       (str(host), choices[c][1], False, username))
+      self._progress_queue_cfg.start()
+    self._changed_files_param.clear()
 
   def changeEvent(self, event):
     '''
@@ -1483,6 +1537,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     QtGui.QMainWindow.changeEvent(self, event)
     self._check_for_changed_files()
+    self._check_for_changed_files_param()
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Capabilities handling      %%%%%%%%%%%%%%%%%%%

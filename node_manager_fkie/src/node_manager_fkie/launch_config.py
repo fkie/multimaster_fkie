@@ -43,6 +43,7 @@ from xml.dom.minidom import parse, parseString
 
 from python_qt_binding import QtCore
 
+from master_discovery_fkie.common import resolve_url
 import node_manager_fkie as nm
 from common import package_name
 
@@ -84,6 +85,7 @@ class LaunchConfig(QtCore.QObject):
     self.global_param_done = [] # masteruri's where the global parameters are registered 
     self.hostname = nm.nameres().getHostname(self.__masteruri)
     self.__launch_id = '%.9f'%time.time()
+    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
 #    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
 
 
@@ -172,6 +174,9 @@ class LaunchConfig(QtCore.QObject):
     '''
     Tries to determine the path of the included file. The statement of 
     $(find 'package') will be resolved.
+    The supported URL begins with `file:///`, `package://` or `pkg://`.
+    The package URL will be resolved to a valid file path. If the file is in a
+    subdirectory, you can replace the subdirectory by `///`. 
     @param path: the sting which contains the included path
     @type path: C{str}
     @param pwd: current working path
@@ -190,25 +195,35 @@ class LaunchConfig(QtCore.QObject):
         pkg = roslib.packages.get_pkg_dir(script[1])
         return os.path.join(pkg, path[endIndex+2:].strip(os.path.sep))
     elif len(path) > 0 and path[0] != os.path.sep:
-      return os.path.join(pwd, path)
+      try:
+        return resolve_url(path)
+      except ValueError, e:
+        if len(path) > 0 and path[0] != os.path.sep:
+          return os.path.normpath(''.join([pwd, os.path.sep, path]))
     return path
 
   @classmethod
-  def getIncludedFiles(cls, file):
+  def getIncludedFiles(cls, file, regexp_list=[QtCore.QRegExp("\\binclude\\b"),
+                                               QtCore.QRegExp("\\btextfile\\b"),
+                                               QtCore.QRegExp("\\bfile\\b")]):
     '''
     Reads the configuration file and searches for included files. This files
     will be returned in a list.
+    @param file: path of the ROS launch file
+    @param regexp_list: pattern of 
     @return: the list with all files needed for the configuration
     @rtype: C{[str,...]}
     '''
-    result = set([file])
-    regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
-                   QtCore.QRegExp("\\bfile\\b"), QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                   QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
-                   QtCore.QRegExp("\\bvalue=.*\$\(find\\b")]
-    lines = []
+    result = set()
     with open(file, 'r') as f:
-      lines = f.readlines()
+      content = f.read()
+      # remove the comments
+      comment_pattern = QtCore.QRegExp("<!--.*-->")
+      pos = comment_pattern.indexIn(content)
+      while pos != -1:
+        content = content[:pos] + content[pos+comment_pattern.matchedLength():]
+        pos = comment_pattern.indexIn(content)
+      lines = content.splitlines()
     for line in lines:
       index = cls._index(line, regexp_list)
       if index > -1:
@@ -222,7 +237,7 @@ class LaunchConfig(QtCore.QObject):
               if os.path.isfile(path):
                 result.add(path)
                 if path.endswith('.launch'):
-                  result.update(cls.getIncludedFiles(path))
+                  result.update(cls.getIncludedFiles(path, regexp_list))
             except:
               pass
     return list(result)
@@ -236,7 +251,6 @@ class LaunchConfig(QtCore.QObject):
     @rtype boolean
     @raise LaunchConfigException: on load errors
     '''
-    import re
     try:
       roscfg = roslaunch.ROSLaunchConfig()
       loader = roslaunch.XmlLoader()
@@ -246,6 +260,13 @@ class LaunchConfig(QtCore.QObject):
 #      for m, k in self.__roscfg.machines.items():
 #        print m, k
       nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
+      if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
+        nm.file_watcher_param().add(self.__masteruri, self.__launchFile, self.__launch_id, 
+                                    self.getIncludedFiles(self.Filename, 
+                                                          regexp_list = [QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                                         QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                                         QtCore.QRegExp("\\bvalue=.*\$\(find\\b")])
+                                                          )
     except roslaunch.XmlParseException, e:
       test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
       message = str(e)

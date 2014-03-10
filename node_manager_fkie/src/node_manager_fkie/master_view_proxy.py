@@ -713,7 +713,7 @@ class MasterViewProxy(QtGui.QWidget):
         nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
         # restart nodes
         if nodes2start:
-          restart = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, self)
+          restart = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, '', self)
           self.start_nodes_by_name(restart, launchfile, True)
       # set the robot_icon
       if launchfile in self.__robot_icons:
