@@ -66,7 +66,7 @@ class SelectDialog(QtGui.QDialog):
     if description:
       self.description_frame = QtGui.QFrame(self)
       descriptionLayout = QtGui.QHBoxLayout(self.description_frame)
-      descriptionLayout.setContentsMargins(1, 1, 1, 1)
+#      descriptionLayout.setContentsMargins(1, 1, 1, 1)
       if icon:
         self.icon_label = QtGui.QLabel(self.description_frame)
         self.icon_label.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)

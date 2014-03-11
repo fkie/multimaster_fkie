@@ -1470,7 +1470,7 @@ class MainWindow(QtGui.QMainWindow):
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
       cfgs = SelectDialog.getValue('Reload configurations?',
-                                   '<b>%s</b> was changed. Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
+                                   '<b>%s</b> was changed.<br>Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
                                    False, True,
                                    ':/icons/crystal_clear_launch_file.png',
                                    self)
@@ -1515,7 +1515,7 @@ class MainWindow(QtGui.QMainWindow):
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
       cfgs = SelectDialog.getValue('Transfer configurations?',
-                                   'Configuration files referenced by parameter are changed. Select affected configurations for copy to remote host: (don\'t forget to restart the nodes!)', 
+                                   'Configuration files referenced by parameter are changed.<br>Select affected configurations for copy to remote host: (don\'t forget to restart the nodes!)', 
                                    choices.keys(), False, True,
                                    ':/icons/crystal_clear_launch_file_transfer.png',
                                    self)

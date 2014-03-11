@@ -218,7 +218,7 @@ class LaunchConfig(QtCore.QObject):
     with open(file, 'r') as f:
       content = f.read()
       # remove the comments
-      comment_pattern = QtCore.QRegExp("<!--.*-->")
+      comment_pattern = QtCore.QRegExp("<!--.*?-->")
       pos = comment_pattern.indexIn(content)
       while pos != -1:
         content = content[:pos] + content[pos+comment_pattern.matchedLength():]
@@ -257,8 +257,6 @@ class LaunchConfig(QtCore.QObject):
       self.argv = self.resolveArgs(argv)
       loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
       self.__roscfg = roscfg
-#      for m, k in self.__roscfg.machines.items():
-#        print m, k
       nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
       if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
         nm.file_watcher_param().add(self.__masteruri, self.__launchFile, self.__launch_id, 
