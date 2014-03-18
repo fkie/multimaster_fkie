@@ -491,10 +491,10 @@ class GroupItem(QtGui.QStandardItem):
     if items:
       result = ''.join([result, '<b><u>', title,'</u></b>'])
       if len(items) > 1:
-        result = ''.join([result, ' [', str(len(items)),']'])
-      result = ''.join([result, '<ul>'])
+        result = ''.join([result, ' <span style="color:gray;">[', str(len(items)),']</span>'])
+      result = ''.join([result, '<ul><span></span><br>'])
       for i in items:
-        result = ''.join([result, '<li>', i, '</li>'])
+        result = ''.join([result, '\n', i, '<br>'])
       result = ''.join([result, '</ul>'])
     return result
 

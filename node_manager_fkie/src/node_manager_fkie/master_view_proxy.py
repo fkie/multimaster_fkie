@@ -1004,35 +1004,44 @@ class MasterViewProxy(QtGui.QWidget):
   def on_node_collapsed(self, index):
     if not index.parent ().isValid():
       self.masterTab.nodeTreeView.selectionModel().clear()
-    
+
   def on_node_expanded(self, index):
     pass
 
   def _create_html_list(self, title, items, type=None):
     '''
-    
     :param type: LAUNCH, TOPIC, NODE, SERVICE
-    
     :type type: str
     '''
     result = ''
     if items:
       result = ''.join([result, '<b><u>', title,'</u></b>'])
       if len(items) > 1:
-        result = ''.join([result, ' [', str(len(items)),']'])
-      result = ''.join([result, '<ul>'])
+        result = ''.join([result, ' <span style="color:gray;">[', str(len(items)),']</span>'])
+      result = ''.join([result, '<br><ul><span></span>'])
+      items.sort()
       for i in items:
         item = i
-        if type == 'TOPIC':
+        if type in ['TOPIC_PUB', 'TOPIC_SUB']:
+          # determine the count of publisher or subscriber
+          count = None
+          try:
+            count = len(self.__master_info.getTopic(i).publisherNodes) if type == 'TOPIC_SUB' else len(self.__master_info.getTopic(i).subscriberNodes)
+          except:
+            pass
 #          item = ''.join([i, ' <a href="topic://', str(i),'">[echo] <a href="topichz://', str(i),'">[hz] ', '</a>'])
-          item = ''.join([' <a href="topic://', str(i),'">', i, '</a>'])
+          item = ''.join(['<a href="topic://', str(i),'">', i, '</a>'])
+          # add the count
+          if not count is None:
+            item = ''.join(['<span style="color:gray;">_', str(count), '_/</span>',item])
         elif type == 'SERVICE':
           item = ''.join(['<a href="service://', str(i),'">', i, '</a>'])
         elif type == 'LAUNCH':
           item = ''.join(['<a href="launch://', str(i),'">', i, '</a>'])
           if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
             item = ''.join([item, '<br>', '<a href="reload_globals://', str(i),'">', '<font color="#339900">', 'reload global parameter @next start', '</font>', '</a>'])
-        result = ''.join([result, '<li>', item, '</li>'])
+#        result = ''.join([result, '<li>', item, '</li>'])
+        result = ''.join([result, '\n', item, '<br>'])
       result = ''.join([result, '</ul>'])
     return result
 
@@ -1110,8 +1119,8 @@ class MasterViewProxy(QtGui.QWidget):
           text = ''.join([text, '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'])
           text = ''.join([text, '<a href="unregister_node://', node.name,'">', 'unregister</a></dt>'])
       text = ''.join([text, '</dl>'])
-      text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC')])
-      text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC')])
+      text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB')])
+      text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB')])
       text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE')])
       # set loaunch file paths
       text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
@@ -1169,7 +1178,7 @@ class MasterViewProxy(QtGui.QWidget):
       try:
         mclass = roslib.message.get_message_class(topic.type)
         if not mclass is None:
-          text = ''.join([text, '<ul>'])
+#          text = ''.join([text, '<ul>'])
           for f in mclass.__slots__:
             idx = mclass.__slots__.index(f)
             idtype = mclass._slot_types[idx]
@@ -1183,8 +1192,8 @@ class MasterViewProxy(QtGui.QWidget):
 ##                primitive = "class", list_msg_class.__slots__
 #              except ValueError:
 #                pass
-            text = ''.join([text, '<li>', str(f), ': ', str(idtype), '</li>'])
-          text = ''.join([text, '</ul>'])
+            text = ''.join([text, str(f), ': <span style="color:gray;">', str(idtype), '</span><br>'])
+          text = ''.join([text, '<br>'])
       except ValueError:
         pass
       text = ''.join([text, '</dl>'])
