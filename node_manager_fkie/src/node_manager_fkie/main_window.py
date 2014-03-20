@@ -1062,19 +1062,22 @@ class MainWindow(QtGui.QMainWindow):
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
               'Optional Parameter' : ('list', params_optional) }
-    dia = ParameterDialog(params)
+    dia = ParameterDialog(params, sidebar_var='Host')
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
-    dia.resize(350,280)
+    dia.resize(400,280)
     dia.setFocusField('Host')
     if dia.exec_():
       try:
         params = dia.getKeywords()
-        hostname = params['Host']
+        hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
         port = params['Network(0..99)']
         discovery_type = params['Optional Parameter']['Discovery type']
-        mastername = params['Optional Parameter']['ROS Master Name']
-        masteruri = params['Optional Parameter']['ROS Master URI']
+        mastername = 'autodetect'
+        masteruri = 'ROS_MASTER_URI'
+        if len(hostnames) < 2:
+          mastername = params['Optional Parameter']['ROS Master Name']
+          masteruri = params['Optional Parameter']['ROS Master URI']
         static_hosts = params['Optional Parameter']['Static hosts']
         username = params['Optional Parameter']['Username']
         send_mcast = params['Optional Parameter']['Send MCast']
@@ -1082,30 +1085,31 @@ class MainWindow(QtGui.QMainWindow):
           static_hosts = static_hosts.replace(' ', '')
           static_hosts = static_hosts.replace('[', '')
           static_hosts = static_hosts.replace(']', '')
-        try:
-          args = []
-          if not port is None and port and int(port) < 100 and int(port) >= 0:
-            args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
-          else:
-            args.append(''.join(['_mcast_port:=', str(11511)]))
-          if not mastername == 'autodetect':
-            args.append(''.join(['_name:=', str(mastername)]))
-          args.append('_send_mcast:=%s'%str(send_mcast))
-          args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
-          #TODO: remove the name parameter from the ROS parameter server
-          self._progress_queue.add2queue(str(uuid.uuid4()), 
-                                         'start discovering on '+str(hostname), 
-                                         nm.starter().runNodeWithoutConfig, 
-                                         (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, username))
-          self._progress_queue.start()
+        for hostname in hostnames:
+          try:
+            args = []
+            if not port is None and port and int(port) < 100 and int(port) >= 0:
+              args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
+            else:
+              args.append(''.join(['_mcast_port:=', str(11511)]))
+            if not mastername == 'autodetect':
+              args.append(''.join(['_name:=', str(mastername)]))
+            args.append('_send_mcast:=%s'%str(send_mcast))
+            args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
+            #TODO: remove the name parameter from the ROS parameter server
+            self._progress_queue.add2queue(str(uuid.uuid4()), 
+                                           'start discovering on '+str(hostname), 
+                                           nm.starter().runNodeWithoutConfig, 
+                                           (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, username))
 
-        except (Exception, nm.StartException), e:
-          import traceback
-          print traceback.format_exc()
-          rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
-                            'Error while start master_discovery',
-                            str(e)).exec_()
+          except (Exception, nm.StartException), e:
+            import traceback
+            print traceback.format_exc()
+            rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
+            WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
+                              'Error while start master_discovery',
+                              str(e)).exec_()
+          self._progress_queue.start()
       except Exception, e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                           'Error while parse parameter',
