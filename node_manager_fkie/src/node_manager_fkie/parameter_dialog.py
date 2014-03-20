@@ -58,11 +58,12 @@ class MyComboBox(QtGui.QComboBox):
     key_mod = QtGui.QApplication.keyboardModifiers()
     if key_mod & QtCore.Qt.ShiftModifier and (event.key() == QtCore.Qt.Key_Delete):
       try:
-        if self.currentText():
+        curr_text = self.currentText()
+        if curr_text:
           for i in range(self.count()):
-            if self.currentText() == self.itemText(i):
+            if curr_text == self.itemText(i):
               self.removeItem(i)
-              self.remove_item_signal.emit(self.currentText())
+              self.remove_item_signal.emit(curr_text)
               self.clearEditText()
       except:
         import traceback
