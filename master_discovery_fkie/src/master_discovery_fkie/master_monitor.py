@@ -160,6 +160,7 @@ class MasterMonitor(object):
     self._master = xmlrpclib.ServerProxy(self.getMasteruri())
     # === UPDATE THE LAUNCH URIS Section ===
     # subscribe to get parameter updates
+    rospy.loginfo("Subscribe to parameter `/roslaunch/uris`")
     self.__mycache_param_server = rospy.impl.paramserver.get_param_server_cache()
     # HACK: use own method to get the updates also for parameters in the subgroup 
     self.__mycache_param_server.update = self.__update_param
@@ -191,11 +192,16 @@ class MasterMonitor(object):
     Shutdown the RPC Server.
     '''
     if hasattr(self, 'rpcServer'):
+      if not self._master is None:
+        rospy.loginfo("Unsubscribe from parameter `/roslaunch/uris`")
+        self._master.unsubscribeParam(self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+      rospy.loginfo("shutdown own RPC server")
       self.rpcServer.shutdown()
       if not self._timer_update_launch_uris is None:
         self._timer_update_launch_uris.cancel()
       del self.rpcServer.socket
       del self.rpcServer
+      rospy.loginfo("exit")
 
   def _update_launch_uris(self, params={}):
     with self._update_launch_uris_lock:
