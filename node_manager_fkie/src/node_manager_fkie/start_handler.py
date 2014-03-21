@@ -34,6 +34,7 @@ import os, shlex, subprocess
 import socket
 import types
 import time
+import signal
 
 import roslib
 import rospy
@@ -722,7 +723,7 @@ class StartHandler(object):
         output, error, ok = nm.ssh().ssh_exec(host, [nm.STARTER_SCRIPT, '--delete_logs', nodename], user, pw, auto_pw_request)
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
-  
+
   def kill(self, host, pid, auto_pw_request=False, user=None, pw=None):
     '''
     Kills the process with given process id on given host.
@@ -742,7 +743,6 @@ class StartHandler(object):
   def _kill_wo(self, host, pid, auto_pw_request=False, user=None, pw=None):
     rospy.loginfo("kill %s on %s", str(pid), host)
     if nm.is_local(host): 
-      import signal
       os.kill(pid, signal.SIGKILL)
       rospy.loginfo("kill: %s", str(pid))
     else:

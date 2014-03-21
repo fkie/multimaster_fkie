@@ -176,11 +176,6 @@ class MainWindow(QtGui.QMainWindow):
     self.masters = dict() # masteruri : MasterViewProxy
     self.currentMaster = None # MasterViewProxy
 
-    # initialize the class to get the state of discovering of other ROS master
-    self._update_handler = UpdateHandler()
-    self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
-    self._update_handler.error_signal.connect(self.on_master_info_error)
-
     # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
     self.own_master_monitor = OwnMasterMonitoring()
     self.own_master_monitor.init(22622)
@@ -251,6 +246,7 @@ class MainWindow(QtGui.QMainWindow):
     '''@ivar: stores the open XmlEditor '''
 
     self.ui.simTimeLabel.setVisible(False)
+    self.ui.launchServerLabel.setVisible(False)
     self.ui.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
 
     # since the is_local method is threaded for host names, call it to cache the localhost
@@ -285,6 +281,12 @@ class MainWindow(QtGui.QMainWindow):
     self._subscribe()
 
     self.ui.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
+
+    # initialize the class to get the state of discovering of other ROS master
+    self._update_handler = UpdateHandler()
+    self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
+    self._update_handler.error_signal.connect(self.on_master_info_error)
+
 
   def on_hide_docks_toggled(self, checked):
     if self.ui.dockWidgetArea(self.ui.launchDock) == QtCore.Qt.LeftDockWidgetArea:
@@ -908,6 +910,8 @@ class MainWindow(QtGui.QMainWindow):
     master = self.getMaster(masteruri, False)
     sim_time_enabled = self.ui.masternameLabel.isEnabled() and not master is None and master.use_sim_time
     self.ui.simTimeLabel.setVisible(sim_time_enabled)
+    launch_server_enabled = self.ui.masternameLabel.isEnabled() and (not master is None) and master.has_launch_server()
+    self.ui.launchServerLabel.setVisible(launch_server_enabled)
     self.ui.masternameLabel.setEnabled(online)
     self.ui.masterInfoFrame.setEnabled((not timestamp is None))
 
@@ -1577,6 +1581,10 @@ class MainWindow(QtGui.QMainWindow):
       master = self.getMaster(str(url.encodedPath()).replace('show_all_screens', 'http'), False)
       if not master is None:
         master.on_show_all_screens()
+    elif url.toString().startswith('remove_all_launch_server://'):
+      master = self.getMaster(str(url.encodedPath()).replace('remove_all_launch_server', 'http'), False)
+      if not master is None:
+        master.on_remove_all_launch_server()
     elif url.toString().startswith('topic://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), False)

@@ -67,6 +67,7 @@ from parameter_handler import ParameterHandler
 from detailed_msg_box import WarningMessageBox, DetailedError
 from progress_queue import ProgressQueue, ProgressThread, InteractionNeededError
 from common import masteruri_from_ros, get_packages, package_name
+from launch_server_handler import LaunchServerHandler
 
 
 
@@ -158,11 +159,15 @@ class MasterViewProxy(QtGui.QWidget):
     self.__current_parameter_robot_icon = ''
     # store the running_nodes to update to duplicates after load a launch file
     self.__running_nodes = dict() # dict (node name : masteruri)
-
     self.default_cfg_handler = DefaultConfigHandler()
     self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
     self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
     self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
+
+    self.__launch_servers = {} # uri : (pid, nodes)
+    self.launch_server_handler = LaunchServerHandler()
+    self.launch_server_handler.launch_server_signal.connect(self.on_launch_server_retrieved)
+    self.launch_server_handler.error_signal.connect(self.on_launch_server_err)
 
     self.masterTab = QtGui.QWidget()
     ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MasterTab.ui')
@@ -373,6 +378,7 @@ class MasterViewProxy(QtGui.QWidget):
   def stop(self):
     print "  Shutdown master", self.masteruri, "..."
     self.default_cfg_handler.stop()
+    self.launch_server_handler.stop()
     self._progress_queue.stop()
     for ps in self.__echo_topics_dialogs.values():
       try:
@@ -455,7 +461,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.on_node_selection_changed(None, None)
       self.on_topic_selection_changed(None, None)
       self.on_service_selection_changed(None, None)
-      self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon"])
+      self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon", "/roslaunch/uris"])
     except:
       import traceback
       print traceback.format_exc()
@@ -934,6 +940,73 @@ class MasterViewProxy(QtGui.QWidget):
 #    QtGui.QMessageBox.warning(self, 'Error while call %s'%service,
 #                              str(msg),
 #                              QtGui.QMessageBox.Ok)
+
+  @property
+  def launch_servers(self):
+    return self.__launch_servers
+
+  def has_launch_server(self):
+    '''
+    Returns `True` if the there are roslaunch server, which have no `master` as 
+    node or or have other nodes as `rosout-#` inside.
+    '''
+    for uri, (pid, nodes) in self.__launch_servers.items():
+      if not self._is_master_launch_server(nodes):
+        return True
+    return False
+
+  def _is_master_launch_server(self, nodes):
+    if 'master' in nodes and len(nodes) < 3:
+      return True
+    return False
+
+  def on_launch_server_retrieved(self, serveruri, pid, nodes):
+    '''
+    Handles the info about roslaunch server.
+    Emits a Qt signal L{host_description_updated} to notify about a new host 
+    description and a Qt signal L{capabilities_update} to notify about a capabilities
+    update.
+    @param serveruri: the URI of the roslaunch server
+    @type serveruri: C{str}
+    @param pid: the process id of the roslaunch server
+    @type pid: C{str}
+    @param nodes: list with nodes handled by the roslaunch server
+    @type nodes: C{[L{str}]}
+    '''
+    self.__launch_servers[serveruri] = (pid, nodes)
+
+  def on_launch_server_err(self, serveruri, msg):
+    '''
+    Handles the error messages from launch server hanlder.
+    @param serveruri: the URI of the launch server
+    @type serveruri: C{str}
+    @param msg: the error message 
+    @type msg: C{str}
+    '''
+    try:
+      del self.__launch_servers[serveruri]
+    except:
+      pass
+
+  def on_remove_all_launch_server(self):
+    '''
+    Kill all running launch server. The coresponding URIS are removed by master_monitor.
+    '''
+    for lsuri, (pid, nodes) in self.__launch_servers.items():
+      try:
+        if not self._is_master_launch_server(nodes):
+          self._progress_queue.add2queue(str(uuid.uuid4()), 
+                                         ''.join(['kill roslaunch ', lsuri, '(', str(pid), ')']), 
+                                         nm.starter().kill, 
+                                         (nm.nameres().getHostname(lsuri), pid, False, self.current_user))
+          self.launch_server_handler.updateLaunchServerInfo(lsuri, delayed_exec=3.0)
+      except Exception as e:
+        rospy.logwarn("Error while kill roslaunch %s: %s", str(lsuri), str(e))
+        raise DetailedError("Kill error", 
+                            ''.join(['Error while kill roslaunch ', lsuri]),
+                            str(e))
+    self._progress_queue.start()
+
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%   Handling of the view activities                  %%%%%%%%
@@ -1794,7 +1867,6 @@ class MasterViewProxy(QtGui.QWidget):
     finally:
       self.setCursor(cursor)
 
-
   def on_log_clicked(self):
     '''
     Shows log files of the selected nodes.
@@ -2468,6 +2540,10 @@ class MasterViewProxy(QtGui.QWidget):
           robot_icon_found = True
           self.__current_parameter_robot_icon = val if code_n == 1 else ''
           self.update_robot_icon()
+        elif p.startswith('/roslaunch/uris'):
+          if code_n == 1:
+            for key, value in val.items():
+              self.launch_server_handler.updateLaunchServerInfo(value)
     else:
       rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), str(msg))
     if not robot_icon_found:

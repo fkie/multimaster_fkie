@@ -717,6 +717,8 @@ class HostItem(GroupItem):
     tooltip = ''.join([tooltip, '<p>'])
     tooltip = ''.join([tooltip, '<a href="show_all_screens://', str(self.id[0]).replace('http://', ''),'">', 'show all screens</a>'])
     tooltip = ''.join([tooltip, '<p>'])
+    tooltip = ''.join([tooltip, '<a href="remove_all_launch_server://', str(self.id[0]).replace('http://', ''),'">', 'kill all launch server</a>'])
+    tooltip = ''.join([tooltip, '<p>'])
     # get sensors
     capabilities = []
     for j in range(self.rowCount()):
