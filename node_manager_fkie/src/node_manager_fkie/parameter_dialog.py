@@ -639,7 +639,7 @@ class ParameterDialog(QtGui.QDialog):
     self.horizontalLayout = QtGui.QHBoxLayout(self)
     self.horizontalLayout.setObjectName("horizontalLayout")
     self.horizontalLayout.setContentsMargins(1, 1, 1, 1)
-    self.verticalLayout = QtGui.QVBoxLayout(self)
+    self.verticalLayout = QtGui.QVBoxLayout()
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
     # add filter row
@@ -697,10 +697,10 @@ class ParameterDialog(QtGui.QDialog):
     values = nm.history().cachedParamValues('/%s'%sidebar_var)
     self.sidebar_frame = QtGui.QFrame()
     self.sidebar_frame.setObjectName(sidebar_var)
+    sidebarframe_verticalLayout = QtGui.QVBoxLayout(self.sidebar_frame)
+    sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
+    sidebarframe_verticalLayout.setContentsMargins(1, 1, 1, 1)
     if len(values) > 1 and sidebar_var in params:
-      sidebarframe_verticalLayout = QtGui.QVBoxLayout(self.sidebar_frame)
-      sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
-      sidebarframe_verticalLayout.setContentsMargins(1, 1, 1, 1)
       self.horizontalLayout.addWidget(self.sidebar_frame)
       values.sort()
       for v in values:
