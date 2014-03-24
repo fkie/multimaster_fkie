@@ -1069,7 +1069,7 @@ class MainWindow(QtGui.QMainWindow):
     dia = ParameterDialog(params, sidebar_var='Host')
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
-    dia.resize(400,280)
+    dia.resize(450,280)
     dia.setFocusField('Host')
     if dia.exec_():
       try:
