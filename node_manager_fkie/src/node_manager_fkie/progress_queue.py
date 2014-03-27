@@ -188,7 +188,7 @@ class ProgressQueue(QtCore.QObject):
       pt.start()
     elif isinstance(req.request, nm.ScreenSelectionRequest):
       from select_dialog import SelectDialog
-      items = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False)
+      items, ok = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False)
       if not items:
         self._progress_thread_finished(id)
         return
@@ -200,7 +200,7 @@ class ProgressQueue(QtCore.QObject):
       pt.start()
     elif isinstance(req.request, nm.BinarySelectionRequest):
       from select_dialog import SelectDialog
-      items = SelectDialog.getValue('Multiple executables', '', req.request.choices, True)
+      items, ok = SelectDialog.getValue('Multiple executables', '', req.request.choices, True)
       if not items:
         self._progress_thread_finished(id)
         return

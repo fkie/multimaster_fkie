@@ -146,8 +146,8 @@ class SelectDialog(QtGui.QDialog):
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():
-      return selectDia.getSelected()
-    return list()
+      return selectDia.getSelected(), True
+    return list(), False
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

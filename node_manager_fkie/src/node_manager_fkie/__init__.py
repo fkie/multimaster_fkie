@@ -34,8 +34,8 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.3.9.1"
-__date__ = "2014-02-17"
+__version__ = "0.3.9.3"
+__date__ = "2014-03-27"
 
 import os
 import sys

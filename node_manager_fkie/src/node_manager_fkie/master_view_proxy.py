@@ -719,7 +719,7 @@ class MasterViewProxy(QtGui.QWidget):
         nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
         # restart nodes
         if nodes2start:
-          restart = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, '', self)
+          restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, '', self)
           self.start_nodes_by_name(restart, launchfile, True)
       # set the robot_icon
       if launchfile in self.__robot_icons:
@@ -1490,13 +1490,15 @@ class MasterViewProxy(QtGui.QWidget):
           ch_keys.sort()
           choises_str = str(ch_keys)
           if not choises_str in cfg_choices.keys():
-            choice = self._getUserCfgChoice(choices, node.name)
+            choice, ok = self._getUserCfgChoice(choices, node.name)
             if not choice is None:
               cfg_choices[choises_str] = choices[choice]
               cfg_nodes[node.name] = choices[choice]
-            else:
+            elif ok:
               res = WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                               ''.join(['Error while start ', node.name, ':\nNo configuration selected!'])).exec_()
+            else:
+              break
           else:
             cfg_nodes[node.name] = cfg_choices[choises_str]
 
@@ -1587,14 +1589,16 @@ class MasterViewProxy(QtGui.QWidget):
 
   def _getUserCfgChoice(self, choices, nodename):
     value = None
+    ok = False
     # Open selection
     if len(choices) == 1:
       value = choices.keys()[0]
+      ok = True
     elif len(choices) > 0:
-      items = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>'%nodename, choices.keys(), True)
+      items, ok = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>'%nodename, choices.keys(), True)
       if items:
         value = items[0]
-    return value
+    return value, ok
 
   def on_stop_clicked(self):
     '''
@@ -1848,7 +1852,7 @@ class MasterViewProxy(QtGui.QWidget):
       sel_screen = []
       try:
         screens = nm.screen().getActiveScreens(host, auto_pw_request=True, user=self.current_user)
-        sel_screen = SelectDialog.getValue('Open screen', '', screens, False, False, self)
+        sel_screen, ok = SelectDialog.getValue('Open screen', '', screens, False, False, self)
       except Exception, e:
         rospy.logwarn("Error while get screen list: %s", str(e))
         WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error", 
@@ -1921,7 +1925,7 @@ class MasterViewProxy(QtGui.QWidget):
 #    try:
 #      nm.screen().LOG_PATH.
 #      screens = nm.screen().getActiveScreens(host, auto_pw_request=True)
-#      sel_screen = SelectDialog.getValue('Open log', '', screens, False, self)
+#      sel_screen, ok = SelectDialog.getValue('Open log', '', screens, False, self)
 #    except Exception, e:
 #      rospy.logwarn("Error while get screen list: %s", str(e))
 #      WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error", 
@@ -1953,7 +1957,7 @@ class MasterViewProxy(QtGui.QWidget):
           if len(nodes) == 1:
             items = nodes
           elif len(nodes) > 1:
-            items = SelectDialog.getValue('Dynamic configuration selection', '', [i for i in nodes])
+            items, ok = SelectDialog.getValue('Dynamic configuration selection', '', [i for i in nodes])
             if items is None:
               items = []
           if len(items) > 3:
@@ -1983,9 +1987,9 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     for node in selectedNodes:
       choices = self._getCfgChoises(node, True)
-      choice = self._getUserCfgChoice(choices, node.name)
+      choice, ok = self._getUserCfgChoice(choices, node.name)
       config = choices[choice] if choices and choice else ''
-      if isinstance(config, LaunchConfig):
+      if ok and isinstance(config, LaunchConfig):
         # get the file, which include the node and the main configuration file
         node_cfg = config.getNode(node.name)
         files = [config.Filename]
@@ -2050,7 +2054,7 @@ class MasterViewProxy(QtGui.QWidget):
     cfgs = []
     
 #    if len(choices) > 1:
-    cfgs = SelectDialog.getValue('Close configurations', '', choices.keys(), False, False, self)
+    cfgs, ok = SelectDialog.getValue('Close configurations', '', choices.keys(), False, False, self)
 #    elif len(choices) == 1:
 #      cfgs = choices.values()[0]
 

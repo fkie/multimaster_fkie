@@ -176,21 +176,6 @@ class MainWindow(QtGui.QMainWindow):
     self.masters = dict() # masteruri : MasterViewProxy
     self.currentMaster = None # MasterViewProxy
 
-    # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
-    self.own_master_monitor = OwnMasterMonitoring()
-    self.own_master_monitor.init(22622)
-    self.own_master_monitor.state_signal.connect(self.on_master_state_changed)
-    self.own_master_monitor.err_signal.connect(self.on_master_monitor_err)
-
-    # get the name of the service and topic of the discovery node. The name are determine by the message type  of those topics
-    self.masterlist_service = masterlist_service = MasterListService()
-    masterlist_service.masterlist_signal.connect(self.on_master_list_retrieved)
-    masterlist_service.masterlist_err_signal.connect(self.on_master_list_err_retrieved)
-    self.state_topic = MasterStateTopic()
-    self.state_topic.state_signal.connect(self.on_master_state_changed)
-    self.stats_topic = MasterStatisticTopic()
-    self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
-
     nm.file_watcher().file_changed.connect(self.on_configfile_changed)
     nm.file_watcher_param().file_changed.connect(self.on_configparamfile_changed)
     self.__in_question = set()
@@ -277,15 +262,34 @@ class MainWindow(QtGui.QMainWindow):
                         "No SCREEN available! You can't launch nodes.",
                         str(e)).exec_()
 
-    self._con_tries = dict()
-    self._subscribe()
-
     self.ui.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
+
+    # =============================
+    # Initialize the update handler
+    # =============================
 
     # initialize the class to get the state of discovering of other ROS master
     self._update_handler = UpdateHandler()
     self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
     self._update_handler.error_signal.connect(self.on_master_info_error)
+
+    # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
+    self.own_master_monitor = OwnMasterMonitoring()
+    self.own_master_monitor.init(22622)
+    self.own_master_monitor.state_signal.connect(self.on_master_state_changed)
+    self.own_master_monitor.err_signal.connect(self.on_master_monitor_err)
+
+    # get the name of the service and topic of the discovery node. The name are determine by the message type  of those topics
+    self.masterlist_service = masterlist_service = MasterListService()
+    masterlist_service.masterlist_signal.connect(self.on_master_list_retrieved)
+    masterlist_service.masterlist_err_signal.connect(self.on_master_list_err_retrieved)
+    self.state_topic = MasterStateTopic()
+    self.state_topic.state_signal.connect(self.on_master_state_changed)
+    self.stats_topic = MasterStatisticTopic()
+    self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
+
+    self._con_tries = dict()
+    self._subscribe()
 
 
   def on_hide_docks_toggled(self, checked):
@@ -849,6 +853,11 @@ class MainWindow(QtGui.QMainWindow):
       self.ui.syncButton.setEnabled(True)
 
   def on_master_timecheck(self):
+    # HACK: sometimes the local monitoring will not be activated. This is the detection.
+    if len(self.masters) < 2 and self.currentMaster is None:
+      self._subscribe()
+      return
+    # update the info panel of the robot. If the node manager is not selected the updates are rarer. 
     current_time = time.time()
     if self.isActiveWindow() or current_time - self._last_time_view_update > 5:
       self._last_time_view_update = current_time
@@ -1477,7 +1486,7 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs = SelectDialog.getValue('Reload configurations?',
+      cfgs, ok = SelectDialog.getValue('Reload configurations?',
                                    '<b>%s</b> was changed.<br>Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
                                    False, True,
                                    ':/icons/crystal_clear_launch_file.png',
@@ -1522,7 +1531,7 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs = SelectDialog.getValue('Transfer configurations?',
+      cfgs, ok = SelectDialog.getValue('Transfer configurations?',
                                    'Configuration files referenced by parameter are changed.<br>Select affected configurations for copy to remote host: (don\'t forget to restart the nodes!)', 
                                    choices.keys(), False, True,
                                    ':/icons/crystal_clear_launch_file_transfer.png',
