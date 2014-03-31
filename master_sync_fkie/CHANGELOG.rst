@@ -2,6 +2,11 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.10 (2014-03-31)
+-------------------
+* master_sync_fkie: fixed a bug which sometimes does not synchronized some topics
+* multimaster_fkie: fixed problems detected by catkin_lint
+
 0.3.9 (2013-12-12)
 ------------------
 * multimaster_fkie: moved .gitignore to top level

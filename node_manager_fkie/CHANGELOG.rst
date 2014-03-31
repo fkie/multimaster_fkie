@@ -2,6 +2,37 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.10 (2014-03-31)
+-------------------
+* node_manager_fkie: fixed the activation of the local monitoring. Fixed the cancelation in selection dialog.
+* node_manager_fkie: added an indicator for running roslaunch server
+* node_manager_fkie: fixed layout problems
+* node_manager_fkie: dialog size of `start master_discovery` changed
+* node_manager_fkie: added a side bar with checkitems in start host dialog
+* node_manager_fkie: fixed remove entries in combonox of parameter dialog
+* node_manager_fkie: remove comments in launch file fixed
+* node_manager_fkie: added a check for changed files in parameter value
+* node_manager_fkie: inform about changed files only on activating the main GUI
+* node_manager_fkie: fixed search routine
+* node_manager_fkie: fixed multiple entries in dialog for publishing to a new topic
+* node_manager_fkie: added a context sensitive proposals in XML editor
+* node_manager_fkie: enabled drag&drop action in xmleditor and launch view
+* node_manager_fkie: added a button for quick insertion of launch tags
+* node_manager_fkie: reduced the cpu load of echo dialog
+* node_manager_fkie: added a line limit in echo dialog
+* node_manager_fkie: fixed the processing of jobs after the `cancel` button was pressed
+* node_manager_fkie: added a `reload global parameter` link
+  - select the loaded row in launch dialog after loading the launch file
+  with double click
+* node_manager_fkie: fixed start nodes with ns
+* node_maager_fkie: the launch files are now loaded in a thread, so they don't block
+* node_manager_fkie: fixed duplicate detection of running and synchronized nodes
+* node_manager_fkie: sync dialog extended by a new button to sync topics containing AnyMsg as type
+* node_manager_fkie: cmd line output for registered parameter changed
+* node_manager_fkie: removed project file
+* node_manager_fkie: remember the used path in parameter dialog
+* node_manager_fkie: changed the handling of localhost in machine tag of launchfile
+
 0.3.9 (2013-12-12)
 ------------------
 * node_manager_fkie: set node to warning state, if it not renning propertly because of problems with illegal name
