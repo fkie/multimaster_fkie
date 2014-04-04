@@ -44,6 +44,7 @@ class ParameterValueItem(QtGui.QStandardItem):
   ITEM_TYPE = QtGui.QStandardItem.UserType + 39
   NAME_ROLE = QtCore.Qt.UserRole + 1
   VALUE_ROLE = QtCore.Qt.UserRole + 2
+  TYPE_ROLE = QtCore.Qt.UserRole + 3
 
   def __init__(self, name, value, parent=None):
     '''
@@ -84,6 +85,8 @@ class ParameterValueItem(QtGui.QStandardItem):
       return self.name
     elif role == self.VALUE_ROLE:
       return str(self.value)
+    elif role == self.TYPE_ROLE:
+      return str(type(self.value).replace('<type \'').replace('\'>'))
     else:
       return QtGui.QStandardItem.data(self, role)
 
@@ -116,6 +119,7 @@ class ParameterNameItem(QtGui.QStandardItem):
   ITEM_TYPE = QtGui.QStandardItem.UserType + 38
   NAME_ROLE = QtCore.Qt.UserRole + 1
   VALUE_ROLE = QtCore.Qt.UserRole + 2
+  TYPE_ROLE = QtCore.Qt.UserRole + 3
 
   def __init__(self, name, value, parent=None):
     '''
@@ -152,6 +156,80 @@ class ParameterNameItem(QtGui.QStandardItem):
       return self.name
     elif role == self.VALUE_ROLE:
       return str(self.value)
+    elif role == self.TYPE_ROLE:
+      return str(type(self.value).replace('<type \'').replace('\'>'))
+    else:
+      return QtGui.QStandardItem.data(self, role)
+
+  def __eq__(self, item):
+    '''
+    Compares the name of parameter.
+    '''
+    if isinstance(item, str) or isinstance(item, unicode):
+      return self.name.lower() == item.lower()
+    elif not (item is None):
+      return self.name.lower() == item.name.lower()
+    return False
+
+  def __gt__(self, item):
+    '''
+    Compares the name of parameter.
+    '''
+    if isinstance(item, str) or isinstance(item, unicode):
+      return self.name.lower() > item.lower()
+    elif not (item is None):
+      return self.name.lower() > item.name.lower()
+    return False
+
+
+class ParameterTypeItem(QtGui.QStandardItem):
+  '''
+  The parameter item is stored in the parameter model. This class stores the name 
+  and value of a parameter of ROS parameter server and shows the name.
+  '''
+
+  ITEM_TYPE = QtGui.QStandardItem.UserType + 40
+  NAME_ROLE = QtCore.Qt.UserRole + 1
+  VALUE_ROLE = QtCore.Qt.UserRole + 2
+  TYPE_ROLE = QtCore.Qt.UserRole + 3
+
+  def __init__(self, name, value, parent=None):
+    '''
+    Initialize the item object.
+    @param name: the name of the parameter
+    @type name: C{str}
+    @param value: the value of the parameter
+    @type value: C{str}
+    '''
+    QtGui.QStandardItem.__init__(self, str(type(value)).replace("<type '", '').replace("'>", ''))
+    self._name = name
+    '''@ivar: the name of parameter '''
+    self._value = value
+    '''@ivar: the value of the parameter '''
+
+  @property
+  def name(self):
+    return self._name
+
+  @property
+  def value(self):
+    return self._value
+
+  @value.setter
+  def value(self, value):
+    self._value = value
+    self.setText(str(value))
+
+  def type(self):
+    return ParameterValueItem.ITEM_TYPE
+
+  def data(self, role):
+    if role == self.NAME_ROLE:
+      return self.name
+    elif role == self.VALUE_ROLE:
+      return str(self.value)
+    elif role == self.TYPE_ROLE:
+      return str(type(self.value).replace('<type \'').replace('\'>'))
     else:
       return QtGui.QStandardItem.data(self, role)
 
@@ -182,6 +260,7 @@ class ParameterModel(QtGui.QStandardItemModel):
   The model to manage the list with parameter in ROS network.
   '''
   header = [('Parameter', 300),
+            ('Type', 50),
             ('Value', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
   
@@ -203,7 +282,7 @@ class ParameterModel(QtGui.QStandardItemModel):
     '''
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
-    if index.column() == 1:
+    if index.column() == 2:
       return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
@@ -228,7 +307,7 @@ class ParameterModel(QtGui.QStandardItemModel):
         parameterItem = root.child(i)
         if (parameterItem == name):
           # update item
-          parameterValueItem = root.child(i, 1)
+          parameterValueItem = root.child(i, 2)
           parameterValueItem.value = value
           doAddItem = False
           break
@@ -252,6 +331,9 @@ class ParameterModel(QtGui.QStandardItemModel):
     '''
     items = []
     item = ParameterNameItem(name, value)
+    item.setEditable(False)
+    items.append(item)
+    item = ParameterTypeItem(name, value)
     item.setEditable(False)
     items.append(item)
     itemValue = ParameterValueItem(name, value)

@@ -2331,7 +2331,7 @@ class MasterViewProxy(QtGui.QWidget):
     ns = '/'
     if selectedParameter:
       ns = roslib.names.namespace(selectedParameter[0][0])
-    fields = {'name' : ('string', ['', ns]), 'type' : ('string', ['string', 'int', 'float', 'bool']), 'value': ('string', '')}
+    fields = {'name' : ('string', ['', ns]), 'type' : ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
     newparamDia = ParameterDialog(fields, parent=self)
     newparamDia.setWindowTitle('Add new parameter')
     newparamDia.setFilterVisible(False)
@@ -2345,6 +2345,18 @@ class MasterViewProxy(QtGui.QWidget):
           value = float(params['value'])
         elif params['type'] == 'bool':
           value = bool(params['value'].lower() in ("yes", "true", "t", "1"))
+        elif params['type'] == 'list':
+          try:
+            import yaml
+            value = [yaml.load(params['value'])]
+            # if there is no YAML, load() will return an
+            # empty string.  We want an empty dictionary instead
+            # for our representation of empty.
+            if value is None:
+              value = []
+          except yaml.MarkedYAMLError, e:
+            QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s"%str(e), QtGui.QMessageBox.Ok)
+            return
         else:
           value = params['value']
         self.parameterHandler.deliverParameter(self.masteruri, {params['name'] : value})
@@ -2428,10 +2440,10 @@ class MasterViewProxy(QtGui.QWidget):
         val = l
         if isinstance(l, (str, unicode)):
           val = l.replace("\\n", "\n")
-          result.append("".join([val]))
+#          result.append("".join([val]))
         elif isinstance(l, list):
           val = self._replaceDoubleSlash(l)
-          result.append(val)
+        result.append(val)
       return result
     return liste
 
@@ -2448,9 +2460,19 @@ class MasterViewProxy(QtGui.QWidget):
         elif isinstance(item.value, float):
           value = float(item.text())
         elif isinstance(item.value, list):
-          import yaml
-          value = yaml.load(item.text())
-          value = self._replaceDoubleSlash(value)
+          try:
+            import yaml
+            value = yaml.load(item.text())
+            # if there is no YAML, load() will return an
+            # empty string.  We want an empty dictionary instead
+            # for our representation of empty.
+            if value is None:
+              value = []
+            value = self._replaceDoubleSlash(value)
+          except yaml.MarkedYAMLError, e:
+            QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s"%str(e), QtGui.QMessageBox.Ok)
+            item.setText(unicode(item.value))
+            return
         else:
           value = item.text()
         self.parameterHandler.deliverParameter(self.masteruri, {item.name : value})
@@ -2683,6 +2705,7 @@ class ParameterSortFilterProxyModel(QtGui.QSortFilterProxyModel):
     '''
     index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
     index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
+    index2 = self.sourceModel().index(sourceRow, 2, sourceParent)
     regex = self.filterRegExp()
     return (regex.indexIn(self.sourceModel().data(index0, ParameterNameItem.NAME_ROLE)) != -1
-            or regex.indexIn(self.sourceModel().data(index1, ParameterValueItem.VALUE_ROLE)) != -1)
+            or regex.indexIn(self.sourceModel().data(index2, ParameterValueItem.VALUE_ROLE)) != -1)

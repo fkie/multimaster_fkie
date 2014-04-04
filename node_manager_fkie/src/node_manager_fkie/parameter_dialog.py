@@ -83,12 +83,12 @@ class ParameterDescription(object):
       self._type = 'list'
     self._value = value
     self._widget = widget
-    self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
+    try:
+      self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
+    except:
+      pass
     if msg_type == 'binary':
       self._base_type = msg_type
-    self._is_primitive_type =  self._base_type in roslib.msgs.PRIMITIVE_TYPES or self._base_type in ['int', 'float', 'time', 'duration', 'binary']
-    self._is_time_type = self._base_type in ['time', 'duration']
-    self._is_binary_type = self._base_type in ['binary']
 
   def __repr__(self):
     return ''.join([self._name, ' [', self._type, ']'])
@@ -115,19 +115,24 @@ class ParameterDescription(object):
     return result
 
   def isArrayType(self):
-    return self._is_array_type
+    # handle representation of `rosparam`
+    return self._is_array_type or self._type in ['[]']
 
   def arrayLength(self):
     return self._array_length
 
   def isPrimitiveType(self):
-    return self._is_primitive_type
+    result = self._base_type in roslib.msgs.PRIMITIVE_TYPES 
+    result = result or self._base_type in ['int', 'float', 'time', 'duration', 'binary']
+    # if value is a string, the list is represented as a string, see `rosparam`
+    result = result or self._type in ['[]']
+    return result
 
   def isTimeType(self):
-    return self._is_time_type
+    return self._base_type in ['time', 'duration']
 
   def isBinaryType(self):
-    return self._is_binary_type
+    return self._base_type in ['binary']
 
   def baseType(self):
     return self._base_type
@@ -151,17 +156,27 @@ class ParameterDescription(object):
       elif value:
         nm.history().addParamCache(self.fullName(), value)
         if self.isArrayType():
-          value = value.lstrip('[').rstrip(']').split(',')
+          value = value.lstrip('[').rstrip(']')
           if 'int' in self.baseType():
-            self._value = map(int, value)
+            self._value = map(int, value.split(','))
           elif 'float' in self.baseType():
-            self._value = map(float, value)
+            self._value = map(float, value.split(','))
           elif 'bool' in self.baseType():
-            self._value = map(str2bool, value)
+            self._value = map(str2bool, value.split(','))
           elif self.isBinaryType():
-            self._value = str(value)
+            self._value = value
           else:
-            self._value = map(str, value)#[ s.encode(sys.getfilesystemencoding()) for s in value]
+#            self._value = map(str, value)#[ s.encode(sys.getfilesystemencoding()) for s in value]
+            try:
+              import yaml
+              self._value = [yaml.load(value)]
+              # if there is no YAML, load() will return an
+              # empty string.  We want an empty dictionary instead
+              # for our representation of empty.
+              if self._value is None:
+                self._value = []
+            except yaml.MarkedYAMLError, e:
+              raise Exception("Field [%s] yaml error: %s"%(self.fullName(), str(e)))
           if not self.arrayLength() is None and self.arrayLength() != len(self._value):
             raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
         else:
@@ -236,7 +251,7 @@ class ParameterDescription(object):
         result = QtGui.QCheckBox(parent=parent)
         result.setObjectName(self.name())
         if not isinstance(value, bool):
-          value = str2bool(value)
+          value = str2bool(value[0] if isinstance(value, list) else value)
         result.setChecked(value)
       else:
         result = MyComboBox(parent=parent)
@@ -934,7 +949,7 @@ class MasterParameterDialog(ParameterDialog):
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def _on_add_parameter(self):
-    params_arg = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool']), 'value' : ('string', '') }
+    params_arg = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool', 'list']), 'value' : ('string', '') }
     dia = ParameterDialog(params_arg)
     dia.setWindowTitle('Add new parameter')
     dia.resize(360,150)
@@ -949,6 +964,17 @@ class MasterParameterDialog(ParameterDialog):
             value = float(params['value'])
           elif params['type'] == 'bool':
             value = str2bool(params['value'])
+          elif params['type'] == 'list':
+            try:
+              import yaml
+              value = [yaml.load(params['value'])]
+              # if there is no YAML, load() will return an
+              # empty string.  We want an empty dictionary instead
+              # for our representation of empty.
+              if value is None:
+                value = []
+            except yaml.MarkedYAMLError, e:
+              QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s"%str(e), QtGui.QMessageBox.Ok)
           else:
             value = params['value']
           self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']) : (1, '', value)})
@@ -993,7 +1019,7 @@ class MasterParameterDialog(ParameterDialog):
         if code_n != 1:
           val = ''
         type_str = 'string'
-        value = val
+        value = unicode(val)
         if isinstance(val, bool):
           type_str = 'bool'
         elif isinstance(val, int):
@@ -1001,7 +1027,13 @@ class MasterParameterDialog(ParameterDialog):
         elif isinstance(val, float):
           type_str = 'float'
         elif isinstance(val, list) or isinstance(val, dict):
-          value = unicode(val)
+          # handle representation of `rosparam`
+          type_str = '[]'
+          value = ''
+          for v in val:
+            if len(value) > 0:
+              value = value + ', '
+            value = value + unicode(v)
         elif isinstance(val, Binary):
           type_str = 'binary'
         param = p.replace(self.ns, '')
@@ -1015,11 +1047,11 @@ class MasterParameterDialog(ParameterDialog):
               group = group[group_name][1]
             else:
               tmp_dict = dict()
-              group[group_name] = (n, tmp_dict)
+              group[group_name] = ('list', tmp_dict)
               group = tmp_dict
-          group[param_name] = (type_str, value)
+          group[param_name] = (type_str, [value])
         else:
-          dia_params[param_name] = (type_str, value)
+          dia_params[param_name] = (type_str, [value])
       try:
         self.content.createFieldFromValue(dia_params)
         self.setInfoActive(False)
