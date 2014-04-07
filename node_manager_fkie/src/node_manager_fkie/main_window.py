@@ -661,6 +661,8 @@ class MainWindow(QtGui.QMainWindow):
       if not self.currentMaster is None and not self.currentMaster.master_info is None and not self.restricted_to_one_master:
         self.ui.syncButton.setEnabled(True)
         self.ui.syncButton.setChecked(not self.currentMaster.master_info.getNodeEndsWith('master_sync') is None)
+    else:
+      self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
 #    cputimes_m = os.times()
 #    cputime_m = cputimes_m[0] + cputimes_m[1] - cputime_init_m
 #    print "ALL:", cputime_m

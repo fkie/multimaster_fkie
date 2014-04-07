@@ -717,6 +717,7 @@ class ParameterDialog(QtGui.QDialog):
     sidebarframe_verticalLayout.setContentsMargins(1, 1, 1, 1)
     if len(values) > 1 and sidebar_var in params:
       self.horizontalLayout.addWidget(self.sidebar_frame)
+      self.sidebar_default_val = values[0]
       values.sort()
       for v in values:
         checkbox = QtGui.QCheckBox(v)
@@ -813,7 +814,9 @@ class ParameterDialog(QtGui.QDialog):
     result = self.content.value()
     # add the sidebar results
     if sidebar_name in result:
-      sidebar_list.append(result[sidebar_name])
+      # skip the default value, if elements are selected in the side_bar
+      if len(sidebar_list) == 0 or self.sidebar_default_val != result[sidebar_name]:
+        sidebar_list.append(result[sidebar_name])
       result[sidebar_name] = list(set(sidebar_list))
     return result
 
