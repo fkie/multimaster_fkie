@@ -88,6 +88,7 @@ HELP_FILE = ''.join([PACKAGE_DIR, os.path.sep, 'README.rst'])
 CURRENT_DIALOG_PATH = os.path.expanduser('~')
 
 _lock = threading.RLock()
+_terminal_emulator = None
 
 def terminal_cmd(cmd, title):
   '''
@@ -99,10 +100,15 @@ def terminal_cmd(cmd, title):
   @return: command with a terminal prefix
   @rtype:  str
   '''
-  if os.path.isfile('/usr/bin/xterm'):
-    return str(' '.join(['/usr/bin/xterm', '-geometry 112x35', '-title', str(title), '-e', ' '.join(cmd)]))
-  elif os.path.isfile('/usr/bin/konsole'):
-    return str(' '.join(['/usr/bin/konsole', '--noclose', '-title', str(title), '-e', ' '.join(cmd)]))
+  global _terminal_emulator
+  if _terminal_emulator is None:
+    _terminal_emulator = ""
+    for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm']:
+      if os.path.isfile(t) and os.access(t, os.X_OK):
+        _terminal_emulator = t
+        break
+  if _terminal_emulator == "": return ""
+  return str(' '.join([_terminal_emulator, '-title', str(title), '-e', ' '.join(cmd)]))
 
 main_form = None
 _ssh_handler = None
