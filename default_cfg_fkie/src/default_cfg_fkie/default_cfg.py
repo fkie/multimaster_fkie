@@ -81,7 +81,7 @@ class DefaultCfg(object):
 #    self.global_parameter_setted = False
 
   
-  def load(self, package, file, argv):
+  def load(self, package, file, argv, autostart=False):
     '''
     Load the launch file configuration
     @param package: the package containing the launch file, or empty string to load
@@ -91,6 +91,8 @@ class DefaultCfg(object):
     @type file: C{str}
     @param argv: the argv needed to load the launch file
     @type argv: C{str}
+    @param autostart: starts all nodes after load
+    @type autostart: C{bool}
     '''
     with self.__lock:
       # shutdown the services to inform the caller about a new configuration.
@@ -107,15 +109,19 @@ class DefaultCfg(object):
       self.masteruri = self._masteruri_from_ros()
       self.roscfg = roslaunch.ROSLaunchConfig()
       loader = roslaunch.XmlLoader()
+      argv = [a for a in argv if not a.startswith('__ns:=')]
+      argv.append('__ns:=test')
       loader.load(launch_file, self.roscfg, verbose=False, argv=argv)
       # create the list with node names
       for item in self.roscfg.nodes:
         if item.machine_name and not item.machine_name == 'localhost':
           machine = self.roscfg.machines[item.machine_name]
           if roslib.network.is_local_address(machine.address):
-            self.nodes.append(str(''.join([item.namespace, item.name])))
+            print "a:", item.namespace, item.name
+            self.nodes.append(roslib.names.ns_join(item.namespace, item.name))
         else:
-          self.nodes.append(str(''.join([item.namespace, item.name])))
+          print "b:", item.namespace, item.name
+          self.nodes.append(roslib.names.ns_join(item.namespace, item.name))
       # get the robot description
       self.description_response = dr = ListDescriptionResponse()
       dr.robot_name = ''
@@ -168,6 +174,9 @@ class DefaultCfg(object):
 #    except:
 #      import traceback
 #      print traceback.format_exc()
+      if autostart:
+        for n in self.nodes:
+          self.runNode(n)
 
   def _decode(self, val):
     '''
@@ -206,6 +215,7 @@ class DefaultCfg(object):
                 capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3])}
       # get the capability nodes
       for item in self.roscfg.nodes:
+        print "c:", item.namespace, item.name
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
         machine_name = item.machine_name if not item.machine_name is None and not item.machine_name == 'localhost' else ''
         added = False
