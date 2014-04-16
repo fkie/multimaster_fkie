@@ -366,19 +366,19 @@ class DefaultCfg(object):
         break
     if n is None:
       raise StartException(''.join(["Node '", node, "' not found!"]))
-    
+
 #    env = n.env_args
     prefix = n.launch_prefix if not n.launch_prefix is None else ''
     args = [''.join(['__ns:=', n.namespace]), ''.join(['__name:=', n.name])]
     if not (n.cwd is None):
       args.append(''.join(['__cwd:=', n.cwd]))
-    
+
     # add remaps
     for remap in n.remap_args:
       args.append(''.join([remap[0], ':=', remap[1]]))
 
 #    masteruri = self.masteruri
-    
+
 #    if n.machine_name and not n.machine_name == 'localhost':
 #      machine = self.roscfg.machines[n.machine_name]
       #TODO: env-loader support?
@@ -386,19 +386,7 @@ class DefaultCfg(object):
 #        env[len(env):] = machine.env_args
 
 #    nm.screen().testScreen()
-    try:
-      cmd = roslib.packages.find_node(n.package, n.type)
-    except roslib.packages.ROSPkgException as e:
-      # multiple nodes, invalid package
-      raise StartException(str(e))
-    except Exception as e:
-      raise StartException(str(e))
-    # handle diferent result types str or array of string
-    import types
-    if isinstance(cmd, types.StringTypes):
-      cmd = [cmd]
-    if cmd is None or len(cmd) == 0:
-      raise StartException(' '.join([n.type, 'in package [', n.package, '] not found!']))
+    cmd = self._get_node(n.package, n.type)
     # determine the current working path, Default: the package of the node
     cwd = self.get_ros_home()
     if not (n.cwd is None):
@@ -406,7 +394,10 @@ class DefaultCfg(object):
         cwd = self.get_ros_home()
       elif n.cwd == 'node':
         cwd = os.path.dirname(cmd[0])
-    node_cmd = ['rosrun node_manager_fkie respawn' if n.respawn else '', prefix, cmd[0]]
+    respawn = ['']
+    if n.respawn:
+      respawn = self._get_node('node_manager_fkie', 'respawn')
+    node_cmd = [respawn[0], prefix, cmd[0]]
     cmd_args = [ScreenHandler.getSceenCmd(node)]
     cmd_args[len(cmd_args):] = node_cmd
     cmd_args.append(n.args)
@@ -425,6 +416,23 @@ class DefaultCfg(object):
 #    subprocess.Popen(popen_cmd, cwd=cwd)
     if len(cmd) > 1:
       raise StartException('Multiple executables are found! The first one was started! Exceutables:\n' + str(cmd))
+
+  def _get_node(self, pkg, file):
+    cmd = None
+    try:
+      cmd = roslib.packages.find_node(pkg, file)
+    except roslib.packages.ROSPkgException as e:
+      # multiple nodes, invalid package
+      raise StartException(str(e))
+    except Exception as e:
+      raise StartException(str(e))
+    # handle different result types str or array of string
+    import types
+    if isinstance(cmd, types.StringTypes):
+      cmd = [cmd]
+    if cmd is None or len(cmd) == 0:
+      raise StartException(' '.join([file, 'in package [', pkg, '] not found!']))
+    return cmd
 
   def get_ros_home(self):
     '''
