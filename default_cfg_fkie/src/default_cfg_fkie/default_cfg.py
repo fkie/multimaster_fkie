@@ -110,17 +110,16 @@ class DefaultCfg(object):
       self.roscfg = roslaunch.ROSLaunchConfig()
       loader = roslaunch.XmlLoader()
       argv = [a for a in argv if not a.startswith('__ns:=')]
-      argv.append('__ns:=test')
+      # remove namespace from sys.argv to avoid load the launchfile info local namespace
+      sys.argv = [a for a in sys.argv if not a.startswith('__ns:=')]
       loader.load(launch_file, self.roscfg, verbose=False, argv=argv)
       # create the list with node names
       for item in self.roscfg.nodes:
         if item.machine_name and not item.machine_name == 'localhost':
           machine = self.roscfg.machines[item.machine_name]
           if roslib.network.is_local_address(machine.address):
-            print "a:", item.namespace, item.name
             self.nodes.append(roslib.names.ns_join(item.namespace, item.name))
         else:
-          print "b:", item.namespace, item.name
           self.nodes.append(roslib.names.ns_join(item.namespace, item.name))
       # get the robot description
       self.description_response = dr = ListDescriptionResponse()
@@ -215,7 +214,6 @@ class DefaultCfg(object):
                 capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3])}
       # get the capability nodes
       for item in self.roscfg.nodes:
-        print "c:", item.namespace, item.name
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
         machine_name = item.machine_name if not item.machine_name is None and not item.machine_name == 'localhost' else ''
         added = False
