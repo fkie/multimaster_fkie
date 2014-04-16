@@ -42,7 +42,7 @@ import rospy
 import roslib.network
 from ros import roslaunch
 import rosgraph.masterapi
-
+from rosgraph.rosenv import ROS_NAMESPACE
 
 from multimaster_msgs_fkie.msg import Capability
 from multimaster_msgs_fkie.srv import ListDescription, ListNodes, LoadLaunch, Task, ListDescriptionResponse, ListNodesResponse
@@ -112,6 +112,8 @@ class DefaultCfg(object):
       argv = [a for a in argv if not a.startswith('__ns:=')]
       # remove namespace from sys.argv to avoid load the launchfile info local namespace
       sys.argv = [a for a in sys.argv if not a.startswith('__ns:=')]
+      # set the global environment to empty namespace
+      os.environ[ROS_NAMESPACE] = rospy.names.SEP
       loader.load(launch_file, self.roscfg, verbose=False, argv=argv)
       # create the list with node names
       for item in self.roscfg.nodes:
