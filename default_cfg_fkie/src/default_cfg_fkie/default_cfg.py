@@ -405,7 +405,14 @@ class DefaultCfg(object):
 #    print 'runNode: ', cmd_args
     popen_cmd = shlex.split(str(' '.join(cmd_args)))
     rospy.loginfo("run node '%s as': %s", node, str(' '.join(popen_cmd)))
+    # remove the 'BASH_ENV' and 'ENV' from environment
     new_env = dict(os.environ)
+    try:
+      for k in ['BASH_ENV', 'ENV']:
+        del new_env[k]
+    except:
+      pass
+    # add node environment parameter
     for k, v in n.env_args:
       new_env[k] = v
     ps = subprocess.Popen(popen_cmd, cwd=cwd, env=new_env)
