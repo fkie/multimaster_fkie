@@ -49,9 +49,12 @@ class LaunchListModel(QtCore.QAbstractListModel):
   NOTHING = 0
   RECENT_FILE = 1
   LAUNCH_FILE = 2
-  FOLDER = 3
-  PACKAGE = 4
-  STACK = 5
+  CFG_FILE = 3
+  FOLDER = 10
+  PACKAGE = 11
+  STACK = 12
+
+  CFG_FILES = ['.yaml', '.yml', '.sync', '.iface']
 
   RECENT_LENGTH = 5
 
@@ -177,6 +180,17 @@ class LaunchListModel(QtCore.QAbstractListModel):
       return not path is None and os.path.isfile(path) and path.endswith('.launch')
     return False
 
+  def isConfigFile(self, row):
+    '''
+    Tests for the given row whether it is a config file or not.
+    @return: C{True} if it is a config file
+    @rtype: C{boolean}
+    '''
+    if row >= 0 and row < len(self.items):
+      pathItem, path, pathId = self.items[row]
+      return pathId == self.CFG_FILE
+    return False
+
   def expandItem(self, path_item, path):
     '''
     Returns for the given item and path the file path if this is a file. Otherwise the 
@@ -221,6 +235,14 @@ class LaunchListModel(QtCore.QAbstractListModel):
     self.load_history.append(file)
     if len(self.load_history) > self.RECENT_LENGTH:
       self.load_history.pop(0)
+    self._storeLoadHistory(self.load_history)
+    self.reloadCurrentPath()
+
+  def removeFromLoadHistory(self, file):
+    try:
+      self.load_history.remove(file)
+    except:
+      pass
     self._storeLoadHistory(self.load_history)
     self.reloadCurrentPath()
 
@@ -301,6 +323,10 @@ class LaunchListModel(QtCore.QAbstractListModel):
       elif os.path.isfile(path):
         if (path.endswith('.launch')):
           return LaunchListModel.LAUNCH_FILE
+        else:
+          for e in LaunchListModel.CFG_FILES:
+            if path.endswith(e):
+              return LaunchListModel.CFG_FILE
       elif os.path.isdir(path):
         fileList = os.listdir(path)
         if self._containsLaunches(path):

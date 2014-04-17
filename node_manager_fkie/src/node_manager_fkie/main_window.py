@@ -251,7 +251,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.textBrowser.setText(examples.html_body(unicode(f.read())))
     except:
       import traceback
-      msg = ''.join(["Error while generate help: ", str(traceback.format_exc())])
+      msg = "Error while generate help: %s"%traceback.format_exc()
       rospy.logwarn(msg)
       self.ui.textBrowser.setText(msg)
 
@@ -1160,7 +1160,10 @@ class MainWindow(QtGui.QMainWindow):
 #      self.ui.xmlFileView.setEnabled(False)
       file = activated.model().expandItem(item, path)
       if not file is None:
-        self.loadLaunchFile(path, row=activated.row())
+        if self.ui.xmlFileView.model().isLaunchFile(activated.row()):
+          self.loadLaunchFile(path, row=activated.row())
+        elif self.ui.xmlFileView.model().isConfigFile(activated.row()):
+          self._editor_dialog_open([file], '')
 #      self.ui.xmlFileView.setEnabled(True)
 #      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
     except Exception, e:
@@ -1176,11 +1179,12 @@ class MainWindow(QtGui.QMainWindow):
     '''
     indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
     for index in indexes:
-      isfile = self.ui.xmlFileView.model().isLaunchFile(index.row())
-      self.ui.editXmlButton.setEnabled(isfile)
-      self.ui.loadXmlButton.setEnabled(isfile)
-      self.ui.transferButton.setEnabled(isfile)
-      self.ui.loadXmlAsDefaultButton.setEnabled(isfile)
+      islaunch = self.ui.xmlFileView.model().isLaunchFile(index.row())
+      isconfig = self.ui.xmlFileView.model().isConfigFile(index.row())
+      self.ui.editXmlButton.setEnabled(islaunch or isconfig)
+      self.ui.loadXmlButton.setEnabled(islaunch)
+      self.ui.transferButton.setEnabled(islaunch or isconfig)
+      self.ui.loadXmlAsDefaultButton.setEnabled(islaunch)
 
   def on_refresh_xml_clicked(self):
     '''
@@ -1641,11 +1645,7 @@ class MainWindow(QtGui.QMainWindow):
       indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
       for index in indexes:
         pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-        try:
-          self.ui.xmlFileView.model().load_history.remove(path)
-        except:
-          pass
-      self.ui.xmlFileView.model().reloadCurrentPath()
+        self.ui.xmlFileView.model().removeFromLoadHistory(path)
     QtGui.QMainWindow.keyReleaseEvent(self, event)
 
   def image_mouseDoubleClickEvent(self, event):

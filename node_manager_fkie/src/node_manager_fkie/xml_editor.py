@@ -333,7 +333,7 @@ class Editor(QtGui.QTextEdit):
       block_end = cursor.blockNumber()
       if block_end-block_start == 0:
         # shift one line two spaces to the left
-        if key_mod & QtCore.Qt.ControlModifier:
+        if key_mod & QtCore.Qt.ControlModifier or key_mod & QtCore.Qt.ShiftModifier:
           for s in range(2):
             cursor.movePosition(QtGui.QTextCursor.StartOfLine)
             cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 1)
@@ -349,7 +349,7 @@ class Editor(QtGui.QTextEdit):
           cursor.insertText('  ')
       else:
         # shift the selected block two spaces to the left
-        if key_mod & QtCore.Qt.ControlModifier:
+        if key_mod & QtCore.Qt.ControlModifier or key_mod & QtCore.Qt.ShiftModifier:
           removed = 0
           for i in reversed(range(start, end)):
             cursor.setPosition(i)
@@ -405,10 +405,16 @@ class Editor(QtGui.QTextEdit):
       if os.path.exists(text) and os.path.isfile(text):
         # find the package name containing the included file 
         (package, path) = package_name(os.path.dirname(text))
-        if package:
-          cursor.insertText('<include file="$(find %s)%s" />'%(package, text.replace(path, '')))
+        if path.endswith('.launch'):
+          if package:
+            cursor.insertText('<include file="$(find %s)%s" />'%(package, text.replace(path, '')))
+          else:
+            cursor.insertText('<include file="%s" />'%text)
         else:
-          cursor.insertText('<include file="%s" />'%text)
+          if package:
+            cursor.insertText('<rosparam file="$(find %s)%s" command="load" />'%(package, text.replace(path, '')))
+          else:
+            cursor.insertText('<rosparam file="%s" command="load" />'%text)
       else:
         cursor.insertText(e.mimeData().text())
     e.accept()
@@ -1000,7 +1006,7 @@ class XmlEditor(QtGui.QDialog):
 
   def _on_add_group_tag(self):
     self._insert_text('<group ns="namespace" clear_params="true|false">\n'
-                      '</node>')
+                      '</group>')
 
   def _on_add_node_tag(self):
     self._insert_text('<node name="NAME" pkg="PKG" type="BIN">\n'
