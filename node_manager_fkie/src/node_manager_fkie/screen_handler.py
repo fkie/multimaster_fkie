@@ -335,7 +335,7 @@ class ScreenHandler(object):
                 nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
               except:
                 import traceback
-                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", str(pid), str(host), str(traceback.format_exc()))
+                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", str(pid), str(host), traceback.format_exc())
           if nm.is_local(host):
             ps = subprocess.Popen([cls.SCREEN, '-wipe'])
             # wait for process to avoid 'defunct' processes

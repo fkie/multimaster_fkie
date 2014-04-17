@@ -2011,7 +2011,7 @@ class MasterViewProxy(QtGui.QWidget):
         inputDia.show()
       except:
         import traceback
-        rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), str(traceback.format_exc()))
+        rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), traceback.format_exc())
 
   def on_save_clicked(self):
     (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
@@ -2384,10 +2384,10 @@ class MasterViewProxy(QtGui.QWidget):
           rospy.logwarn("Error on delete parameter '%s': %s", parameter, msg)
     except:
       import traceback
-      rospy.logwarn("Error on delete parameter: %s", str(traceback.format_exc()))
+      rospy.logwarn("Error on delete parameter: %s", traceback.format_exc())
       WarningMessageBox(QtGui.QMessageBox.Warning, "Warning", 
                         'Error while delete a parameter to the ROS parameter server',
-                        str(traceback.format_exc())).exec_()
+                        traceback.format_exc()).exec_()
     else:
       self.on_get_parameter_clicked()
     finally:
@@ -2571,7 +2571,7 @@ class MasterViewProxy(QtGui.QWidget):
             for key, value in val.items():
               self.launch_server_handler.updateLaunchServerInfo(value)
     else:
-      rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), str(msg))
+      rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), msg)
     if not robot_icon_found:
       self.__current_parameter_robot_icon = ''
       self.update_robot_icon()

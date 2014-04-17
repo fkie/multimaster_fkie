@@ -122,7 +122,7 @@ class CapabilityHeader(QtGui.QHeaderView):
         text = examples.html_body(text)
       except:
         import traceback
-        rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], str(traceback.format_exc()))
+        rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], traceback.format_exc())
       self.description_requested_signal.emit(title, text)
 
   def setDescription(self, index, cfg, name, displayed_name, type, description, images):
