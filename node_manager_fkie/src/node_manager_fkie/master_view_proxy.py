@@ -285,7 +285,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
     self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
     self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
-    #create a handler to request sim paramter
+    #create a handler to request sim parameter
     self.parameterHandler_sim = ParameterHandler()
 #    self.parameterHandler_sim.parameter_list_signal.connect(self._on_param_list)
     self.parameterHandler_sim.parameter_values_signal.connect(self._on_sim_param_values)
@@ -2395,7 +2395,7 @@ class MasterViewProxy(QtGui.QWidget):
 
   def on_save_parameter_clicked(self):
     '''
-    Stores selected paramter to a file.
+    Stores selected parameter to a file.
     '''
     selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
     if selectedParameter:

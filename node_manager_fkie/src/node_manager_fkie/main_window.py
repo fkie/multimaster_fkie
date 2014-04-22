@@ -1505,7 +1505,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_configparamfile_changed(self, changed, affected):
     '''
-    Signal hander to handle the changes of a configuration file referenced by a paramter value
+    Signal handler to handle the changes of a configuration file referenced by a parameter value
     @param changed: the changed file
     @type changed: C{str}
     @param affected: the list of tuples with masteruri and launchfile, which are affected by file change

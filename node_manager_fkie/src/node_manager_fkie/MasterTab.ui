@@ -1073,7 +1073,7 @@ p, li { white-space: pre-wrap; }
                 </size>
                </property>
                <property name="toolTip">
-                <string>Get the paramter list from the Paramter server</string>
+                <string>Get the parameter list from the Parameter server</string>
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
