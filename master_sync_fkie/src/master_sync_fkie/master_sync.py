@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import uuid
 import threading
 import time
 import xmlrpclib
@@ -77,7 +78,7 @@ class Main(object):
     self.__own_state = None
     self.update_timer = None
     self.own_state_getter = None
-    rospy.on_shutdown(self.finish)
+    self._join_threads = dict() # threads waiting for stopping the sync thread
     # initialize the ROS services
     rospy.Service('~get_sync_info', GetSyncInfo, self.rosservice_get_sync_info)
     rospy.on_shutdown(self.finish)
@@ -92,11 +93,12 @@ class Main(object):
     @type data: L{master_discovery_fkie.MasterState}
     '''
     with self.__lock:
-      if data.state in [MasterState.STATE_REMOVED]:
-        self.removeMaster(data.master.name)
-      elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
-        m = data.master
-        self.updateMaster(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri)
+      if not rospy.is_shutdown():
+        if data.state in [MasterState.STATE_REMOVED]:
+          self.removeMaster(data.master.name)
+        elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+          m = data.master
+          self.updateMaster(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri)
 
   def getMasteruri(self):
     '''
@@ -132,8 +134,8 @@ class Main(object):
               resp = discoverMasters()
               masters = []
               for m in resp.masters:
-  #              if not self._re_ignore_hosts.match(m.name) or self._re_sync_hosts.match(m.name): # do not sync to the master, if it is in ignore list
-  #                masters.append(m.name)
+                if not self._re_ignore_hosts.match(m.name) or self._re_sync_hosts.match(m.name): # do not sync to the master, if it is in ignore list
+                  masters.append(m.name)
                 self.updateMaster(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri)
               for key in set(self.masters.keys()) - set(masters):
                 self.removeMaster(self.masters[key].name)
@@ -170,12 +172,10 @@ class Main(object):
         if (masteruri != self.materuri):
           if (is_empty_pattern(self._re_ignore_hosts) or not self._re_ignore_hosts.match(mastername)
               or (not is_empty_pattern(self._re_sync_hosts) and not self._re_sync_hosts.match(mastername) is None)): # do not sync to the master, if it is in ignore list
-    #        print "--update:", ros_master.uri, mastername
             if (mastername in self.masters):
               # updates only, if local changes are occured
               self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
             else:
-    #          print "add a sync thread to:", mastername, ros_master.uri
               self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand)
               if not self.__own_state is None:
                 self.masters[mastername].setOwnMasterState(MasterInfo.from_list(self.__own_state))
@@ -191,6 +191,7 @@ class Main(object):
 
   def get_own_state(self, monitoruri):
     # get the master info from local discovery master and set it to all sync threads
+    # This function is running in a thread!!!
     try:
       socket.setdefaulttimeout(3)
       own_monitor = xmlrpclib.ServerProxy(monitoruri)
@@ -198,6 +199,7 @@ class Main(object):
       own_state = MasterInfo.from_list(self.__own_state)
       socket.setdefaulttimeout(None)
       with self.__lock:
+        # update the state for all sync threads
         for (mastername, s) in self.masters.iteritems():
           s.setOwnMasterState(own_state, self.__sync_topics_on_demand)
         self.__timestamp_local = own_state.timestamp_local
@@ -206,7 +208,7 @@ class Main(object):
       print traceback.print_exc()
       socket.setdefaulttimeout(None)
       time.sleep(3)
-      if not self.own_state_getter is None:
+      if not self.own_state_getter is None and not rospy.is_shutdown():
         self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
         self.own_state_getter.start()
 
@@ -220,12 +222,22 @@ class Main(object):
       with self.__lock:
         if (ros_master_name in self.masters):
           m = self.masters.pop(ros_master_name)
-          m.stop()
-          m.join()
-          del m
+          id = uuid.uuid4()
+          thread = threading.Thread(target=self._threading_stop_sync, args=(m, id))
+          self._join_threads[id] = thread
+          thread.start()
     except Exception:
       import traceback
       rospy.logwarn("ERROR while removing master[%s]: %s", ros_master_name, traceback.format_exc())
+
+  def _threading_stop_sync(self, sync_thread, id):
+    if isinstance(sync_thread, SyncThread):
+      rospy.loginfo("  Stop synchronization to `%s`"%sync_thread.name)
+      sync_thread.stop()
+      with self.__lock:
+        del self._join_threads[id]
+      rospy.loginfo("  Finished synchronization to `%s`"%sync_thread.name)
+      del sync_thread
 
   def finish(self, msg=''):
     '''
@@ -233,26 +245,23 @@ class Main(object):
     '''
     rospy.loginfo("Stop synchronization...")
     with self.__lock:
+      # stop update timer
+      rospy.loginfo("  Stop timers...")
+      if not self.update_timer is None:
+        self.update_timer.cancel()
+      # unregister from update topics
+      rospy.loginfo("  Unregister from master discovery...")
       for (k, v) in self.sub_changes.iteritems():
         v.unregister()
       self.own_state_getter = None
-      if not self.update_timer is None:
-        self.update_timer.cancel()
-      # Stop all syncs
+      # Stop all sync threads
       for key in self.masters.keys():
-        rospy.loginfo("  Stop %s", str(key))
-        self.masters[key].stop()
-      # wait for their ending
-      for key in self.masters.keys():
-        rospy.loginfo("  Wait for ending %s", str(key))
-        m = self.masters[key]
-        m.join(5)
-        del m
-#      if hasattr(self, "sub_changes"):
-#        rospy.loginfo("  Unregister subscriptions...")
-#        for key, item in self.sub_changes.items():
-#          rospy.loginfo("    %s", str(key))
-#          item.unregister()
+        rospy.loginfo("  Remove master: %s", key)
+        self.removeMaster(key)
+    # wait for their ending
+    while len(self._join_threads) > 0:
+      rospy.loginfo("  Wait for ending of %s threads ...", str(len(self._join_threads)))
+      time.sleep(1)
     rospy.loginfo("Synchronization is now off")
 
   def rosservice_get_sync_info(self, req):
@@ -269,7 +278,7 @@ class Main(object):
       traceback.print_exc()
     finally:
       return GetSyncInfoResponse(masters)
-  
+
   def _loadInterface(self):
     interface_file = resolve_url(rospy.get_param('~interface_url', ''))
     if interface_file:
@@ -280,7 +289,6 @@ class Main(object):
       self._re_ignore_hosts = create_pattern('ignore_hosts', data, interface_file, [])
       # set the sync hosts list
       self._re_sync_hosts = create_pattern('sync_hosts', data, interface_file, [])
-      
       self.__sync_topics_on_demand = False
       if interface_file:
         if data.has_key('sync_topics_on_demand'):
@@ -294,4 +302,3 @@ class Main(object):
       rospy.logerr("Error on load interface: %s", traceback.format_exc())
       import os, signal
       os.kill(os.getpid(), signal.SIGKILL)
-
