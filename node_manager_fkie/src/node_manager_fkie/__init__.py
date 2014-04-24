@@ -78,7 +78,7 @@ the script used on remote hosts to start new ROS nodes
 '''
 
 HOSTS_CACHE = dict()
-''' 
+'''
 the cache directory to store the results of tests for local hosts.
 @see: L{is_local()}
 '''
@@ -108,7 +108,7 @@ def terminal_cmd(cmd, title):
         _terminal_emulator = t
         break
   if _terminal_emulator == "": return ""
-  return str(' '.join([_terminal_emulator, '-title', str(title), '-e', ' '.join(cmd)]))
+  return str(' '.join([_terminal_emulator, '-T', str(title), '-e', ' '.join(cmd)]))
 
 main_form = None
 _ssh_handler = None
@@ -139,7 +139,7 @@ def screen():
 
 def starter():
   '''
-  @return: The start handler to handle the start of new ROS nodes on local or 
+  @return: The start handler to handle the start of new ROS nodes on local or
   remote machines.
   @rtype: L{StartHandler}
   '''
@@ -196,7 +196,7 @@ def is_local(hostname):
       if isinstance(HOSTS_CACHE[hostname], threading.Thread):
         return False
       return HOSTS_CACHE[hostname]
-  
+
   try:
     machine_addr = socket.inet_aton(hostname)
     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
@@ -287,7 +287,7 @@ def init_cfg_path():
   return masteruri
 
 def init_globals(masteruri):
-  # initialize the global handler 
+  # initialize the global handler
   global _ssh_handler
   global _screen_handler
   global _start_handler
