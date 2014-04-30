@@ -78,12 +78,9 @@ def main():
   rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
-  launch_file = rospy.get_param('~launch_file', '')
-  package = rospy.get_param('~package', '')
-  autostart = rospy.get_param('~autostart', False)
   default_cfg = DefaultCfg()
   try:
-    default_cfg.load(package, launch_file, sys.argv, autostart)
+    default_cfg.load()
   except:
     # on load error the process will be killed to notify user in node_manager
     # about error
