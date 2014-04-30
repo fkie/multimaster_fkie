@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# linebuffer() sets the output buffering to line by line,
+# so we will see each line as soon as it is output.
 if which stdbuf >/dev/null 2>&1
 then
 function linebuffer()
@@ -11,13 +14,39 @@ function linebuffer()
 	"$@"
 }
 fi
-exitcode=1
+
+let respawn_counter=0
 exec 3>&1
-while [ "$exitcode" -ne 0 ]
+while true
 do
-	echo "Spawning:" "$@" >&2
+	let respawn_counter++
+	last_launch=$( date +%s )
+	# Launch process and simultaneously monitor output
+	# for "shutdown request" line
+	echo "Spawning[$respawn_counter]:" "$@" >&2
 	linebuffer "$@" 2>&1 | linebuffer tee /dev/fd/3 | linebuffer grep -i "shutdown request" >/dev/null
-	exitcode=$?
-	sleep 1
+	# Store exit code of all processes in the pipeline above
+	result=( "${PIPESTATUS[@]}" )
+	# Get exit code of launched process
+	exitcode="${result[0]}"
+	# If "shutdown request" was printed (grep exit code 0), do not respawn
+	[ "${result[2]}" -eq 0 ] && exitcode=0
+	# Terminate loop on successful exit
+	[ "$exitcode" -eq 0 ] && exit 0
+	# Check how long the process ran before terminating
+	# and reset counter if necessary
+	let runtime=$(date +%s )-$last_launch
+	if [ $runtime -gt ${RESPAWN_MIN_RUNTIME:-120} ]
+	then
+		let respawn_counter=0
+	fi
+	# Stop respawning if too many failures occured
+	if [ $respawn_counter -ge ${RESPAWN_MAX:-999999} ]
+	then
+		echo "RESPAWN_MAX counter reached" >&2
+		exit 1
+	fi
+	# Prevent CPU burn-in on instantly-crashing processes
+	sleep ${RESPAWN_DELAY:-1}
 done
 
