@@ -405,7 +405,7 @@ class Editor(QtGui.QTextEdit):
       if os.path.exists(text) and os.path.isfile(text):
         # find the package name containing the included file 
         (package, path) = package_name(os.path.dirname(text))
-        if path.endswith('.launch'):
+        if text.endswith('.launch'):
           if package:
             cursor.insertText('<include file="$(find %s)%s" />'%(package, text.replace(path, '')))
           else:
