@@ -394,6 +394,14 @@ class DefaultCfg(object):
     respawn = ['']
     if n.respawn:
       respawn = self._get_node('node_manager_fkie', 'respawn')
+      # set the respawn environment variables
+      respawn_params = self._get_respawn_params(rospy.names.ns_join(n.namespace, n.name))
+      if respawn_params['max'] > 0:
+        n.env_args.append(('RESPAWN_MAX', '%d'%respawn_params['max']))
+      if respawn_params['min_runtime'] > 0:
+        n.env_args.append(('RESPAWN_MIN_RUNTIME', '%d'%respawn_params['min_runtime']))
+      if respawn_params['delay'] > 0:
+        n.env_args.append(('RESPAWN_DELAY', '%d'%respawn_params['delay']))
     node_cmd = [respawn[0], prefix, cmd[0]]
     cmd_args = [ScreenHandler.getSceenCmd(node)]
     cmd_args[len(cmd_args):] = node_cmd
@@ -477,6 +485,25 @@ class DefaultCfg(object):
     except:
       pass
     return ''
+
+  def _get_respawn_params(self, node):
+    result = { 'max' : 0, 'min_runtime' : 0, 'delay': 0 }
+    respawn_max = rospy.names.ns_join(node, 'respawn/max')
+    respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
+    respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
+    try:
+      result['max'] = int(self.roscfg.params[respawn_max].value)
+    except:
+      pass
+    try:
+      result['min_runtime'] = int(self.roscfg.params[respawn_min_runtime].value)
+    except:
+      pass
+    try:
+      result['delay'] = int(self.roscfg.params[respawn_delay].value)
+    except:
+      pass
+    return result
 
   def get_ros_home(self):
     '''
