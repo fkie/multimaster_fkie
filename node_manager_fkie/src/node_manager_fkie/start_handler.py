@@ -69,7 +69,7 @@ class StartHandler(object):
   '''
   def __init__(self):
     pass
-  
+
   @classmethod
   def runNode(cls, node, launch_config, force2host=None, masteruri=None, auto_pw_request=False, user=None, pw=None, item=None):
     '''
@@ -94,6 +94,15 @@ class StartHandler(object):
       raise StartException(''.join(["Node '", node, "' not found!"]))
 
     env = list(n.env_args)
+    if n.respawn:
+      # set the respawn environment variables
+      respawn_params = cls._get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launch_config.Roscfg.params)
+      if respawn_params['max'] > 0:
+        env.append(('RESPAWN_MAX', '%d'%respawn_params['max']))
+      if respawn_params['min_runtime'] > 0:
+        env.append(('RESPAWN_MIN_RUNTIME', '%d'%respawn_params['min_runtime']))
+      if respawn_params['delay'] > 0:
+        env.append(('RESPAWN_DELAY', '%d'%respawn_params['delay']))
     prefix = n.launch_prefix if not n.launch_prefix is None else ''
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
       rospy.loginfo("SCREEN prefix removed before start!")
@@ -290,6 +299,27 @@ class StartHandler(object):
 #        parameters = '\n'.join(abs_paths)
 #        raise nm.StartException(str('\n'.join(['Following parameter seems to use an absolute local path for remote host:', parameters, 'Use "cwd" attribute of the "node" tag to specify relative paths for remote usage!'])))
     #'print "RUN OK", node, time.time()
+
+
+  @classmethod
+  def _get_respawn_params(cls, node, params):
+    result = { 'max' : 0, 'min_runtime' : 0, 'delay': 0 }
+    respawn_max = rospy.names.ns_join(node, 'respawn/max')
+    respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
+    respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
+    try:
+      result['max'] = int(params[respawn_max].value)
+    except:
+      pass
+    try:
+      result['min_runtime'] = int(params[respawn_min_runtime].value)
+    except:
+      pass
+    try:
+      result['delay'] = int(params[respawn_delay].value)
+    except:
+      pass
+    return result
 
   @classmethod
   def _load_parameters(cls, masteruri, params, clear_params, user, pw, auto_pw_request):
