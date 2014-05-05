@@ -42,6 +42,7 @@ import rospy
 import roslib.network
 from ros import roslaunch
 import rosgraph.masterapi
+import rosgraph.names
 from rosgraph.rosenv import ROS_NAMESPACE
 
 from multimaster_msgs_fkie.msg import Capability
@@ -480,11 +481,17 @@ class DefaultCfg(object):
 
   def _get_start_required(self, node):
     param_name = rospy.names.ns_join(node, 'default_cfg/autostart/required/publisher')
+    topic = ''
     try:
-      return self.roscfg.params[param_name].value
+      topic = self.roscfg.params[param_name].value
+      if rosgraph.names.is_private(topic):
+        rospy.logwarn('Private for autostart required topic `%s` is ignored!'%topic)
+        topic = ''
+      elif not rosgraph.names.is_global(topic):
+        topic = rospy.names.ns_join(rosgraph.names.namespace(node), topic)
     except:
       pass
-    return ''
+    return topic
 
   def _get_respawn_params(self, node):
     result = { 'max' : 0, 'min_runtime' : 0, 'delay': 0 }
