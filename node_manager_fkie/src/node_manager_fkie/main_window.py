@@ -554,6 +554,7 @@ class MainWindow(QtGui.QMainWindow):
         m.name = nm.nameres().mastername(m.uri)
         master = self.getMaster(m.uri)
         master.master_state = m
+        master.force_next_update()
         self._assigne_icon(m.name)
         self.master_model.updateMaster(m)
         self._update_handler.requestMasterInfo(m.uri, m.monitoruri)
@@ -716,6 +717,7 @@ class MainWindow(QtGui.QMainWindow):
       self.currentMaster.master_info.timestamp = self.currentMaster.master_info.timestamp - 1.0
       self.currentMaster.master_info.check_ts = check_ts
       self._update_handler.requestMasterInfo(self.currentMaster.master_state.uri, self.currentMaster.master_state.monitoruri)
+      self.currentMaster.force_next_update()
 #      self.currentMaster.remove_all_def_configs()
 
   def on_run_node_clicked(self):

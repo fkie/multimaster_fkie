@@ -140,6 +140,7 @@ class MasterViewProxy(QtGui.QWidget):
     self._tmpObjects = []
     self.__master_state = None
     self.__master_info = None
+    self.__force_update = False
     self.__configs = dict() # [file name] = LaunchConfig
 #    self.rosconfigs = dict() # [launch file path] = LaunchConfig()
     self.__in_question = [] # stores the changed files, until the user is interacted
@@ -445,16 +446,17 @@ class MasterViewProxy(QtGui.QWidget):
 #      cputimes = os.times()
 #      cputime_init = cputimes[0] + cputimes[1]
       # update nodes in the model
-      if update_result[0] or update_result[1] or update_result[2]:
+      if update_result[0] or update_result[1] or update_result[2] or self.__force_update:
         self.updateRunningNodesInModel(self.__master_info)
       # Updates the topic view based on the current master information.
-      if update_result[3] or update_result[4] or update_result[5]:
+      if update_result[3] or update_result[4] or update_result[5] or self.__force_update:
         self.topic_model.updateModelData(self.__master_info.topics, update_result[3], update_result[4], update_result[5])
       # Updates the service view based on the current master information.
-      if update_result[6] or update_result[7] or update_result[8]:
+      if update_result[6] or update_result[7] or update_result[8] or self.__force_update:
         self.service_model.updateModelData(self.__master_info.services, update_result[6], update_result[7], update_result[8])
         # update the default configuration
         self.updateDefaultConfigs(self.__master_info)
+      self.__force_update = False
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
@@ -469,6 +471,9 @@ class MasterViewProxy(QtGui.QWidget):
   @property
   def use_sim_time(self):
     return self.__use_sim_time
+
+  def force_next_update(self):
+    self.__force_update = True
 
   def markNodesAsDuplicateOf(self, running_nodes):
     '''
