@@ -1174,6 +1174,7 @@ class MainWindow(QtGui.QMainWindow):
       WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
                         ''.join(['Error while load launch file:\n', item]),
                         str(e)).exec_()
+      self.ui.xmlFileView.model().reloadCurrentPath()
 
   def on_xmlFileView_selection_changed(self, selected, deselected):
     '''

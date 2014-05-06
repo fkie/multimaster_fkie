@@ -164,10 +164,13 @@ class LaunchListModel(QtCore.QAbstractListModel):
     except:
       import traceback
       print traceback.format_exc()
-    if self.currentPath is None:
-      self._setNewList(self._moveUp(self.currentPath))
-    else:
-      self._setNewList(self._moveDown(self.currentPath))
+    try:
+      if self.currentPath is None:
+        self._setNewList(self._moveUp(self.currentPath))
+      else:
+          self._setNewList(self._moveDown(self.currentPath))
+    except:
+      self._setNewList(self._moveUp(None))
 
   def isLaunchFile(self, row):
     '''
