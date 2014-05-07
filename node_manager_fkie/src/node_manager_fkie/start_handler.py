@@ -420,6 +420,8 @@ class StartHandler(object):
     @type name: C{str} 
     @param args: the list with arguments passed to the binary
     @type args: C{[str, ...]} 
+    @param auto_pw_request: opens question dialog directly, use True only if the method is called from the main GUI thread
+    @type auto_pw_request: bool
     @raise Exception: on errors while resolving host
     @see: L{node_manager_fkie.is_local()}
     '''

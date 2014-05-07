@@ -728,7 +728,20 @@ class MainWindow(QtGui.QMainWindow):
     if not self.currentMaster is None:
       dia = RunDialog(nm.nameres().getHostname(self.currentMaster.masteruri), self.currentMaster.masteruri)
       if dia.exec_():
-        dia.runSelected()
+        params = dia.run_params()
+        if params:
+          params = params + (False, self.currentMaster.current_user,) # autorequest must be false
+        try:
+          self._progress_queue.add2queue(str(uuid.uuid4()), 
+                                         'run `%s` on %s'%(params[2], params[0]), 
+                                         nm.starter().runNodeWithoutConfig, 
+                                         params)
+          self._progress_queue.start()
+        except (Exception, nm.StartException), e:
+          rospy.logwarn("Error while run `%s` on %s: %s", params[2], params[0], str(e))
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Run error", 
+                            'Error while run node %s [%s]'%(params[2], params[1]),
+                            str(e)).exec_()
 
   def on_show_rxconsole_clicked(self):
     if not self.currentMaster is None:

@@ -159,9 +159,10 @@ class RunDialog(QtGui.QDialog):
 #    if packages:
 #      self.on_package_selected(packages[0])
 
-  def runSelected(self):
+  def run_params(self):
     '''
-    Runs the selected node, or do nothing. 
+    Runs the selected node, or do nothing.
+    :return: a tuple with host, package, binary, name, args, maseruri or empty tuple on errors
     '''
     self.binary = self.binary_field.currentText()
     self.host = self.host_field.currentText() if self.host_field.currentText() else self.host
@@ -176,12 +177,8 @@ class RunDialog(QtGui.QDialog):
       nm.history().addParamCache('run_dialog/Args', args)
     if self.package and self.binary:
       nm.history().addParamCache('/Host', self.host)
-      try:
-        nm.starter().runNodeWithoutConfig(self.host, self.package, self.binary, str(self.name_field.text()), str(''.join(['__ns:=', ns, ' ', args])).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
-      except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Run node", 
-                          ''.join(['Run node ', str(self.binary), '[', str(self.package), '] failed!']),
-                          str(e)).exec_()
+      return (self.host, self.package, self.binary, self.name_field.text(), ('__ns:=%s %s'%(ns, args)).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
+    return ()
 
   def _getBinaries(self, path):
     result = {}
