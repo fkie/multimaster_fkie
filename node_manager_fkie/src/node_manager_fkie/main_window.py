@@ -1657,22 +1657,23 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Deletes the selected history launch file.
     '''
+    key_mod = QtGui.QApplication.keyboardModifiers()
     if self.ui.xmlFileView.hasFocus():
       if event.key() == QtCore.Qt.Key_Delete:
         indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
         for index in indexes:
           pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
           self.ui.xmlFileView.model().removeFromLoadHistory(path)
-      elif event.key() == QtCore.Qt.Key_F4 and self.ui.editXmlButton.isEnabled():
+      elif not key_mod and event.key() == QtCore.Qt.Key_F4 and self.ui.editXmlButton.isEnabled():
         self.on_edit_xml_clicked()
     # open editor for selected node wich hava a loaded configuration
     elif not self.currentMaster is None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
-      if event.key() == QtCore.Qt.Key_F4:
+      if event.key() == QtCore.Qt.Key_F4 and not key_mod:
         if self.currentMaster.masterTab.editConfigButton.isEnabled():
           self.currentMaster.on_edit_config_clicked()
         elif self.currentMaster.masterTab.editRosParamButton.isEnabled():
           self.currentMaster.on_edit_rosparam_clicked()
-      elif event.key() == QtCore.Qt.Key_F3 and self.currentMaster.masterTab.ioButton.isEnabled():
+      elif event.key() == QtCore.Qt.Key_F3  and not key_mod and self.currentMaster.masterTab.ioButton.isEnabled():
         self.currentMaster.on_io_clicked()
     QtGui.QMainWindow.keyReleaseEvent(self, event)
 
