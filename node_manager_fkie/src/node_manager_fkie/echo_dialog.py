@@ -35,6 +35,7 @@ from python_qt_binding import QtCore, QtGui
 
 import time
 import math
+from datetime import datetime
 
 import roslib
 import roslib.message
@@ -75,11 +76,11 @@ class EchoDialog(QtGui.QDialog):
     @raise Exception: if no topic class was found for the given type
     '''
     QtGui.QDialog.__init__(self, parent=parent)
-    masteruri_str = '' if masteruri is None else ''.join([' [', str(masteruri), ']'])
+    masteruri_str = '' if masteruri is None else '[%s]'%masteruri
     self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
-    self.setWindowTitle(''.join(['Echo of ' if not show_only_rate else 'Hz of ', topic, masteruri_str]))
+    self.setWindowTitle('%s %s %s'%('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
     self.resize(728,512)
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
@@ -96,7 +97,6 @@ class EchoDialog(QtGui.QDialog):
     self.times =[]
 
     self.message_count = 0
-
     self._rate_message = ''
     self._scrapped_msgs = 0
     self._scrapped_msgs_sl = 0
@@ -281,11 +281,9 @@ class EchoDialog(QtGui.QDialog):
       else:
         self.times.append(current_time - self.msg_tn)
         self.msg_tn = current_time
-
-      #only keep statistics for the last 5000 messages so as not to run out of memory
+      # keep only statistics for the last 5000 messages so as not to run out of memory
       if len(self.times) > self.STATISTIC_QUEUE_LEN:
         self.times.pop(0)
-
     self.message_count += 1
     # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
     if self._last_received_ts != 0 and self.receiving_hz != 0:
@@ -294,7 +292,6 @@ class EchoDialog(QtGui.QDialog):
         self._scrapped_msgs_sl += 1
         return 
     self._last_received_ts = current_time
-
     if not self.show_only_rate:
       # convert message to string and reduce line width to current limit
       msg = roslib.message.strify_message(msg, field_filter=self.field_filter_fn)
@@ -310,7 +307,7 @@ class EchoDialog(QtGui.QDialog):
         txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>'%self._scrapped_msgs_sl
         self.display.append(txt)
         self._scrapped_msgs_sl = 0
-      txt = ''.join(['<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier,monospace; padding:10px;">------------------------------\n\n', msg,'</pre>'])
+      txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>'%(datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
       # set the count of the displayed messages on receiving the first message
       if self._blocks_in_msg is None:
         td = QtGui.QTextDocument(txt)
@@ -324,22 +321,19 @@ class EchoDialog(QtGui.QDialog):
       self.close()
       return
     if self.message_count == self.last_printed_count:
-#      self._rate_message = 'no new messages'
       return
     with self.lock:
       # the code from ROS rostopic
       n = len(self.times)
-      if n == 0:
+      if n < 2:
         return
       mean = sum(self.times) / n
       rate = 1./mean if mean > 0. else 0
-
       #std dev
       std_dev = math.sqrt(sum((x - mean)**2 for x in self.times) /n)
       # min and max
       max_delta = max(self.times)
       min_delta = min(self.times)
-
       self.last_printed_count = self.message_count
       self._rate_message = "average rate: %.3f\tmin: %.3fs   max: %.3fs   std dev: %.5fs   window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
       if self._scrapped_msgs > 0:
@@ -347,10 +341,7 @@ class EchoDialog(QtGui.QDialog):
       self._print_status()
       if self.show_only_rate:
         self.display.append(self._rate_message)
-#        status_label = QtGui.QLabel(self._rate_message, self)
-#        self.contentLayout.addWidget(status_label)
 
   def _print_status(self):
-    status_text = ' '.join([str(self.message_count), 'messages', ', ' if self._rate_message else '', self._rate_message])
-    self.status_label.setText(status_text)
+    self.status_label.setText('%s messages   %s'%(self.message_count, self._rate_message))
 
