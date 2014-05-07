@@ -58,8 +58,10 @@ class WarningMessageBox(QtGui.QMessageBox):
 
     if QtGui.QMessageBox.Abort & buttons:
       self.setEscapeButton(QtGui.QMessageBox.Abort)
-    if QtGui.QMessageBox.Ignore & buttons:
+    elif QtGui.QMessageBox.Ignore & buttons:
       self.setEscapeButton(QtGui.QMessageBox.Ignore)
+    else:
+      self.setEscapeButton(buttons)
 
     self.textEdit = textEdit = self.findChild(QtGui.QTextEdit)
     if textEdit != None :
