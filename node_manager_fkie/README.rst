@@ -11,8 +11,11 @@ Shortcuts
 ---------
 
 ===================== ========
+**F2**                Renames a selected launch file.
+**F3**                Opens a screen for selected node.
+**F4**                Opens an XML Editor for selected node.
 **Ctrl+R**            Opens a dialog to launch a master_discovery_ node on entered host.
-**Ctrl+E**            Opens an XML Editor for selected launch file.
+**Ctrl+E**, **F4**    Opens an XML Editor for selected launch file.
 **Ctrl+L**            Loads the selected launch file into selected host.
 **Ctrl+O**            Runs on selected host default_cfg_ node with selected launch file as parameter.
 **Alt+N**             Opens a dialog to run a ROS node without a configuration. This node will be launched in a `SCREEN`.

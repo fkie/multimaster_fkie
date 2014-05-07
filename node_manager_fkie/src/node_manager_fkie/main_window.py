@@ -1211,7 +1211,7 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.loadXmlButton.setEnabled(False)
     self.ui.transferButton.setEnabled(False)
     self.ui.loadXmlAsDefaultButton.setEnabled(False)
-    
+
   def on_edit_xml_clicked(self):
     '''
     Opens an XML editor to edit the launch file. 
@@ -1657,11 +1657,23 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Deletes the selected history launch file.
     '''
-    if self.ui.xmlFileView.hasFocus() and event.key() == QtCore.Qt.Key_Delete:
-      indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-      for index in indexes:
-        pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-        self.ui.xmlFileView.model().removeFromLoadHistory(path)
+    if self.ui.xmlFileView.hasFocus():
+      if event.key() == QtCore.Qt.Key_Delete:
+        indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
+        for index in indexes:
+          pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
+          self.ui.xmlFileView.model().removeFromLoadHistory(path)
+      elif event.key() == QtCore.Qt.Key_F4 and self.ui.editXmlButton.isEnabled():
+        self.on_edit_xml_clicked()
+    # open editor for selected node wich hava a loaded configuration
+    elif not self.currentMaster is None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
+      if event.key() == QtCore.Qt.Key_F4:
+        if self.currentMaster.masterTab.editConfigButton.isEnabled():
+          self.currentMaster.on_edit_config_clicked()
+        elif self.currentMaster.masterTab.editRosParamButton.isEnabled():
+          self.currentMaster.on_edit_rosparam_clicked()
+      elif event.key() == QtCore.Qt.Key_F3 and self.currentMaster.masterTab.ioButton.isEnabled():
+        self.currentMaster.on_io_clicked()
     QtGui.QMainWindow.keyReleaseEvent(self, event)
 
   def image_mouseDoubleClickEvent(self, event):
