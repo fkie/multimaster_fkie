@@ -96,12 +96,16 @@ class DefaultCfg(object):
     '''@ivar: The service will be created on each load of a launch file to
     inform the caller about a new configuration. '''
     self.description_response = ListDescriptionResponse()
+    # variables to print the pending autostart nodes 
+    self._pending_starts = set()
+    self._pending_starts_last_printed = set()
 
   def load(self, delay_service_creation=0.):
     '''
     Load the launch file configuration
     '''
     with self.__lock:
+      self._pending_starts.clear()
       # shutdown the services to inform the caller about a new configuration.
       if not self.runService is None:
         self.runService.shutdown('reload config')
@@ -442,6 +446,7 @@ class DefaultCfg(object):
       raise StartException('Multiple executables are found! The first one was started! Exceutables:\n%s'%str(cmd))
 
   def _run_node(self, cmd, cwd, env, node, autostart=False):
+    self._pending_starts.add(node)
     start_now = True
     start_delay = self._get_start_delay(node)
     start_required = self._get_start_required(node)
@@ -459,7 +464,7 @@ class DefaultCfg(object):
         start_timer.start()
     if start_now and autostart and start_delay > 0:
       start_now = False
-      # start timer for delayd start
+      # start timer for delayed start
       start_timer = threading.Timer(start_delay, self._run_node, args=(cmd, cwd, env, node, False))
       start_timer.start()
     if start_now:
@@ -468,6 +473,16 @@ class DefaultCfg(object):
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
       thread.start()
+      # remove from pending autostarts
+      try:
+        self._pending_starts.remove(node)
+      except:
+        pass
+    # print the current pending autostarts
+    if self._pending_starts_last_printed != self._pending_starts:
+      self._pending_starts_last_printed.clear()
+      self._pending_starts_last_printed.update(self._pending_starts)
+      rospy.loginfo("Pending autostarts %d: %s", len(self._pending_starts), self._pending_starts)
 
   def _get_node(self, pkg, file):
     cmd = None

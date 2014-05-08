@@ -12,7 +12,6 @@
   </node>
 
   <node respawn="True" name="rostopic_respawn" pkg="rostopic" type="rostopic" args="what" clear_params="True">
-    <env name="TEST1" value="30" />
     <param name="capability_group" value="autostart" />
     <param name="respawn/max" value="5" />
     <param name="respawn/min_runtime" value="60" />
