@@ -85,10 +85,10 @@ def main():
     # on load error the process will be killed to notify user in node_manager
     # about error
     import traceback
-    print traceback.format_exc()
     rospy.logwarn("%s", traceback.format_exc())
+    import sys
+    sys.stdout.write(traceback.format_exc())
+    sys.stdout.flush()
     import os, signal
     os.kill(os.getpid(), signal.SIGKILL)
-    import time
-    time.sleep(10)
   rospy.spin()
