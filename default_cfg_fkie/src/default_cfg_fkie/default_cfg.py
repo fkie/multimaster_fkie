@@ -191,6 +191,7 @@ class DefaultCfg(object):
             self.runNode(n, self.do_autostart)
           except Exception as e:
             rospy.logwarn("Error while start %s: %s", n, e)
+        self.do_autostart = False
 
   def _decode(self, val):
     '''
