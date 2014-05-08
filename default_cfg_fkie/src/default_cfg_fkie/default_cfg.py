@@ -182,7 +182,10 @@ class DefaultCfg(object):
 #      print traceback.format_exc()
       if self.do_autostart:
         for n in self.nodes:
-          self.runNode(n, self.do_autostart)
+          try:
+            self.runNode(n, self.do_autostart)
+          except Exception as e:
+            rospy.logwarn("Error while start %s: %s", n, e)
 
   def _decode(self, val):
     '''
