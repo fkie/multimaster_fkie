@@ -78,6 +78,11 @@ class DefaultCfg(object):
     rospy.loginfo("package: %s"%self.package)
     self.do_autostart = rospy.get_param('~autostart', False)
     rospy.loginfo("do_autostart: %s"%self.do_autostart)
+    self.argv = rospy.get_param('~argv', [])
+    rospy.loginfo("argv: %s"%self.argv)
+    if not isinstance(self.argv, list):
+      self.argv = ["%s"%self.argv]
+    sys.argv[:] = self.argv
     if self.do_autostart:
       rospy.set_param('~autostart', False)
     # initialize the ROS services

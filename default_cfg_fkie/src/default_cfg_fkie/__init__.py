@@ -86,6 +86,7 @@ def main():
     # about error
     import traceback
     print traceback.format_exc()
+    rospy.logwarn("%s", traceback.format_exc())
     import os, signal
     os.kill(os.getpid(), signal.SIGKILL)
     import time
