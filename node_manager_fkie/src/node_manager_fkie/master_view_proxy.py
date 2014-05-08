@@ -434,6 +434,9 @@ class MasterViewProxy(QtGui.QWidget):
       else:
         update_result = self.__master_info.updateInfo(master_info)
 #         print "MINFO", self.__master_info.listedState()
+      # we receive the master info from remove nodes first -> skip
+      if self.__master_info is None:
+        return
       try:
         # request the info of new remote nodes
         hosts2update = set([nm.nameres().getHostname(self.__master_info.getNode(nodename).uri) for nodename in update_result[0]])
@@ -1086,20 +1089,27 @@ class MasterViewProxy(QtGui.QWidget):
   def on_node_expanded(self, index):
     pass
 
-  def _create_html_list(self, title, items, type=None):
+  def _create_html_list(self, title, items, type=None, name=''):
     '''
     :param type: LAUNCH, TOPIC, NODE, SERVICE
     :type type: str
     '''
     result = ''
     if items:
-      result = ''.join([result, '<b><u>', title,'</u></b>'])
+      result = '%s<b><u>%s</u></b>'%(result, title)
       if len(items) > 1:
-        result = ''.join([result, ' <span style="color:gray;">[', str(len(items)),']</span>'])
-      result = ''.join([result, '<br><ul><span></span>'])
+        result = '%s <span style="color:gray;">[%d]</span>'%(result, len(items))
+      result = '%s<br><ul><span></span>'%result
       items.sort()
       for i in items:
         item = i
+        # reduce the displayed name
+        item_name = i
+        if name:
+          item_name = item_name.replace('%s%s'%(name, roslib.names.SEP), '~', 1)
+          ns = roslib.names.namespace(name)
+          if item_name.startswith(ns) and ns != roslib.names.SEP:
+            item_name = item_name.replace(ns, '', 1)
         if type in ['TOPIC_PUB', 'TOPIC_SUB']:
           # determine the count of publisher or subscriber
           count = None
@@ -1107,20 +1117,18 @@ class MasterViewProxy(QtGui.QWidget):
             count = len(self.__master_info.getTopic(i).publisherNodes) if type == 'TOPIC_SUB' else len(self.__master_info.getTopic(i).subscriberNodes)
           except:
             pass
-#          item = ''.join([i, ' <a href="topic://', str(i),'">[echo] <a href="topichz://', str(i),'">[hz] ', '</a>'])
-          item = ''.join(['<a href="topic://', str(i),'">', i, '</a>'])
+          item = '<a href="topic://%s">%s</a>'%(i, item_name)
           # add the count
           if not count is None:
-            item = ''.join(['<span style="color:gray;">_', str(count), '_/</span>',item])
+            item = '<span style="color:gray;">_%d_/</span>%s'%(count, item)
         elif type == 'SERVICE':
-          item = ''.join(['<a href="service://', str(i),'">', i, '</a>'])
+          item = '<a href="service://%s">%s</a>'%(i, item_name)
         elif type == 'LAUNCH':
-          item = ''.join(['<a href="launch://', str(i),'">', i, '</a>'])
+          item = '<a href="launch://%s">%s</a>'%(i, item_name)
           if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
-            item = ''.join([item, '<br>', '<a href="reload_globals://', str(i),'">', '<font color="#339900">', 'reload global parameter @next start', '</font>', '</a>'])
-#        result = ''.join([result, '<li>', item, '</li>'])
-        result = ''.join([result, '\n', item, '<br>'])
-      result = ''.join([result, '</ul>'])
+            item = '%s<br><a href="reload_globals://%s"><font color="#339900">reload global parameter @next start</font></a>'%(item, i)
+        result = '%s\n%s<br>'%(result, item)
+      result = '%s</ul>'%(result,)
     return result
 
   def on_node_selection_changed(self, selected, deselected, force_emit=False):
@@ -1197,9 +1205,9 @@ class MasterViewProxy(QtGui.QWidget):
           text = ''.join([text, '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'])
           text = ''.join([text, '<a href="unregister_node://', node.name,'">', 'unregister</a></dt>'])
       text = ''.join([text, '</dl>'])
-      text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB')])
-      text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB')])
-      text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE')])
+      text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)])
+      text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)])
+      text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE', node.name)])
       # set loaunch file paths
       text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
       text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
@@ -1279,7 +1287,7 @@ class MasterViewProxy(QtGui.QWidget):
       if self.__last_info_type == 'Topic' and (self.__last_info_text != info_text or force_emit):
         self.__last_info_text = info_text
         self.description_signal.emit(topic.name, info_text)
-  
+
   def _href_from_msgtype(self, type):
     result = type
     if type:
@@ -2643,7 +2651,7 @@ class MasterViewProxy(QtGui.QWidget):
   def on_shortcut_collapse_all(self):
     self.masterTab.nodeTreeView.selectionModel().clearSelection()
     self.masterTab.nodeTreeView.collapseAll()
-    
+
   def on_copy_x_pressed(self):
     result = ''
     if self.masterTab.nodeTreeView.hasFocus():
