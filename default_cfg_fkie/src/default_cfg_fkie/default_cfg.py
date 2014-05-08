@@ -45,6 +45,8 @@ import rosgraph.masterapi
 import rosgraph.names
 from rosgraph.rosenv import ROS_NAMESPACE
 
+import std_srvs.srv
+
 from multimaster_msgs_fkie.msg import Capability
 from multimaster_msgs_fkie.srv import ListDescription, ListNodes, LoadLaunch, Task, ListDescriptionResponse, ListNodesResponse
 from screen_handler import ScreenHandler, ScreenHandlerException
@@ -80,6 +82,7 @@ class DefaultCfg(object):
       rospy.set_param('~autostart', False)
     # initialize the ROS services
 #    rospy.Service('~load', LoadLaunch, self.rosservice_load_launch)
+    self._reload_service = rospy.Service('~reload', std_srvs.srv.Empty, self.rosservice_reload)
     rospy.Service('~description', ListDescription, self.rosservice_description)
     self.runService = None
     '''@ivar: The service will be created on each load of a launch file to
@@ -89,7 +92,7 @@ class DefaultCfg(object):
     inform the caller about a new configuration. '''
     self.description_response = ListDescriptionResponse()
 
-  def load(self):
+  def load(self, delay_service_creation=0.):
     '''
     Load the launch file configuration
     '''
@@ -161,12 +164,15 @@ class DefaultCfg(object):
                 cap.description = descr_dict['description']
                 cap.nodes = list(descr_dict['nodes'])
                 dr.capabilities.append(cap)
-      # initialize the ROS services
-      self._timed_service_creation()
-      #HACK to let the node_manager to update the view
-#      t = threading.Timer(2.0, self._timed_service_creation)
-#      t.start()
+      # load parameters into the ROS parameter server
       self.loadParams()
+      # initialize the ROS services
+      #HACK to let the node_manager to update the view
+      if delay_service_creation > 0.:
+        t = threading.Timer(delay_service_creation, self._timed_service_creation)
+        t.start()
+      else:
+        self._timed_service_creation()
   #    self.timer = rospy.Timer(rospy.Duration(2), self.timed_service_creation, True)
   #    if self.nodes:
   #      self.runService = rospy.Service('~run', Task, self.rosservice_start_node)
@@ -316,10 +322,10 @@ class DefaultCfg(object):
     '''
     self.runNode(req.node)
     return []
-#    except:
-#      import traceback
-#      return TaskResponse(str(traceback.format_exc().splitlines()[-1]))
-#    return TaskResponse('')
+
+  def rosservice_reload(self, req):
+    self.load(2.)
+    return []
 
 #  def rosservice_load_launch(self, req):
 #    '''
