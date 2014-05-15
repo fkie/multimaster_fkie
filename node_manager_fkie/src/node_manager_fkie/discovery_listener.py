@@ -305,7 +305,7 @@ class OwnMasterMonitoring(QtCore.QObject):
     '''
     import os
     current_check_hz = OwnMasterMonitoring.ROSMASTER_HZ
-    while (not rospy is None and not rospy.is_shutdown() and not self._do_finish):
+    while (not rospy.is_shutdown() and not self._do_finish):
       try:
         if not self._do_pause:
           cputimes = os.times()
@@ -330,13 +330,14 @@ class OwnMasterMonitoring(QtCore.QObject):
           elif current_check_hz*cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
             current_check_hz = float(current_check_hz)*2.0
       except MasterConnectionException, e:
-        rospy.logwarn("MasterConnectionError while master check loop: %s", str(e))
-        self.err_signal.emit("Error while master check loop: " + str(e))
+        rospy.logwarn("MasterConnectionError while master check loop: %s"%e)
+        self.err_signal.emit("Error while master check loop: %s"%e)
       except RuntimeError, e:
         # will thrown on exit of the app while try to emit the signal
-        rospy.logwarn("RuntimeError while master check loop: %s", str(e))
-        self.err_signal.emit("Error while master check loop: " + str(e))
-      time.sleep(1.0/current_check_hz)
+        rospy.logwarn("RuntimeError while master check loop: %s"%e)
+        self.err_signal.emit("Error while master check loop: %s"%e)
+      if not rospy.is_shutdown() and not self._do_finish:
+        time.sleep(1.0/current_check_hz)
   
   def pause(self, state):
     '''
