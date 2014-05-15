@@ -34,11 +34,9 @@ from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 
 import os
-import threading
 
 import node_manager_fkie as nm
-from common import get_packages
-from detailed_msg_box import WarningMessageBox
+from packages_thread import PackagesThread
 
 
 class RunDialog(QtGui.QDialog):
@@ -120,21 +118,22 @@ class RunDialog(QtGui.QDialog):
       master_history.remove(self.masteruri)
     master_history.insert(0, self.masteruri)
     self.master_field.addItems(master_history)
-    
+
     self.buttonBox = QtGui.QDialogButtonBox(self)
     self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
     self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
     self.buttonBox.setObjectName("buttonBox")
     self.verticalLayout.addWidget(self.buttonBox)
-    
+
     self.package_field.setFocus(QtCore.Qt.TabFocusReason)
     self.package = ''
     self.binary = ''
-    
+
     if self.packages is None:
       self.package_field.addItems(['packages searching...'])
       self.package_field.setCurrentIndex(0)
-      self._fill_packages_thread = threading.Thread(target=self._fill_packages)
+      self._fill_packages_thread = PackagesThread()
+      self._fill_packages_thread.packages.connect(self._fill_packages)
       self._fill_packages_thread.start()
 
     QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
@@ -144,20 +143,14 @@ class RunDialog(QtGui.QDialog):
     self.package_field.textChanged.connect(self.on_package_selected)
     self.binary_field.activated[str].connect(self.on_binary_selected)
 
-  def _fill_packages(self):
+  def _fill_packages(self, packages):
     # fill the input fields
-    self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-    self.packages = {}
-    for p in self.root_paths:
-      ret = get_packages(p)
-      self.packages = dict(ret.items() + self.packages.items())
-    packages = self.packages.keys()
+    self.packages = packages
+    packages = packages.keys()
     packages.sort()
     self.package_field.clear()
     self.package_field.clearEditText()
     self.package_field.addItems(packages)
-#    if packages:
-#      self.on_package_selected(packages[0])
 
   def run_params(self):
     '''
