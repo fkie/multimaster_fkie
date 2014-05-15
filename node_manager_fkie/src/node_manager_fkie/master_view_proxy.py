@@ -325,6 +325,7 @@ class MasterViewProxy(QtGui.QWidget):
 #     screen_menu.addAction(self.showAllScreensAct)
 #     self.masterTab.ioButton.setMenu(screen_menu)
     self.masterTab.ioButton.setEnabled(True)
+    self.masterTab.tabWidget.currentChanged.connect(self.on_tab_current_changed)
     self._shortcut_screen_show_all = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Shift+S", "Show all available screens")), self)
     self._shortcut_screen_show_all.activated.connect(self.on_show_all_screens)
     self._shortcut_screen_kill = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Shift+Backspace", "Kill Screen")), self)
@@ -1131,6 +1132,27 @@ class MasterViewProxy(QtGui.QWidget):
       result = '%s</ul>'%(result,)
     return result
 
+  def on_tab_current_changed(self, index):
+    if self.masterTab.tabWidget.tabText(index) == 'Topics':
+      # select the topics of the selected node in the "Topic" view
+      selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+      selectedNodes = self.nodesFromIndexes(selections)
+      if len(selectedNodes) == 1:
+        node = selectedNodes[0]
+        selected_topics = self.topic_model.index_from_names(node.published, node.subscribed)
+        for s in selected_topics:
+          self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
+    elif self.masterTab.tabWidget.tabText(index) == 'Services':
+      # select the services of the selected node in the "Services" view
+      selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+      selectedNodes = self.nodesFromIndexes(selections)
+      if len(selectedNodes) == 1:
+        node = selectedNodes[0]
+        selected_services = self.service_model.index_from_names(node.services)
+        for s in selected_services:
+          self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
+
+
   def on_node_selection_changed(self, selected, deselected, force_emit=False):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
@@ -1162,14 +1184,6 @@ class MasterViewProxy(QtGui.QWidget):
     selectedNodes = self.nodesFromIndexes(selections)
     if len(selectedNodes) == 1:
       node = selectedNodes[0]
-      # select the topics of the node in the "Topic" view
-      selected_topics = self.topic_model.index_from_names(node.published, node.subscribed)
-      for s in selected_topics:
-        self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
-      # select the services of the node in the "Services" view
-      selected_services = self.service_model.index_from_names(node.services)
-      for s in selected_services:
-        self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
       # create description for a node
       ns, sep, name = node.name.rpartition(rospy.names.SEP)
       text = ''.join(['<font size="+1"><b>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</b></font><br>'])
