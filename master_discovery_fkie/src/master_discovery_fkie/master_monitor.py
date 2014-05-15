@@ -194,7 +194,10 @@ class MasterMonitor(object):
     if hasattr(self, 'rpcServer'):
       if not self._master is None:
         rospy.loginfo("Unsubscribe from parameter `/roslaunch/uris`")
-        self._master.unsubscribeParam(self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+        try:
+          self._master.unsubscribeParam(self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+        except Exception as e:
+          rospy.logwarn("Error while unsubscribe from `/roslaunch/uris`: %s"%e)
       rospy.loginfo("shutdown own RPC server")
       self.rpcServer.shutdown()
       if not self._timer_update_launch_uris is None:
@@ -215,14 +218,18 @@ class MasterMonitor(object):
             launch_server = xmlrpclib.ServerProxy(value)
             c, m, pid = launch_server.get_pid()
           except:
-            # remove the parameter from parameter server on error
-            master = xmlrpclib.ServerProxy(self.getMasteruri())
-            master.deleteParam(self.ros_node_name, key)
+            try:
+              # remove the parameter from parameter server on error
+              master = xmlrpclib.ServerProxy(self.getMasteruri())
+              master.deleteParam(self.ros_node_name, key)
+            except:
+              pass
       finally:
         socket.setdefaulttimeout(None)
         # create the new timer
-        self._timer_update_launch_uris = threading.Timer(self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris)
-        self._timer_update_launch_uris.start()
+        if not rospy.is_shutdown():
+          self._timer_update_launch_uris = threading.Timer(self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris)
+          self._timer_update_launch_uris.start()
 
   def _getNodePid(self, nodes):
     '''
