@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>908</width>
-    <height>643</height>
+    <height>752</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -663,7 +663,7 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>908</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>
@@ -771,8 +771,12 @@ p, li { white-space: pre-wrap; }
         </item>
         <item>
          <widget class="QPushButton" name="progressCancelButton_sync">
-          <property name="text">
-           <string>cancel</string>
+          <property name="icon">
+           <iconset resource="GUI.qrc">
+            <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -810,8 +814,12 @@ p, li { white-space: pre-wrap; }
         </item>
         <item>
          <widget class="QPushButton" name="progressCancelButton">
-          <property name="text">
-           <string>cancel</string>
+          <property name="icon">
+           <iconset resource="GUI.qrc">
+            <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -950,7 +958,7 @@ p, li { white-space: pre-wrap; }
     <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
    </property>
    <property name="windowTitle">
-    <string>Launch Configuration</string>
+    <string>Launch Files</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
@@ -964,7 +972,17 @@ p, li { white-space: pre-wrap; }
       <number>0</number>
      </property>
      <item>
+      <widget class="QLineEdit" name="searchPackageLine">
+       <property name="placeholderText">
+        <string>search for package</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QListView" name="xmlFileView">
+       <property name="editTriggers">
+        <set>QAbstractItemView::EditKeyPressed</set>
+       </property>
        <property name="iconSize">
         <size>
          <width>16</width>
@@ -1004,8 +1022,12 @@ p, li { white-space: pre-wrap; }
         </item>
         <item>
          <widget class="QPushButton" name="progressCancelButton_cfg">
-          <property name="text">
-           <string>cancel</string>
+          <property name="icon">
+           <iconset resource="GUI.qrc">
+            <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
