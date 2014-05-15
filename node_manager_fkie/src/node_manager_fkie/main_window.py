@@ -504,7 +504,7 @@ class MainWindow(QtGui.QMainWindow):
       # remove discovered ROS master and set the local master to selected
       for uri in self.masters.keys():
         master = self.masters[uri]
-        if nm.is_local(nm.nameres().getHostname(uri)):
+        if nm.is_local(nm.nameres().getHostname(uri)) or uri == self.getMasteruri():
           if not self._history_selected_robot or master.mastername == self._history_selected_robot:
             self.setCurrentMaster(master)
         else:
