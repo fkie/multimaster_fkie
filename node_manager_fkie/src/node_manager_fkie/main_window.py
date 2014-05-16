@@ -50,7 +50,7 @@ import rospy
 import gui_resources
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .update_handler import UpdateHandler
-from .launch_list_model import LaunchListModel 
+from .launch_list_model import LaunchListModel, LaunchItem
 from .master_view_proxy import MasterViewProxy
 from .launch_config import LaunchConfig, LaunchConfigException
 from .capability_table import CapabilityTable
@@ -156,13 +156,18 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.startRobotButton.clicked.connect(self.on_start_robot_clicked)
 
     # initialize the view for the launch files
-    self.ui.xmlFileView.setModel(LaunchListModel())
+    self.launchlist_model = LaunchListModel()
+    self.launchlist_proxyModel = QtGui.QSortFilterProxyModel(self)
+    self.launchlist_proxyModel.setSourceModel(self.launchlist_model)
+    self.ui.xmlFileView.setModel(self.launchlist_proxyModel)
     self.ui.xmlFileView.setAlternatingRowColors(True)
     self.ui.xmlFileView.activated.connect(self.on_launch_selection_activated)
     self.ui.xmlFileView.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
     self.ui.xmlFileView.setDragEnabled(True)
     sm = self.ui.xmlFileView.selectionModel()
     sm.selectionChanged.connect(self.on_xmlFileView_selection_changed)
+    self.ui.searchPackageLine.setVisible(False)
+    self.ui.searchPackageLine.textChanged.connect(self.on_package_search_changed)
     self.ui.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.ui.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
     self.ui.newXmlButton.clicked.connect(self.on_new_xml_clicked)
@@ -213,9 +218,9 @@ class MainWindow(QtGui.QMainWindow):
     self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
     if self.default_load_launch:
       if os.path.isdir(self.default_load_launch):
-        self.ui.xmlFileView.model().setPath(self.default_load_launch)
+        self.launchlist_model.setPath(self.default_load_launch)
       elif os.path.isfile(self.default_load_launch):
-        self.ui.xmlFileView.model().setPath(os.path.dirname(self.default_load_launch))
+        self.launchlist_model.setPath(os.path.dirname(self.default_load_launch))
 
     self._discover_dialog = None
     self.restricted_to_one_master = restricted_to_one_master
@@ -499,7 +504,7 @@ class MainWindow(QtGui.QMainWindow):
       # remove discovered ROS master and set the local master to selected
       for uri in self.masters.keys():
         master = self.masters[uri]
-        if nm.is_local(nm.nameres().getHostname(uri)):
+        if nm.is_local(nm.nameres().getHostname(uri)) or uri == self.getMasteruri():
           if not self._history_selected_robot or master.mastername == self._history_selected_robot:
             self.setCurrentMaster(master)
         else:
@@ -1170,43 +1175,69 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Tries to load the launch file, if one was activated.
     '''
-    item, path, id = activated.model().items[activated.row()]
-    try:
-#      self.ui.xmlFileView.setEnabled(False)
-      file = activated.model().expandItem(item, path)
-      if not file is None:
-        if self.ui.xmlFileView.model().isLaunchFile(activated.row()):
-          self.loadLaunchFile(path, row=activated.row())
-        elif self.ui.xmlFileView.model().isConfigFile(activated.row()):
-          self._editor_dialog_open([file], '')
-#      self.ui.xmlFileView.setEnabled(True)
-#      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
-    except Exception, e:
-#      self.ui.xmlFileView.setEnabled(True)
-      rospy.logwarn("Error while load launch file %s: %s", str(item), str(e))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
-                        ''.join(['Error while load launch file:\n', item]),
-                        str(e)).exec_()
-      self.ui.xmlFileView.model().reloadCurrentPath()
+    selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+    for item in selected:
+      try:
+  #      self.ui.xmlFileView.setEnabled(False)
+        file = self.launchlist_model.expandItem(item.name, item.path, item.id)
+        self.on_package_search_changed(None, False)
+        if not file is None:
+          if item.isLaunchFile():
+            self.loadLaunchFile(item.path, row=activated.row())
+          elif item.isConfigFile():
+            self._editor_dialog_open([file], '')
+  #      self.ui.xmlFileView.setEnabled(True)
+  #      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+      except Exception as e:
+  #      self.ui.xmlFileView.setEnabled(True)
+        rospy.logwarn("Error while load launch file %s: %s", str(item), str(e))
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
+                          'Error while load launch file:\n%s'%item.name,
+                          "%s"%e).exec_()
+        self.launchlist_model.reloadCurrentPath()
+
+  def launchItemsFromIndexes(self, indexes, recursive=True):
+    result = []
+    for index in indexes:
+      if index.column() == 0:
+        model_index = self.launchlist_proxyModel.mapToSource(index)
+        item = self.launchlist_model.itemFromIndex(model_index)
+        if not item is None and isinstance(item, LaunchItem):
+          result.append(item)
+    return result
 
   def on_xmlFileView_selection_changed(self, selected, deselected):
     '''
     On selection of a launch file, the buttons are enabled otherwise disabled.
     '''
-    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-    for index in indexes:
-      islaunch = self.ui.xmlFileView.model().isLaunchFile(index.row())
-      isconfig = self.ui.xmlFileView.model().isConfigFile(index.row())
+    selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+    for item in selected:
+      islaunch = item.isLaunchFile()
+      isconfig = item.isConfigFile()
       self.ui.editXmlButton.setEnabled(islaunch or isconfig)
       self.ui.loadXmlButton.setEnabled(islaunch)
       self.ui.transferButton.setEnabled(islaunch or isconfig)
       self.ui.loadXmlAsDefaultButton.setEnabled(islaunch)
 
+  def on_package_search_changed(self, text, change_path=True):
+    if not text is None:
+      if not self.ui.searchPackageLine.isVisible():
+        if change_path:
+          self.launchlist_model.show_packages(True)
+        self.ui.searchPackageLine.setVisible(True)
+    else:
+      if self.ui.searchPackageLine.isVisible():
+        if change_path:
+          self.launchlist_model.show_packages(False)
+        self.ui.searchPackageLine.setVisible(False)
+      self.ui.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+    self.launchlist_proxyModel.setFilterRegExp(QtCore.QRegExp(text, QtCore.Qt.CaseInsensitive, QtCore.QRegExp.Wildcard))
+
   def on_refresh_xml_clicked(self):
     '''
     Reload the current path.
     '''
-    self.ui.xmlFileView.model().reloadCurrentPath()
+    self.launchlist_model.reloadCurrentPath()
     self.ui.editXmlButton.setEnabled(False)
     self.ui.loadXmlButton.setEnabled(False)
     self.ui.transferButton.setEnabled(False)
@@ -1216,10 +1247,9 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Opens an XML editor to edit the launch file. 
     '''
-    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-    for index in indexes:
-      pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
+    selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+    for item in selected:
+      path = self.launchlist_model.expandItem(item.name, item.path, item.id)
       if not path is None:
         self._editor_dialog_open([path], '')
 
@@ -1229,7 +1259,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
                                                  "New launch file",
-                                                 self.__current_path if self.ui.xmlFileView.model().currentPath is None else self.ui.xmlFileView.model().currentPath,
+                                                 self.__current_path if self.launchlist_model.currentPath is None else self.launchlist_model.currentPath,
                                                  "Config files (*.launch *.yaml);;All files (*)")
     if fileName:
       try:
@@ -1252,7 +1282,7 @@ class MainWindow(QtGui.QMainWindow):
                   )
         self._editor_dialog_open([fileName], '')
         self.__current_path = os.path.dirname(fileName)
-        self.ui.xmlFileView.model().setPath(self.__current_path)
+        self.launchlist_model.setPath(self.__current_path)
       except EnvironmentError as e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
                          'Error while create a new file',
@@ -1271,10 +1301,9 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Copies the selected file to 
     '''
-    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-    for index in indexes:
-      pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
+    selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+    for item in selected:
+      path = self.launchlist_model.expandItem(item.name, item.path, item.id)
       if not path is None:
         host = 'localhost'
         username = nm.ssh().USER_DEFAULT
@@ -1345,12 +1374,11 @@ class MainWindow(QtGui.QMainWindow):
     Tries to load the selected launch file. The button is only enabled and this
     method is called, if the button was enabled by on_launch_selection_clicked()
     '''
-    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-    for index in indexes:
-      pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
+    selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+    for item in selected:
+      path = self.launchlist_model.expandItem(item.name, item.path, item.id)
       if not path is None:
-        self.loadLaunchFile(path, row=index.row())
+        self.loadLaunchFile(path)#, row=index.row())
 
   def loadLaunchFile(self, path, force_as_default=False, host=None, row=None):
     '''
@@ -1364,11 +1392,11 @@ class MainWindow(QtGui.QMainWindow):
       cursor = self.cursor()
 #      self.setCursor(QtCore.Qt.WaitCursor)
 #      self.ui.xmlFileView.setEnabled(False)
-      self.ui.xmlFileView.model().add2LoadHistory(path)
+      self.launchlist_model.add2LoadHistory(path)
       try:
         if not row is None:
           sm = self.ui.xmlFileView.selectionModel()
-          sm.select(self.ui.xmlFileView.model().createIndex(row, 0), QtGui.QItemSelectionModel.Select)
+          sm.select(self.xmlFileView.model().createIndex(row, 0), QtGui.QItemSelectionModel.Select)
       except:
         pass
 #      QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
@@ -1433,10 +1461,9 @@ class MainWindow(QtGui.QMainWindow):
     is only enabled and this method is called, if the button was enabled by 
     on_launch_selection_clicked()
     '''
-    indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-    for index in indexes:
-      pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-      path = self.ui.xmlFileView.model().expandItem(pathItem, path)
+    selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+    for item in selected:
+      path = self.launchlist_model.expandItem(item.name, item.path, item.id)
       if not path is None:
         params = {'Host' : ('string', 'localhost') }
         dia = ParameterDialog(params)
@@ -1466,10 +1493,9 @@ class MainWindow(QtGui.QMainWindow):
     if (key_mod & QtCore.Qt.ShiftModifier):
       self.ui.loadXmlAsDefaultButton.showMenu()
     else:
-      indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-      for index in indexes:
-        pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-        path = self.ui.xmlFileView.model().expandItem(pathItem, path)
+      selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+      for item in selected:
+        path = self.launchlist_model.expandItem(item.name, item.path, item.id)
         if not path is None:
           rospy.loginfo("LOAD the launch file as default: %s", path)
           self.loadLaunchFile(path, True)
@@ -1655,17 +1681,37 @@ class MainWindow(QtGui.QMainWindow):
 
   def keyReleaseEvent(self, event):
     '''
-    Deletes the selected history launch file.
+    Defines some of shortcuts for navigation/management in launch
+    list view or topics view.
     '''
     key_mod = QtGui.QApplication.keyboardModifiers()
-    if self.ui.xmlFileView.hasFocus():
-      if event.key() == QtCore.Qt.Key_Delete:
-        indexes = self.ui.xmlFileView.selectionModel().selectedIndexes()
-        for index in indexes:
-          pathItem, path, pathId = self.ui.xmlFileView.model().items[index.row()]
-          self.ui.xmlFileView.model().removeFromLoadHistory(path)
+    if self.ui.xmlFileView.hasFocus() and not self.ui.xmlFileView.state() == QtGui.QAbstractItemView.EditingState:
+      # remove history file from list by pressing DEL
+      if event == QtGui.QKeySequence.Delete:
+        selected = self.launchItemsFromIndexes(self.ui.xmlFileView.selectionModel().selectedIndexes(), False)
+        for item in selected:
+          if item.path in self.launchlist_model.load_history:
+            self.launchlist_model.removeFromLoadHistory(item.path)
       elif not key_mod and event.key() == QtCore.Qt.Key_F4 and self.ui.editXmlButton.isEnabled():
+        # open selected launch file in xml editor by F4
         self.on_edit_xml_clicked()
+      elif event == QtGui.QKeySequence.Find:
+        # show a filter box for packages
+        self.on_package_search_changed('')
+        self.ui.searchPackageLine.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+      elif event == QtGui.QKeySequence.Paste:
+        # paste files from clipboard
+        self.launchlist_model.paste_from_clipboard()
+      elif event == QtGui.QKeySequence.Copy:
+        # copy the selected items as file paths into clipboard
+        selected = self.ui.xmlFileView.selectionModel().selectedIndexes()
+        indexes = []
+        for s in selected:
+          indexes.append(self.launchlist_proxyModel.mapToSource(s))
+        self.launchlist_model.copy_to_clipboard(indexes)
+    elif self.ui.searchPackageLine.hasFocus() and event.key() == QtCore.Qt.Key_Escape:
+      # hide package filter box on pressing ESC 
+      self.on_package_search_changed(None)
     # open editor for selected node wich hava a loaded configuration
     elif not self.currentMaster is None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
       if event.key() == QtCore.Qt.Key_F4 and not key_mod:

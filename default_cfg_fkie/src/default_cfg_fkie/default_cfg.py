@@ -384,6 +384,11 @@ class DefaultCfg(object):
     if n is None:
       raise StartException("Node '%s' not found!"%node)
 
+    if autostart and self._get_start_exclude(rospy.names.ns_join(n.namespace, n.name)):
+      # skip autostart
+      rospy.loginfo("%s is in exclude list, skip autostart", n.name)
+      return
+
 #    env = n.env_args
     prefix = n.launch_prefix if not n.launch_prefix is None else ''
     args = ['__ns:=%s'%n.namespace, '__name:=%s'%n.name]
@@ -500,6 +505,14 @@ class DefaultCfg(object):
     if cmd is None or len(cmd) == 0:
       raise StartException('%s in package [%s] not found!'%(file, pkg))
     return cmd
+
+  def _get_start_exclude(self, node):
+    param_name = rospy.names.ns_join(node, 'default_cfg/autostart/exclude')
+    try:
+      return bool(self.roscfg.params[param_name].value)
+    except:
+      pass
+    return False
 
   def _get_start_delay(self, node):
     param_name = rospy.names.ns_join(node, 'default_cfg/autostart/delay')

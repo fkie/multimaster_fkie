@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2012, Fraunhofer FKIE/US, Alexander Tiderko
@@ -32,63 +30,44 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-__author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
-__copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
-__license__ = "BSD"
-__version__ = "0.3.0"
-__date__ = "2012-04-01"
+import os
+import threading
+from python_qt_binding import QtCore
 
-import sys
-
-import roslib; roslib.load_manifest('default_cfg_fkie')
 import rospy
+from common import get_packages
 
-from default_cfg import DefaultCfg
 
+class PackagesThread(QtCore.QObject, threading.Thread):
+  '''
+  A thread to list all available ROS packages and
+  publish there be sending a QT signal.
+  '''
+  packages = QtCore.Signal(dict)
+  '''
+  @ivar: packages is a signal, which is emitted, if a list with ROS packages was
+  created {package : path}.
+  '''
 
-NODE_NAME = "default_cfg"
+  def __init__(self):
+    '''
+    '''
+    QtCore.QObject.__init__(self)
+    threading.Thread.__init__(self)
+    self.setDaemon(True)
 
-def setTerminalName(name):
-  '''
-  Change the terminal name.
-  @param name: New name of the terminal
-  @type name:  C{str}
-  '''
-  sys.stdout.write("".join(["\x1b]2;",name,"\x07"]))
-
-def setProcessName(name):
-  '''
-  Change the process name.
-  @param name: New process name
-  @type name:  C{str}
-  '''
-  try:
-    from ctypes import cdll, byref, create_string_buffer
-    libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(len(name)+1)
-    buff.value = name
-    libc.prctl(15, byref(buff), 0, 0, 0)
-  except:
-    pass
-
-def main():
-  '''
-  Creates and runs the ROS node
-  '''
-  rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
-  try:
-    default_cfg = DefaultCfg()
-    default_cfg.load()
-  except:
-    # on load error the process will be killed to notify user in node_manager
-    # about error
-    import traceback
-    rospy.logwarn("%s", traceback.format_exc())
-    import sys
-    sys.stdout.write(traceback.format_exc())
-    sys.stdout.flush()
-    import os, signal
-    os.kill(os.getpid(), signal.SIGKILL)
-  rospy.spin()
+  def run(self):
+    '''
+    '''
+    try:
+      # fill the input fields
+      root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+      packages = {}
+      for p in root_paths:
+        ret = get_packages(p)
+        packages = dict(ret.items() + packages.items())
+      self.packages.emit(packages)
+    except:
+      import traceback
+      formatted_lines = traceback.format_exc().splitlines()
+      rospy.logwarn("Error while list packages:\n\t%s", formatted_lines[-1])

@@ -1,4 +1,3 @@
-#          raise Exception(''.join(["No path to file '", str(item), "' found!"]))
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2012, Fraunhofer FKIE/US, Alexander Tiderko
@@ -33,18 +32,23 @@
 
 import os
 import sys
+import shutil
 
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
 import node_manager_fkie as nm
 from common import is_package, package_name
+from packages_thread import PackagesThread
+from .detailed_msg_box import WarningMessageBox
 
-class LaunchListModel(QtCore.QAbstractListModel):
+class LaunchItem(QtGui.QStandardItem):
   '''
-  The model to manage the files with launch files.
+  The launch item stored in the launch model. 
   '''
   
+  ITEM_TYPE = QtGui.QStandardItem.UserType + 40
+
   NOT_FOUND = -1
   NOTHING = 0
   RECENT_FILE = 1
@@ -56,42 +60,36 @@ class LaunchListModel(QtCore.QAbstractListModel):
 
   CFG_FILES = ['.yaml', '.yml', '.sync', '.iface']
 
-  RECENT_LENGTH = 5
 
-  def __init__(self):
+  def __init__(self, name, path, id, parent=None):
     '''
-    Creates a new list model. Loads the required icons.
+    Initialize the topic item.
+    @param name: the topic name
+    @type name: C{str}
     '''
-    QtCore.QAbstractListModel.__init__(self)
-    self.icons = {LaunchListModel.FOLDER : QtGui.QIcon(":/icons/crystal_clear_folder.png"),
-                  LaunchListModel.STACK : QtGui.QIcon(":/icons/crystal_clear_stack.png"),
-                  LaunchListModel.PACKAGE : QtGui.QIcon(":/icons/crystal_clear_package.png"),
-                  LaunchListModel.LAUNCH_FILE : QtGui.QIcon(":/icons/crystal_clear_launch_file.png"),
-                  LaunchListModel.RECENT_FILE : QtGui.QIcon(":/icons/crystal_clear_launch_file_recent.png")}
-    self.items = []
-    self.currentPath = None
-    self.load_history = self._getLoadHistory()
-    self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-    self._setNewList(self._moveUp(None))
+    QtGui.QStandardItem.__init__(self, name)
+    self.parent_item = parent
+    self.name = name
+    self.path = path
+    self.id = id
+    if self.id == LaunchItem.FOLDER:
+      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_folder.png"))
+    elif self.id == LaunchItem.PACKAGE:
+      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_package.png"))
+    elif self.id == LaunchItem.LAUNCH_FILE:
+      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_launch_file.png"))
+    elif self.id == LaunchItem.RECENT_FILE:
+      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_launch_file_recent.png"))
+    elif self.id == LaunchItem.STACK:
+      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_stack.png"))
 
-  def _getRootItems(self):
-    result = list(self.load_history)
-    result.extend(self.root_paths)
-    return result
+#  def __del__(self):
+#    print "delete LAUNCH", self.name
 
-  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  #%%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
-  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  def type(self):
+    return LaunchItem.ITEM_TYPE
 
-  def rowCount(self, parent=QtCore.QModelIndex()):
-    '''
-    Tell the view how many rows we have present in our data.
-    @param parent: parent of the list
-    @type parent: L{QtCore.QModelIndex}
-    '''
-    return len(self.items)
-
-  def data(self, index, role=QtCore.Qt.DisplayRole):
+  def data(self, role):
     '''
     The view asks us for all sorts of information about our data...
     @param index: parent of the list
@@ -102,37 +100,132 @@ class LaunchListModel(QtCore.QAbstractListModel):
     '''
     if role == QtCore.Qt.DisplayRole:
       # return the displayed item name
-      pathItem, path, pathId = self.items[index.row()]
-      if pathId == LaunchListModel.RECENT_FILE:
-        return ''.join([pathItem, '   [', str(package_name(os.path.dirname(path))[0]), ']']).decode(sys.getfilesystemencoding())
+      if self.id == LaunchItem.RECENT_FILE:
+        return "%s   [%s]"%(self.name, package_name(os.path.dirname(self.path))[0])#.decode(sys.getfilesystemencoding())
       else:
-        return pathItem
+        return self.name
     elif role == QtCore.Qt.ToolTipRole:
       # return the tooltip of the item
-      pathItem, result, pathId = self.items[index.row()]
-      if pathId == LaunchListModel.RECENT_FILE:
-        result = '\n'.join([result, "Press 'Delete' to remove the entry from the history list"])
-      return result.decode(sys.getfilesystemencoding())
-    elif role == QtCore.Qt.DecorationRole:
-      # return the showed icon
-      pathItem, path, pathId = self.items[index.row()]
-      if pathId > LaunchListModel.NOTHING and self.icons.has_key(pathId):
-        return self.icons[pathId]
-      return None
+      if self.id == LaunchItem.RECENT_FILE:
+        result = "%s\nPress 'Delete' to remove the entry from the history list"%self.path
+      return self.path.decode(sys.getfilesystemencoding())
+#     elif role == QtCore.Qt.DecorationRole:
+#       # return the showed icon
+#       pathItem, path, pathId = self.items[index.row()]
+#       if self.id > LaunchListModel.NOTHING and self.model().icons.has_key(self.id):
+#         return self.model().icons[self.id]
+#       return None
+    elif role == QtCore.Qt.EditRole:
+      return self.name
     else:
       # We don't care about anything else, so return None
-      return None
+#      return None
+      return QtGui.QStandardItem.data(self, role)
+
+  def setData(self, value, role=QtCore.Qt.EditRole):
+    if role == QtCore.Qt.EditRole:
+      # rename the file or folder
+      if self.name != value and self.id in [self.RECENT_FILE, self.LAUNCH_FILE, self.CFG_FILE, self.FOLDER]:
+        new_path = os.path.join(os.path.dirname(self.path), value)
+        if not os.path.exists(new_path):
+          os.rename(self.path, new_path)
+          self.name = value
+          self.path = new_path
+        else:
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Path already exists", 
+                        "`%s` already exists!"%value, "Complete path: %s"%new_path).exec_()
+    return QtGui.QStandardItem.setData(self, value, role)
+
+  @classmethod
+  def getItemList(self, name, path, id, root):
+    '''
+    Creates the list of the items . This list is used for the 
+    visualization of topic data as a table row.
+    @param name: the topic name
+    @type name: C{str}
+    @param root: The parent QStandardItem
+    @type root: L{PySide.QtGui.QStandardItem}
+    @return: the list for the representation as a row
+    @rtype: C{[L{LaunchItem} or L{PySide.QtGui.QStandardItem}, ...]}
+    '''
+    items = []
+    item = LaunchItem(name, path, id, parent=root)
+    items.append(item)
+    return items
+
+  def isLaunchFile(self):
+    '''
+    @return: C{True} if it is a launch file
+    @rtype: C{boolean}
+    '''
+    return not self.path is None and os.path.isfile(self.path) and self.path.endswith('.launch')
+
+  def isConfigFile(self):
+    '''
+    @return: C{True} if it is a config file
+    @rtype: C{boolean}
+    '''
+    return self.id == self.CFG_FILE
+
+
+
+class LaunchListModel(QtGui.QStandardItemModel):
+  '''
+  The model to manage the list with launch files.
+  '''
+  header = [('Name', -1)]
+  '''@ivar: the list with columns C{[(name, width), ...]}'''
+  
+  RECENT_LENGTH = 5
+  
+  def __init__(self):
+    '''
+    Creates a new list model.
+    '''
+    QtGui.QStandardItemModel.__init__(self)
+    self.setColumnCount(len(LaunchListModel.header))
+    self.setHorizontalHeaderLabels([label for label, width in LaunchListModel.header])
+    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+    self.items = []
+    self.currentPath = None
+    self.load_history = self._getLoadHistory()
+    self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+    self._setNewList(self._moveUp(None))
+    self.__packages = {}
+    self._fill_packages_thread = PackagesThread()
+    self._fill_packages_thread.packages.connect(self._fill_packages)
+    self._fill_packages_thread.start()
+
+  def _getRootItems(self):
+    result = list(self.load_history)
+    result.extend(self.root_paths)
+    return result
+
+  def _fill_packages(self, packages):
+    self.__packages = packages
+
+  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  #%%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
+  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def flags(self, index):
     '''
-    Make the only selectable
     @param index: parent of the list
-    @type index: L{QtCore.QModelIndex}
-    @return: Flag or the requestet item
+    @type index: L{PySide.QtCore.QModelIndex}
+    @return: Flag or the requested item
     @rtype: L{PySide.QtCore.Qt.ItemFlag}
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
-    return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDragEnabled
+    if not index.isValid():
+      return QtCore.Qt.NoItemFlags
+    try:
+      item = self.itemFromIndex(index)
+      result = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDragEnabled
+      if item.id in [LaunchItem.RECENT_FILE, LaunchItem.LAUNCH_FILE, LaunchItem.CFG_FILE, LaunchItem.FOLDER]:
+        result = result | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled
+      return result
+    except:
+      return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Drag operation                        %%%%%%%%
@@ -143,10 +236,13 @@ class LaunchListModel(QtCore.QAbstractListModel):
 
   def mimeData(self, indexes):
     mimeData = QtCore.QMimeData()
+    text = ''
     for index in indexes:
       if index.isValid():
-        pathItem, path, pathId = self.items[index.row()]
-        mimeData.setData('text/plain', 'file://%s'%path)
+        item = self.itemFromIndex(index)
+        prev = '%s\n'%text if text else ''
+        text = '%sfile://%s'%(prev, item.path)
+    mimeData.setData('text/plain', text)
     return mimeData
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,29 +268,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
     except:
       self._setNewList(self._moveUp(None))
 
-  def isLaunchFile(self, row):
-    '''
-    Tests for the given row whether it is a launch file or not.
-    @return: C{True} if it is a launch file
-    @rtype: C{boolean}
-    '''
-    if row >= 0 and row < len(self.items):
-      pathItem, path, pathId = self.items[row]
-      return not path is None and os.path.isfile(path) and path.endswith('.launch')
-    return False
-
-  def isConfigFile(self, row):
-    '''
-    Tests for the given row whether it is a config file or not.
-    @return: C{True} if it is a config file
-    @rtype: C{boolean}
-    '''
-    if row >= 0 and row < len(self.items):
-      pathItem, path, pathId = self.items[row]
-      return pathId == self.CFG_FILE
-    return False
-
-  def expandItem(self, path_item, path):
+  def expandItem(self, path_item, path, id):
     '''
     Returns for the given item and path the file path if this is a file. Otherwise the 
     folder will be expanded and None will be returned.
@@ -206,17 +280,15 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @rtype: C{str
     @raise Exception if no path to given item was found
     '''
-    for pathItem, p, id in self.items:
-      if path_item == pathItem and p == path:
-        if path_item == '..':
-          root_path, items = self._moveUp(os.path.dirname(p))
-        elif os.path.isfile(p):
-          return p
-        elif id == LaunchListModel.RECENT_FILE or id == LaunchListModel.LAUNCH_FILE:
-          raise Exception(''.join(["Invalid file path: ", str(path)]))
-        else:
-          root_path, items = self._moveDown(p)
-        self._setNewList((root_path, items))
+    if path_item == '..':
+      root_path, items = self._moveUp(os.path.dirname(path))
+    elif os.path.isfile(path):
+      return path
+    elif id == LaunchItem.RECENT_FILE or id == LaunchItem.LAUNCH_FILE:
+      raise Exception("Invalid file path: %s", path)
+    else:
+      root_path, items = self._moveDown(path)
+    self._setNewList((root_path, items))
     return None
 
 
@@ -249,6 +321,53 @@ class LaunchListModel(QtCore.QAbstractListModel):
     self._storeLoadHistory(self.load_history)
     self.reloadCurrentPath()
 
+  def show_packages(self, show):
+    if show:
+    # clear the cache for package names
+      try:
+        items = []
+        for package, path in self.__packages.items():
+          items.append((package, path, LaunchItem.PACKAGE))
+        self._setNewList((self.currentPath, items))
+      except:
+        import traceback
+        print traceback.format_exc()
+    else:
+      self._setNewList(self._moveUp(self.currentPath))
+
+  def paste_from_clipboard(self):
+    '''
+    Copy the file or folder to new position...
+    '''
+    if QtGui.QApplication.clipboard().mimeData().hasText() and self.currentPath:
+      text = QtGui.QApplication.clipboard().mimeData().text()
+      if text.startswith('file://'):
+        path = text.replace('file://', '')
+        basename = os.path.basename(text)
+        ok = True
+        if os.path.exists(os.path.join(self.currentPath, basename)):
+          basename, ok = QtGui.QInputDialog.getText(None, 'File exists', 'New name (or override):', QtGui.QLineEdit.Normal, basename)
+        if ok and basename:
+          if os.path.isdir(path):
+            shutil.copytree(path, os.path.join(self.currentPath, basename))
+          elif os.path.isfile(path):
+            shutil.copy2(path, os.path.join(self.currentPath, basename))
+          self.reloadCurrentPath()
+
+  def copy_to_clipboard(self, indexes):
+    '''
+    Copy the selected path to the clipboard
+    '''
+    mimeData = QtCore.QMimeData()
+    text = ''
+    for index in indexes:
+      if index.isValid():
+        item = self.itemFromIndex(index)
+        prev = '%s\n'%text if text else ''
+        text = '%sfile://%s'%(prev, item.path)
+    mimeData.setData('text/plain', text)
+    QtGui.QApplication.clipboard().setMimeData(mimeData)
+        
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Functionality                         %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -265,12 +384,13 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @param items: the list with characterized items
     @type items: C{[(item, path, id)]}
     '''
-    self.beginRemoveRows(QtCore.QModelIndex(), 0, len(self.items))
-    del self.items[:]
-    self.endRemoveRows()
+    root = self.invisibleRootItem()
+    while root.rowCount():
+      root.removeRow(0)
+    self.pyqt_workaround.clear()
     # add new items
     if not root_path is None:
-      self._addPathToList('..', root_path, LaunchListModel.NOTHING)
+      self._addPathToList('..', root_path, LaunchItem.NOTHING)
     for item_name, item_path, item_id in items:
       self._addPathToList(item_name, item_path, item_id)
     self.currentPath = root_path
@@ -297,49 +417,55 @@ class LaunchListModel(QtCore.QAbstractListModel):
     @param path_id: the id of the item, which represents whether it is a file, package or stack.
     @type path_id: C{constants of LaunchListModel} 
     '''
-    if item is None or path is None or path_id == LaunchListModel.NOT_FOUND:
+    root = self.invisibleRootItem()
+    if item is None or path is None or path_id == LaunchItem.NOT_FOUND:
       return False
-    if (path_id != LaunchListModel.NOT_FOUND):
+    if (path_id != LaunchItem.NOT_FOUND):
       # add sorted a new entry
-      for index, (i, p, id) in enumerate(self.items):
-        launch_file_cmp = (path_id == LaunchListModel.RECENT_FILE and id == LaunchListModel.LAUNCH_FILE and i > item)
-        if launch_file_cmp or (id == path_id and i > item): 
-          self.beginInsertRows(QtCore.QModelIndex(), index, index)
-          self.items.insert(index, (item, path, path_id))
-          self.endInsertRows()
-          return True
-      self.beginInsertRows(QtCore.QModelIndex(), len(self.items), len(self.items))
-      self.items.append((item, path, path_id))
-      self.endInsertRows()
-      return True
-    return False
+      try:
+        for i in range(root.rowCount()):
+          launchItem = root.child(i)
+          launch_file_cmp = (path_id == LaunchItem.RECENT_FILE and path_id == LaunchItem.LAUNCH_FILE and item < launchItem.name)
+          if launch_file_cmp or (launchItem.id == path_id and item < launchItem.name):
+            new_item_row = LaunchItem.getItemList(item, path, path_id, root)
+            root.insertRow(i, new_item_row)
+            self.pyqt_workaround[item] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+            return True
+        new_item_row = LaunchItem.getItemList(item, path, path_id, root)
+        root.appendRow(new_item_row)
+        self.pyqt_workaround[item] = new_item_row[0]
+        return True
+      except:
+        import traceback
+        print traceback.format_exc()
+      return False
 
   def _identifyPath(self, path):
     '''
     Determines the id of the given path
     @return: the id represents whether it is a file, package or stack
-    @rtype: C{constants of LaunchListModel} 
+    @rtype: C{constants of LaunchItem} 
     '''
     if os.path.basename(path)[0] != '.':
       if path in self.load_history:
-        return LaunchListModel.RECENT_FILE
+        return LaunchItem.RECENT_FILE
       elif os.path.isfile(path):
         if (path.endswith('.launch')):
-          return LaunchListModel.LAUNCH_FILE
+          return LaunchItem.LAUNCH_FILE
         else:
-          for e in LaunchListModel.CFG_FILES:
+          for e in LaunchItem.CFG_FILES:
             if path.endswith(e):
-              return LaunchListModel.CFG_FILE
+              return LaunchItem.CFG_FILE
       elif os.path.isdir(path):
         fileList = os.listdir(path)
         if self._containsLaunches(path):
           if 'stack.xml' in fileList:
-            return LaunchListModel.STACK
+            return LaunchItem.STACK
           elif is_package(fileList):
-            return LaunchListModel.PACKAGE
+            return LaunchItem.PACKAGE
           else:
-            return LaunchListModel.FOLDER
-    return LaunchListModel.NOT_FOUND
+            return LaunchItem.FOLDER
+    return LaunchItem.NOT_FOUND
 
   def _containsLaunches(self, path):
     '''
@@ -375,7 +501,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
       if pathItem == 'src':
         pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
       pathId = self._identifyPath(item)
-      if (pathId != LaunchListModel.NOT_FOUND):
+      if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
     if len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
       return self._moveDown(result_list[0][1])
@@ -401,7 +527,7 @@ class LaunchListModel(QtCore.QAbstractListModel):
       if pathItem == 'src':
         pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
       pathId = self._identifyPath(item)
-      if (pathId != LaunchListModel.NOT_FOUND):
+      if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
     if not path is None and len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
       return self._moveUp(os.path.dirname(path))
