@@ -64,6 +64,7 @@ from .sync_dialog import SyncDialog
 from .common import masteruri_from_ros, package_name
 from .select_dialog import SelectDialog
 from .master_list_model import MasterModel, MasterSyncItem
+from .log_widget import LogWidget
 
 import node_manager_fkie as nm
 
@@ -86,7 +87,9 @@ class MainWindow(QtGui.QMainWindow):
     restricted_to_one_master = False
     self._finished = False
     self._history_selected_robot = ''
-    self.__icons = {'default_pc' : (QtGui.QIcon(''.join([':/icons/crystal_clear_miscellaneous.png'])), ':/icons/crystal_clear_miscellaneous.png')} # (masnter name : (QIcon, path))
+    self.__icons = {'default_pc' : (QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
+                    'log_warning' : (QtGui.QIcon(':/icons/crystal_clear_warning.png'), ':/icons/crystal_clear_warning.png')
+                    } # (masnter name : (QIcon, path))
     self.__current_icon = None
     self.__current_master_label_name = None
     self.__current_path = os.path.expanduser('~')
@@ -95,6 +98,12 @@ class MainWindow(QtGui.QMainWindow):
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     #load the UI formular for the main window
 #    loader = QtUiTools.QUiLoader()
+    # setup logger widget
+    self.log_ui = LogWidget(self)
+    self.log_ui.added_signal.connect(self._on_log_added)
+    self.log_ui.cleared_signal.connect(self._on_log_cleared)
+
+    # setup main window frame
     self.setObjectName('MainWindow')
     self.ui = mainWindow = QtGui.QMainWindow()
 #    self.ui = mainWindow = loader.load(":/forms/MainWindow.ui")
@@ -117,6 +126,9 @@ class MainWindow(QtGui.QMainWindow):
 #    self.syncDialogAct = QtGui.QAction("&Open sync dialog", self, shortcut=QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_S), statusTip="Opens a sync dialog with additional sync options", triggered=self.on_sync_dialog_released)
 #    sync_menu.addAction(self.syncDialogAct)
 #    self.ui.syncButton.setMenu(sync_menu)
+
+    self.ui.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.log_ui)
+    self.ui.logButton.clicked.connect(self._on_log_button_clicked)
 
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run.png")
     self.setWindowIcon(self.mIcon)
@@ -296,6 +308,16 @@ class MainWindow(QtGui.QMainWindow):
     self._con_tries = dict()
     self._subscribe()
 
+  def _on_log_button_clicked(self):
+    self.log_ui.setVisible(not self.log_ui.isVisible())
+
+  def _on_log_added(self, info, warn, err, fatal):
+    self.ui.logButton.setEnabled(True)
+
+  def _on_log_cleared(self):
+    self.ui.logButton.setIcon(self.__icons['log_warning'][0])
+    self.ui.logButton.setText('')
+    self.ui.logButton.setEnabled(False)
 
   def on_hide_docks_toggled(self, checked):
     if self.ui.dockWidgetArea(self.ui.launchDock) == QtCore.Qt.LeftDockWidgetArea:
@@ -369,6 +391,7 @@ class MainWindow(QtGui.QMainWindow):
         master.stop()
       self.own_master_monitor.stop()
       self.master_timecheck_timer.stop()
+      self.log_ui.stop()
       print "Mainwindow finished!"
 
   def getMasteruri(self):
@@ -945,6 +968,15 @@ class MainWindow(QtGui.QMainWindow):
     self.ui.launchServerLabel.setVisible(launch_server_enabled)
     self.ui.masternameLabel.setEnabled(online)
     self.ui.masterInfoFrame.setEnabled((not timestamp is None))
+    # update warning symbol / text
+    if self.ui.logButton.isEnabled():
+      if self.ui.logButton.text():
+        self.ui.logButton.setIcon(self.__icons['log_warning'][0])
+        self.ui.logButton.setText('')
+      else:
+        self.ui.logButton.setText('%d'%self.log_ui.count())
+        self.ui.logButton.setIcon(QtGui.QIcon())
+
 
   def timestampStr(self, timestamp):
     dt = datetime.fromtimestamp(timestamp)

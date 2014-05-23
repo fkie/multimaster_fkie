@@ -83,6 +83,35 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="logButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="GUI.qrc">
+           <normaloff>:/icons/crystal_clear_warning.png</normaloff>:/icons/crystal_clear_warning.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="infoButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -663,7 +692,7 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>908</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
