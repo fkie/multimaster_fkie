@@ -425,8 +425,10 @@ class LaunchListModel(QtGui.QStandardItemModel):
       try:
         for i in range(root.rowCount()):
           launchItem = root.child(i)
-          launch_file_cmp = (path_id == LaunchItem.RECENT_FILE and path_id == LaunchItem.LAUNCH_FILE and item < launchItem.name)
-          if launch_file_cmp or (launchItem.id == path_id and item < launchItem.name):
+          launch_file_cmp = (path_id in [LaunchItem.RECENT_FILE, LaunchItem.LAUNCH_FILE] and item < launchItem.name)
+          launch_id_cmp = (launchItem.id > path_id and launchItem.id > LaunchItem.LAUNCH_FILE)
+          launch_name_cmp = (launchItem.id == path_id and item < launchItem.name)
+          if launch_file_cmp or launch_id_cmp or launch_name_cmp:
             new_item_row = LaunchItem.getItemList(item, path, path_id, root)
             root.insertRow(i, new_item_row)
             self.pyqt_workaround[item] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass

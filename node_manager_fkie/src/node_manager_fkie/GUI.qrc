@@ -58,9 +58,10 @@
     <file>icons/stock_disconnect.png</file>
   </qresource>
   <qresource prefix="forms">
-    <file>LogDockWidget.ui</file>
     <file>MainWindow.ui</file>
     <file>MasterTab.ui</file>
+    <file>LogDockWidget.ui</file>
+    <file>LaunchFilesDockWidget.ui</file>
     <file>PasswordInput.ui</file>
   </qresource>
 </RCC>

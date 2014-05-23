@@ -193,7 +193,10 @@ class MasterStateTopic(QtCore.QObject):
     '''
     if hasattr(self, 'sub_changes'):
       for s in self.sub_changes:
-        s.unregister()
+        try:
+          s.unregister()
+        except Exceptio as e:
+          rospy.logwarn("Error while unregister master state topic %s"%e)
       del self.sub_changes
 
   def handlerMasterStateMsg(self, msg):
