@@ -81,8 +81,9 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     self.xmlFileView.setDragEnabled(True)
     sm = self.xmlFileView.selectionModel()
     sm.selectionChanged.connect(self.on_xmlFileView_selection_changed)
-    self.searchPackageLine.setVisible(False)
-    self.searchPackageLine.textChanged.connect(self.on_package_search_changed)
+#    self.searchPackageLine.setVisible(False)
+    self.searchPackageLine.textChanged.connect(self.set_package_filter)
+    self.searchPackageLine.focusInEvent = self._searchline_focusInEvent
     # connect to the button signals
     self.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
     self.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
@@ -114,7 +115,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     for item in selected:
       try:
         file = self.launchlist_model.expandItem(item.name, item.path, item.id)
-        self.on_package_search_changed(None, False)
+        self.searchPackageLine.setText('')
         if not file is None:
           if item.isLaunchFile():
             self.launchlist_model.add2LoadHistory(item.path)
@@ -130,7 +131,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
         WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
                           'Error while load launch file:\n%s'%item.name,
                           "%s"%e).exec_()
-        self.launchlist_model.reloadCurrentPath()
+#        self.launchlist_model.reloadCurrentPath()
 
   def on_xmlFileView_selection_changed(self, selected, deselected):
     '''
@@ -145,21 +146,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
       self.transferButton.setEnabled(islaunch or isconfig)
       self.loadXmlAsDefaultButton.setEnabled(islaunch)
 
-  def on_package_search_changed(self, text, change_path=True):
-    '''
-    Searches for packages, if pattern was changed.
-    '''
-    if not text is None:
-      if not self.searchPackageLine.isVisible():
-        if change_path:
-          self.launchlist_model.show_packages(True)
-        self.searchPackageLine.setVisible(True)
-    else:
-      if self.searchPackageLine.isVisible():
-        if change_path:
-          self.launchlist_model.show_packages(False)
-        self.searchPackageLine.setVisible(False)
-      self.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+  def set_package_filter(self, text):
     self.launchlist_proxyModel.setFilterRegExp(QtCore.QRegExp(text,
                                                               QtCore.Qt.CaseInsensitive,
                                                               QtCore.QRegExp.Wildcard))
@@ -169,6 +156,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     Reload the current path.
     '''
     self.launchlist_model.reloadCurrentPath()
+    self.launchlist_model.reloadPackages()
     self.editXmlButton.setEnabled(False)
     self.loadXmlButton.setEnabled(False)
     self.transferButton.setEnabled(False)
@@ -332,9 +320,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
         # open selected launch file in xml editor by F4
         self.on_edit_xml_clicked()
       elif event == QtGui.QKeySequence.Find:
-        # show a filter box for packages
-        self.searchPackageLine.setText('')
-        self.on_package_search_changed('')
+        # set focus to filter box for packages
         self.searchPackageLine.setFocus(QtCore.Qt.ActiveWindowFocusReason)
       elif event == QtGui.QKeySequence.Paste:
         # paste files from clipboard
@@ -347,6 +333,12 @@ class LaunchFilesWidget(QtGui.QDockWidget):
           indexes.append(self.launchlist_proxyModel.mapToSource(s))
         self.launchlist_model.copy_to_clipboard(indexes)
     if self.searchPackageLine.hasFocus() and event.key() == QtCore.Qt.Key_Escape:
-      # hide package filter box on pressing ESC 
-      self.on_package_search_changed(None)
+      # cancel package filtering on pressing ESC 
+      self.launchlist_model.show_packages(False)
+      self.searchPackageLine.setText('')
+      self.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)
     QtGui.QDockWidget.keyReleaseEvent(self, event)
+
+  def _searchline_focusInEvent(self, event):
+    self.launchlist_model.show_packages(True)
+    QtGui.QLineEdit.focusInEvent(self.searchPackageLine, event)

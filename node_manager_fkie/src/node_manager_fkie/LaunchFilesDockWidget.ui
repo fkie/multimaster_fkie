@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>364</width>
+    <width>241</width>
     <height>314</height>
    </rect>
   </property>
@@ -21,13 +21,6 @@
     <property name="margin">
      <number>0</number>
     </property>
-    <item>
-     <widget class="QLineEdit" name="searchPackageLine">
-      <property name="placeholderText">
-       <string>search for package</string>
-      </property>
-     </widget>
-    </item>
     <item>
      <widget class="QListView" name="xmlFileView">
       <property name="editTriggers">
@@ -85,8 +78,195 @@
      </widget>
     </item>
     <item>
-     <widget class="QWidget" name="launchControlWidget" native="true">
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <widget class="QFrame" name="launchControlWidget">
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="spacing">
+        <number>1</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="editXmlButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>26</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Opens an editor for selected lauch file &lt;span style=&quot; font-weight:600;&quot;&gt;Ctrl+E&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;Opens a &lt;/span&gt;&lt;span style=&quot; font-family:'Courier New,courier'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;Launch Editor&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt; is a simple text editor with &lt;/span&gt;&lt;a href=&quot;http://www.ros.org/wiki/roslaunch/XML&quot;&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#2b7fcf; background-color:#ffffff;&quot;&gt;roslaunch XML&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt; syntax highlighting. The included files are open in a new tab by &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; font-weight:600; color:#000000; background-color:#ffffff;&quot;&gt;Ctrl+(left mouse click)&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;. If the file does not exists, it will be created.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="GUI.qrc">
+           <normaloff>:/icons/crystal_clear_edit_launch.png</normaloff>:/icons/crystal_clear_edit_launch.png</iconset>
+         </property>
+         <property name="shortcut">
+          <string>Ctrl+E</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="newXmlButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>26</width>
+           <height>26</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a new launch file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;New included file can be created in editor by writing an include tag and open this by &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; font-weight:600; color:#000000; background-color:#ffffff;&quot;&gt;Ctrl+(left mouse click)&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;. If the file does not exists, it will be created.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="GUI.qrc">
+           <normaloff>:/icons/crystal_clear_launch_file_new.png</normaloff>:/icons/crystal_clear_launch_file_new.png</iconset>
+         </property>
+         <property name="shortcut">
+          <string>Ctrl+N</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="openXmlButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>26</width>
+           <height>26</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Open a file selection dialog to load a launch file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="GUI.qrc">
+           <normaloff>:/icons/crystal_clear_folder_open.png</normaloff>:/icons/crystal_clear_folder_open.png</iconset>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="transferButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>26</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Copies the selected (+included) file to a remote host &lt;span style=&quot; font-weight:600;&quot;&gt;Ctrl+T&lt;/span&gt;. This is usefull to load the changes as default configuration on remote host.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Since only local launch files can be edited, is sometimes useful to copy the changed files to a remote host, for example to load as &lt;span style=&quot; font-weight:600;&quot;&gt;Default configuration&lt;/span&gt; on the remote host. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; The copying of the include files must be activated in the opened dialog. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="GUI.qrc">
+           <normaloff>:/icons/crystal_clear_launch_file_transfer.png</normaloff>:/icons/crystal_clear_launch_file_transfer.png</iconset>
+         </property>
+         <property name="shortcut">
+          <string>Ctrl+T</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="searchPackageLine">
+         <property name="placeholderText">
+          <string>search for package</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="launchControlWidget_2" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
        <property name="margin">
         <number>0</number>
        </property>
@@ -126,135 +306,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="editXmlButton">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Opens an editor for selected lauch file &lt;span style=&quot; font-weight:600;&quot;&gt;Ctrl+E&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="whatsThis">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;Opens a &lt;/span&gt;&lt;span style=&quot; font-family:'Courier New,courier'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;Launch Editor&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt; is a simple text editor with &lt;/span&gt;&lt;a href=&quot;http://www.ros.org/wiki/roslaunch/XML&quot;&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#2b7fcf; background-color:#ffffff;&quot;&gt;roslaunch XML&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt; syntax highlighting. The included files are open in a new tab by &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; font-weight:600; color:#000000; background-color:#ffffff;&quot;&gt;Ctrl+(left mouse click)&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;. If the file does not exists, it will be created.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string>Edit</string>
-         </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_edit_launch.png</normaloff>:/icons/crystal_clear_edit_launch.png</iconset>
-         </property>
-         <property name="shortcut">
-          <string>Ctrl+E</string>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="newXmlButton">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a new launch file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="whatsThis">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;New included file can be created in editor by writing an include tag and open this by &lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; font-weight:600; color:#000000; background-color:#ffffff;&quot;&gt;Ctrl+(left mouse click)&lt;/span&gt;&lt;span style=&quot; font-family:'Helvetica,Verdana,Arial,Lucida Grande,sans-serif'; font-size:15px; color:#000000; background-color:#ffffff;&quot;&gt;. If the file does not exists, it will be created.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string>New</string>
-         </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_launch_file_new.png</normaloff>:/icons/crystal_clear_launch_file_new.png</iconset>
-         </property>
-         <property name="shortcut">
-          <string>Ctrl+N</string>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="transferButton">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>85</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Copies the selected (+included) file to a remote host &lt;span style=&quot; font-weight:600;&quot;&gt;Ctrl+T&lt;/span&gt;. This is usefull to load the changes as default configuration on remote host.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="whatsThis">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Since only local launch files can be edited, is sometimes useful to copy the changed files to a remote host, for example to load as &lt;span style=&quot; font-weight:600;&quot;&gt;Default configuration&lt;/span&gt; on the remote host. &lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; The copying of the include files must be activated in the opened dialog. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string>Transfer</string>
-         </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_launch_file_transfer.png</normaloff>:/icons/crystal_clear_launch_file_transfer.png</iconset>
-         </property>
-         <property name="shortcut">
-          <string>Ctrl+T</string>
-         </property>
-         <property name="popupMode">
-          <enum>QToolButton::DelayedPopup</enum>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QWidget" name="launchControlWidget_2" native="true">
-      <layout class="QHBoxLayout" name="horizontalLayout_8">
-       <property name="margin">
-        <number>0</number>
-       </property>
-       <item>
         <widget class="QToolButton" name="loadXmlButton">
          <property name="enabled">
           <bool>false</bool>
@@ -290,33 +341,6 @@ p, li { white-space: pre-wrap; }
          </property>
          <property name="toolButtonStyle">
           <enum>Qt::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="openXmlButton">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Open a file selection dialog to load a launch file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_folder_open.png</normaloff>:/icons/crystal_clear_folder_open.png</iconset>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonIconOnly</enum>
          </property>
         </widget>
        </item>

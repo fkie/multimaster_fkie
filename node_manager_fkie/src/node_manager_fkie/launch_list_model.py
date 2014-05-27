@@ -249,6 +249,15 @@ class LaunchListModel(QtGui.QStandardItemModel):
   #%%%%%%%%%%%%%              External usage                        %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+  def reloadPackages(self):
+    '''
+    Reloads the cached packag list.
+    '''
+    if not self._fill_packages_thread.isAlive():
+      self._fill_packages_thread = PackagesThread()
+      self._fill_packages_thread.packages.connect(self._fill_packages)
+      self._fill_packages_thread.start()
+
   def reloadCurrentPath(self):
     '''
     Reloads the current path.
@@ -311,7 +320,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     if len(self.load_history) > self.RECENT_LENGTH:
       self.load_history.pop(0)
     self._storeLoadHistory(self.load_history)
-    self.reloadCurrentPath()
+#    self.reloadCurrentPath() # todo: keep the item selected in list view after the reload the path
 
   def removeFromLoadHistory(self, file):
     try:
@@ -319,7 +328,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     except:
       pass
     self._storeLoadHistory(self.load_history)
-    self.reloadCurrentPath()
+#    self.reloadCurrentPath() # todo: keep the item selected in list view after the reload the path
 
   def show_packages(self, show):
     if show:
