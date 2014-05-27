@@ -343,7 +343,7 @@ class StartHandler(object):
         param_server_multi.deleteParam(rospy.get_name(), p)
       r = param_server_multi()
       for code, msg, _ in r:
-        if code != 1:
+        if code != 1 and "is not set" != msg:
           rospy.logwarn("Failed to clear parameter: %s", msg)
 #          raise StartException("Failed to clear parameter: %s"%(msg))
 
@@ -530,28 +530,33 @@ class StartHandler(object):
       print "Start ROS-Master with", masteruri, "..."
       # run a roscore
       from urlparse import urlparse
-      master_port = str(urlparse(masteruri).port)
+      master_port = urlparse(masteruri).port
       new_env = dict(os.environ)
       new_env['ROS_MASTER_URI'] = masteruri
-      cmd_args = [nm.ScreenHandler.getSceenCmd(''.join(['/roscore', '--', master_port])), 'roscore', '--port', master_port]
-      subprocess.Popen(shlex.split(' '.join([str(c) for c in cmd_args])), env=new_env)
-      # wait for roscore to avoid connection problems while init_node
-      result = -1
-      count = 1
-      while result == -1 and count < 11:
-        try:
-          print "  retry connect to ROS master", count, '/', 10
-          master = xmlrpclib.ServerProxy(masteruri)
-          result, uri, msg = master.getUri(rospy.get_name())
-        except:
-          time.sleep(1)
-          count += 1
-      if count >= 11:
-        raise StartException('Cannot connect to the ROS-Master: '+  str(masteruri))
+      cmd_args = '%s roscore --port %d'%(nm.ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
+      print "    %s"%cmd_args
+      try:
+        subprocess.Popen(shlex.split(cmd_args), env=new_env)
+        # wait for roscore to avoid connection problems while init_node
+        result = -1
+        count = 1
+        while result == -1 and count < 11:
+          try:
+            print "  retry connect to ROS master", count, '/', 10
+            master = xmlrpclib.ServerProxy(masteruri)
+            result, uri, msg = master.getUri(rospy.get_name())
+          except:
+            time.sleep(1)
+            count += 1
+        if count >= 11:
+          raise StartException('Cannot connect to the ROS-Master: '+  str(masteruri))
+      except Exception as e:
+        import sys
+        print  >> sys.stderr, e
+        raise
     finally:
       socket.setdefaulttimeout(None)
 
-    
   def callService(self, service_uri, service, service_type, service_args=[]):
     '''
     Calls the service and return the response.
@@ -666,6 +671,7 @@ class StartHandler(object):
     else:
       request = '[]' if len(nodes) != 1 else nodes[0]
       try:
+        socket.setdefaulttimeout(3)
         output, error, ok = nm.ssh().ssh_exec(host, [nm.STARTER_SCRIPT, '--ros_log_path', request], user, pw, auto_pw_request)
         if ok:
           return output
@@ -673,6 +679,9 @@ class StartHandler(object):
           raise StartException(str(''.join(['Get log path from "', host, '" failed:\n', error])))
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.copylogPath2Clipboards, (host, nodes, auto_pw_request))
+      finally:
+        socket.setdefaulttimeout(None)
+
 
   @classmethod
   def openLog(cls, nodename, host, user=None):

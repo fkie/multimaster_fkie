@@ -1644,7 +1644,7 @@ class MasterViewProxy(QtGui.QWidget):
         self.stop_nodes(selectedNodes)
       finally:
         self.setCursor(cursor)
-  
+
   def stop_node(self, node, force=False):
     if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
       try:
@@ -1934,9 +1934,7 @@ class MasterViewProxy(QtGui.QWidget):
       nodenames.append(n.name)
     try:
       host = nm.nameres().getHostname(self.masteruri)
-      socket.setdefaulttimeout(3)
       path_on_host = nm.starter().copylogPath2Clipboards(host, nodenames, True)
-      socket.setdefaulttimeout(None)
       QtGui.QApplication.clipboard().setText(''.join([getpass.getuser() if self.is_local else self.current_user, '@', host, ':', path_on_host]))
     except Exception as e:
       WarningMessageBox(QtGui.QMessageBox.Warning, "Get log path", 

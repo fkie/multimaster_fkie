@@ -220,13 +220,6 @@ class MainWindow(QtGui.QMainWindow):
     # since the is_local method is threaded for host names, call it to cache the localhost
     nm.is_local("localhost")
 
-    # timer to update the showed update time of the ros state 
-    self.master_timecheck_timer = QtCore.QTimer()
-    self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
-    self.master_timecheck_timer.start(1000)
-    self._refresh_time = time.time()
-    self._last_time_view_update = time.time()
-
     # set the help text
     try:
       from docutils import examples
@@ -242,9 +235,9 @@ class MainWindow(QtGui.QMainWindow):
       ScreenHandler.testScreen()
     except Exception as e:
       rospy.logerr("No SCREEN available! You can't launch nodes.")
-      WarningMessageBox(QtGui.QMessageBox.Warning, "No SCREEN", 
-                        "No SCREEN available! You can't launch nodes.",
-                        '%s'%e).exec_()
+#      WarningMessageBox(QtGui.QMessageBox.Warning, "No SCREEN", 
+#                        "No SCREEN available! You can't launch nodes.",
+#                        '%s'%e).exec_()
 
     self.ui.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
 
@@ -271,6 +264,13 @@ class MainWindow(QtGui.QMainWindow):
     self.state_topic.state_signal.connect(self.on_master_state_changed)
     self.stats_topic = MasterStatisticTopic()
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
+
+    # timer to update the showed update time of the ros state 
+    self.master_timecheck_timer = QtCore.QTimer()
+    self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
+    self.master_timecheck_timer.start(1000)
+    self._refresh_time = time.time()
+    self._last_time_view_update = time.time()
 
     self._con_tries = dict()
     self._subscribe()
@@ -471,11 +471,14 @@ class MainWindow(QtGui.QMainWindow):
     own local monitoring of the ROS master state will be enabled.
     '''
     if not self.restricted_to_one_master:
-      result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
-      result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
-      self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
-      if not result_1 or not result_2:
-        self._setLocalMonitoring(True)
+      try:
+        result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
+        result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
+        self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
+        if not result_1 or not result_2:
+          self._setLocalMonitoring(True)
+      except:
+        pass
     else:
       self._setLocalMonitoring(True)
 
