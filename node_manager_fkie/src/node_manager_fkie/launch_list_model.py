@@ -58,9 +58,6 @@ class LaunchItem(QtGui.QStandardItem):
   PACKAGE = 11
   STACK = 12
 
-  CFG_FILES = ['.yaml', '.yml', '.sync', '.iface']
-
-
   def __init__(self, name, path, id, parent=None):
     '''
     Initialize the topic item.
@@ -175,9 +172,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
   '''
   header = [('Name', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
-  
-  RECENT_LENGTH = 5
-  
+
   def __init__(self):
     '''
     Creates a new list model.
@@ -317,8 +312,11 @@ class LaunchListModel(QtGui.QStandardItemModel):
     except:
       pass
     self.load_history.append(file)
-    if len(self.load_history) > self.RECENT_LENGTH:
-      self.load_history.pop(0)
+    try:
+      while len(self.load_history) > nm.settings().launch_history_length:
+        self.load_history.pop(0)
+    except:
+      pass
     self._storeLoadHistory(self.load_history)
 #    self.reloadCurrentPath() # todo: keep the item selected in list view after the reload the path
 
@@ -464,7 +462,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         if (path.endswith('.launch')):
           return LaunchItem.LAUNCH_FILE
         else:
-          for e in LaunchItem.CFG_FILES:
+          for e in nm.Settings().LAUNCH_VIEW_EXT:
             if path.endswith(e):
               return LaunchItem.CFG_FILE
       elif os.path.isdir(path):
@@ -553,16 +551,16 @@ class LaunchListModel(QtGui.QStandardItemModel):
     @rtype: C{[str]}
     '''
     result = list()
-    historyFile = ''.join([nm.CFG_PATH, 'launch.history'])
-    if os.path.isfile(historyFile):
-      with open(historyFile, 'r') as f:
-        line = f.readline()
-        while line:
-          if line:
-            if os.path.isfile(line.strip()):
-              result.append(line.strip())
-          line = f.readline()
-      f.closed
+    historyFile = nm.settings().qsettings(nm.settings().LAUNCH_HISTORY_FILE)
+    size = historyFile.beginReadArray("launch_history")
+    for i in range(size):
+      historyFile.setArrayIndex(i)
+      if i >= nm.settings().launch_history_length:
+        break
+      file = historyFile.value("file")
+      if os.path.isfile(file):
+        result.append(file)
+    historyFile.endArray()
     return result
 
   def _storeLoadHistory(self, files):
@@ -571,9 +569,9 @@ class LaunchListModel(QtGui.QStandardItemModel):
     @param files: the list with filenames
     @type files: C{[str]}
     '''
-    if not os.path.isdir(nm.CFG_PATH):
-      os.makedirs(nm.CFG_PATH)
-    with open(''.join([nm.CFG_PATH, 'launch.history']), 'w') as f:
-      for files in files:
-        f.write(''.join([files, '\n']))
-    f.closed
+    historyFile = nm.settings().qsettings(nm.settings().LAUNCH_HISTORY_FILE)
+    historyFile.beginWriteArray("launch_history")
+    for i, file in enumerate(files):
+      historyFile.setArrayIndex(i)
+      historyFile.setValue("file", file)
+    historyFile.endArray()

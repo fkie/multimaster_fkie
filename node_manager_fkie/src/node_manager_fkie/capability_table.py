@@ -139,7 +139,7 @@ class CapabilityHeader(QtGui.QHeaderView):
       obj['description'] = description
       del obj['images'][:]
       for image_path in images:
-        img = ''.join([nm.PACKAGE_DIR,image_path])
+        img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
         if os.path.isfile(img):
           obj['images'].append(QtGui.QPixmap(img))
 
@@ -162,7 +162,7 @@ class CapabilityHeader(QtGui.QHeaderView):
         obj['description'] = description
       if not obj['images']:
         for image_path in images:
-          img = ''.join([nm.PACKAGE_DIR,image_path])
+          img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
           if os.path.isfile(img):
             obj['images'].append(QtGui.QPixmap(img))
 

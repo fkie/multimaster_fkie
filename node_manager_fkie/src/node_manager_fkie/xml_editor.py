@@ -40,6 +40,7 @@ from xml_highlighter import XmlHighlighter
 from yaml_highlighter import YamlHighlighter
 from detailed_msg_box import WarningMessageBox
 
+import node_manager_fkie as nm
 from master_discovery_fkie.common import resolve_url
 from common import package_name
 
@@ -54,7 +55,6 @@ class Editor(QtGui.QTextEdit):
   ''' @ivar: A signal for request to open a configuration file'''
 
   SUBSTITUTION_ARGS = ['env', 'optenv', 'find', 'anon', 'arg']
-  FILE_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.sync', '.test', '.xml']
   CONTEXT_FILE_EXT = ['.launch', '.test', '.xml']
 
   def __init__(self, filename, parent=None):
@@ -187,7 +187,7 @@ class Editor(QtGui.QTextEdit):
               path = self.interpretPath(fileName)
               file = QtCore.QFile(path)
               ext = os.path.splitext(path)
-              if file.exists() and ext[1] in self.FILE_EXT:
+              if file.exists() and ext[1] in nm.Settings().FOLLOW_INCLUDED_EXT:
                 result.append(path)
             except:
               import traceback

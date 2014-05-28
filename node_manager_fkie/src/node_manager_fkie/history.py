@@ -37,23 +37,19 @@ import rospy
 import node_manager_fkie as nm
 
 class History(QtCore.QObject):
-  
-  HISTORY_LENGTH = 12
 
   PARAM_CACHE = dict()
   '''
   the cache is used to store and recover the value for last entered parameter in parameter dialog.
   '''
-  
-  PARAM_HISTORY_FILE = 'param.history'
-  
+
   def __init__(self):
     QtCore.QObject.__init__(self)
-    self.PARAM_CACHE = self.loadCache(self.PARAM_HISTORY_FILE)
+    self.PARAM_CACHE = self.loadCache(nm.settings().PARAM_HISTORY_FILE)
 
   def storeAll(self):
-    self.storeCache(self.PARAM_HISTORY_FILE, self.PARAM_CACHE, self.HISTORY_LENGTH)
-  
+    self.storeCache(nm.settings().PARAM_HISTORY_FILE, self.PARAM_CACHE, nm.settings().param_history_length)
+
   def cachedParamValues(self, key):
     try:
       return list(self.PARAM_CACHE[key])
@@ -76,9 +72,7 @@ class History(QtCore.QObject):
     @rtype: C{dict(str(name):[str(value), ...], ...)}
     '''
     result = {}
-    historyFile = ''.join([nm.CFG_PATH, file])
-    if not os.path.isdir(nm.CFG_PATH):
-      os.makedirs(nm.CFG_PATH)
+    historyFile = os.path.join(nm.settings().cfg_path, file)
     if os.path.isfile(historyFile):
       with open(historyFile, 'r') as f:
         line = f.readline()
@@ -90,7 +84,7 @@ class History(QtCore.QObject):
               if sep:
                 if not key in result.keys():
                   result[key] = [value]
-                else:
+                elif len(result[key]) <= nm.settings().param_history_length:
                   result[key].append(value)
           line = f.readline()
     return result
@@ -105,10 +99,8 @@ class History(QtCore.QObject):
     @param history_len: the maximal count of value for a key
     @type history_len: C{int}
     '''
-    if not os.path.isdir(nm.CFG_PATH):
-      os.makedirs(nm.CFG_PATH)
     ignored = dict()
-    with open(''.join([nm.CFG_PATH, file]), 'w') as f:
+    with open(os.path.join(nm.settings().cfg_path, file), 'w') as f:
       for key in cache.keys():
         count = 0
         for value in cache[key]:
@@ -133,7 +125,7 @@ class History(QtCore.QObject):
         cache[key] = [uvalue]
       elif not uvalue in cache[key]:
         cache[key].insert(0, uvalue)
-        if len(cache[key]) >= self.HISTORY_LENGTH:
+        if len(cache[key]) >= nm.settings().param_history_length:
           cache[key].pop()
       else:
         cache[key].remove(uvalue)

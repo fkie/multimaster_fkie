@@ -641,15 +641,16 @@ class HostItem(GroupItem):
       self._hostname = str(address)
     GroupItem.__init__(self, name, parent)
     self.id = (unicode(masteruri), unicode(address))
-    if QtCore.QFile.exists(''.join([nm.ROBOTS_DIR, name, '.png'])):
-      self.setIcon(QtGui.QIcon(''.join([nm.ROBOTS_DIR, name, '.png'])))
+    image_file = nm.settings().robot_image_file(name)
+    if QtCore.QFile.exists(image_file):
+      self.setIcon(QtGui.QIcon(image_file))
     else:
       if local:
         self.setIcon(QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'))
       else:
         self.setIcon(QtGui.QIcon(':/icons/remote.png'))
     self.descr_type = self.descr_name = self.descr = ''
-  
+
   @property
   def hostname(self):
     return self._hostname

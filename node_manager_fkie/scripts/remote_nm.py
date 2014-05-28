@@ -91,11 +91,11 @@ def main(argv=sys.argv):
     if args:
       if options['show_screen_log']:
         logfile = nm.ScreenHandler.getScreenLogFile(node=options['show_screen_log'])
-        p = subprocess.Popen(shlex.split(' '.join([nm.LESS, str(logfile)])))
+        p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
         p.wait()
       elif options['show_ros_log']:
         logfile = nm.ScreenHandler.getROSLogFile(node=options['show_ros_log'])
-        p = subprocess.Popen(shlex.split(' '.join([nm.LESS, str(logfile)])))
+        p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
         p.wait()
       elif options['ros_log_path']:
         if options['ros_log_path'] == '[]':
@@ -113,7 +113,8 @@ def main(argv=sys.argv):
         if os.path.isfile(roslog):
           os.remove(roslog)
       elif options['node_type'] and options['package'] and options['node_name']:
-        runNode(options['package'], options['node_type'], options['node_name'], args, options['prefix'], options['node_respawn'], options['masteruri'])
+        runNode(options['package'], options['node_type'], options['node_name'], 
+                args, options['prefix'], options['node_respawn'], options['masteruri'])
       elif options['pidkill']:
         import signal
         os.kill(int(options['pidkill']), signal.SIGKILL)
@@ -149,7 +150,7 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
     raise nm.StartException(' '.join([type, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
   # create string for node parameter. Set arguments with spaces into "'".
   node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
-  cmd_args = [nm.ScreenHandler.getSceenCmd(name), nm.RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
+  cmd_args = [nm.ScreenHandler.getSceenCmd(name), nm.Settings.RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
   print 'run on remote host:', ' '.join(cmd_args)
   # determine the current working path
   arg_cwd = getCwdArg('__cwd', args) 

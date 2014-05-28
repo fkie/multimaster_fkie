@@ -154,7 +154,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
     self.__use_sim_time = False
-    self.__current_user = nm.ssh().USER_DEFAULT
+    self.__current_user = nm.settings().default_user
     self.__robot_icons = []
     self.__current_robot_icon = None
     self.__current_parameter_robot_icon = ''

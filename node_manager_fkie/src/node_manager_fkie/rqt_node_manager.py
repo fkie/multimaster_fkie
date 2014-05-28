@@ -25,12 +25,13 @@ class NodeManager(Plugin):
         if not args.quiet:
             print 'arguments: ', args
             print 'unknowns: ', unknowns
-        masteruri = node_manager_fkie.init_cfg_path()
+        node_manager_fkie.init_settings()
+        masteruri = node_manager_fkie.settings().masteruri()
         node_manager_fkie.init_globals(masteruri)
         # Create QWidget
         try:
           self._widget = MainWindow()
-          self._widget.read_view_history()
+#          self._widget.read_view_history()
         except Exception, e:
           msgBox = QMessageBox()
           msgBox.setText(str(e))

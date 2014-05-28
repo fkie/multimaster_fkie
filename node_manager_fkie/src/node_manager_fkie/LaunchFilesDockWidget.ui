@@ -10,6 +10,9 @@
     <height>314</height>
    </rect>
   </property>
+  <property name="features">
+   <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+  </property>
   <property name="windowTitle">
    <string>Launch files</string>
   </property>

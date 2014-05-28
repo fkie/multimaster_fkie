@@ -62,7 +62,6 @@ class SSHhandler(object):
   '''
   The class to handle the SSH sessions to the remote hosts.
   '''
-  USER_DEFAULT = 'robot'
   SSH_SESSIONS = {} # host :session
   SSH_AUTH = {} # host : user
 
@@ -95,7 +94,7 @@ class SSHhandler(object):
     '''
     with self.mutex:
       try:
-        ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw, True, auto_pw_request)
+        ssh = self._getSSH(host, self.settings().default_user if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           sftp = ssh.open_sftp()
           try:
@@ -126,7 +125,7 @@ class SSHhandler(object):
     '''
     with self.mutex:
       try:
-        ssh = self._getSSH(host, self.USER_DEFAULT if user is None else user, pw, True, auto_pw_request)
+        ssh = self._getSSH(host, self.settings().default_user if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           cmd_str = str(' '.join(cmd))
           rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
@@ -160,7 +159,7 @@ class SSHhandler(object):
     with self.mutex:
       try:
         # workaround: use ssh in a terminal with X11 forward
-        user = self.USER_DEFAULT if user is None else user
+        user = self.settings().default_user if user is None else user
         if self.SSH_AUTH.has_key(host):
           user = self.SSH_AUTH[host]
         # generate string for SSH command
@@ -173,7 +172,7 @@ class SSHhandler(object):
                             '-oCheckHostIP=no',
                             ''.join([user, '@', host])])
         if not title is None:
-          cmd_str = nm.terminal_cmd([ssh_str, ' '.join(cmd)], title)
+          cmd_str = nm.settings().terminal_cmd([ssh_str, ' '.join(cmd)], title)
         else:
           cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
         rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)

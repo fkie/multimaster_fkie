@@ -65,6 +65,7 @@ from .select_dialog import SelectDialog
 from .master_list_model import MasterModel, MasterSyncItem
 from .log_widget import LogWidget
 from .launch_files_widget import LaunchFilesWidget
+from .settings_widget import SettingsWidget
 
 import node_manager_fkie as nm
 
@@ -97,42 +98,44 @@ class MainWindow(QtGui.QMainWindow):
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     # setup main window frame
     self.setObjectName('MainWindow')
-    self.ui = mainWindow = QtGui.QMainWindow()
-#    self.ui = mainWindow = loader.load(":/forms/MainWindow.ui")
+#    self = mainWindow = QtGui.QMainWindow()
+#    self = mainWindow = loader.load(":/forms/MainWindow.ui")
     ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MainWindow.ui')
     #/home/tiderko/ros/src/multimaster_fkie/node_manager_fkie/src/node_manager_fkie/
-    loadUi(ui_file, self.ui)
-    self.ui.setObjectName('MainUI')
-    self.ui.user_frame.setVisible(False)
+    loadUi(ui_file, self)
+    self.setObjectName('MainUI')
+    self.user_frame.setVisible(False)
     self._add_user_to_combo(getpass.getuser())
-    self.ui.userComboBox.editTextChanged.connect(self.on_user_changed)
-    self.ui.masterInfoFrame.setEnabled(False)
-    self.ui.infoButton.clicked.connect(self.on_info_clicked)
-    self.ui.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
-    self.ui.runButton.clicked.connect(self.on_run_node_clicked)
-    self.ui.rxconsoleButton.clicked.connect(self.on_show_rxconsole_clicked)
-    self.ui.rxgraphButton.clicked.connect(self.on_show_rxgraph_clicked)
-    self.ui.syncButton.released.connect(self.on_sync_dialog_released)
+    self.userComboBox.editTextChanged.connect(self.on_user_changed)
+    self.masterInfoFrame.setEnabled(False)
+    self.infoButton.clicked.connect(self.on_info_clicked)
+    self.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
+    self.runButton.clicked.connect(self.on_run_node_clicked)
+    self.rxconsoleButton.clicked.connect(self.on_show_rxconsole_clicked)
+    self.rxgraphButton.clicked.connect(self.on_show_rxgraph_clicked)
+    self.syncButton.released.connect(self.on_sync_dialog_released)
 
+    # setup settings widget
+    self.settings_dock = SettingsWidget(self)
+    self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.settings_dock)
     # setup logger widget
     self.log_dock = LogWidget(self)
     self.log_dock.added_signal.connect(self._on_log_added)
     self.log_dock.cleared_signal.connect(self._on_log_cleared)
-    self.ui.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.log_dock)
-    self.ui.logButton.clicked.connect(self._on_log_button_clicked)
-
+    self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.log_dock)
+    self.logButton.clicked.connect(self._on_log_button_clicked)
     # setup the launch files view
     self.launch_dock = LaunchFilesWidget(self)
     self.launch_dock.load_signal.connect(self.on_load_launch_file)
     self.launch_dock.load_as_default_signal.connect(self.on_load_launch_as_default)
     self.launch_dock.edit_signal.connect(self.on_launch_edit)
     self.launch_dock.transfer_signal.connect(self.on_launch_transfer)
-    self.ui.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.launch_dock)
+    self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.launch_dock)
 
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run.png")
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("Node Manager")
-    self.setCentralWidget(mainWindow)
+#    self.setCentralWidget(mainWindow)
 
     # init the stack layout which contains the information about different ros master
     self.stackedLayout = QtGui.QStackedLayout()
@@ -140,30 +143,30 @@ class MainWindow(QtGui.QMainWindow):
     emptyWidget = QtGui.QWidget()
     emptyWidget.setObjectName('emptyWidget')
     self.stackedLayout.addWidget(emptyWidget)
-    self.ui.tabWidget.currentChanged.connect(self.on_currentChanged_tab)
-    self.ui.tabLayout = QtGui.QVBoxLayout(self.ui.tabPlace)
-    self.ui.tabLayout.setObjectName("tabLayout")
-    self.ui.tabLayout.setContentsMargins(0, 0, 0, 0)
-    self.ui.tabLayout.addLayout(self.stackedLayout)
+    self.tabWidget.currentChanged.connect(self.on_currentChanged_tab)
+    self.tabLayout = QtGui.QVBoxLayout(self.tabPlace)
+    self.tabLayout.setObjectName("tabLayout")
+    self.tabLayout.setContentsMargins(0, 0, 0, 0)
+    self.tabLayout.addLayout(self.stackedLayout)
 
     # initialize the progress queue
-    self._progress_queue = ProgressQueue(self.ui.progressFrame, self.ui.progressBar, self.ui.progressCancelButton)
-    self._progress_queue_sync = ProgressQueue(self.ui.progressFrame_sync, self.ui.progressBar_sync, self.ui.progressCancelButton_sync)
+    self._progress_queue = ProgressQueue(self.progressFrame, self.progressBar, self.progressCancelButton)
+    self._progress_queue_sync = ProgressQueue(self.progressFrame_sync, self.progressBar_sync, self.progressCancelButton_sync)
 
     # initialize the view for the discovered ROS master
     self.master_model = MasterModel(self.getMasteruri())
-    self.ui.masterTableView.setModel(self.master_model)
-#    self.ui.masterTableView.setAlternatingRowColors(True)
-    self.ui.masterTableView.clicked.connect(self.on_master_table_clicked)
-    self.ui.masterTableView.pressed.connect(self.on_master_table_pressed)
-    self.ui.masterTableView.activated.connect(self.on_master_table_activated)
-    sm = self.ui.masterTableView.selectionModel()
+    self.masterTableView.setModel(self.master_model)
+#    self.masterTableView.setAlternatingRowColors(True)
+    self.masterTableView.clicked.connect(self.on_master_table_clicked)
+    self.masterTableView.pressed.connect(self.on_master_table_pressed)
+    self.masterTableView.activated.connect(self.on_master_table_activated)
+    sm = self.masterTableView.selectionModel()
     sm.currentRowChanged.connect(self.on_masterTableView_selection_changed)
     for i, (name, width) in enumerate(MasterModel.header):
-      self.ui.masterTableView.setColumnWidth(i, width)
-    self.ui.refreshAllButton.clicked.connect(self.on_all_master_refresh_clicked)
-    self.ui.discoveryButton.clicked.connect(self.on_discover_network_clicked)
-    self.ui.startRobotButton.clicked.connect(self.on_start_robot_clicked)
+      self.masterTableView.setColumnWidth(i, width)
+    self.refreshAllButton.clicked.connect(self.on_all_master_refresh_clicked)
+    self.discoveryButton.clicked.connect(self.on_discover_network_clicked)
+    self.startRobotButton.clicked.connect(self.on_start_robot_clicked)
 
     # stores the widget to a 
     self.masters = dict() # masteruri : MasterViewProxy
@@ -174,21 +177,23 @@ class MainWindow(QtGui.QMainWindow):
     self.__in_question = set()
 
     ############################################################################
-    self.capabilitiesTable = CapabilityTable(self.ui.capabilities_tab)
+    self.capabilitiesTable = CapabilityTable(self.capabilities_tab)
     self.capabilitiesTable.setObjectName("capabilitiesTable")
     self.capabilitiesTable.start_nodes_signal.connect(self.on_start_nodes)
     self.capabilitiesTable.stop_nodes_signal.connect(self.on_stop_nodes)
     self.capabilitiesTable.description_requested_signal.connect(self.on_description_update_cap)
-    self.ui.capabilities_tab.layout().addWidget(self.capabilitiesTable)
+    self.capabilities_tab.layout().addWidget(self.capabilitiesTable)
 
-    self.ui.descriptionTextEdit.setOpenLinks(False)
-    self.ui.descriptionTextEdit.anchorClicked.connect(self.on_description_anchorClicked)
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Shift+C", "copy selected description")), self.ui.descriptionTextEdit)
-    self._shortcut_copy.activated.connect(self.ui.descriptionTextEdit.copy)
-    self.ui.tabifyDockWidget(self.launch_dock, self.ui.descriptionDock)
-    self.ui.tabifyDockWidget(self.launch_dock, self.ui.helpDock)
+    self.descriptionTextEdit.setOpenLinks(False)
+    self.descriptionTextEdit.anchorClicked.connect(self.on_description_anchorClicked)
+    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Shift+C", "copy selected description")), self.descriptionTextEdit)
+    self._shortcut_copy.activated.connect(self.descriptionTextEdit.copy)
+
+    self.tabifyDockWidget(self.launch_dock, self.descriptionDock)
+    self.tabifyDockWidget(self.launch_dock, self.settings_dock)
+    self.tabifyDockWidget(self.launch_dock, self.helpDock)
     self.launch_dock.raise_()
-    self.ui.helpDock.setWindowIcon(QtGui.QIcon(':icons/crystal_clear_helpcenter.png'))
+    self.helpDock.setWindowIcon(QtGui.QIcon(':icons/crystal_clear_helpcenter.png'))
 
     flags = self.windowFlags()
     self.setWindowFlags(flags | QtCore.Qt.WindowContextHelpButtonHint)
@@ -203,19 +208,18 @@ class MainWindow(QtGui.QMainWindow):
     self._discover_dialog = None
     self.restricted_to_one_master = restricted_to_one_master
     if restricted_to_one_master:
-      self.ui.syncButton.setEnabled(False)
-      self.ui.refreshAllButton.setEnabled(False)
-      self.ui.discoveryButton.setEnabled(False)
-      self.ui.startRobotButton.setEnabled(False)
+      self.syncButton.setEnabled(False)
+      self.refreshAllButton.setEnabled(False)
+      self.discoveryButton.setEnabled(False)
+      self.startRobotButton.setEnabled(False)
 
     self._sync_dialog = SyncDialog()
 
     self.editor_dialogs  = dict() # [file] = XmlEditor
     '''@ivar: stores the open XmlEditor '''
 
-    self.ui.simTimeLabel.setVisible(False)
-    self.ui.launchServerLabel.setVisible(False)
-    self.ui.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
+    self.simTimeLabel.setVisible(False)
+    self.launchServerLabel.setVisible(False)
 
     # since the is_local method is threaded for host names, call it to cache the localhost
     nm.is_local("localhost")
@@ -223,13 +227,13 @@ class MainWindow(QtGui.QMainWindow):
     # set the help text
     try:
       from docutils import examples
-      with file(nm.HELP_FILE) as f:
-        self.ui.textBrowser.setText(examples.html_body(unicode(f.read())))
+      with file(nm.settings().HELP_FILE) as f:
+        self.textBrowser.setText(examples.html_body(unicode(f.read())))
     except:
       import traceback
       msg = "Error while generate help: %s"%traceback.format_exc()
       rospy.logwarn(msg)
-      self.ui.textBrowser.setText(msg)
+      self.textBrowser.setText(msg)
 
     try:
       ScreenHandler.testScreen()
@@ -239,7 +243,18 @@ class MainWindow(QtGui.QMainWindow):
 #                        "No SCREEN available! You can't launch nodes.",
 #                        '%s'%e).exec_()
 
-    self.ui.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
+    self.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
+
+    try:
+      self.readSettings()
+    except Exception as e:
+      rospy.logwarn("Error while read settings: %s"%e)
+    # setup the hide button, which hides the docks on left side
+    docks = self._dock_widget_in(QtCore.Qt.LeftDockWidgetArea, only_visible=True)
+    if not docks:
+      self.hideDocksButton.toggle()
+      self.on_hide_docks_toggled(True)
+    self.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
 
     # =============================
     # Initialize the update handler
@@ -275,74 +290,80 @@ class MainWindow(QtGui.QMainWindow):
     self._con_tries = dict()
     self._subscribe()
 
+  def _dock_widget_in(self, area=QtCore.Qt.LeftDockWidgetArea, only_visible=False):
+    result = []
+    docks = [self.launch_dock, self.descriptionDock, self.helpDock, self.networkDock]
+    for dock in docks:
+      if self.dockWidgetArea(dock) == area:
+        if not only_visible or (only_visible and dock.isVisibleTo(self)):
+          result.append(dock)
+    return result
+
   def _on_log_button_clicked(self):
     self.log_dock.setVisible(not self.log_dock.isVisible())
 
   def _on_log_added(self, info, warn, err, fatal):
-    self.ui.logButton.setEnabled(True)
+    self.logButton.setEnabled(True)
 
   def _on_log_cleared(self):
-    self.ui.logButton.setIcon(self.__icons['log_warning'][0])
-    self.ui.logButton.setText('')
-    self.ui.logButton.setEnabled(False)
+    self.logButton.setIcon(self.__icons['log_warning'][0])
+    self.logButton.setText('')
+    self.logButton.setEnabled(False)
 
   def on_hide_docks_toggled(self, checked):
-    if self.ui.dockWidgetArea(self.launch_dock) == QtCore.Qt.LeftDockWidgetArea:
+    if self.dockWidgetArea(self.launch_dock) == QtCore.Qt.LeftDockWidgetArea:
       self.launch_dock.setVisible(not checked)
-    if self.ui.dockWidgetArea(self.ui.descriptionDock) == QtCore.Qt.LeftDockWidgetArea:
-      self.ui.descriptionDock.setVisible(not checked)
-    if self.ui.dockWidgetArea(self.ui.helpDock) == QtCore.Qt.LeftDockWidgetArea:
-      self.ui.helpDock.setVisible(not checked)
-    if self.ui.dockWidgetArea(self.ui.networkDock) == QtCore.Qt.LeftDockWidgetArea:
-      self.ui.networkDock.setVisible(not checked)
-    self.ui.hideDocksButton.setArrowType(QtCore.Qt.RightArrow if checked else QtCore.Qt.LeftArrow)
-    historyFile = os.path.join(nm.CFG_PATH, 'view.history')
-    with open(historyFile, 'w') as f:
-      f.write(''.join(['selected_robot:=', self._history_selected_robot, '\n']))
-      f.write(''.join(['show_left_docks:=', 'false' if checked else 'true', '\n']))
-      f.write(''.join(['area_launch_dock:=', str(self.ui.dockWidgetArea(self.launch_dock)), '\n']))
-      f.write(''.join(['area_descr_dock:=', str(self.ui.dockWidgetArea(self.ui.descriptionDock)), '\n']))
-
-  def read_view_history(self):
-    show_left_docks = True
-    area_launch_dock = 1
-    area_descr_dock = 1
-    historyFile = os.path.join(nm.CFG_PATH, 'view.history')
-    with open(historyFile, 'r') as f:
-      line = f.readline()
-      while line:
-        if line:
-          line = line.strip()
-          if line:
-            key, sep, value = line.partition(':=')
-            if sep:
-              if key == 'selected_robot':
-                self._history_selected_robot = value
-              if key == 'show_left_docks':
-                show_left_docks = (value=='true')
-              if key == 'area_launch_dock':
-                area_launch_dock = int(value)
-              if key == 'area_descr_dock':
-                area_descr_dock = int(value)
-        line = f.readline()
-    if area_launch_dock != QtCore.Qt.LeftDockWidgetArea:
-      self.ui.addDockWidget(area_launch_dock, self.launch_dock)
-    if area_descr_dock != QtCore.Qt.LeftDockWidgetArea:
-      self.ui.addDockWidget(area_descr_dock, self.ui.descriptionDock)
-    self.ui.hideDocksButton.setChecked(not show_left_docks)
-    self.on_hide_docks_toggled(not show_left_docks)
+    if self.dockWidgetArea(self.descriptionDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.descriptionDock.setVisible(not checked)
+    if self.dockWidgetArea(self.helpDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.helpDock.setVisible(not checked)
+    if self.dockWidgetArea(self.networkDock) == QtCore.Qt.LeftDockWidgetArea:
+      self.networkDock.setVisible(not checked)
+    self.hideDocksButton.setArrowType(QtCore.Qt.RightArrow if checked else QtCore.Qt.LeftArrow)
 
   def on_currentChanged_tab(self, index):
     pass
-#    if index == self.ui.tabWidget.widget(0):
-#      self.ui.networkDock.show()
+#    if index == self.tabWidget.widget(0):
+#      self.networkDock.show()
 #      self.launch_dock.show()
 #    else:
-#      self.ui.networkDock.hide()
+#      self.networkDock.hide()
 #      self.launch_dock.hide()
 
+  def readSettings(self):
+    if nm.settings().store_geometry:
+      settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+      self._history_selected_robot = settings.value("selected_robot", '')
+      settings.beginGroup("mainwindow")
+      maximized = settings.value("maximized", 'false') == 'true'
+      if maximized:
+        self.showMaximized()
+      else:
+        self.resize(settings.value("size", QtCore.QSize(1024, 720)))
+        self.move(settings.value("pos", QtCore.QPoint(0, 0)))
+      try:
+        self.restoreState(settings.value("window_state"))
+      except:
+        pass
+      settings.endGroup()
+
+  def storeSetting(self):
+    if nm.settings().store_geometry:
+      settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+      settings.beginGroup("mainwindow")
+      settings.setValue("size", self.size())
+      settings.setValue("pos", self.pos())
+      settings.setValue("maximized", self.isMaximized())
+      settings.setValue("window_state", self.saveState())
+      settings.endGroup()
+
   def closeEvent(self, event):
+    try:
+      self.storeSetting()
+    except Exception as e:
+      rospy.logwarn("Error while store settings: %s"%e)
     self.finish()
+    QtGui.QMainWindow.closeEvent(self, event)
 
   def finish(self):
     if not self._finished:
@@ -394,7 +415,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].stop_nodes_signal.disconnect()
       self.masters[masteruri].robot_icon_updated.disconnect()
       self.stackedLayout.removeWidget(self.masters[masteruri])
-      self.ui.tabPlace.layout().removeWidget(self.masters[masteruri])
+      self.tabPlace.layout().removeWidget(self.masters[masteruri])
       self.masters[masteruri].setParent(None)
       del self.masters[masteruri]
 
@@ -489,13 +510,13 @@ class MainWindow(QtGui.QMainWindow):
     @param on: the enable / disable the local monitoring
     @type on: C{boolean}
     '''
-    self.ui.masterTableView.setEnabled(not on)
-    self.ui.refreshAllButton.setEnabled(not on)
+    self.masterTableView.setEnabled(not on)
+    self.refreshAllButton.setEnabled(not on)
     self.own_master_monitor.pause(not on)
     if on:
-      self.ui.masterTableView.setToolTip("use 'Start' button to enable the master discovering")
+      self.masterTableView.setToolTip("use 'Start' button to enable the master discovering")
     else:
-      self.ui.masterTableView.setToolTip('')
+      self.masterTableView.setToolTip('')
     if on:
       # remove discovered ROS master and set the local master to selected
       for uri in self.masters.keys():
@@ -507,7 +528,7 @@ class MainWindow(QtGui.QMainWindow):
           if not master.master_state is None:
             self.master_model.removeMaster(master.master_state.name)
           self.removeMaster(uri)
-#      self.ui.masterTableView.doItemsLayout()
+#      self.masterTableView.doItemsLayout()
 
 
 
@@ -576,7 +597,7 @@ class MainWindow(QtGui.QMainWindow):
       self.getMaster(msg.master.uri).master_state = msg.master
       self._assigne_icon(msg.master.name)
       self.master_model.updateMaster(msg.master)
-#      self.ui.masterTableView.doItemsLayout()
+#      self.masterTableView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
     if msg.state == MasterState.STATE_NEW:
       nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
@@ -584,7 +605,7 @@ class MainWindow(QtGui.QMainWindow):
       self.getMaster(msg.master.uri).master_state = msg.master
       self._assigne_icon(msg.master.name)
       self.master_model.updateMaster(msg.master)
-#      self.ui.masterTableView.doItemsLayout()
+#      self.masterTableView.doItemsLayout()
       self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
     if msg.state == MasterState.STATE_REMOVED:
       if msg.master.uri == self.getMasteruri():
@@ -593,7 +614,7 @@ class MainWindow(QtGui.QMainWindow):
       else:
         nm.nameres().removeMasterEntry(msg.master.uri)
         self.master_model.removeMaster(msg.master.name)
-#        self.ui.masterTableView.doItemsLayout()
+#        self.masterTableView.doItemsLayout()
         self.removeMaster(msg.master.uri)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
@@ -608,7 +629,7 @@ class MainWindow(QtGui.QMainWindow):
     :param path: path of the icon (Default: None)
     :type path: str
     '''
-    icon_path = path if path else ''.join([nm.ROBOTS_DIR, name, '.png'])
+    icon_path = path if path else nm.settings().robot_image_file(name)
     if not self.__icons.has_key(name) or self.__icons[name][1] != path:
       if QtCore.QFile.exists(icon_path):
         self.__icons[name] = (QtGui.QIcon(icon_path), icon_path)
@@ -661,8 +682,8 @@ class MainWindow(QtGui.QMainWindow):
       self.updateDuplicateNodes()
       # update the buttons, whether master is synchronized or not
       if not self.currentMaster is None and not self.currentMaster.master_info is None and not self.restricted_to_one_master:
-        self.ui.syncButton.setEnabled(True)
-        self.ui.syncButton.setChecked(not self.currentMaster.master_info.getNodeEndsWith('master_sync') is None)
+        self.syncButton.setEnabled(True)
+        self.syncButton.setChecked(not self.currentMaster.master_info.getNodeEndsWith('master_sync') is None)
     else:
       self.masterlist_service.retrieveMasterList(minfo.masteruri, False)
 #    cputimes_m = os.times()
@@ -781,11 +802,11 @@ class MainWindow(QtGui.QMainWindow):
       thread.start()
 
   def on_sync_dialog_released(self, released=False, masteruri=None, external_call=False):
-    self.ui.syncButton.setEnabled(False)
+    self.syncButton.setEnabled(False)
     master = self.currentMaster
     if not masteruri is None:
       master = self.getMaster(masteruri, False)
-    if not master is None and (self.ui.syncButton.isChecked() or external_call):
+    if not master is None and (self.syncButton.isChecked() or external_call):
       self._sync_dialog.resize(350,190)
       if self._sync_dialog.exec_():
         try:
@@ -807,12 +828,12 @@ class MainWindow(QtGui.QMainWindow):
                             "Error while start sync node",
                             str(traceback.format_exc())).exec_()
       else:
-        self.ui.syncButton.setChecked(False)
+        self.syncButton.setChecked(False)
     elif not master is None and not master.master_info is None:
       node = master.master_info.getNodeEndsWith('master_sync')
       if not node is None:
         master.stop_nodes([node])
-    self.ui.syncButton.setEnabled(True)
+    self.syncButton.setEnabled(True)
 
   def on_sync_released(self, external_call=False):
     '''
@@ -823,14 +844,14 @@ class MainWindow(QtGui.QMainWindow):
       if external_call:
         self.on_sync_dialog_released()
 #      else:
-#        self.ui.syncButton.showMenu()
+#        self.syncButton.showMenu()
       if not self.currentMaster.master_info is None:
         node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
-        self.ui.syncButton.setChecked(not node is None)
+        self.syncButton.setChecked(not node is None)
     else:
-      self.ui.syncButton.setEnabled(False)
+      self.syncButton.setEnabled(False)
       if not self.currentMaster is None:
-        if self.ui.syncButton.isChecked():
+        if self.syncButton.isChecked():
           # ask the user to start the master_sync with loaded launch file
           if not self.currentMaster.master_info is None:
             node = self.currentMaster.getNode('/master_sync')
@@ -868,7 +889,7 @@ class MainWindow(QtGui.QMainWindow):
           node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
           if not node is None:
             self.currentMaster.stop_nodes([node])
-      self.ui.syncButton.setEnabled(True)
+      self.syncButton.setEnabled(True)
 
   def on_master_timecheck(self):
     # HACK: sometimes the local monitoring will not be activated. This is the detection.
@@ -885,8 +906,8 @@ class MainWindow(QtGui.QMainWindow):
         masteruri = master.master_state.uri
         if self.restricted_to_one_master:
           name = ''.join([name, ' <span style=" color:red;">(restricted)</span>'])
-          if not self.ui.masternameLabel.toolTip():
-            self.ui.masternameLabel.setToolTip('The multicore options are disabled, because the roscore is running on remote host!')
+          if not self.masternameLabel.toolTip():
+            self.masternameLabel.setToolTip('The multicore options are disabled, because the roscore is running on remote host!')
         if not master.master_info is None:
           self.showMasterName(masteruri, name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
           pass
@@ -916,39 +937,39 @@ class MainWindow(QtGui.QMainWindow):
       pass
     if self.__current_master_label_name != name:
       self.__current_master_label_name = name
-      self.ui.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>'%name)
+      self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>'%name)
     ts = 'updated: %s'%str(timestamp) if not timestamp is None else ''
-    self.ui.masterInfoLabel.setText('<span style=" font-size:8pt;">%s%s</span>'%(con_err, ts))
+    self.masterInfoLabel.setText('<span style=" font-size:8pt;">%s%s</span>'%(con_err, ts))
 
     # load the robot image, if one exists
-    if self.ui.masternameLabel.isEnabled():
+    if self.masternameLabel.isEnabled():
       if self.__icons.has_key(name):
         if self.__icons[name][0] != self.__current_icon:
           icon = self.__icons[name][0]
           self.__current_icon = icon
-          self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
-          self.ui.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', self.__icons[name][1], '" alt="', name,'"></body></html>']))
+          self.imageLabel.setPixmap(icon.pixmap(self.nameFrame.size()))
+          self.imageLabel.setToolTip(''.join(['<html><head></head><body><img src="', self.__icons[name][1], '" alt="', name,'"></body></html>']))
       elif self.__icons['default_pc'][0] != self.__current_icon:
         icon = self.__icons['default_pc'][0]
         self.__current_icon = icon
-        self.ui.imageLabel.setPixmap(icon.pixmap(self.ui.nameFrame.size()))
-        self.ui.imageLabel.setToolTip('')
+        self.imageLabel.setPixmap(icon.pixmap(self.nameFrame.size()))
+        self.imageLabel.setToolTip('')
     # set sim_time info
     master = self.getMaster(masteruri, False)
-    sim_time_enabled = self.ui.masternameLabel.isEnabled() and not master is None and master.use_sim_time
-    self.ui.simTimeLabel.setVisible(sim_time_enabled)
-    launch_server_enabled = self.ui.masternameLabel.isEnabled() and (not master is None) and master.has_launch_server()
-    self.ui.launchServerLabel.setVisible(launch_server_enabled)
-    self.ui.masternameLabel.setEnabled(online)
-    self.ui.masterInfoFrame.setEnabled((not timestamp is None))
+    sim_time_enabled = self.masternameLabel.isEnabled() and not master is None and master.use_sim_time
+    self.simTimeLabel.setVisible(sim_time_enabled)
+    launch_server_enabled = self.masternameLabel.isEnabled() and (not master is None) and master.has_launch_server()
+    self.launchServerLabel.setVisible(launch_server_enabled)
+    self.masternameLabel.setEnabled(online)
+    self.masterInfoFrame.setEnabled((not timestamp is None))
     # update warning symbol / text
-    if self.ui.logButton.isEnabled():
-      if self.ui.logButton.text():
-        self.ui.logButton.setIcon(self.__icons['log_warning'][0])
-        self.ui.logButton.setText('')
+    if self.logButton.isEnabled():
+      if self.logButton.text():
+        self.logButton.setIcon(self.__icons['log_warning'][0])
+        self.logButton.setText('')
       else:
-        self.ui.logButton.setText('%d'%self.log_dock.count())
-        self.ui.logButton.setIcon(QtGui.QIcon())
+        self.logButton.setText('%d'%self.log_dock.count())
+        self.logButton.setIcon(QtGui.QIcon())
 
 
   def timestampStr(self, timestamp):
@@ -992,10 +1013,10 @@ class MainWindow(QtGui.QMainWindow):
     '''
     item = self.master_model.itemFromIndex(selected)
     if isinstance(item, MasterSyncItem):
-      self.ui.syncButton.setChecked(not item.synchronized)
+      self.syncButton.setChecked(not item.synchronized)
       item.synchronized = not item.synchronized
       self.on_sync_released(True)
-      item.synchronized = self.ui.syncButton.isChecked()
+      item.synchronized = self.syncButton.isChecked()
 
   def on_master_table_activated(self, selected):
     pass
@@ -1005,7 +1026,7 @@ class MainWindow(QtGui.QMainWindow):
     If a master was selected, set the corresponding Widget of the stacked layout
     to the current widget and shows the state of the selected master.
     '''
-#     si = self.ui.masterTableView.selectedIndexes()
+#     si = self.masterTableView.selectedIndexes()
 #     for index in si:
 #       if index.row() == selected.row():
     item = self.master_model.itemFromIndex(selected)
@@ -1014,10 +1035,10 @@ class MainWindow(QtGui.QMainWindow):
       self.setCurrentMaster(item.master.uri)
       if not self.currentMaster.master_info is None and not self.restricted_to_one_master:
         node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
-        self.ui.syncButton.setEnabled(True)
-        self.ui.syncButton.setChecked(not node is None)
+        self.syncButton.setEnabled(True)
+        self.syncButton.setChecked(not node is None)
       else:
-        self.ui.syncButton.setEnabled(False)
+        self.syncButton.setEnabled(False)
       return
     self.launch_dock.raise_()
 
@@ -1033,7 +1054,7 @@ class MainWindow(QtGui.QMainWindow):
       self.stackedLayout.setCurrentWidget(master)
       show_user_field = not master.is_local
       self._add_user_to_combo(self.currentMaster.current_user)
-      self.ui.userComboBox.setEditText(self.currentMaster.current_user)
+      self.userComboBox.setEditText(self.currentMaster.current_user)
     elif master is None:
       self.currentMaster = None
       self.stackedLayout.setCurrentIndex(0)
@@ -1043,17 +1064,17 @@ class MainWindow(QtGui.QMainWindow):
         self.stackedLayout.setCurrentWidget(self.currentMaster)
         show_user_field = not self.currentMaster.is_local
         self._add_user_to_combo(self.currentMaster.current_user)
-        self.ui.userComboBox.setEditText(self.currentMaster.current_user)
+        self.userComboBox.setEditText(self.currentMaster.current_user)
       else:
         self.stackedLayout.setCurrentIndex(0)
-    self.ui.user_frame.setVisible(show_user_field)
+    self.user_frame.setVisible(show_user_field)
     self.on_master_timecheck()
 
   def _add_user_to_combo(self, user):
-    for i in range(self.ui.userComboBox.count()):
-      if user.lower() == self.ui.userComboBox.itemText(i).lower():
+    for i in range(self.userComboBox.count()):
+      if user.lower() == self.userComboBox.itemText(i).lower():
         return
-    self.ui.userComboBox.addItem(user)
+    self.userComboBox.addItem(user)
 
   def on_user_changed(self, user):
     if not self.currentMaster is None:
@@ -1096,7 +1117,7 @@ class MainWindow(QtGui.QMainWindow):
                        'ROS Master Name' : ('string', 'autodetect'),
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
                        'Static hosts' : ('string', ''),
-                       'Username' : ('string', [self.ui.userComboBox.itemText(i) for i in reversed(range(self.ui.userComboBox.count()))]),
+                       'Username' : ('string', [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]),
                        'Send MCast' : ('bool', True),
                       }
     params = {'Host' : ('string', 'localhost'),
@@ -1293,7 +1314,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     if files:
       host = 'localhost'
-      username = nm.ssh().USER_DEFAULT
+      username = nm.settings().default_user
       if not self.currentMaster is None:
         host = nm.nameres().getHostname(self.currentMaster.masteruri)
         username = self.currentMaster.current_user
@@ -1456,16 +1477,16 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_description_update(self, title, text):
     if self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy):
-      self.ui.descriptionDock.setWindowTitle(title)
-      self.ui.descriptionTextEdit.setText(text)
+      self.descriptionDock.setWindowTitle(title)
+      self.descriptionTextEdit.setText(text)
       if text:
-        self.ui.descriptionDock.raise_()
+        self.descriptionDock.raise_()
       else:
         self.launch_dock.raise_()
 
   def on_description_update_cap(self, title, text):
-    self.ui.descriptionDock.setWindowTitle(title)
-    self.ui.descriptionTextEdit.setText(text)
+    self.descriptionDock.setWindowTitle(title)
+    self.descriptionTextEdit.setText(text)
 
   def on_description_anchorClicked(self, url):
     if url.toString().startswith('open_sync_dialog://'):
@@ -1537,15 +1558,15 @@ class MainWindow(QtGui.QMainWindow):
     '''
     if self.currentMaster:
       try:
-        if not os.path.isdir(nm.ROBOTS_DIR):
-          os.makedirs(nm.ROBOTS_DIR)
+        if not os.path.isdir(nm.settings().ROBOTS_DIR):
+          os.makedirs(nm.settings().ROBOTS_DIR)
         (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
                                                  "Set robot image",
-                                                 nm.ROBOTS_DIR,
+                                                 nm.settings().ROBOTS_DIR,
                                                  "Image files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.xbm);;All files (*)")
         if fileName and self.__current_master_label_name:
           p = QtGui.QPixmap(fileName)
-          p.save(os.path.join(nm.ROBOTS_DIR, self.__current_master_label_name+'.png'))
+          p.save(nm.settings().robot_image_file(self.__current_master_label_name))
         if self.__icons.has_key(self.__current_master_label_name):
           del self.__icons[self.__current_master_label_name]
         self._assigne_icon(self.__current_master_label_name)
