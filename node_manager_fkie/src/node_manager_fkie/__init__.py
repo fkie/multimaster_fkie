@@ -179,9 +179,9 @@ def is_local(hostname):
     # the hostname must be resolved => do it in a thread
     thread = threading.Thread(target=__is_local, args=((hostname,)))
     thread.daemon = True
-    thread.start()
     with _lock:
       HOSTS_CACHE[hostname] = thread
+    thread.start()
   return False
 
 def __is_local(hostname):
