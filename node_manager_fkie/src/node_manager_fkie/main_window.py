@@ -319,6 +319,8 @@ class MainWindow(QtGui.QMainWindow):
       self.helpDock.setVisible(not checked)
     if self.dockWidgetArea(self.networkDock) == QtCore.Qt.LeftDockWidgetArea:
       self.networkDock.setVisible(not checked)
+    if self.dockWidgetArea(self.settings_dock) == QtCore.Qt.LeftDockWidgetArea:
+      self.settings_dock.setVisible(not checked)
     self.hideDocksButton.setArrowType(QtCore.Qt.RightArrow if checked else QtCore.Qt.LeftArrow)
 
   def on_currentChanged_tab(self, index):
