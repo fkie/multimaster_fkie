@@ -108,16 +108,16 @@ class Settings(object):
   def cfg_path(self, path):
     if not os.path.isdir(path):
       os.makedirs(path)
-    self._cfg_path = path
-    if self._cfg_path != self.CFG_PATH:
+    if path != self.CFG_PATH:
       settings = self.qsettings(self.CFG_REDIRECT_FILE)
-      settings.setValue('cfg_path', self._cfg_path)
+      settings.setValue('cfg_path', path)
     else:
       # remove the redirection
       try:
-        os.remove(os.path.join(self._cfg_path, self.CFG_REDIRECT_FILE))
+        os.remove(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
       except:
         pass
+    self._cfg_path = path
 
   @property
   def robots_path(self):
