@@ -87,8 +87,14 @@ class Settings(object):
     self._robots_path = self.ROBOTS_DIR
     settings = self.qsettings(self.CFG_FILE)
     self._default_user = settings.value('default_user', self.USER_DEFAULT)
-    self._launch_history_length = int(settings.value('launch_history_length', self.LAUNCH_HISTORY_LENGTH))
-    self._param_history_length = int(settings.value('param_history_length', self.PARAM_HISTORY_LENGTH))
+    try:
+      self._launch_history_length = int(settings.value('launch_history_length', self.LAUNCH_HISTORY_LENGTH))
+    except:
+      self._launch_history_length = self.LAUNCH_HISTORY_LENGTH
+    try:
+      self._param_history_length = int(settings.value('param_history_length', self.PARAM_HISTORY_LENGTH))
+    except:
+      self._param_history_length = self.PARAM_HISTORY_LENGTH
     self._current_dialog_path = self.CURRENT_DIALOG_PATH
     self._log_viewer = self.LOG_VIEWER
     self._start_remote_script = self.STARTER_SCRIPT
