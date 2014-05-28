@@ -213,7 +213,7 @@ def finish(*arg):
     try:
       _history.storeAll()
     except Exception as e:
-      rospy.roswarn("Error while store history: %s"%e)
+      print >> sys.stderr, "Error while store history: %s"%e
   global main_form
   import main_window
   if isinstance(main_form, main_window.MainWindow):
