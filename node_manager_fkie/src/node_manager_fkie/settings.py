@@ -112,18 +112,19 @@ class Settings(object):
 
   @cfg_path.setter
   def cfg_path(self, path):
-    if not os.path.isdir(path):
-      os.makedirs(path)
-    if path != self.CFG_PATH:
-      settings = self.qsettings(self.CFG_REDIRECT_FILE)
-      settings.setValue('cfg_path', path)
-    else:
-      # remove the redirection
-      try:
-        os.remove(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
-      except:
-        pass
-    self._cfg_path = path
+    if path:
+      if not os.path.isdir(path):
+        os.makedirs(path)
+      if path != self.CFG_PATH:
+        settings = self.qsettings(self.CFG_REDIRECT_FILE)
+        settings.setValue('cfg_path', path)
+      else:
+        # remove the redirection
+        try:
+          os.remove(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
+        except:
+          pass
+      self._cfg_path = path
 
   @property
   def robots_path(self):
@@ -131,11 +132,12 @@ class Settings(object):
 
   @robots_path.setter
   def robots_path(self, path):
-    if not os.path.isdir(path):
-      os.makedirs(path)
-    self._robots_path = path
-    settings = self.qsettings(self.CFG_FILE)
-    settings.setValue('robots_path', self._robots_path)
+    if path:
+      if not os.path.isdir(path):
+        os.makedirs(path)
+      self._robots_path = path
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('robots_path', self._robots_path)
 
   @property
   def default_user(self):
@@ -229,9 +231,11 @@ class Settings(object):
 
   @store_geometry.setter
   def store_geometry(self, value):
-    self._store_geometry = self.str2bool(value)
-    settings = self.qsettings(self.CFG_FILE)
-    settings.setValue('store_geometry', self._store_geometry)
+    v = self.str2bool(value)
+    if self._store_geometry != v:
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('store_geometry', self._store_geometry)
+      self._store_geometry = v
 
   def str2bool(self, v):
     if isinstance(v, bool):
