@@ -1121,7 +1121,7 @@ class MasterViewProxy(QtGui.QWidget):
           item = '<a href="topic://%s">%s</a>'%(i, item_name)
           # add the count
           if not count is None:
-            item = '<span style="color:gray;">_%d_/</span>%s'%(count, item)
+            item = '<span style="color:gray;">_%d_/ </span>%s'%(count, item)
         elif type == 'SERVICE':
           item = '<a href="service://%s">%s</a>'%(i, item_name)
         elif type == 'LAUNCH':

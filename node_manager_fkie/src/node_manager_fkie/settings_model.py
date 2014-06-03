@@ -272,6 +272,7 @@ class SettingsModel(QtGui.QStandardItemModel):
     # remove all current items
     root = self.invisibleRootItem()
     while root.rowCount():
+      print "remove"
       root.removeRow(0)
     self.pyqt_workaround.clear()
     # add new items
@@ -303,7 +304,7 @@ class SettingsModel(QtGui.QStandardItemModel):
                      )
       root.appendRow(new_item_row)
       self.pyqt_workaround[name] = new_item_row[0]
-    
+
   def _get_settings_param(self, entry, param, default=None):
     try:
       return entry[0][param]

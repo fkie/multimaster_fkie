@@ -64,7 +64,15 @@ class SettingsWidget(QtGui.QDockWidget):
     for i, (name, width) in enumerate(SettingsModel.header):
       self.settingsTreeView.setColumnWidth(i, width)
     self.item_delegate = ItemDelegate()
+    self.item_delegate.settings_path_changed_signal.connect(self.reload_settings)
     self.settingsTreeView.setItemDelegateForColumn(1, self.item_delegate)
+    self.reload_settings()
+
+  def reload_settings(self):
+    '''
+    Load the current settings data into the model. The settings itself will not
+    be loaded.
+    '''
     settings = {'Default user:' : ({
                                    'value' : nm.settings().default_user,
                                    'settings' : nm.settings(),
@@ -115,24 +123,15 @@ class SettingsWidget(QtGui.QDockWidget):
                                       'The images with robot name will be displayed in the '
                                       'info bar.</p>'
                                    },),
-                'View file extentions:' : ({
+                'Show files extentions:' : ({
                                    'value' : ', '.join(nm.settings().launch_view_file_ext),
                                    'settings' : nm.settings(),
                                    'attrname' : 'launch_view_file_ext',
                                    'value_default' : ', '.join(nm.settings().LAUNCH_VIEW_EXT),
-                                   'tooltip'  : '<p>Files displayed in <span style=" '
-                                      'font-weight:600;">launch files</span> view</p>'
+                                   'tooltip'  : '<p>Files that are displayed next to Launch '
+                                      'files in the <span style="font-weight:600;">'
+                                      'launch files</span> view</p>'
                                    },),
-                'Follow file extentions:' : ({
-                                   'value' : ', '.join(nm.settings().follow_include_file_ext),
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'launch_view_file_ext',
-                                   'value_default' : ', '.join(nm.settings().FOLLOW_INCLUDED_EXT),
-                                   'tooltip'  : '<p>Files which are classified as '
-                                      '<span style=" font-weight:600;">included file</span> '
-                                      'in launch files.</p>'
-                                   },),
-
                 'Store window layout:' : ({
                                    'value' : nm.settings().store_geometry,
                                    'settings' : nm.settings(),
@@ -147,15 +146,25 @@ class SettingsWidget(QtGui.QDockWidget):
     self.settingsTreeView.expandAll()
 
 
-
 class ItemDelegate(QtGui.QStyledItemDelegate):
+  '''
+  This ItemDelegate provides editors for different setting types in settings view.
+  '''
+
+  settings_path_changed_signal = QtCore.Signal()
+
+  reload_settings = False
 
   def createEditor(self, parent, option, index):
+    '''
+    Creates a editor in the TreeView depending on type of the settings data.
+    '''
     item = self._itemFromIndex(index)
     if item.edit_type() == SettingsValueItem.EDIT_TYPE_AUTODETECT:
       if isinstance(item.value(), bool):
-        item.setData('1' if item.value() else '0', QtCore.Qt.EditRole)
         box = QtGui.QCheckBox(parent)
+        box.setFocusPolicy(QtCore.Qt.StrongFocus)
+        box.setAutoFillBackground(True)
         box.stateChanged.connect(self.edit_finished)
         return box
       elif isinstance(item.value(), int):
@@ -167,35 +176,28 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
           box.setMaximum(item.value_max())
         return box
     elif item.edit_type() == SettingsValueItem.EDIT_TYPE_FOLDER:
-      #TODO
-#      editor = PathEditor(item.value())
-#      return editor
-      pass
+      editor = PathEditor(item.value(), parent)
+      editor.editing_finished_signal.connect(self.edit_finished)
+      return editor
     return QtGui.QStyledItemDelegate.createEditor(self, parent, option, index)
 
-  def setEditorData(self, editor, index):
+#  def setEditorData(self, editor, index):
 #    print "setEditorData"
-    QtGui.QStyledItemDelegate.setEditorData(self, editor, index)
-#     if index.column() == 3:
-#       editor.starRating = StarRating(index.data())
-#     else:
-#       QStyledItemDelegate.setModelData(self, editor, model, index)
+#    QtGui.QStyledItemDelegate.setEditorData(self, editor, index)
 
 #  def updateEditorGeometry(self, editor, option, index):
-#    pass
 #    print "updateEditorGeometry", option.rect.width()
-##    editor
-#    editor.setMaximumSize(25, 25)  
+#    editor.setMaximumSize(option.rect.width(), option.rect.height())
 #    QtGui.QStyledItemDelegate.updateEditorGeometry(self, editor, option, index)
 
   def setModelData(self, editor, model, index):
-#    print "setModelData"
-    QtGui.QStyledItemDelegate.setModelData(self, editor, model, index)
-#     if index.column() == 3:
-#       model.setData(index, editor.starRating.starCount)
-#     else:
-#       QStyledItemDelegate.setModelData(self, editor, model, index)
-  
+    if isinstance(editor, PathEditor):
+      cfg_path = nm.settings().cfg_path
+      model.setData(index, editor.path)
+      self.reload_settings = (cfg_path != nm.settings().cfg_path)
+    else:
+      QtGui.QStyledItemDelegate.setModelData(self, editor, model, index)
+
   def sizeHint(self, option, index):
     '''
     Determines and returns the size of the text after the format.
@@ -211,7 +213,10 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
     # and need to write our changed back to the model.
     self.commitData.emit(editor)
     self.closeEditor.emit(editor, QtGui.QAbstractItemDelegate.NoHint)
-            
+    if self.reload_settings:
+      self.reload_settings = False
+      self.settings_path_changed_signal.emit()
+
   def _itemFromIndex(self, index):
     if isinstance(index.model(), QtGui.QSortFilterProxyModel):
       sindex = index.model().mapToSource(index)
@@ -219,23 +224,49 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
     else:
       return index.model().itemFromIndex(index)
 
-class PathEditor(QtGui.QFrame):
+
+class PathEditor(QtGui.QWidget):
+  '''
+  This is a path editor used as ItemDeligate in settings view. This editor
+  provides an additional button for directory selection dialog.
+  '''
+
+  editing_finished_signal = QtCore.Signal()
 
   def __init__(self, path, parent=None):
     QtGui.QWidget.__init__(self, parent)
     self.path = path
     self._layout = QtGui.QHBoxLayout(self)
+    self._layout.setContentsMargins(0, 0, 0, 0)
+    self._layout.setSpacing(0)
     self._button = QtGui.QPushButton('...')
+    self._button.setMaximumSize(QtCore.QSize(24, 20))
     self._button.clicked.connect(self._on_path_select_clicked)
     self._layout.addWidget(self._button)
+    self._lineedit = QtGui.QLineEdit(path)
+    self._lineedit.returnPressed.connect(self._on_editing_finished)
+    self._layout.addWidget(self._lineedit)
     self.setLayout(self._layout)
-   
+    self.setFocusProxy(self._button)
+    self.setAutoFillBackground(True)
+
   def _on_path_select_clicked(self):
-    dialog = QFileDialog(self)
-    dialog.setFileMode(QFileDialog.Directory)
-    dialog.setDirectory(self._path)
-    if dialog.exce_():
-      fileNames = dialog.selectedFiles()
-      print "files", fileNames
-    
-   
+    # Workaround for QtGui.QFileDialog.getExistingDirectory because it do not
+    # select the configuration folder in the dialog
+    self.dialog = QtGui.QFileDialog(self, caption='Select a new settings folder')
+    self.dialog.setOption(QtGui.QFileDialog.HideNameFilterDetails, True)
+    self.dialog.setFileMode(QtGui.QFileDialog.Directory)
+    self.dialog.setDirectory(self.path)
+    if self.dialog.exec_():
+      fileNames = self.dialog.selectedFiles()
+      dir = fileNames[0]
+      if os.path.isfile(dir):
+        dir = os.path.basename(dir)
+      self._lineedit.setText(dir)
+      self.path = dir
+      self.editing_finished_signal.emit()
+
+  def _on_editing_finished(self):
+    if self._lineedit.text():
+      self.path = self._lineedit.text()
+      self.editing_finished_signal.emit()

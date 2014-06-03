@@ -462,7 +462,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         if (path.endswith('.launch')):
           return LaunchItem.LAUNCH_FILE
         else:
-          for e in nm.Settings().LAUNCH_VIEW_EXT:
+          for e in nm.Settings().launch_view_file_ext:
             if path.endswith(e):
               return LaunchItem.CFG_FILE
       elif os.path.isdir(path):

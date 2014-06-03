@@ -41,13 +41,13 @@ class Settings(object):
   # set the cwd to the package of the node_manager_fkie to support the images
   # in HTML descriptions of the robots and capabilities
   PKG_NAME = 'node_manager_fkie'
-  PACKAGE_DIR = ''.join([roslib.packages.get_pkg_dir(PKG_NAME), os.path.sep])
-  ROBOTS_DIR = ''.join([PACKAGE_DIR, os.path.sep, 'images', os.path.sep])
-  CFG_PATH = ''.join(['.node_manager', os.sep])
+  PACKAGE_DIR = roslib.packages.get_pkg_dir(PKG_NAME)
+  ROBOTS_DIR = os.path.join(PACKAGE_DIR, 'images')
+  CFG_PATH = os.path.join('.node_manager', os.sep)
   '''@ivar: configuration path to store the history.'''
-  HELP_FILE = ''.join([PACKAGE_DIR, os.path.sep, 'README.rst'])
+  HELP_FILE = os.path.join(PACKAGE_DIR, 'README.rst')
   CURRENT_DIALOG_PATH = os.path.expanduser('~')
-  LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
+  LOG_PATH = os.environ.get('ROS_LOG_DIR') if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
 
   LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
   STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
@@ -69,21 +69,30 @@ class Settings(object):
   TIMEOUT_CONTROL = 5
   TIMEOUT_UPDATES = 20
 
-  FOLLOW_INCLUDED_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.sync', '.test', '.xml']
-  LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.sync', '.test']
+  SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.sync', '.test', '.xml']
+  LAUNCH_VIEW_EXT = ['.yaml', '.conf', '.cfg', '.iface', '.sync', '.test']
 
   STORE_GEOMETRY = True
 
   def __init__(self):
+    self.reload()
+
+  def reload(self):
+    '''
+    Loads the settings from file or sets default values if no one exists.
+    '''
     self._terminal_emulator = None
     self._masteruri = masteruri_from_ros()
-    self.CFG_PATH = ''.join([get_ros_home(), os.sep, 'node_manager', os.sep])
-    self._cfg_path = self.CFG_PATH
-    if not os.path.isdir(self.cfg_path):
-      os.makedirs(self.cfg_path)
-    elif os.path.exists(os.path.join(self.cfg_path, self.CFG_REDIRECT_FILE)):
-      settings = self.qsettings(self.CFG_REDIRECT_FILE)
+    self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
+    # loads the current configuration path. If the path was changed, a redirection
+    # file exists with new configuration folder
+    if not os.path.isdir(self.CFG_PATH):
+      os.makedirs(self.CFG_PATH)
+      self._cfg_path = self.CFG_PATH
+    else:
+      settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
       self._cfg_path = settings.value('cfg_path', self.CFG_PATH)
+    # after the settings path was loaded, load other settings
     self._robots_path = self.ROBOTS_DIR
     settings = self.qsettings(self.CFG_FILE)
     self._default_user = settings.value('default_user', self.USER_DEFAULT)
@@ -100,8 +109,8 @@ class Settings(object):
     self._start_remote_script = self.STARTER_SCRIPT
     self._respawn_script = self.RESPAWN_SCRIPT
     self._launch_view_file_ext = self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))
-    self._follow_include_file_ext = self.str2list(settings.value('launch_view_file_ext', ', '.join(self.FOLLOW_INCLUDED_EXT)))
     self._store_geometry = self.str2bool(settings.value('store_geometry', self.STORE_GEOMETRY))
+    self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
 
   def masteruri(self):
     return self._masteruri
@@ -113,18 +122,18 @@ class Settings(object):
   @cfg_path.setter
   def cfg_path(self, path):
     if path:
-      if not os.path.isdir(path):
-        os.makedirs(path)
-      if path != self.CFG_PATH:
-        settings = self.qsettings(self.CFG_REDIRECT_FILE)
-        settings.setValue('cfg_path', path)
+      abspath = os.path.abspath(path).rstrip(os.path.sep)
+      if not os.path.isdir(abspath):
+        os.makedirs(abspath)
+      self._cfg_path = abspath
+      if abspath != os.path.abspath(self.CFG_PATH).rstrip(os.path.sep):
+        settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
+        settings.setValue('cfg_path', abspath)
       else:
         # remove the redirection
-        try:
-          os.remove(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
-        except:
-          pass
-      self._cfg_path = path
+        settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
+        settings.remove('cfg_path')
+      self.reload()
 
   @property
   def robots_path(self):
@@ -214,16 +223,7 @@ class Settings(object):
     self._launch_view_file_ext = self.str2list('%s'%exts)
     settings = self.qsettings(self.CFG_FILE)
     settings.setValue('launch_view_file_ext', self._launch_view_file_ext)
-
-  @property
-  def follow_include_file_ext(self):
-    return self._follow_include_file_ext
-
-  @follow_include_file_ext.setter
-  def follow_include_file_ext(self, exts):
-    self._follow_include_file_ext = self.str2list('%s'%exts)
-    settings = self.qsettings(self.CFG_FILE)
-    settings.setValue('follow_include_file_ext', self._follow_include_file_ext)
+    self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
 
   @property
   def store_geometry(self):
@@ -233,9 +233,9 @@ class Settings(object):
   def store_geometry(self, value):
     v = self.str2bool(value)
     if self._store_geometry != v:
+      self._store_geometry = v
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('store_geometry', self._store_geometry)
-      self._store_geometry = v
 
   def str2bool(self, v):
     if isinstance(v, bool):
@@ -245,12 +245,15 @@ class Settings(object):
   def str2list(self, l):
     if isinstance(l, list):
       return l
-    l = l.strip('[]')
-    l = l.replace('u"', '')
-    l = l.replace('"', '')
-    l = l.replace("'", '')
-    l = l.replace(",", ' ')
-    return [str(i).strip() for i in l.split(' ') if i]
+    try:
+      l = l.strip('[]')
+      l = l.replace('u"', '')
+      l = l.replace('"', '')
+      l = l.replace("'", '')
+      l = l.replace(",", ' ')
+      return [str(i).strip() for i in l.split(' ') if i]
+    except:
+      return []
 
   def terminal_cmd(self, cmd, title):
     '''
@@ -273,5 +276,8 @@ class Settings(object):
 
   def qsettings(self, file):
     from python_qt_binding import QtCore
-    return QtCore.QSettings(os.path.join(self.cfg_path, file),
+    path = file
+    if not file.startswith(os.path.sep):
+       path = os.path.join(self.cfg_path, file)
+    return QtCore.QSettings(path,
                             QtCore.QSettings.IniFormat)

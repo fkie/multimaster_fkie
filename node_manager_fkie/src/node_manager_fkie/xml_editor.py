@@ -187,7 +187,7 @@ class Editor(QtGui.QTextEdit):
               path = self.interpretPath(fileName)
               file = QtCore.QFile(path)
               ext = os.path.splitext(path)
-              if file.exists() and ext[1] in nm.Settings().FOLLOW_INCLUDED_EXT:
+              if file.exists() and ext[1] in nm.Settings().SEARCH_IN_EXT:
                 result.append(path)
             except:
               import traceback
