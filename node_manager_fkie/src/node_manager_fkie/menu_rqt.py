@@ -57,39 +57,39 @@ class MenuRqt(QtGui.QMenu):
       self.action_rqt_console = QtGui.QAction(QtGui.QIcon.fromTheme('mail-message-new'),
                                               "&Console", self,
                                               statusTip='"<p>Starts a python GUI plugin for displaying and filtering '
-                                                'ROS log messages, connected to the selected master.</p>"',
+                                                'ROS log messages that is connected to the selected master.</p>"',
                                               triggered=self.on_show_console_clicked)
       self.addAction(self.action_rqt_console)
       self.action_rqt_logger_level = QtGui.QAction(QtGui.QIcon.fromTheme('format-indent-more'),
                                               "&Logger Level", self,
                                               statusTip='"<p>Starts a python GUI plugin for configuring the level of '
-                                                'ROS loggers, connected to the selected master.</p>"',
+                                                'ROS loggers that is connected to the selected master.</p>"',
                                               triggered=self.on_show_logger_level_clicked)
       self.addAction(self.action_rqt_logger_level)
       self.action_rqt_tf_tree = QtGui.QAction(QtGui.QIcon.fromTheme('preferences-system-network'),
                                               "&TF Tree", self,
                                               statusTip='"<p>Starts a python GUI plugin for visualizing the TF tree'
-                                                ', connected to the selected master.</p>"',
+                                                'that is connected to the selected master.</p>"',
                                               triggered=self.on_show_tf_tree_clicked)
       self.addAction(self.action_rqt_tf_tree)
       self.action_rqt_ros_graph = QtGui.QAction(QtGui.QIcon(":/icons/button_graph.png"),
                                               "Ros &Graph", self,
                                               statusTip='"<p>Starts a python GUI plugin for visualizing the ROS computation graph'
-                                                ', connected to the selected master</p>"',
+                                                'that is connected to the selected master</p>"',
                                               triggered=self.on_show_ros_graph_clicked)
       self.addAction(self.action_rqt_ros_graph)
       self.addSeparator()
       self.action_rqt = QtGui.QAction(QtGui.QIcon(rqt_icon_path),
                                       "&Rqt GUI", self,
                                       statusTip='"<p>Start the rqt GUI'
-                                        ', connected to the selected master</p>"',
+                                        'that is connected to the selected master</p>"',
                                       triggered=self.on_start_rqt_clicked)
       self.addAction(self.action_rqt)
       menu_button.setMenu(self)
     except Exception as e:
       print '%s'%e
       menu_button.setEnabled(False)
-      menu_button.setToolTip('rqt_gui not found! Please install rqt to use these plug-ins!')
+      menu_button.setToolTip('rqt_gui not found! Please install rqt to use its plugins!')
 
   def on_show_console_clicked(self):
     self.start_rqt_plugin_signal.emit('Console', 'rqt_console.console.Console')
