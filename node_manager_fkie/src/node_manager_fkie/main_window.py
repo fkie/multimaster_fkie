@@ -66,6 +66,7 @@ from .master_list_model import MasterModel, MasterSyncItem
 from .log_widget import LogWidget
 from .launch_files_widget import LaunchFilesWidget
 from .settings_widget import SettingsWidget
+from .menu_rqt import MenuRqt
 
 import node_manager_fkie as nm
 
@@ -111,9 +112,10 @@ class MainWindow(QtGui.QMainWindow):
     self.infoButton.clicked.connect(self.on_info_clicked)
     self.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
     self.runButton.clicked.connect(self.on_run_node_clicked)
-    self.rxconsoleButton.clicked.connect(self.on_show_rxconsole_clicked)
-    self.rxgraphButton.clicked.connect(self.on_show_rxgraph_clicked)
     self.syncButton.released.connect(self.on_sync_dialog_released)
+
+    menu_rqt = MenuRqt(self.rqtButton)
+    menu_rqt.start_rqt_plugin_signal.connect(self.on_rqt_plugin_start)
 
     # setup settings widget
     self.settings_dock = SettingsWidget(self)
@@ -767,41 +769,29 @@ class MainWindow(QtGui.QMainWindow):
                             'Error while run node %s [%s]'%(params[2], params[1]),
                             str(e)).exec_()
 
-  def on_show_rxconsole_clicked(self):
+  def on_rqt_plugin_start(self, name, plugin):
     if not self.currentMaster is None:
-      import os, subprocess
-      env = dict(os.environ)
-      env["ROS_MASTER_URI"] = str(self.currentMaster.master_state.uri)
-      cmd = 'rxconsole'
       try:
-        import rqt_console
-        cmd = 'rqt_console'
-      except:
-        pass
-      rospy.loginfo("start rxconsole: %s", cmd)
-      ps = subprocess.Popen([cmd], env=env)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=ps.wait)
-      thread.setDaemon(True)
-      thread.start()
-
-  def on_show_rxgraph_clicked(self):
-    if not self.currentMaster is None:
-      import os, subprocess
-      env = dict(os.environ)
-      env["ROS_MASTER_URI"] = str(self.currentMaster.master_state.uri)
-      cmd = 'rxgraph'
-      try:
-        import rqt_graph
-        cmd = 'rqt_graph'
-      except:
-        pass
-      rospy.loginfo("start rxgraph: %s", cmd)
-      ps = subprocess.Popen([cmd], env=env)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=ps.wait)
-      thread.setDaemon(True)
-      thread.start()
+        args = []
+        if plugin:
+          args = ['-s', plugin]
+        node_name = 'rqt_%s_%s'%(name.lower().replace(' ', '_'),
+                             self.currentMaster.master_state.name.replace('-', '_'))
+        self.currentMaster._progress_queue.add2queue(str(uuid.uuid4()),
+                                       'start logger level',
+                                       nm.starter().runNodeWithoutConfig,
+                                       ('localhost', 'rqt_gui', 'rqt_gui',
+                                        node_name, args, 
+                                        '%s'%self.currentMaster.master_state.uri, 
+                                        False))
+      except (Exception, nm.StartException), e:
+        import traceback
+        print traceback.format_exc()
+        rospy.logwarn("Error while start %s: %s"%(name, e))
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+                          'Error while start %s'%name,
+                          '%s'%e).exec_()
+      self.currentMaster._progress_queue.start()
 
   def on_sync_dialog_released(self, released=False, masteruri=None, external_call=False):
     self.syncButton.setEnabled(False)
