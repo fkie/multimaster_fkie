@@ -3,7 +3,7 @@ Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 0.3.11 (2014-06-04)
------------
+-------------------
 * node_manager_fkie: replaced the rxconsole and rxgraph by rqt button to start rqt plugins related to selected master
 * node_manager_fkie: added a setting docking window
 * node_manager_fkie: hints on start problems fixed, if no screen is installed

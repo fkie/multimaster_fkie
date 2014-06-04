@@ -3,7 +3,7 @@ Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 0.3.11 (2014-06-04)
------------
+-------------------
 * master_discovery_fkie: added some error catches to solve problems with removing of interfaces
 * master_discovery_fkie: fixed a short timestamp represantation
 * Contributors: Alexander Tiderko

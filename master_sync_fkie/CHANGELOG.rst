@@ -3,7 +3,7 @@ Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 0.3.11 (2014-06-04)
------------
+-------------------
 * master_sync_fkie: fixed a block while connection problems
 
 0.3.10 (2014-03-31)
