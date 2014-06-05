@@ -2,6 +2,9 @@
 Changelog for package multimaster_msgs_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.11 (2014-06-04)
+-------------------
+
 0.3.10 (2014-03-31)
 -------------------
 * multimaster_fkie: fixed problems detected by catkin_lint

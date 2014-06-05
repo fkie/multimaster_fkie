@@ -19,8 +19,6 @@ Shortcuts
 **Ctrl+L**            Loads the selected launch file into selected host.
 **Ctrl+O**            Runs on selected host default_cfg_ node with selected launch file as parameter.
 **Alt+N**             Opens a dialog to run a ROS node without a configuration. This node will be launched in a `SCREEN`.
-**Alt+K**             Runs the `rxconsole` connected to the ROS master of selected host.
-**Alt+G**             Runs the `rxgraph` connected to the ROS master of selected host.
 **Alt+R**             Runs selected nodes. Ignores already running nodes.
 **Alt+S**             Stops selected nodes. If more then one node is selected, nodes ending with `rosout`, `node_manager`, `master_discovery`, `master_sync` or `default_cfg` are ignored.
 **Ctrl+Backspace**    Sends a `SIGKILL` to selected nodes. If more then one node is selected, nodes ending with `rosout`, `node_manager`, `master_discovery`, `master_sync` and `default_cfg` are ignored.

@@ -2,6 +2,21 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.11 (2014-06-04)
+-------------------
+* default_cfg_fkie: added 'default_cfg/autostart/exclude' parameter to exclude nodes from autostart
+* default_cfg_fkie: flush stdout before SIGKILL
+  Otherwise, the error message may not reach the console output in time.
+* default_cfg_fkie: added a console output for count of pending autostart nodes
+* default_cfg_fkie: set autostart to False after all node are started
+* default_cfg_fkie: added a reload service, to reload the configuration
+* default_cfg_fkie: added for each node respawn parameters
+* default_cfg_fkie: added a possibility for delayd start or after a published topic is available
+* default_cfg_fkie: loads now without the private namespace of the default_cfg node
+* default_cfg_fkie: removed BASH_ENV from environment while start with respawn script
+* default_cfg_fkie: added an autostart option
+* Contributors: Alexander Tiderko, Timo Röhling
+
 0.3.10 (2014-03-31)
 -------------------
 * multimaster_fkie: fixed problems detected by catkin_lint

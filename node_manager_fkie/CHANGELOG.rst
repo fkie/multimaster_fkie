@@ -2,6 +2,44 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.11 (2014-06-04)
+-------------------
+* node_manager_fkie: replaced the rxconsole and rxgraph by rqt button to start rqt plugins related to selected master
+* node_manager_fkie: added a setting docking window
+* node_manager_fkie: hints on start problems fixed, if no screen is installed
+* node_manager_fkie: added a dock widget and button which shows warning messages
+* node_manager_fkie: select the topics and services of a node while tab change and not while node selection. This reduce the cpu load.
+* node_manager_fkie: fixed detection of local host at start
+* node_manager_fkie: fix the removing of local master at startup
+* node_manager_fkie: added features to launch file view
+  * Search for packages
+  * rename files
+  * copy files
+* node_manager_fkie: do not wait in the discovery loop at shutdown
+* node_manager_fkie: cancel buttons redesined, some titles renamed
+* node_manager_fkie: reduced the displayed namespace of the topics and services in info area
+* node_manager_fkie: added F4 and F3 shortcasts for aditing a configuration and show a screen of a node
+* node_manager_fkie: fixed InteractionNeededError while starting nodes on remote hosts using run dialog.
+* node_manager_fkie: added timestamps to each printed message
+* node_manager_fkie: fix detailed message box. Close using ESC button.
+* node_manager_fkie: reload root path in xml file view, if the current path was deleted
+* node_manager_fkie: fixed include tag of dropped file in xml editor
+* node_manager_fkie: added for each node respawn parameters
+* node_manager_fkie: improve respawn script
+  The new script correctly checks the exit code of the launched
+  process and can limit the number of respawns for faulty
+  nodes.
+* node_manager_fkie: use -T for terminal emulator
+  -T is compatible with more terminal emulators than -title
+* node_manager_fkie: added handling for some of other configuration file types to launch file view
+* Open terminal windows with x-terminal-emulator
+  The /usr/bin/x-terminal-emulator symlink is available on Debian
+  based systems and points to the default terminal emulator on
+  the system. /usr/bin/xterm will be used as fallback.
+* node_manager_fkie: changed side bar selection while start hosts
+* node_manager_fkie: fixed the parameter handling of parameter with list type
+* Contributors: Alexander, Alexander Tiderko, Sammy Pfeiffer, Timo Röhling
+
 0.3.10 (2014-03-31)
 -------------------
 * node_manager_fkie: fixed the activation of the local monitoring. Fixed the cancelation in selection dialog.
