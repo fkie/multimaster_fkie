@@ -47,6 +47,7 @@ PKG_NAME = 'node_manager_fkie'
 
 import roslib; roslib.load_manifest(PKG_NAME)
 import rospy
+import roslib.network
 
 #PYTHONVER = (2, 7, 1)
 #if sys.version_info < PYTHONVER:
@@ -150,7 +151,7 @@ def file_watcher_param():
   return _file_watcher_param
 
 
-def is_local(hostname):
+def is_local(hostname, wait=False):
   '''
   Test whether the given host name is the name of the local host or not.
   @param hostname: the name or IP of the host
@@ -171,21 +172,26 @@ def is_local(hostname):
     machine_addr = socket.inet_aton(hostname)
     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
     # check 127/8 and local addresses
-    result = machine_addr.startswith('127.') or machine_addr in local_addresses
+    result = hostname.startswith('127.') or hostname in local_addresses
     with _lock:
       HOSTS_CACHE[hostname] = result
     return result
   except socket.error:
     # the hostname must be resolved => do it in a thread
-    thread = threading.Thread(target=__is_local, args=((hostname,)))
-    thread.daemon = True
-    with _lock:
-      HOSTS_CACHE[hostname] = thread
-    thread.start()
+    if wait:
+      result = __is_local(hostname)
+      return result
+    else:
+      thread = threading.Thread(target=__is_local, args=((hostname,)))
+      thread.daemon = True
+      with _lock:
+        HOSTS_CACHE[hostname] = thread
+      thread.start()
   return False
 
 def __is_local(hostname):
   import roslib
+  import roslib.network
   try:
     machine_addr = socket.gethostbyname(hostname)
   except socket.gaierror:
@@ -193,12 +199,13 @@ def __is_local(hostname):
     print traceback.format_exc()
     with _lock:
       HOSTS_CACHE[hostname] = False
-    return
+    return False
   local_addresses = ['localhost'] + roslib.network.get_local_addresses()
   # check 127/8 and local addresses
   result = machine_addr.startswith('127.') or machine_addr in local_addresses
   with _lock:
     HOSTS_CACHE[hostname] = result
+  return result
 
 def finish(*arg):
   '''
@@ -269,8 +276,7 @@ def init_globals(masteruri):
 
   # test where the roscore is running (local or remote)
   __is_local('localhost') ## fill cache
-  __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
-  return is_local(_name_resolution.getHostname(masteruri))
+  return __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
 
 def init_arg_parser():
   parser = argparse.ArgumentParser()

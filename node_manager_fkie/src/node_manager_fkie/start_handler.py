@@ -161,7 +161,7 @@ class StartHandler(object):
       abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, params, clear_params, user, pw, auto_pw_request)
     #'print "RUN prepared", node, time.time()
 
-    if nm.is_local(host): 
+    if nm.is_local(host):
       nm.screen().testScreen()
       if item:
         cmd_type = item
@@ -527,33 +527,37 @@ class StartHandler(object):
 #      socket.setdefaulttimeout(None)
 #      import traceback
 #      print traceback.format_exc()
-      print "Start ROS-Master with", masteruri, "..."
       # run a roscore
       from urlparse import urlparse
-      master_port = urlparse(masteruri).port
-      new_env = dict(os.environ)
-      new_env['ROS_MASTER_URI'] = masteruri
-      cmd_args = '%s roscore --port %d'%(nm.ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
-      print "    %s"%cmd_args
-      try:
-        subprocess.Popen(shlex.split(cmd_args), env=new_env)
-        # wait for roscore to avoid connection problems while init_node
-        result = -1
-        count = 1
-        while result == -1 and count < 11:
-          try:
-            print "  retry connect to ROS master", count, '/', 10
-            master = xmlrpclib.ServerProxy(masteruri)
-            result, uri, msg = master.getUri(rospy.get_name())
-          except:
-            time.sleep(1)
-            count += 1
-        if count >= 11:
-          raise StartException('Cannot connect to the ROS-Master: '+  str(masteruri))
-      except Exception as e:
-        import sys
-        print  >> sys.stderr, e
-        raise
+      master_host = urlparse(masteruri).hostname
+      if nm.is_local(master_host, True):
+        print "Start ROS-Master with", masteruri, "..."
+        master_port = urlparse(masteruri).port
+        new_env = dict(os.environ)
+        new_env['ROS_MASTER_URI'] = masteruri
+        cmd_args = '%s roscore --port %d'%(nm.ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
+        print "    %s"%cmd_args
+        try:
+          subprocess.Popen(shlex.split(cmd_args), env=new_env)
+          # wait for roscore to avoid connection problems while init_node
+          result = -1
+          count = 1
+          while result == -1 and count < 11:
+            try:
+              print "  retry connect to ROS master", count, '/', 10
+              master = xmlrpclib.ServerProxy(masteruri)
+              result, uri, msg = master.getUri(rospy.get_name())
+            except:
+              time.sleep(1)
+              count += 1
+          if count >= 11:
+            raise StartException('Cannot connect to the ROS-Master: '+  str(masteruri))
+        except Exception as e:
+          import sys
+          print  >> sys.stderr, e
+          raise
+      else:
+        raise Exception("ROS master '%s' is not reachable"%masteruri)
     finally:
       socket.setdefaulttimeout(None)
 
