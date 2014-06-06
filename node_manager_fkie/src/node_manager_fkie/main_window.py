@@ -1111,6 +1111,7 @@ class MainWindow(QtGui.QMainWindow):
                        'Robot hosts' : ('string', ''),
                        'Username' : ('string', [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]),
                        'Send MCast' : ('bool', True),
+                       'Heartbeat [Hz]' : ('float', 0.02)
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
@@ -1118,7 +1119,7 @@ class MainWindow(QtGui.QMainWindow):
     dia = ParameterDialog(params, sidebar_var='Host')
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
-    dia.resize(450,280)
+    dia.resize(450,300)
     dia.setFocusField('Host')
     if dia.exec_():
       try:
@@ -1134,6 +1135,7 @@ class MainWindow(QtGui.QMainWindow):
         robot_hosts = params['Optional Parameter']['Robot hosts']
         username = params['Optional Parameter']['Username']
         send_mcast = params['Optional Parameter']['Send MCast']
+        heartbeat_hz = params['Optional Parameter']['Heartbeat [Hz]']
         if robot_hosts:
           robot_hosts = robot_hosts.replace(' ', '')
           robot_hosts = robot_hosts.replace('[', '')
@@ -1142,13 +1144,14 @@ class MainWindow(QtGui.QMainWindow):
           try:
             args = []
             if not port is None and port and int(port) < 100 and int(port) >= 0:
-              args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
+              args.append('_mcast_port:=%s'%(11511 + int(port)))
             else:
-              args.append(''.join(['_mcast_port:=', str(11511)]))
+              args.append('_mcast_port:=%s'%(11511))
             if not mastername == 'autodetect':
-              args.append(''.join(['_name:=', str(mastername)]))
-            args.append('_send_mcast:=%s'%str(send_mcast))
-            args.append(''.join(['_robot_hosts:=[', robot_hosts, ']']))
+              args.append('_name:=%s'%(mastername))
+            args.append('_send_mcast:=%s'%send_mcast)
+            args.append('_robot_hosts:=[%s]'%robot_hosts)
+            args.append('_heartbeat_hz:=%s'%heartbeat_hz)
             #TODO: remove the name parameter from the ROS parameter server
             self._progress_queue.add2queue(str(uuid.uuid4()), 
                                            'start discovering on '+str(hostname), 

@@ -400,6 +400,9 @@ class Discoverer(object):
 #     if (self.HEARTBEAT_HZ > 0. and self.HEARTBEAT_HZ < 0.1) or self.HEARTBEAT_HZ < 0:
 #       rospy.logwarn("Heart beat [Hz]: %s is increased to 0.1"%self.HEARTBEAT_HZ)
 #       self.HEARTBEAT_HZ = 0.1
+    if self.HEARTBEAT_HZ < 0.:
+      rospy.logwarn("Heart beat [Hz]: %s is increased to 0.02"%self.HEARTBEAT_HZ)
+      self.HEARTBEAT_HZ = 0.02
     if self.HEARTBEAT_HZ > 25.5:
       rospy.logwarn("Heart beat [Hz]: %s is decreased to 25.5"%self.HEARTBEAT_HZ)
       self.HEARTBEAT_HZ = 25.5
@@ -585,7 +588,7 @@ class Discoverer(object):
       t = self.master_monitor.getCurrentState().timestamp
       local_t = self.master_monitor.getCurrentState().timestamp_local
       return struct.pack(Discoverer.HEARTBEAT_FMT,'R', Discoverer.VERSION,
-                         int(Discoverer.HEARTBEAT_HZ*10),
+                         int(self.HEARTBEAT_HZ*10),
                          int(t), int((t-(int(t))) * 1000000000),
                          self.master_monitor.rpcport,
                          int(local_t), int((local_t-(int(local_t))) * 1000000000))
@@ -724,6 +727,7 @@ class Discoverer(object):
               if add_to_list:
                 with self.__lock:
                   rospy.logdebug("Add master discovery: http://%s:%s"%(address[0], monitor_port))
+                  print "rate:", rate, float(rate)/10.0
                   self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                               heartbeat_rate=float(rate)/10.0,
                                                               timestamp=float(secs)+float(nsecs)/1000000000.0,
@@ -741,9 +745,9 @@ class Discoverer(object):
     :return: parses the hearbeat message and return a tuple of
             version and values corresponding with current version of message.
             :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`
-    
+
     :raise: Exception on invalid message
-    
+
     :rtype: (``unsigned char``, tuple corresponding to :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`)
     '''
     if len(msg) > 2:
@@ -776,7 +780,8 @@ class Discoverer(object):
     with self.__lock:
       for (k, v) in self.masters.iteritems():
         quality = -1.0
-        if not (v.mastername is None) and v.heartbeat_rate != 0:
+        print "v.heartbeat_rate", v.heartbeat_rate
+        if not (v.mastername is None) and v.heartbeat_rate > 0:
           rate = v.heartbeat_rate
           measurement_duration = self.MEASUREMENT_INTERVALS
           if rate < 1.:
