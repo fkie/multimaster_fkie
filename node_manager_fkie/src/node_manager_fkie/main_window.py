@@ -1090,7 +1090,7 @@ class MainWindow(QtGui.QMainWindow):
         check_ts = m.master_info.check_ts
         m.master_info.timestamp = m.master_info.timestamp - 1.0
         m.master_info.check_ts = check_ts
-    self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
+    self.masterlist_service.refresh(self.getMasteruri(), False)
 
   def on_discover_network_clicked(self):
     try:
@@ -1108,7 +1108,7 @@ class MainWindow(QtGui.QMainWindow):
     params_optional = {'Discovery type': ('string', ['master_discovery', 'zeroconf']),
                        'ROS Master Name' : ('string', 'autodetect'),
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
-                       'Static hosts' : ('string', ''),
+                       'Robot hosts' : ('string', ''),
                        'Username' : ('string', [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]),
                        'Send MCast' : ('bool', True),
                       }
@@ -1131,13 +1131,13 @@ class MainWindow(QtGui.QMainWindow):
         if len(hostnames) < 2:
           mastername = params['Optional Parameter']['ROS Master Name']
           masteruri = params['Optional Parameter']['ROS Master URI']
-        static_hosts = params['Optional Parameter']['Static hosts']
+        robot_hosts = params['Optional Parameter']['Robot hosts']
         username = params['Optional Parameter']['Username']
         send_mcast = params['Optional Parameter']['Send MCast']
-        if static_hosts:
-          static_hosts = static_hosts.replace(' ', '')
-          static_hosts = static_hosts.replace('[', '')
-          static_hosts = static_hosts.replace(']', '')
+        if robot_hosts:
+          robot_hosts = robot_hosts.replace(' ', '')
+          robot_hosts = robot_hosts.replace('[', '')
+          robot_hosts = robot_hosts.replace(']', '')
         for hostname in hostnames:
           try:
             args = []
@@ -1148,7 +1148,7 @@ class MainWindow(QtGui.QMainWindow):
             if not mastername == 'autodetect':
               args.append(''.join(['_name:=', str(mastername)]))
             args.append('_send_mcast:=%s'%str(send_mcast))
-            args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
+            args.append(''.join(['_robot_hosts:=[', robot_hosts, ']']))
             #TODO: remove the name parameter from the ROS parameter server
             self._progress_queue.add2queue(str(uuid.uuid4()), 
                                            'start discovering on '+str(hostname), 
