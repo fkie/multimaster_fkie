@@ -149,6 +149,9 @@ class DiscoveredMaster(object):
     :rtype: bool
     '''
     result = False
+    cur_time = time.time()
+    self.last_heartbeat_ts = cur_time
+    self.count_requests = 0
     # publish new master state, if the timestamp is changed 
     if (self.timestamp != timestamp or not self.online or self.timestamp_local != timestamp_local):
       self.timestamp = timestamp
@@ -171,10 +174,7 @@ class DiscoveredMaster(object):
       if self.heartbeat_rate != rate:
         self.heartbeat_rate = rate
         self.heartbeats = list()
-      cur_time = time.time()
       self.heartbeats.append(cur_time)
-      self.last_heartbeat_ts = cur_time
-      self.count_requests = 0
     return result
 
   def add_request(self, timestamp):
@@ -775,7 +775,7 @@ class Discoverer(object):
                 add_to_list = True
               if add_to_list:
                 with self.__lock:
-                  rospy.logdebug("Add master discovery: http://%s:%s"%(address[0], monitor_port))
+                  rospy.logdebug("Add discovery master: http://%s:%s"%(address[0], monitor_port))
                   self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                               heartbeat_rate=float(rate)/10.0,
                                                               timestamp=float(secs)+float(nsecs)/1000000000.0,
