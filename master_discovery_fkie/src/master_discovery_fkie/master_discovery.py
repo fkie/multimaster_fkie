@@ -60,47 +60,50 @@ class DiscoveredMaster(object):
   information about the ROS master.
 
   :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
-  
+
   :type monitoruri:  str
-  
+
   :param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
-  
+
   :type heartbeat_rate:  float (Default: `1.``)
-  
+
   :param timestamp: The timestamp of the state of the remoter ROS master
-  
+
   :type timestamp:  float (Default: ``0``)
-  
+
   :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
-  
+
   :type timestamp_local:  float (Default: ``0``)
-  
+
   :param callback_master_state: the callback method to publish the changes of the ROS masters
-  
+
   :type callback_master_state: `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_}  (Default: ``None``)
   '''
+
+  MIN_HZ_FOR_QUALILTY = 0.3
+
   def __init__(self, monitoruri, heartbeat_rate=1., timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
     '''
     Initialize method for the DiscoveredMaster class.
-    
+
     :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
-    
+
     :type monitoruri:  str
-    
+
     :param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
-    
+
     :type heartbeat_rate:  float (Default: `1.``)
-    
+
     :param timestamp: The timestamp of the state of the remoter ROS master
-    
+
     :type timestamp:  float (Default: ``0``)
-    
+
     :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization. 
-    
+
     :type timestamp_local:  float (Default: ``0``)
-    
+
     :param callback_master_state: the callback method to publish the changes of the ROS masters
-    
+
     :type callback_master_state: `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_}  (Default: ``None``)
     '''
     self.masteruri = None
@@ -111,6 +114,7 @@ class DiscoveredMaster(object):
     self.monitoruri = monitoruri
     self.heartbeat_rate = heartbeat_rate
     self.heartbeats = list()
+    self.requests = list()
     self.last_heartbeat_ts = time.time()
     self.online = False
     self.callback_master_state = callback_master_state
@@ -118,11 +122,11 @@ class DiscoveredMaster(object):
     # unanswered count of request.
     self.count_requests = 0
     # create a thread to retrieve additional information about the remote ROS master
-    self._retrieveThread = threading.Thread(target = self.__retrieveMasterinfo)
+    self._retrieveThread = threading.Thread(target = self.__retrieve_masterinfo)
     self._retrieveThread.setDaemon(True)
     self._retrieveThread.start()
 
-  def addHeartbeat(self, timestamp, timestamp_local, rate):
+  def add_heartbeat(self, timestamp, timestamp_local, rate):
     '''
     Adds a new heartbeat measurement. If it is a new timestamp a ROS message 
     about the change of this ROS master will be published into ROS network.
@@ -136,6 +140,7 @@ class DiscoveredMaster(object):
     :type timestamp_local:  float (Default: ``0``)
     
     :param rate: The remote rate, which is used to send the heartbeat messages. 
+                 If the rate is zero the heartbeat is ignored.
     
     :type rate:  float
     
@@ -143,14 +148,7 @@ class DiscoveredMaster(object):
     
     :rtype: bool
     '''
-    cur_time = time.time()
-    self.heartbeats.append(cur_time)
-    self.last_heartbeat_ts = cur_time
-    self.count_requests = 0
-    # reset the list, if the heartbeat is changed
-    if self.heartbeat_rate != rate:
-      self.heartbeat_rate = rate
-      self.heartbeats = list()
+    result = False
     # publish new master state, if the timestamp is changed 
     if (self.timestamp != timestamp or not self.online or self.timestamp_local != timestamp_local):
       self.timestamp = timestamp
@@ -167,21 +165,41 @@ class DiscoveredMaster(object):
                                                            self.online, 
                                                            self.discoverername, 
                                                            self.monitoruri)))
-          return True
-    return False
+          result = True
+    if rate >= DiscoveredMaster.MIN_HZ_FOR_QUALILTY:
+      # reset the list, if the heartbeat is changed
+      if self.heartbeat_rate != rate:
+        self.heartbeat_rate = rate
+        self.heartbeats = list()
+      cur_time = time.time()
+      self.heartbeats.append(cur_time)
+      self.last_heartbeat_ts = cur_time
+      self.count_requests = 0
+    return result
 
-  def removeHeartbeats(self, timestamp):
+  def add_request(self, timestamp):
+    self.requests.append(timestamp)
+
+
+  def remove_heartbeats(self, timestamp):
     '''
     Removes all hearbeat measurements, which are older as the given timestamp.
-    
+
     :param timestamp: heartbeats older this timestamp will be removed.
-    
+
     :type timestamp:  float
-    
+
     :return: the count of removed heartbeats
-    
+
     :rtype: int
     '''
+    do_remove = True
+    # remove the requests
+    while do_remove:
+      if len(self.requests) > 0 and self.requests[0] < timestamp:
+        del self.requests[0]
+      else:
+        do_remove = False
     do_remove = True
     removed = 0
     while do_remove:
@@ -192,7 +210,7 @@ class DiscoveredMaster(object):
         do_remove = False
     return removed
 
-  def setOffline(self):
+  def set_offline(self):
     '''
     Sets this master to offline and publish the new state to the ROS network.
     '''
@@ -208,7 +226,34 @@ class DiscoveredMaster(object):
                                                        self.monitoruri)))
     self.online = False
 
-  def __retrieveMasterinfo(self):
+  def get_quality(self, interval=5, offline_after=1.4):
+    '''
+    Calculates the link quality to this master.
+    '''
+    quality = -1.0
+    if not (self.mastername is None) and self.heartbeat_rate >= self.MIN_HZ_FOR_QUALILTY:
+      rate = self.heartbeat_rate
+      measurement_duration = interval
+      if self.heartbeat_rate < 1.:
+        measurement_duration = interval / self.heartbeat_rate
+      current_time = time.time()
+      # remove all heartbeats, which are to old
+      ts_oldest = current_time - measurement_duration
+      removed_ts = self.remove_heartbeats(ts_oldest)
+      # sets the master offline if the last received heartbeat is to old
+      if current_time - self.last_heartbeat_ts > (measurement_duration * offline_after):
+        self.set_offline()
+      # calculate the quality for inly online masters
+      if self.online:
+        beats_count = len(self.heartbeats)
+        expected_count = self.heartbeat_rate * measurement_duration + len(self.requests)
+        if expected_count > 0:
+          quality = float(beats_count) / float(expected_count) * 100.0
+          if quality > 100.0:
+            quality = 100.0
+    return quality
+
+  def __retrieve_masterinfo(self):
     '''
     Connects to the remote RPC server of the discoverer node and gets the 
     information about the Master URI, name of the service, and other. The 
@@ -354,8 +399,6 @@ class Discoverer(object):
       `CHANGE_NOTIFICATION_COUNT` times (Default: 3 sec). The new state will be
       sent with `ROSMASTER_HZ` and only if `HEARTBEAT_HZ` is zero. '''
 
-  MIN_HZ_PUB_ON_CHANGE = 0.3
-
   NETPACKET_SIZE = 68
 
   def __init__(self, mcast_port, mcast_group, monitor_port):
@@ -447,7 +490,7 @@ class Discoverer(object):
     # create timer and paramter for heartbeat notifications
     self._init_notifications = 0
     # disable parameter, if HEARTBEAT_HZ is active (> zero) 
-    if self.HEARTBEAT_HZ > self.MIN_HZ_PUB_ON_CHANGE:
+    if self.HEARTBEAT_HZ > DiscoveredMaster.MIN_HZ_FOR_QUALILTY:
       self._init_notifications = self.INIT_NOTIFICATION_COUNT
       self._current_change_notification_count = self.CHANGE_NOTIFICATION_COUNT
     self._timer_heartbeat = threading.Timer(1.0, self.send_heardbeat)
@@ -515,29 +558,30 @@ class Discoverer(object):
     send heartbeat messages periodically. This message will also send on start
     of the discoverer.
     '''
-    # stop the current running timer, if this method was invoked outside of the timer
-    try:
-      self._timer_heartbeat.cancel()
-    except:
-      pass
-    # publish the current state
-    if not (self.master_monitor.getMasteruri() is None or rospy.is_shutdown() or self.do_finish):
-      self._send_current_state2group()
+    with self.__lock:
+      # stop the current running timer, if this method was invoked outside of the timer
       try:
-        # send update requests to group
-        if self._init_notifications < self.INIT_NOTIFICATION_COUNT:
-          self._init_notifications +=1
-          self._send_request2group()
-        # send update requests to predefined robot hosts
-        for a in self.robots:
-          self._send_request2addr(a)
-      except Exception as e:
-        rospy.logwarn(e)
-        self._init_mcast_socket()
-    if not self.do_finish and (self.HEARTBEAT_HZ > 0. or self._init_notifications < self.INIT_NOTIFICATION_COUNT):
-      sleeptime = 1.0/self.HEARTBEAT_HZ if self.HEARTBEAT_HZ > 0. else 1.0
-      self._timer_heartbeat = threading.Timer(sleeptime, self.send_heardbeat)
-      self._timer_heartbeat.start()
+        self._timer_heartbeat.cancel()
+      except:
+        pass
+      # publish the current state
+      if not (self.master_monitor.getMasteruri() is None or rospy.is_shutdown() or self.do_finish):
+        self._send_current_state2group()
+        try:
+          # send update requests to group
+          if self._init_notifications < self.INIT_NOTIFICATION_COUNT:
+            self._init_notifications +=1
+            self._send_request2group()
+          # send update requests to predefined robot hosts
+          for a in self.robots:
+            self._send_request2addr(a)
+        except Exception as e:
+          rospy.logwarn(e)
+          self._init_mcast_socket()
+      if not self.do_finish and (self.HEARTBEAT_HZ > 0. or self._init_notifications < self.INIT_NOTIFICATION_COUNT):
+        sleeptime = 1.0/self.HEARTBEAT_HZ if self.HEARTBEAT_HZ > 0. else 1.0
+        self._timer_heartbeat = threading.Timer(sleeptime, self.send_heardbeat)
+        self._timer_heartbeat.start()
 
   def _send_current_state2group(self):
     try:
@@ -568,6 +612,9 @@ class Discoverer(object):
   def _send_request2group(self):
     try:
       rospy.logdebug('Send request to mcast group %s:%s'%(self.mcast_group, self.mcast_port))
+      current_time = time.time()
+      for (k, v) in self.masters.iteritems():
+        v.add_request(current_time)
       self.msocket.send2group(self._create_request_update_msg())
     except Exception as e:
       rospy.logwarn("Send request to mcast group %s:%s' failed: %s"%(self.mcast_group, self.mcast_port, e))
@@ -578,6 +625,7 @@ class Discoverer(object):
       self.msocket.send2addr(self._create_request_update_msg(), address)
       if not master is None:
         master.count_requests += 1
+        master.add_request(time.time())
     except Exception as e:
       rospy.logwarn("Send to robot host '%s' failed: %s"%(address, e))
 
@@ -616,7 +664,7 @@ class Discoverer(object):
         cputime_init = cputimes[0] + cputimes[1]
         if self.master_monitor.checkState(self._changed):
           # publish the new state if frequetly publishing is disabled
-          if not self.do_finish and self.HEARTBEAT_HZ <= self.MIN_HZ_PUB_ON_CHANGE:
+          if not self.do_finish and self.HEARTBEAT_HZ < DiscoveredMaster.MIN_HZ_FOR_QUALILTY:
             self.send_heardbeat()
             self._current_change_notification_count = 0
         with self.__lock:
@@ -665,7 +713,7 @@ class Discoverer(object):
           if v.count_requests < self.OFFLINE_AFTER_REQUEST_COUNT:
             self._send_request2addr(k[0][0], v)
           else:
-            v.setOffline()
+            v.set_offline()
       for r in to_remove:
         rospy.logdebug("Remove master discovery: http://%s:%s"%(r[0][0], r[1]))
         del self.masters[r]
@@ -697,8 +745,9 @@ class Discoverer(object):
                 # send the current master state to the sender address
                 # if send_mcast is disabled responce only to local requests
                 if (self._send_mcast or address[0].startswith('127')):
-                  self._send_current_state2addr(address[0])
-                  add_to_list = not master_key in self.masters
+                  with self.__lock:
+                    self._send_current_state2addr(address[0])
+                    add_to_list = not master_key in self.masters
               # remove master if sec and nsec are -1
               elif secs == -1 or secs_l == -1:
                 with self.__lock:
@@ -718,7 +767,7 @@ class Discoverer(object):
               # update the timestamp of existing master
               elif self.masters.has_key(master_key):
                 with self.__lock:
-                  changed = self.masters[master_key].addHeartbeat(float(secs)+float(nsecs)/1000000000.0, float(secs_l)+float(nsecs_l)/1000000000.0, float(rate)/10.0,)
+                  changed = self.masters[master_key].add_heartbeat(float(secs)+float(nsecs)/1000000000.0, float(secs_l)+float(nsecs_l)/1000000000.0, float(rate)/10.0,)
                   if not self._changed:
                     self._changed = changed
               # or create <a new master
@@ -727,7 +776,6 @@ class Discoverer(object):
               if add_to_list:
                 with self.__lock:
                   rospy.logdebug("Add master discovery: http://%s:%s"%(address[0], monitor_port))
-                  print "rate:", rate, float(rate)/10.0
                   self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                               heartbeat_rate=float(rate)/10.0,
                                                               timestamp=float(secs)+float(nsecs)/1000000000.0,
@@ -779,27 +827,7 @@ class Discoverer(object):
     result.header.stamp.nsecs = int((current_time - result.header.stamp.secs) * 1000000000)
     with self.__lock:
       for (k, v) in self.masters.iteritems():
-        quality = -1.0
-        print "v.heartbeat_rate", v.heartbeat_rate
-        if not (v.mastername is None) and v.heartbeat_rate > 0:
-          rate = v.heartbeat_rate
-          measurement_duration = self.MEASUREMENT_INTERVALS
-          if rate < 1.:
-            measurement_duration = self.MEASUREMENT_INTERVALS / rate
-          # remove all heartbeats, which are to old
-          ts_oldest = current_time - measurement_duration
-          removed_ts = v.removeHeartbeats(ts_oldest)
-          # sets the master offline if the last received heartbeat is to old
-          if current_time - v.last_heartbeat_ts > (measurement_duration * self.TIMEOUT_FACTOR):
-            v.setOffline()
-          # calculate the quality for inly online masters
-          if v.online:
-            beats_count = len(v.heartbeats)
-            expected_count = rate * measurement_duration
-            if expected_count > 0:
-              quality = float(beats_count) / float(expected_count) * 100.0
-              if quality > 100.0:
-                quality = 100.0
+        quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
         if not (v.mastername is None) and v.online:
           result.links.append(LinkState(v.mastername, quality))
     #publish the results
@@ -814,9 +842,9 @@ class Discoverer(object):
   def publish_masterstate(self, master_state):
     '''
     Publishes the given state to the ROS network. This method is thread safe.
-    
+
     :param master_state: the master state to publish
-    
+
     :type master_state:  `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_
     '''
     with self.__lock:
@@ -829,9 +857,9 @@ class Discoverer(object):
   def publish_stats(self, stats):
     '''
     Publishes the link quality states to the ROS network.This method is thread safe.
-    
+
     :param stats: the link quality states to publish
-    
+
     :type stats:  `master_discovery_fkie.msg.LinkStatesStamped <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/LinkStatesStamped.html>`_
     '''
     with self.__lock:
@@ -872,9 +900,9 @@ class Discoverer(object):
         for (k, v) in self.masters.iteritems():
           if not v.mastername is None:
             # send an active unicast request
-            self._send_request2addr(k[0][0])
+            self._send_request2addr(k[0][0], v)
         self._send_request2group()
-        self._send_current_state2group()
+#        self._send_current_state2group()
       except:
         import traceback
         traceback.print_exc()
