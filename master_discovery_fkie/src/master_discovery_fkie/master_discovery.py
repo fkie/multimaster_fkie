@@ -178,6 +178,7 @@ class DiscoveredMaster(object):
     return result
 
   def add_request(self, timestamp):
+    self.count_requests += 1
     self.requests.append(timestamp)
 
 
@@ -624,7 +625,6 @@ class Discoverer(object):
       rospy.logdebug('Send a request for update: %s'%address)
       self.msocket.send2addr(self._create_request_update_msg(), address)
       if not master is None:
-        master.count_requests += 1
         master.add_request(time.time())
     except Exception as e:
       rospy.logwarn("Send to robot host '%s' failed: %s"%(address, e))
@@ -709,7 +709,7 @@ class Discoverer(object):
                                                      v.discoverername,
                                                      v.monitoruri)))
         # request updates
-        elif ts_since_last_hb > self.ACTIVE_REQUEST_AFTER:
+        elif ts_since_last_hb > self.ACTIVE_REQUEST_AFTER or v.count_requests > 0:
           if v.count_requests < self.OFFLINE_AFTER_REQUEST_COUNT:
             self._send_request2addr(k[0][0], v)
           else:
@@ -767,6 +767,7 @@ class Discoverer(object):
               # update the timestamp of existing master
               elif self.masters.has_key(master_key):
                 with self.__lock:
+                  print "add heartbeat", address
                   changed = self.masters[master_key].add_heartbeat(float(secs)+float(nsecs)/1000000000.0, float(secs_l)+float(nsecs_l)/1000000000.0, float(rate)/10.0,)
                   if not self._changed:
                     self._changed = changed
