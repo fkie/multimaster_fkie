@@ -56,6 +56,7 @@ class Editor(QtGui.QTextEdit):
 
   SUBSTITUTION_ARGS = ['env', 'optenv', 'find', 'anon', 'arg']
   CONTEXT_FILE_EXT = ['.launch', '.test', '.xml']
+  YAML_VALIDATION_FILES = ['.yaml', '.iface', '.sync']
 
   def __init__(self, filename, parent=None):
     self.parent = parent
@@ -93,6 +94,8 @@ class Editor(QtGui.QTextEdit):
   def save(self):
     '''
     Saves changes to the file.
+    :return: saved, errors, msg
+    :rtype: bool, bool, str
     '''
     if self.document().isModified() or not QtCore.QFileInfo(self.filename).exists():
       file = QtCore.QFile(self.filename)
@@ -100,11 +103,30 @@ class Editor(QtGui.QTextEdit):
         file.write(self.toPlainText().encode('utf-8'))
         self.document().setModified(False)
         self.file_info = QtCore.QFileInfo(self.filename)
-        return True
+
+        ext = os.path.splitext(self.filename)
+        # validate the xml structure of the launch files
+        if ext[1] in self.CONTEXT_FILE_EXT:
+          imported = False
+          try:
+            from lxml import etree
+            imported = True
+            parser = etree.XMLParser()
+            etree.fromstring(self.toPlainText().encode('utf-8'), parser)
+          except Exception as e:
+            if imported:
+              return True, True, "%s"%e
+        # validate the yaml structure of yaml files
+        elif ext[1] in self.YAML_VALIDATION_FILES:
+          try:
+            import yaml
+            yaml.load(self.toPlainText().encode('utf-8'))
+          except yaml.MarkedYAMLError, e:
+            return True, True, "%s"%e
+        return True, False, ''
       else:
-        QtGui.QMessageBox.critical(self, "Error", "Cannot write XML file")
-        return False
-    return False
+        return False, True, "Cannot write XML file"
+    return False, False, ''
 
   def setCurrentPath(self, path):
     '''
@@ -616,6 +638,8 @@ class XmlEditor(QtGui.QDialog):
     self.setWindowFlags(QtCore.Qt.Window)
     self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
+    self._error_icon = QtGui.QIcon(":/icons/crystal_clear_warning.png")
+    self._empty_icon = QtGui.QIcon()
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("ROSLaunch Editor");
 #    self.finished.connect(self.closeEvent)
@@ -810,7 +834,15 @@ class XmlEditor(QtGui.QDialog):
     Saves the current document. This method is called if the C{save button} 
     was clicked.
     '''
-    if self.tabWidget.currentWidget().save():
+    saved, errors, msg = self.tabWidget.currentWidget().save()
+    if errors:
+      QtGui.QMessageBox.critical(self, "Error", msg)
+      self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
+      self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), msg)
+    else:
+      self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
+      self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
+    if saved:
       self.on_editor_textChanged()
 
   def on_editor_textChanged(self):
@@ -827,7 +859,7 @@ class XmlEditor(QtGui.QDialog):
     Shows the number of the line and column in a label.
     '''
     cursor = self.tabWidget.currentWidget().textCursor()
-    self.pos_label.setText(''.join([str(cursor.blockNumber()+1), ':', str(cursor.columnNumber()+1)]))
+    self.pos_label.setText('%s:%s'%(cursor.blockNumber()+1, cursor.columnNumber()))
 
   def on_shortcut_find(self):
     '''
