@@ -274,6 +274,7 @@ class SyncDialog(QtGui.QDialog):
 
   def _on_select_interface_clicked(self):
     self.toolButton_SyncAll.setVisible(False)
+    self.toolButton_SyncAllAnyMsg.setVisible(False)
     self.toolButton_SyncTopicOnDemand.setVisible(False)
     self.toolButton_SelectInterface.setVisible(False)
     self.interface_field.setVisible(True)
@@ -412,6 +413,7 @@ class SyncDialog(QtGui.QDialog):
 
   def resetView(self):
     self.toolButton_SyncAll.setVisible(True)
+    self.toolButton_SyncAllAnyMsg.setVisible(True)
     self.toolButton_SyncTopicOnDemand.setVisible(True)
     self.toolButton_SelectInterface.setVisible(True)
     self.interface_field.setVisible(False)
