@@ -30,9 +30,12 @@ install(
 
 install(
    FILES
-        ./src/node_manager_fkie/MainWindow.ui
         ./src/node_manager_fkie/MasterTab.ui
+        ./src/node_manager_fkie/LaunchFilesDockWidget.ui
+        ./src/node_manager_fkie/LogDockWidget.ui
         ./src/node_manager_fkie/PasswordInput.ui
+        ./src/node_manager_fkie/MainWindow.ui
+        ./src/node_manager_fkie/SettingsDockWidget.ui
         ./src/node_manager_fkie/GUI.qrc
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
