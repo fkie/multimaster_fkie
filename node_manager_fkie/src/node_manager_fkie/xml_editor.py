@@ -614,7 +614,6 @@ class XmlEditor(QtGui.QDialog):
     self.setObjectName(' - '.join(['xmlEditor', str(filenames)]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
-    self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("ROSLaunch Editor");
@@ -694,10 +693,31 @@ class XmlEditor(QtGui.QDialog):
       if f:
         self.on_load_request(os.path.normpath(f), search_text)
 
+    self.readSettings()
 #    print "================ create", self.objectName()
 #
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
+  def readSettings(self):
+    if nm.settings().store_geometry:
+      settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+      settings.beginGroup("editor")
+      maximized = settings.value("maximized", 'false') == 'true'
+      if maximized:
+        self.showMaximized()
+      else:
+        self.resize(settings.value("size", QtCore.QSize(800,640)))
+        self.move(settings.value("pos", QtCore.QPoint(0, 0)))
+      settings.endGroup()
+
+  def storeSetting(self):
+    if nm.settings().store_geometry:
+      settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+      settings.beginGroup("editor")
+      settings.setValue("size", self.size())
+      settings.setValue("pos", self.pos())
+      settings.setValue("maximized", self.isMaximized())
+      settings.endGroup()
 
   def on_load_request(self, filename, search_text=''):
     '''
@@ -803,6 +823,7 @@ class XmlEditor(QtGui.QDialog):
     else:
       event.accept()
     if event.isAccepted():
+      self.storeSetting()
       self.finished_signal.emit(self.init_filenames)
 
   def on_saveButton_clicked(self):
