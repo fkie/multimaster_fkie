@@ -2,6 +2,14 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.12 (2014-07-08)
+-------------------
+* node_manager_fkie: fix instalation problem with missed .ui files
+* node_manager_fkie: fixed ros master preparation
+  Do not try to start ROS master on remote hosts for echo topics, if this
+  host are not reachable.
+* Contributors: Alexander Tiderko
+
 0.3.11 (2014-06-04)
 -------------------
 * node_manager_fkie: replaced the rxconsole and rxgraph by rqt button to start rqt plugins related to selected master
