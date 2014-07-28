@@ -249,6 +249,7 @@ class MainWindow(QtGui.QMainWindow):
 
     try:
       self.readSettings()
+      self.launch_dock.raise_()
     except Exception as e:
       rospy.logwarn("Error while read settings: %s"%e)
     # setup the hide button, which hides the docks on left side
