@@ -337,7 +337,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         items = []
         for package, path in self.__packages.items():
           items.append((package, path, LaunchItem.PACKAGE))
-        self._setNewList((self.currentPath, items))
+        self._setNewList((self.currentPath if self.currentPath else '', items))
       except:
         import traceback
         print traceback.format_exc()
