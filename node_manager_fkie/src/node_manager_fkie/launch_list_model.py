@@ -485,11 +485,12 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     fileList = os.listdir(path)
     for file in fileList:
-      if os.path.isfile(''.join([path, '/', file])) and file.endswith('.launch'):
+      file_name, file_extension = os.path.splitext(file)
+      if os.path.isfile(os.path.join(path, file)) and (file.endswith('.launch') or file_extension in nm.Settings().launch_view_file_ext):
         return True
     for file in fileList:
-      if os.path.isdir(''.join([path, '/', file])):
-        if self._containsLaunches(''.join([path, '/', file])):
+      if os.path.isdir(os.path.join(path, file)):
+        if self._containsLaunches(os.path.join(path, file)):
           return True
     return False
 
@@ -508,7 +509,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
       item = os.path.normpath(''.join([path, '/', file]))
       pathItem = os.path.basename(item)
       if pathItem == 'src':
-        pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
+        pathItem = '%s (src)'%os.path.basename(os.path.dirname(item))
       pathId = self._identifyPath(item)
       if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
@@ -531,10 +532,10 @@ class LaunchListModel(QtGui.QStandardItemModel):
     else:
       dirlist = os.listdir(path)
     for file in dirlist:
-      item = os.path.normpath(''.join([path, '/', file])) if not path is None else file
+      item = os.path.normpath(os.path.join(path, file)) if not path is None else file
       pathItem = os.path.basename(item)
       if pathItem == 'src':
-        pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
+        pathItem = '%s (src)'%os.path.basename(os.path.dirname(item))
       pathId = self._identifyPath(item)
       if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
