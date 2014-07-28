@@ -288,6 +288,8 @@ class Editor(QtGui.QTextEdit):
     '''
     if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
       self.setMouseTracking(True)
+    if event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_7:
+      self.commentText()
     if event.key() != QtCore.Qt.Key_Escape:
       # handle the shifting of the block
       if event.key() == QtCore.Qt.Key_Tab:
@@ -315,6 +317,69 @@ class Editor(QtGui.QTextEdit):
         if menu:
           menu.exec_(self.mapToGlobal(self.cursorRect().bottomRight()))
     QtGui.QTextEdit.keyReleaseEvent(self, event)
+
+  def commentText(self):
+    cursor = self.textCursor()
+    if not cursor.isNull():
+      cursor.beginEditBlock()
+      start = cursor.selectionStart()
+      end = cursor.selectionEnd()
+      cursor.setPosition(start)
+      block_start = cursor.blockNumber()
+      cursor.setPosition(end)
+      block_end = cursor.blockNumber()
+      if block_end-block_start > 0 and end-cursor.block().position() <= 0:
+        # skip the last block, if no characters are selected
+        block_end -= 1
+      cursor.setPosition(start, QtGui.QTextCursor.MoveAnchor)
+      cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+      start = cursor.position()
+      while (cursor.block().blockNumber() < block_end+1):
+        cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+        ext = os.path.splitext(self.filename)
+        # XML comment
+        if ext[1] in self.CONTEXT_FILE_EXT:
+          if cursor.block().length() < 4:
+            cursor.movePosition(QtGui.QTextCursor.NextBlock)
+            continue
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 4)
+          # only comments breakers at the start of the line are removed 
+          if cursor.selectedText() == '<!--':
+            cursor.insertText('')
+            cursor.movePosition(QtGui.QTextCursor.EndOfLine)
+            cursor.movePosition(QtGui.QTextCursor.PreviousCharacter, QtGui.QTextCursor.KeepAnchor, 3)
+            if cursor.selectedText() == '-->':
+              cursor.insertText('')
+          else:
+            cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+            cursor.movePosition(QtGui.QTextCursor.EndOfLine, QtGui.QTextCursor.KeepAnchor)
+            # only comment out, if no comments are found
+            if cursor.selectedText().find('<!--') < 0 and cursor.selectedText().find('-->') < 0:
+              cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+              cursor.insertText('<!--')
+              cursor.movePosition(QtGui.QTextCursor.EndOfLine)
+              cursor.insertText('-->')
+        else: # other comments
+          if cursor.block().length() < 2:
+            cursor.movePosition(QtGui.QTextCursor.NextBlock)
+            continue
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 2)
+          # only comments breakers at the start of the line are removed
+          if cursor.selectedText() == '# ':
+            cursor.insertText('')
+          else:
+            cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+            cursor.insertText('# ')
+        cursor.movePosition(QtGui.QTextCursor.NextBlock)
+      # Set our cursor's selection to span all of the involved lines.
+      cursor.endEditBlock()
+      cursor.setPosition(start, QtGui.QTextCursor.MoveAnchor)
+      cursor.movePosition(QtGui.QTextCursor.StartOfBlock, QtGui.QTextCursor.MoveAnchor)
+      while (cursor.block().blockNumber() < block_end):
+        cursor.movePosition(QtGui.QTextCursor.NextBlock, QtGui.QTextCursor.KeepAnchor)
+      cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+      # set the cursor 
+      self.setTextCursor(cursor)
 
   def shiftText(self):
     '''
