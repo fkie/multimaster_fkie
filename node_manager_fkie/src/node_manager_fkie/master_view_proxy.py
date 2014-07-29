@@ -452,21 +452,21 @@ class MasterViewProxy(QtGui.QWidget):
       # update nodes in the model
       if update_result[0] or update_result[1] or update_result[2] or self.__force_update:
         self.updateRunningNodesInModel(self.__master_info)
+        self.on_node_selection_changed(None, None)
       # Updates the topic view based on the current master information.
       if update_result[3] or update_result[4] or update_result[5] or self.__force_update:
         self.topic_model.updateModelData(self.__master_info.topics, update_result[3], update_result[4], update_result[5])
+        self.on_topic_selection_changed(None, None)
       # Updates the service view based on the current master information.
       if update_result[6] or update_result[7] or update_result[8] or self.__force_update:
         self.service_model.updateModelData(self.__master_info.services, update_result[6], update_result[7], update_result[8])
+        self.on_service_selection_changed(None, None)
         # update the default configuration
         self.updateDefaultConfigs(self.__master_info)
       self.__force_update = False
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
-      self.on_node_selection_changed(None, None)
-      self.on_topic_selection_changed(None, None)
-      self.on_service_selection_changed(None, None)
       self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon", "/roslaunch/uris"])
     except:
       import traceback
@@ -1111,7 +1111,9 @@ class MasterViewProxy(QtGui.QWidget):
           ns = roslib.names.namespace(name)
           if item_name.startswith(ns) and ns != roslib.names.SEP:
             item_name = item_name.replace(ns, '', 1)
-        if type in ['TOPIC_PUB', 'TOPIC_SUB']:
+        if type in ['NODE']:
+          item = '<a href="node://%s%s">%s</a>'%(self.mastername, i, item_name)
+        elif type in ['TOPIC_PUB', 'TOPIC_SUB']:
           # determine the count of publisher or subscriber
           count = None
           try:
@@ -1119,17 +1121,19 @@ class MasterViewProxy(QtGui.QWidget):
           except:
             pass
           item = '<a href="topic://%s">%s</a>'%(i, item_name)
+          item += '   <a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a>'%(self.mastername, i)
           # add the count
           if not count is None:
             item = '<span style="color:gray;">_%d_/ </span>%s'%(count, item)
         elif type == 'SERVICE':
-          item = '<a href="service://%s">%s</a>'%(i, item_name)
+          item = '<a href="service://%s%s">%s</a>'%(self.mastername, i, item_name)
+          item += '   <a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a>'%(self.mastername, i)
         elif type == 'LAUNCH':
           item = '<a href="launch://%s">%s</a>'%(i, item_name)
           if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
-            item = '%s<br><a href="reload_globals://%s"><font color="#339900">reload global parameter @next start</font></a>'%(item, i)
-        result = '%s\n%s<br>'%(result, item)
-      result = '%s</ul>'%(result,)
+            item += '%s<br><a href="reload_globals://%s"><font color="#339900">reload global parameter @next start</font></a>'%(item, i)
+        result += '\n%s<br>'%(item)
+      result += '</ul>'
     return result
 
   def on_tab_current_changed(self, index):
@@ -1153,80 +1157,88 @@ class MasterViewProxy(QtGui.QWidget):
           self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
 
 
-  def on_node_selection_changed(self, selected, deselected, force_emit=False):
+  def on_node_selection_changed(self, selected, deselected, force_emit=False, node_name=''):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of host, group or node. 
     '''
-    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
-      return
+    if node_name and not self.master_info is None:
+      # get node by name
+      selectedNodes = self.node_tree_model.getNode("%s"%node_name)
+      if selectedNodes[0] is None:
+        return
+      selectedHosts = []
+      selections = []
+    else:
+      # get node by selected items
+      if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
+        return
+      selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+      selectedHosts = self.hostsFromIndexes(selections)
+      selectedNodes = self.nodesFromIndexes(selections)
     self.masterTab.topicsView.selectionModel().clear()
     self.masterTab.servicesView.selectionModel().clear()
-    selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
     name = ''
     text = ''
-    selectedHosts = self.hostsFromIndexes(selections)
     # add host description, if only the one host is selected
     if len(selectedHosts) == 1 and len(selections) / 2 == 1:
       host = selectedHosts[0]
-      name = ' - '.join([host.name, 'Robot'])
+      name = '%s - Robot'%host.name
       text = host.generateDescription()
-      text = ''.join([text, '<br>'])
+      text += '<br>'
     else:
       # add group description, if only the one group is selected
       selectedGroups = self.groupsFromIndexes(selections)
       if len(selectedGroups) == 1 and len(selections) / 2 == 1:
         group = selectedGroups[0]
-        name = ' - '.join([group.name, 'Group'])
+        name = '%s - Group'%group.name
         text = group.generateDescription()
-        text = ''.join([text, '<br>'])
+        text += '<br>'
     # add node description for one selected node
-    selectedNodes = self.nodesFromIndexes(selections)
     if len(selectedNodes) == 1:
       node = selectedNodes[0]
       # create description for a node
       ns, sep, name = node.name.rpartition(rospy.names.SEP)
-      text = ''.join(['<font size="+1"><b>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</b></font><br>'])
+      text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
       launches = [c for c in node.cfgs if not isinstance(c, tuple)]
       default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
       if launches or default_cfgs:
-        text = ''.join([text, '<a href="restart_node://', node.name,'">', 'restart</a> - '])
-      text = ''.join([text, '<a href="kill_node://', node.name,'">', 'kill</a> - '])
-      text = ''.join([text, '<a href="kill_screen://', node.name,'">', 'kill screen</a><br>'])
+        text += '<a href="restart_node://%s">restart</a> - '%node.name
+      text += '<a href="kill_node://%s">kill</a> - '%node.name
+      text += '<a href="kill_screen://%s">kill screen</a><br>'%node.name
       if launches:
-        text = ''.join([text, '<a href="start_node_at_host://', node.name, '">', 'start@host</a>'])
-      text = ''.join([text, '<p>'])
-      text = ''.join([text, '<dl>'])
-      text = ''.join([text, '<dt><b>URI</b>: ', str(node.node_info.uri), '</dt>'])
-      text = ''.join([text, '<dt><b>PID</b>: ', str(node.node_info.pid), '</dt>'])
-      text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(node.node_info.masteruri), '</dt>'])
+        text += '<a href="start_node_at_host://%s">start@host</a>'%node.name
+      text += '<dl>'
+      text += '<dt><b>URI</b>: %s</dt>'%node.node_info.uri
+      text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
+      text += '<dt><b>ORG.MASTERURI</b>: %s</dt>'%node.node_info.masteruri
       if not is_legal_name(node.name):
-        text = ''.join([text, '<dt><font color="#CC0000"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'])
+        text += '<dt><font color="#CC0000"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
       if node.is_ghost:
         if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
-          text = ''.join([text, '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'])
+          text += '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'
         else:
-          text = ''.join([text, '<dt><font color="#FF9900"><b>The node is running on remote host, but is not synchronized, because of filter or errors while sync, see log of <i>master_sync</i></b></font></dt>'])
-          text = ''.join([text, '<dt><font color="#FF9900"><i>Are you use the same ROS packages?</i></font></dt>'])
+          text += '<dt><font color="#FF9900"><b>The node is running on remote host, but is not synchronized, because of filter or errors while sync, see log of <i>master_sync</i></b></font></dt>'
+          text += '<dt><font color="#FF9900"><i>Are you use the same ROS packages?</i></font></dt>'
       if node.has_running and node.node_info.pid is None and node.node_info.uri is None:
-        text = ''.join([text, '<dt><font color="#FF9900"><b>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'])
+        text += '<dt><font color="#FF9900"><b>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'
       if not node.node_info.uri is None and node.node_info.masteruri != self.masteruri:
-        text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
+        text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
       if node.node_info.pid is None and not node.node_info.uri is None:
         if not node.node_info.isLocal:
-          text = ''.join([text, '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'])
+          text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'
         else:
-          text = ''.join([text, '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'])
-          text = ''.join([text, '<a href="unregister_node://', node.name,'">', 'unregister</a></dt>'])
-      text = ''.join([text, '</dl>'])
-      text = ''.join([text, self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)])
-      text = ''.join([text, self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)])
-      text = ''.join([text, self._create_html_list('Services:', node.services, 'SERVICE', node.name)])
+          text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
+          text += '<a href="unregister_node://%s">unregister</a></dt>'%node.name
+      text += '</dl>'
+      text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
+      text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
+      text += self._create_html_list('Services:', node.services, 'SERVICE', node.name)
       # set loaunch file paths
-      text = ''.join([text, self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')])
-      text = ''.join([text, self._create_html_list('Default Configurations:', default_cfgs)])
-      text = ''.join([text, '<dt><a href="copy_log_path://', node.name,'">', 'copy log path to clipboard</a></dt>'])
-      text = ''.join(['<div>', text, '</div>'])
+      text += self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')
+      text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
+      text += '<dt><a href="copy_log_path://%s">copy log path to clipboard</a></dt>'%node.name
+      text = '<div>%s</div>'%text
       name = node.name
     elif len(selectedNodes) > 1:
 #      stoppable_nodes = [sn for sn in selectedNodes if not sn.node_info.uri is None and not self._is_in_ignore_list(sn.name)]
@@ -1235,50 +1247,57 @@ class MasterViewProxy(QtGui.QWidget):
       unregisterble_nodes = [sn for sn in selectedNodes if sn.node_info.pid is None and not sn.node_info.uri is None and sn.node_info.isLocal and not self._is_in_ignore_list(sn.name)]
       # add description for multiple selected nodes
       if restartable_nodes or killable_nodes or unregisterble_nodes:
-        text = ''.join([text, '<b>Selected nodes:</b><br>'])
+        text += '<b>Selected nodes:</b><br>'
       if restartable_nodes:
-        text = ''.join([text, '<a href="restart_node://all_selected_nodes">', 'restart [', str(len(restartable_nodes)),']</a>'])
+        text += '<a href="restart_node://all_selected_nodes">restart [%d]</a>'%len(restartable_nodes)
         if killable_nodes or unregisterble_nodes:
-          text = ''.join([text, ' - '])
+          text += ' - '
       if killable_nodes:
-        text = ''.join([text, '<a href="kill_node://all_selected_nodes">', 'kill [', str(len(killable_nodes)),']</a> - '])
-        text = ''.join([text, '<a href="kill_screen://all_selected_nodes">', 'kill screen [', str(len(killable_nodes)),']</a>'])
+        text += '<a href="kill_node://all_selected_nodes">kill [%d]</a> - '%len(killable_nodes)
+        text += '<a href="kill_screen://all_selected_nodes">kill screen [%d]</a>'%len(killable_nodes)
         if unregisterble_nodes:
-          text = ''.join([text, ' - '])
+          text += ' - '
       if unregisterble_nodes:
-        text = ''.join([text, '<a href="unregister_node://all_selected_nodes">', 'unregister [', str(len(unregisterble_nodes)),']</a>'])
+        text += '<a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
       if restartable_nodes:
-        text = ''.join([text, '<br><a href="start_node_at_host://all_selected_nodes">', 'start@host [', str(len(restartable_nodes)),']</a>'])
+        text += '<br><a href="start_node_at_host://all_selected_nodes">start@host [%d]</a>'%len(restartable_nodes)
 
-    if self.__last_info_type == 'Node' and (self.__last_info_text != text or force_emit):
+    if (self.__last_info_type == 'Node' and self.__last_info_text != text) or force_emit:
       self.__last_info_text = text
       self.description_signal.emit(name, text)
     self.updateButtons()
 
-  def on_topic_selection_changed(self, selected, deselected, force_emit=False):
+  def on_topic_selection_changed(self, selected, deselected, force_emit=False, topic_name=''):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected topic
     '''
-    selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
-    topics_selected = (len(selectedTopics) > 0)
-    self.masterTab.echoTopicButton.setEnabled(topics_selected)
-    self.masterTab.hzTopicButton.setEnabled(topics_selected)
-    self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
-    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Topics':
-      return
+    if topic_name and not self.master_info is None:
+      selectedTopics = [self.master_info.getTopic("%s"%topic_name)]
+      if selectedTopics[0] is None:
+        return
+    else:
+      if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Topics':
+        return
+      selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+      topics_selected = (len(selectedTopics) > 0)
+      self.masterTab.echoTopicButton.setEnabled(topics_selected)
+      self.masterTab.hzTopicButton.setEnabled(topics_selected)
+      self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
       ns, sep, name = topic.name.rpartition(rospy.names.SEP)
-      text = ''.join(['<h3>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</h3>'])
-      text = ''.join([text, self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')])
-      text = ''.join([text, self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')])
-      text = ''.join([text, '<b><u>Type:</u></b> ', str(self._href_from_msgtype(topic.type))])
-      text = ''.join([text, '<dl>'])
+      text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
+      text += '<a href="topicecho://%s%s">echo</a> - '%(self.mastername, topic.name)
+      text += '<a href="topichz://%s%s">hz</a>'%(self.mastername, topic.name)
+      text += '<p>'
+      text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
+      text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
+      text += '<b><u>Type:</u></b> %s'%self._href_from_msgtype(topic.type)
+      text += '<dl>'
       try:
         mclass = roslib.message.get_message_class(topic.type)
         if not mclass is None:
-#          text = ''.join([text, '<ul>'])
           for f in mclass.__slots__:
             idx = mclass.__slots__.index(f)
             idtype = mclass._slot_types[idx]
@@ -1292,65 +1311,72 @@ class MasterViewProxy(QtGui.QWidget):
 ##                primitive = "class", list_msg_class.__slots__
 #              except ValueError:
 #                pass
-            text = ''.join([text, str(f), ': <span style="color:gray;">', str(idtype), '</span><br>'])
-          text = ''.join([text, '<br>'])
+            text += '%s: <span style="color:gray;">%s</span><br>'%(f, idtype)
+          text += '<br>'
       except ValueError:
         pass
-      text = ''.join([text, '</dl>'])
-      info_text = ''.join(['<div>', text, '</div>'])
-      if self.__last_info_type == 'Topic' and (self.__last_info_text != info_text or force_emit):
+      text += '</dl>'
+      info_text = '<div>%s</div>'%text
+      if (self.__last_info_type == 'Topic' and self.__last_info_text != info_text) or force_emit:
         self.__last_info_text = info_text
         self.description_signal.emit(topic.name, info_text)
 
   def _href_from_msgtype(self, type):
     result = type
     if type:
-      result = ''.join(['<a href="http://ros.org/doc/api/', type.replace('/', '/html/msg/'), '.html">', type, '</a>'])
+      result = '<a href="http://ros.org/doc/api/%s.html">%s</a>'%(type.replace('/', '/html/msg/'), type)
     return result
 
-  def on_service_selection_changed(self, selected, deselected, force_emit=False):
+  def on_service_selection_changed(self, selected, deselected, force_emit=False, service_name=''):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected service
     '''
-    selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
-    self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
-    if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Services':
-      return
+    if service_name and not self.master_info is None:
+      # get service by name
+      selectedServices = [self.master_info.getService("%s"%service_name)]
+      if selectedServices[0] is None:
+        return
+    else:
+      # get service by selected items
+      selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+      self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
+      if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Services':
+        return
     if len(selectedServices) == 1:
       service = selectedServices[0]
       ns, sep, name = service.name.rpartition(rospy.names.SEP)
-      text = ''.join(['<h3>', '<span style="color:gray;">', str(ns), sep, '</span><b>', str(name), '</h3>'])
-      text = ''.join([text, '<dl>'])
-      text = ''.join([text, '<dt><b>URI</b>: ', str(service.uri), '</dt>'])
-      text = ''.join([text, '<dt><b>ORG.MASTERURI</b>: ', str(service.masteruri), '</dt>'])
-      text = ''.join([text, '<dt><b>Provider</b>: ', str(service.serviceProvider), '</dt>'])
+      text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
+      text += '<a href="servicecall://%s%s">call</a>'%(self.mastername, service.name)
+      text += '<dl>'
+      text += '<dt><b>URI</b>: %s</dt>'%service.uri
+      text += '<dt><b>ORG.MASTERURI</b>: %s</dt>'%service.masteruri
+      text += self._create_html_list('Provider:', service.serviceProvider, 'NODE')
       if service.masteruri != self.masteruri:
-        text = ''.join([text, '<dt><font color="#339900"><b>synchronized</b></font></dt>'])
-      text = ''.join([text, '</dl>'])
+        text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
+      text += '</dl>'
       try:
         service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
-        text = ''.join([text, '<h4>', self._href_from_svrtype(service_class._type), '</h4>'])
-        text = ''.join([text, '<b><u>', 'Request', ':</u></b>'])
-        text = ''.join([text, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
-
-        text = ''.join([text, '<b><u>', 'Response', ':</u></b>'])
-        text = ''.join([text, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
+        text += '<h4>%s</h4>'%self._href_from_svrtype(service_class._type)
+        text += '<b><u>Request:</u></b>'
+        text += '<dl><dt>%s</dt></dl>'%service_class._request_class.__slots__
+        text += '<b><u>Response:</u></b>'
+        text += '<dl><dt>%s</dt></dl>'%service_class._response_class.__slots__
       except:
-        text = ''.join([text, '<h4><font color=red>', 'Unknown service type', '</font></h4>'])
+        text += '<h4><font color=red>Unknown service type</font></h4>'
         if service.isLocal:
-          text = ''.join([text, '<font color=red>', 'Unable to communicate with service, is provider node running?', '</font>'])
+          text += '<font color=red>Unable to communicate with service, is provider node running?</font>'
         else:
-          text = ''.join([text, '<font color=red>', 'Try to refresh <b>all</b> hosts. Is provider node running?', '</font>'])
-      info_text = ''.join(['<div>', text, '</div>'])
-      if self.__last_info_type == 'Service' and (self.__last_info_text != info_text or force_emit):
+          text += '<font color=red>Try to refresh <b>all</b> hosts. Is provider node running?</font>'
+      info_text = '<div>%s</div>'%text
+      if (self.__last_info_type == 'Service' and self.__last_info_text != info_text) or force_emit:
         self.__last_info_text = info_text
         self.description_signal.emit(service.name, info_text)
 
   def _href_from_svrtype(self, type):
     result = type
     if type:
-      result = ''.join(['<a href="http://ros.org/doc/api/', type.replace('/', '/html/srv/'), '.html">', type, '</a>'])
+      result = '<a href="http://ros.org/doc/api/%s.html">%s</a>'%(type.replace('/', '/html/srv/'), type)
     return result
 
   def on_parameter_selection_changed(self, selected, deselected):
@@ -1459,16 +1485,16 @@ class MasterViewProxy(QtGui.QWidget):
     if node.pid is None or force:
       # start the node using launch configuration
       if config is None:
-        raise DetailedError("Start error", 
-                          ''.join(['Error while start ', node.name, ':\nNo configuration found!']))
+        raise DetailedError("Start error",
+                          'Error while start %s:\nNo configuration found!'%node.name)
       if isinstance(config, LaunchConfig):
         try:
           nm.starter().runNode(node.name, config, force_host, self.masteruri, user=self.current_user)
         except socket.error as se:
           rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
-          raise DetailedError("Start error", 
-                              ''.join(['Error while start ', node.name, '\n\nStart canceled!']),
-                              str(se))
+          raise DetailedError("Start error",
+                              'Error while start %s\n\nStart canceled!'%node.name,
+                              '%s'%se)
           return False
         except nm.InteractionNeededError as ie:
           raise
@@ -1476,8 +1502,8 @@ class MasterViewProxy(QtGui.QWidget):
           print type(e)
           import traceback
           print traceback.format_exc()
-          rospy.logwarn("Error while start '%s': %s", node.name, str(e))
-          raise DetailedError("Start error", ''.join(['Error while start ', node.name]), str(e))
+          rospy.logwarn("Error while start '%s': %s"%(node.name, e))
+          raise DetailedError("Start error", 'Error while start %s'%node.name, '%s'%e)
       elif isinstance(config, (str, unicode)):
         # start with default configuration
         from multimaster_msgs_fkie.srv import Task
@@ -1485,10 +1511,10 @@ class MasterViewProxy(QtGui.QWidget):
           nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
         except (Exception, nm.StartException) as e:
 #          socket_error =  (str(e).find("timeout") or str(e).find("113"))
-          rospy.logwarn("Error while call a service of node '%s': %s", node.name, str(e))
-          raise DetailedError("Service error", 
-                              ''.join(['Error while call a service of node ', node.name, '[', self.master_info.getService(config).uri, ']']),
-                              str(e))
+          rospy.logwarn("Error while call a service of node '%s': %s"%(node.name, e))
+          raise DetailedError("Service error",
+                              'Error while call a service of node %s [%s]'%(node.name, self.master_info.getService(config).uri),
+                              '%s'%e)
 
   def start_nodes(self, nodes, force=False, force_host=None):
     '''
@@ -1563,6 +1589,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.setCursor(QtCore.Qt.WaitCursor)
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      self.stop_nodes(selectedNodes)
       self.start_nodes(selectedNodes, True)
     finally:
       self.setCursor(cursor)
@@ -2281,10 +2308,12 @@ class MasterViewProxy(QtGui.QWidget):
     Shows the topic output in a new window.
     '''
     if not self.master_info is None:
-      topic = self.master_info.getTopic(str(topic_name))
+      topic = self.master_info.getTopic("%s"%topic_name)
       if not topic is None:
         self._add_topic_output2queue(topic, show_hz_only)
-  
+      else:
+        rospy.logwarn("topic not found: %s"%topic_name)
+
   def _add_topic_output2queue(self, topic, show_hz_only):
     try:
         # connect to topic on remote host

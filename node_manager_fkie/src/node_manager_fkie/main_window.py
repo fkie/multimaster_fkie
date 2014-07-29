@@ -1492,13 +1492,22 @@ class MainWindow(QtGui.QMainWindow):
       master = self.getMaster(str(url.encodedPath()).replace('remove_all_launch_server', 'http'), False)
       if not master is None:
         master.on_remove_all_launch_server()
+    elif url.toString().startswith('node://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_node_selection_changed(None, None, True, url.encodedPath())
     elif url.toString().startswith('topic://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_topic_selection_changed(None, None, True, url.encodedPath())
+    elif url.toString().startswith('topicecho://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), False)
     elif url.toString().startswith('topichz://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), True)
     elif url.toString().startswith('service://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_service_selection_changed(None, None, True, url.encodedPath())
+    elif url.toString().startswith('servicecall://'):
       if not self.currentMaster is None:
         self.currentMaster.service_call(url.encodedPath())
     elif url.toString().startswith('unregister_node://'):
