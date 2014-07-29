@@ -115,18 +115,30 @@ class Editor(QtGui.QTextEdit):
             etree.fromstring(self.toPlainText().encode('utf-8'), parser)
           except Exception as e:
             if imported:
+              self.markLine(e.position[0])
               return True, True, "%s"%e
         # validate the yaml structure of yaml files
         elif ext[1] in self.YAML_VALIDATION_FILES:
           try:
             import yaml
             yaml.load(self.toPlainText().encode('utf-8'))
-          except yaml.MarkedYAMLError, e:
+          except yaml.MarkedYAMLError as e:
             return True, True, "%s"%e
         return True, False, ''
       else:
         return False, True, "Cannot write XML file"
     return False, False, ''
+
+  def markLine(self, no):
+    try:
+      cursor = self.textCursor()
+      cursor.setPosition(0, QtGui.QTextCursor.MoveAnchor)
+      while (cursor.block().blockNumber()+1 < no):
+        cursor.movePosition(QtGui.QTextCursor.NextBlock, QtGui.QTextCursor.MoveAnchor)
+      cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+      self.setTextCursor(cursor)
+    except:
+      pass
 
   def setCurrentPath(self, path):
     '''
