@@ -458,6 +458,8 @@ class LaunchListModel(QtGui.QStandardItemModel):
     @rtype: C{constants of LaunchItem} 
     '''
     if path in self.DIR_CACHE:
+      if path in self.load_history:
+        return LaunchItem.RECENT_FILE
       return self.DIR_CACHE[path]
     if os.path.basename(path)[0] != '.':
       if path in self.load_history:

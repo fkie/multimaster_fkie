@@ -316,6 +316,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
         for item in selected:
           if item.path in self.launchlist_model.load_history:
             self.launchlist_model.removeFromLoadHistory(item.path)
+            self.launchlist_model.reloadCurrentPath()
       elif not key_mod and event.key() == QtCore.Qt.Key_F4 and self.editXmlButton.isEnabled():
         # open selected launch file in xml editor by F4
         self.on_edit_xml_clicked()
