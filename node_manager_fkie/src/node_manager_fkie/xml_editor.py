@@ -841,9 +841,9 @@ class XmlEditor(QtGui.QDialog):
         editor.setCurrentPath(os.path.basename(filename))
         editor.load_request_signal.connect(self.on_load_request)
         if filename.endswith('.launch'):
-          hl = XmlHighlighter(editor.document())
+          self.hl = XmlHighlighter(editor.document())
         else:
-          hl = YamlHighlighter(editor.document())
+          self.hl = YamlHighlighter(editor.document())
         editor.textChanged.connect(self.on_editor_textChanged)
         editor.cursorPositionChanged.connect(self.on_editor_positionChanged)
         editor.setFocus(QtCore.Qt.OtherFocusReason)
