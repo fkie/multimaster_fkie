@@ -457,7 +457,7 @@ class MainWindow(QtGui.QMainWindow):
               self.launch_dock.progress_queue.add2queue('%s'%uuid.uuid4(),
                                              'start default config @%s'%host,
                                              nm.starter().runNodeWithoutConfig, 
-                                             (host, 'default_cfg_fkie',
+                                             ('%s'%(nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
                                               'default_cfg', node_name,
                                               args, masteruri, False,
                                               self.masters[masteruri].current_user))
