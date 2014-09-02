@@ -1469,7 +1469,7 @@ class MainWindow(QtGui.QMainWindow):
       master.stop_nodes_by_name(nodes)
 
   def on_description_update(self, title, text):
-    if (self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)) and (not self.descriptionTextEdit.hasFocus() or self._accept_next):
+    if (self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)) and (not self.descriptionTextEdit.hasFocus() or self._accept_next_update):
       self._accept_next_update = False
       self.descriptionDock.setWindowTitle(title)
       self.descriptionTextEdit.setText(text)
