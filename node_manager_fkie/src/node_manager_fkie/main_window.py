@@ -1469,7 +1469,8 @@ class MainWindow(QtGui.QMainWindow):
       master.stop_nodes_by_name(nodes)
 
   def on_description_update(self, title, text):
-    if self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy):
+    if (self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)) and (not self.descriptionTextEdit.hasFocus() or self._accept_next):
+      self._accept_next_update = False
       self.descriptionDock.setWindowTitle(title)
       self.descriptionTextEdit.setText(text)
       if text:
@@ -1482,6 +1483,7 @@ class MainWindow(QtGui.QMainWindow):
     self.descriptionTextEdit.setText(text)
 
   def on_description_anchorClicked(self, url):
+    self._accept_next_update = True
     if url.toString().startswith('open_sync_dialog://'):
       self.on_sync_dialog_released(False, str(url.encodedPath()).replace('open_sync_dialog', 'http'), True)
     elif url.toString().startswith('show_all_screens://'):
