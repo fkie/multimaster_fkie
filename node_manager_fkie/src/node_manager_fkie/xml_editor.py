@@ -896,6 +896,9 @@ class XmlEditor(QtGui.QDialog):
 #  def hideEvent(self, event):
 #    self.close()
 
+  def reject(self):
+    self.close()
+
   def closeEvent (self, event):
     '''
     Test the open files for changes and save this if needed.
