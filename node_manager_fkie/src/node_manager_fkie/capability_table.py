@@ -39,7 +39,8 @@ from python_qt_binding import QtGui
 import roslib
 import rospy
 import node_manager_fkie as nm
-from master_discovery_fkie.master_info import NodeInfo 
+from master_discovery_fkie.master_info import NodeInfo
+from common import resolve_paths
 
 
 ################################################################################
@@ -136,10 +137,12 @@ class CapabilityHeader(QtGui.QHeaderView):
       obj['name'] = name
       obj['displayed_name'] = displayed_name
       obj['type'] = type
-      obj['description'] = description
+      obj['description'] = resolve_paths(description)
       del obj['images'][:]
       for image_path in images:
-        img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
+        img = resolve_paths(image_path)
+        if img and img[0] != os.path.sep:
+          img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
         if os.path.isfile(img):
           obj['images'].append(QtGui.QPixmap(img))
 
@@ -159,10 +162,12 @@ class CapabilityHeader(QtGui.QHeaderView):
       if not obj['type']:
         obj['type'] = type
       if not obj['description']:
-        obj['description'] = description
+        obj['description'] = resolve_paths(description)
       if not obj['images']:
         for image_path in images:
-          img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
+          img = resolve_paths(image_path)
+          if img and img[0] != os.path.sep:
+            img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
           if os.path.isfile(img):
             obj['images'].append(QtGui.QPixmap(img))
 

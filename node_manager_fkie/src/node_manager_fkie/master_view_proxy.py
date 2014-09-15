@@ -66,7 +66,7 @@ from echo_dialog import EchoDialog
 from parameter_handler import ParameterHandler
 from detailed_msg_box import WarningMessageBox, DetailedError
 from progress_queue import ProgressQueue, ProgressThread, InteractionNeededError
-from common import masteruri_from_ros, get_packages, package_name
+from common import masteruri_from_ros, get_packages, package_name, resolve_paths
 from launch_server_handler import LaunchServerHandler
 
 
@@ -926,12 +926,12 @@ class MasterViewProxy(QtGui.QWidget):
       for c in items[0].capabilities:
         if not caps.has_key(c.namespace):
           caps[c.namespace] = dict()
-        caps[c.namespace][c.name.decode(sys.getfilesystemencoding())] = { 'type' : c.type, 'images' : c.images, 'description' : c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), 'nodes' : list(c.nodes) }
+        caps[c.namespace][c.name.decode(sys.getfilesystemencoding())] = { 'type' : c.type, 'images' : [resolve_paths(i) for i in c.images], 'description' : resolve_paths(c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding())), 'nodes' : list(c.nodes) }
       if host_addr is None:
         host_addr = nm.nameres().getHostname(key[1])
       self.node_tree_model.addCapabilities(masteruri, host_addr, key, caps)
       # set host description
-      tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, items[0].robot_name.decode(sys.getfilesystemencoding()), items[0].robot_descr.decode(sys.getfilesystemencoding()))
+      tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, items[0].robot_name.decode(sys.getfilesystemencoding()), resolve_paths(items[0].robot_descr.decode(sys.getfilesystemencoding())))
       self.host_description_updated.emit(masteruri, host_addr, tooltip)
       self.capabilities_update_signal.emit(masteruri, host_addr, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
 

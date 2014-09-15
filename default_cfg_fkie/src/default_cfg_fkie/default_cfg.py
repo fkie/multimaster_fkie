@@ -151,7 +151,7 @@ class DefaultCfg(object):
                   if not entry[0] or entry[0] == rospy.get_param('/mastername', ''):
                     dr.robot_name = self._decode(entry[2])
                     dr.robot_type = entry[1]
-                    dr.robot_images = entry[3].split()
+                    dr.robot_images = entry[3].split(',')
                     dr.robot_descr = self._decode(entry[4])
                     break
                 except:
@@ -231,7 +231,7 @@ class DefaultCfg(object):
               print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
             else:
               for entry in p.value:
-                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3])}
+                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(','), 'description' : self._decode(entry[3])}
       # get the capability nodes
       for item in self.roscfg.nodes:
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
