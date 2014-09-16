@@ -767,7 +767,6 @@ class Discoverer(object):
               # update the timestamp of existing master
               elif self.masters.has_key(master_key):
                 with self.__lock:
-                  print "add heartbeat", address
                   changed = self.masters[master_key].add_heartbeat(float(secs)+float(nsecs)/1000000000.0, float(secs_l)+float(nsecs_l)/1000000000.0, float(rate)/10.0,)
                   if not self._changed:
                     self._changed = changed
@@ -784,8 +783,8 @@ class Discoverer(object):
                                                               callback_master_state=self.publish_masterstate)
 
           except Exception, e:
-            import traceback
-            print traceback.format_exc()
+#            import traceback
+#            print traceback.format_exc()
             rospy.logwarn("Error while decode message: %s", str(e))
 
   @classmethod
