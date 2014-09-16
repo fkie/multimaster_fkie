@@ -2,6 +2,12 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.13 (2014-07-29)
+-------------------
+
+0.3.12 (2014-07-08)
+-------------------
+
 0.3.11 (2014-06-04)
 -------------------
 * master_discovery_fkie: added some error catches to solve problems with removing of interfaces

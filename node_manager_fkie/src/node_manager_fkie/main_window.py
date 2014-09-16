@@ -249,6 +249,7 @@ class MainWindow(QtGui.QMainWindow):
 
     try:
       self.readSettings()
+      self.launch_dock.raise_()
     except Exception as e:
       rospy.logwarn("Error while read settings: %s"%e)
     # setup the hide button, which hides the docks on left side
@@ -456,7 +457,7 @@ class MainWindow(QtGui.QMainWindow):
               self.launch_dock.progress_queue.add2queue('%s'%uuid.uuid4(),
                                              'start default config @%s'%host,
                                              nm.starter().runNodeWithoutConfig, 
-                                             (host, 'default_cfg_fkie',
+                                             ('%s'%(nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
                                               'default_cfg', node_name,
                                               args, masteruri, False,
                                               self.masters[masteruri].current_user))
@@ -1471,7 +1472,8 @@ class MainWindow(QtGui.QMainWindow):
       master.stop_nodes_by_name(nodes)
 
   def on_description_update(self, title, text):
-    if self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy):
+    if (self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)) and (not self.descriptionTextEdit.hasFocus() or self._accept_next_update):
+      self._accept_next_update = False
       self.descriptionDock.setWindowTitle(title)
       self.descriptionTextEdit.setText(text)
       if text:
@@ -1484,6 +1486,7 @@ class MainWindow(QtGui.QMainWindow):
     self.descriptionTextEdit.setText(text)
 
   def on_description_anchorClicked(self, url):
+    self._accept_next_update = True
     if url.toString().startswith('open_sync_dialog://'):
       self.on_sync_dialog_released(False, str(url.encodedPath()).replace('open_sync_dialog', 'http'), True)
     elif url.toString().startswith('show_all_screens://'):
@@ -1494,13 +1497,22 @@ class MainWindow(QtGui.QMainWindow):
       master = self.getMaster(str(url.encodedPath()).replace('remove_all_launch_server', 'http'), False)
       if not master is None:
         master.on_remove_all_launch_server()
+    elif url.toString().startswith('node://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_node_selection_changed(None, None, True, url.encodedPath())
     elif url.toString().startswith('topic://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_topic_selection_changed(None, None, True, url.encodedPath())
+    elif url.toString().startswith('topicecho://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), False)
     elif url.toString().startswith('topichz://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), True)
     elif url.toString().startswith('service://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_service_selection_changed(None, None, True, url.encodedPath())
+    elif url.toString().startswith('servicecall://'):
       if not self.currentMaster is None:
         self.currentMaster.service_call(url.encodedPath())
     elif url.toString().startswith('unregister_node://'):

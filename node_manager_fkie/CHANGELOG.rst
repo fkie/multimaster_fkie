@@ -2,6 +2,27 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.13 (2014-07-29)
+-------------------
+* node_manager_fkie: fixed the button view in the sync dialog
+* node_manager_fkie: added a xml and yaml validation on save of a configuration files
+* node_manager_fkie: changed the navigation in info widget
+* node_manager_fkie: raise launch dock after the settings are restored
+* node_manager_fkie: show up directory while package selection
+* node_manager_fkie: added comment/uncomment functionality
+* node_manager_fkie: added caching for browsing in launch files
+* node_manager_fkie: show also folder with additional config files
+* node_manager_fkie: stores the xml editor geometry
+* Contributors: Alexander Tiderko
+
+0.3.12 (2014-07-08)
+-------------------
+* node_manager_fkie: fix instalation problem with missed .ui files
+* node_manager_fkie: fixed ros master preparation
+  Do not try to start ROS master on remote hosts for echo topics, if this
+  host are not reachable.
+* Contributors: Alexander Tiderko
+
 0.3.11 (2014-06-04)
 -------------------
 * node_manager_fkie: replaced the rxconsole and rxgraph by rqt button to start rqt plugins related to selected master

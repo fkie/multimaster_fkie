@@ -485,17 +485,17 @@ class GroupItem(QtGui.QStandardItem):
       self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     elif not has_off and has_running:
       self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
-  
+
   def _create_html_list(self, title, items):
     result = ''
     if items:
-      result = ''.join([result, '<b><u>', title,'</u></b>'])
+      result += '<b><u>%s</u></b>'%title
       if len(items) > 1:
-        result = ''.join([result, ' <span style="color:gray;">[', str(len(items)),']</span>'])
-      result = ''.join([result, '<ul><span></span><br>'])
+        result += ' <span style="color:gray;">[%d]</span>'%len(items)
+      result += '<ul><span></span><br>'
       for i in items:
-        result = ''.join([result, '\n', i, '<br>'])
-      result = ''.join([result, '</ul>'])
+        result += '<a href="node://%s%s">%s</a><br>'%(self.name, i, i)
+      result += '</ul>'
     return result
 
   def updateTooltip(self):
@@ -509,30 +509,30 @@ class GroupItem(QtGui.QStandardItem):
     tooltip = self.generateDescription(False)
     self.setToolTip(tooltip if tooltip else self.name)
     return tooltip
-  
+
   def generateDescription(self, extended=True):
     tooltip = ''
     if self.descr_type or self.descr_name or self.descr:
-      tooltip = ''.join(['<h4>', self.descr_name, '</h4><dl>'])
+      tooltip += '<h4>%s</h4><dl>'%self.descr_name
       if self.descr_type:
-        tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
+        tooltip += '<dt>Type: %s</dt></dl>'%self.descr_type
       if extended:
         try:
           from docutils import examples
           if self.descr:
-            tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-            tooltip = ''.join([tooltip, examples.html_body(unicode(self.descr))])
+            tooltip += '<b><u>Detailed description:</u></b>'
+            tooltip += examples.html_body(unicode(self.descr))
         except:
           import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc())
-          tooltip = ''.join([tooltip, '<br>'])
+          tooltip += '<br>'
       # get nodes
       nodes = []
       for j in range(self.rowCount()):
         nodes.append(self.child(j).name)
       if nodes:
-        tooltip = ''.join([tooltip, self._create_html_list('Nodes:', nodes)])
-    return ''.join(['<div>', tooltip, '</div>']) if tooltip else ''
+        tooltip += self._create_html_list('Nodes:', nodes)
+    return '<div>%s</div>'%tooltip
 
   def updateDescription(self, descr_type, descr_name, descr):
     '''
@@ -562,7 +562,7 @@ class GroupItem(QtGui.QStandardItem):
         cfgs = list(set(cfgs))
       cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
       if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
-        cfg_col.setText(str(''.join(['[',str(len(cfgs)),']'])) if len(cfgs) > 1 else "")
+        cfg_col.setText('[%d]'%len(cfgs) if len(cfgs) > 1 else "")
         # set tooltip
         # removed for clarity !!!
 #        tooltip = ''
@@ -676,9 +676,9 @@ class HostItem(GroupItem):
     hostname = nm.nameres().hostname(address)
     if hostname is None:
       hostname = str(address)
-    result = '@'.join([name, hostname])
+    result = '%s@%s'%(name, hostname)
     if nm.nameres().getHostname(masteruri) != hostname:
-      result = ''.join([result, '[', masteruri,']'])
+      result += '[%s]'%masteruri
     #'print "- hostNameFrom"
     return result
     
@@ -694,32 +694,32 @@ class HostItem(GroupItem):
     tooltip = self.generateDescription(False)
     self.setToolTip(tooltip if tooltip else self.name)
     return tooltip
-  
+
   def generateDescription(self, extended=True):
     tooltip = ''
     if self.descr_type or self.descr_name or self.descr:
-      tooltip = ''.join(['<h4>', self.descr_name, '</h4><dl>'])
+      tooltip += '<h4>%s</h4><dl>'%self.descr_name
       if self.descr_type:
-        tooltip = ''.join([tooltip, '<dt>Type: ', self.descr_type, '</dt></dl>'])
+        tooltip += '<dt>Type: %s</dt></dl>'%self.descr_type
       if extended:
         try:
           from docutils import examples
           if self.descr:
-            tooltip = ''.join([tooltip, '<b><u>Detailed description:</u></b>'])
-            tooltip = ''.join([tooltip, examples.html_body(self.descr, input_encoding='utf8')])
+            tooltip += '<b><u>Detailed description:</u></b>'
+            tooltip += examples.html_body(self.descr, input_encoding='utf8')
         except:
           import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc())
-          tooltip = ''.join([tooltip, '<br>'])
-    tooltip = ''.join([tooltip, '<h3>', str(self._hostname), '</h3>'])
-    tooltip = ''.join([tooltip, '<font size="+1"><i>', str(self.id[0]), '</i></font><br>'])
-    tooltip = ''.join([tooltip, '<font size="+1">Host: <b>', str(self.id[1]), '</b></font><br>'])
-    tooltip = ''.join([tooltip, '<a href="open_sync_dialog://', str(self.id[0]).replace('http://', ''),'">', 'open sync dialog</a>'])
-    tooltip = ''.join([tooltip, '<p>'])
-    tooltip = ''.join([tooltip, '<a href="show_all_screens://', str(self.id[0]).replace('http://', ''),'">', 'show all screens</a>'])
-    tooltip = ''.join([tooltip, '<p>'])
-    tooltip = ''.join([tooltip, '<a href="remove_all_launch_server://', str(self.id[0]).replace('http://', ''),'">', 'kill all launch server</a>'])
-    tooltip = ''.join([tooltip, '<p>'])
+          tooltip += '<br>'
+    tooltip += '<h3>%s</h3>'%self._hostname
+    tooltip += '<font size="+1"><i>%s</i></font><br>'%self.id[0]
+    tooltip += '<font size="+1">Host: <b>%s</b></font><br>'%self.id[1]
+    tooltip += '<a href="open_sync_dialog://%s">open sync dialog</a>'%(str(self.id[0]).replace('http://', ''))
+    tooltip += '<p>'
+    tooltip += '<a href="show_all_screens://%s">show all screens</a>'%(str(self.id[0]).replace('http://', ''))
+    tooltip += '<p>'
+    tooltip += '<a href="remove_all_launch_server://%s">kill all launch server</a>'%str(self.id[0]).replace('http://', '')
+    tooltip += '<p>'
     # get sensors
     capabilities = []
     for j in range(self.rowCount()):
@@ -727,15 +727,15 @@ class HostItem(GroupItem):
       if isinstance(item, GroupItem):
         capabilities.append(item.name)
     if capabilities:
-      tooltip = ''.join([tooltip, '<b><u>Capabilities:</u></b>'])
+      tooltip += '<b><u>Capabilities:</u></b>'
       try:
         from docutils import examples
-        tooltip = ''.join([tooltip, examples.html_body(''.join(['- ', '\n- '.join(capabilities)]), input_encoding='utf8')])
+        tooltip += examples.html_body('- %s'%('\n- '.join(capabilities)), input_encoding='utf8')
       except:
         import traceback
         rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc())
-    return ''.join(['<div>', tooltip, '</div>']) if tooltip else ''
-  
+    return '<div>%s</div>'%tooltip if tooltip else ''
+
   def type(self):
     return HostItem.ITEM_TYPE
 
@@ -939,10 +939,10 @@ class NodeItem(QtGui.QStandardItem):
     '''
     Updates the name representation of the Item
     '''
-    tooltip = ''.join(['<h4>', self.node_info.name, '</h4><dl>'])
-    tooltip = ''.join([tooltip, '<dt><b>URI:</b> ', str(self.node_info.uri), '</dt>'])
-    tooltip = ''.join([tooltip, '<dt><b>PID:</b> ', str(self.node_info.pid), '</dt>'])
-    tooltip = ''.join([tooltip, '<dt><b>ORG.MASTERURI:</b> ', str(self.node_info.masteruri), '</dt></dl>'])
+    tooltip = '<h4>%s</h4><dl>'%self.node_info.name
+    tooltip += '<dt><b>URI:</b> %s</dt>'%self.node_info.uri
+    tooltip += '<dt><b>PID:</b> %s</dt>'%self.node_info.pid
+    tooltip += '<dt><b>ORG.MASTERURI:</b> %s</dt></dl>'%self.node_info.masteruri
     #'print "updateDispayedName - hasMaster"
     master_discovered = nm.nameres().hasMaster(self.node_info.masteruri)
     local = False
@@ -956,9 +956,9 @@ class NodeItem(QtGui.QStandardItem):
     elif not self.node_info.uri is None and not self.node_info.isLocal:
       self._state = NodeItem.STATE_RUN
       self.setIcon(QtGui.QIcon(':/icons/state_unknown.png'))
-      tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
-      tooltip = ''.join([tooltip, '</dl>'])
-      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      tooltip += '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'
+      tooltip += '</dl>'
+      self.setToolTip('<div>%s</div>'%tooltip)
 #    elif not self.node_info.isLocal and not master_discovered and not self.node_info.uri is None:
 ##    elif not local and not master_discovered and not self.node_info.uri is None:
 #      self._state = NodeItem.STATE_RUN
@@ -969,27 +969,25 @@ class NodeItem(QtGui.QStandardItem):
     elif self.node_info.pid is None and self.node_info.uri is None and (self.node_info.subscribedTopics or self.node_info.publishedTopics or self.node_info.services):
       self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
       self._state = NodeItem.STATE_WARNING
-      tooltip = ''.join([tooltip, '<dl><dt>Can\'t get node contact information, but there exists publisher, subscriber or services of this node.</dt></dl>'])
-      tooltip = ''.join([tooltip, '</dl>'])
-      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      tooltip += '<dl><dt>Can\'t get node contact information, but there exists publisher, subscriber or services of this node.</dt></dl>'
+      tooltip += '</dl>'
+      self.setToolTip('<div>%s</div>'%tooltip)
     elif not self.node_info.uri is None:
       self._state = NodeItem.STATE_WARNING
       self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
       if not self.node_info.isLocal and master_discovered:
-        tooltip = ''.join(['<h4>', self.node_info.name, ' is not local, however the ROS master on this host is discovered, but no information about this node received!', '</h4>'])
-        tooltip = ''.join([tooltip, '</dl>'])
-        self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+        tooltip = '<h4>%s is not local, however the ROS master on this host is discovered, but no information about this node received!</h4>'%self.node_info.name
+        self.setToolTip('<div>%s</div>'%tooltip)
     elif self.is_ghost:
       self._state = NodeItem.STATE_GHOST
       self.setIcon(QtGui.QIcon(':/icons/state_ghost.png'))
-      tooltip = ''.join(['<h4>The node is running, but not synchronized because of filter or errors, see master_sync log.</h4>'])
-      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      tooltip = '<h4>The node is running, but not synchronized because of filter or errors, see master_sync log.</h4>'
+      self.setToolTip('<div>%s</div>'%tooltip)
     elif self.has_running:
       self._state = NodeItem.STATE_DUPLICATE
       self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
-      tooltip = ''.join(['<h4>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'])
-      tooltip = ''.join([tooltip, '</dl>'])
-      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
+      tooltip = '<h4>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'
+      self.setToolTip('<div>%s</div>'%tooltip)
     else:
       self._state = NodeItem.STATE_OFF
       self.setIcon(QtGui.QIcon(':/icons/state_off.png'))

@@ -2,6 +2,12 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.13 (2014-07-29)
+-------------------
+
+0.3.12 (2014-07-08)
+-------------------
+
 0.3.11 (2014-06-04)
 -------------------
 * default_cfg_fkie: added 'default_cfg/autostart/exclude' parameter to exclude nodes from autostart

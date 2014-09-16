@@ -45,7 +45,7 @@ from python_qt_binding import QtCore
 
 from master_discovery_fkie.common import resolve_url
 import node_manager_fkie as nm
-from common import package_name
+from common import package_name, resolve_paths
 
 class LaunchConfigException(Exception):
   pass
@@ -369,7 +369,7 @@ class LaunchConfig(QtCore.QObject):
               print "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore", param
             else:
               for entry in p.value:
-                result[entry[0]] = { 'type' : entry[1], 'name' : entry[2], 'images' : entry[4].split(), 'description' : self._decode(entry[4]) }
+                result[entry[0]] = { 'type' : entry[1], 'name' : entry[2], 'images' : resolve_paths(entry[3]).split(','), 'description' : resolve_paths(self._decode(entry[4])) }
     return result
 
   def getCapabilitiesDesrc(self):
@@ -392,7 +392,7 @@ class LaunchConfig(QtCore.QObject):
               print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
             else:
               for entry in p.value:
-                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(), 'description' : self._decode(entry[3])}
+                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : resolve_paths(entry[2]).split(','), 'description' : resolve_paths(self._decode(entry[3]))}
       # get the capability nodes
       for item in self.Roscfg.nodes:
         node_fullname = roslib.names.ns_join(item.namespace, item.name)

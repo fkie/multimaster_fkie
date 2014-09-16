@@ -182,6 +182,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     self.setHorizontalHeaderLabels([label for label, width in LaunchListModel.header])
     self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
     self.items = []
+    self.DIR_CACHE = {}
     self.currentPath = None
     self.load_history = self._getLoadHistory()
     self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
@@ -261,6 +262,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     try:
       from common import PACKAGE_CACHE
       PACKAGE_CACHE.clear()
+      self.DIR_CACHE = {}
     except:
       import traceback
       print traceback.format_exc()
@@ -335,7 +337,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         items = []
         for package, path in self.__packages.items():
           items.append((package, path, LaunchItem.PACKAGE))
-        self._setNewList((self.currentPath, items))
+        self._setNewList((self.currentPath if self.currentPath else '', items))
       except:
         import traceback
         print traceback.format_exc()
@@ -455,25 +457,36 @@ class LaunchListModel(QtGui.QStandardItemModel):
     @return: the id represents whether it is a file, package or stack
     @rtype: C{constants of LaunchItem} 
     '''
+    if path in self.DIR_CACHE:
+      if path in self.load_history:
+        return LaunchItem.RECENT_FILE
+      return self.DIR_CACHE[path]
     if os.path.basename(path)[0] != '.':
       if path in self.load_history:
+        self.DIR_CACHE[path] = LaunchItem.RECENT_FILE
         return LaunchItem.RECENT_FILE
       elif os.path.isfile(path):
         if (path.endswith('.launch')):
+          self.DIR_CACHE[path] = LaunchItem.LAUNCH_FILE
           return LaunchItem.LAUNCH_FILE
         else:
           for e in nm.Settings().launch_view_file_ext:
             if path.endswith(e):
+              self.DIR_CACHE[path] = LaunchItem.CFG_FILE
               return LaunchItem.CFG_FILE
       elif os.path.isdir(path):
         fileList = os.listdir(path)
         if self._containsLaunches(path):
           if 'stack.xml' in fileList:
+            self.DIR_CACHE[path] = LaunchItem.STACK
             return LaunchItem.STACK
           elif is_package(fileList):
+            self.DIR_CACHE[path] = LaunchItem.PACKAGE
             return LaunchItem.PACKAGE
           else:
+            self.DIR_CACHE[path] = LaunchItem.FOLDER
             return LaunchItem.FOLDER
+    self.DIR_CACHE[path] = LaunchItem.NOT_FOUND
     return LaunchItem.NOT_FOUND
 
   def _containsLaunches(self, path):
@@ -485,14 +498,14 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     fileList = os.listdir(path)
     for file in fileList:
-      if os.path.isfile(''.join([path, '/', file])) and file.endswith('.launch'):
+      file_name, file_extension = os.path.splitext(file)
+      if os.path.isfile(os.path.join(path, file)) and (file.endswith('.launch')) or (file_extension in nm.Settings().launch_view_file_ext):
         return True
     for file in fileList:
-      if os.path.isdir(''.join([path, '/', file])):
-        if self._containsLaunches(''.join([path, '/', file])):
+      if os.path.isdir(os.path.join(path, file)):
+        if self._containsLaunches(os.path.join(path, file)):
           return True
     return False
-
 
   def _moveDown(self, path):
     '''
@@ -508,7 +521,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
       item = os.path.normpath(''.join([path, '/', file]))
       pathItem = os.path.basename(item)
       if pathItem == 'src':
-        pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
+        pathItem = '%s (src)'%os.path.basename(os.path.dirname(item))
       pathId = self._identifyPath(item)
       if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
@@ -531,10 +544,10 @@ class LaunchListModel(QtGui.QStandardItemModel):
     else:
       dirlist = os.listdir(path)
     for file in dirlist:
-      item = os.path.normpath(''.join([path, '/', file])) if not path is None else file
+      item = os.path.normpath(os.path.join(path, file)) if not path is None else file
       pathItem = os.path.basename(item)
       if pathItem == 'src':
-        pathItem = ''.join([os.path.basename(os.path.dirname(item)), ' (src)'])
+        pathItem = '%s (src)'%os.path.basename(os.path.dirname(item))
       pathId = self._identifyPath(item)
       if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))

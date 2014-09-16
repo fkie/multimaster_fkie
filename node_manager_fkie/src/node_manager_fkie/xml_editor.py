@@ -115,18 +115,30 @@ class Editor(QtGui.QTextEdit):
             etree.fromstring(self.toPlainText().encode('utf-8'), parser)
           except Exception as e:
             if imported:
+              self.markLine(e.position[0])
               return True, True, "%s"%e
         # validate the yaml structure of yaml files
         elif ext[1] in self.YAML_VALIDATION_FILES:
           try:
             import yaml
             yaml.load(self.toPlainText().encode('utf-8'))
-          except yaml.MarkedYAMLError, e:
+          except yaml.MarkedYAMLError as e:
             return True, True, "%s"%e
         return True, False, ''
       else:
         return False, True, "Cannot write XML file"
     return False, False, ''
+
+  def markLine(self, no):
+    try:
+      cursor = self.textCursor()
+      cursor.setPosition(0, QtGui.QTextCursor.MoveAnchor)
+      while (cursor.block().blockNumber()+1 < no):
+        cursor.movePosition(QtGui.QTextCursor.NextBlock, QtGui.QTextCursor.MoveAnchor)
+      cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+      self.setTextCursor(cursor)
+    except:
+      pass
 
   def setCurrentPath(self, path):
     '''
@@ -310,6 +322,8 @@ class Editor(QtGui.QTextEdit):
     '''
     if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
       self.setMouseTracking(True)
+    if event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_7:
+      self.commentText()
     if event.key() != QtCore.Qt.Key_Escape:
       # handle the shifting of the block
       if event.key() == QtCore.Qt.Key_Tab:
@@ -337,6 +351,69 @@ class Editor(QtGui.QTextEdit):
         if menu:
           menu.exec_(self.mapToGlobal(self.cursorRect().bottomRight()))
     QtGui.QTextEdit.keyReleaseEvent(self, event)
+
+  def commentText(self):
+    cursor = self.textCursor()
+    if not cursor.isNull():
+      cursor.beginEditBlock()
+      start = cursor.selectionStart()
+      end = cursor.selectionEnd()
+      cursor.setPosition(start)
+      block_start = cursor.blockNumber()
+      cursor.setPosition(end)
+      block_end = cursor.blockNumber()
+      if block_end-block_start > 0 and end-cursor.block().position() <= 0:
+        # skip the last block, if no characters are selected
+        block_end -= 1
+      cursor.setPosition(start, QtGui.QTextCursor.MoveAnchor)
+      cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+      start = cursor.position()
+      while (cursor.block().blockNumber() < block_end+1):
+        cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+        ext = os.path.splitext(self.filename)
+        # XML comment
+        if ext[1] in self.CONTEXT_FILE_EXT:
+          if cursor.block().length() < 4:
+            cursor.movePosition(QtGui.QTextCursor.NextBlock)
+            continue
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 4)
+          # only comments breakers at the start of the line are removed 
+          if cursor.selectedText() == '<!--':
+            cursor.insertText('')
+            cursor.movePosition(QtGui.QTextCursor.EndOfLine)
+            cursor.movePosition(QtGui.QTextCursor.PreviousCharacter, QtGui.QTextCursor.KeepAnchor, 3)
+            if cursor.selectedText() == '-->':
+              cursor.insertText('')
+          else:
+            cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+            cursor.movePosition(QtGui.QTextCursor.EndOfLine, QtGui.QTextCursor.KeepAnchor)
+            # only comment out, if no comments are found
+            if cursor.selectedText().find('<!--') < 0 and cursor.selectedText().find('-->') < 0:
+              cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+              cursor.insertText('<!--')
+              cursor.movePosition(QtGui.QTextCursor.EndOfLine)
+              cursor.insertText('-->')
+        else: # other comments
+          if cursor.block().length() < 2:
+            cursor.movePosition(QtGui.QTextCursor.NextBlock)
+            continue
+          cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 2)
+          # only comments breakers at the start of the line are removed
+          if cursor.selectedText() == '# ':
+            cursor.insertText('')
+          else:
+            cursor.movePosition(QtGui.QTextCursor.StartOfLine)
+            cursor.insertText('# ')
+        cursor.movePosition(QtGui.QTextCursor.NextBlock)
+      # Set our cursor's selection to span all of the involved lines.
+      cursor.endEditBlock()
+      cursor.setPosition(start, QtGui.QTextCursor.MoveAnchor)
+      cursor.movePosition(QtGui.QTextCursor.StartOfBlock, QtGui.QTextCursor.MoveAnchor)
+      while (cursor.block().blockNumber() < block_end):
+        cursor.movePosition(QtGui.QTextCursor.NextBlock, QtGui.QTextCursor.KeepAnchor)
+      cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+      # set the cursor 
+      self.setTextCursor(cursor)
 
   def shiftText(self):
     '''
@@ -636,7 +713,6 @@ class XmlEditor(QtGui.QDialog):
     self.setObjectName(' - '.join(['xmlEditor', str(filenames)]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
-    self.resize(800,640)
     self.mIcon = QtGui.QIcon(":/icons/crystal_clear_edit_launch.png")
     self._error_icon = QtGui.QIcon(":/icons/crystal_clear_warning.png")
     self._empty_icon = QtGui.QIcon()
@@ -718,10 +794,31 @@ class XmlEditor(QtGui.QDialog):
       if f:
         self.on_load_request(os.path.normpath(f), search_text)
 
+    self.readSettings()
 #    print "================ create", self.objectName()
 #
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
+  def readSettings(self):
+    if nm.settings().store_geometry:
+      settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+      settings.beginGroup("editor")
+      maximized = settings.value("maximized", 'false') == 'true'
+      if maximized:
+        self.showMaximized()
+      else:
+        self.resize(settings.value("size", QtCore.QSize(800,640)))
+        self.move(settings.value("pos", QtCore.QPoint(0, 0)))
+      settings.endGroup()
+
+  def storeSetting(self):
+    if nm.settings().store_geometry:
+      settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+      settings.beginGroup("editor")
+      settings.setValue("size", self.size())
+      settings.setValue("pos", self.pos())
+      settings.setValue("maximized", self.isMaximized())
+      settings.endGroup()
 
   def on_load_request(self, filename, search_text=''):
     '''
@@ -744,9 +841,9 @@ class XmlEditor(QtGui.QDialog):
         editor.setCurrentPath(os.path.basename(filename))
         editor.load_request_signal.connect(self.on_load_request)
         if filename.endswith('.launch'):
-          hl = XmlHighlighter(editor.document())
+          self.hl = XmlHighlighter(editor.document())
         else:
-          hl = YamlHighlighter(editor.document())
+          self.hl = YamlHighlighter(editor.document())
         editor.textChanged.connect(self.on_editor_textChanged)
         editor.cursorPositionChanged.connect(self.on_editor_positionChanged)
         editor.setFocus(QtCore.Qt.OtherFocusReason)
@@ -799,6 +896,9 @@ class XmlEditor(QtGui.QDialog):
 #  def hideEvent(self, event):
 #    self.close()
 
+  def reject(self):
+    self.close()
+
   def closeEvent (self, event):
     '''
     Test the open files for changes and save this if needed.
@@ -827,6 +927,7 @@ class XmlEditor(QtGui.QDialog):
     else:
       event.accept()
     if event.isAccepted():
+      self.storeSetting()
       self.finished_signal.emit(self.init_filenames)
 
   def on_saveButton_clicked(self):
@@ -1055,7 +1156,7 @@ class XmlEditor(QtGui.QDialog):
 
   def _on_add_include_tag_all(self):
     self._insert_text('<include file="$(find pkg-name)/path/filename.xml"\n'
-                      '         ns="foo" clear_params="true|false"\n'
+                      '         ns="foo" clear_params="true|false">\n'
                       '</include>')
 
   def _on_add_remap_tag(self):
@@ -1072,14 +1173,14 @@ class XmlEditor(QtGui.QDialog):
                       '       type="str|int|double|bool"\n'
                       '       textfile="$(find pkg-name)/path/file.txt"\n'
                       '       binfile="$(find pkg-name)/path/file"\n'
-                      '       command="$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'"\n'
+                      '       command="$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'">\n'
                       '</param>')
 
   def _on_add_rosparam_tag_all(self):
     self._insert_text('<rosparam param="param-name"\n'
                       '       file="$(find pkg-name)/path/foo.yaml"\n'
                       '       command="load|dump|delete"\n'
-                      '       ns="namespace"\n'
+                      '       ns="namespace">\n'
                       '</rosparam>')
 
   def _on_add_arg_tag_default(self):
@@ -1089,7 +1190,7 @@ class XmlEditor(QtGui.QDialog):
     self._insert_text('<arg name="foo" value="bar" />')
 
   def _on_add_test_tag(self):
-    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name"\n'
+    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name">\n'
                       '</test>')
 
   def _on_add_test_tag_all(self):

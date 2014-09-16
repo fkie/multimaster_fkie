@@ -28,7 +28,7 @@
 | Weight             | 8.2 oz (233 g)                                      |\n
 +--------------------+-----------------------------------------------------+\n
         "],
-        ["Joystick", "Controller", "images/crystal_clear_app_package_games.png", "Erkennt automatisch den angeschloßenen Joystick."],
+        ["Joystick", "Controller", "$(find node_manager_fkie)/images/crystal_clear_app_package_games.png", "Erkennt automatisch den angeschloßenen Joystick."],
         ["Base", "Chassis", "", "Kontroller für das Chassis des Roboters."],
         ["GPS", "Localization", "images/satellite_256.png", "GPS Maus"],
         ["Local Navigation", "Intelligence", "images/navigation.png", "Algorithmen mit lokaler Navigation"],
@@ -38,9 +38,9 @@
 
    <rosparam param="robots" tag="Format: [Name (name of the host), Type, Displayed name, Image, Description in as 'reStructeredText']">
       [
-      ["tiderko4", "Labtop", "pc", "images/crystal_clear_app_klaptop.png", "Notebook\n\n|nb|\n\n.. |nb| image:: images/crystal_clear_app_klaptop.png\n"],
-      ["bob", "Robot", "bob", "images/bob.png", "Robot|nb|\n\n.. |nb| image:: images/bob.png\n"],
-      ["bar", "Robot", "bar", "images/bar.png", "Robot|nb|\n\n.. |nb| image:: images/bar.png\n"]
+      ["bob", "Robot", "bob", "images/bob.png", "Robot|nb|\n\n.. image:: images/bob.png\n"],
+      ["bar", "Robot", "bar", "images/bar.png", "Robot|nb|\n\n.. image:: images/bar.png\n"],
+      ["c3po", "Robot", "c3po", "$(find node_manager_fkie)/images/veryicon_devcom_workstation.png", "Robot|nb|\n\n.. image:: $(find node_manager_fkie)/images/veryicon_devcom_workstation.png\n"]
       ]
    </rosparam>
 
