@@ -106,6 +106,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
 
   def run(self):
     index = 0
+    self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
     while (not rospy.is_shutdown()) and self._running:
       msg = None
       address = None
@@ -159,6 +160,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
       if index >= len(self.sockets):
         index = 0
         self._updateDisplay()
+        self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
 
   def closeEvent (self, event):
     self._running = False
