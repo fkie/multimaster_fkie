@@ -1156,7 +1156,7 @@ class XmlEditor(QtGui.QDialog):
 
   def _on_add_include_tag_all(self):
     self._insert_text('<include file="$(find pkg-name)/path/filename.xml"\n'
-                      '         ns="foo" clear_params="true|false"\n'
+                      '         ns="foo" clear_params="true|false">\n'
                       '</include>')
 
   def _on_add_remap_tag(self):
@@ -1173,14 +1173,14 @@ class XmlEditor(QtGui.QDialog):
                       '       type="str|int|double|bool"\n'
                       '       textfile="$(find pkg-name)/path/file.txt"\n'
                       '       binfile="$(find pkg-name)/path/file"\n'
-                      '       command="$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'"\n'
+                      '       command="$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'">\n'
                       '</param>')
 
   def _on_add_rosparam_tag_all(self):
     self._insert_text('<rosparam param="param-name"\n'
                       '       file="$(find pkg-name)/path/foo.yaml"\n'
                       '       command="load|dump|delete"\n'
-                      '       ns="namespace"\n'
+                      '       ns="namespace">\n'
                       '</rosparam>')
 
   def _on_add_arg_tag_default(self):
@@ -1190,7 +1190,7 @@ class XmlEditor(QtGui.QDialog):
     self._insert_text('<arg name="foo" value="bar" />')
 
   def _on_add_test_tag(self):
-    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name"\n'
+    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name">\n'
                       '</test>')
 
   def _on_add_test_tag_all(self):
