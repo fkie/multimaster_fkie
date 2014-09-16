@@ -729,6 +729,7 @@ class MasterViewProxy(QtGui.QWidget):
         # restart nodes
         if nodes2start:
           restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:"%self.mastername, nodes2start, False, True, '', self)
+          self.stop_nodes_by_name(restart)
           self.start_nodes_by_name(restart, launchfile, True)
       # set the robot_icon
       if launchfile in self.__robot_icons:
