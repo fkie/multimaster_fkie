@@ -66,6 +66,7 @@ class CapabilityHeader(QtGui.QHeaderView):
       self.setDefaultAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
     elif orientation == QtCore.Qt.Vertical:
       self.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+    self.controlWidget = {} # index, header
 
   def index(self, name):
     '''
@@ -260,10 +261,10 @@ class CapabilityControlWidget(QtGui.QFrame):
   stop_nodes_signal = QtCore.Signal(str, list)
   '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
-  def __init__(self, masteruri, cfg, nodes, parent=None):
+  def __init__(self, masteruri, cfg, ns, nodes, parent=None):
     QtGui.QFrame.__init__(self, parent)
     self._masteruri = masteruri
-    self._nodes = nodes
+    self._nodes = {ns : nodes}
     self._cfg = cfg
     frame_layout = QtGui.QHBoxLayout(self)
     frame_layout.setContentsMargins(0, 0, 0, 0)
@@ -294,7 +295,7 @@ class CapabilityControlWidget(QtGui.QFrame):
     defined by ROS full name.
     @rtype: C{[str]}
     '''
-    return self._nodes
+    return [n for l in self._nodes.itervalues() for n in l]
   
   def setNodeState(self, running_nodes, stopped_nodes, error_nodes):
     '''
@@ -326,14 +327,16 @@ class CapabilityControlWidget(QtGui.QFrame):
     palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
     self.setPalette(palette)
 
+  def updateNodes(self, ns, nodes):
+    self._nodes[ns] = nodes
 
   def on_on_clicked(self):
-    self.start_nodes_signal.emit(self._masteruri, self._cfg, self._nodes)
+    self.start_nodes_signal.emit(self._masteruri, self._cfg, self.nodes())
     self.on_button.setFlat(True)
     self.off_button.setFlat(False)
     
   def on_off_clicked(self):
-    self.stop_nodes_signal.emit(self._masteruri, self._nodes)
+    self.stop_nodes_signal.emit(self._masteruri, self.nodes())
     self.on_button.setFlat(False)
     self.off_button.setFlat(True)
 
@@ -411,14 +414,15 @@ class CapabilityTable(QtGui.QTableWidget):
         item.setSizeHint(QtCore.QSize(96,96))
         self.setVerticalHeaderItem(cap_index, item)
         self.verticalHeaderItem(cap_index).setText(c.name.decode(sys.getfilesystemencoding()))
+        # add the capability control widget
+        controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.namespace, c.nodes)
+        controlWidget.start_nodes_signal.connect(self._start_nodes)
+        controlWidget.stop_nodes_signal.connect(self._stop_nodes)
+        self.setCellWidget(cap_index, robot_index, controlWidget)
+        self._capabilityHeader.controlWidget[cap_index] = controlWidget
       else:
         self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
-
-      # add the capability control widget
-      controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.nodes)
-      controlWidget.start_nodes_signal.connect(self._start_nodes)
-      controlWidget.stop_nodes_signal.connect(self._stop_nodes)
-      self.setCellWidget(cap_index, robot_index, controlWidget)
+        self._capabilityHeader.controlWidget[cap_index].updateNodes(c.namespace, c.nodes)
 
   def removeConfig(self, cfg):
     '''
