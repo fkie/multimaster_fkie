@@ -38,7 +38,20 @@
 Overview</h3>
 
 <p>This package offers a set of nodes to establish and manage a multimaster network. This requires no or minimal configuration. The changes are automatically detected and synchronized.
+<br/>
+<br/>
+<strong>Packages:</strong>
+<ul>
+<a href="master_discovery.html">Master Discovery</a> -- discovery using multicast or zeroconf
+<br/>
+<a href="master_sync.html">Master Synchronization</a> -- Synchronize local ROS master to remote ROS masters
+<br/>
+<a href="node_manager.html">Node Manager</a> -- A GUI to manage the configuration on local and remote ROS masters
+<br/>
+<a href="default_cfg.html">Default Configuration</a> -- Helper node allows an easy (auto)start of remote nodes
+</ul>
 
+<strong>Idea:</strong>
 <ul type="square">
   <li>The <a href="master_discovery.html">master_discovery</a> node connects to the ROS-Master, gets changes by polling (1.) and publish the changes (multicast or/and unicast) over the network (2.). The received changes of the remote ROS-Master are published to the local ROS topics (3.). </li>
   <li>The <a href="master_sync.html">master_sync</a> node connects to the discovered <a href="master_discovery.html">master_discovery</a> nodes (4.), requests the actual ROS state and registers the remote topics/service by local ROS master (5.).</li>
