@@ -724,6 +724,12 @@ class MasterViewProxy(QtGui.QWidget):
           for n in new_nodes:
             if p.startswith(n):
               nodes2start.add(n)
+        # detect changes in the arguments and remap 
+        for n in stored_roscfg.nodes:
+          for new_n in self.__configs[launchfile].Roscfg.nodes:
+            if n.name == new_n.name and n.namespace == new_n.namespace:
+              if n.args != new_n.args or n.remap_args != new_n.remap_args:
+                nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
         # filter out anonymous nodes
         nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
         # restart nodes
