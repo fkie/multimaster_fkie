@@ -338,25 +338,18 @@ class SyncThread(object):
         socket.setdefaulttimeout(3)
         result = own_master_multi()
         # analyze the results of the registration call
+        #HACK param to reduce publisher creation, see line 372
+        hack_pub = set()
         for h,(code, statusMessage, r) in zip(handler, result):
           try:
             if h[0] == 'sub':
               if code == -1:
-                rospy.logwarn("SyncThread[%s] topic subscription error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
+                rospy.logwarn("SyncThread[%s] topic subscription error: %s (%s), %s %s, node: %s", self.name, h[1], h[2], str(code), str(statusMessage), h[3])
               else:
-                rospy.loginfo("SyncThread[%s] topic subscribed: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                rospy.loginfo("SyncThread[%s] topic subscribed: %s, %s %s, node: %s", self.name, h[1], str(code), str(statusMessage), h[3])
             if h[0] == 'sub' and code == 1 and len(r) > 0:
-              # Horrible hack: the response from registerSubscriber() can contain a
-              # list of current publishers.  But we don't have a way of injecting them
-              # into rospy here.  Now, if we get a publisherUpdate() from the master,
-              # everything will work.  So, we ask the master if anyone is currently
-              # publishing the topic, grab the advertised type, use it to advertise
-              # ourselves, then unadvertise, triggering a publisherUpdate() along the
-              # way.
-              # We create publisher locally as a hack, to get callback set up properly for already registered local publishers
-              topicPub = rospy.Publisher(h[1], roslib.message.get_message_class(h[2]))
-              topicPub.unregister()
-              del topicPub
+              # Horrible hack: see line 372
+              hack_pub.add((h[1], roslib.message.get_message_class(h[2])))
             elif h[0] == 'pub':
               if code == -1:
                 rospy.logwarn("SyncThread[%s] topic advertise error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
@@ -375,7 +368,25 @@ class SyncThread(object):
               rospy.loginfo("SyncThread[%s] service unregistered: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
           except:
             import traceback
-            rospy.logerr("SyncThread[%s] ERROR while hack subscriber[%s]: %s", self.name, h[1], traceback.format_exc())
+            rospy.logerr("SyncThread[%s] ERROR while analyzing the results of the registration call [%s]: %s", self.name, h[1], traceback.format_exc())
+        # Horrible hack: the response from registerSubscriber() can contain a
+        # list of current publishers.  But we don't have a way of injecting them
+        # into rospy here.  Now, if we get a publisherUpdate() from the master,
+        # everything will work.  So, we ask the master if anyone is currently
+        # publishing the topic, grab the advertised type, use it to advertise
+        # ourselves, then unadvertise, triggering a publisherUpdate() along the
+        # way.
+        # We create publisher locally as a hack, to get callback set up properly for already registered local publishers
+        if hack_pub:
+          rospy.loginfo("SyncThread[%s] Horrible hack: create and delete publisher to trigger an update for subscribed topics", self.name)
+        for (m, t) in hack_pub:
+          try:
+            topicPub = rospy.Publisher(m, t)
+            topicPub.unregister()
+            del topicPub
+          except:
+              import traceback
+              rospy.logerr("SyncThread[%s] ERROR while hack subscriber[%s]: %s", self.name, h[1], traceback.format_exc())
         # set the last synchronization time
         self.timestamp = stamp
         self.timestamp_local = stamp_local
