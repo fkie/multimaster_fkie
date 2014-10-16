@@ -36,7 +36,7 @@ from python_qt_binding import QtGui
 import threading
 
 from urlparse import urlparse
-from socket import getaddrinfo
+from socket import getaddrinfo, AF_INET, AF_INET6
 
 import node_manager_fkie as nm
 
@@ -119,7 +119,10 @@ class MasterItem(QtGui.QStandardItem):
       result = getaddrinfo(o.hostname, None)
       ips = []
       for r in result:
-        (family, socktype, proto, canonname, (ip, port)) = r
+        if r[0] == AF_INET6:
+          (family, socktype, proto, canonname, (ip, port, flow, scope)) = r
+        else:
+          (family, socktype, proto, canonname, (ip, port)) = r
         if self.master_ip is None and ip:
           self.master_ip = ''
         if ip and not ip in ips:
