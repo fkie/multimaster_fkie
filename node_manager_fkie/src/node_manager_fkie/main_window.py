@@ -849,7 +849,7 @@ class MainWindow(QtGui.QMainWindow):
           # ask the user to start the master_sync with loaded launch file
           if not self.currentMaster.master_info is None:
             node = self.currentMaster.getNode('/master_sync')
-            if node:
+            if node and node[0].has_configs():
               def_cfg_info = '\nNote: default_cfg parameter will be changed!' if node[0].has_default_cfgs(node[0].cfgs) else ''
               ret = QtGui.QMessageBox.question(self, 'Start synchronization','Start the synchronization using loaded configuration?\n\n `No` starts the master_sync with default parameter.%s'%def_cfg_info, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
               if ret == QtGui.QMessageBox.Yes:
@@ -1007,10 +1007,10 @@ class MainWindow(QtGui.QMainWindow):
     '''
     item = self.master_model.itemFromIndex(selected)
     if isinstance(item, MasterSyncItem):
-      self.syncButton.setChecked(not item.synchronized)
-      item.synchronized = not item.synchronized
-      self.on_sync_released(True)
-      item.synchronized = self.syncButton.isChecked()
+      if MasterSyncItem.START_SYNC != item.synchronized:
+        self.syncButton.setChecked(item.synchronized != MasterSyncItem.SYNC)
+        item.synchronized = MasterSyncItem.START_SYNC
+        self.on_sync_released(True)
 
   def on_master_table_activated(self, selected):
     pass
