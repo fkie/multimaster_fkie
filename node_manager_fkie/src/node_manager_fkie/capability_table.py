@@ -66,7 +66,7 @@ class CapabilityHeader(QtGui.QHeaderView):
       self.setDefaultAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
     elif orientation == QtCore.Qt.Vertical:
       self.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
-    self.controlWidget = {} # index, header
+    self.controlWidget = []
 
   def index(self, name):
     '''
@@ -419,7 +419,7 @@ class CapabilityTable(QtGui.QTableWidget):
         controlWidget.start_nodes_signal.connect(self._start_nodes)
         controlWidget.stop_nodes_signal.connect(self._stop_nodes)
         self.setCellWidget(cap_index, robot_index, controlWidget)
-        self._capabilityHeader.controlWidget[cap_index] = controlWidget
+        self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
       else:
         self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
         self._capabilityHeader.controlWidget[cap_index].updateNodes(c.namespace, c.nodes)
