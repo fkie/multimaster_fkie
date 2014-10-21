@@ -89,7 +89,8 @@ class MainWindow(QtGui.QMainWindow):
     restricted_to_one_master = False
     self._finished = False
     self._history_selected_robot = ''
-    self.__icons = {'default_pc' : (QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
+    self.__icons = {'empty' : (QtGui.QIcon(), ''),
+                    'default_pc' : (QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
                     'log_warning' : (QtGui.QIcon(':/icons/crystal_clear_warning.png'), ':/icons/crystal_clear_warning.png')
                     } # (masnter name : (QIcon, path))
     self.__current_icon = None
@@ -962,7 +963,7 @@ class MainWindow(QtGui.QMainWindow):
         self.logButton.setText('')
       else:
         self.logButton.setText('%d'%self.log_dock.count())
-        self.logButton.setIcon(QtGui.QIcon())
+        self.logButton.setIcon(self.__icons['empty'][0])
 
 
   def timestampStr(self, timestamp):
@@ -978,7 +979,7 @@ class MainWindow(QtGui.QMainWindow):
       before = diff_dt.strftime('%H:%M:%S std')
     else:
       before = diff_dt.strftime('%d Day(s) %H:%M:%S')
-    return ''.join([dt.strftime('%H:%M:%S'), ' (', before, ')'])
+    return '%s (%s)'%(dt.strftime('%H:%M:%S'), before)
 
   def updateDuplicateNodes(self):
     # update the duplicate nodes

@@ -185,6 +185,7 @@ class GroupItem(QtGui.QStandardItem):
             groupItem.updateIcon()
 #          groupItem.updateTooltip()
 
+
   def remCapablities(self, config):
     '''
     Removes internal entry of the capability, so the new nodes are not grouped.
@@ -194,8 +195,7 @@ class GroupItem(QtGui.QStandardItem):
     @type config: C{str}
     '''
     try:
-      if self._capcabilities.has_key(config):
-        del self._capcabilities[config]
+      del self._capcabilities[config]
     except:
       pass
     else:
