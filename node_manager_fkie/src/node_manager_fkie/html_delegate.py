@@ -100,7 +100,7 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
       name, sep, host = text.rpartition('@')
       result = ''
       if sep:
-        result = ''.join(['<div>', name, '<span style="color:gray;">', sep, host, '</span></div>'])
+        result = '<div>%s<span style="color:gray;">%s%s</span></div>'%(name, sep, host)
       else:
         result = group_name
     elif text.find('{') > -1: # handle group names 
@@ -108,21 +108,21 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
       ns, sep, name = text.rpartition('/')
       result = ''
       if sep:
-        result = ''.join(['<div>', '<b>{</b><span style="color:gray;">', ns, sep, '</span><b>', name, '}</b></div>'])
+        result = '<div><b>{</b><span style="color:gray;">%s%s</span><b>%s}</b></div>'%(ns, sep, name)
       else:
-        result = ''.join(['<div>', '<b>{', name, '}</b></div>'])
+        result = '<div><b>{%s}</b></div>'%(name)
     elif not is_legal_name(text): # handle all invalid names (used space in the name)
       ns, sep, name = text.rpartition('/')
       result = ''
       if sep:
-        result = ''.join(['<div>', '<span style="color:#CC0000;">', str(ns), sep, '<b>', name, '</b></span></div>'])
+        result = '<div><span style="color:#CC0000;">%s%s<b>%s</b></span></div>'%(ns, sep, name)
       else:
-        result = ''.join(['<div>', '<span style="color:#CC0000;">', name, '</span></div>'])
+        result = '<div><span style="color:#CC0000;">%s</span></div>'%(name)
     else: # handle all ROS names
       ns, sep, name = text.rpartition('/')
       result = ''
       if sep:
-        result = ''.join(['<div>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></div>'])
+        result = '<div><span style="color:gray;">%s%s</span><b>%s</b></div>'%(ns, sep, name)
       else:
         result = name
     return result
