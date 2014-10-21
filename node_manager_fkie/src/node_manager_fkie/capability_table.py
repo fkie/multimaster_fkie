@@ -264,8 +264,7 @@ class CapabilityControlWidget(QtGui.QFrame):
   def __init__(self, masteruri, cfg, ns, nodes, parent=None):
     QtGui.QFrame.__init__(self, parent)
     self._masteruri = masteruri
-    self._nodes = {ns : nodes}
-    self._cfg = cfg
+    self._nodes = {cfg : {ns : nodes} }
     frame_layout = QtGui.QHBoxLayout(self)
     frame_layout.setContentsMargins(0, 0, 0, 0)
     frame_layout.addItem(QtGui.QSpacerItem(20, 20))
@@ -282,21 +281,27 @@ class CapabilityControlWidget(QtGui.QFrame):
     frame_layout.addWidget(self.off_button)
     frame_layout.addItem(QtGui.QSpacerItem(20, 20))
 
-  def config(self):
+  def hasConfigs(self):
     '''
-    @return: the configuration defines this capability
-    @rtype: C{str}
+    @return: True, if a configurations for this widget are available.
+    @rtype: bool
     '''
-    return self._cfg
+    return len(self._nodes) > 0
 
-  def nodes(self):
+  def nodes(self, cfg=''):
     '''
     @return: the list with nodes required by this capability. The nodes are 
     defined by ROS full name.
     @rtype: C{[str]}
     '''
-    return [n for l in self._nodes.itervalues() for n in l]
-  
+    try:
+      if cfg:
+        return [n for l in self._nodes[cfg].itervalues() for n in l]
+      else:
+        return [n for c in self._nodes.itervalues() for l in c.itervalues() for n in l]
+    except:
+      return []
+
   def setNodeState(self, running_nodes, stopped_nodes, error_nodes):
     '''
     Sets the state of this capability.
@@ -327,14 +332,21 @@ class CapabilityControlWidget(QtGui.QFrame):
     palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
     self.setPalette(palette)
 
-  def updateNodes(self, ns, nodes):
-    self._nodes[ns] = nodes
+  def removeCfg(self, cfg):
+    try:
+      del self._nodes[cfg]
+    except:
+      pass
+
+  def updateNodes(self, cfg, ns, nodes):
+    self._nodes[cfg] = {ns : nodes}
 
   def on_on_clicked(self):
-    self.start_nodes_signal.emit(self._masteruri, self._cfg, self.nodes())
+    for c in self._nodes.iterkeys():
+      self.start_nodes_signal.emit(self._masteruri, c, self.nodes(c))
     self.on_button.setFlat(True)
     self.off_button.setFlat(False)
-    
+
   def on_off_clicked(self):
     self.stop_nodes_signal.emit(self._masteruri, self.nodes())
     self.on_button.setFlat(False)
@@ -422,7 +434,7 @@ class CapabilityTable(QtGui.QTableWidget):
         self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
       else:
         self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
-        self._capabilityHeader.controlWidget[cap_index].updateNodes(c.namespace, c.nodes)
+        self._capabilityHeader.controlWidget[cap_index].updateNodes(cfg_name, c.namespace, c.nodes)
 
   def removeConfig(self, cfg):
     '''
@@ -439,8 +451,10 @@ class CapabilityTable(QtGui.QTableWidget):
     for r in reversed(removed_from_robots):
       for c in removed_from_caps:
         controlWidget = self.cellWidget(c, r)
-        if isinstance(controlWidget, CapabilityControlWidget) and controlWidget.config() == cfg:
-          self.removeCellWidget(c, r)
+        if isinstance(controlWidget, CapabilityControlWidget):
+          controlWidget.removeCfg(cfg)
+          if not controlWidget.hasConfigs():
+            self.removeCellWidget(c, r)
     # remove empty columns
     for r in removed_from_robots:
       is_empty = True
