@@ -1497,7 +1497,9 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
       if not host is None: # should not occur
-        return host.getNodeItemsByName(node_name)
+        res = host.getNodeItemsByName(node_name)
+        if res:
+          return res
     return []
 
   def getRunningNodes(self):
