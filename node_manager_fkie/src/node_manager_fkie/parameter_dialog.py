@@ -52,7 +52,9 @@ class MyComboBox(QtGui.QComboBox):
 
   remove_item_signal = QtCore.Signal(str)
 
-  parameter_description = None
+  def __init__(self, parent=None):
+    QtGui.QComboBox.__init__(self, parent=parent)
+    self.parameter_description = None
 
   def keyPressEvent(self, event):
     key_mod = QtGui.QApplication.keyboardModifiers()
@@ -715,12 +717,17 @@ class ParameterDialog(QtGui.QDialog):
     sidebarframe_verticalLayout = QtGui.QVBoxLayout(self.sidebar_frame)
     sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
     sidebarframe_verticalLayout.setContentsMargins(1, 1, 1, 1)
+    self._sidebar_selected = 0
     if len(values) > 1 and sidebar_var in params:
       self.horizontalLayout.addWidget(self.sidebar_frame)
-      self.sidebar_default_val = values[0]
+      try:
+        self.sidebar_default_val = params[sidebar_var][1]
+      except:
+        self.sidebar_default_val = ''
       values.sort()
       for v in values:
         checkbox = QtGui.QCheckBox(v)
+        checkbox.stateChanged.connect(self._on_sidebar_stateChanged)
         self.sidebar_frame.layout().addWidget(checkbox)
       self.sidebar_frame.layout().addItem(QtGui.QSpacerItem(100, 20, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
     # set the input fields
@@ -736,6 +743,19 @@ class ParameterDialog(QtGui.QDialog):
   def __del__(self):
 #    print "************ destroy", self.objectName()
     self.content.removeAllFields()
+
+  def _on_sidebar_stateChanged(self, state):
+    if state == QtCore.Qt.Checked:
+      self._sidebar_selected += 1
+    elif state == QtCore.Qt.Unchecked:
+      self._sidebar_selected -= 1
+    if self._sidebar_selected in [0, 1]:
+      try:
+        field = self.content.getField(self.sidebar_frame.objectName())
+        if not field is None and field.currentText() == self.sidebar_default_val:
+          field.setEnabled(True if self._sidebar_selected == 0 else False)
+      except:
+        pass
 
   def showLoadSaveButtons(self):
     self.load_button = QtGui.QPushButton()
