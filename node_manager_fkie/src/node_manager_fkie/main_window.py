@@ -422,6 +422,8 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].robot_icon_updated.disconnect()
       self.stackedLayout.removeWidget(self.masters[masteruri])
       self.tabPlace.layout().removeWidget(self.masters[masteruri])
+      for cfg in self.masters[masteruri].default_cfgs:
+        self.capabilitiesTable.removeConfig(cfg)
       self.masters[masteruri].setParent(None)
       del self.masters[masteruri]
 

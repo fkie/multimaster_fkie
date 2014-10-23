@@ -141,7 +141,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__master_state = None
     self.__master_info = None
     self.__force_update = False
-    self.__configs = dict() # [file name] = LaunchConfig
+    self.__configs = dict() # [file name] : LaunchConfig or tuple(ROS node name, ROS service uri, ROS master URI) : ROS nodes
 #    self.rosconfigs = dict() # [launch file path] = LaunchConfig()
     self.__in_question = [] # stores the changed files, until the user is interacted
 #    self.__uses_confgs = dict() # stores the decisions of the user for used configuration to start of node
@@ -588,6 +588,18 @@ class MasterViewProxy(QtGui.QWidget):
     @rtype: C{boolean}
     '''
     return self.launchfiles.has_key(path)
+
+  @property
+  def default_cfgs(self):
+    '''
+    Returns the copy of the dictionary with default configurations on this host
+    @rtype: C{[str(ROS node name)]}
+    '''
+    result = []
+    for (c, cfg) in self.__configs.items():
+      if isinstance(c, tuple):
+        result.append(c[0])
+    return result
 
   @property
   def launchfiles(self):
