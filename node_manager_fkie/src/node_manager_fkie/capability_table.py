@@ -265,21 +265,41 @@ class CapabilityControlWidget(QtGui.QFrame):
     QtGui.QFrame.__init__(self, parent)
     self._masteruri = masteruri
     self._nodes = {cfg : {ns : nodes} }
-    frame_layout = QtGui.QHBoxLayout(self)
+    frame_layout = QtGui.QVBoxLayout(self)
     frame_layout.setContentsMargins(0, 0, 0, 0)
-    frame_layout.addItem(QtGui.QSpacerItem(20, 20))
+    # create frame for warning label
+    self.warning_frame = warning_frame = QtGui.QFrame()
+    warning_layout = QtGui.QHBoxLayout(warning_frame)
+    warning_layout.setContentsMargins(0, 0, 0, 0)
+    warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    self.warning_label = QtGui.QLabel()
+    icon = QtGui.QIcon(':/icons/crystal_clear_warning.png')
+    self.warning_label.setPixmap(icon.pixmap(QtCore.QSize(40, 40)))
+    self.warning_label.setToolTip('Multiple configuration for same node found!\nA first one will be selected for the start a node!')
+    warning_layout.addWidget(self.warning_label)
+    warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    frame_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    frame_layout.addWidget(warning_frame)
+    # create frame for start/stop buttons
+    buttons_frame = QtGui.QFrame()
+    buttons_layout = QtGui.QHBoxLayout(buttons_frame)
+    buttons_layout.setContentsMargins(0, 0, 0, 0)
+    buttons_layout.addItem(QtGui.QSpacerItem(20, 20))
     self.on_button = QtGui.QPushButton()
     self.on_button.setFlat(False)
     self.on_button.setText("On")
     self.on_button.clicked.connect(self.on_on_clicked)
-    frame_layout.addWidget(self.on_button)
+    buttons_layout.addWidget(self.on_button)
 
     self.off_button = QtGui.QPushButton()
     self.off_button.setFlat(True)
     self.off_button.setText("Off")
     self.off_button.clicked.connect(self.on_off_clicked)
-    frame_layout.addWidget(self.off_button)
-    frame_layout.addItem(QtGui.QSpacerItem(20, 20))
+    buttons_layout.addWidget(self.off_button)
+    buttons_layout.addItem(QtGui.QSpacerItem(20, 20))
+    frame_layout.addWidget(buttons_frame)
+    frame_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    self.warning_frame.setVisible(False)
 
   def hasConfigs(self):
     '''
@@ -340,10 +360,15 @@ class CapabilityControlWidget(QtGui.QFrame):
 
   def updateNodes(self, cfg, ns, nodes):
     self._nodes[cfg] = {ns : nodes}
+    test_nodes = self.nodes()
+    self.warning_frame.setVisible(len(test_nodes) != len(set(test_nodes)))
 
   def on_on_clicked(self):
+    started = set() # do not start nodes multiple times
     for c in self._nodes.iterkeys():
-      self.start_nodes_signal.emit(self._masteruri, c, self.nodes(c))
+      node2start = set(self.nodes(c)) - started
+      self.start_nodes_signal.emit(self._masteruri, c, list(node2start))
+      started.update(node2start)
     self.on_button.setFlat(True)
     self.off_button.setFlat(False)
 
