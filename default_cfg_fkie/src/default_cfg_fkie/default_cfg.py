@@ -82,7 +82,7 @@ class DefaultCfg(object):
     rospy.loginfo("argv: %s"%self.argv)
     if not isinstance(self.argv, list):
       self.argv = ["%s"%self.argv]
-    sys.argv[:] = self.argv
+    sys.argv.extend(self.argv)
     if self.do_autostart:
       rospy.set_param('~autostart', False)
     # initialize the ROS services
