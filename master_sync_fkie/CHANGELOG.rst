@@ -2,6 +2,10 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.14 (2014-10-24)
+-------------------
+* master_sync_fkie: reduced update notifications after registration of a subscriber
+
 0.3.13 (2014-07-29)
 -------------------
 
