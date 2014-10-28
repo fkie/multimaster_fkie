@@ -1115,7 +1115,7 @@ class MainWindow(QtGui.QMainWindow):
                        'Robot hosts' : ('string', ''),
                        'Username' : ('string', [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]),
                        'Send MCast' : ('bool', True),
-                       'Heartbeat [Hz]' : ('float', 0.02)
+                       'Heartbeat [Hz]' : ('float', 0.5)
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
