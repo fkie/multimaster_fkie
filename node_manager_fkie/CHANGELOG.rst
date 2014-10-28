@@ -2,6 +2,34 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.14 (2014-10-24)
+-------------------
+* node_manager_fkie: added a warning to capability table, if multiple configurations for the same node are loaded
+* node_manager_fkie: remove now the configuration in capability table after a host was removed
+* node_manager_fkie: fixed error while navigate in description panel
+* node_manager_fkie: changed sidebar parameter handling (for start host dialog)
+* node_manager_fkie: changed the handling on click the sync button in master list
+* node_manager_fkie: fixed tooltip for recent loaded files
+* node_manager_fkie: fixed problems in capability table with multi-launch-files for the same host and group
+* CapabilityHeader: Keep indices of _data and controlWidget in sync when inserting new capabilities
+* Fixed crash in master_list_model if IPv6 addresses are present on the host
+* node_manager_fkie:manual link added
+* node_manager_fkie: added args and remaps to change detection after reload a launch file
+* node_manager_fkie: ignore namespace while display the Capabilities in Capabilities table
+* node_manager_fkie: fixed some template tags in xml editor
+* node_manager_fkie: stop nodes first while restart nodes after loading a launch file
+* node_manager_fkie: added support of $(find ...) statement to add images in decription of capabilities
+* node_manager_fkie: xmleditor - ask for save by pressing ESC
+* node_manager_fkie: changed the update strategy for description dock
+* node_manager_fkie: changed the update strategy for description dock
+* node_manager_fkie: changed name creation for default configuration node
+* node_manager_fkie: fixed blocked focus if a xmleditor was open
+* node_manager_fkie: fixed highlighter problem in pyqt
+* node_manager_fkie: improved respawn script
+* node_manager_fkie: fixed handling of history files
+* node_manager_fkie: mark line with problems in launch editor
+* Contributors: Alexander, Alexander Tiderko, Stefan Oßwald, Timo Röhling
+
 0.3.13 (2014-07-29)
 -------------------
 * node_manager_fkie: fixed the button view in the sync dialog

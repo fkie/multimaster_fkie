@@ -123,7 +123,7 @@ class SettingsWidget(QtGui.QDockWidget):
                                       'The images with robot name will be displayed in the '
                                       'info bar.</p>'
                                    },),
-                'Show files extentions:' : ({
+                'Show files extensions:' : ({
                                    'value' : ', '.join(nm.settings().launch_view_file_ext),
                                    'settings' : nm.settings(),
                                    'attrname' : 'launch_view_file_ext',

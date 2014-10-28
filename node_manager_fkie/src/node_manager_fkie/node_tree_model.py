@@ -185,6 +185,7 @@ class GroupItem(QtGui.QStandardItem):
             groupItem.updateIcon()
 #          groupItem.updateTooltip()
 
+
   def remCapablities(self, config):
     '''
     Removes internal entry of the capability, so the new nodes are not grouped.
@@ -194,8 +195,7 @@ class GroupItem(QtGui.QStandardItem):
     @type config: C{str}
     '''
     try:
-      if self._capcabilities.has_key(config):
-        del self._capcabilities[config]
+      del self._capcabilities[config]
     except:
       pass
     else:
@@ -1497,7 +1497,9 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
       if not host is None: # should not occur
-        return host.getNodeItemsByName(node_name)
+        res = host.getNodeItemsByName(node_name)
+        if res:
+          return res
     return []
 
   def getRunningNodes(self):

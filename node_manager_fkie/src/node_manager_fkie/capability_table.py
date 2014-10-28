@@ -66,6 +66,7 @@ class CapabilityHeader(QtGui.QHeaderView):
       self.setDefaultAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
     elif orientation == QtCore.Qt.Vertical:
       self.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+    self.controlWidget = []
 
   def index(self, name):
     '''
@@ -260,42 +261,67 @@ class CapabilityControlWidget(QtGui.QFrame):
   stop_nodes_signal = QtCore.Signal(str, list)
   '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
-  def __init__(self, masteruri, cfg, nodes, parent=None):
+  def __init__(self, masteruri, cfg, ns, nodes, parent=None):
     QtGui.QFrame.__init__(self, parent)
     self._masteruri = masteruri
-    self._nodes = nodes
-    self._cfg = cfg
-    frame_layout = QtGui.QHBoxLayout(self)
+    self._nodes = {cfg : {ns : nodes} }
+    frame_layout = QtGui.QVBoxLayout(self)
     frame_layout.setContentsMargins(0, 0, 0, 0)
-    frame_layout.addItem(QtGui.QSpacerItem(20, 20))
+    # create frame for warning label
+    self.warning_frame = warning_frame = QtGui.QFrame()
+    warning_layout = QtGui.QHBoxLayout(warning_frame)
+    warning_layout.setContentsMargins(0, 0, 0, 0)
+    warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    self.warning_label = QtGui.QLabel()
+    icon = QtGui.QIcon(':/icons/crystal_clear_warning.png')
+    self.warning_label.setPixmap(icon.pixmap(QtCore.QSize(40, 40)))
+    self.warning_label.setToolTip('Multiple configuration for same node found!\nA first one will be selected for the start a node!')
+    warning_layout.addWidget(self.warning_label)
+    warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    frame_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    frame_layout.addWidget(warning_frame)
+    # create frame for start/stop buttons
+    buttons_frame = QtGui.QFrame()
+    buttons_layout = QtGui.QHBoxLayout(buttons_frame)
+    buttons_layout.setContentsMargins(0, 0, 0, 0)
+    buttons_layout.addItem(QtGui.QSpacerItem(20, 20))
     self.on_button = QtGui.QPushButton()
     self.on_button.setFlat(False)
     self.on_button.setText("On")
     self.on_button.clicked.connect(self.on_on_clicked)
-    frame_layout.addWidget(self.on_button)
+    buttons_layout.addWidget(self.on_button)
 
     self.off_button = QtGui.QPushButton()
     self.off_button.setFlat(True)
     self.off_button.setText("Off")
     self.off_button.clicked.connect(self.on_off_clicked)
-    frame_layout.addWidget(self.off_button)
-    frame_layout.addItem(QtGui.QSpacerItem(20, 20))
+    buttons_layout.addWidget(self.off_button)
+    buttons_layout.addItem(QtGui.QSpacerItem(20, 20))
+    frame_layout.addWidget(buttons_frame)
+    frame_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    self.warning_frame.setVisible(False)
 
-  def config(self):
+  def hasConfigs(self):
     '''
-    @return: the configuration defines this capability
-    @rtype: C{str}
+    @return: True, if a configurations for this widget are available.
+    @rtype: bool
     '''
-    return self._cfg
+    return len(self._nodes) > 0
 
-  def nodes(self):
+  def nodes(self, cfg=''):
     '''
     @return: the list with nodes required by this capability. The nodes are 
     defined by ROS full name.
     @rtype: C{[str]}
     '''
-    return self._nodes
-  
+    try:
+      if cfg:
+        return [n for l in self._nodes[cfg].itervalues() for n in l]
+      else:
+        return [n for c in self._nodes.itervalues() for l in c.itervalues() for n in l]
+    except:
+      return []
+
   def setNodeState(self, running_nodes, stopped_nodes, error_nodes):
     '''
     Sets the state of this capability.
@@ -326,14 +352,28 @@ class CapabilityControlWidget(QtGui.QFrame):
     palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
     self.setPalette(palette)
 
+  def removeCfg(self, cfg):
+    try:
+      del self._nodes[cfg]
+    except:
+      pass
+
+  def updateNodes(self, cfg, ns, nodes):
+    self._nodes[cfg] = {ns : nodes}
+    test_nodes = self.nodes()
+    self.warning_frame.setVisible(len(test_nodes) != len(set(test_nodes)))
 
   def on_on_clicked(self):
-    self.start_nodes_signal.emit(self._masteruri, self._cfg, self._nodes)
+    started = set() # do not start nodes multiple times
+    for c in self._nodes.iterkeys():
+      node2start = set(self.nodes(c)) - started
+      self.start_nodes_signal.emit(self._masteruri, c, list(node2start))
+      started.update(node2start)
     self.on_button.setFlat(True)
     self.off_button.setFlat(False)
-    
+
   def on_off_clicked(self):
-    self.stop_nodes_signal.emit(self._masteruri, self._nodes)
+    self.stop_nodes_signal.emit(self._masteruri, self.nodes())
     self.on_button.setFlat(False)
     self.off_button.setFlat(True)
 
@@ -411,14 +451,15 @@ class CapabilityTable(QtGui.QTableWidget):
         item.setSizeHint(QtCore.QSize(96,96))
         self.setVerticalHeaderItem(cap_index, item)
         self.verticalHeaderItem(cap_index).setText(c.name.decode(sys.getfilesystemencoding()))
+        # add the capability control widget
+        controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.namespace, c.nodes)
+        controlWidget.start_nodes_signal.connect(self._start_nodes)
+        controlWidget.stop_nodes_signal.connect(self._stop_nodes)
+        self.setCellWidget(cap_index, robot_index, controlWidget)
+        self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
       else:
         self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
-
-      # add the capability control widget
-      controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.nodes)
-      controlWidget.start_nodes_signal.connect(self._start_nodes)
-      controlWidget.stop_nodes_signal.connect(self._stop_nodes)
-      self.setCellWidget(cap_index, robot_index, controlWidget)
+        self._capabilityHeader.controlWidget[cap_index].updateNodes(cfg_name, c.namespace, c.nodes)
 
   def removeConfig(self, cfg):
     '''
@@ -435,8 +476,10 @@ class CapabilityTable(QtGui.QTableWidget):
     for r in reversed(removed_from_robots):
       for c in removed_from_caps:
         controlWidget = self.cellWidget(c, r)
-        if isinstance(controlWidget, CapabilityControlWidget) and controlWidget.config() == cfg:
-          self.removeCellWidget(c, r)
+        if isinstance(controlWidget, CapabilityControlWidget):
+          controlWidget.removeCfg(cfg)
+          if not controlWidget.hasConfigs():
+            self.removeCellWidget(c, r)
     # remove empty columns
     for r in removed_from_robots:
       is_empty = True

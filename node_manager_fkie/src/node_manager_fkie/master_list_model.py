@@ -36,22 +36,27 @@ from python_qt_binding import QtGui
 import threading
 
 from urlparse import urlparse
-from socket import getaddrinfo
+from socket import getaddrinfo, AF_INET, AF_INET6
 
 import node_manager_fkie as nm
 
 class MasterSyncItem(QtGui.QStandardItem):
   ITEM_TYPE = QtGui.QStandardItem.UserType + 35
 
+  NOT_SYNC = 0
+  START_SYNC = 1
+  SYNC = 2
+
   def __init__(self, master, parent=None):
     self.name = master.name
     QtGui.QStandardItem.__init__(self, self.name)
     self.parent_item = None
     self._master = master
-    self._syncronized = False
-    self.ICONS = {'sync' : QtGui.QIcon(":/icons/crystal_clear_sync.png"),
-                  'not_sync': QtGui.QIcon(":/icons/crystal_clear_not_sync.png") }
-    self.setIcon(self.ICONS['not_sync'])
+    self._syncronized = MasterSyncItem.NOT_SYNC
+    self.ICONS = {MasterSyncItem.SYNC : QtGui.QIcon(":/icons/crystal_clear_sync.png"),
+                  MasterSyncItem.NOT_SYNC : QtGui.QIcon(":/icons/crystal_clear_not_sync.png"),
+                  MasterSyncItem.START_SYNC: QtGui.QIcon(":/icons/crystal_clear_start_sync.png") }
+    self.setIcon(self.ICONS[MasterSyncItem.NOT_SYNC])
 
   @property
   def master(self):
@@ -65,7 +70,8 @@ class MasterSyncItem(QtGui.QStandardItem):
   def synchronized(self, value):
     if self._syncronized != value:
       self._syncronized = value
-      self.setIcon(self.ICONS['sync'] if value else self.ICONS['not_sync'])
+      if value in self.ICONS:
+        self.setIcon(self.ICONS[value])
 
   def __eq__(self, item):
     if isinstance(item, str) or isinstance(item, unicode):
@@ -119,7 +125,10 @@ class MasterItem(QtGui.QStandardItem):
       result = getaddrinfo(o.hostname, None)
       ips = []
       for r in result:
-        (family, socktype, proto, canonname, (ip, port)) = r
+        if r[0] == AF_INET6:
+          (family, socktype, proto, canonname, (ip, port, flow, scope)) = r
+        else:
+          (family, socktype, proto, canonname, (ip, port)) = r
         if self.master_ip is None and ip:
           self.master_ip = ''
         if ip and not ip in ips:
@@ -372,7 +381,7 @@ class MasterModel(QtGui.QStandardItemModel):
     for i in reversed(range(root.rowCount())):
       masterItem = root.child(i, self.COL_SYNC)
       if masterItem.master.name == master:
-        masterItem.synchronized = state
+        masterItem.synchronized = MasterSyncItem.SYNC if state else MasterSyncItem.NOT_SYNC
         break
 
   def removeMaster(self, master):

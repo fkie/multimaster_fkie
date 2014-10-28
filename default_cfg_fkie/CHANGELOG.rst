@@ -2,6 +2,10 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.14 (2014-10-24)
+-------------------
+* node_manager_fkie: added support of $(find ...) statement to add images in decription of capabilities
+
 0.3.13 (2014-07-29)
 -------------------
 

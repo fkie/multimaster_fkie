@@ -68,6 +68,7 @@ class LaunchItem(QtGui.QStandardItem):
     self.parent_item = parent
     self.name = name
     self.path = path
+    self.package_name = package_name(os.path.dirname(self.path))[0]
     self.id = id
     if self.id == LaunchItem.FOLDER:
       self.setIcon(QtGui.QIcon(":/icons/crystal_clear_folder.png"))
@@ -98,14 +99,15 @@ class LaunchItem(QtGui.QStandardItem):
     if role == QtCore.Qt.DisplayRole:
       # return the displayed item name
       if self.id == LaunchItem.RECENT_FILE:
-        return "%s   [%s]"%(self.name, package_name(os.path.dirname(self.path))[0])#.decode(sys.getfilesystemencoding())
+        return "%s   [%s]"%(self.name, self.package_name)#.decode(sys.getfilesystemencoding())
       else:
-        return self.name
+        return "%s"%self.name
     elif role == QtCore.Qt.ToolTipRole:
       # return the tooltip of the item
+      result = "%s"%self.path
       if self.id == LaunchItem.RECENT_FILE:
         result = "%s\nPress 'Delete' to remove the entry from the history list"%self.path
-      return self.path.decode(sys.getfilesystemencoding())
+      return result
 #     elif role == QtCore.Qt.DecorationRole:
 #       # return the showed icon
 #       pathItem, path, pathId = self.items[index.row()]
@@ -113,10 +115,9 @@ class LaunchItem(QtGui.QStandardItem):
 #         return self.model().icons[self.id]
 #       return None
     elif role == QtCore.Qt.EditRole:
-      return self.name
+      return "%s"%self.name
     else:
-      # We don't care about anything else, so return None
-#      return None
+      # We don't care about anything else, so return default value
       return QtGui.QStandardItem.data(self, role)
 
   def setData(self, value, role=QtCore.Qt.EditRole):
