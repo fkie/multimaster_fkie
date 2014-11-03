@@ -847,7 +847,7 @@ class ParameterDialog(QtGui.QDialog):
     # add the sidebar results
     if sidebar_name in result_value:
       # skip the default value, if elements are selected in the side_bar
-      if len(sidebar_list) == 0 or self.sidebar_default_val != result_value[sidebar_name]:
+      if len(sidebar_list) == 0 or self.sidebar_default_val != result_value[sidebar_name][0]:
         sidebar_list.append(result_value[sidebar_name])
       result_value[sidebar_name] = ([v for v, changed in set(sidebar_list)], True)
     result = self._remove_unchanged_parameter(result_value, only_changed)
