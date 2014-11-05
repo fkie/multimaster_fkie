@@ -685,8 +685,11 @@ class MasterViewProxy(QtGui.QWidget):
   def _apply_launch_config(self, launchfile, launchConfig):
 #    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ExcludeUserInputEvents)
     stored_roscfg = None
+    expanded_items = None
     if self.__configs.has_key(launchfile):
-      # close the current loaded configuration with the same name 
+      # store expanded items
+      expanded_items = self._get_expanded_groups()
+      # close the current loaded configuration with the same name
       self.removeConfigFromModel(launchfile)
       stored_roscfg = self.__configs[launchfile].Roscfg
       del self.__configs[launchfile]
@@ -754,6 +757,9 @@ class MasterViewProxy(QtGui.QWidget):
         self.__robot_icons.remove(launchfile)
       self.__robot_icons.insert(0, launchfile)
       self.markNodesAsDuplicateOf(self.__running_nodes)
+      # expand items to restore old view
+      if not expanded_items is None:
+        self._expand_groups(expanded_items)
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:
@@ -791,6 +797,48 @@ class MasterViewProxy(QtGui.QWidget):
       self.on_node_selection_changed(None, None, True)
     except:
       pass
+
+  def _get_expanded_groups(self):
+    '''
+    Returns a list of group names, which are expanded.
+    '''
+    result = []
+    try:
+      for r in range(self.masterTab.nodeTreeView.model().rowCount()):
+        index_host = self.masterTab.nodeTreeView.model().index(r, 0)
+        if index_host.isValid() and self.masterTab.nodeTreeView.isExpanded(index_host):
+          if self.masterTab.nodeTreeView.model().hasChildren(index_host):
+            for c in range(self.masterTab.nodeTreeView.model().rowCount(index_host)):
+              index_cap = self.masterTab.nodeTreeView.model().index(c, 0, index_host)
+              if index_cap.isValid() and self.masterTab.nodeTreeView.isExpanded(index_cap):
+                item = self.node_tree_model.itemFromIndex(index_cap)
+                if isinstance(item, (GroupItem, HostItem)):
+                  result.append(item.name)
+    except:
+      import traceback
+      print traceback.format_exc()
+    return result
+
+  def _expand_groups(self, groups=None):
+    '''
+    Expands all groups, which are in the given list. If no list is given, 
+    expands all groups of expanded hosts.
+    '''
+    try:
+      for r in range(self.masterTab.nodeTreeView.model().rowCount()):
+        index_host = self.masterTab.nodeTreeView.model().index(r, 0)
+        if index_host.isValid() and self.masterTab.nodeTreeView.isExpanded(index_host):
+          if self.masterTab.nodeTreeView.model().hasChildren(index_host):
+            for c in range(self.masterTab.nodeTreeView.model().rowCount(index_host)):
+              index_cap = self.masterTab.nodeTreeView.model().index(c, 0, index_host)
+              if index_cap.isValid():
+                item = self.node_tree_model.itemFromIndex(index_cap)
+                if isinstance(item, (GroupItem, HostItem)):
+                  if groups is None or item.name in groups:
+                    self.masterTab.nodeTreeView.setExpanded(index_cap, True)
+    except:
+      import traceback
+      print traceback.format_exc()
 
   def update_robot_icon(self, force=False):
     '''
