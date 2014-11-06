@@ -1512,6 +1512,12 @@ class MainWindow(QtGui.QMainWindow):
     elif url.toString().startswith('topichz://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), True)
+    elif url.toString().startswith('topicpub://'):
+      if not self.currentMaster is None:
+        self.currentMaster.start_publisher(url.encodedPath())
+    elif url.toString().startswith('topicstop://'):
+      if not self.currentMaster is None:
+        self.currentMaster.on_topic_pub_stop_clicked(url.encodedPath())
     elif url.toString().startswith('service://'):
       if not self.currentMaster is None:
         self.currentMaster.on_service_selection_changed(None, None, True, url.encodedPath())

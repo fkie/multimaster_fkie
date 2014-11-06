@@ -1355,8 +1355,17 @@ class MasterViewProxy(QtGui.QWidget):
       topic = selectedTopics[0]
       ns, sep, name = topic.name.rpartition(rospy.names.SEP)
       text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
-      text += '<a href="topicecho://%s%s">echo</a> - '%(self.mastername, topic.name)
-      text += '<a href="topichz://%s%s">hz</a>'%(self.mastername, topic.name)
+      text += '<a href="topicecho://%s%s">echo</a>'%(self.mastername, topic.name)
+      text += '- <a href="topichz://%s%s">hz</a>'%(self.mastername, topic.name)
+      text += '- <a href="topicpub://%s%s">pub</a>'%(self.mastername, topic.name)
+      topic_publisher = []
+      topic_prefix = '/rostopic_pub%s_'%topic.name
+      node_names = self.master_info.node_names
+      for n in node_names:
+        if n.startswith(topic_prefix):
+          topic_publisher.append(n)
+      if topic_publisher:
+        text += '- <a href="topicstop://%s%s">stop [%d]</a>'%(self.mastername, topic.name, len(topic_publisher))
       text += '<p>'
       text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
       text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
@@ -1380,6 +1389,15 @@ class MasterViewProxy(QtGui.QWidget):
 #                pass
             text += '%s: <span style="color:gray;">%s</span><br>'%(f, idtype)
           text += '<br>'
+          constants = {}
+          for m in dir(mclass):
+            if not m.startswith('_'):
+              if type(getattr(mclass, m)) in [str, int, bool, float]:
+                constants[m] = getattr(mclass, m)
+          if constants:
+            text += '<b><u>Constants:</u></b><br>'
+            for n in sorted(constants.iterkeys()):
+              text += '%s: <span style="color:gray;">%s</span><br>'%(n, constants[n])
       except ValueError:
         pass
       text += '</dl>'
@@ -2276,6 +2294,17 @@ class MasterViewProxy(QtGui.QWidget):
                             'Error while add a parameter to the ROS parameter server',
                             str(e)).exec_()
 
+  def start_publisher(self, topic_name):
+    '''
+    Starts a publisher to given topic.
+    '''
+    if not self.master_info is None:
+      topic = self.master_info.getTopic("%s"%topic_name)
+      if not topic is None:
+        self._start_publisher(topic.name, topic.type)
+      else:
+        rospy.logwarn("Error while start publisher, topic not found: %s"%topic_name)
+
   def _start_publisher(self, topic_name, topic_type):
     try:
       topic_name = roslib.names.ns_join(roslib.names.SEP, topic_name)
@@ -2307,10 +2336,14 @@ class MasterViewProxy(QtGui.QWidget):
           opt_name_suf = '__once_'
         else:
           try:
-            i = int(rate)
+            i = 0
+            try:
+              i = int(rate)
+            except:
+              i = float(rate)
             if i > 0:
               opt_str = ''.join(['-r ', rate])
-              opt_name_suf = ''.join(['__', rate, 'Hz_'])
+              opt_name_suf = '__%sHz_'%(str(rate).replace('.', '_'))
           except:
             pass
         # remove empty lists
@@ -2345,12 +2378,17 @@ class MasterViewProxy(QtGui.QWidget):
         result[key] = value
     return result
 
-  def on_topic_pub_stop_clicked(self):
-    selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+  def on_topic_pub_stop_clicked(self, topic_name=''):
+    topic_names = []
+    if topic_name:
+      topic_names.append(topic_name)
+    else:
+      selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+      topic_names = ['%s'%topic.name for topic in selectedTopics]
     if not self.master_info is None:
       nodes2stop = []
-      for topic in selectedTopics:
-        topic_prefix = ''.join(['/rostopic_pub', topic.name, '_'])
+      for topic in topic_names:
+        topic_prefix = '/rostopic_pub%s_'%topic
         node_names = self.master_info.node_names
         for n in node_names:
           if n.startswith(topic_prefix):
