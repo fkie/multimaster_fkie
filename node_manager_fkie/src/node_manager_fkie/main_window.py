@@ -1512,6 +1512,9 @@ class MainWindow(QtGui.QMainWindow):
     elif url.toString().startswith('topicpub://'):
       if not self.currentMaster is None:
         self.currentMaster.start_publisher(url.encodedPath())
+    elif url.toString().startswith('topicrepub://'):
+      if not self.currentMaster is None:
+        self.currentMaster.start_publisher(url.encodedPath(), True)
     elif url.toString().startswith('topicstop://'):
       if not self.currentMaster is None:
         self.currentMaster.on_topic_pub_stop_clicked(url.encodedPath())
