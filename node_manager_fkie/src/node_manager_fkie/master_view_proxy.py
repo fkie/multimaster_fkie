@@ -158,6 +158,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__robot_icons = []
     self.__current_robot_icon = None
     self.__current_parameter_robot_icon = ''
+    self.__republish_params = {} # { topic : params, created by dialog}
     # store the running_nodes to update to duplicates after load a launch file
     self.__running_nodes = dict() # dict (node name : masteruri)
     self.default_cfg_handler = DefaultConfigHandler()
@@ -1358,6 +1359,8 @@ class MasterViewProxy(QtGui.QWidget):
       text += '<a href="topicecho://%s%s">echo</a>'%(self.mastername, topic.name)
       text += '- <a href="topichz://%s%s">hz</a>'%(self.mastername, topic.name)
       text += '- <a href="topicpub://%s%s">pub</a>'%(self.mastername, topic.name)
+      if topic.name in self.__republish_params:
+        text += '- <a href="topicrepub://%s%s">repub</a>'%(self.mastername, topic.name)
       topic_publisher = []
       topic_prefix = '/rostopic_pub%s_'%topic.name
       node_names = self.master_info.node_names
@@ -2294,18 +2297,18 @@ class MasterViewProxy(QtGui.QWidget):
                             'Error while add a parameter to the ROS parameter server',
                             str(e)).exec_()
 
-  def start_publisher(self, topic_name):
+  def start_publisher(self, topic_name, republish=False):
     '''
     Starts a publisher to given topic.
     '''
     if not self.master_info is None:
       topic = self.master_info.getTopic("%s"%topic_name)
       if not topic is None:
-        self._start_publisher(topic.name, topic.type)
+        self._start_publisher(topic.name, topic.type, republish)
       else:
         rospy.logwarn("Error while start publisher, topic not found: %s"%topic_name)
 
-  def _start_publisher(self, topic_name, topic_type):
+  def _start_publisher(self, topic_name, topic_type, republish=False):
     try:
       topic_name = roslib.names.ns_join(roslib.names.SEP, topic_name)
       mclass = roslib.message.get_message_class(topic_type)
@@ -2316,8 +2319,13 @@ class MasterViewProxy(QtGui.QWidget):
         return
       slots = mclass.__slots__
       types = mclass._slot_types
-      args = ServiceDialog._params_from_slots(slots, types)
-      p = { '! Publish rate' : ('string', ['once', 'latch', '1']), topic_type : ('dict', args) }
+      default_topic_values = {}
+      rate_values = ['once', 'latch', '1']
+      if republish and topic_name in self.__republish_params:
+        default_topic_values = self.__republish_params[topic_name][topic_type]
+        rate_values = self.__republish_params[topic_name]['! Publish rate']
+      args = ServiceDialog._params_from_slots(slots, types, default_topic_values)
+      p = { '! Publish rate' : ('string', rate_values), topic_type : ('dict', args) }
       dia = ParameterDialog(p)
       dia.setWindowTitle(''.join(['Publish to ', topic_name]))
       dia.showLoadSaveButtons()
@@ -2326,6 +2334,8 @@ class MasterViewProxy(QtGui.QWidget):
 
       if dia.exec_():
         params = dia.getKeywords()
+        # store params for republish
+        self.__republish_params[topic_name] = params
         rate = params['! Publish rate']
         opt_str = ''
         opt_name_suf = '__latch_'
