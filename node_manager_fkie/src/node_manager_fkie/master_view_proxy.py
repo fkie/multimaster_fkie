@@ -440,6 +440,8 @@ class MasterViewProxy(QtGui.QWidget):
       if self.__master_info is None:
         return
       try:
+        if (master_info.masteruri == self.masteruri):
+          self.update_system_parameter()
         # request the info of new remote nodes
         hosts2update = set([nm.nameres().getHostname(self.__master_info.getNode(nodename).uri) for nodename in update_result[0]])
         hosts2update.update([nm.nameres().getHostname(self.__master_info.getService(nodename).uri) for nodename in update_result[6]])
@@ -468,7 +470,6 @@ class MasterViewProxy(QtGui.QWidget):
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
-      self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon", "/roslaunch/uris"])
     except:
       import traceback
       print traceback.format_exc()
@@ -479,6 +480,9 @@ class MasterViewProxy(QtGui.QWidget):
 
   def force_next_update(self):
     self.__force_update = True
+
+  def update_system_parameter(self):
+    self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon", "/roslaunch/uris"])
 
   def markNodesAsDuplicateOf(self, running_nodes):
     '''
