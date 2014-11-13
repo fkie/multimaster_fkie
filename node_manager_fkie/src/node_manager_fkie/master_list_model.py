@@ -47,15 +47,18 @@ class MasterSyncItem(QtGui.QStandardItem):
   START_SYNC = 1
   SYNC = 2
 
+  ICON_PREFIX = 'irondevil'
+#  ICON_PREFIX = 'crystal_clear'
+
   def __init__(self, master, parent=None):
     self.name = master.name
     QtGui.QStandardItem.__init__(self, self.name)
     self.parent_item = None
     self._master = master
     self._syncronized = MasterSyncItem.NOT_SYNC
-    self.ICONS = {MasterSyncItem.SYNC : QtGui.QIcon(":/icons/crystal_clear_sync.png"),
-                  MasterSyncItem.NOT_SYNC : QtGui.QIcon(":/icons/crystal_clear_not_sync.png"),
-                  MasterSyncItem.START_SYNC: QtGui.QIcon(":/icons/crystal_clear_start_sync.png") }
+    self.ICONS = {MasterSyncItem.SYNC : QtGui.QIcon(":/icons/%s_sync.png"%self.ICON_PREFIX),
+                  MasterSyncItem.NOT_SYNC : QtGui.QIcon(":/icons/%s_not_sync.png"%self.ICON_PREFIX),
+                  MasterSyncItem.START_SYNC: QtGui.QIcon(":/icons/%s_start_sync.png"%self.ICON_PREFIX) }
     self.setIcon(self.ICONS[MasterSyncItem.NOT_SYNC])
 
   @property

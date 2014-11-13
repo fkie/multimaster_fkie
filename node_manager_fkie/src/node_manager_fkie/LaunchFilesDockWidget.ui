@@ -301,7 +301,7 @@ p, li { white-space: pre-wrap; }
          </property>
          <property name="icon">
           <iconset resource="GUI.qrc">
-           <normaloff>:/icons/deleket_deviantart_refresh.png</normaloff>:/icons/deleket_deviantart_refresh.png</iconset>
+           <normaloff>:/icons/oxygen_view_refresh.png</normaloff>:/icons/oxygen_view_refresh.png</iconset>
          </property>
          <property name="flat">
           <bool>true</bool>

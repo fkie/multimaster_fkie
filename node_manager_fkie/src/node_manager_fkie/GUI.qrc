@@ -44,7 +44,11 @@
     <file>icons/deleket_deviantart_refresh.png</file>
     <file>icons/deleket_deviantart_stop.png</file>
     <file>icons/imacadam_stop.png</file>
+    <file>icons/irondevil_not_sync.png</file>
+    <file>icons/irondevil_start_sync.png</file>
+    <file>icons/irondevil_sync.png</file>
     <file>icons/load.png</file>
+    <file>icons/oxygen_view_refresh.png</file>
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
     <file>icons/state_ghost.png</file>
