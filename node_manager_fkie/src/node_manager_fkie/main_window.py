@@ -606,7 +606,10 @@ class MainWindow(QtGui.QMainWindow):
       self._assigne_icon(msg.master.name)
       self.master_model.updateMaster(msg.master)
 #      self.masterTableView.doItemsLayout()
-      self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+      if nm.settings().autoupdate:
+        self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+      else:
+        rospy.loginfo("Autoupdate disabled, the data will not be updated for %s"%msg.master.uri)
     if msg.state == MasterState.STATE_NEW:
       nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
       msg.master.name = nm.nameres().mastername(msg.master.uri)
@@ -614,7 +617,10 @@ class MainWindow(QtGui.QMainWindow):
       self._assigne_icon(msg.master.name)
       self.master_model.updateMaster(msg.master)
 #      self.masterTableView.doItemsLayout()
-      self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+      if nm.settings().autoupdate:
+        self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+      else:
+        rospy.loginfo("Autoupdate disabled, the data will not be updated for %s"%msg.master.uri)
     if msg.state == MasterState.STATE_REMOVED:
       if msg.master.uri == self.getMasteruri():
         # switch to locale monitoring, if the local master discovering was removed
@@ -915,7 +921,7 @@ class MainWindow(QtGui.QMainWindow):
       masteruri = self.getMasteruri()
       if not masteruri is None:
         master = self.getMaster(masteruri)
-        if not master is None and not master.master_state is None:
+        if not master is None and not master.master_state is None and nm.settings().autoupdate:
           self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
         self._refresh_time = current_time
 
@@ -935,6 +941,8 @@ class MainWindow(QtGui.QMainWindow):
       self.__current_master_label_name = name
       self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>'%name)
     ts = 'updated: %s'%str(timestamp) if not timestamp is None else ''
+    if not nm.settings().autoupdate:
+      ts = '%s<span style=" color:orange;"> AU off</span>'%ts
     self.masterInfoLabel.setText('<span style=" font-size:8pt;">%s%s</span>'%(con_err, ts))
 
     # load the robot image, if one exists

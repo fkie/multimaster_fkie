@@ -138,6 +138,16 @@ class SettingsWidget(QtGui.QDockWidget):
                                    'attrname' : 'store_geometry',
                                    'value_default' : nm.settings().STORE_GEOMETRY,
                                    'tooltip'  : ''
+                                   },),
+                'Autoupdate:' : ({
+                                   'value' : nm.settings().autoupdate,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'autoupdate',
+                                   'value_default' : nm.settings().AUTOUPDATE,
+                                   'tooltip'  : '<p>By default node manager updates the current '
+                                      'state on changes. You can deactivate this behavior to '
+                                      'reduce the network load. If autoupdate is deactivated '
+                                      'you must refresh the state manually.</p>'
                                    },)
                 }
     self.settings_model.init_settings(settings)
