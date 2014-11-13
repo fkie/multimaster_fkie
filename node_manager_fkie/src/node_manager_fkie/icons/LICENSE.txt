@@ -12,3 +12,10 @@ http://www.imacadam.com/
 
 Cloud icon is Free for non commercial use.
 Author: http://www.stardock.com/weather.asp
+
+Oxygen Icons are licensed under a GNU Lesser General Public License.
+http://www.oxygen-icons.org
+http://en.wikipedia.org/wiki/GNU_Lesser_General_Public_License
+
+IronDevil:
+License: Free for non-commercial use.

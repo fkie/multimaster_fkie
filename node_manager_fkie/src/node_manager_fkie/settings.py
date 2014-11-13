@@ -73,6 +73,7 @@ class Settings(object):
   LAUNCH_VIEW_EXT = ['.yaml', '.conf', '.cfg', '.iface', '.sync', '.test']
 
   STORE_GEOMETRY = True
+  AUTOUPDATE = True
 
   def __init__(self):
     self.reload()
@@ -111,6 +112,7 @@ class Settings(object):
     self._launch_view_file_ext = self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))
     self._store_geometry = self.str2bool(settings.value('store_geometry', self.STORE_GEOMETRY))
     self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
+    self._autoupdate = self.str2bool(settings.value('autoupdate', self.AUTOUPDATE))
 
   def masteruri(self):
     return self._masteruri
@@ -236,6 +238,18 @@ class Settings(object):
       self._store_geometry = v
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('store_geometry', self._store_geometry)
+
+  @property
+  def autoupdate(self):
+    return self._autoupdate
+
+  @autoupdate.setter
+  def autoupdate(self, value):
+    v = self.str2bool(value)
+    if self._autoupdate != v:
+      self._autoupdate = v
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('autoupdate', self._autoupdate)
 
   def str2bool(self, v):
     if isinstance(v, bool):

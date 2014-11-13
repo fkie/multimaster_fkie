@@ -108,6 +108,7 @@ class SyncDialog(QtGui.QDialog):
   def __init__(self, parent=None):
     QtGui.QDialog.__init__(self, parent)
 #    self.host = host
+    self.setWindowIcon(QtGui.QIcon(":/icons/irondevil_sync.png"))
     self.setWindowTitle('Sync')
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
