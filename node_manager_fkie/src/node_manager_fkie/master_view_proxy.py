@@ -538,7 +538,7 @@ class MasterViewProxy(QtGui.QWidget):
     @return: The list the nodes with given name.
     @rtype: []
     '''
-    return self.node_tree_model.getNode(node_name)
+    return self.node_tree_model.getNode("%s"%node_name, self.masteruri)
 
   def updateButtons(self):
     '''
@@ -1236,7 +1236,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     if node_name and not self.master_info is None:
       # get node by name
-      selectedNodes = self.node_tree_model.getNode("%s"%node_name)
+      selectedNodes = self.getNode(node_name)
       if selectedNodes[0] is None:
         return
       selectedHosts = []

@@ -1485,7 +1485,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
             return True
     return False
 
-  def getNode(self, node_name):
+  def getNode(self, node_name, masteruri):
     '''
     Since the same node can be included by different groups, this method searches
     for all nodes with given name and returns these items.
@@ -1496,7 +1496,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not host is None: # should not occur
+      if not host is None and (masteruri is None or host.masteruri == masteruri):
         res = host.getNodeItemsByName(node_name)
         if res:
           return res
