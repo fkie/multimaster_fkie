@@ -37,8 +37,8 @@ import time
 import math
 from datetime import datetime
 
-import roslib
-import roslib.message
+#import roslib
+from roslib import message
 import rospy
 import threading
 
@@ -66,13 +66,13 @@ class EchoDialog(QtGui.QDialog):
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
   
-  def __init__(self, topic, type, show_only_rate=False, masteruri=None, parent=None):
+  def __init__(self, topic, msg_type, show_only_rate=False, masteruri=None, parent=None):
     '''
     Creates an input dialog.
     @param topic: the name of the topic
     @type topic: C{str}
-    @param type: the type of the topic
-    @type type: C{str}
+    @param msg_type: the type of the topic
+    @type msg_type: C{str}
     @raise Exception: if no topic class was found for the given type
     '''
     QtGui.QDialog.__init__(self, parent=parent)
@@ -169,9 +169,9 @@ class EchoDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.status_label)
 
     # subscribe to the topic
-    self.__msg_class = roslib.message.get_message_class(type)
+    self.__msg_class = message.get_message_class(msg_type)
     if not self.__msg_class:
-      raise Exception("Cannot load message class for [%s]. Are your messages built?"%type)
+      raise Exception("Cannot load message class for [%s]. Are your messages built?"%msg_type)
 
     self.print_hz_timer = QtCore.QTimer()
     self.print_hz_timer.timeout.connect(self._on_calc_hz)
@@ -201,8 +201,8 @@ class EchoDialog(QtGui.QDialog):
   def create_field_filter(self, echo_nostr, echo_noarr):
     def field_filter(val):
       try:
-        fields = val.__slots__
-        field_types = val._slot_types
+#        fields = val.__slots__
+#        field_types = val._slot_types
         for f, t in zip(val.__slots__, val._slot_types):
           if echo_noarr and '[' in t:
             continue
@@ -294,7 +294,7 @@ class EchoDialog(QtGui.QDialog):
     self._last_received_ts = current_time
     if not self.show_only_rate:
       # convert message to string and reduce line width to current limit
-      msg = roslib.message.strify_message(msg, field_filter=self.field_filter_fn)
+      msg = message.strify_message(msg, field_filter=self.field_filter_fn)
       if isinstance(msg, tuple):
         msg = msg[0]
       if self.line_limit != 0:

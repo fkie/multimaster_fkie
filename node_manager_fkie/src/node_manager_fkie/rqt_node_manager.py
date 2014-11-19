@@ -1,9 +1,6 @@
- 
-import rospy
-
 from qt_gui.plugin import Plugin
-from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QWidget, QMessageBox
+#from python_qt_binding import loadUi
+from python_qt_binding.QtGui import QMessageBox#, QWidget
 import node_manager_fkie
 from .main_window import MainWindow
 

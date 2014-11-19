@@ -79,10 +79,10 @@ class Editor(QtGui.QTextEdit):
     self.filename = filename
     self.file_info = None
     if self.filename:
-      file = QtCore.QFile(filename);
-      if file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
+      f = QtCore.QFile(filename);
+      if f.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
         self.file_info = QtCore.QFileInfo(filename)
-        self.setText(unicode(file.readAll(), "utf-8"))
+        self.setText(unicode(f.readAll(), "utf-8"))
 
     self.path = '.'
     # enables drop events
@@ -98,9 +98,9 @@ class Editor(QtGui.QTextEdit):
     :rtype: bool, bool, str
     '''
     if self.document().isModified() or not QtCore.QFileInfo(self.filename).exists():
-      file = QtCore.QFile(self.filename)
-      if file.open(QtCore.QIODevice.WriteOnly | QtCore.QIODevice.Text):
-        file.write(self.toPlainText().encode('utf-8'))
+      f = QtCore.QFile(self.filename)
+      if f.open(QtCore.QIODevice.WriteOnly | QtCore.QIODevice.Text):
+        f.write(self.toPlainText().encode('utf-8'))
         self.document().setModified(False)
         self.file_info = QtCore.QFileInfo(self.filename)
 
@@ -197,7 +197,7 @@ class Editor(QtGui.QTextEdit):
       if index > -1:
         return index
     try:
-      return resolve_url(path)
+      return resolve_url(text)
     except:
       pass
     return -1
@@ -219,9 +219,9 @@ class Editor(QtGui.QTextEdit):
           if len(fileName) > 0:
             try:
               path = self.interpretPath(fileName)
-              file = QtCore.QFile(path)
+              f = QtCore.QFile(path)
               ext = os.path.splitext(path)
-              if file.exists() and ext[1] in nm.Settings().SEARCH_IN_EXT:
+              if f.exists() and ext[1] in nm.settings().SEARCH_IN_EXT:
                 result.append(path)
             except:
               import traceback
@@ -256,9 +256,9 @@ class Editor(QtGui.QTextEdit):
           self.file_info = QtCore.QFileInfo(self.filename)
           result = QtGui.QMessageBox.question(self, "File changed", "File was changed, reload?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
           if result == QtGui.QMessageBox.Yes:
-            file = QtCore.QFile(self.filename);
-            if file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
-              self.setText(unicode(file.readAll(), "utf-8"))
+            f = QtCore.QFile(self.filename);
+            if f.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
+              self.setText(unicode(f.readAll(), "utf-8"))
               self.document().setModified(False)
               self.textChanged.emit()
             else:
@@ -282,20 +282,20 @@ class Editor(QtGui.QTextEdit):
           fileName = cursor.block().text()[startIndex+1:endIndex]
           if len(fileName) > 0:
             try:
-              file = QtCore.QFile(self.interpretPath(fileName))
-              if not file.exists():
+              f = QtCore.QFile(self.interpretPath(fileName))
+              if not f.exists():
                 # create a new file, if it does not exists
-                result = QtGui.QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", file.fileName()]), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+                result = QtGui.QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", f.fileName()]), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
                 if result == QtGui.QMessageBox.Yes:
-                  dir = os.path.dirname(file.fileName())
+                  d = os.path.dirname(f.fileName())
                   if not os.path.exists(dir):
-                    os.makedirs(dir)
-                  with open(file.fileName(),'w') as f:
-                    if file.fileName().endswith('.launch'):
+                    os.makedirs(d)
+                  with open(f.fileName(),'w') as f:
+                    if f.fileName().endswith('.launch'):
                       f.write('<launch>\n\n</launch>')
-                  self.load_request_signal.emit(file.fileName())
+                  self.load_request_signal.emit(f.fileName())
               else:
-                self.load_request_signal.emit(file.fileName())
+                self.load_request_signal.emit(f.fileName())
             except Exception, e:
               WarningMessageBox(QtGui.QMessageBox.Warning, "File not found", fileName, str(e)).exec_()
     QtGui.QTextEdit.mouseReleaseEvent(self, event)
@@ -433,7 +433,7 @@ class Editor(QtGui.QTextEdit):
       if block_end-block_start == 0:
         # shift one line two spaces to the left
         if key_mod & QtCore.Qt.ControlModifier or key_mod & QtCore.Qt.ShiftModifier:
-          for s in range(2):
+          for _ in range(2):
             cursor.movePosition(QtGui.QTextCursor.StartOfLine)
             cursor.movePosition(QtGui.QTextCursor.NextCharacter, QtGui.QTextCursor.KeepAnchor, 1)
             if cursor.selectedText() == ' ':
@@ -994,9 +994,9 @@ class XmlEditor(QtGui.QDialog):
         curpos = self.tabWidget.currentWidget().textCursor().blockNumber()+1
     self.tabWidget.currentWidget().setFocus(QtCore.Qt.ActiveWindowFocusReason)
 
-  def __getTabName(self, file):
-    base = os.path.basename(file).replace('.launch', '')
-    (package, path) = package_name(os.path.dirname(file))
+  def __getTabName(self, lfile):
+    base = os.path.basename(lfile).replace('.launch', '')
+    (package, _) = package_name(os.path.dirname(lfile))
     return ''.join([str(base), ' [', str(package),']'])
 
   def on_find_dialog_clicked(self, button):
@@ -1133,7 +1133,7 @@ class XmlEditor(QtGui.QDialog):
     cursor = self.tabWidget.currentWidget().textCursor()
     if not cursor.isNull():
       col = cursor.columnNumber()
-      spaces = ''.join([' ' for i in range(col)])
+      spaces = ''.join([' ' for _ in range(col)])
       cursor.insertText(text.replace('\n','\n%s'%spaces))
       self.tabWidget.currentWidget().setFocus(QtCore.Qt.OtherFocusReason)
 

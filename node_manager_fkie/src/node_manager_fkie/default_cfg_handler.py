@@ -71,7 +71,7 @@ class DefaultConfigHandler(QtCore.QObject):
   
   def stop(self):
     print "    Shutdown default config update threads..."
-    for key, service in self.__serviceThreads.iteritems():
+    for _, service in self.__serviceThreads.iteritems():
       service.join(3)
     print "    Default config update threads are off!"
 
@@ -139,14 +139,14 @@ class DefaultConfigHandler(QtCore.QObject):
         pass
     self.description_signal.emit(service_uri, service, items)
 
-  def _on_err(self, service_uri, service, str):
+  def _on_err(self, service_uri, service, msg):
     with self._lock:
       try:
         thread = self.__serviceThreads.pop((service_uri, service))
         del thread
       except KeyError:
         pass
-    self.err_signal.emit(service_uri, service, str)
+    self.err_signal.emit(service_uri, service, msg)
 
 
 
@@ -173,7 +173,7 @@ class ServiceThread(QtCore.QObject, threading.Thread):
       try:
         if self._delay_exec > 0:
           time.sleep(self._delay_exec)
-        req, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
+        _, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
         self.update_signal.emit(self._service_uri, self._service, resp.nodes)
       except:
         import traceback
@@ -204,7 +204,7 @@ class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
       try:
         if self._delay_exec > 0:
           time.sleep(self._delay_exec)
-        req, resp = nm.starter().callService(self._service_uri, self._service, ListDescription)
+        _, resp = nm.starter().callService(self._service_uri, self._service, ListDescription)
         self.update_signal.emit(self._service_uri, self._service, [resp])
       except:
         import traceback

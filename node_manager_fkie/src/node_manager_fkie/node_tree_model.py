@@ -216,7 +216,7 @@ class GroupItem(QtGui.QStandardItem):
     try:
       for cfg, cap in self._capcabilities.items():
         for ns, groups in cap.items():
-          for group, descr in groups.items():
+          for group, _ in groups.items():#_:=decription
             if self.is_in_cap_group(node_name, cfg, ns, group):
               if not result.has_key(cfg):
                 result[cfg] = []
@@ -322,7 +322,7 @@ class GroupItem(QtGui.QStandardItem):
     '''
     groups = self.getCapabilityGroups(node.name)
     if groups:
-      for c, group_list in groups.items():
+      for _, group_list in groups.items():
         for group_name in group_list:
           # insert in the group
           groupItem = self.getGroupItem(group_name)
@@ -696,6 +696,7 @@ class HostItem(GroupItem):
     return tooltip
 
   def generateDescription(self, extended=True):
+    from docutils import examples
     tooltip = ''
     if self.descr_type or self.descr_name or self.descr:
       tooltip += '<h4>%s</h4><dl>'%self.descr_name
@@ -703,7 +704,6 @@ class HostItem(GroupItem):
         tooltip += '<dt>Type: %s</dt></dl>'%self.descr_type
       if extended:
         try:
-          from docutils import examples
           if self.descr:
             tooltip += '<b><u>Detailed description:</u></b>'
             tooltip += examples.html_body(self.descr, input_encoding='utf8')
@@ -729,7 +729,6 @@ class HostItem(GroupItem):
     if capabilities:
       tooltip += '<b><u>Capabilities:</u></b>'
       try:
-        from docutils import examples
         tooltip += examples.html_body('- %s'%('\n- '.join(capabilities)), input_encoding='utf8')
       except:
         import traceback
@@ -945,7 +944,7 @@ class NodeItem(QtGui.QStandardItem):
     tooltip += '<dt><b>ORG.MASTERURI:</b> %s</dt></dl>'%self.node_info.masteruri
     #'print "updateDispayedName - hasMaster"
     master_discovered = nm.nameres().hasMaster(self.node_info.masteruri)
-    local = False
+#    local = False
 #    if not self.node_info.uri is None and not self.node_info.masteruri is None:
 #      local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
     if not self.node_info.pid is None:
@@ -1183,7 +1182,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     super(NodeTreeModel, self).__init__(parent)
     self.setColumnCount(len(NodeTreeModel.header))
-    self.setHorizontalHeaderLabels([label for label, width in NodeTreeModel.header])
+    self.setHorizontalHeaderLabels([label for label, _ in NodeTreeModel.header])
     self._local_host_address = host_address
     self._std_capabilities = {'': {'SYSTEM': {'images': [], 
                                               'nodes': [ '/rosout', 
@@ -1210,11 +1209,10 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     if not index.isValid():
       return QtCore.Qt.NoItemFlags
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-  
+
   def _set_std_capabilities(self, host_item):
     if not host_item is None:
       cap = self._std_capabilities
-      s = roslib.names.SEP
       hostname = roslib.names.SEP.join(['', host_item.hostname, '*', 'default_cfg'])
       if not hostname in cap['']['SYSTEM']['nodes']:
         cap['']['SYSTEM']['nodes'].append(hostname)
@@ -1314,7 +1312,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       available_ns = set([''])
       available_groups = set(['SYSTEM'])
       # assumption: all parameter are 'capability_group' parameter
-      for p, (code_n, msg_n, val) in params.items():
+      for p, (code_n, _, val) in params.items():#_:=msg_n
         nodename = roslib.names.namespace(p).rstrip(roslib.names.SEP)
         ns = roslib.names.namespace(nodename).rstrip(roslib.names.SEP)
         available_ns.add(ns)
@@ -1331,7 +1329,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
               changed = True
         else:
           try:
-            for group, caps in capabilities[ns].items():
+            for group, _ in capabilities[ns].items():
               try:
                 #remove the config from item, if parameter was not foun on the ROS parameter server
                 groupItem = hostItem.getGroupItem(roslib.names.ns_join(ns,group))
@@ -1485,7 +1483,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
             return True
     return False
 
-  def getNode(self, node_name):
+  def getNode(self, node_name, masteruri):
     '''
     Since the same node can be included by different groups, this method searches
     for all nodes with given name and returns these items.
@@ -1496,7 +1494,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not host is None: # should not occur
+      if not host is None and (masteruri is None or host.masteruri == masteruri):
         res = host.getNodeItemsByName(node_name)
         if res:
           return res

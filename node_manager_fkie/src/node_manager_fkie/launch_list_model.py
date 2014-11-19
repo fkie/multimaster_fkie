@@ -471,7 +471,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
           self.DIR_CACHE[path] = LaunchItem.LAUNCH_FILE
           return LaunchItem.LAUNCH_FILE
         else:
-          for e in nm.Settings().launch_view_file_ext:
+          for e in nm.settings().launch_view_file_ext:
             if path.endswith(e):
               self.DIR_CACHE[path] = LaunchItem.CFG_FILE
               return LaunchItem.CFG_FILE
@@ -500,7 +500,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     fileList = os.listdir(path)
     for file in fileList:
       file_name, file_extension = os.path.splitext(file)
-      if os.path.isfile(os.path.join(path, file)) and (file.endswith('.launch')) or (file_extension in nm.Settings().launch_view_file_ext):
+      if os.path.isfile(os.path.join(path, file)) and (file.endswith('.launch')) or (file_extension in nm.settings().launch_view_file_ext):
         return True
     for file in fileList:
       if os.path.isdir(os.path.join(path, file)):

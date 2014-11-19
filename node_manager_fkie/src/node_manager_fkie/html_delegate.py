@@ -33,7 +33,6 @@
 from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 
-import rospy
 from rosgraph.names import is_legal_name
 
 
@@ -102,7 +101,7 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
       if sep:
         result = '<div>%s<span style="color:gray;">%s%s</span></div>'%(name, sep, host)
       else:
-        result = group_name
+        result = text
     elif text.find('{') > -1: # handle group names 
       text = text.strip('{}')
       ns, sep, name = text.rpartition('/')

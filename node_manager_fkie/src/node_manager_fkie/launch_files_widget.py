@@ -30,20 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import os
-from datetime import datetime
+#from datetime import datetime
 
 from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 from python_qt_binding import loadUi
 
 import rospy
-from rosgraph_msgs.msg import Log
 
-import node_manager_fkie as nm
-from .common import masteruri_from_ros, package_name
+from .common import package_name#, masteruri_from_ros
 from .detailed_msg_box import WarningMessageBox
 from .launch_list_model import LaunchListModel, LaunchItem
-from .progress_queue import ProgressQueue, ProgressThread
+from .progress_queue import ProgressQueue#, ProgressThread
 from .parameter_dialog import ParameterDialog
 
 class LaunchFilesWidget(QtGui.QDockWidget):
@@ -114,9 +112,9 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
     for item in selected:
       try:
-        file = self.launchlist_model.expandItem(item.name, item.path, item.id)
+        lfile = self.launchlist_model.expandItem(item.name, item.path, item.id)
         self.searchPackageLine.setText('')
-        if not file is None:
+        if not lfile is None:
           if item.isLaunchFile():
             self.launchlist_model.add2LoadHistory(item.path)
             key_mod = QtGui.QApplication.keyboardModifiers()
@@ -125,7 +123,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
             else:
               self.load_signal.emit(item.path)
           elif item.isConfigFile():
-            self.edit_signal.emit([file])
+            self.edit_signal.emit([lfile])
       except Exception as e:
         rospy.logwarn("Error while load launch file %s: %s"%(item, e))
         WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
@@ -180,13 +178,13 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     open_path = self.__current_path
     if not self.launchlist_model.currentPath is None:
       open_path = self.launchlist_model.currentPath
-    (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
+    (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
                                                  "New launch file",
                                                  open_path,
                                                  "Config files (*.launch *.yaml);;All files (*)")
     if fileName:
       try:
-        (pkg, pkg_path) = package_name(os.path.dirname(fileName))
+        (pkg, _) = package_name(os.path.dirname(fileName))#_:=pkg_path
         if pkg is None:
           WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
                          'The new file is not in a ROS package').exec_()
@@ -212,7 +210,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
                           '%s'%e).exec_()
 
   def on_open_xml_clicked(self):
-    (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
+    (fileName, _) = QtGui.QFileDialog.getOpenFileName(self,
                                                  "Load launch file", 
                                                  self.__current_path, 
                                                  "Config files (*.launch);;All files (*)")

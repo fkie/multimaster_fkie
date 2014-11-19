@@ -30,7 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import os
-from datetime import datetime
 
 from python_qt_binding import QtGui
 from python_qt_binding import QtCore
@@ -61,7 +60,7 @@ class SettingsWidget(QtGui.QDockWidget):
     self.settings_proxyModel.setSourceModel(self.settings_model)
     self.settingsTreeView.setModel(self.settings_proxyModel)
     self.settingsTreeView.setAlternatingRowColors(True)
-    for i, (name, width) in enumerate(SettingsModel.header):
+    for i, (_, width) in enumerate(SettingsModel.header):
       self.settingsTreeView.setColumnWidth(i, width)
     self.item_delegate = ItemDelegate()
     self.item_delegate.settings_path_changed_signal.connect(self.reload_settings)
@@ -269,10 +268,10 @@ class PathEditor(QtGui.QWidget):
     self.dialog.setDirectory(self.path)
     if self.dialog.exec_():
       fileNames = self.dialog.selectedFiles()
-      dir = fileNames[0]
-      if os.path.isfile(dir):
-        dir = os.path.basename(dir)
-      self._lineedit.setText(dir)
+      path = fileNames[0]
+      if os.path.isfile(path):
+        path = os.path.basename(path)
+      self._lineedit.setText(path)
       self.path = dir
       self.editing_finished_signal.emit()
 

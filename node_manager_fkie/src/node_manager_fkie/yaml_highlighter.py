@@ -100,11 +100,11 @@ class YamlHighlighter(QtGui.QSyntaxHighlighter):
 
 
   def highlightBlock(self, text):
-    for pattern, format in self.rules:
+    for pattern, form in self.rules:
       index = pattern.indexIn(text)
       while index >= 0:
         length = pattern.matchedLength()
-        self.setFormat(index, length, format)
+        self.setFormat(index, length, form)
         index = pattern.indexIn(text, index + length)
 
     # mark comment blocks

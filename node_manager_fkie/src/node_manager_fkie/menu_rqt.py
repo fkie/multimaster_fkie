@@ -33,9 +33,7 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-import rospy
 import roslib
-import node_manager_fkie as nm
 
 class MenuRqt(QtGui.QMenu):
   '''

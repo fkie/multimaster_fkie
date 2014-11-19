@@ -24,13 +24,13 @@ def get_ros_home():
       import roslib.rosenv
       return roslib.rosenv.get_ros_home()
     else:
-      import rospkg
-      return rospkg.get_ros_home()
+      from rospkg import get_ros_home
+      return get_ros_home()
   except:
 #    import traceback
 #    print traceback.format_exc()
-    import roslib.rosenv
-    return roslib.rosenv.get_ros_home()
+    from roslib import rosenv
+    return rosenv.get_ros_home()
 
 
 def masteruri_from_ros():
@@ -82,7 +82,7 @@ def resolve_paths(text):
     if len(script) == 2 and (script[0] == 'find'):
       pkg = ''
       try:
-        import rospkg
+        from rospkg import RosPack
         rp = RosPack()
         pkg = rp.get_path(script[1])
       except:
@@ -91,30 +91,30 @@ def resolve_paths(text):
       return result.replace(text[startIndex:endIndex+1], pkg)
   return result
 
-def package_name(dir):
+def package_name(path):
   '''
   Returns for given directory a tuple of package name and package path or None values.
   The results are cached!
   @rtype: C{(name, path)}
   '''
-  if not (dir is None) and dir and dir != os.path.sep and os.path.isdir(dir):
-    if PACKAGE_CACHE.has_key(dir):
-      return PACKAGE_CACHE[dir]
-    package = os.path.basename(dir)
-    fileList = os.listdir(dir)
-    for file in fileList:
-      if file == MANIFEST_FILE:
-        PACKAGE_CACHE[dir] = (package, dir)
-        return (package, dir)
-      if CATKIN_SUPPORTED and file == PACKAGE_FILE:
+  if not (path is None) and path and path != os.path.sep and os.path.isdir(path):
+    if PACKAGE_CACHE.has_key(path):
+      return PACKAGE_CACHE[path]
+    package = os.path.basename(path)
+    fileList = os.listdir(path)
+    for f in fileList:
+      if f == MANIFEST_FILE:
+        PACKAGE_CACHE[path] = (package, path)
+        return (package, path)
+      if CATKIN_SUPPORTED and f == PACKAGE_FILE:
         try:
-          pkg = parse_package(os.path.join(dir, file))
-          PACKAGE_CACHE[dir] = (pkg.name, dir)
-          return (pkg.name, dir)
+          pkg = parse_package(os.path.join(path, f))
+          PACKAGE_CACHE[path] = (pkg.name, path)
+          return (pkg.name, path)
         except:
           return (None,None)
-    PACKAGE_CACHE[dir] = package_name(os.path.dirname(dir))
-    return PACKAGE_CACHE[dir]
+    PACKAGE_CACHE[path] = package_name(os.path.dirname(path))
+    return PACKAGE_CACHE[path]
   return (None, None)
 
 def is_package(file_list):

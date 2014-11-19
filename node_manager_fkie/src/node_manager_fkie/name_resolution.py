@@ -193,7 +193,7 @@ class NameResolution(object):
 
   def addInfo(self, mastername, address, hostname=None):
     with self.mutex:
- #     mastername = self._validateMastername(mastername)
+#      mastername = self._validateMastername(mastername)
       for m in self._masters:
         if m.hasMastername(mastername):
           m.addMastername(mastername)

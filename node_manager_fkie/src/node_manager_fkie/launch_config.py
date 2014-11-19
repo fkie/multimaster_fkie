@@ -34,11 +34,10 @@ import os
 import re
 import sys
 import time
-from ros import roslaunch
-import rospy
+import roslaunch
 import roslib
 
-from xml.dom.minidom import parse, parseString 
+from xml.dom.minidom import parse#, parseString
 #from xml.dom import Node as DomNode #avoid aliasing
 
 from python_qt_binding import QtCore
@@ -114,7 +113,7 @@ class LaunchConfig(QtCore.QObject):
     if not (self.__roscfg is None):
       return self.__roscfg
     else:
-      result, argv = self.load(self.argv)
+      result, _ = self.load(self.argv)#_:=argv
       if not result:
         raise LaunchConfigException("not all argv are setted properly!")
       return self.__roscfg
@@ -129,7 +128,6 @@ class LaunchConfig(QtCore.QObject):
       return self.__launchFile
     elif not (self.__package is None):
       try:
-        import roslib
         return roslib.packages.find_resource(self.PackageName, self.LaunchName).pop()
       except Exception:
         raise LaunchConfigException(''.join(['launch file ', self.LaunchName, ' not found!']))
@@ -197,25 +195,25 @@ class LaunchConfig(QtCore.QObject):
     elif len(path) > 0 and path[0] != os.path.sep:
       try:
         return resolve_url(path)
-      except ValueError, e:
+      except ValueError, _:
         if len(path) > 0 and path[0] != os.path.sep:
           return os.path.normpath(''.join([pwd, os.path.sep, path]))
     return path
 
   @classmethod
-  def getIncludedFiles(cls, file, regexp_list=[QtCore.QRegExp("\\binclude\\b"),
+  def getIncludedFiles(cls, inc_file, regexp_list=[QtCore.QRegExp("\\binclude\\b"),
                                                QtCore.QRegExp("\\btextfile\\b"),
                                                QtCore.QRegExp("\\bfile\\b")]):
     '''
     Reads the configuration file and searches for included files. This files
     will be returned in a list.
-    @param file: path of the ROS launch file
+    @param inc_file: path of the ROS launch file
     @param regexp_list: pattern of 
     @return: the list with all files needed for the configuration
     @rtype: C{[str,...]}
     '''
     result = set()
-    with open(file, 'r') as f:
+    with open(inc_file, 'r') as f:
       content = f.read()
       # remove the comments
       comment_pattern = QtCore.QRegExp("<!--.*?-->")
@@ -233,7 +231,7 @@ class LaunchConfig(QtCore.QObject):
           fileName = line[startIndex+1:endIndex]
           if len(fileName) > 0:
             try:
-              path = cls.interpretPath(fileName, os.path.dirname(file))
+              path = cls.interpretPath(fileName, os.path.dirname(inc_file))
               if os.path.isfile(path):
                 result.add(path)
                 if path.endswith('.launch'):
@@ -276,7 +274,7 @@ class LaunchConfig(QtCore.QObject):
   def resolveArgs(self, argv):
     argv_dict = self.argvToDict(argv)
     # replace $(arg ...) in arg values
-    for k, v in argv_dict.items():
+    for k, _ in argv_dict.items():
       self._replaceArg(k,argv_dict, self.__argv_values)
     return ["%s:=%s"%(k,v) for k, v in argv_dict.items()]
   
@@ -327,21 +325,21 @@ class LaunchConfig(QtCore.QObject):
         raise roslaunch.XmlParseException("Invalid roslaunch XML syntax: %s"%e) 
 
       for arg in args:
-       arg_name = arg.getAttribute("name")
-       if not arg_name:
-         raise roslaunch.XmlParseException("arg tag needs a name, xml is %s"%arg.toxml())
+        arg_name = arg.getAttribute("name")
+        if not arg_name:
+          raise roslaunch.XmlParseException("arg tag needs a name, xml is %s"%arg.toxml())
 
-       # we only want argsargs at top level:
-       if not arg.parentNode.tagName=="launch":
-         continue 
+        # we only want argsargs at top level:
+        if not arg.parentNode.tagName=="launch":
+          continue 
 
-       arg_default = arg.getAttribute("default")
-       arg_value = arg.getAttribute("value")
-       arg_sub = ''.join([arg_name, ':=', arg_default])
-       if (not arg_value) and not arg_sub in arg_subs:
-         arg_subs.append(arg_sub)
-       elif arg_value:
-         self.__argv_values[arg_name] = arg_value
+        arg_default = arg.getAttribute("default")
+        arg_value = arg.getAttribute("value")
+        arg_sub = ''.join([arg_name, ':=', arg_default])
+        if (not arg_value) and not arg_sub in arg_subs:
+          arg_subs.append(arg_sub)
+        elif arg_value:
+          self.__argv_values[arg_name] = arg_value
 
     return arg_subs
 

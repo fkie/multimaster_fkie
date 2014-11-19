@@ -39,14 +39,14 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, input=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None):
+  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None):
     '''
     Creates an input dialog.
-    @param input: a list with strings
-    @type input: C{list()}
+    @param items: a list with strings
+    @type items: C{list()}
     '''
     QtGui.QDialog.__init__(self, parent=parent)
-    self.setObjectName(' - '.join(['SelectDialog', str(input)]))
+    self.setObjectName(' - '.join(['SelectDialog', str(items)]))
 
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
@@ -113,12 +113,12 @@ class SelectDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.buttonBox)
 
     # set the input fields
-    if input:
-      self.content.createFieldsFromValues(input, exclusive)
-      if len(input) == 1 or preselect_all:
+    if items:
+      self.content.createFieldsFromValues(items, exclusive)
+      if len(items) == 1 or preselect_all:
         self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)
 
-    if not input or len(input) < 11:
+    if not items or len(items) < 11:
       self.filter_frame.setVisible(False)
 #    print '=============== create', self.objectName()
 #
@@ -141,8 +141,8 @@ class SelectDialog(QtGui.QDialog):
     return self.content.getSelected()
 
   @staticmethod
-  def getValue(title, description='', input=list(), exclusive=False, preselect_all=False, icon='', parent=None):
-    selectDia = SelectDialog(input, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent)
+  def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None):
+    selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent)
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():
@@ -217,7 +217,6 @@ class MainBox(QtGui.QWidget):
     @param arg: the filter text
     @type art: C{str}
     '''
-    result = False
     for i in range(self.layout().count()):
       item = self.layout().itemAt(i).widget()
       if isinstance(item, QtGui.QCheckBox):

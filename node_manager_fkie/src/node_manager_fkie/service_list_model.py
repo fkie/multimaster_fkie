@@ -172,7 +172,7 @@ class ServiceModel(QtGui.QStandardItemModel):
     '''
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(ServiceModel.header))
-    self.setHorizontalHeaderLabels([label for label, width in ServiceModel.header])
+    self.setHorizontalHeaderLabels([label for label, _ in ServiceModel.header])
     self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
 
   def flags(self, index):

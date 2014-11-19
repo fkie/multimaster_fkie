@@ -42,7 +42,7 @@ import threading
 import xmlrpclib
 
 import node_manager_fkie as nm
-from common import get_ros_home, masteruri_from_ros, package_name, package_name
+from common import get_ros_home, masteruri_from_ros, package_name#, package_name
 
 
 class StartException(Exception):
@@ -206,7 +206,7 @@ class StartHandler(object):
         elif n.cwd == 'node':
           cwd = os.path.dirname(cmd_type)
       cls._prepareROSMaster(masteruri)
-      node_cmd = [nm.Settings().respawn_script if n.respawn else '', prefix, cmd_type]
+      node_cmd = [nm.settings().respawn_script if n.respawn else '', prefix, cmd_type]
       cmd_args = [nm.screen().getSceenCmd(node)]
       cmd_args[len(cmd_args):] = node_cmd
       cmd_args.append(str(n.args))
@@ -251,7 +251,7 @@ class StartHandler(object):
         except nm.AuthenticationRequest as e:
           raise nm.InteractionNeededError(e, cls.runNode, (node, launch_config, force2host, masteruri, auto_pw_request))
 
-      startcmd = [env_command, nm.Settings().start_remote_script,
+      startcmd = [env_command, nm.settings().start_remote_script,
                   '--package', str(n.package),
                   '--node_type', str(n.type),
                   '--node_name', str(node),
@@ -386,10 +386,10 @@ class StartHandler(object):
         return value, True, True, ''
       else:
 #        print "ABS PATH:", value, os.path.dirname(value), host
-        dir = os.path.dirname(value) if os.path.isfile(value) else value
-        package, package_path = package_name(dir)
+        path = os.path.dirname(value) if os.path.isfile(value) else value
+        package, package_path = package_name(path)
         if package:
-          output, error, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request)
+          output, _, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request)
           if ok:
             if output:
 #              print "  RESOLVED:", output
@@ -407,15 +407,15 @@ class StartHandler(object):
       return value, False, False, ''
 
   @classmethod
-  def runNodeWithoutConfig(cls, host, package, type, name, args=[], masteruri=None, auto_pw_request=False, user=None, pw=None):
+  def runNodeWithoutConfig(cls, host, package, binary, name, args=[], masteruri=None, auto_pw_request=False, user=None, pw=None):
     '''
     Start a node with using a launch configuration.
     @param host: the host or ip to run the node
     @type host: C{str} 
     @param package: the ROS package containing the binary
     @type package: C{str} 
-    @param type: the binary of the node to execute
-    @type type: C{str} 
+    @param binary: the binary of the node to execute
+    @type binary: C{str} 
     @param name: the ROS name of the node (with name space)
     @type name: C{str} 
     @param args: the list with arguments passed to the binary
@@ -437,17 +437,17 @@ class StartHandler(object):
     # run on local host
     if nm.is_local(host):
       try:
-        cmd = roslib.packages.find_node(package, type)
+        cmd = roslib.packages.find_node(package, binary)
       except roslib.packages.ROSPkgException as e:
         # multiple nodes, invalid package
         raise StartException(str(e))
       # handle different result types str or array of string
-      import types
+#      import types
       if isinstance(cmd, types.StringTypes):
         cmd = [cmd]
       cmd_type = ''
       if cmd is None or len(cmd) == 0:
-        raise StartException(' '.join([type, 'in package [', package, '] not found!']))
+        raise StartException(' '.join([binary, 'in package [', package, '] not found!']))
       if len(cmd) > 1:
         # Open selection for executables
 #        try:
@@ -484,9 +484,9 @@ class StartHandler(object):
       thread.start()
     else:
       # run on a remote machine
-      startcmd = [nm.Settings().start_remote_script,
+      startcmd = [nm.settings().start_remote_script,
                   '--package', str(package),
-                  '--node_type', str(type),
+                  '--node_type', str(binary),
                   '--node_name', str(fullname)]
       startcmd[len(startcmd):] = args2
       if not masteruri is None:
@@ -510,7 +510,7 @@ class StartHandler(object):
             rospy.logwarn("ERROR while start '%s': %s", name, error)
             raise StartException(''.join(['The host "', host, '" reports:\n', error]))
       except nm.AuthenticationRequest as e:
-        raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, (host, package, type, name, args, masteruri, auto_pw_request))
+        raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, (host, package, binary, name, args, masteruri, auto_pw_request))
 
   @classmethod
   def _prepareROSMaster(cls, masteruri):
@@ -546,7 +546,7 @@ class StartHandler(object):
             try:
               print "  retry connect to ROS master", count, '/', 10
               master = xmlrpclib.ServerProxy(masteruri)
-              result, uri, msg = master.getUri(rospy.get_name())
+              result, _, _ = master.getUri(rospy.get_name())#_:=uri, msg
             except:
               time.sleep(1)
               count += 1
@@ -608,7 +608,6 @@ class StartHandler(object):
         raise StartException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]"%(e, argsummary(service_args), genpy.message.get_printable_message_args(request)))
 
 #    request = args_kwds_to_message(type._request_class, args, kwds) 
-    transport = None
     protocol = TCPROSServiceClient(service, service_type, headers={})
     transport = TCPROSTransport(protocol, service)
     # initialize transport
@@ -676,7 +675,7 @@ class StartHandler(object):
       request = '[]' if len(nodes) != 1 else nodes[0]
       try:
         socket.setdefaulttimeout(3)
-        output, error, ok = nm.ssh().ssh_exec(host, [nm.Settings().start_remote_script, '--ros_log_path', request], user, pw, auto_pw_request)
+        output, error, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--ros_log_path', request], user, pw, auto_pw_request)
         if ok:
           return output
         else:
@@ -728,12 +727,12 @@ class StartHandler(object):
         found = True
       return found
     else:
-      ps = nm.ssh().ssh_x11_exec(host, [nm.Settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
+      ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
       thread.start()
-      ps = nm.ssh().ssh_x11_exec(host, [nm.Settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
+      ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
       # wait for process to avoid 'defunct' processes
       thread = threading.Thread(target=ps.wait)
       thread.setDaemon(True)
@@ -765,7 +764,8 @@ class StartHandler(object):
         os.remove(roslog)
     else:
       try:
-        output, error, ok = nm.ssh().ssh_exec(host, [nm.Settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request)
+        #output ignored: output, error, ok 
+        nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request)
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
 
@@ -802,7 +802,7 @@ class StartHandler(object):
           rospy.logdebug("STDOUT while kill %s on %s: %s", str(pid), host, output)
 
   @classmethod
-  def transfer_files(cls, host, file, auto_pw_request=False, user=None, pw=None):
+  def transfer_files(cls, host, path, auto_pw_request=False, user=None, pw=None):
     '''
     Copies the given file to the remote host. Uses caching of remote paths.
     '''
@@ -810,10 +810,10 @@ class StartHandler(object):
     if nm.is_local(host):
       #it's local -> no copy needed
       return
-    (pkg_name, pkg_path) = package_name(os.path.dirname(file))
+    (pkg_name, pkg_path) = package_name(os.path.dirname(path))
     if not pkg_name is None:
       # get the subpath of the file
-      subfile_path = file.replace(pkg_path, '')
+      subfile_path = path.replace(pkg_path, '')
       # get the path of the package on the remote machine
       try:
         output = ''
@@ -824,17 +824,17 @@ class StartHandler(object):
         else:
           if not CACHED_PKG_PATH.has_key(host):
             CACHED_PKG_PATH[host] = dict()
-          output, error, ok = nm.ssh().ssh_exec(host, [nm.Settings().start_remote_script, '--package', pkg_name], user, pw, auto_pw_request)
+          output, error, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--package', pkg_name], user, pw, auto_pw_request)
         if ok:
           if error:
-            rospy.logwarn("ERROR while transfer %s to %s: %s", file, host, error)
+            rospy.logwarn("ERROR while transfer %s to %s: %s", path, host, error)
             raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))
           if output:
             CACHED_PKG_PATH[host][pkg_name] = output
-            nm.ssh().transfer(host, file, os.path.join(output.strip(), subfile_path.strip(os.sep)), user)
+            nm.ssh().transfer(host, path, os.path.join(output.strip(), subfile_path.strip(os.sep)), user)
           else:
             raise StartException("Remote host no returned any answer. Is there the new version of node_manager installed?")
         else:
           raise StartException("Can't get path from remote host. Is there the new version of node_manager installed?")
       except nm.AuthenticationRequest as e:
-        raise nm.InteractionNeededError(e, cls.transfer_files, (host, file, auto_pw_request))
+        raise nm.InteractionNeededError(e, cls.transfer_files, (host, path, auto_pw_request))

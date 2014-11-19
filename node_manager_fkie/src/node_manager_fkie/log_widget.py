@@ -36,8 +36,6 @@ from python_qt_binding import QtGui
 from python_qt_binding import QtCore
 from python_qt_binding import loadUi
 
-from rosgraph_msgs.msg import Log
-
 from .rosout_listener import RosoutListener
 
 class LogWidget(QtGui.QDockWidget):

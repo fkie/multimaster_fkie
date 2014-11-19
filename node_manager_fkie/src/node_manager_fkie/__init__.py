@@ -34,8 +34,8 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.3.14-0" # git describe --tags --dirty --always
-__date__ = "2014-10-24"    # git log -1 --date=iso
+__version__ = "0.3.14-10" # git describe --tags --dirty --always
+__date__ = "2014-11-13"    # git log -1 --date=iso
 
 import os
 import sys
@@ -169,7 +169,7 @@ def is_local(hostname, wait=False):
       return HOSTS_CACHE[hostname]
 
   try:
-    machine_addr = socket.inet_aton(hostname)
+    socket.inet_aton(hostname)
     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
     # check 127/8 and local addresses
     result = hostname.startswith('127.') or hostname in local_addresses
@@ -190,8 +190,6 @@ def is_local(hostname, wait=False):
   return False
 
 def __is_local(hostname):
-  import roslib
-  import roslib.network
   try:
     machine_addr = socket.gethostbyname(hostname)
   except socket.gaierror:
@@ -315,7 +313,7 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
 
 def main(name):
   try:
-    from python_qt_binding.QtGui import QApplication
+    from python_qt_binding import QtGui
   except:
     print >> sys.stderr, "please install 'python_qt_binding' package!!"
     sys.exit(-1)
@@ -327,7 +325,7 @@ def main(name):
   parsed_args = parser.parse_args(args[1:])
   # Initialize Qt
   global app
-  app = QApplication(sys.argv)
+  app = QtGui.QApplication(sys.argv)
 
   # decide to show main or echo dialog
   global main_form
@@ -336,11 +334,12 @@ def main(name):
   else:
     main_form = init_main_window(name, masteruri, parsed_args.file)
 
+  exit_code = 0
   # resize and show the qt window
   if not rospy.is_shutdown():
     os.chdir(settings().PACKAGE_DIR) # change path to be able to the images of descriptions
 #    main_form.resize(1024, 720)
-    screen_size = QApplication.desktop().availableGeometry()
+    screen_size = QtGui.QApplication.desktop().availableGeometry()
     if main_form.size().width() >= screen_size.width() or main_form.size().height() >= screen_size.height()-24:
       main_form.showMaximized()
     else:
@@ -348,4 +347,4 @@ def main(name):
     exit_code = -1
     rospy.on_shutdown(finish)
     exit_code = app.exec_()
-
+  return exit_code

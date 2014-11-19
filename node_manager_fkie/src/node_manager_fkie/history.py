@@ -63,16 +63,16 @@ class History(QtCore.QObject):
   def removeParamCache(self, key, value):
     self._removeFromCache(self.PARAM_CACHE, key, value)
 
-  def loadCache(self, file):
+  def loadCache(self, history_file):
     '''
     Loads the content of the given file and return it as cache.
-    @param file: the name of the history file
-    @type file: C{str}
+    @param history_file: the name of the history file
+    @type history_file: C{str}
     @return: the dictionary with arguments
     @rtype: C{dict(str(name):[str(value), ...], ...)}
     '''
     result = {}
-    historyFile = os.path.join(nm.settings().cfg_path, file)
+    historyFile = os.path.join(nm.settings().cfg_path, history_file)
     if os.path.isfile(historyFile):
       with open(historyFile, 'r') as f:
         line = f.readline()
@@ -89,18 +89,18 @@ class History(QtCore.QObject):
           line = f.readline()
     return result
 
-  def storeCache(self, file, cache, history_len):
+  def storeCache(self, history_file, cache, history_len):
     '''
     Stores the cache to a file.
-    @param file: the name of the history file
-    @type file: C{str}
+    @param history_file: the name of the history file
+    @type history_file: C{str}
     @param cache: the dictionary with values
     @type cache: C{dict}
     @param history_len: the maximal count of value for a key
     @type history_len: C{int}
     '''
     ignored = dict()
-    with open(os.path.join(nm.settings().cfg_path, file), 'w') as f:
+    with open(os.path.join(nm.settings().cfg_path, history_file), 'w') as f:
       for key in cache.keys():
         count = 0
         for value in cache[key]:

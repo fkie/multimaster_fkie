@@ -73,7 +73,7 @@ class MasterListService(QtCore.QObject):
 
   def stop(self):
     print "  Shutdown discovery listener..."
-    for key, thread in self.__serviceThreads.iteritems():
+    for _, thread in self.__serviceThreads.iteritems():
       thread.join(3)
     print "  Discovery listener is off!"
 
@@ -121,14 +121,14 @@ class MasterListService(QtCore.QObject):
         pass
     self.masterlist_signal.emit(masteruri, service_name, items)
 
-  def _on_err(self, masteruri, str):
+  def _on_err(self, masteruri, msg):
     with self._lock:
       try:
         thread = self.__serviceThreads.pop(masteruri)
         del thread
       except KeyError:
         pass
-    self.masterlist_err_signal.emit(masteruri, str)
+    self.masterlist_err_signal.emit(masteruri, msg)
 
   def _on_ok(self, masteruri):
     with self._lock:
