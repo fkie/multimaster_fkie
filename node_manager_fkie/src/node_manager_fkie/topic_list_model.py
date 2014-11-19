@@ -33,15 +33,9 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-import rospy
-import roslib
-import roslib.message
-import roslib.msgs
-import genpy
+
 from master_discovery_fkie.master_info import TopicInfo
 from detailed_msg_box import WarningMessageBox
-from parameter_dialog import ParameterDialog, ServiceDialog
-
 
 class TopicItem(QtGui.QStandardItem):
   '''
@@ -239,7 +233,7 @@ class TopicModel(QtGui.QStandardItemModel):
     '''
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(TopicModel.header))
-    self.setHorizontalHeaderLabels([label for label, width in TopicModel.header])
+    self.setHorizontalHeaderLabels([label for label, _ in TopicModel.header])
     self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
 
   def flags(self, index):
@@ -268,7 +262,6 @@ class TopicModel(QtGui.QStandardItemModel):
     @type removed_topics: list or set
     '''
     root = self.invisibleRootItem()
-    updated = []
     #remove or update the existing items
     for i in reversed(range(root.rowCount())):
       topicItem = root.child(i)

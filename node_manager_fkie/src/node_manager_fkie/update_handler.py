@@ -62,7 +62,7 @@ class UpdateHandler(QtCore.QObject):
   def stop(self):
     print "  Shutdown update threads..."
     self.__requestedUpdates.clear()
-    for key, thread in self.__updateThreads.iteritems():
+    for _, thread in self.__updateThreads.iteritems():
       thread.join(3)
     print "  Update threads are off!"
 

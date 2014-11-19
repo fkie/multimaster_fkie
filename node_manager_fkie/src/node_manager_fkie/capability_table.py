@@ -36,10 +36,8 @@ import sys
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-import roslib
 import rospy
 import node_manager_fkie as nm
-from master_discovery_fkie.master_info import NodeInfo
 from common import resolve_paths
 
 
@@ -104,7 +102,6 @@ class CapabilityHeader(QtGui.QHeaderView):
         pix = self._data[logicalIndex]['images'][1]
         pix = pix.scaled(new_rect.width(), new_rect.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         self.style().drawItemPixmap(painter, new_rect, 5, pix)
-        
 
   def mousePressEvent(self, event):
     '''
@@ -127,7 +124,7 @@ class CapabilityHeader(QtGui.QHeaderView):
         rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], traceback.format_exc())
       self.description_requested_signal.emit(title, text)
 
-  def setDescription(self, index, cfg, name, displayed_name, type, description, images):
+  def setDescription(self, index, cfg, name, displayed_name, robot_type, description, images):
     '''
     Sets the values of an existing item to the given items.
     '''
@@ -137,7 +134,7 @@ class CapabilityHeader(QtGui.QHeaderView):
         obj['cfgs'].append(cfg)
       obj['name'] = name
       obj['displayed_name'] = displayed_name
-      obj['type'] = type
+      obj['type'] = robot_type
       obj['description'] = resolve_paths(description)
       del obj['images'][:]
       for image_path in images:
@@ -147,7 +144,7 @@ class CapabilityHeader(QtGui.QHeaderView):
         if os.path.isfile(img):
           obj['images'].append(QtGui.QPixmap(img))
 
-  def updateDescription(self, index, cfg, name, displayed_name, type, description, images):
+  def updateDescription(self, index, cfg, name, displayed_name, robot_type, description, images):
     '''
     Sets the values of an existing item to the given items only if the current 
     value is empty.
@@ -161,7 +158,7 @@ class CapabilityHeader(QtGui.QHeaderView):
       if not obj['displayed_name']:
         obj['displayed_name'] = displayed_name
       if not obj['type']:
-        obj['type'] = type
+        obj['type'] = robot_type
       if not obj['description']:
         obj['description'] = resolve_paths(description)
       if not obj['images']:

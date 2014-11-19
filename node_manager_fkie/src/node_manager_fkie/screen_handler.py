@@ -211,10 +211,10 @@ class ScreenHandler(object):
     output = None
     result = []
     if nm.is_local(host):
-      out, out_err = cls.getLocalOutput([cls.SCREEN, '-ls'])
+      out, _ = cls.getLocalOutput([cls.SCREEN, '-ls']) #_:=out_err
       output = out
     else:
-      output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request)
+      output, _, _ = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request)#_:=error, ok
     if output:
       splits = output.split()
       for i in splits:
@@ -291,7 +291,7 @@ class ScreenHandler(object):
               cls.openScreenTerminal(host, choices[0], node, user)
             elif auto_item_request:
               from select_dialog import SelectDialog
-              items, ok = SelectDialog.getValue('Show screen', '', choices.keys(), False)
+              items, _ = SelectDialog.getValue('Show screen', '', choices.keys(), False)
               for item in items:
                 #open the selected screen
                 cls.openScreenTerminal(host, choices[item], node, user)
@@ -329,7 +329,7 @@ class ScreenHandler(object):
             do_kill = True
         if do_kill:
           for s in screens:
-            pid, sep, name = s.partition('.')
+            pid, _, _ = s.partition('.')
             if pid:
               try:
                 nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
@@ -343,7 +343,8 @@ class ScreenHandler(object):
             thread.setDaemon(True)
             thread.start()
           else:
-            output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
+#            output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
+            nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
     except nm.AuthenticationRequest as e:
       raise nm.InteractionNeededError(e, cls.killScreens, (node, host, auto_ok_request))
 

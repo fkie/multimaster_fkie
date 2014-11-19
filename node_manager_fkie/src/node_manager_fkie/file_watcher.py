@@ -32,8 +32,6 @@
 
 import os
 import time
-import rospy
-import roslib
 
 try:
   from python_qt_binding import QtCore
@@ -70,7 +68,7 @@ class FileWatcher(QtCore.QObject):
     if (not self.changed.has_key(file) or (self.changed.has_key(file) and self.changed[file] + 0.05 < time.time())):
       self.changed[file] = time.time()
       changes = []
-      for (uri, lfile, id), files in self.launches.items():
+      for (uri, lfile, _), files in self.launches.items():#_:=id
         if file in files:
           changes.append((uri, lfile))
       self.file_changed.emit(file, changes)

@@ -34,7 +34,6 @@ import os
 import time
 import uuid
 import xmlrpclib
-import threading
 import getpass
 
 from datetime import datetime
@@ -51,13 +50,13 @@ import gui_resources
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .update_handler import UpdateHandler
 from .master_view_proxy import MasterViewProxy
-from .launch_config import LaunchConfig, LaunchConfigException
+from .launch_config import LaunchConfig#, LaunchConfigException
 from .capability_table import CapabilityTable
 from .xml_editor import XmlEditor
 from .detailed_msg_box import WarningMessageBox
 from .network_discovery_dialog import NetworkDiscoveryDialog
 from .parameter_dialog import ParameterDialog
-from .progress_queue import ProgressQueue, ProgressThread
+from .progress_queue import ProgressQueue#, ProgressThread
 from .screen_handler import ScreenHandler
 from .sync_dialog import SyncDialog
 from .common import masteruri_from_ros, package_name
@@ -165,7 +164,7 @@ class MainWindow(QtGui.QMainWindow):
     self.masterTableView.activated.connect(self.on_master_table_activated)
     sm = self.masterTableView.selectionModel()
     sm.currentRowChanged.connect(self.on_masterTableView_selection_changed)
-    for i, (name, width) in enumerate(MasterModel.header):
+    for i, (_, width) in enumerate(MasterModel.header):#_:=name
       self.masterTableView.setColumnWidth(i, width)
     self.refreshAllButton.clicked.connect(self.on_all_master_refresh_clicked)
     self.discoveryButton.clicked.connect(self.on_discover_network_clicked)
@@ -380,7 +379,7 @@ class MainWindow(QtGui.QMainWindow):
       self._update_handler.stop()
       self.state_topic.stop()
       self.stats_topic.stop()
-      for key, master in self.masters.iteritems():
+      for _, master in self.masters.iteritems():
         master.stop()
       self.own_master_monitor.stop()
       self.master_timecheck_timer.stop()
@@ -398,7 +397,7 @@ class MainWindow(QtGui.QMainWindow):
     if not hasattr(self, 'materuri') or self.materuri is None:
       masteruri = masteruri_from_ros()
       master = xmlrpclib.ServerProxy(masteruri)
-      code, message, self.materuri = master.getUri(rospy.get_name())
+      _, _, self.materuri = master.getUri(rospy.get_name())#_:=code, message
       nm.is_local(nm.nameres().getHostname(self.materuri))
     return self.materuri
 
@@ -664,7 +663,7 @@ class MainWindow(QtGui.QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
     if minfo.masteruri in self.masters:
-      for uri, master in self.masters.items():
+      for _, master in self.masters.items():#_:=uri
         try:
           # check for running discovery service
           new_info = master.master_info is None or master.master_info.timestamp < minfo.timestamp
@@ -961,7 +960,7 @@ class MainWindow(QtGui.QMainWindow):
     # set sim_time info
     master = self.getMaster(masteruri, False)
     sim_time_enabled = self.masternameLabel.isEnabled() and not master is None and master.use_sim_time
-    self.simTimeLabel.setVisible(sim_time_enabled)
+    self.simTimeLabel.setVisible(bool(sim_time_enabled))
     launch_server_enabled = self.masternameLabel.isEnabled() and (not master is None) and master.has_launch_server()
     self.launchServerLabel.setVisible(launch_server_enabled)
     self.masternameLabel.setEnabled(online)
@@ -994,10 +993,10 @@ class MainWindow(QtGui.QMainWindow):
   def updateDuplicateNodes(self):
     # update the duplicate nodes
     running_nodes = dict()
-    for uri, m in self.masters.items():
+    for _, m in self.masters.items():
       if not m.master_state is None and m.master_state.online:
         running_nodes.update(m.getRunningNodesIfLocal())
-    for uri, m in self.masters.items():
+    for _, m in self.masters.items():
       if not m.master_state is None:
         m.markNodesAsDuplicateOf(running_nodes)
 
@@ -1097,7 +1096,7 @@ class MainWindow(QtGui.QMainWindow):
     master and get their current state.
     '''
     # set the timestamp of the current master info back
-    for uri, m in self.masters.items():
+    for _, m in self.masters.items():
       if not m.master_info is None:
         check_ts = m.master_info.check_ts
         m.master_info.timestamp = m.master_info.timestamp - 1.0
@@ -1353,9 +1352,9 @@ class MainWindow(QtGui.QMainWindow):
           WarningMessageBox(QtGui.QMessageBox.Warning, "Transfer error",
                            'Error while transfer files', '%s'%e).exec_()
 
-  def _reload_globals_at_next_start(self, file):
+  def _reload_globals_at_next_start(self, launch_file):
     if not self.currentMaster is None:
-      self.currentMaster.reload_global_parameter_at_next_start(file)
+      self.currentMaster.reload_global_parameter_at_next_start(launch_file)
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Change file detection      %%%%%%%%%%%%%%%%%%%
@@ -1382,7 +1381,7 @@ class MainWindow(QtGui.QMainWindow):
     Check the dictinary with changed files and notify the masters about changes.
     '''
     new_affected = list()
-    for changed, affected in self._changed_files.items():
+    for _, affected in self._changed_files.items():#:=changed
       for (muri, lfile) in affected:
         if not (muri, lfile) in self.__in_question:
           self.__in_question.add((muri, lfile))
@@ -1395,7 +1394,7 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs, ok = SelectDialog.getValue('Reload configurations?',
+      cfgs, _ = SelectDialog.getValue('Reload configurations?',
                                    '<b>%s</b> was changed.<br>Select affected configurations to reload:'%', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
                                    False, True,
                                    ':/icons/crystal_clear_launch_file.png',
@@ -1440,7 +1439,7 @@ class MainWindow(QtGui.QMainWindow):
         if not master is None:
           master.launchfile = lfile
           choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-      cfgs, ok = SelectDialog.getValue('Transfer configurations?',
+      cfgs, _ = SelectDialog.getValue('Transfer configurations?',
                                    'Configuration files referenced by parameter are changed.<br>Select affected configurations for copy to remote host: (don\'t forget to restart the nodes!)', 
                                    choices.keys(), False, True,
                                    ':/icons/crystal_clear_launch_file_transfer.png',
@@ -1584,7 +1583,7 @@ class MainWindow(QtGui.QMainWindow):
       try:
         if not os.path.isdir(nm.settings().ROBOTS_DIR):
           os.makedirs(nm.settings().ROBOTS_DIR)
-        (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
+        (fileName, _) = QtGui.QFileDialog.getOpenFileName(self,
                                                  "Set robot image",
                                                  nm.settings().ROBOTS_DIR,
                                                  "Image files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.xbm);;All files (*)")

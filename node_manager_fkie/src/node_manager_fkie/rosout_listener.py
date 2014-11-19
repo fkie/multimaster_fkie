@@ -30,10 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import threading
-import time
-import socket
-
 from python_qt_binding import QtCore
 from rosgraph_msgs.msg import Log
 

@@ -30,17 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import sys
-import shutil
-
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
-
-import node_manager_fkie as nm
-from common import is_package, package_name
-from packages_thread import PackagesThread
-from .detailed_msg_box import WarningMessageBox
 
 class SettingsNameItem(QtGui.QStandardItem):
 
@@ -231,7 +222,7 @@ class SettingsModel(QtGui.QStandardItemModel):
     '''
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(SettingsModel.header))
-    self.setHorizontalHeaderLabels([label for label, width in SettingsModel.header])
+    self.setHorizontalHeaderLabels([label for label, _ in SettingsModel.header])
     self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

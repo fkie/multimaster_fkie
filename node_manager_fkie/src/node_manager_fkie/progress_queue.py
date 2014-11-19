@@ -79,8 +79,8 @@ class ProgressQueue(QtCore.QObject):
       pass
 
 
-  def add2queue(self, id, descr, target=None, args=()):
-    pt = ProgressThread(id, descr, target, args)
+  def add2queue(self, ident, descr, target=None, args=()):
+    pt = ProgressThread(ident, descr, target, args)
     pt.finished_signal.connect(self._progress_thread_finished)
     pt.error_signal.connect(self._progress_thread_error)
     pt.request_interact_signal.connect(self._on_request_interact)
@@ -100,21 +100,21 @@ class ProgressQueue(QtCore.QObject):
   def count(self):
     return len(self.__progress_queue)
 
-  def has_id(self, id):
+  def has_id(self, ident):
     '''
     Searches the current and planed threads for given id and returns `True` if 
     one is found.
     '''
     for th in self.__progress_queue:
-      if th.id() == id:
+      if th.id() == ident:
         return True
     return False
 
-  def _progress_thread_finished(self, id):
+  def _progress_thread_finished(self, ident):
     try:
       val = self._progress_bar.value()
       # be on the safe side that the finished thread is the first thread in the queue (avoid calls from canceled threads)
-      if id == self.__progress_queue[val].id():
+      if ident == self.__progress_queue[val].id():
         val = val + 1
       th = self.__progress_queue[val]
       self._progress_bar.setToolTip(th.descr)
@@ -133,9 +133,9 @@ class ProgressQueue(QtCore.QObject):
       self.__progress_queue = []
       #'print "PG finished delete all ok"
 
-  def _progress_thread_error(self, id, title, msg, detailed_msg):
+  def _progress_thread_error(self, ident, title, msg, detailed_msg):
     if detailed_msg in self.__ignore_err_list:
-      self._progress_thread_finished(id)
+      self._progress_thread_finished(ident)
       return
     btns = (QtGui.QMessageBox.Ignore)
     if len(self.__progress_queue) > 1:
@@ -149,7 +149,7 @@ class ProgressQueue(QtCore.QObject):
     else:
       if res == 1 or res == 0: # HACK: the number is returned, if "Don't show again" is pressed, instead 'QtGui.QMessageBox.HelpRole' (4)
         self.__ignore_err_list.append(detailed_msg)
-      self._progress_thread_finished(id)
+      self._progress_thread_finished(ident)
 
   def _on_progress_canceled(self):
     try:
@@ -170,7 +170,7 @@ class ProgressQueue(QtCore.QObject):
       import traceback
       print traceback.format_exc()
 
-  def _on_request_interact(self, id, descr, req):
+  def _on_request_interact(self, ident, descr, req):
     '''
     If the interaction of the user is needed a message dialog must be exceuted 
     in the main Qt thread. The requests are done by different request exceptinos.
@@ -181,31 +181,31 @@ class ProgressQueue(QtCore.QObject):
       if not res:
         self._on_progress_canceled()
         return
-      pt = ProgressThread(id, descr, req.method, (req.args+(user, pw)))
+      pt = ProgressThread(ident, descr, req.method, (req.args+(user, pw)))
       pt.finished_signal.connect(self._progress_thread_finished)
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
     elif isinstance(req.request, nm.ScreenSelectionRequest):
       from select_dialog import SelectDialog
-      items, ok = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False)
+      items, _ = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False)
       if not items:
-        self._progress_thread_finished(id)
+        self._progress_thread_finished(ident)
         return
       res = [req.request.choices[i] for i in items]
-      pt = ProgressThread(id, descr, req.method, (req.args+(res,)))
+      pt = ProgressThread(ident, descr, req.method, (req.args+(res,)))
       pt.finished_signal.connect(self._progress_thread_finished)
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
     elif isinstance(req.request, nm.BinarySelectionRequest):
       from select_dialog import SelectDialog
-      items, ok = SelectDialog.getValue('Multiple executables', '', req.request.choices, True)
+      items, _ = SelectDialog.getValue('Multiple executables', '', req.request.choices, True)
       if not items:
-        self._progress_thread_finished(id)
+        self._progress_thread_finished(ident)
         return
       res = items[0]
-      pt = ProgressThread(id, descr, req.method, (req.args+(res,)))
+      pt = ProgressThread(ident, descr, req.method, (req.args+(res,)))
       pt.finished_signal.connect(self._progress_thread_finished)
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
@@ -222,13 +222,13 @@ class ProgressQueue(QtCore.QObject):
           if v:
             argv.append(''.join([p, ':=', v]))
         res = argv
-        pt = ProgressThread(id, descr, req.method, (req.args+(argv,)))
+        pt = ProgressThread(ident, descr, req.method, (req.args+(argv,)))
         pt.finished_signal.connect(self._progress_thread_finished)
         pt.error_signal.connect(self._progress_thread_error)
         pt.request_interact_signal.connect(self._on_request_interact)
         pt.start()
       else:
-        self._progress_thread_finished(id)
+        self._progress_thread_finished(ident)
         return
 
 
@@ -250,10 +250,10 @@ class ProgressThread(QtCore.QObject, threading.Thread):
 
   request_interact_signal = QtCore.Signal(str, str, InteractionNeededError)
 
-  def __init__(self, id, descr='', target=None, args=()):
+  def __init__(self, ident, descr='', target=None, args=()):
     QtCore.QObject.__init__(self)
     threading.Thread.__init__(self)
-    self._id = id
+    self._id = ident
     self.descr = descr
     self._target = target
     self._args = args

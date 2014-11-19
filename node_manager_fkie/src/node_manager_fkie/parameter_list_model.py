@@ -270,7 +270,7 @@ class ParameterModel(QtGui.QStandardItemModel):
     '''
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(ParameterModel.header))
-    self.setHorizontalHeaderLabels([label for label, width in ParameterModel.header])
+    self.setHorizontalHeaderLabels([label for label, _ in ParameterModel.header])
 
   def flags(self, index):
     '''

@@ -64,7 +64,7 @@ class LaunchServerHandler(QtCore.QObject):
   def stop(self):
     print "  Shutdown launch update threads..."
     self.__requestedUpdates.clear()
-    for key, thread in self.__updateThreads.iteritems():
+    for _, thread in self.__updateThreads.iteritems():
       thread.join(3)
     print "  Launch update threads are off!"
 
@@ -146,8 +146,8 @@ class LaunchServerUpdateThread(QtCore.QObject, threading.Thread):
       time.sleep(delay)
       socket.setdefaulttimeout(25)
       server = xmlrpclib.ServerProxy(self._launch_serveruri)
-      code, msg, pid = server.get_pid()
-      code, msg, nodes = server.get_node_names()
+      _, _, pid = server.get_pid()#_:=code, msg
+      _, _, nodes = server.get_node_names()#_:=code, msg
       self.launch_server_signal.emit(self._launch_serveruri, pid, nodes)
     except:
       import traceback

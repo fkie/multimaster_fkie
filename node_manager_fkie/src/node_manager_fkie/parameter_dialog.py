@@ -38,7 +38,8 @@ import time
 import threading
 from xmlrpclib import Binary
 
-import roslib
+import roslib.names
+import roslib.msgs
 import rospy
 import node_manager_fkie as nm
 
@@ -158,7 +159,6 @@ class ParameterDescription(object):
     self.updateValue(result)
 
   def updateValue(self, value):
-    error_str = ''
     try:
       if isinstance(value, (dict, list)):
         self._value = value
@@ -304,11 +304,11 @@ class MainBox(QtGui.QWidget):
   '''
   Groups the parameter without visualization of the group. It is the main widget.
   '''
-  def __init__(self, name, type, collapsible=True, parent=None):
+  def __init__(self, name, param_type, collapsible=True, parent=None):
     QtGui.QWidget.__init__(self, parent)
     self.setObjectName(name)
     self.name = name
-    self.type = type
+    self.type = param_type
     self.params = []
     self.collapsed = False
     self.parameter_description = None
@@ -320,7 +320,7 @@ class MainBox(QtGui.QWidget):
     font = self.name_label.font()
     font.setBold(True)
     self.name_label.setFont(font)
-    self.type_label = QtGui.QLabel(''.join([' (', type, ')']))
+    self.type_label = QtGui.QLabel(''.join([' (', param_type, ')']))
 
     if collapsible:
       self.hide_button = QtGui.QPushButton('-')
@@ -342,7 +342,7 @@ class MainBox(QtGui.QWidget):
     self.param_widget.setLayout(boxLayout)
     vLayout.addWidget(self.param_widget)
     self.setLayout(vLayout)
-    if type in ['std_msgs/Header']:
+    if param_type in ['std_msgs/Header']:
       self.setCollapsed(True)
 
   def setCollapsed(self, value):
@@ -497,8 +497,8 @@ class GroupBox(MainBox):
   Groups the parameter of a dictionary, struct or class using the group box for 
   visualization.
   '''
-  def __init__(self, name, type, parent=None):
-    MainBox.__init__(self, name, type, True, parent)
+  def __init__(self, name, param_type, parent=None):
+    MainBox.__init__(self, name, param_type, True, parent)
     self.setObjectName(name)
 
 
@@ -507,9 +507,9 @@ class ArrayEntry(MainBox):
   '''
   A part of the ArrayBox to represent the elements of a list.
   '''
-  def __init__(self, index, type, parent=None):
+  def __init__(self, index, param_type, parent=None):
 #    QtGui.QFrame.__init__(self, parent)
-    MainBox.__init__(self, ''.join(['#',str(index)]), type, True, parent)
+    MainBox.__init__(self, ''.join(['#',str(index)]), param_type, True, parent)
     self.index = index
     self.setObjectName(''.join(['[', str(index), ']']))
     self.param_widget.setFrameShape(QtGui.QFrame.Box)
@@ -532,8 +532,8 @@ class ArrayBox(MainBox):
   '''
   Groups the parameter of a list.
   '''
-  def __init__(self, name, type, parent=None):
-    MainBox.__init__(self, name, type, True, parent)
+  def __init__(self, name, param_type, parent=None):
+    MainBox.__init__(self, name, param_type, True, parent)
     self._dynamic_value = None
     self._dynamic_widget = None
     self._dynamic_items_count = 0
@@ -849,7 +849,7 @@ class ParameterDialog(QtGui.QDialog):
       # skip the default value, if elements are selected in the side_bar
       if len(sidebar_list) == 0 or self.sidebar_default_val != result_value[sidebar_name][0]:
         sidebar_list.append(result_value[sidebar_name])
-      result_value[sidebar_name] = ([v for v, changed in set(sidebar_list)], True)
+      result_value[sidebar_name] = ([v for v, _ in set(sidebar_list)], True)#_:=changed
     result = self._remove_unchanged_parameter(result_value, only_changed)
     return result
 
@@ -886,7 +886,7 @@ class ParameterDialog(QtGui.QDialog):
   def _save_parameter(self):
     try:
       import yaml
-      (fileName, filter) = QtGui.QFileDialog.getSaveFileName(self,
+      (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
                                                "Save parameter", 
                                                self.__current_path, 
                                                "YAML files (*.yaml);;All files (*)")
@@ -906,7 +906,7 @@ class ParameterDialog(QtGui.QDialog):
   def _load_parameter(self):
     try:
       import yaml
-      (fileName, filter) = QtGui.QFileDialog.getOpenFileName(self,
+      (fileName, _) = QtGui.QFileDialog.getOpenFileName(self,
                                                    "Load parameter", 
                                                    self.__current_path, 
                                                    "YAML files (*.yaml);;All files (*)")
@@ -930,10 +930,14 @@ class ParameterDialog(QtGui.QDialog):
 
   def accept(self):
     self.setResult(QtGui.QDialog.Accepted)
-    self.hide()
+    self.accepted.emit()
+    if self.isModal():
+      print "modal"
+      self.hide()
 
   def reject(self):
     self.setResult(QtGui.QDialog.Rejected)
+    self.rejected.emit()
     self.hide()
 
   def hideEvent(self, event):
@@ -1083,7 +1087,7 @@ class MasterParameterDialog(ParameterDialog):
     '''
     if code == 1:
       dia_params = dict()
-      for p, (code_n, msg_n, val) in params.items():
+      for p, (code_n, _, val) in params.items():#_:=msg_n
         if code_n != 1:
           val = ''
         type_str = 'string'
@@ -1144,7 +1148,7 @@ class MasterParameterDialog(ParameterDialog):
     self.is_delivered = True
     errmsg = ''
     if code == 1:
-      for p, (code_n, msg, val) in params.items():
+      for _, (code_n, msg, _) in params.items():#_:=param, val
         if code_n != 1:
           errmsg = '\n'.join([errmsg, msg])
     else:
@@ -1226,7 +1230,7 @@ class ServiceDialog(ParameterDialog):
   def _params_from_slots(cls, slots, types, values={}):
     result = dict()
     for slot, msg_type in zip(slots, types):
-      base_type, is_array, array_length = roslib.msgs.parse_type(msg_type)
+      base_type, is_array, _ = roslib.msgs.parse_type(msg_type)#_:=array_length
       if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
         default_value = 'now' if base_type in ['time', 'duration'] else ''
         if slot in values and values[slot]:
