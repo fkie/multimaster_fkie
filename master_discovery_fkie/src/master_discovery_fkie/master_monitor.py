@@ -36,7 +36,6 @@ import xmlrpclib
 import socket
 import time
 from SimpleXMLRPCServer import SimpleXMLRPCServer
-from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from SocketServer import ThreadingMixIn
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
@@ -322,12 +321,12 @@ class MasterMonitor(object):
           header = { 'probe':'1', 'md5sum':'*',
                     'callerid':self.ros_node_name, 'service':service}
           roslib.network.write_ros_handshake_header(s, header)
-          type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
+          stype = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
 #          print "_getServiceInfo _lock try..", threading.current_thread()
           with self._lock:
 #            print "get info about service", service, uri
-            self.__new_master_state.getService(service).type = type['type']
-            self.__cached_services[service] = (uri, type['type'], time.time())
+            self.__new_master_state.getService(service).type = stype['type']
+            self.__cached_services[service] = (uri, stype['type'], time.time())
 #          print "_getServiceInfo _lock RET", threading.current_thread()
         except socket.error:
 #          print "_getServiceInfo _lock try..", threading.current_thread()

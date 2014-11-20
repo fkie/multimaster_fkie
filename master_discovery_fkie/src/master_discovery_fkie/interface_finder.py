@@ -128,13 +128,13 @@ def _get_topic(masteruri, ttype, wait=True):
   while not result and not rospy.is_shutdown():
     master = xmlrpclib.ServerProxy(masteruri)
     # get the system state to resolve the published nodes
-    code, message, state = master.getSystemState(rospy.get_name())
+    code, _, state = master.getSystemState(rospy.get_name())
     # read topic types
     code, msg, val = master.getPublishedTopics(rospy.get_name(), '')
     if code == 1:
       # search for a topic with type MasterState
-      for topic, type in val:
-        if type.endswith(ttype):
+      for topic, topic_type in val:
+        if topic_type.endswith('LinkStatesStamped'):
           # get the name of the publisher node
           for t, l in state[0]:
             if topic == t:

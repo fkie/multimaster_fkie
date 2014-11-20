@@ -222,20 +222,20 @@ class Main(object):
       with self.__lock:
         if (ros_master_name in self.masters):
           m = self.masters.pop(ros_master_name)
-          id = uuid.uuid4()
-          thread = threading.Thread(target=self._threading_stop_sync, args=(m, id))
-          self._join_threads[id] = thread
+          ident = uuid.uuid4()
+          thread = threading.Thread(target=self._threading_stop_sync, args=(m, ident))
+          self._join_threads[ident] = thread
           thread.start()
     except Exception:
       import traceback
       rospy.logwarn("ERROR while removing master[%s]: %s", ros_master_name, traceback.format_exc())
 
-  def _threading_stop_sync(self, sync_thread, id):
+  def _threading_stop_sync(self, sync_thread, ident):
     if isinstance(sync_thread, SyncThread):
       rospy.loginfo("  Stop synchronization to `%s`"%sync_thread.name)
       sync_thread.stop()
       with self.__lock:
-        del self._join_threads[id]
+        del self._join_threads[ident]
       rospy.loginfo("  Finished synchronization to `%s`"%sync_thread.name)
       del sync_thread
 

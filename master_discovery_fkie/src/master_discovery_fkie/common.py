@@ -80,7 +80,7 @@ def resolve_url(interface_url):
       filename = interface_url[7:]
     elif interface_url.startswith('package://') or interface_url.startswith('pkg://'):
       length = 6 if interface_url.startswith('pkg://') else 10
-      pkg_name, slash, pkg_path = interface_url[length:].partition('/')
+      pkg_name, _, pkg_path = interface_url[length:].partition('/')
       if pkg_path.startswith('//'):
         paths = roslib.packages.find_resource(pkg_name, pkg_path.strip('/'))
         if len(paths) > 0:
@@ -172,7 +172,7 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
             if isinstance(item[mastername], list):
               def_list[len(def_list):] = item[mastername]
             else:
-              def_list.append(item[host])
+              def_list.append(item[mastername])
         elif isinstance(item, list):
           def_list[len(def_list):] = item
         else:

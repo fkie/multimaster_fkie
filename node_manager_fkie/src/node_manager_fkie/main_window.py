@@ -805,9 +805,12 @@ class MainWindow(QtGui.QMainWindow):
   def on_sync_dialog_released(self, released=False, masteruri=None, external_call=False):
     self.syncButton.setEnabled(False)
     master = self.currentMaster
+    sync_node = None
     if not masteruri is None:
       master = self.getMaster(masteruri, False)
-    if not master is None and (self.syncButton.isChecked() or external_call):
+      if master is not None and master.master_info is not None:
+        sync_node = master.master_info.getNodeEndsWith('master_sync')
+    if master is not None and (sync_node is None or external_call):
       self._sync_dialog.resize(350,190)
       if self._sync_dialog.exec_():
         try:
@@ -815,25 +818,23 @@ class MainWindow(QtGui.QMainWindow):
           if not self._sync_dialog.interface_filename is None:
             # copy the interface file to remote machine
             self._progress_queue_sync.add2queue(str(uuid.uuid4()),
-                                           'Transfer sync interface '+str(host), 
-                                           nm.starter().transfer_files, 
-                                           (str(host), self._sync_dialog.interface_filename, False, master.current_user))
-          self._progress_queue_sync.add2queue(str(uuid.uuid4()), 
-                                         'Start sync on '+str(host), 
-                                         nm.starter().runNodeWithoutConfig, 
-                                         (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, str(master.masteruri), False, master.current_user))
+                                           'Transfer sync interface %s'%host,
+                                           nm.starter().transfer_files,
+                                           ("%s"%host, self._sync_dialog.interface_filename, False, master.current_user))
+          self._progress_queue_sync.add2queue(str(uuid.uuid4()),
+                                         'Start sync on %s'%host,
+                                         nm.starter().runNodeWithoutConfig,
+                                         ("%s"%host, 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, "%s"%master.masteruri, False, master.current_user))
           self._progress_queue_sync.start()
         except:
           import traceback
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Start sync error", 
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Start sync error",
                             "Error while start sync node",
                             str(traceback.format_exc())).exec_()
       else:
         self.syncButton.setChecked(False)
-    elif not master is None and not master.master_info is None:
-      node = master.master_info.getNodeEndsWith('master_sync')
-      if not node is None:
-        master.stop_nodes([node])
+    elif sync_node is not None:
+        master.stop_nodes([sync_node])
     self.syncButton.setEnabled(True)
 
   def on_sync_released(self, external_call=False):
@@ -843,7 +844,7 @@ class MainWindow(QtGui.QMainWindow):
     key_mod = QtGui.QApplication.keyboardModifiers()
     if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
       if external_call:
-        self.on_sync_dialog_released()
+        self.on_sync_dialog_released(external_call=external_call)
 #      else:
 #        self.syncButton.showMenu()
       if not self.currentMaster.master_info is None:

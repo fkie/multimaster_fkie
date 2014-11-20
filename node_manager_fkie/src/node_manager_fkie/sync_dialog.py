@@ -84,11 +84,11 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
 
 
   def highlightBlock(self, text):
-    for pattern, _ in self.rules:#_:=format
+    for pattern, myformat in self.rules:
       index = pattern.indexIn(text)
       while index >= 0:
         length = pattern.matchedLength()
-        self.setFormat(index, length, format)
+        self.setFormat(index, length, myformat)
         index = pattern.indexIn(text, index + length)
 
     self.setCurrentBlockState(0)

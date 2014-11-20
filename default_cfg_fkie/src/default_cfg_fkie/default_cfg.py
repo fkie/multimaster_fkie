@@ -36,11 +36,10 @@ import shlex
 import subprocess
 import threading
 
-import roslib
 import roslib.names
-import rospy
 import roslib.network
-from ros import roslaunch
+import rospy
+from roslaunch import ROSLaunchConfig, XmlLoader
 import rosgraph.masterapi
 import rosgraph.names
 from rosgraph.rosenv import ROS_NAMESPACE
@@ -48,8 +47,8 @@ from rosgraph.rosenv import ROS_NAMESPACE
 import std_srvs.srv
 
 from multimaster_msgs_fkie.msg import Capability
-from multimaster_msgs_fkie.srv import ListDescription, ListNodes, LoadLaunch, Task, ListDescriptionResponse, ListNodesResponse
-from screen_handler import ScreenHandler, ScreenHandlerException
+from multimaster_msgs_fkie.srv import ListDescription, ListNodes, Task, ListDescriptionResponse, ListNodesResponse#, LoadLaunch
+from screen_handler import ScreenHandler#, ScreenHandlerException
 
 class LoadException(Exception):
   ''' The exception throwing while searching for the given launch file. '''
@@ -118,8 +117,8 @@ class DefaultCfg(object):
       launch_path = self.getPath(self.launch_file, self.package)
       rospy.loginfo("loading launch file: %s", launch_path)
       self.masteruri = self._masteruri_from_ros()
-      self.roscfg = roslaunch.ROSLaunchConfig()
-      loader = roslaunch.XmlLoader()
+      self.roscfg = ROSLaunchConfig()
+      loader = XmlLoader()
       argv = [a for a in sys.argv if not a.startswith('__ns:=')]
       # remove namespace from sys.argv to avoid load the launchfile info local namespace
       sys.argv = [a for a in sys.argv if not a.startswith('__ns:=')]
@@ -246,7 +245,7 @@ class DefaultCfg(object):
             cap_ns = roslib.names.SEP
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
         if cap_ns == node_fullname:
-         cap_ns = item.namespace.rstrip(roslib.names.SEP)        # if the parameter group parameter found, assign node to the group
+          cap_ns = item.namespace.rstrip(roslib.names.SEP)        # if the parameter group parameter found, assign node to the group
         # if the 'capability_group' parameter found, assign node to the group
         if self.roscfg.params.has_key(cap_param) and self.roscfg.params[cap_param].value:
           p = self.roscfg.params[cap_param]
@@ -282,7 +281,6 @@ class DefaultCfg(object):
       if distro in ['electric', 'diamondback', 'cturtle']:
         return roslib.rosenv.get_master_uri()
       else:
-        import rosgraph
         return rosgraph.rosenv.get_master_uri()
     except:
       return roslib.rosenv.get_master_uri()
@@ -298,13 +296,13 @@ class DefaultCfg(object):
         import traceback
         print traceback.format_exc()
 
-  def getPath(self, file, package=''):
+  def getPath(self, path, package=''):
     '''
     Searches for a launch file. If package is given, try first to find the launch
     file in the given package. If more then one launch file with the same name 
     found in the package, the first one will be tacked.
-    @param file: the file name of the launch file
-    @type file: C{str}
+    @param path: the file name of the launch file
+    @type path: C{str}
     @param package: the package containing the launch file or an empty string, 
     if the C{file} is an absolute path
     @type package: C{str}
@@ -312,7 +310,7 @@ class DefaultCfg(object):
     @rtype: C{str}
     @raise LoadException: if the given file is not found 
     '''
-    launch_file = file
+    launch_file = path
     # if package is set, try to find the launch file in the given package
     if package:
       paths = roslib.packages.find_resource(package, launch_file)
@@ -321,7 +319,7 @@ class DefaultCfg(object):
         launch_file = paths[0]
     if os.path.isfile(launch_file) and os.path.exists(launch_file):
       return launch_file
-    raise LoadException('File %s in package [%s] not found!'%(file, package))
+    raise LoadException('File %s in package [%s] not found!'%(path, package))
 
   def rosservice_list_nodes(self, req):
     '''
@@ -489,10 +487,10 @@ class DefaultCfg(object):
       self._pending_starts_last_printed.update(self._pending_starts)
       rospy.loginfo("Pending autostarts %d: %s", len(self._pending_starts), self._pending_starts)
 
-  def _get_node(self, pkg, file):
+  def _get_node(self, pkg, filename):
     cmd = None
     try:
-      cmd = roslib.packages.find_node(pkg, file)
+      cmd = roslib.packages.find_node(pkg, filename)
     except roslib.packages.ROSPkgException as e:
       # multiple nodes, invalid package
       raise StartException(str(e))
@@ -503,7 +501,7 @@ class DefaultCfg(object):
     if isinstance(cmd, types.StringTypes):
       cmd = [cmd]
     if cmd is None or len(cmd) == 0:
-      raise StartException('%s in package [%s] not found!'%(file, pkg))
+      raise StartException('%s in package [%s] not found!'%(filename, pkg))
     return cmd
 
   def _get_start_exclude(self, node):
@@ -576,37 +574,11 @@ class DefaultCfg(object):
       import roslib.rosenv
       return roslib.rosenv.get_ros_home()
 
-#  @classmethod
-#  def getGlobalParams(cls, roscfg):
-#    '''
-#    Return the parameter of the configuration file, which are not associated with 
-#    any nodes in the configuration.
-#    @param roscfg: the launch configuration
-#    @type roscfg: L{roslaunch.ROSLaunchConfig}
-#    @return: the list with names of the global parameter
-#    @rtype: C{dict(param:value, ...)}
-#    '''
-#    result = dict()
-#    nodes = []
-#    for item in roscfg.resolved_node_names:
-#      nodes.append(item)
-#    for param, value in roscfg.params.items():
-#      nodesparam = False
-#      for n in nodes:
-#        if param.startswith(n):
-#          nodesparam = True
-#          break
-#      if not nodesparam:
-#        result[param] = value
-#    return result
-
   @classmethod
   def _load_parameters(cls, masteruri, params, clear_params):
     """
     Load parameters onto the parameter server
     """
-    import roslaunch
-    import roslaunch.launch
     import xmlrpclib
     param_server = xmlrpclib.ServerProxy(masteruri)
     p = None
@@ -633,22 +605,5 @@ class DefaultCfg(object):
       for code, msg, _ in r:
         if code != 1:
           raise StartException("Failed to set parameter: %s"%(msg))
-    except roslaunch.core.RLException, e:
-      raise StartException(e)
-    except Exception as e:
+    except Exception:
       raise #re-raise as this is fatal
-
-#  @classmethod
-#  def packageName(cls, dir):
-#    '''
-#    Returns for given directory the package name or None
-#    @rtype: C{str} or C{None}
-#    '''
-#    if not (dir is None) and dir and dir != '/' and os.path.isdir(dir):
-#      package = os.path.basename(dir)
-#      fileList = os.listdir(dir)
-#      for file in fileList:
-#        if file == 'manifest.xml':
-#            return package
-#      return cls.packageName(os.path.dirname(dir))
-#    return None

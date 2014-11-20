@@ -30,8 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import time
-
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
@@ -515,9 +513,9 @@ class ServiceInfo(object):
     if not self.__service_class is None:
       return self.__service_class
 
-    type = self.type
+    srv_type = self.type
     # request the type if it is empty and allowed
-    if not type and allow_get_type and self.uri:
+    if not srv_type and allow_get_type and self.uri:
       dest_addr = dest_port = None
       try:
         dest_addr, dest_port = rospy.parse_rosrpc_uri(self.uri)
@@ -534,8 +532,8 @@ class ServiceInfo(object):
           header = { 'probe':'1', 'md5sum':'*',
                     'callerid':rospy.get_name(), 'service':self.name}
           roslib.network.write_ros_handshake_header(s, header)
-          type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
-          type = type['type']
+          srv_type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
+          srv_type = srv_type['type']
         except socket.error:
           pass
         except:
@@ -545,17 +543,17 @@ class ServiceInfo(object):
             s.close()
 
     import rosservice
-    if not type:
-      raise rosservice.ROSServiceException("Not valid type of service [%s]."%str(type))
+    if not srv_type:
+      raise rosservice.ROSServiceException("Not valid type of service [%s]."%str(srv_type))
 
     # get the Service class so we can populate the request
-    service_class = roslib.message.get_service_class(type)
+    service_class = roslib.message.get_service_class(srv_type)
 
     # #1083: roscpp services are currently returning the wrong type
     if service_class and self.type.endswith('Request') and \
             not hasattr(service_class, "_request_class"):
-        type = type[:-7]
-        service_class = roslib.message.get_service_class(type)
+        srv_type = srv_type[:-7]
+        service_class = roslib.message.get_service_class(srv_type)
         
     if service_class is None:
         pkg = roslib.names.resource_name_package(self.type)
@@ -670,9 +668,9 @@ class MasterInfo(object):
         result.getNode(n).services = s
         result.getService(s).serviceProvider = n
     # set the topic types
-    for topic, type in topicTypes:
+    for topic, ttype in topicTypes:
       result.topics = topic
-      result.getTopic(topic).type = type
+      result.getTopic(topic).type = ttype
     # set the node informations
     for nodename, uri, masteruri, pid, local in nodes:
       result.nodes = nodename
@@ -680,11 +678,11 @@ class MasterInfo(object):
       result.getNode(nodename).masteruri = masteruri
       result.getNode(nodename).pid = pid
     # set the service informations
-    for servicename, uri, masteruri, type, local in serviceProvider:
+    for servicename, uri, masteruri, stype, local in serviceProvider:
       result.services = servicename
       result.getService(servicename).uri = uri
       result.getService(servicename).masteruri = masteruri
-      result.getService(servicename).type = type
+      result.getService(servicename).type = stype
     return result
 
   @property
@@ -1116,7 +1114,7 @@ class MasterInfo(object):
              ``[ [str,str,str,int,str] ]``, 
              ``[ [str,str,str,str,str] ])``
     '''
-    filter = FilterInterface() if filter_interface is None else filter_interface
+    iffilter = FilterInterface() if filter_interface is None else filter_interface
     stamp = '%.9f'%self.timestamp
     stamp_local = '%.9f'%self.timestamp_local
     publishers = []
@@ -1129,8 +1127,8 @@ class MasterInfo(object):
     nodes_last_check = set()
     # process the node filtering first, but the nodelist to send will be created later
     for name, node in self.nodes.items():
-      if not filter.is_ignored_node(name):
-        if filter_interface is None or node.isLocal or (filter.sync_remote_nodes() and self.masteruri == str(node.masteruri)):
+      if not iffilter.is_ignored_node(name):
+        if filter_interface is None or node.isLocal or (iffilter.sync_remote_nodes() and self.masteruri == str(node.masteruri)):
           added_nodes.append(name)
 
     # filter the topics 
@@ -1138,7 +1136,7 @@ class MasterInfo(object):
       pn = []
       for n in topic.publisherNodes:
         if n in added_nodes:
-          if not filter.is_ignored_topic(n, name, topic.type):
+          if not iffilter.is_ignored_topic(n, name, topic.type):
             pn.append(n)
             nodes_last_check.add(n)
       if pn:
@@ -1146,7 +1144,7 @@ class MasterInfo(object):
       sn = []
       for n in topic.subscriberNodes:
         if n in added_nodes:
-          if not filter.is_ignored_topic(n, name, topic.type):
+          if not iffilter.is_ignored_topic(n, name, topic.type):
             sn.append(n)
             nodes_last_check.add(n)
       if sn:
@@ -1159,7 +1157,7 @@ class MasterInfo(object):
       srv_prov = []
       for sp in service.serviceProvider:
         if sp in added_nodes:
-          if not filter.is_ignored_service(sp, name):
+          if not iffilter.is_ignored_service(sp, name):
             srv_prov.append(sp)
             nodes_last_check.add(sp)
       if srv_prov:
