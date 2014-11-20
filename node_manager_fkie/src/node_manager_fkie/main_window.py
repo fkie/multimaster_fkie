@@ -808,8 +808,8 @@ class MainWindow(QtGui.QMainWindow):
     sync_node = None
     if not masteruri is None:
       master = self.getMaster(masteruri, False)
-      if master is not None and master.master_info is not None:
-        sync_node = master.master_info.getNodeEndsWith('master_sync')
+    if master is not None and master.master_info is not None:
+      sync_node = master.master_info.getNodeEndsWith('master_sync')
     if master is not None and (sync_node is None or external_call):
       self._sync_dialog.resize(350,190)
       if self._sync_dialog.exec_():
