@@ -86,7 +86,6 @@ def main():
     # about error
     import traceback
     rospy.logwarn("%s", traceback.format_exc())
-    import sys
     sys.stdout.write(traceback.format_exc())
     sys.stdout.flush()
     import os, signal

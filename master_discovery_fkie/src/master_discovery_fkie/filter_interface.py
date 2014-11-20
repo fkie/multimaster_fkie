@@ -31,9 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import re
-import os
 
-import roslib
 import rospy
 
 from common import resolve_url, read_interface, create_pattern, is_empty_pattern, EMPTY_PATTERN
@@ -263,9 +261,9 @@ def _to_str(re_object):
     return ''
   return re_object.pattern
 
-def _from_str(str):
-  if str:
-    return re.compile(str, re.I)
+def _from_str(msg):
+  if msg:
+    return re.compile(msg, re.I)
   else:
     return EMPTY_PATTERN
 

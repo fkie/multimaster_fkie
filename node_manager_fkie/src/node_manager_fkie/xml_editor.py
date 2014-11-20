@@ -91,13 +91,13 @@ class Editor(QtGui.QTextEdit):
 #  def __del__(self):
 #    print "********** desctroy:", self.objectName()
 
-  def save(self):
+  def save(self, force=False):
     '''
     Saves changes to the file.
     :return: saved, errors, msg
     :rtype: bool, bool, str
     '''
-    if self.document().isModified() or not QtCore.QFileInfo(self.filename).exists():
+    if force or self.document().isModified() or not QtCore.QFileInfo(self.filename).exists():
       f = QtCore.QFile(self.filename)
       if f.open(QtCore.QIODevice.WriteOnly | QtCore.QIODevice.Text):
         f.write(self.toPlainText().encode('utf-8'))
@@ -935,15 +935,14 @@ class XmlEditor(QtGui.QDialog):
     Saves the current document. This method is called if the C{save button} 
     was clicked.
     '''
-    saved, errors, msg = self.tabWidget.currentWidget().save()
+    saved, errors, msg = self.tabWidget.currentWidget().save(True)
     if errors:
       QtGui.QMessageBox.critical(self, "Error", msg)
       self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
       self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), msg)
-    else:
+    elif saved:
       self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
       self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
-    if saved:
       self.on_editor_textChanged()
 
   def on_editor_textChanged(self):
