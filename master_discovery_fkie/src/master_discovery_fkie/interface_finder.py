@@ -134,7 +134,7 @@ def _get_topic(masteruri, ttype, wait=True):
     if code == 1:
       # search for a topic with type MasterState
       for topic, topic_type in val:
-        if topic_type.endswith('LinkStatesStamped'):
+        if topic_type.endswith(ttype):
           # get the name of the publisher node
           for t, l in state[0]:
             if topic == t:
