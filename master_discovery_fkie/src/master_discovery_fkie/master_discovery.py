@@ -460,7 +460,7 @@ class Discoverer(object):
     if self.HEARTBEAT_HZ > 0.:
       rospy.loginfo("Approx. mininum network load: %s bytes/s"%str(self.HEARTBEAT_HZ * (self.NETPACKET_SIZE*(len(self.robots) + 1 if self._send_mcast else 0))))
     self.current_check_hz = self.ROSMASTER_HZ
-    self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped)
+    self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped, queue_size=1)
 
     # test the reachability of the ROS master 
     local_addr = roslib.network.get_local_address()
@@ -472,7 +472,7 @@ class Discoverer(object):
     rospy.loginfo("Start broadcasting at ('%s', %d)", mcast_group, mcast_port)
     self._init_mcast_socket(True)
     # initialize the ROS publishers
-    self.pubchanges = rospy.Publisher("~changes", MasterState)
+    self.pubchanges = rospy.Publisher("~changes", MasterState, queue_size=10)
     # initialize the ROS services
     rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
     rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)

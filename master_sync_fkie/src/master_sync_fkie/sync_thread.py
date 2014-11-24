@@ -378,7 +378,7 @@ class SyncThread(object):
           rospy.loginfo("SyncThread[%s] Horrible hack: create and delete publisher to trigger an update for subscribed topics", self.name)
         for (m, t) in hack_pub:
           try:
-            topicPub = rospy.Publisher(m, t)
+            topicPub = rospy.Publisher(m, t, queue_size=1)
             topicPub.unregister()
             del topicPub
           except:
