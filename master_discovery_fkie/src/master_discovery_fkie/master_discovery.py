@@ -350,7 +350,7 @@ class Discoverer(threading.Thread):
     rospy.loginfo("Static hosts: " + str(self.static_hosts))
     rospy.loginfo("Approx. network load: %s bytes/s"%str(self.HEARTBEAT_HZ * (self.NETPACKET_SIZE*(len(self.static_hosts) + 1 if self._send_mcast else 0))))
     self.current_check_hz = Discoverer.ROSMASTER_HZ
-    self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped)
+    self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped, queue_size=1)
 
 
     # test the reachability of the ROS master 
@@ -369,7 +369,7 @@ class Discoverer(threading.Thread):
 #      sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast")
 #
     # initialize the ROS publishers
-    self.pubchanges = rospy.Publisher("~changes", MasterState)
+    self.pubchanges = rospy.Publisher("~changes", MasterState, queue_size=10)
     # initialize the ROS services
     rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
 

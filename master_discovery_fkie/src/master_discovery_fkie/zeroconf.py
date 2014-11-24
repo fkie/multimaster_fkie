@@ -528,8 +528,8 @@ class MasterList(object):
     :type callback_update_local:  str
     '''
     # initialize the ROS publishers
-    self.pubchanges = rospy.Publisher("~changes", MasterState)
-    self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped)
+    self.pubchanges = rospy.Publisher("~changes", MasterState, queue_size=10)
+    self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped, queue_size=1)
     # initialize the ROS services
     rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
     # the list with all ROS master neighbors
