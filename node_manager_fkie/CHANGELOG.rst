@@ -2,6 +2,29 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.15 (2014-12-01)
+-------------------
+* node_manager_fkie: fixed sync button handling
+* multimaster_fkie: removed some python mistakes
+* node_manager_fkie: removed some python mistakes
+* node_manager_fkie: fixed node selection in description dock
+* node_manager_fkie: some icons changed
+* node_manager_fkie: 'autoupdate' parameter added
+  The autoupdate parameter disables the automatic requests. It is usefull
+  for low bandwidth networks.
+* node_manager_fkie: reduced remote parameter requests
+* node_manager_fkie: added a republish functionality
+  This function is accessible in extended info widget.
+* node_manager_fkie: fix publish with rate slower one
+  Updated the topic info. Added constants to message definition view.
+* node_manager_fkie: restores the view of expanded capability groups after reload of a launch file
+* node_managef_fkie: fix sidebar parameter selection
+* node_manager_fkie: fixes in parameter dialog
+  * fixed filter in parameter dialog
+  * fixed parser of the list values
+  * update only changed values in ROS parameter server
+* Contributors: Alexander Tiderko
+
 0.3.14 (2014-10-24)
 -------------------
 * node_manager_fkie: added a warning to capability table, if multiple configurations for the same node are loaded
