@@ -281,12 +281,16 @@ class Settings(object):
     '''
     if self._terminal_emulator is None:
       self._terminal_emulator = ""
+      command_arg = 'e'
       for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm']:
         if os.path.isfile(t) and os.access(t, os.X_OK):
+          #workaround to support the command parameter in different terminal
+          if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
+            command_arg = 'x'
           self._terminal_emulator = t
           break
     if self._terminal_emulator == "": return ""
-    return "%s -T %s -e %s"%(self._terminal_emulator, title, ' '.join(cmd))
+    return '%s -T "%s" -%s %s'%(self._terminal_emulator, title, command_arg, ' '.join(cmd))
 
   def qsettings(self, settings_file):
     from python_qt_binding import QtCore

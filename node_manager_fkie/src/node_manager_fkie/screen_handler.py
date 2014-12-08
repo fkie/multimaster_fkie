@@ -238,7 +238,7 @@ class ScreenHandler(object):
     '''
     #create a title of the terminal
 #    pid, session_name = cls.splitSessionName(screen_name)
-    title_opt = ' '.join(['"SCREEN', nodename, 'on', host, '"'])
+    title_opt = 'SCREEN %s on %s'%(nodename, host)
     if nm.is_local(host):
       cmd = nm.settings().terminal_cmd([cls.SCREEN, '-x', screen_name], title_opt)
       rospy.loginfo("Open screen terminal: %s", cmd)
