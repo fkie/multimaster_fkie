@@ -700,7 +700,7 @@ class StartHandler(object):
     @see: L{node_manager_fkie.is_local()}
     '''
     rospy.loginfo("show log for '%s' on '%s'", str(nodename), str(host))
-    title_opt = ' '.join(['"LOG', nodename, 'on', host, '"'])
+    title_opt = 'LOG %s on %s'%(nodename, host)
     if nm.is_local(host):
       found = False
       screenLog = nm.screen().getScreenLogFile(node=nodename)

@@ -2,6 +2,12 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.15 (2014-12-01)
+-------------------
+* multimaster_fkie: added queue_size argumet to the publishers
+* multimaster_fkie: removed some python mistakes
+* Contributors: Alexander Tiderko
+
 0.3.14 (2014-10-24)
 -------------------
 
