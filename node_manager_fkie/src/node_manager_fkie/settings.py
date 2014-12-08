@@ -83,6 +83,7 @@ class Settings(object):
     Loads the settings from file or sets default values if no one exists.
     '''
     self._terminal_emulator = None
+    self._terminal_command_arg = 'e'
     self._masteruri = masteruri_from_ros()
     self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
     # loads the current configuration path. If the path was changed, a redirection
@@ -281,16 +282,15 @@ class Settings(object):
     '''
     if self._terminal_emulator is None:
       self._terminal_emulator = ""
-      command_arg = 'e'
       for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm']:
         if os.path.isfile(t) and os.access(t, os.X_OK):
           #workaround to support the command parameter in different terminal
           if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
-            command_arg = 'x'
+            self._terminal_command_arg = 'x'
           self._terminal_emulator = t
           break
     if self._terminal_emulator == "": return ""
-    return '%s -T "%s" -%s %s'%(self._terminal_emulator, title, command_arg, ' '.join(cmd))
+    return '%s -T "%s" -%s %s'%(self._terminal_emulator, title, self._terminal_command_arg, ' '.join(cmd))
 
   def qsettings(self, settings_file):
     from python_qt_binding import QtCore
