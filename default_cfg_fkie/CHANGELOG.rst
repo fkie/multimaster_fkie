@@ -2,6 +2,9 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.16 (2014-12-08)
+-------------------
+
 0.3.15 (2014-12-01)
 -------------------
 * multimaster_fkie: removed some python mistakes

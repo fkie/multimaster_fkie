@@ -2,6 +2,15 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.16 (2014-12-08)
+-------------------
+* node_manager_fkie: fixed a problem with screen view
+  The node_manager uses the /usr/bin/x-terminal-emulator to show the
+  screen content of the nodes. To execute a command with arguments
+  'konsole', 'xterm' uses -e, 'terminator', 'gnome-terminal' or
+  'xfce4-terminal'use '-x'.
+* Contributors: Alexander Tiderko
+
 0.3.15 (2014-12-01)
 -------------------
 * node_manager_fkie: fixed sync button handling
