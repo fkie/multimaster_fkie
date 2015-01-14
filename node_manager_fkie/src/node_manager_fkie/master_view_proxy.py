@@ -2298,11 +2298,10 @@ class MasterViewProxy(QtGui.QWidget):
           except:
             pass
         # remove empty lists
-        topic_params = self._rem_empty_lists(params[topic_type])
-#        print params[topic_type]
-#        print topic_params
+        topic_params = dict()
+        if topic_type in params:
+          topic_params = self._rem_empty_lists(params[topic_type])
         pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
-#        nm.starter().runNodeWithoutConfig(nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', ''.join(['rostopic_pub', topic_name, opt_name_suf, str(rospy.Time.now())]), args=[pub_cmd], masteruri=self.masteruri)
         self._progress_queue.add2queue(str(uuid.uuid4()), 
                                  ''.join(['start publisher for ', topic_name]), 
                                  nm.starter().runNodeWithoutConfig, 

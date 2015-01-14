@@ -932,7 +932,6 @@ class ParameterDialog(QtGui.QDialog):
     self.setResult(QtGui.QDialog.Accepted)
     self.accepted.emit()
     if self.isModal():
-      print "modal"
       self.hide()
 
   def reject(self):
