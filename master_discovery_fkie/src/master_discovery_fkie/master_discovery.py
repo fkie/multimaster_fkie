@@ -379,7 +379,7 @@ class Discoverer(threading.Thread):
     self._recvThread.start()
 
     # create a thread to monitor the ROS master state
-    self.master_monitor = MasterMonitor(monitor_port)
+    self.master_monitor = MasterMonitor(monitor_port, ipv6=self._is_ipv6_group(mcast_group))
     self._masterMonitorThread = threading.Thread(target = self.checkROSMaster_loop)
     self._masterMonitorThread.setDaemon(True)
     self._masterMonitorThread.start()
@@ -392,6 +392,14 @@ class Discoverer(threading.Thread):
       rospy.logwarn("ROS Timer is not available! Statistic calculation and timeouts are deactivated!")
     # set the callback to finish all running threads
     rospy.on_shutdown(self.finish)
+
+  def _is_ipv6_group(self, addr):
+    try:
+      socket.inet_pton(socket.AF_INET6, addr)
+      return True
+    except:
+      pass
+    return False
 
   def _init_mcast_socket(self, doexit_on_error=False):
     rospy.loginfo("Init multicast socket")

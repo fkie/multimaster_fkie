@@ -76,7 +76,7 @@ class McastSocket(socket.socket):
     # get info about the IP version (4 or 6)
     addrinfo = socket.getaddrinfo(mgroup, None)[0]
     socket.socket.__init__(self, addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    
+
     # Allow multiple copies of this program on one machine
     if(reuse):
       self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -91,7 +91,7 @@ class McastSocket(socket.socket):
       self.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
     else:# IPv6
       self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_bin)
-      socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
+      self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
 
     #join to the multicast group 
     group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])

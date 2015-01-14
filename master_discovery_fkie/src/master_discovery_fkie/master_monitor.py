@@ -67,6 +67,10 @@ def _succeed(args):
 class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
   pass
 
+class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
+  address_family = socket.AF_INET6
+  pass
+
 class MasterMonitor(object):
   '''
   This class provides methods to get the state from the ROS master using his 
@@ -95,7 +99,7 @@ class MasterMonitor(object):
 
   INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-  def __init__(self, rpcport=11611, do_retry=True):
+  def __init__(self, rpcport=11611, do_retry=True, ipv6=False):
     '''
     Initialize method. Creates an XML-RPC server on given port and starts this
     in its own thread.
@@ -107,6 +111,10 @@ class MasterMonitor(object):
     :param do_retry: retry to create XML-RPC server
     
     :type do_retry: bool
+    
+    :param ipv6: Use ipv6
+    
+    :type ipv6: bool
     '''
     self._state_access_lock = threading.RLock()
     self._create_access_lock = threading.RLock()
@@ -135,7 +143,10 @@ class MasterMonitor(object):
     self.ready = False
     while not self.ready and (not rospy.is_shutdown()):
       try:
-        self.rpcServer = RPCThreading(('', rpcport), logRequests=False, allow_none=True)
+        RPCClass = RPCThreading
+        if ipv6:
+          RPCClass = RPCThreadingV6
+        self.rpcServer = RPCClass(('', rpcport), logRequests=False, allow_none=True)
         rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
         self.rpcServer.register_introspection_functions()
         self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')
@@ -145,10 +156,10 @@ class MasterMonitor(object):
         self._rpcThread.setDaemon(True)
         self._rpcThread.start()
         self.ready = True
-      except socket.error:
+      except socket.error as e:
         if not do_retry:
-          raise Exception(''.join(["Error while start RPC-XML server on port ", str(rpcport), ". Is a Node Manager already running?"]))
-        rospy.logwarn(''.join(["Error while start RPC-XML server on port ", str(rpcport), ". Try again..."]))
+          raise Exception("Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?"%(rpcport, e))
+        rospy.logwarn("Error while start RPC-XML server on port %d: %s\nTry again..."%(rpcport, e))
         time.sleep(1)
       except:
         import traceback

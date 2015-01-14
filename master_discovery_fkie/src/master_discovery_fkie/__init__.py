@@ -43,7 +43,8 @@ import sys
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
-MCAST_GROUP = "226.0.0.0" # ipv6 multicast group ff02::1
+#MCAST_GROUP = "ff02::1"# ipv6 multicast group
+MCAST_GROUP = "226.0.0.0" # ipv4 multicast group
 MCAST_PORT = 11511
 
 def getDefaultRPCPort(zeroconf=False):
