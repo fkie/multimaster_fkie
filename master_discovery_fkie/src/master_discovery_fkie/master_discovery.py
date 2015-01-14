@@ -483,9 +483,13 @@ class Discoverer(object):
     self._recvThread.start()
 
     # create a thread to monitor the ROS master state
-    self.master_monitor = MasterMonitor(monitor_port)
+    self.master_monitor = MasterMonitor(monitor_port, ipv6=self._is_ipv6_group(mcast_group))
     # create timer to check for ros master changes
     self._timer_ros_changes = threading.Timer(0.1, self.checkROSMaster_loop)
+#     self._masterMonitorThread = threading.Thread(target = self.checkROSMaster_loop)
+#     self._masterMonitorThread.setDaemon(True)
+#     self._masterMonitorThread.start()
+
     # create a timer monitor the offline ROS master and calculate the link qualities
     self._timer_stats = threading.Timer(1, self.timed_stats_calculation)
     # create timer and paramter for heartbeat notifications
@@ -502,6 +506,14 @@ class Discoverer(object):
     self._timer_ros_changes.start()
     self._timer_stats.start()
     self._timer_heartbeat.start()
+
+  def _is_ipv6_group(self, addr):
+    try:
+      socket.inet_pton(socket.AF_INET6, addr)
+      return True
+    except:
+      pass
+    return False
 
   def _init_mcast_socket(self, doexit_on_error=False):
     rospy.loginfo("Init multicast socket")
