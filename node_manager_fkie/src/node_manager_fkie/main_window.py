@@ -576,6 +576,16 @@ class MainWindow(QtGui.QMainWindow):
     '''
     self._setLocalMonitoring(False)
     self._con_tries[masteruri] = 0
+    # remove ROS master which are not in the new list
+    new_uris = [m.uri for m in master_list if not m.uri is None]
+    for uri in self.masters.keys():
+      if uri not in new_uris:
+        master = self.masters[uri]
+        if not (nm.is_local(nm.nameres().getHostname(uri)) or uri == self.getMasteruri()):
+          if not master.master_state is None:
+            self.master_model.removeMaster(master.master_state.name)
+          self.removeMaster(uri)
+    # add or update master
     for m in master_list:
       if not m.uri is None:
         host = nm.nameres().getHostname(m.uri)
@@ -610,6 +620,9 @@ class MainWindow(QtGui.QMainWindow):
       else:
         rospy.loginfo("Autoupdate disabled, the data will not be updated for %s"%msg.master.uri)
     if msg.state == MasterState.STATE_NEW:
+      # if new master with uri of the local master is received update the master list 
+      if msg.master.uri == self.getMasteruri():
+        self.masterlist_service.retrieveMasterList(msg.master.uri, False)
       nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
       msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
