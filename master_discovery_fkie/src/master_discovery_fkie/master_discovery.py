@@ -233,7 +233,6 @@ class DiscoveredMaster(object):
     '''
     quality = -1.0
     if not (self.mastername is None) and self.heartbeat_rate >= self.MIN_HZ_FOR_QUALILTY:
-      rate = self.heartbeat_rate
       measurement_duration = interval
       if self.heartbeat_rate < 1.:
         measurement_duration = interval / self.heartbeat_rate
@@ -436,6 +435,11 @@ class Discoverer(object):
     self.CHANGE_NOTIFICATION_COUNT = rospy.get_param('~change_notification_count', Discoverer.CHANGE_NOTIFICATION_COUNT)
     self._current_change_notification_count = 0
     self._send_mcast = rospy.get_param('~send_mcast', True)
+    # for cases with more then one master_discovery on the same host and
+    # heartbeat rate is less then 0.1. In this case we have to send a multicast
+    # request reply, because we are bind to the same port. Unicast replies are 
+    # not forward to the same port only once.
+    self._addresses = dict() # {address : (int) ocurres}
 
     # some parameter checks and info outputs
     if not self._send_mcast and not self.robots:
@@ -618,6 +622,8 @@ class Discoverer(object):
         if self._send_mcast:
           rospy.logdebug('Send current state to addr %s'%(address))
           self.msocket.send2addr(msg, address)
+          if self._is_multi_address(address):
+            self._send_current_state2group()
     except Exception as e:
       rospy.logwarn("Send current state to '%s' failed: %s"%(address, e))
       self._init_mcast_socket()
@@ -636,6 +642,8 @@ class Discoverer(object):
     try:
       rospy.logdebug('Send a request for update: %s'%address)
       self.msocket.send2addr(self._create_request_update_msg(), address)
+      if self._is_multi_address(address):
+        self._send_request2group()
       if not master is None:
         master.add_request(time.time())
     except Exception as e:
@@ -728,6 +736,7 @@ class Discoverer(object):
             v.set_offline()
       for r in to_remove:
         rospy.logdebug("Remove master discovery: http://%s:%s"%(r[0][0], r[1]))
+        self._rem_address(r[0][0])
         del self.masters[r]
 
 
@@ -775,6 +784,7 @@ class Discoverer(object):
                                                                master.discoverername, 
                                                                master.monitoruri)))
                     rospy.logdebug("Remove master discovery: http://%s:%s"%(address[0], monitor_port))
+                    self._rem_address(address[0])
                     del self.masters[master_key]
               # update the timestamp of existing master
               elif self.masters.has_key(master_key):
@@ -788,6 +798,7 @@ class Discoverer(object):
               if add_to_list:
                 with self.__lock:
                   rospy.logdebug("Add discovery master: http://%s:%s"%(address[0], monitor_port))
+                  self._add_address(address[0])
                   self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
                                                               heartbeat_rate=float(rate)/10.0,
                                                               timestamp=float(secs)+float(nsecs)/1000000000.0,
@@ -798,6 +809,21 @@ class Discoverer(object):
 #            import traceback
 #            print traceback.format_exc()
             rospy.logwarn("Error while decode message: %s", str(e))
+
+  def _is_multi_address(self, address):
+    return address in self._addresses and self._addresses[address] > 1
+
+  def _add_address(self, address):
+    if address in self._addresses:
+      self._addresses[address] += 1
+    else:
+      self._addresses[address] = 1
+
+  def _rem_address(self, address):
+    if address in self._addresses:
+      self._addresses[address] -= 1
+    if self._addresses[address] == 0:
+      del self._addresses[address]
 
   @classmethod
   def msg2masterState(cls, msg, address):
