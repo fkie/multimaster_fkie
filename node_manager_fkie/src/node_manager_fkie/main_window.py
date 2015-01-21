@@ -1122,7 +1122,7 @@ class MainWindow(QtGui.QMainWindow):
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
                        'Robot hosts' : ('string', ''),
                        'Username' : ('string', [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]),
-                       'Send MCast' : ('bool', True),
+                       'MCast Group' : ('string', '226.0.0.0'),
                        'Heartbeat [Hz]' : ('float', 0.5)
                       }
     params = {'Host' : ('string', 'localhost'),
@@ -1146,7 +1146,7 @@ class MainWindow(QtGui.QMainWindow):
           masteruri = params['Optional Parameter']['ROS Master URI']
         robot_hosts = params['Optional Parameter']['Robot hosts']
         username = params['Optional Parameter']['Username']
-        send_mcast = params['Optional Parameter']['Send MCast']
+        mcast_group = params['Optional Parameter']['MCast Group']
         heartbeat_hz = params['Optional Parameter']['Heartbeat [Hz]']
         if robot_hosts:
           robot_hosts = robot_hosts.replace(' ', '')
@@ -1161,7 +1161,7 @@ class MainWindow(QtGui.QMainWindow):
               args.append('_mcast_port:=%s'%(11511))
             if not mastername == 'autodetect':
               args.append('_name:=%s'%(mastername))
-            args.append('_send_mcast:=%s'%send_mcast)
+            args.append('_mcast_group:=%s'%mcast_group)
             args.append('_robot_hosts:=[%s]'%robot_hosts)
             args.append('_heartbeat_hz:=%s'%heartbeat_hz)
             #TODO: remove the name parameter from the ROS parameter server
