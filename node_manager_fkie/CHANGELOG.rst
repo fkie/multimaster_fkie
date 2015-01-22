@@ -2,6 +2,17 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.17 (2015-01-22)
+-------------------
+* node_manager_fkie: switch to local monitoring after connection problems to local master_discovery
+* node_manager_fkie: added an update procedure to refresh discovered masters
+  In same cases the messages, which are send on the shutdown of the
+  master_discovery are not received by node_manager. To update the
+  discovered list in node_manager the complete list of discoevered hosts
+  will be requested, if the localhost master is added as new master.
+* node_manager_fkie: fixed error while publishing to 'std_msgs/Empty'
+* Contributors: Alexander Tiderko
+
 0.3.16 (2014-12-08)
 -------------------
 * node_manager_fkie: fixed a problem with screen view
