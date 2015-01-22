@@ -723,11 +723,8 @@ class MainWindow(QtGui.QMainWindow):
     if masteruri == self.getMasteruri():
       rospy.logwarn("Error while connect to local master_discovery %s: %s", masteruri, error)
       # switch to local monitoring after 3 timeouts
-#      self._local_tries += 1
-#      if self._local_tries > 2:
-#        print "CONNECTION ERROR2222222"
-#        self._setLocalMonitoring(True)
-#      elif not masteruri is None:
+      if self._con_tries[masteruri] > 2:
+        self._setLocalMonitoring(True)
     master = self.getMaster(masteruri, False)
     if master and not master.master_state is None:
       self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri, self.DELAYED_NEXT_REQ_ON_ERR)
