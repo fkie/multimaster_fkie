@@ -717,6 +717,7 @@ class Discoverer(object):
       to_remove = []
       for (k, v) in self.masters.iteritems():
         ts_since_last_hb = current_time - v.last_heartbeat_ts
+        ts_since_last_request = current_time - v.requests[-1] if v.requests else v.last_heartbeat_ts
         if self.REMOVE_AFTER > 0 and ts_since_last_hb > self.REMOVE_AFTER:
           to_remove.append(k)
           if not v.mastername is None:
@@ -729,11 +730,10 @@ class Discoverer(object):
                                                      v.discoverername,
                                                      v.monitoruri)))
         # request updates
-        elif ts_since_last_hb > self.ACTIVE_REQUEST_AFTER or v.count_requests > 0:
-          if v.count_requests < self.OFFLINE_AFTER_REQUEST_COUNT:
-            self._send_request2addr(k[0][0], v)
-          else:
+        elif ts_since_last_request > self.ACTIVE_REQUEST_AFTER or (v.count_requests > 0 and v.online):
+          if v.count_requests >= self.OFFLINE_AFTER_REQUEST_COUNT:
             v.set_offline()
+          self._send_request2addr(k[0][0], v)
       for r in to_remove:
         rospy.logdebug("Remove master discovery: http://%s:%s"%(r[0][0], r[1]))
         self._rem_address(r[0][0])
