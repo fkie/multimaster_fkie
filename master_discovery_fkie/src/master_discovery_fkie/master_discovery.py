@@ -717,7 +717,7 @@ class Discoverer(object):
       to_remove = []
       for (k, v) in self.masters.iteritems():
         ts_since_last_hb = current_time - v.last_heartbeat_ts
-        ts_since_last_request = current_time - v.requests[-1] if v.requests else v.last_heartbeat_ts
+        ts_since_last_request = current_time - (v.requests[-1] if v.requests else v.last_heartbeat_ts)
         if self.REMOVE_AFTER > 0 and ts_since_last_hb > self.REMOVE_AFTER:
           to_remove.append(k)
           if not v.mastername is None:
