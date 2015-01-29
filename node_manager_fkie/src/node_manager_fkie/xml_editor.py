@@ -87,6 +87,10 @@ class Editor(QtGui.QTextEdit):
     self.path = '.'
     # enables drop events
     self.setAcceptDrops(True)
+    if filename.endswith('.launch'):
+      self.hl = XmlHighlighter(self.document())
+    else:
+      self.hl = YamlHighlighter(self.document())
 
 #  def __del__(self):
 #    print "********** desctroy:", self.objectName()
@@ -840,10 +844,6 @@ class XmlEditor(QtGui.QDialog):
         self.files.append(filename)
         editor.setCurrentPath(os.path.basename(filename))
         editor.load_request_signal.connect(self.on_load_request)
-        if filename.endswith('.launch'):
-          self.hl = XmlHighlighter(editor.document())
-        else:
-          self.hl = YamlHighlighter(editor.document())
         editor.textChanged.connect(self.on_editor_textChanged)
         editor.cursorPositionChanged.connect(self.on_editor_positionChanged)
         editor.setFocus(QtCore.Qt.OtherFocusReason)
