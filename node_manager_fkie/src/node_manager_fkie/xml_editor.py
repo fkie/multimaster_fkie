@@ -287,22 +287,22 @@ class Editor(QtGui.QTextEdit):
           fileName = cursor.block().text()[startIndex+1:endIndex]
           if len(fileName) > 0:
             try:
-              f = QtCore.QFile(self.interpretPath(fileName))
-              if not f.exists():
+              qf = QtCore.QFile(self.interpretPath(fileName))
+              if not qf.exists():
                 # create a new file, if it does not exists
-                result = QtGui.QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", f.fileName()]), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+                result = QtGui.QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", qf.fileName()]), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
                 if result == QtGui.QMessageBox.Yes:
-                  d = os.path.dirname(f.fileName())
-                  if not os.path.exists(dir):
+                  d = os.path.dirname(qf.fileName())
+                  if not os.path.exists(d):
                     os.makedirs(d)
-                  with open(f.fileName(),'w') as f:
-                    if f.fileName().endswith('.launch'):
+                  with open(qf.fileName(),'w') as f:
+                    if qf.fileName().endswith('.launch'):
                       f.write('<launch>\n\n</launch>')
-                  self.load_request_signal.emit(f.fileName())
+                  self.load_request_signal.emit(qf.fileName())
               else:
-                self.load_request_signal.emit(f.fileName())
+                self.load_request_signal.emit(qf.fileName())
             except Exception, e:
-              WarningMessageBox(QtGui.QMessageBox.Warning, "File not found", fileName, str(e)).exec_()
+              WarningMessageBox(QtGui.QMessageBox.Warning, "File not found %s"%fileName, str(e)).exec_()
     QtGui.QTextEdit.mouseReleaseEvent(self, event)
 
   def mouseMoveEvent(self, event):
