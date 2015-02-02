@@ -39,15 +39,10 @@ import node_manager_fkie as nm
 from packages_thread import PackagesThread
 
 
-class RunDialog(QtGui.QDialog):
-  '''
-  A dialog to run a ROS node without configuration
-  '''
-
-  def __init__(self, host, masteruri=None, parent=None):
+class PackageDialog(QtGui.QDialog):
+  def __init__(self, parent=None):
     QtGui.QDialog.__init__(self, parent)
-    self.host = host
-    self.setWindowTitle('Run')
+    self.setWindowTitle('Select Binary')
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
 
@@ -70,6 +65,83 @@ class RunDialog(QtGui.QDialog):
     self.binary_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
     self.binary_field.setEditable(True)
     self.contentLayout.addRow(binary_label, self.binary_field)
+
+    self.buttonBox = QtGui.QDialogButtonBox(self)
+    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+    self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+    self.buttonBox.setObjectName("buttonBox")
+    self.verticalLayout.addWidget(self.buttonBox)
+
+    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
+    self.package = ''
+    self.binary = ''
+
+    if self.packages is None:
+      self.package_field.addItems(['packages searching...'])
+      self.package_field.setCurrentIndex(0)
+      self._fill_packages_thread = PackagesThread()
+      self._fill_packages_thread.packages.connect(self._fill_packages)
+      self._fill_packages_thread.start()
+
+    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
+    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
+    QtCore.QMetaObject.connectSlotsByName(self)
+    self.package_field.activated[str].connect(self.on_package_selected)
+    self.package_field.textChanged.connect(self.on_package_selected)
+
+  def _fill_packages(self, packages):
+    # fill the input fields
+    self.packages = packages
+    packages = packages.keys()
+    packages.sort()
+    self.package_field.clear()
+    self.package_field.clearEditText()
+    self.package_field.addItems(packages)
+
+  def _getBinaries(self, path):
+    result = {}
+    if os.path.isdir(path):
+      fileList = os.listdir(path)
+      for f in fileList:
+        if f and f[0] != '.' and not f in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
+          ret = self._getBinaries(os.path.join(path, f))
+          result = dict(ret.items() + result.items())
+    elif os.path.isfile(path) and os.access(path, os.X_OK):
+      # create a selection for binaries
+      return {os.path.basename(path) : path}
+    return result
+
+  def on_package_selected(self, package):
+    self.binary_field.clear()
+    if self.packages and self.packages.has_key(package):
+      self.binary_field.setEnabled(True)
+      path = self.packages[package]
+      binaries = self._getBinaries(path).keys()
+      try:
+        # find binaries in catkin workspace
+        from catkin.find_in_workspaces import find_in_workspaces as catkin_find
+        search_paths = catkin_find(search_dirs=['libexec', 'share'], project=package, first_matching_workspace_only=True)
+        for p in search_paths:
+          binaries += self._getBinaries(p).keys()
+      except:
+        pass
+      binaries = list(set(binaries))
+      binaries.sort()
+      self.binary_field.addItems(binaries)
+      self.package = package
+      self.binary = binaries[0] if binaries else ''
+
+
+class RunDialog(PackageDialog):
+  '''
+  A dialog to run a ROS node without configuration
+  '''
+
+  def __init__(self, host, masteruri=None, parent=None):
+    PackageDialog.__init__(self, parent)
+    self.host = host
+    self.setWindowTitle('Run')
+
     ns_name_label = QtGui.QLabel("NS/Name:", self.content)
     self.ns_field = QtGui.QComboBox(self.content)
     self.ns_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
@@ -92,7 +164,7 @@ class RunDialog(QtGui.QDialog):
     args_history = nm.history().cachedParamValues('run_dialog/Args')
     args_history.insert(0, '')
     self.args_field.addItems(args_history)
-    
+
     host_label = QtGui.QLabel("Host:", self.content)
     self.host_field = QtGui.QComboBox(self.content)
 #    self.host_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
@@ -119,38 +191,9 @@ class RunDialog(QtGui.QDialog):
     master_history.insert(0, self.masteruri)
     self.master_field.addItems(master_history)
 
-    self.buttonBox = QtGui.QDialogButtonBox(self)
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
-    self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-    self.buttonBox.setObjectName("buttonBox")
-    self.verticalLayout.addWidget(self.buttonBox)
-
-    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
-    self.package = ''
-    self.binary = ''
-
-    if self.packages is None:
-      self.package_field.addItems(['packages searching...'])
-      self.package_field.setCurrentIndex(0)
-      self._fill_packages_thread = PackagesThread()
-      self._fill_packages_thread.packages.connect(self._fill_packages)
-      self._fill_packages_thread.start()
-
-    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
-    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
-    QtCore.QMetaObject.connectSlotsByName(self)
-    self.package_field.activated[str].connect(self.on_package_selected)
+#    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
     self.package_field.textChanged.connect(self.on_package_selected)
     self.binary_field.activated[str].connect(self.on_binary_selected)
-
-  def _fill_packages(self, packages):
-    # fill the input fields
-    self.packages = packages
-    packages = packages.keys()
-    packages.sort()
-    self.package_field.clear()
-    self.package_field.clearEditText()
-    self.package_field.addItems(packages)
 
   def run_params(self):
     '''
@@ -173,39 +216,12 @@ class RunDialog(QtGui.QDialog):
       return (self.host, self.package, self.binary, self.name_field.text(), ('__ns:=%s %s'%(ns, args)).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
     return ()
 
-  def _getBinaries(self, path):
-    result = {}
-    if os.path.isdir(path):
-      fileList = os.listdir(path)
-      for f in fileList:
-        if f and f[0] != '.' and not f in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
-          ret = self._getBinaries(os.path.join(path, f))
-          result = dict(ret.items() + result.items())
-    elif os.path.isfile(path) and os.access(path, os.X_OK):
-      # create a selection for binaries
-      return {os.path.basename(path) : path}
-    return result
-
   def on_package_selected(self, package):
-    self.binary_field.clear()
+    PackageDialog.on_package_selected(self, package)
     if self.packages and self.packages.has_key(package):
-      self.binary_field.setEnabled(True)
       self.args_field.setEnabled(True)
       self.ns_field.setEnabled(True)
       self.name_field.setEnabled(True)
-      path = self.packages[package]
-      binaries = self._getBinaries(path).keys()
-      try:
-        # find binaries in catkin workspace
-        from catkin.find_in_workspaces import find_in_workspaces as catkin_find
-        search_paths = catkin_find(search_dirs=['libexec', 'share'], project=package, first_matching_workspace_only=True)
-        for p in search_paths:
-          binaries += self._getBinaries(p).keys()
-      except:
-        pass
-      binaries.sort()
-      self.binary_field.addItems(binaries)
-      self.package = package
       root, ext = os.path.splitext(os.path.basename(self.binary_field.currentText()))
       self.name_field.setText(root)
 

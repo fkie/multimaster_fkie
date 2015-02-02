@@ -43,6 +43,7 @@ from detailed_msg_box import WarningMessageBox
 import node_manager_fkie as nm
 from master_discovery_fkie.common import resolve_url
 from common import package_name
+from run_dialog import PackageDialog
 
 class Editor(QtGui.QTextEdit):
   '''
@@ -1141,17 +1142,21 @@ class XmlEditor(QtGui.QDialog):
                       '</group>')
 
   def _on_add_node_tag(self):
-    self._insert_text('<node name="NAME" pkg="PKG" type="BIN">\n'
-                      '</node>')
+    dia = PackageDialog()
+    if dia.exec_():
+      self._insert_text('<node name="%s" pkg="%s" type="%s">\n'
+                        '</node>'%(dia.binary, dia.package, dia.binary))
 
   def _on_add_node_tag_all(self):
-    self._insert_text('<node name="NAME" pkg="PKG" type="BIN"\n'
-                      '      args="arg1" machine="machine-name"\n'
-                      '      respawn="true" required="true"\n'
-                      '      ns="foo" clear_params="true|false"\n'
-                      '      output="log|screen" cwd="ROS_HOME|node"\n'
-                      '      launch-prefix="prefix arguments">\n'
-                      '</node>')
+    dia = PackageDialog()
+    if dia.exec_():
+      self._insert_text('<node name="%s" pkg="%s" type="%s"\n'
+                        '      args="arg1" machine="machine-name"\n'
+                        '      respawn="true" required="true"\n'
+                        '      ns="foo" clear_params="true|false"\n'
+                        '      output="log|screen" cwd="ROS_HOME|node"\n'
+                        '      launch-prefix="prefix arguments">\n'
+                        '</node>'%(dia.binary, dia.package, dia.binary))
 
   def _on_add_include_tag_all(self):
     self._insert_text('<include file="$(find pkg-name)/path/filename.xml"\n'
@@ -1189,13 +1194,17 @@ class XmlEditor(QtGui.QDialog):
     self._insert_text('<arg name="foo" value="bar" />')
 
   def _on_add_test_tag(self):
-    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name">\n'
-                      '</test>')
+    dia = PackageDialog()
+    if dia.exec_():
+      self._insert_text('<test name="%s" pkg="%s" type="%s" test-name="test_%s">\n'
+                        '</test>'%(dia.binary, dia.package, dia.binary, dia.binary))
 
   def _on_add_test_tag_all(self):
-    self._insert_text('<test name="NAME" pkg="PKG" type="BIN" test-name="test_name"\n'
-                      '      args="arg1" time-limit="60.0"\n'
-                      '      ns="foo" clear_params="true|false"\n'
-                      '      cwd="ROS_HOME|node" retry="0"\n'
-                      '      launch-prefix="prefix arguments">\n'
-                      '</test>')
+    dia = PackageDialog()
+    if dia.exec_():
+      self._insert_text('<test name="%s" pkg="%s" type="%s" test-name="test_%s">\n'
+                        '      args="arg1" time-limit="60.0"\n'
+                        '      ns="foo" clear_params="true|false"\n'
+                        '      cwd="ROS_HOME|node" retry="0"\n'
+                        '      launch-prefix="prefix arguments">\n'
+                        '</test>'%(dia.binary, dia.package, dia.binary, dia.binary))
