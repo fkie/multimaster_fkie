@@ -247,7 +247,7 @@ class SettingsModel(QtGui.QStandardItemModel):
       return result
     except:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
       return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -263,7 +263,6 @@ class SettingsModel(QtGui.QStandardItemModel):
     # remove all current items
     root = self.invisibleRootItem()
     while root.rowCount():
-      print "remove"
       root.removeRow(0)
     self.pyqt_workaround.clear()
     # add new items
@@ -272,7 +271,7 @@ class SettingsModel(QtGui.QStandardItemModel):
         self._add_item(root, name, value)
     except:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
 
   def _add_item(self, root, name, value):
     if isinstance(value, dict):

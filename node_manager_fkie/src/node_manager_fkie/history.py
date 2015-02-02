@@ -111,7 +111,7 @@ class History(QtCore.QObject):
               ignored[key] = (value, str(e))
             except:
               import traceback
-              rospy.logwarn("Storing history aborted: %s", traceback.format_exc)
+              rospy.logwarn("Storing history aborted: %s", traceback.format_exc(1))
             count += 1
           else:
             break

@@ -69,5 +69,5 @@ class PackagesThread(QtCore.QObject, threading.Thread):
       self.packages.emit(packages)
     except:
       import traceback
-      formatted_lines = traceback.format_exc().splitlines()
+      formatted_lines = traceback.format_exc(1).splitlines()
       rospy.logwarn("Error while list packages:\n\t%s", formatted_lines[-1])

@@ -168,7 +168,7 @@ class ProgressQueue(QtCore.QObject):
       self.__running = False
     except:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
 
   def _on_request_interact(self, ident, descr, req):
     '''
@@ -285,11 +285,11 @@ class ProgressThread(QtCore.QObject, threading.Thread):
     except:
       import traceback
 #      print traceback.print_exc()
-      formatted_lines = traceback.format_exc().splitlines()
+      formatted_lines = traceback.format_exc(1).splitlines()
       last_line = formatted_lines[-1]
       index = 1
       while not last_line and len(formatted_lines) > index:
         index += 1
         last_line = formatted_lines[-index]
       rospy.logwarn("%s failed:\n\t%s", str(self.descr), last_line)
-      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr)+" failed:\n"+last_line, traceback.format_exc())
+      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr)+" failed:\n"+last_line, traceback.format_exc(1))

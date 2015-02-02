@@ -95,7 +95,7 @@ class FileWatcher(QtCore.QObject):
             del self.launches[(uri, file, id)]
     except:
 #      import traceback
-#      print traceback.format_exc()
+#      print traceback.format_exc(1)
       pass
     self.update_files()
 

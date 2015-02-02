@@ -329,10 +329,13 @@ def main(name):
 
   # decide to show main or echo dialog
   global main_form
-  if parsed_args.echo:
-    main_form = init_echo_dialog(name, masteruri, parsed_args.echo[0], parsed_args.echo[1], parsed_args.hz)
-  else:
-    main_form = init_main_window(name, masteruri, parsed_args.file)
+  try:
+    if parsed_args.echo:
+      main_form = init_echo_dialog(name, masteruri, parsed_args.echo[0], parsed_args.echo[1], parsed_args.hz)
+    else:
+      main_form = init_main_window(name, masteruri, parsed_args.file)
+  except Exception as e:
+    sys.exit("%s"%e)
 
   exit_code = 0
   # resize and show the qt window

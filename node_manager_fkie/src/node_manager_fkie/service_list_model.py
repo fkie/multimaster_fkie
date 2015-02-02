@@ -121,7 +121,7 @@ class ServiceItem(QtGui.QStandardItem):
       item.setToolTip('')
     except:
 #       import traceback
-#       print traceback.format_exc()
+#       print traceback.format_exc(1)
       if not service.isLocal:
         tooltip = ''.join(['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
         item.setToolTip(''.join(['<div>', tooltip, '</div>']))
@@ -239,7 +239,7 @@ class ServiceModel(QtGui.QStandardItemModel):
       except:
         pass
 #        import traceback
-#        print traceback.format_exc()
+#        print traceback.format_exc(1)
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update services ", cputime, ', service count:', len(services)

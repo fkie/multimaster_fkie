@@ -233,7 +233,7 @@ class MainWindow(QtGui.QMainWindow):
         self.textBrowser.setText(examples.html_body(unicode(f.read())))
     except:
       import traceback
-      msg = "Error while generate help: %s"%traceback.format_exc()
+      msg = "Error while generate help: %s"%traceback.format_exc(2)
       rospy.logwarn(msg)
       self.textBrowser.setText(msg)
 
@@ -758,10 +758,12 @@ class MainWindow(QtGui.QMainWindow):
   def on_refresh_master_clicked(self):
     if not self.currentMaster is None:
       rospy.loginfo("Request an update from %s", str(self.currentMaster.master_state.monitoruri))
-      check_ts = self.currentMaster.master_info.check_ts
-      self.currentMaster.master_info.timestamp = self.currentMaster.master_info.timestamp - 1.0
-      self.currentMaster.master_info.check_ts = check_ts
-      self._update_handler.requestMasterInfo(self.currentMaster.master_state.uri, self.currentMaster.master_state.monitoruri)
+      if not self.currentMaster.master_info is None:
+        check_ts = self.currentMaster.master_info.check_ts
+        self.currentMaster.master_info.timestamp = self.currentMaster.master_info.timestamp - 1.0
+        self.currentMaster.master_info.check_ts = check_ts
+      if not self.currentMaster.master_state is None:
+        self._update_handler.requestMasterInfo(self.currentMaster.master_state.uri, self.currentMaster.master_state.monitoruri)
       self.currentMaster.force_next_update()
 #      self.currentMaster.remove_all_def_configs()
 
@@ -805,7 +807,7 @@ class MainWindow(QtGui.QMainWindow):
                                         False))
       except (Exception, nm.StartException), e:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
         rospy.logwarn("Error while start %s: %s"%(name, e))
         WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
                           'Error while start %s'%name,
@@ -840,7 +842,7 @@ class MainWindow(QtGui.QMainWindow):
           import traceback
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start sync error",
                             "Error while start sync node",
-                            str(traceback.format_exc())).exec_()
+                            str(traceback.format_exc(1))).exec_()
       else:
         self.syncButton.setChecked(False)
     elif sync_node is not None:
@@ -924,7 +926,10 @@ class MainWindow(QtGui.QMainWindow):
           self.showMasterName(masteruri, name, self.timestampStr(master.master_info.check_ts), master.master_state.online)
           pass
         elif not master.master_state is None:
-          self.showMasterName(masteruri, name, 'Try to get info!!!', master.master_state.online)
+          text = 'Try to get info!!!'
+          if not nm.settings().autoupdate:
+            text = 'Press F5 or click on reload to get info'
+          self.showMasterName(masteruri, name, text, master.master_state.online)
       else:
         self.showMasterName('', 'No robot selected', None, False)
     if (current_time - self._refresh_time > 30.0):
@@ -1182,7 +1187,7 @@ class MainWindow(QtGui.QMainWindow):
 
           except (Exception, nm.StartException), e:
             import traceback
-            print traceback.format_exc()
+            print traceback.format_exc(1)
             rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
             WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                               'Error while start master_discovery',
@@ -1229,7 +1234,7 @@ class MainWindow(QtGui.QMainWindow):
         master_proxy.launchfiles = path
       except Exception, e:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
         WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", path, '%s'%e).exec_()
 #      self.setCursor(cursor)
     else:
@@ -1269,7 +1274,7 @@ class MainWindow(QtGui.QMainWindow):
             return
       except:
         import traceback
-        rospy.logwarn('Error while load %s as default: %s'%(path, traceback.format_exc()))
+        rospy.logwarn('Error while load %s as default: %s'%(path, traceback.format_exc(1)))
       hostname = host if host else nm.nameres().address(master_proxy.masteruri)
       name_file_prefix = os.path.basename(path).replace('.launch','').replace(' ', '_')
       node_name = roslib.names.SEP.join([hostname,

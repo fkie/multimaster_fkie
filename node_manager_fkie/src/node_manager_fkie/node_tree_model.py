@@ -123,7 +123,7 @@ class GroupItem(QtGui.QStandardItem):
             self._re_cap_nodes[(config, ns, groupname)] = re.compile('\b', re.I)
         except:
           import traceback
-          print traceback.format_exc()
+          print traceback.format_exc(1)
 
 
   def addCapabilities(self, config, capabilities, masteruri):
@@ -224,7 +224,7 @@ class GroupItem(QtGui.QStandardItem):
     except:
       pass
 #      import traceback
-#      print traceback.format_exc()
+#      print traceback.format_exc(1)
     return result
 
   def getNodeItemsByName(self, node_name, recursive=True):
@@ -524,7 +524,7 @@ class GroupItem(QtGui.QStandardItem):
             tooltip += examples.html_body(unicode(self.descr))
         except:
           import traceback
-          rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc())
+          rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
           tooltip += '<br>'
       # get nodes
       nodes = []
@@ -709,7 +709,7 @@ class HostItem(GroupItem):
             tooltip += examples.html_body(self.descr, input_encoding='utf8')
         except:
           import traceback
-          rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc())
+          rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
           tooltip += '<br>'
     tooltip += '<h3>%s</h3>'%self._hostname
     tooltip += '<font size="+1"><i>%s</i></font><br>'%self.id[0]
@@ -732,7 +732,7 @@ class HostItem(GroupItem):
         tooltip += examples.html_body('- %s'%('\n- '.join(capabilities)), input_encoding='utf8')
       except:
         import traceback
-        rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc())
+        rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
     return '<div>%s</div>'%tooltip if tooltip else ''
 
   def type(self):

@@ -93,7 +93,7 @@ class UpdateThread(QtCore.QObject, threading.Thread):
     except:
       import traceback
 #      print traceback.print_exc()
-      formatted_lines = traceback.format_exc().splitlines()
+      formatted_lines = traceback.format_exc(1).splitlines()
       rospy.logwarn("Connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
       #'print "request failed", self._monitoruri
       self.error_signal.emit(self._masteruri, formatted_lines[-1])

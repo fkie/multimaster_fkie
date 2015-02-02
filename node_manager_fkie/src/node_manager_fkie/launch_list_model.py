@@ -266,7 +266,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
       self.DIR_CACHE = {}
     except:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(2)
     try:
       if self.currentPath is None:
         self._setNewList(self._moveUp(self.currentPath))
@@ -341,7 +341,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         self._setNewList((self.currentPath if self.currentPath else '', items))
       except:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(2)
     else:
       self._setNewList(self._moveUp(self.currentPath))
 
@@ -449,7 +449,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         return True
       except:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(2)
       return False
 
   def _identifyPath(self, path):

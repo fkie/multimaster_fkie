@@ -109,11 +109,11 @@ class LaunchServerHandler(QtCore.QObject):
         self.__create_update_thread(serveruri, delayed_exec)
       except KeyError:
   #      import traceback
-  #      print traceback.format_exc()
+  #      print traceback.format_exc(1)
         pass
       except:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(2)
 
   def __create_update_thread(self, serveruri, delayed_exec):
     upthread = LaunchServerUpdateThread(serveruri, delayed_exec)
@@ -152,7 +152,7 @@ class LaunchServerUpdateThread(QtCore.QObject, threading.Thread):
     except:
       import traceback
 #      print traceback.print_exc()
-      formatted_lines = traceback.format_exc().splitlines()
+      formatted_lines = traceback.format_exc(1).splitlines()
       rospy.logwarn("Connection to launch server @ %s failed:\n\t%s", str(self._launch_serveruri), formatted_lines[-1])
       #'print "request failed", self._monitoruri
       self.error_signal.emit(self._launch_serveruri, formatted_lines[-1])

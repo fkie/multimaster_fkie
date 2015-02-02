@@ -111,11 +111,11 @@ class UpdateHandler(QtCore.QObject):
         self.__create_update_thread(monitoruri, masteruri, delayed_exec)
       except KeyError:
   #      import traceback
-  #      print traceback.format_exc()
+  #      print traceback.format_exc(1)
         pass
       except:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
 
   def __create_update_thread(self, monitoruri, masteruri, delayed_exec):
     upthread = UpdateThread(monitoruri, masteruri, delayed_exec)

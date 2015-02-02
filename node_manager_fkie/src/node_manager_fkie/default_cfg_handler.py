@@ -177,7 +177,7 @@ class ServiceThread(QtCore.QObject, threading.Thread):
         self.update_signal.emit(self._service_uri, self._service, resp.nodes)
       except:
         import traceback
-        lines = traceback.format_exc().splitlines()
+        lines = traceback.format_exc(1).splitlines()
         rospy.logwarn("Error while retrieve the node list from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
 
@@ -208,6 +208,6 @@ class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
         self.update_signal.emit(self._service_uri, self._service, [resp])
       except:
         import traceback
-        lines = traceback.format_exc().splitlines()
+        lines = traceback.format_exc(1).splitlines()
         rospy.logwarn("Error while retrieve the description from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
