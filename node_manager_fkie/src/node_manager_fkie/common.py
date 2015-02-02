@@ -28,7 +28,7 @@ def get_ros_home():
       return get_ros_home()
   except:
 #    import traceback
-#    print traceback.format_exc()
+#    print traceback.format_exc(1)
     from roslib import rosenv
     return rosenv.get_ros_home()
 

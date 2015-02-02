@@ -229,7 +229,7 @@ class Editor(QtGui.QTextEdit):
                 result.append(path)
             except:
               import traceback
-              print traceback.format_exc()
+              print traceback.format_exc(1)
       b = b.next()
     return result
 
@@ -554,7 +554,7 @@ class Editor(QtGui.QTextEdit):
           action.setData(data)
     except:
 #      import traceback
-#      print traceback.format_exc()
+#      print traceback.format_exc(1)
       return None
     return menu
 
@@ -855,7 +855,7 @@ class XmlEditor(QtGui.QDialog):
             break
     except:
       import traceback
-      rospy.logwarn("Error while open %s: %s", filename, traceback.format_exc())
+      rospy.logwarn("Error while open %s: %s", filename, traceback.format_exc(1))
     self.tabWidget.setUpdatesEnabled(True)
     if search_text:
       if self.find(search_text, False):
@@ -891,7 +891,7 @@ class XmlEditor(QtGui.QDialog):
           self.close()
     except:
       import traceback
-      rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc())
+      rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
 
 #  def hideEvent(self, event):
 #    self.close()

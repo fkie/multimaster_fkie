@@ -140,7 +140,7 @@ class MasterItem(QtGui.QStandardItem):
 #      self.updateNameView(self.master, self.quality, self)
     except:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
 
   @property
   def master(self):

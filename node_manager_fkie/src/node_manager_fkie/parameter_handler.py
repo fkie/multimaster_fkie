@@ -196,9 +196,9 @@ class RequestListThread(QtCore.QObject, threading.Thread):
         self.parameter_list_signal.emit(self._masteruri, code, msg, result)
       except:
         import traceback
-        err_msg = "Error while retrieve the parameter list from %s: %s"%(self._masteruri, traceback.format_exc())
+        err_msg = "Error while retrieve the parameter list from %s: %s"%(self._masteruri, traceback.format_exc(1))
         rospy.logwarn(err_msg)
-#        lines = traceback.format_exc().splitlines()
+#        lines = traceback.format_exc(1).splitlines()
         self.parameter_list_signal.emit(self._masteruri, -1, err_msg, [])
 
 class RequestValuesThread(QtCore.QObject, threading.Thread):
@@ -234,10 +234,10 @@ class RequestValuesThread(QtCore.QObject, threading.Thread):
         self.parameter_values_signal.emit(self._masteruri, 1, '', result)
       except:
         import traceback
-#        err_msg = "Error while retrieve parameter values from %s: %s"%(self._masteruri, traceback.format_exc())
+#        err_msg = "Error while retrieve parameter values from %s: %s"%(self._masteruri, traceback.format_exc(1))
 #        rospy.logwarn(err_msg)
-#        lines = traceback.format_exc().splitlines()
-        self.parameter_values_signal.emit(self._masteruri, -1, traceback.format_exc(), result)
+#        lines = traceback.format_exc(1).splitlines()
+        self.parameter_values_signal.emit(self._masteruri, -1, traceback.format_exc(1), result)
 
 class DeliverValuesThread(QtCore.QObject, threading.Thread):
   '''
@@ -279,7 +279,7 @@ class DeliverValuesThread(QtCore.QObject, threading.Thread):
         self.result_signal.emit(self._masteruri, 1, '', result)
       except:
         import traceback
-        err_msg = "Error while deliver parameter values to %s: %s"%(self._masteruri, traceback.format_exc())
+        err_msg = "Error while deliver parameter values to %s: %s"%(self._masteruri, traceback.format_exc(1))
         rospy.logwarn(err_msg)
-#        lines = traceback.format_exc().splitlines()
+#        lines = traceback.format_exc(1).splitlines()
         self.result_signal.emit(self._masteruri, -1, err_msg, result)

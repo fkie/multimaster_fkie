@@ -43,6 +43,7 @@ import xmlrpclib
 
 import node_manager_fkie as nm
 from common import get_ros_home, masteruri_from_ros, package_name#, package_name
+from supervised_popen import SupervisedPopen
 
 
 class StartException(Exception):
@@ -219,11 +220,7 @@ class StartHandler(object):
         new_env['ROS_NAMESPACE'] = n.namespace
       for k, v in env:
         new_env[k] = v
-      ps = subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=ps.wait)
-      thread.setDaemon(True)
-      thread.start()
+      SupervisedPopen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env, id="Run node", description="Run node [%s]%s"%(str(package), str(binary)))
     else:
       #'print "RUN REMOTE", node, time.time()
       # start remote
@@ -475,13 +472,7 @@ class StartHandler(object):
       if not masteruri is None:
         cls._prepareROSMaster(masteruri)
         new_env['ROS_MASTER_URI'] = masteruri
-        ps = subprocess.Popen(shlex.split(cmd_str), env=new_env)
-      else:
-        ps = subprocess.Popen(shlex.split(cmd_str), env=new_env)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=ps.wait)
-      thread.setDaemon(True)
-      thread.start()
+      SupervisedPopen(shlex.split(cmd_str), env=new_env, id="Run without config", description="Run without config [%s]%s"%(str(package), str(binary)))
     else:
       # run on a remote machine
       startcmd = [nm.settings().start_remote_script,
@@ -526,7 +517,7 @@ class StartHandler(object):
     except:
 #      socket.setdefaulttimeout(None)
 #      import traceback
-#      print traceback.format_exc()
+#      print traceback.format_exc(1)
       # run a roscore
       from urlparse import urlparse
       master_host = urlparse(masteruri).hostname
@@ -538,7 +529,7 @@ class StartHandler(object):
         cmd_args = '%s roscore --port %d'%(nm.ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
         print "    %s"%cmd_args
         try:
-          subprocess.Popen(shlex.split(cmd_args), env=new_env)
+          SupervisedPopen(shlex.split(cmd_args), env=new_env, id="ROSCORE", description="Start roscore")
           # wait for roscore to avoid connection problems while init_node
           result = -1
           count = 1
@@ -707,11 +698,7 @@ class StartHandler(object):
       if os.path.isfile(screenLog):
         cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, screenLog], title_opt)
         rospy.loginfo("open log: %s", cmd)
-        ps = subprocess.Popen(shlex.split(cmd))
-        # wait for process to avoid 'defunct' processes
-        thread = threading.Thread(target=ps.wait)
-        thread.setDaemon(True)
-        thread.start()
+        SupervisedPopen(shlex.split(cmd), id="Open log", description="Open log for '%s' on '%s'"%(str(nodename), str(host)))
         found = True
       #open roslog file
       roslog = nm.screen().getROSLogFile(nodename)
@@ -719,24 +706,12 @@ class StartHandler(object):
         title_opt = title_opt.replace('LOG', 'ROSLOG')
         cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, roslog], title_opt)
         rospy.loginfo("open ROS log: %s", cmd)
-        ps = subprocess.Popen(shlex.split(cmd))
-        # wait for process to avoid 'defunct' processes
-        thread = threading.Thread(target=ps.wait)
-        thread.setDaemon(True)
-        thread.start()
+        SupervisedPopen(shlex.split(cmd), id="Open log", description="Open log for '%s' on '%s'"%(str(nodename), str(host)))
         found = True
       return found
     else:
       ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=ps.wait)
-      thread.setDaemon(True)
-      thread.start()
       ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=ps.wait)
-      thread.setDaemon(True)
-      thread.start()
     return False
 
 

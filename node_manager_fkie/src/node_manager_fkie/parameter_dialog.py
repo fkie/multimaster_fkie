@@ -70,7 +70,7 @@ class MyComboBox(QtGui.QComboBox):
               self.clearEditText()
       except:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
     QtGui.QComboBox.keyPressEvent(self, event)
 
 class ParameterDescription(object):
@@ -585,7 +585,7 @@ class ArrayBox(MainBox):
         del item
       except:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
       self.count_label.setText(str(self._dynamic_items_count))
 
   def createFieldFromValue(self, value):
@@ -898,7 +898,7 @@ class ParameterDialog(QtGui.QDialog):
           f.write(text)
     except Exception as e:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
       WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error", 
                        'Error while save parameter',
                         str(e)).exec_()
@@ -918,7 +918,7 @@ class ParameterDialog(QtGui.QDialog):
           self.content.set_values(yaml.load(f.read()))
     except Exception as e:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
       WarningMessageBox(QtGui.QMessageBox.Warning, "Load parameter Error", 
                        'Error while load parameter',
                         str(e)).exec_()
@@ -1010,7 +1010,7 @@ class MasterParameterDialog(ParameterDialog):
           self.close()
       except Exception, e:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
         QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
     elif self.masteruri is None:
       QtGui.QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QtGui.QMessageBox.Ok)
@@ -1053,7 +1053,7 @@ class MasterParameterDialog(ParameterDialog):
           QtGui.QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QtGui.QMessageBox.Ok)
       except ValueError, e:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
         QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
 
   def _on_param_list(self, masteruri, code, msg, params):
@@ -1128,7 +1128,7 @@ class MasterParameterDialog(ParameterDialog):
         self.setInfoActive(False)
       except Exception, e:
         import traceback
-        print traceback.format_exc()
+        print traceback.format_exc(1)
         QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
     else:
       self.setText(msg)
@@ -1154,7 +1154,7 @@ class MasterParameterDialog(ParameterDialog):
       errmsg = msg if msg else 'Unknown error on set parameter'
     if errmsg:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
       QtGui.QMessageBox.warning(self, self.tr("Warning"), errmsg, QtGui.QMessageBox.Ok)
       self.is_delivered = False
       self.is_send = False
@@ -1221,7 +1221,7 @@ class ServiceDialog(ParameterDialog):
       self.service_resp_signal.emit(str(req), str(resp))
     except Exception, e:
       import traceback
-      print traceback.format_exc()
+      print traceback.format_exc(1)
       rospy.logwarn("Error while call service '%s': %s", str(self.service.name), str(e))
       self.service_resp_signal.emit(unicode(req), unicode(e))
 
@@ -1242,7 +1242,7 @@ class ServiceDialog(ParameterDialog):
           result[slot] = (msg_type, [subresult] if is_array else subresult)
         except ValueError, e:
           import traceback
-          print traceback.format_exc()
+          print traceback.format_exc(1)
           rospy.logwarn("Error while parse message type '%s': %s", str(msg_type), str(e))
     return result
 

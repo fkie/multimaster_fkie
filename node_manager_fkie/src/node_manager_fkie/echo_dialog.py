@@ -169,9 +169,12 @@ class EchoDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.status_label)
 
     # subscribe to the topic
-    self.__msg_class = message.get_message_class(msg_type)
-    if not self.__msg_class:
-      raise Exception("Cannot load message class for [%s]. Are your messages built?"%msg_type)
+    try:
+      self.__msg_class = message.get_message_class(msg_type)
+      if not self.__msg_class:
+        raise Exception("Cannot load message class for [%s]. Did you build messages?"%msg_type)
+    except Exception as e:
+      raise Exception("Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e))
 
     self.print_hz_timer = QtCore.QTimer()
     self.print_hz_timer.timeout.connect(self._on_calc_hz)

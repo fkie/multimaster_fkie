@@ -44,6 +44,7 @@ except Exception, e:
 
 import rospy
 import node_manager_fkie as nm
+from supervised_popen import SupervisedPopen
 
 class AuthenticationRequest(Exception):
   ''' '''
@@ -141,7 +142,7 @@ class SSHhandler(object):
       except Exception, e:
         return '', str(e), False
 
-    
+
   def ssh_x11_exec(self, host, cmd, title=None, user=None):
     '''
     Executes a command on remote host using a terminal with X11 forwarding. 
@@ -176,10 +177,10 @@ class SSHhandler(object):
         else:
           cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
         rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
-        return subprocess.Popen(shlex.split(cmd_str))
+        return SupervisedPopen(shlex.split(cmd_str), id=str(title), description="REMOTE x11 execute on %s: %s"%(host, cmd_str))
       except:
-        pass
-    
+        raise
+
   def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=False):
     '''
     @return: the paramiko ssh client
@@ -204,7 +205,7 @@ class SSHhandler(object):
           self.SSH_AUTH[host] = user
         except Exception, e:
 #          import traceback
-#          print traceback.format_exc()
+#          print traceback.format_exc(1)
           if str(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
             if auto_pw_request:
               #'print "REQUEST PW-AUTO"
