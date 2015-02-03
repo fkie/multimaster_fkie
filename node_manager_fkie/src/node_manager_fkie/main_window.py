@@ -173,6 +173,7 @@ class MainWindow(QtGui.QMainWindow):
     # stores the widget to a 
     self.masters = dict() # masteruri : MasterViewProxy
     self.currentMaster = None # MasterViewProxy
+    self._close_on_exit = True
 
     nm.file_watcher().file_changed.connect(self.on_configfile_changed)
     nm.file_watcher_param().file_changed.connect(self.on_configparamfile_changed)
@@ -363,12 +364,38 @@ class MainWindow(QtGui.QMainWindow):
       settings.endGroup()
 
   def closeEvent(self, event):
-    try:
-      self.storeSetting()
-    except Exception as e:
-      rospy.logwarn("Error while store settings: %s"%e)
-    self.finish()
-    QtGui.QMainWindow.closeEvent(self, event)
+    # ask to close nodes on exit
+    if self._close_on_exit:
+      masters2stop, self._close_on_exit = SelectDialog.getValue('Stop nodes?', "Select masters where to stop:", self.masters.keys(), False, False, '', self, select_if_single=False)
+      if self._close_on_exit:
+        self._on_finish = True
+        for uri in masters2stop:
+          try:
+            m = self.masters[uri]
+            if not m is None:
+              m.stop_nodes_by_name(m.getRunningNodesIfLocal())
+          except Exception as e:
+            rospy.logwarn("Error while stop nodes on %s: %s"%(uri, e))
+        QtCore.QTimer.singleShot(200, self._test_for_finish)
+      else:
+        self._close_on_exit = True
+      event.ignore()
+    else:
+      try:
+        self.storeSetting()
+      except Exception as e:
+        rospy.logwarn("Error while store settings: %s"%e)
+      self.finish()
+      QtGui.QMainWindow.closeEvent(self, event)
+
+  def _test_for_finish(self):
+    # this method test on exit for running process queues with stopping jobs
+    for uri, m in self.masters.items():
+      if m.in_process():
+        QtCore.QTimer.singleShot(200, self._test_for_finish)
+        return
+    self._close_on_exit = False
+    self.close()
 
   def finish(self):
     if not self._finished:
@@ -607,6 +634,10 @@ class MainWindow(QtGui.QMainWindow):
     @type msg: L{master_discovery_fkie.msg.MasterState}
     '''
     #'print "*on_master_state_changed"
+    # do not update while closing
+    if hasattr(self, "_on_finish"):
+      rospy.logdebug("ignore changes on %s, because currently on closing...", msg.master.uri)
+      return;
     host=nm.nameres().getHostname(msg.master.uri)
     if msg.state == MasterState.STATE_CHANGED:
       nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
