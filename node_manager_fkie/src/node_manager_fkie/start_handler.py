@@ -220,7 +220,7 @@ class StartHandler(object):
         new_env['ROS_NAMESPACE'] = n.namespace
       for k, v in env:
         new_env[k] = v
-      SupervisedPopen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env, id="Run node", description="Run node [%s]%s"%(str(package), str(binary)))
+      SupervisedPopen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env, id="Run node", description="Run node [%s]%s"%(str(n.package), str(n.type)))
     else:
       #'print "RUN REMOTE", node, time.time()
       # start remote

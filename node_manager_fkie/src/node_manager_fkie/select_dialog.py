@@ -39,7 +39,7 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None):
+  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True):
     '''
     Creates an input dialog.
     @param items: a list with strings
@@ -115,7 +115,7 @@ class SelectDialog(QtGui.QDialog):
     # set the input fields
     if items:
       self.content.createFieldsFromValues(items, exclusive)
-      if len(items) == 1 or preselect_all:
+      if (select_if_single and len(items) == 1) or preselect_all:
         self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)
 
     if not items or len(items) < 11:
@@ -141,8 +141,8 @@ class SelectDialog(QtGui.QDialog):
     return self.content.getSelected()
 
   @staticmethod
-  def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None):
-    selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent)
+  def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True):
+    selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single)
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():

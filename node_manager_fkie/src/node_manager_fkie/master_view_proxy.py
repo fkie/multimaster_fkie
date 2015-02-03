@@ -436,6 +436,9 @@ class MasterViewProxy(QtGui.QWidget):
   def use_sim_time(self):
     return self.__use_sim_time
 
+  def in_process(self):
+    return self._progress_queue.count() > 0
+
   def force_next_update(self):
     self.__force_update = True
 
@@ -1545,7 +1548,7 @@ class MasterViewProxy(QtGui.QWidget):
         except (Exception, nm.StartException) as e:
           print type(e)
           import traceback
-          print traceback.format_exc(1)
+          print traceback.format_exc(3)
           rospy.logwarn("Error while start '%s': %s"%(node.name, e))
           raise DetailedError("Start error", 'Error while start %s'%node.name, '%s'%e)
       elif isinstance(config, (str, unicode)):
@@ -1738,7 +1741,7 @@ class MasterViewProxy(QtGui.QWidget):
                               str(e))
       finally:
         socket.setdefaulttimeout(None)
-    elif not node is None and node.is_ghost:
+    elif isinstance(node, NodeItem) and node.is_ghost:
       #since for ghost nodes no info is available, emit a signal to handle the
       # stop message in other master_view_proxy
       self.stop_nodes_signal.emit(node.masteruri, [node.name])
@@ -1752,9 +1755,9 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     # put into the queue and start the que handling
     for node in nodes:
-      self._progress_queue.add2queue(str(uuid.uuid4()), 
-                                     ''.join(['stop ', node.name]), 
-                                     self.stop_node, 
+      self._progress_queue.add2queue(str(uuid.uuid4()),
+                                     'stop %s'%node.name,
+                                     self.stop_node,
                                      (node, (len(nodes)==1)))
     self._progress_queue.start()
 
