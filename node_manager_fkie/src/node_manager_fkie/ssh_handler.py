@@ -95,7 +95,7 @@ class SSHhandler(object):
     '''
     with self.mutex:
       try:
-        ssh = self._getSSH(host, nm.settings().default_user if user is None else user, pw, True, auto_pw_request)
+        ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           sftp = ssh.open_sftp()
           try:
@@ -126,7 +126,7 @@ class SSHhandler(object):
     '''
     with self.mutex:
       try:
-        ssh = self._getSSH(host, nm.settings().default_user if user is None else user, pw, True, auto_pw_request)
+        ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           cmd_str = str(' '.join(cmd))
           rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
@@ -158,7 +158,7 @@ class SSHhandler(object):
     with self.mutex:
       try:
         # workaround: use ssh in a terminal with X11 forward
-        user = nm.settings().default_user if user is None else user
+        user = nm.settings().host_user(host) if user is None else user
         if self.SSH_AUTH.has_key(host):
           user = self.SSH_AUTH[host]
         # generate string for SSH command

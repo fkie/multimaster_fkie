@@ -155,7 +155,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
     self.__use_sim_time = False
-    self.__current_user = nm.settings().default_user
+    self.__current_user = nm.settings().host_user(self.mastername)
     self.__robot_icons = []
     self.__current_robot_icon = None
     self.__current_parameter_robot_icon = ''
@@ -356,6 +356,7 @@ class MasterViewProxy(QtGui.QWidget):
   @current_user.setter
   def current_user(self, user):
     self.__current_user = user
+    nm.settings().set_host_user(self.mastername, user)
 
   @property
   def is_local(self):
@@ -1858,15 +1859,16 @@ class MasterViewProxy(QtGui.QWidget):
       finally:
         socket.setdefaulttimeout(None)
     return True
-    
+
   def on_unregister_nodes(self):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     # put into the queue and start the que handling
     for node in selectedNodes:
-      self._progress_queue.add2queue(str(uuid.uuid4()), 
-                                     ''.join(['unregister node ', node.name]), 
-                                     self.unregister_node, 
-                                     (node, (len(selectedNodes)==1)))
+      if node.pid is None or len(selectedNodes) == 1:
+        self._progress_queue.add2queue(str(uuid.uuid4()), 
+                                       ''.join(['unregister node ', node.name]), 
+                                       self.unregister_node, 
+                                       (node, (len(selectedNodes)==1)))
     self._progress_queue.start()
 
   def on_stop_context_toggled(self, state):

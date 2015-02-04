@@ -1163,11 +1163,13 @@ class MainWindow(QtGui.QMainWindow):
     Tries to start the master_discovery node on the machine requested by a dialog.
     '''
     # get the history list
+    user_list = [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]
+    user_list.insert(0, 'last used')
     params_optional = {'Discovery type': ('string', ['master_discovery', 'zeroconf']),
                        'ROS Master Name' : ('string', 'autodetect'),
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
                        'Static hosts' : ('string', ''),
-                       'Username' : ('string', [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]),
+                       'Username' : ('string', user_list),
                        'Send MCast' : ('bool', True),
                       }
     params = {'Host' : ('string', 'localhost'),
@@ -1208,15 +1210,18 @@ class MainWindow(QtGui.QMainWindow):
             args.append('_send_mcast:=%s'%str(send_mcast))
             args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
             #TODO: remove the name parameter from the ROS parameter server
+            usr = username
+            if username == 'last used':
+              usr = nm.settings().host_user(hostname)
             self._progress_queue.add2queue(str(uuid.uuid4()), 
-                                           'start discovering on '+str(hostname), 
+                                           'start discovering on %s'%hostname,
                                            nm.starter().runNodeWithoutConfig, 
-                                           (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, username))
+                                           (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, usr))
 
           except (Exception, nm.StartException), e:
             import traceback
             print traceback.format_exc(1)
-            rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
+            rospy.logwarn("Error while start master_discovery for %s: %s"%(str(hostname), e))
             WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                               'Error while start master_discovery',
                               str(e)).exec_()
