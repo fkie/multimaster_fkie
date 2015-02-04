@@ -76,6 +76,11 @@ class MenuRqt(QtGui.QMenu):
                                                 'that is connected to the selected master</p>"',
                                               triggered=self.on_show_ros_graph_clicked)
       self.addAction(self.action_rqt_ros_graph)
+      self.action_rqt_rviz = QtGui.QAction(QtGui.QIcon.fromTheme('image-x-generic'),
+                                              "R&Viz", self,
+                                              statusTip='"<p>Starts RViz</p>"',
+                                              triggered=self.on_show_rviz_clicked)
+      self.addAction(self.action_rqt_rviz)
       self.addSeparator()
       self.action_rqt = QtGui.QAction(QtGui.QIcon(rqt_icon_path),
                                       "&Rqt GUI", self,
@@ -100,6 +105,9 @@ class MenuRqt(QtGui.QMenu):
 
   def on_show_ros_graph_clicked(self):
     self.start_rqt_plugin_signal.emit('Ros Graph', 'rqt_graph.ros_graph.RosGraph')
+
+  def on_show_rviz_clicked(self):
+    self.start_rqt_plugin_signal.emit('RViz', 'rqt_rviz/RViz')
 
   def on_start_rqt_clicked(self):
     self.start_rqt_plugin_signal.emit('Rqt GUI', '')
