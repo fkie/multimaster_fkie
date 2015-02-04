@@ -199,7 +199,7 @@ class SSHhandler(object):
       session.set_missing_host_key_policy(paramiko.AutoAddPolicy())
       while (session.get_transport() is None or not session.get_transport().authenticated) and do_connect:
         try:
-          session.connect(host, username=user, password=pw, timeout=3)
+          session.connect(host, username=user, password=pw, timeout=3, compress=True)
           self.SSH_AUTH[host] = user
         except Exception, e:
 #          import traceback
