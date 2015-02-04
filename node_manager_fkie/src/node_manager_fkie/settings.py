@@ -98,6 +98,11 @@ class Settings(object):
     self._robots_path = self.ROBOTS_DIR
     settings = self.qsettings(self.CFG_FILE)
     self._default_user = settings.value('default_user', self.USER_DEFAULT)
+    settings.beginGroup('default_user_hosts')
+    self._default_user_hosts = dict()
+    for k in settings.childKeys():
+      self._default_user_hosts[k] = settings.value(k, self._default_user)
+    settings.endGroup()
     try:
       self._launch_history_length = int(settings.value('launch_history_length', self.LAUNCH_HISTORY_LENGTH))
     except:
@@ -161,6 +166,17 @@ class Settings(object):
       self._default_user = user
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('default_user', self._default_user)
+
+  def host_user(self, host):
+    if host in self._default_user_hosts:
+      return self._default_user_hosts[host]
+    return self.default_user
+
+  def set_host_user(self, host, user):
+    if host and user:
+      self._default_user_hosts[host] = user
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('default_user_hosts/%s'%host, user)
 
   @property
   def launch_history_length(self):

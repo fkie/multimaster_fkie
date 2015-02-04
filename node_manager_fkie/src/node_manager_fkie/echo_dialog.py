@@ -43,6 +43,7 @@ import rospy
 import threading
 
 import gui_resources
+import node_manager_fkie as nm
 
 class EchoDialog(QtGui.QDialog):
 
@@ -54,19 +55,32 @@ class EchoDialog(QtGui.QDialog):
   '''
   This dialog shows the output of a topic.
   '''
-  
+
   finished_signal = QtCore.Signal(str)
   '''
   finished_signal has as parameter the name of the topic and is emitted, if this
   dialog was closed.
   '''
-  
+
   msg_signal = QtCore.Signal(object, bool)
   '''
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
-  
-  def __init__(self, topic, msg_type, show_only_rate=False, masteruri=None, parent=None):
+
+  text_hz_signal = QtCore.Signal(str)
+  text_signal = QtCore.Signal(str)
+  '''
+  text_signal is a signal, which is emitted, if a new text to display was received.
+  '''
+
+  text_error_signal = QtCore.Signal(str)
+  '''
+  text_error_signal is a signal, which is emitted, if a new error text to display was received.
+  '''
+
+  request_pw = QtCore.Signal(object)
+
+  def __init__(self, topic, msg_type, show_only_rate=False, masteruri=None, use_ssh=False, parent=None):
     '''
     Creates an input dialog.
     @param topic: the name of the topic
@@ -76,6 +90,7 @@ class EchoDialog(QtGui.QDialog):
     @raise Exception: if no topic class was found for the given type
     '''
     QtGui.QDialog.__init__(self, parent=parent)
+    self._masteruri = masteruri
     masteruri_str = '' if masteruri is None else '[%s]'%masteruri
     self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
@@ -158,30 +173,57 @@ class EchoDialog(QtGui.QDialog):
       hLayout.addWidget(clearButton)
       self.verticalLayout.addWidget(options)
 
-    self.display = QtGui.QTextEdit(self)
+    self.display = QtGui.QTextBrowser(self)
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display);
     self.display.document().setMaximumBlockCount(500)
     self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
     self._blocks_in_msg = None
+    self.display.setOpenLinks(False)
+    self.display.anchorClicked.connect(self._on_display_anchorClicked)
 
     self.status_label = QtGui.QLabel('0 messages', self)
     self.verticalLayout.addWidget(self.status_label)
 
     # subscribe to the topic
+    errmsg = ''
     try:
       self.__msg_class = message.get_message_class(msg_type)
       if not self.__msg_class:
-        raise Exception("Cannot load message class for [%s]. Did you build messages?"%msg_type)
+        errmsg = "Cannot load message class for [%s]. Did you build messages?"%msg_type
+#        raise Exception("Cannot load message class for [%s]. Did you build messages?"%msg_type)
     except Exception as e:
-      raise Exception("Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e))
+      self.__msg_class = None
+      errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e)
+#      raise Exception("Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e))
+
+    # variables for Subscriber
+    self.msg_signal.connect(self._append_message)
+    self.sub = None
+
+    # vairables for SSH connection
+    self.ssh_output_file = None
+    self.ssh_error_file = None
+    self.text_signal.connect(self._append_text)
+    self.text_hz_signal.connect(self._append_text_hz)
+    self._current_msg = ''
+    self._current_errmsg = ''
+    self.text_error_signal.connect(self._append_error_text)
+
+    # decide, which connection to open
+    if use_ssh:
+      self.__msg_class = None
+      self._on_display_anchorClicked(QtCore.QUrl(self._masteruri))
+    elif errmsg and self.__msg_class is None:
+      errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>'%(errmsg)
+      self.display.setText('<a href="%s">open using SSH</a>'%(masteruri))
+      self.display.append(errtxt)
+    else:
+      self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
 
     self.print_hz_timer = QtCore.QTimer()
     self.print_hz_timer.timeout.connect(self._on_calc_hz)
     self.print_hz_timer.start(1000)
-
-    self.msg_signal.connect(self._append_message)
-    self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
 
 #    print "======== create", self.objectName()
 #
@@ -195,6 +237,11 @@ class EchoDialog(QtGui.QDialog):
     if not self.sub is None:
       self.sub.unregister()
       del self.sub
+    try:
+      self.ssh_output_file.close()
+      self.ssh_error_file.close()
+    except:
+      pass
     self.finished_signal.emit(self.topic)
     if self.parent() is None:
       QtGui.QApplication.quit()
@@ -255,15 +302,28 @@ class EchoDialog(QtGui.QDialog):
       del self.times[:]
 
   def on_topic_control_btn_clicked(self):
-    if self.sub is None:
-      self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
-      self.topic_control_button.setText('stop')
-      self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
-    else:
-      self.sub.unregister()
-      self.sub = None
-      self.topic_control_button.setText('play')
-      self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
+    try:
+      if self.sub is None and self.ssh_output_file is None:
+        if self.__msg_class:
+          self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
+        else:
+          self._on_display_anchorClicked(QtCore.QUrl(self._masteruri))
+        self.topic_control_button.setText('stop')
+        self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
+      else:
+        if not self.sub is None:
+          self.sub.unregister()
+          self.sub = None
+        elif not self.ssh_output_file is None:
+          self.ssh_output_file.close()
+          self.ssh_error_file.close()
+          self.ssh_output_file = None
+        self.topic_control_button.setText('play')
+        self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
+        self.no_str_checkbox.setEnabled(True)
+        self.no_arr_checkbox.setEnabled(True)
+    except Exception as e:
+      rospy.logwarn('Error while stop/play echo for topic %s: %s'%(self.topic, e))
 
   def _msg_handle(self, data):
     self.msg_signal.emit(data, (data._connection_header['latching'] != '0'))
@@ -275,19 +335,7 @@ class EchoDialog(QtGui.QDialog):
     @type msg: message object
     '''
     current_time = time.time()
-    with self.lock:
-      # time reset
-      if self.msg_t0 < 0 or self.msg_t0 > current_time:
-        self.msg_t0 = current_time
-        self.msg_tn = current_time
-        self.times = []
-      else:
-        self.times.append(current_time - self.msg_tn)
-        self.msg_tn = current_time
-      # keep only statistics for the last 5000 messages so as not to run out of memory
-      if len(self.times) > self.STATISTIC_QUEUE_LEN:
-        self.times.pop(0)
-    self.message_count += 1
+    self._count_messages(current_time)
     # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
     if self._last_received_ts != 0 and self.receiving_hz != 0:
       if not latched and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
@@ -300,11 +348,7 @@ class EchoDialog(QtGui.QDialog):
       msg = message.strify_message(msg, field_filter=self.field_filter_fn)
       if isinstance(msg, tuple):
         msg = msg[0]
-      if self.line_limit != 0:
-        a = ''
-        for l in msg.splitlines():
-          a = a + (l if len(l)<=self.line_limit else l[0:self.line_limit-3]+'...') + '\n'
-        msg = a
+      msg = self._trim_width(msg)
       # create a notification about scrapped messages
       if self._scrapped_msgs_sl > 0:
         txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>'%self._scrapped_msgs_sl
@@ -312,12 +356,55 @@ class EchoDialog(QtGui.QDialog):
         self._scrapped_msgs_sl = 0
       txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>'%(datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
       # set the count of the displayed messages on receiving the first message
-      if self._blocks_in_msg is None:
-        td = QtGui.QTextDocument(txt)
-        self._blocks_in_msg = td.blockCount()
-        self.display.document().setMaximumBlockCount(self._blocks_in_msg*self.max_displayed_msgs)
+      self._update_max_msg_count(txt)
       self.display.append(txt)
     self._print_status()
+
+  def _count_messages(self, ts=time.time()):
+    '''
+    Counts the received messages. Call this method only on receive message.
+    '''
+    current_time = ts
+    with self.lock:
+      # time reset
+      if self.msg_t0 < 0 or self.msg_t0 > current_time:
+        self.msg_t0 = current_time
+        self.msg_tn = current_time
+        self.times = []
+      else:
+        self.times.append(current_time - self.msg_tn)
+        self.msg_tn = current_time
+      # keep only statistics for the last 5000 messages so as not to run out of memory
+      if len(self.times) > self.STATISTIC_QUEUE_LEN:
+        self.times.pop(0)
+      self.message_count += 1
+
+
+  def _trim_width(self, msg):
+    '''
+    reduce line width to current limit
+    :param msg: the message
+    :type msg: str
+    :return: trimmed message
+    '''
+    result = msg
+    if self.line_limit != 0:
+      a = ''
+      for l in msg.splitlines():
+        a = a + (l if len(l)<=self.line_limit else l[0:self.line_limit-3]+'...') + '\n'
+      result = a
+    return result
+
+  def _update_max_msg_count(self, txt):
+    '''
+    set the count of the displayed messages on receiving the first message
+    :param txt: text of the message, which will be added to the document
+    :type txt: str
+    '''
+    if self._blocks_in_msg is None:
+      td = QtGui.QTextDocument(txt)
+      self._blocks_in_msg = td.blockCount()
+      self.display.document().setMaximumBlockCount(self._blocks_in_msg*self.max_displayed_msgs)
 
   def _on_calc_hz(self):
     if rospy.is_shutdown():
@@ -348,3 +435,104 @@ class EchoDialog(QtGui.QDialog):
   def _print_status(self):
     self.status_label.setText('%s messages   %s'%(self.message_count, self._rate_message))
 
+  def _append_text(self, text):
+    '''
+    Append echo text received through the SSH.
+    '''
+    with self.lock:
+      self._current_msg += text
+      if self._current_msg.find('---') != -1:
+        messages = self._current_msg.split('---')
+        for m in messages[:-1]:
+          current_time = time.time()
+          self._count_messages(current_time)
+          # limit the displayed text width
+          m = self._trim_width(m)
+          txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>'%(datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
+          # set the count of the displayed messages on receiving the first message
+          self._update_max_msg_count(txt)
+          self.display.append(txt)
+        self._current_msg = messages[-1]
+      self._print_status()
+
+  def _append_error_text(self, text):
+    '''
+    Append error text received through the SSH.
+    '''
+    with self.lock:
+      self._current_errmsg += text
+      if self._current_errmsg.find('\n') != -1:
+        messages = self._current_errmsg.split('\n')
+        for m in messages[:-1]:
+          txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">%s</pre>'%m
+          self.display.append(txt)
+        self._current_errmsg = messages[-1]
+
+  def _append_text_hz(self, text):
+    '''
+    Append text received through the SSH for hz view.
+    '''
+    with self.lock:
+      self._current_msg += text
+      if self._current_msg.find('\n') != -1:
+        messages = self._current_msg.split('\n')
+        for m in messages[:-1]:
+          txt = '<div style="font-family:Fixedsys,Courier;">%s</div>'%(m)
+          self.display.append(txt)
+        self._current_msg = messages[-1]
+
+  def _on_display_anchorClicked(self, url, user=None, pw=None):
+    try:
+      ok = False
+      if self.show_only_rate:
+        self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s'%(self.topic)], user, pw, auto_pw_request=True, get_pty=True)
+        self.status_label.setText('connected to %s over SSH'%url.host())
+      else:
+        self.combobox_displ_hz.setEnabled(False)
+        nostr = '--nostr' if self.no_str_checkbox.isChecked() else ''
+        noarr = '--noarr' if self.no_arr_checkbox.isChecked() else ''
+        self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s'%(nostr, noarr, self.topic)], user, pw, auto_pw_request=True)
+      if ok:
+        self.display.clear()
+        target = self._read_output_hz if self.show_only_rate else self._read_output
+        thread = threading.Thread(target=target, args=((self.ssh_output_file,)))
+        thread.setDaemon(True)
+        thread.start()
+        thread = threading.Thread(target=self._read_error, args=((self.ssh_error_file,)))
+        thread.setDaemon(True)
+        thread.start()
+      elif self.ssh_output_file:
+        self.ssh_output_file.close()
+        self.ssh_error_file.close()
+    except:
+      pass
+#      import traceback
+#      print traceback.format_exc()
+
+  def _read_output_hz(self, output_file):
+    try:
+      while not output_file.closed:
+        text = output_file.read(1)
+        if text:
+          self.text_hz_signal.emit(text)
+    except:
+      pass
+#      import traceback
+#      print traceback.format_exc()
+
+  def _read_output(self, output_file):
+    while not output_file.closed:
+      text = output_file.read(1)
+      if text:
+        self.text_signal.emit(text)
+
+  def _read_error(self, error_file):
+    try:
+      while not error_file.closed:
+        text = error_file.read(1)
+        if text:
+          self.text_error_signal.emit(text)
+    except:
+      pass
+#      import traceback
+#      print traceback.format_exc()

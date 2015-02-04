@@ -274,7 +274,9 @@ class StartHandler(object):
         startcmd[len(startcmd):] = args
         rospy.loginfo("Run remote on %s: %s", host, str(' '.join(startcmd)))
         #'print "RUN CALL", node, time.time()
-        output, error, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request)
+        output_file, error_file, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request)
+        output = output_file.read()
+        error = error_file.read()
         #'print "RUN CALLOK", node, time.time()
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.runNode, (node, launch_config, force2host, masteruri, auto_pw_request))
@@ -386,7 +388,8 @@ class StartHandler(object):
         path = os.path.dirname(value) if os.path.isfile(value) else value
         package, package_path = package_name(path)
         if package:
-          output, _, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request)
+          output_file, _, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request)
+          output = output_file.read()
           if ok:
             if output:
 #              print "  RESOLVED:", output
@@ -485,8 +488,10 @@ class StartHandler(object):
         startcmd.append(masteruri)
       rospy.loginfo("Run remote on %s: %s", host, ' '.join(startcmd))
       try:
-        output, error, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request)
+        output_file, error_file, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request)
         if ok:
+          output = output_file.read()
+          error = error_file.read()
           if error:
             rospy.logwarn("ERROR while start '%s': %s", name, error)
             raise StartException(''.join(['The host "', host, '" reports:\n', error]))
@@ -666,10 +671,12 @@ class StartHandler(object):
       request = '[]' if len(nodes) != 1 else nodes[0]
       try:
         socket.setdefaulttimeout(3)
-        output, error, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--ros_log_path', request], user, pw, auto_pw_request)
+        output_file, error_file, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--ros_log_path', request], user, pw, auto_pw_request)
         if ok:
+          output = output_file.read()
           return output
         else:
+          error = error_file.read()
           raise StartException(str(''.join(['Get log path from "', host, '" failed:\n', error])))
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.copylogPath2Clipboards, (host, nodes, auto_pw_request))
@@ -768,8 +775,10 @@ class StartHandler(object):
     else:
       # kill on a remote machine
       cmd = ['kill -9', str(pid)]
-      output, error, ok = nm.ssh().ssh_exec(host, cmd, user, pw, False)
+      output_file, error_file, ok = nm.ssh().ssh_exec(host, cmd, user, pw, False)
       if ok:
+        output = output_file.read()
+        error = error_file.read()
         if error:
           rospy.logwarn("ERROR while kill %s: %s", str(pid), error)
           raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))
@@ -799,8 +808,10 @@ class StartHandler(object):
         else:
           if not CACHED_PKG_PATH.has_key(host):
             CACHED_PKG_PATH[host] = dict()
-          output, error, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--package', pkg_name], user, pw, auto_pw_request)
+          output_file, error_file, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--package', pkg_name], user, pw, auto_pw_request)
         if ok:
+          output = output_file.read()
+          error = error_file.read()
           if error:
             rospy.logwarn("ERROR while transfer %s to %s: %s", path, host, error)
             raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))

@@ -214,7 +214,8 @@ class ScreenHandler(object):
     if nm.is_local(host):
       output = cls.getLocalOutput([cls.SCREEN, '-ls'])
     else:
-      output, _, _ = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request)#_:=error, ok
+      output_file, _, _ = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request)#_:=error, ok
+      output = output_file.read()
     if output:
       splits = output.split()
       for i in splits:

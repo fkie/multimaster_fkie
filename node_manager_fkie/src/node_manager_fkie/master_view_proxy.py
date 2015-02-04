@@ -155,7 +155,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
     self.__use_sim_time = False
-    self.__current_user = nm.settings().default_user
+    self.__current_user = nm.settings().host_user(self.mastername)
     self.__robot_icons = []
     self.__current_robot_icon = None
     self.__current_parameter_robot_icon = ''
@@ -264,6 +264,7 @@ class MasterViewProxy(QtGui.QWidget):
 
     self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
     self.masterTab.hzTopicButton.clicked.connect(self.on_topic_hz_clicked)
+    self.masterTab.hzSshTopicButton.clicked.connect(self.on_topic_hz_ssh_clicked)
     self.masterTab.pubTopicButton.clicked.connect(self.on_topic_pub_clicked)
     self.masterTab.pubStopTopicButton.clicked.connect(self.on_topic_pub_stop_clicked)
 
@@ -355,6 +356,7 @@ class MasterViewProxy(QtGui.QWidget):
   @current_user.setter
   def current_user(self, user):
     self.__current_user = user
+    nm.settings().set_host_user(self.mastername, user)
 
   @property
   def is_local(self):
@@ -1310,6 +1312,7 @@ class MasterViewProxy(QtGui.QWidget):
       topics_selected = (len(selectedTopics) > 0)
       self.masterTab.echoTopicButton.setEnabled(topics_selected)
       self.masterTab.hzTopicButton.setEnabled(topics_selected)
+      self.masterTab.hzSshTopicButton.setEnabled(topics_selected)
       self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
@@ -1317,6 +1320,7 @@ class MasterViewProxy(QtGui.QWidget):
       text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
       text += '<a href="topicecho://%s%s">echo</a>'%(self.mastername, topic.name)
       text += '- <a href="topichz://%s%s">hz</a>'%(self.mastername, topic.name)
+      text += '- <a href="topichzssh://%s%s">sshhz</a>'%(self.mastername, topic.name)
       text += '- <a href="topicpub://%s%s">pub</a>'%(self.mastername, topic.name)
       if topic.name in self.__republish_params:
         text += '- <a href="topicrepub://%s%s">repub</a>'%(self.mastername, topic.name)
@@ -1855,15 +1859,16 @@ class MasterViewProxy(QtGui.QWidget):
       finally:
         socket.setdefaulttimeout(None)
     return True
-    
+
   def on_unregister_nodes(self):
     selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
     # put into the queue and start the que handling
     for node in selectedNodes:
-      self._progress_queue.add2queue(str(uuid.uuid4()), 
-                                     ''.join(['unregister node ', node.name]), 
-                                     self.unregister_node, 
-                                     (node, (len(selectedNodes)==1)))
+      if node.pid is None or len(selectedNodes) == 1:
+        self._progress_queue.add2queue(str(uuid.uuid4()), 
+                                       ''.join(['unregister node ', node.name]), 
+                                       self.unregister_node, 
+                                       (node, (len(selectedNodes)==1)))
     self._progress_queue.start()
 
   def on_stop_context_toggled(self, state):
@@ -2189,6 +2194,12 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     self._show_topic_output(True)
 
+  def on_topic_hz_ssh_clicked(self):
+    '''
+    Shows the hz of the topic using ssh.
+    '''
+    self._show_topic_output(True, use_ssh=True)
+
   def on_topic_pub_clicked(self):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     if len(selectedTopics) > 0:
@@ -2345,7 +2356,7 @@ class MasterViewProxy(QtGui.QWidget):
             nodes2stop.append(n)
       self.stop_nodes_by_name(nodes2stop)
 
-  def _show_topic_output(self, show_hz_only):
+  def _show_topic_output(self, show_hz_only, use_ssh=False):
     '''
     Shows the output of the topic in a terminal.
     '''
@@ -2356,27 +2367,28 @@ class MasterViewProxy(QtGui.QWidget):
       ret = (ret == QtGui.QMessageBox.Ok)
     if ret:
       for topic in selectedTopics:
-        self._add_topic_output2queue(topic, show_hz_only)
+        self._add_topic_output2queue(topic, show_hz_only, use_ssh)
 
-  def show_topic_output(self, topic_name, show_hz_only):
+  def show_topic_output(self, topic_name, show_hz_only, use_ssh=False):
     '''
     Shows the topic output in a new window.
     '''
     if not self.master_info is None:
       topic = self.master_info.getTopic("%s"%topic_name)
       if not topic is None:
-        self._add_topic_output2queue(topic, show_hz_only)
+        self._add_topic_output2queue(topic, show_hz_only, use_ssh)
       else:
         rospy.logwarn("topic not found: %s"%topic_name)
 
-  def _add_topic_output2queue(self, topic, show_hz_only):
+  def _add_topic_output2queue(self, topic, show_hz_only, use_ssh=False):
     try:
         # connect to topic on remote host
         import shlex, subprocess
         env = dict(os.environ)
         env["ROS_MASTER_URI"] = str(self.masteruri)
-        cmd = ' '.join(['rosrun', 'node_manager_fkie', 'node_manager', '--echo', topic.name, topic.type, '--hz' if show_hz_only else '', ''.join(['__name:=echo_','hz_' if show_hz_only else '',str(nm.nameres().getHostname(self.masteruri)), topic.name])])
-        rospy.loginfo("Echo topic: %s", cmd)
+        nodename = 'echo_%s%s%s%s'%('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(nm.nameres().getHostname(self.masteruri)), topic.name)
+        cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s'%(topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename)
+        rospy.loginfo("Echo topic: %s"%cmd)
         ps = SupervisedPopen(shlex.split(cmd), env=env, close_fds=True, id=topic.name, description='Echo topic: %s'%topic.name)
         ps.finished.connect(self._topic_dialog_closed)
         self.__echo_topics_dialogs[topic.name] = ps
