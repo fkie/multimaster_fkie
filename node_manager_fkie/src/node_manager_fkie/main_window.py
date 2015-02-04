@@ -1563,6 +1563,9 @@ class MainWindow(QtGui.QMainWindow):
     elif url.toString().startswith('topichz://'):
       if not self.currentMaster is None:
         self.currentMaster.show_topic_output(url.encodedPath(), True)
+    elif url.toString().startswith('topichzssh://'):
+      if not self.currentMaster is None:
+        self.currentMaster.show_topic_output(url.encodedPath(), True, use_ssh=True)
     elif url.toString().startswith('topicpub://'):
       if not self.currentMaster is None:
         self.currentMaster.start_publisher(url.encodedPath())

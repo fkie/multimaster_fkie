@@ -95,7 +95,7 @@ class SSHhandler(object):
     '''
     with self.mutex:
       try:
-        ssh = self._getSSH(host, self.settings().default_user if user is None else user, pw, True, auto_pw_request)
+        ssh = self._getSSH(host, nm.settings().default_user if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           sftp = ssh.open_sftp()
           try:
@@ -109,7 +109,7 @@ class SSHhandler(object):
       except Exception, e:
         raise
 
-  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False):
+  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False, get_pty=False):
     '''
     Executes a command on remote host. Returns the output channels with 
     execution result or None. The connection will be established using paramiko 
@@ -126,15 +126,13 @@ class SSHhandler(object):
     '''
     with self.mutex:
       try:
-        ssh = self._getSSH(host, self.settings().default_user if user is None else user, pw, True, auto_pw_request)
+        ssh = self._getSSH(host, nm.settings().default_user if user is None else user, pw, True, auto_pw_request)
         if not ssh is None:
           cmd_str = str(' '.join(cmd))
           rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
-          (stdin, stdout, stderr) = ssh.exec_command(cmd_str)
+          (stdin, stdout, stderr) = ssh.exec_command(cmd_str, get_pty=get_pty)
           stdin.close()
-          output = stdout.read()
-          error = stderr.read()
-          return output, error, True
+          return stdout, stderr, True
         else:
           return '', '', False
       except AuthenticationRequest as e:
@@ -160,7 +158,7 @@ class SSHhandler(object):
     with self.mutex:
       try:
         # workaround: use ssh in a terminal with X11 forward
-        user = self.settings().default_user if user is None else user
+        user = nm.settings().default_user if user is None else user
         if self.SSH_AUTH.has_key(host):
           user = self.SSH_AUTH[host]
         # generate string for SSH command

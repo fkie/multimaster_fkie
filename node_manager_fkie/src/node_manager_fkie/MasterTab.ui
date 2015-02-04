@@ -652,7 +652,7 @@ p, li { white-space: pre-wrap; }
             <property name="frameShadow">
              <enum>QFrame::Plain</enum>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,0,0,0,0">
+            <layout class="QVBoxLayout" name="verticalLayout_5">
              <property name="spacing">
               <number>3</number>
              </property>
@@ -720,6 +720,41 @@ p, li { white-space: pre-wrap; }
                <property name="icon">
                 <iconset resource="GUI.qrc">
                  <normaloff>:/icons/crystal_clear_show_hz.png</normaloff>:/icons/crystal_clear_show_hz.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>32</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="hzSshTopicButton">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show only the receive rate of the topic. Uses an SSH connection to execute 'rostopic hz'  on remote host.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="icon">
+                <iconset resource="GUI.qrc">
+                 <normaloff>:/icons/crystal_clear_show_hz_ssh.png</normaloff>:/icons/crystal_clear_show_hz_ssh.png</iconset>
                </property>
                <property name="iconSize">
                 <size>

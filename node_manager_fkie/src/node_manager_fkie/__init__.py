@@ -54,9 +54,9 @@ import roslib.network
 #  print 'For full scope of operation this application requires python version > %s, current: %s' % (str(PYTHONVER), sys.version_info)
 
 from settings import Settings
+from start_handler import StartHandler, StartException, BinarySelectionRequest
 from ssh_handler import SSHhandler, AuthenticationRequest
 from screen_handler import ScreenHandler, ScreenSelectionRequest
-from start_handler import StartHandler, StartException, BinarySelectionRequest
 from progress_queue import InteractionNeededError
 from name_resolution import NameResolution
 from history import History
@@ -284,10 +284,11 @@ def init_arg_parser():
   group = parser.add_argument_group('echo')
   group.add_argument("--echo", nargs=2, help="starts an echo dialog instead of node manager", metavar=('name', 'type'))
   group.add_argument("--hz", action="store_true", help="shows only the Hz value instead of topic content in echo dialog")
+  group.add_argument("--ssh", action="store_true", help="connects via SSH")
 
   return parser
 
-def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False):
+def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use_ssh=False):
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
   name = ''.join([prog_name, '_echo'])
@@ -295,7 +296,9 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False):
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
   import echo_dialog
-  return echo_dialog.EchoDialog(topic_name, topic_type, hz, masteruri)
+  global _ssh_handler
+  _ssh_handler = SSHhandler()
+  return echo_dialog.EchoDialog(topic_name, topic_type, hz, masteruri, use_ssh=use_ssh)
 
 def init_main_window(prog_name, masteruri, launch_files=[]):
   # start ROS-Master, if not currently running
@@ -331,7 +334,7 @@ def main(name):
   global main_form
   try:
     if parsed_args.echo:
-      main_form = init_echo_dialog(name, masteruri, parsed_args.echo[0], parsed_args.echo[1], parsed_args.hz)
+      main_form = init_echo_dialog(name, masteruri, parsed_args.echo[0], parsed_args.echo[1], parsed_args.hz, parsed_args.ssh)
     else:
       main_form = init_main_window(name, masteruri, parsed_args.file)
   except Exception as e:
