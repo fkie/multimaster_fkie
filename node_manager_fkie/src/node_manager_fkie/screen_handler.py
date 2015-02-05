@@ -214,8 +214,9 @@ class ScreenHandler(object):
     if nm.is_local(host):
       output = cls.getLocalOutput([cls.SCREEN, '-ls'])
     else:
-      output_file, _, _ = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request)#_:=error, ok
-      output = output_file.read()
+      _, stdout, _, _ = nm.ssh().ssh_exec(host, [cls.SCREEN, ' -ls'], user, pwd, auto_pw_request, close_stdin=True, close_stderr=True)
+      output = stdout.read()
+      stdout.close()
     if output:
       splits = output.split()
       for i in splits:
@@ -333,7 +334,7 @@ class ScreenHandler(object):
             SupervisedPopen([cls.SCREEN, '-wipe'], id='screen -wipe', description="screen: clean up the socket with -wipe")
           else:
 #            output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
-            nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
+            nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
     except nm.AuthenticationRequest as e:
       raise nm.InteractionNeededError(e, cls.killScreens, (node, host, auto_ok_request))
 

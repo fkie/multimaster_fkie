@@ -109,7 +109,7 @@ class SSHhandler(object):
       except Exception, e:
         raise
 
-  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False, get_pty=False):
+  def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False, get_pty=False, close_stdin=False, close_stdout=False, close_stderr=False):
     '''
     Executes a command on remote host. Returns the output channels with 
     execution result or None. The connection will be established using paramiko 
@@ -120,8 +120,8 @@ class SSHhandler(object):
     @type cmd: C{[str,...]}
     @param user: user name
     @param pw: the password
-    @return: the (stdin, stdout, stderr) and boolean of the executing command
-    @rtype: C{tuple(ChannelFile, ChannelFile, ChannelFile), boolean}
+    @return: the 4-tuple stdin, stdout, stderr and boolean of the executing command
+    @rtype: C{tuple(ChannelFile, ChannelFile, ChannelFile, boolean)}
     @see: U{http://www.lag.net/paramiko/docs/paramiko.SSHClient-class.html#exec_command}
     '''
     with self.mutex:
@@ -131,14 +131,18 @@ class SSHhandler(object):
           cmd_str = str(' '.join(cmd))
           rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
           (stdin, stdout, stderr) = ssh.exec_command(cmd_str, get_pty=get_pty)
-          stdin.close()
-          return stdout, stderr, True
-        else:
-          return '', '', False
+          if close_stdin:
+            stdin.close()
+          if close_stdout:
+            stdout.close()
+          if close_stderr:
+            stderr.close()
+          return stdin, stdout, stderr, True
       except AuthenticationRequest as e:
         raise
-      except Exception, e:
-        return '', str(e), False
+      except Exception as e:
+        raise
+    raise Exception('Can not login @%s'%host)
 
 
   def ssh_x11_exec(self, host, cmd, title=None, user=None):

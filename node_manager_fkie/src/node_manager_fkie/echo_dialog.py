@@ -196,7 +196,6 @@ class EchoDialog(QtGui.QDialog):
       self.__msg_class = None
       errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e)
 #      raise Exception("Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e))
-
     # variables for Subscriber
     self.msg_signal.connect(self._append_message)
     self.sub = None
@@ -204,6 +203,7 @@ class EchoDialog(QtGui.QDialog):
     # vairables for SSH connection
     self.ssh_output_file = None
     self.ssh_error_file = None
+    self.ssh_input_file = None
     self.text_signal.connect(self._append_text)
     self.text_hz_signal.connect(self._append_text_hz)
     self._current_msg = ''
@@ -214,7 +214,7 @@ class EchoDialog(QtGui.QDialog):
     if use_ssh:
       self.__msg_class = None
       self._on_display_anchorClicked(QtCore.QUrl(self._masteruri))
-    elif errmsg and self.__msg_class is None:
+    elif self.__msg_class is None:
       errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>'%(errmsg)
       self.display.setText('<a href="%s">open using SSH</a>'%(masteruri))
       self.display.append(errtxt)
@@ -236,10 +236,12 @@ class EchoDialog(QtGui.QDialog):
   def closeEvent (self, event):
     if not self.sub is None:
       self.sub.unregister()
-      del self.sub
     try:
       self.ssh_output_file.close()
       self.ssh_error_file.close()
+      # send Ctrl+C to remote process
+      self.ssh_input_file.write('%s\n'%chr(3))
+      self.ssh_input_file.close()
     except:
       pass
     self.finished_signal.emit(self.topic)
@@ -485,13 +487,13 @@ class EchoDialog(QtGui.QDialog):
     try:
       ok = False
       if self.show_only_rate:
-        self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s'%(self.topic)], user, pw, auto_pw_request=True, get_pty=True)
+        self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s'%(self.topic)], user, pw, auto_pw_request=True, get_pty=True)
         self.status_label.setText('connected to %s over SSH'%url.host())
       else:
         self.combobox_displ_hz.setEnabled(False)
         nostr = '--nostr' if self.no_str_checkbox.isChecked() else ''
         noarr = '--noarr' if self.no_arr_checkbox.isChecked() else ''
-        self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s'%(nostr, noarr, self.topic)], user, pw, auto_pw_request=True)
+        self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s'%(nostr, noarr, self.topic)], user, pw, auto_pw_request=True, get_pty=True)
       if ok:
         self.display.clear()
         target = self._read_output_hz if self.show_only_rate else self._read_output
@@ -504,8 +506,8 @@ class EchoDialog(QtGui.QDialog):
       elif self.ssh_output_file:
         self.ssh_output_file.close()
         self.ssh_error_file.close()
-    except:
-      pass
+    except Exception as e:
+      self._append_error_text('%s\n'%e)
 #      import traceback
 #      print traceback.format_exc()
 
