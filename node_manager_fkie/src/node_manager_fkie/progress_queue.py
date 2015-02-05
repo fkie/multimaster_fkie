@@ -292,4 +292,4 @@ class ProgressThread(QtCore.QObject, threading.Thread):
         index += 1
         last_line = formatted_lines[-index]
       rospy.logwarn("%s failed:\n\t%s", str(self.descr), last_line)
-      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr)+" failed:\n"+last_line, traceback.format_exc(1))
+      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr)+" failed:\n"+last_line, traceback.format_exc(3))
