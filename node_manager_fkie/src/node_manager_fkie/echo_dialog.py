@@ -236,6 +236,7 @@ class EchoDialog(QtGui.QDialog):
   def closeEvent (self, event):
     if not self.sub is None:
       self.sub.unregister()
+      del self.sub
     try:
       self.ssh_output_file.close()
       self.ssh_error_file.close()
