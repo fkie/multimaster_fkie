@@ -181,7 +181,7 @@ class Main(object):
                 self.masters[mastername].setOwnMasterState(MasterInfo.from_list(self.__own_state))
 #              self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
 #              self.own_state_getter.start()
-        elif self.__timestamp_local != timestamp_local:
+        elif self.__timestamp_local != timestamp_local and self.__sync_topics_on_demand:
           # get the master info from local discovery master and set it to all sync threads
           self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
           self.own_state_getter.start()
