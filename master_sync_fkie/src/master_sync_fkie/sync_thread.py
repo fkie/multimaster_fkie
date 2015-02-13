@@ -286,9 +286,11 @@ class SyncThread(object):
           topictype = self._getTopicType(topic, topicTypes)
           nodeuri = self._getNodeUri(node, nodeProviders, remote_masteruri)
           # if remote topictype is None, try to set to the local topic type
-          if not topictype and not self.__own_state is None:
-            if topic in self.__own_state.topics:
-              topictype = self.__own_state.topics[topic].type
+#          if not topictype and not self.__own_state is None:
+#            if topic in self.__own_state.topics:
+#              topictype = self.__own_state.topics[topic].type
+          if not topictype:
+            topictype = '*'
           if topictype and nodeuri and not self._doIgnoreNT(node, topic, topictype):
             # register the node as subscriber in local ROS master
             if not ((topic, node, nodeuri) in self.__subscriber):
