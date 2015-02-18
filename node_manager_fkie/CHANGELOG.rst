@@ -2,6 +2,23 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.18 (2015-02-18)
+-------------------
+* node_manager_fkie: fixed alt+space for context menu in xml editor
+* node_maanger_fkie: removed sync+AnyMsg option, it is now sync with all messages
+* node_manager_fkie: fix an error printed on close of echo dialog
+* node_manager_fkie: fixed some ssh issues
+* node_manager_fkie: enabled ssh compression
+* node_manager_fkie: store user per host
+* node_manager_fkie: added rviz to rqt menu
+* node_manager_fkie: show now unknown topic types through the SSH connection
+* node_manager_fkie: close running nodes on exit
+* node_manager_fkie: fixed bug while creation of a new file in xml editor
+* node_manager_fkie: added binary selection dialog to xml editor, if you add a node section using 'add tag' button
+* node_manager_fkie: trap the errors printed to stderr in popen
+* node_manager_fkie: fixed highlightning in editor
+* Contributors: Alexander Tiderko
+
 0.3.17 (2015-01-22)
 -------------------
 * node_manager_fkie: switch to local monitoring after connection problems to local master_discovery
