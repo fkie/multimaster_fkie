@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.18 (2015-02-18)
+-------------------
+
 0.3.17 (2015-01-22)
 -------------------
 * master_discovery_fkie: fixed discovery support for ipv6
