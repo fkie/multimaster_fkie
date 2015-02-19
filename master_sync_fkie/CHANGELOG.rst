@@ -2,6 +2,11 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.18 (2015-02-18)
+-------------------
+* master_sync: subscribers with None type are now subscribed as AnyType message
+* Contributors: Alexander Tiderko
+
 0.3.17 (2015-01-22)
 -------------------
 
