@@ -329,7 +329,15 @@ class Editor(QtGui.QTextEdit):
       self.setMouseTracking(True)
     if event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_7:
       self.commentText()
-    if event.key() != QtCore.Qt.Key_Escape:
+    elif event.modifiers() == QtCore.Qt.AltModifier and event.key() == QtCore.Qt.Key_Space:
+      ext = os.path.splitext(self.filename)
+      if ext[1] in self.CONTEXT_FILE_EXT:
+        menu = self._create_context_substitution_menu()
+        if menu is None:
+          menu = self._create_context_tag_menu()
+        if menu:
+          menu.exec_(self.mapToGlobal(self.cursorRect().bottomRight()))
+    elif event.key() != QtCore.Qt.Key_Escape:
       # handle the shifting of the block
       if event.key() == QtCore.Qt.Key_Tab:
         self.shiftText()
@@ -347,15 +355,9 @@ class Editor(QtGui.QTextEdit):
     if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
       self.setMouseTracking(False)
       self.viewport().setCursor(QtCore.Qt.IBeamCursor)
-    elif event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_Space:
-      ext = os.path.splitext(self.filename)
-      if ext[1] in self.CONTEXT_FILE_EXT:
-        menu = self._create_context_substitution_menu()
-        if menu is None:
-          menu = self._create_context_tag_menu()
-        if menu:
-          menu.exec_(self.mapToGlobal(self.cursorRect().bottomRight()))
-    QtGui.QTextEdit.keyReleaseEvent(self, event)
+    else:
+      event.accept()
+      QtGui.QTextEdit.keyReleaseEvent(self, event)
 
   def commentText(self):
     cursor = self.textCursor()
@@ -1105,6 +1107,9 @@ class XmlEditor(QtGui.QDialog):
     # param tag
     add_param_tag_action = QtGui.QAction("<param>", self, statusTip="", triggered=self._on_add_param_tag)
     tag_menu.addAction(add_param_tag_action)
+    # param capability group tag
+    add_param_cap_group_tag_action = QtGui.QAction("<param capability group>", self, statusTip="", triggered=self._on_add_param_cap_group_tag)
+    tag_menu.addAction(add_param_cap_group_tag_action)
     # param tag with all attributes
     add_param_tag_all_action = QtGui.QAction("<param all>", self, statusTip="", triggered=self._on_add_param_tag_all)
     tag_menu.addAction(add_param_tag_all_action)
@@ -1171,6 +1176,9 @@ class XmlEditor(QtGui.QDialog):
 
   def _on_add_param_tag(self):
     self._insert_text('<param name="namespace/name" value="value" />')
+
+  def _on_add_param_cap_group_tag(self):
+    self._insert_text('<param name="capability_group" value="demo" />')
 
   def _on_add_param_tag_all(self):
     self._insert_text('<param name="namespace/name" value="value"\n'
