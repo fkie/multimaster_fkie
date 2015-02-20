@@ -2,7 +2,7 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.00 (2015-02-20)
+0.4.0  (2015-02-20)
 -------------------
 * master_discovery_fkie: discovery changed
   * reduced the amount of heartbeat messages for discovery
