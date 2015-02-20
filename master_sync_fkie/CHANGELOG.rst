@@ -2,8 +2,8 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.0  (2015-02-20)
--------------------
+0.4.0 (2015-02-20)
+------------------
 * multimaster_fkie: added log_level parameter to all nodes
 * master_sync: fix the long wait time on first sync
 * master_sync_fkie: fix annonce publisher about the AnyMsg subscribers
