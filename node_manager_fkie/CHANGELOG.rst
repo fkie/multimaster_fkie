@@ -2,6 +2,25 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.00 (2015-02-20)
+-------------------
+* multimaster_fkie: discovery changed
+  * reduced the amount of heartbeat messages for discovery
+  * added fallback for environments with multicast problems
+* node_manager_fkie: added log_level parameter to all nodes
+* node_manager_fkie: fixed syntax highlightning
+* node_manager_fkie: fix ssh handler
+* node_manager_fkie: parameter changed in dialog "start master discovery"
+* node_manager_fkie: fixes in parameter dialog
+  * fixed filter in parameter dialog
+  * fixed parser of the list values
+  * update only changed values in ROS parameter server
+* node_manager_fkie: default value for heartbeat changed to 0.5
+* node_manager_fkie: improved the discovery dialog to detect masters using new methods
+* node_manager_fkie: fixed the button view in the sync dialog
+* node_manager_fkie: added a xml and yaml validation on save of a configuration files
+* Contributors: Alexander Tiderko
+
 0.3.18 (2015-02-18)
 -------------------
 * node_manager_fkie: fixed alt+space for context menu in xml editor

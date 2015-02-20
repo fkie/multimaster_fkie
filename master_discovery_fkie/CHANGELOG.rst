@@ -2,6 +2,23 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.00 (2015-02-20)
+-------------------
+* master_discovery_fkie: discovery changed
+  * reduced the amount of heartbeat messages for discovery
+  * added fallback for environments with multicast problems
+* master_discovery_fkie: added log_level parameter to all nodes
+* master_discovery_fkie: changed discovery after the host was set to offline
+* master_discovery_fkie: fixed a problem if more then one master discovery is running on the same host
+* master_discovery_fkie: removed some python mistakes
+* master_discovery_fkie: removed some debug output
+* master_discovery_fkie: fixed change to offline state after a refresh service was called and host is not reachable
+* master_discovery_fkie: fix set to offline state
+* master_discovery_fkie: fixed link quality detection.
+  The requests for each master are now stored, to detect the right count
+  of messages that we have to receive.
+* Contributors: Alexander, Alexander Tiderko, Robot User
+
 0.3.18 (2015-02-18)
 -------------------
 

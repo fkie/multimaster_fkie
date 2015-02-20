@@ -2,6 +2,11 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.00 (2015-02-20)
+-------------------
+* multimaster_fkie: added log_level parameter to all nodes
+* Contributors: Alexander Tiderko
+
 0.3.18 (2015-02-18)
 -------------------
 
