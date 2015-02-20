@@ -88,9 +88,15 @@ def main():
   Creates and runs the ROS node using multicast messages for discovering
   '''
   import master_discovery
-  rospy.init_node("master_discovery", log_level=rospy.DEBUG)
+  rospy.init_node("master_discovery")
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
+  # setup the loglevel
+  log_level = rospy.get_param('~log_level', "INFO")
+  try:
+    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
+  except Exception as e:
+    rospy.logwarn("Error while set the log level: %s"%e)
   mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
   mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
   rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort())

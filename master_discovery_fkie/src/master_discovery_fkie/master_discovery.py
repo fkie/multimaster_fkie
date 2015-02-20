@@ -190,10 +190,11 @@ class DiscoveredMaster(object):
     '''
     Sets this master to offline and publish the new state to the ROS network.
     '''
-    if not (self.callback_master_state is None) and self.online:
-      self.callback_master_state(MasterState(MasterState.STATE_CHANGED, 
-                                             ROSMaster(str(self.mastername), 
-                                                       self.masteruri, 
+    if not self.callback_master_state is None and self.online:
+      rospy.loginfo('Set host to offline: %s'%self.mastername)
+      self.callback_master_state(MasterState(MasterState.STATE_CHANGED,
+                                             ROSMaster(str(self.mastername),
+                                                       self.masteruri,
                                                        self.timestamp,
                                                        self.timestamp_local, 
                                                        self.online, 

@@ -75,9 +75,15 @@ def main():
   '''
   Creates and runs the ROS node
   '''
-  rospy.init_node(NODE_NAME, log_level=rospy.DEBUG)
+  rospy.init_node(NODE_NAME)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
+  # setup the loglevel
+  log_level = rospy.get_param('~log_level', "DEBUG")
+  try:
+    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
+  except Exception as e:
+    rospy.logwarn("Error while set the log level: %s"%e)
   try:
     default_cfg = DefaultCfg()
     default_cfg.load()

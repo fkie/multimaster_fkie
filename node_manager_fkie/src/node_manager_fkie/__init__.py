@@ -303,9 +303,15 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
 def init_main_window(prog_name, masteruri, launch_files=[]):
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
-  rospy.init_node(prog_name, anonymous=False, log_level=rospy.DEBUG)
+  rospy.init_node(prog_name, anonymous=False)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
+  # setup the loglevel
+  log_level = rospy.get_param('~log_level', "DEBUG")
+  try:
+    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
+  except Exception as e:
+    rospy.logwarn("Error while set the log level: %s"%e)
   import main_window
   local_master = init_globals(masteruri)
   return main_window.MainWindow(launch_files, not local_master, launch_files)
