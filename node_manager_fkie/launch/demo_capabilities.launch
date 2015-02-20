@@ -38,7 +38,7 @@
 
    <rosparam param="robots" tag="Format: [Name (name of the host), Type, Displayed name, Image, Description in as 'reStructeredText']">
       [
-      ["bob", "Robot", "bob", "images/bob.png", "Robot|nb|\n\n.. image:: images/bob.png\n"],
+      ["tiderko", "Robot", "tiderko", "$(find node_manager_fkie)/images/veryicon_devcom_workstation.png", "Robot|nb|\n\n.. image:: $(find node_manager_fkie)/images/veryicon_devcom_workstation.png\n"],
       ["bar", "Robot", "bar", "images/bar.png", "Robot|nb|\n\n.. image:: images/bar.png\n"],
       ["c3po", "Robot", "c3po", "$(find node_manager_fkie)/images/veryicon_devcom_workstation.png", "Robot|nb|\n\n.. image:: $(find node_manager_fkie)/images/veryicon_devcom_workstation.png\n"]
       ]

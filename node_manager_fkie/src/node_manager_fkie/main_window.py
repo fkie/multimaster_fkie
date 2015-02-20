@@ -1148,7 +1148,7 @@ class MainWindow(QtGui.QMainWindow):
         check_ts = m.master_info.check_ts
         m.master_info.timestamp = m.master_info.timestamp - 1.0
         m.master_info.check_ts = check_ts
-    self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
+    self.masterlist_service.refresh(self.getMasteruri(), False)
 
   def on_discover_network_clicked(self):
     try:
@@ -1168,9 +1168,10 @@ class MainWindow(QtGui.QMainWindow):
     params_optional = {'Discovery type': ('string', ['master_discovery', 'zeroconf']),
                        'ROS Master Name' : ('string', 'autodetect'),
                        'ROS Master URI' : ('string', 'ROS_MASTER_URI'),
-                       'Static hosts' : ('string', ''),
+                       'Robot hosts' : ('string', ''),
                        'Username' : ('string', user_list),
-                       'Send MCast' : ('bool', True),
+                       'MCast Group' : ('string', '226.0.0.0'),
+                       'Heartbeat [Hz]' : ('float', 0.5)
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
@@ -1178,7 +1179,7 @@ class MainWindow(QtGui.QMainWindow):
     dia = ParameterDialog(params, sidebar_var='Host')
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
-    dia.resize(450,280)
+    dia.resize(450,300)
     dia.setFocusField('Host')
     if dia.exec_():
       try:
@@ -1191,24 +1192,26 @@ class MainWindow(QtGui.QMainWindow):
         if len(hostnames) < 2:
           mastername = params['Optional Parameter']['ROS Master Name']
           masteruri = params['Optional Parameter']['ROS Master URI']
-        static_hosts = params['Optional Parameter']['Static hosts']
+        robot_hosts = params['Optional Parameter']['Robot hosts']
         username = params['Optional Parameter']['Username']
-        send_mcast = params['Optional Parameter']['Send MCast']
-        if static_hosts:
-          static_hosts = static_hosts.replace(' ', '')
-          static_hosts = static_hosts.replace('[', '')
-          static_hosts = static_hosts.replace(']', '')
+        mcast_group = params['Optional Parameter']['MCast Group']
+        heartbeat_hz = params['Optional Parameter']['Heartbeat [Hz]']
+        if robot_hosts:
+          robot_hosts = robot_hosts.replace(' ', '')
+          robot_hosts = robot_hosts.replace('[', '')
+          robot_hosts = robot_hosts.replace(']', '')
         for hostname in hostnames:
           try:
             args = []
             if not port is None and port and int(port) < 100 and int(port) >= 0:
-              args.append(''.join(['_mcast_port:=', str(11511 + int(port))]))
+              args.append('_mcast_port:=%s'%(11511 + int(port)))
             else:
-              args.append(''.join(['_mcast_port:=', str(11511)]))
+              args.append('_mcast_port:=%s'%(11511))
             if not mastername == 'autodetect':
-              args.append(''.join(['_name:=', str(mastername)]))
-            args.append('_send_mcast:=%s'%str(send_mcast))
-            args.append(''.join(['_static_hosts:=[', static_hosts, ']']))
+              args.append('_name:=%s'%(mastername))
+            args.append('_mcast_group:=%s'%mcast_group)
+            args.append('_robot_hosts:=[%s]'%robot_hosts)
+            args.append('_heartbeat_hz:=%s'%heartbeat_hz)
             #TODO: remove the name parameter from the ROS parameter server
             usr = username
             if username == 'last used':

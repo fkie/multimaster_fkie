@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(master_discovery_fkie)
 
-find_package(catkin REQUIRED COMPONENTS multimaster_msgs_fkie)
+find_package(catkin REQUIRED COMPONENTS std_srvs multimaster_msgs_fkie)
 
 catkin_python_setup()
 

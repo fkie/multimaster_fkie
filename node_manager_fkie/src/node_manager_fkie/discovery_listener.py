@@ -40,6 +40,7 @@ import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 
 try:
+  import std_srvs.srv
   from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
   from multimaster_msgs_fkie.srv import DiscoverMasters#, GetSyncInfo
 except ImportError, e:
@@ -94,6 +95,23 @@ class MasterListService(QtCore.QObject):
         self.__serviceThreads[masteruri] = upthread
         upthread.start()
 
+  def refresh(self, masteruri, wait=False):
+    '''
+    This method use the service 'refresh' of the master_discovery to refresh the
+    discovered masters.
+    @param masteruri: the ROS master URI
+    @type masteruri: C{str}
+    @param wait: wait for the service
+    @type wait: C{boolean}
+    '''
+    with self._lock:
+      if not (self.__serviceThreads.has_key(masteruri)):
+        upthread = MasterRefreshThread(masteruri, wait)
+        upthread.ok_signal.connect(self._on_ok)
+        upthread.err_signal.connect(self._on_err)
+        self.__serviceThreads[masteruri] = upthread
+        upthread.start()
+
   def _on_master_list(self, masteruri, service_name, items):
     with self._lock:
       try:
@@ -112,6 +130,13 @@ class MasterListService(QtCore.QObject):
         pass
     self.masterlist_err_signal.emit(masteruri, msg)
 
+  def _on_ok(self, masteruri):
+    with self._lock:
+      try:
+        thread = self.__serviceThreads.pop(masteruri)
+        del thread
+      except KeyError:
+        pass
 
 
 class MasterListThread(QtCore.QObject, threading.Thread):
@@ -137,7 +162,7 @@ class MasterListThread(QtCore.QObject, threading.Thread):
       service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait)
       err_msg = ''
       for service_name in service_names:
-        rospy.loginfo("service 'list_masters' found on %s as %s", self._masteruri, service_name)
+        rospy.logdebug("service 'list_masters' found on %s as %s", self._masteruri, service_name)
         if self._wait:
           rospy.wait_for_service(service_name)
         socket.setdefaulttimeout(3)
@@ -156,6 +181,40 @@ class MasterListThread(QtCore.QObject, threading.Thread):
       if not found:
         self.err_signal.emit(self._masteruri, "ERROR Service call 'list_masters' failed: %s"%err_msg)
 
+class MasterRefreshThread(QtCore.QObject, threading.Thread):
+  '''
+  A thread to call the refresh service of master discovery.
+  '''
+  ok_signal = QtCore.Signal(str)
+  err_signal = QtCore.Signal(str, str)
+
+  def __init__(self, masteruri, wait, parent=None):
+    QtCore.QObject.__init__(self)
+    threading.Thread.__init__(self)
+    self._masteruri = masteruri
+    self._wait = wait
+    self.setDaemon(True)
+
+  def run(self):
+    '''
+    '''
+    if self._masteruri:
+      service_names = interface_finder.get_refresh_service(self._masteruri, self._wait)
+      err_msg = ''
+      for service_name in service_names:
+        rospy.logdebug("service 'refresh' found on %s as %s", self._masteruri, service_name)
+        if self._wait:
+          rospy.wait_for_service(service_name)
+        socket.setdefaulttimeout(3)
+        refreshMasters = rospy.ServiceProxy(service_name, std_srvs.srv.Empty)
+        try:
+          resp = refreshMasters()
+          self.ok_signal.emit(self._masteruri)
+        except rospy.ServiceException, e:
+          rospy.logwarn("ERROR Service call 'refresh' failed: %s", str(e))
+          self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s"%err_msg)
+        finally:
+          socket.setdefaulttimeout(None)
 
 
 class MasterStateTopic(QtCore.QObject):
