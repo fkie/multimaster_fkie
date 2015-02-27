@@ -1242,7 +1242,7 @@ class MasterViewProxy(QtGui.QWidget):
       text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
       text += '<dt><b>ORG.MASTERURI</b>: %s</dt>'%node.node_info.masteruri
       if not is_legal_name(node.name):
-        text += '<dt><font color="#CC0000"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
+        text += '<dt><font color="#FF6600"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
       if node.is_ghost:
         if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
           text += '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'
