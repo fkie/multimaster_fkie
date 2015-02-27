@@ -83,7 +83,9 @@ class SupervisedPopen(QtCore.QObject, subprocess.Popen):
   def supervise(self):
     # wait for process to avoid 'defunct' processes
     self.wait()
-    result_err = self.stderr.read()
+    result_err = ''
+    if not self.stderr is None:
+      result_err = self.stderr.read()
     if result_err:
       self.error.emit(self._id, self._description, result_err)
     self.finished.emit(self._id)

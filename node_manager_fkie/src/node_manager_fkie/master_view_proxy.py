@@ -2389,7 +2389,7 @@ class MasterViewProxy(QtGui.QWidget):
         nodename = 'echo_%s%s%s%s'%('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(nm.nameres().getHostname(self.masteruri)), topic.name)
         cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s'%(topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename)
         rospy.loginfo("Echo topic: %s"%cmd)
-        ps = SupervisedPopen(shlex.split(cmd), env=env, close_fds=True, id=topic.name, description='Echo topic: %s'%topic.name)
+        ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, id=topic.name, description='Echo topic: %s'%topic.name)
         ps.finished.connect(self._topic_dialog_closed)
         self.__echo_topics_dialogs[topic.name] = ps
     except Exception, e:
