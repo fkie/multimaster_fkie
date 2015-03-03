@@ -130,7 +130,11 @@ class SSHhandler(object):
         if not ssh is None:
           cmd_str = str(' '.join(cmd))
           rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
-          (stdin, stdout, stderr) = ssh.exec_command(cmd_str, get_pty=get_pty)
+          stdin, stdout, stderr = None
+          if get_pty:
+            (stdin, stdout, stderr) = ssh.exec_command(cmd_str)
+          else:
+            (stdin, stdout, stderr) = ssh.exec_command(cmd_str, get_pty=get_pty)
           if close_stdin:
             stdin.close()
           if close_stdout:
