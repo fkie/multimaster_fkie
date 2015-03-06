@@ -46,6 +46,7 @@ import rospy
 #MCAST_GROUP = "ff02::1"# ipv6 multicast group
 MCAST_GROUP = "226.0.0.0" # ipv4 multicast group
 MCAST_PORT = 11511
+PROCESS_NAME = "master_discovery"
 
 def getDefaultRPCPort(zeroconf=False):
   try:
@@ -88,9 +89,9 @@ def main():
   Creates and runs the ROS node using multicast messages for discovering
   '''
   import master_discovery
-  rospy.init_node("master_discovery")
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
+  rospy.init_node(PROCESS_NAME)
+  setTerminalName(PROCESS_NAME)
+  setProcessName(PROCESS_NAME)
   # setup the loglevel
   log_level = rospy.get_param('~log_level', "INFO")
   try:

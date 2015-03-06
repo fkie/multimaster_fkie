@@ -46,7 +46,7 @@ import rospy
 from default_cfg import DefaultCfg
 
 
-NODE_NAME = "default_cfg"
+PROCESS_NAME = "default_cfg"
 
 def setTerminalName(name):
   '''
@@ -75,9 +75,9 @@ def main():
   '''
   Creates and runs the ROS node
   '''
-  rospy.init_node(NODE_NAME)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
+  rospy.init_node(PROCESS_NAME)
+  setTerminalName(PROCESS_NAME)
+  setProcessName(PROCESS_NAME)
   # setup the loglevel
   log_level = rospy.get_param('~log_level', "DEBUG")
   try:

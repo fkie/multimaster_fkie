@@ -45,7 +45,7 @@ import rospy
 
 import master_sync
 
-NODE_NAME = "master_sync"
+PROCESS_NAME = "master_sync"
 
 
 def setTerminalName(name):
@@ -76,9 +76,9 @@ def main():
   '''
   Creates and runs the ROS node.
   '''
-  rospy.init_node(NODE_NAME)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
+  rospy.init_node(PROCESS_NAME)
+  setTerminalName(PROCESS_NAME)
+  setProcessName(PROCESS_NAME)
   # setup the loglevel
   log_level = rospy.get_param('~log_level', "DEBUG")
   try:

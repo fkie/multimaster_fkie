@@ -293,8 +293,8 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
   StartHandler._prepareROSMaster(masteruri)
   name = ''.join([prog_name, '_echo'])
   rospy.init_node(name, anonymous=True, log_level=rospy.DEBUG)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
+  setTerminalName(name)
+  setProcessName(name)
   import echo_dialog
   global _ssh_handler
   _ssh_handler = SSHhandler()
@@ -304,8 +304,8 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
   rospy.init_node(prog_name, anonymous=False)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
+  setTerminalName(prog_name)
+  setProcessName(prog_name)
   # setup the loglevel
   log_level = rospy.get_param('~log_level', "DEBUG")
   try:
