@@ -47,6 +47,12 @@ class UpdateHandler(QtCore.QObject):
   @ivar: master_info_signal is a signal, which is emitted, if a new 
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
+  master_errors_signal = QtCore.Signal(str, list)
+  '''
+  @ivar: master_errors_signal is a signal (masteruri, error list) with errors which
+  are occured on remote master_discovery.
+  '''
+
   error_signal = QtCore.Signal(str, str)
   '''
   @ivar: error_signal is a signal (masteruri, error message), which is emitted, 
@@ -98,10 +104,13 @@ class UpdateHandler(QtCore.QObject):
     self.master_info_signal.emit(minfo)
     self.__handle_requests(minfo.masteruri)
 
+  def _on_master_errors(self, masteruri, error_list):
+    self.master_errors_signal.emit(masteruri, error_list)
+
   def _on_error(self, masteruri, error):
     self.error_signal.emit(masteruri, error)
     self.__handle_requests(masteruri)
-    
+
   def __handle_requests(self, masteruri):
     with self._lock:
       try:
@@ -121,5 +130,6 @@ class UpdateHandler(QtCore.QObject):
     upthread = UpdateThread(monitoruri, masteruri, delayed_exec)
     self.__updateThreads[masteruri] = upthread
     upthread.update_signal.connect(self._on_master_info)
+    upthread.master_errors_signal.connect(self._on_master_errors)
     upthread.error_signal.connect(self._on_error)
     upthread.start()

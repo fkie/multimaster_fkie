@@ -267,6 +267,7 @@ class MainWindow(QtGui.QMainWindow):
     # initialize the class to get the state of discovering of other ROS master
     self._update_handler = UpdateHandler()
     self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
+    self._update_handler.master_errors_signal.connect(self.on_master_errors_retrieved)
     self._update_handler.error_signal.connect(self.on_master_info_error)
 
     # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
@@ -503,7 +504,8 @@ class MainWindow(QtGui.QMainWindow):
         self._update_handler.requestMasterInfo(value.master_state.uri, value.master_state.monitoruri)
 
   def on_host_description_updated(self, masteruri, host, descr):
-    self.master_model.updateDescription(nm.nameres().mastername(masteruri, host), descr)
+#    self.master_model.updateDescription(nm.nameres().mastername(masteruri, host), descr)
+    pass
 
   def on_capabilities_update(self, masteruri, address, config_node, descriptions):
     for d in descriptions:
@@ -746,6 +748,9 @@ class MainWindow(QtGui.QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_m = cputimes_m[0] + cputimes_m[1] - cputime_init_m
 #    print "ALL:", cputime_m
+
+  def on_master_errors_retrieved(self, masteruri, error_list):
+    self.master_model.updateMasterErrors(nm.nameres().mastername(masteruri), error_list)
 
   def on_master_info_error(self, masteruri, error):
     if not self._con_tries.has_key(masteruri):
@@ -1069,7 +1074,8 @@ class MainWindow(QtGui.QMainWindow):
         self.on_sync_released(True)
 
   def on_master_table_activated(self, selected):
-    pass
+    item = self.master_model.itemFromIndex(selected)
+    QtGui.QMessageBox.information(self, item.name, item.toolTip())
 
   def on_master_selection_changed(self, selected):
     '''

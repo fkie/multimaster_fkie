@@ -139,6 +139,8 @@ class MasterMonitor(object):
     self._printed_errors = dict()
     self._last_clearup_ts = time.time()
 
+    self._master_errors = list()
+
     # Create an XML-RPC server
     self.ready = False
     while not self.ready and (not rospy.is_shutdown()):
@@ -152,6 +154,7 @@ class MasterMonitor(object):
         self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')
         self.rpcServer.register_function(self.getListedMasterInfoFiltered, 'masterInfoFiltered')
         self.rpcServer.register_function(self.getMasterContacts, 'masterContacts')
+        self.rpcServer.register_function(self.getMasterErrors, 'masterErrors')
         self._rpcThread = threading.Thread(target = self.rpcServer.serve_forever)
         self._rpcThread.setDaemon(True)
         self._rpcThread.start()
@@ -724,7 +727,6 @@ class MasterMonitor(object):
       #'print "updateSyncInfo _create_access_lock RET", threading.current_thread()
 
 
-    
   def getMasteruri(self):
     '''
     Requests the ROS master URI from the ROS master through the RPC interface and 
@@ -780,11 +782,20 @@ class MasterMonitor(object):
       #'print "getMasterContacts _state_access_lock RET", threading.current_thread()
     #'print "MASTERCONTACTS <<<<<<<<<<<<<<<<<<<<"
     return (str(t), str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
-  
+
+  def getMasterErrors(self):
+    '''
+    The RPC method called by XML-RPC server to request the occured network errors.
+
+    :return: (``ROS master URI``, ``list with errors``)
+    :rtype: (str, str, [str])
+    '''
+    return (str(self.getMasteruri()), self._master_errors)
+
   def checkState(self, clear_cache=False):
     '''
     Gets the state from the ROS master and compares it to the stored state.
-    
+
     :param clear_cache: The URI of nodes and services will be cached to reduce the load.
                         If remote hosted nodes or services was restarted, the cache must 
                         be cleared! The local nodes will be updated periodically after
@@ -833,3 +844,6 @@ class MasterMonitor(object):
         del self.__master_state
       self.__master_state = None
       #'print "reset _state_access_lock RET", threading.current_thread()
+
+  def update_master_errors(self, error_list):
+    self._master_errors = list(error_list)
