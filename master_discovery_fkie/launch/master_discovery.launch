@@ -1,5 +1,5 @@
 <launch>
-  <node name="master_discovery" pkg="master_discovery_fkie" type="master_discovery"
+  <node name="master_discovery" pkg="master_discovery_fkie" type="master_discovery">
     <param name="log_level" value="INFO" />
     <param name="mcast_group" value="226.0.0.0" />
     <param name="mcast_port" value="11511" />
@@ -24,7 +24,7 @@
     <!-- in some network environments does multicast not work properly. In this 
       case you can specify robots where a master discovery is running. These 
       robots are pinged using unicast communication. -->
-    <rosparam name="robot_hosts">[]</rosparam>
+    <rosparam param="robot_hosts">[]</rosparam>
     <!-- After the ROS master was changed the new state will be sent for 
       `CHANGE_NOTIFICATION_COUNT` times (Default: 3 sec). The new state will be
       sent with `ROSMASTER_HZ` and only if `HEARTBEAT_HZ` is zero. -->
