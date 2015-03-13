@@ -201,10 +201,6 @@ class Editor(QtGui.QTextEdit):
       index = pattern.indexIn(text)
       if index > -1:
         return index
-    try:
-      return resolve_url(text)
-    except:
-      pass
     return -1
 
   def includedFiles(self):
