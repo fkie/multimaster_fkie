@@ -599,6 +599,7 @@ class Discoverer(object):
     # send as unicast
     for a in self.robots:
       self.msocket.send2addr(msg, a)
+    time.sleep(0.2)
     self.msocket.close()
 
   def send_heardbeat(self):

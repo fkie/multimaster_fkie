@@ -726,7 +726,7 @@ class MainWindow(QtGui.QMainWindow):
             elif nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
               if new_info:
                 has_discovery_service = self.hasDiscoveryService(minfo)
-                if not self.own_master_monitor.isPaused() and has_discovery_service:
+                if (not self.own_master_monitor.isPaused() or not self.masterTableView.isEnabled()) and has_discovery_service:
                   self._subscribe()
               if self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
                 self.setCurrentMaster(master)
