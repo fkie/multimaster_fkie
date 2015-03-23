@@ -75,15 +75,15 @@ def main():
   '''
   Creates and runs the ROS node
   '''
-  rospy.init_node(PROCESS_NAME)
+  # setup the loglevel
+  try:
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%PROCESS_NAME, "INFO"))
+  except Exception as e:
+    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    log_level = rospy.INFO
+  rospy.init_node(PROCESS_NAME, log_level=log_level)
   setTerminalName(PROCESS_NAME)
   setProcessName(PROCESS_NAME)
-  # setup the loglevel
-  log_level = rospy.get_param('~log_level', "DEBUG")
-  try:
-    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
-  except Exception as e:
-    rospy.logwarn("Error while set the log level: %s"%e)
   try:
     default_cfg = DefaultCfg()
     default_cfg.load()
