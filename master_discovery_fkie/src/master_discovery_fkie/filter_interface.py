@@ -54,6 +54,7 @@ class FilterInterface(object):
   def load(self, mastername='',
            ignore_nodes=[], sync_nodes=[],
            ignore_topics=[], sync_topics=[],
+           ignore_subscribers=[], ignore_publishers=[],
            ignore_srv=[], sync_srv=[],
            ignore_type=[]):
     '''
@@ -69,6 +70,10 @@ class FilterInterface(object):
                                          sync_nodes, mastername)
     self._re_ignore_topics = create_pattern('ignore_topics', data, interface_file,
                                             ignore_topics, mastername)
+    self._re_ignore_publishers = create_pattern('ignore_publishers', data, interface_file,
+                                            ignore_publishers, mastername)
+    self._re_ignore_subscribers = create_pattern('ignore_subscribers', data, interface_file,
+                                            ignore_subscribers, mastername)
     self._re_sync_topics = create_pattern('sync_topics', data, interface_file, 
                                           sync_topics, mastername)
     self._re_ignore_services = create_pattern('ignore_services', data, interface_file, 
@@ -166,6 +171,12 @@ class FilterInterface(object):
     # there are no sync nodes and topic lists defined => return False (=>sync the given topic)
     return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_topics)
 
+  def is_ignored_subscriber(self, node, topic, topictype):
+    return self._re_ignore_subscribers.match(topic) or self.is_ignored_topic(node, topic, topictype)
+
+  def is_ignored_publisher(self, node, topic, topictype):
+    return self._re_ignore_publishers.match(topic) or self.is_ignored_topic(node, topic, topictype)
+
   def is_ignored_service(self, node, service):
     '''
     Searches firstly in ignore lists `ignore_nodes` and `ignore_services`. 
@@ -216,6 +227,8 @@ class FilterInterface(object):
             _to_str(self._re_sync_nodes),
             _to_str(self._re_ignore_topics),
             _to_str(self._re_sync_topics),
+            _to_str(self._re_ignore_publishers),
+            _to_str(self._re_ignore_subscribers),
             _to_str(self._re_ignore_services),
             _to_str(self._re_sync_services),
             _to_str(self._re_ignore_type))
@@ -246,9 +259,11 @@ class FilterInterface(object):
       result._re_sync_nodes = _from_str(l[2])
       result._re_ignore_topics = _from_str(l[3])
       result._re_sync_topics = _from_str(l[4])
-      result._re_ignore_services = _from_str(l[5])
-      result._re_sync_services = _from_str(l[6])
-      result._re_ignore_type = _from_str(l[7])
+      result._re_ignore_publishers = _from_str(l[5])
+      result._re_ignore_subscribers = _from_str(l[6])
+      result._re_ignore_services = _from_str(l[7])
+      result._re_sync_services = _from_str(l[8])
+      result._re_ignore_type = _from_str(l[9])
       result.is_valid = True
       return result
     except:
