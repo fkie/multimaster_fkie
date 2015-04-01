@@ -1136,7 +1136,7 @@ class MasterInfo(object):
       pn = []
       for n in topic.publisherNodes:
         if n in added_nodes:
-          if not iffilter.is_ignored_topic(n, name, topic.type):
+          if not iffilter.is_ignored_publisher(n, name, topic.type):
             pn.append(n)
             nodes_last_check.add(n)
       if pn:
@@ -1144,7 +1144,7 @@ class MasterInfo(object):
       sn = []
       for n in topic.subscriberNodes:
         if n in added_nodes:
-          if not iffilter.is_ignored_topic(n, name, topic.type):
+          if not iffilter.is_ignored_subscriber(n, name, topic.type):
             sn.append(n)
             nodes_last_check.add(n)
       if sn:

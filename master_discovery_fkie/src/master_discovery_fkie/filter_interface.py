@@ -54,9 +54,9 @@ class FilterInterface(object):
   def load(self, mastername='',
            ignore_nodes=[], sync_nodes=[],
            ignore_topics=[], sync_topics=[],
-           ignore_subscribers=[], ignore_publishers=[],
            ignore_srv=[], sync_srv=[],
-           ignore_type=[]):
+           ignore_type=[],
+           ignore_subscribers=[], ignore_publishers=[]):
     '''
     Reads the parameter and creates the pattern using :mod:`master_discovery_fkie.common.create_pattern()`
     '''
@@ -70,10 +70,6 @@ class FilterInterface(object):
                                          sync_nodes, mastername)
     self._re_ignore_topics = create_pattern('ignore_topics', data, interface_file,
                                             ignore_topics, mastername)
-    self._re_ignore_publishers = create_pattern('ignore_publishers', data, interface_file,
-                                            ignore_publishers, mastername)
-    self._re_ignore_subscribers = create_pattern('ignore_subscribers', data, interface_file,
-                                            ignore_subscribers, mastername)
     self._re_sync_topics = create_pattern('sync_topics', data, interface_file, 
                                           sync_topics, mastername)
     self._re_ignore_services = create_pattern('ignore_services', data, interface_file, 
@@ -82,6 +78,10 @@ class FilterInterface(object):
                                             sync_srv, mastername)
     self._re_ignore_type = create_pattern('ignore_type', data, interface_file, 
                                             ignore_type, mastername)
+    self._re_ignore_publishers = create_pattern('ignore_publishers', data, interface_file,
+                                            ignore_publishers, mastername)
+    self._re_ignore_subscribers = create_pattern('ignore_subscribers', data, interface_file,
+                                            ignore_subscribers, mastername)
     self._sync_remote_nodes = False
     if interface_file:
       if data.has_key('sync_remote_nodes'):
@@ -134,6 +134,9 @@ class FilterInterface(object):
 
   def is_ignored_topic(self, node, topic, topictype):
     '''
+    NOTE: This function is deprecated. Please use `is_ignored_subscriber` and
+    `is_ignored_publisher` instead
+
     Searches firstly in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`. 
     Then in `sync_nodes` or `sync_topics`.
     
@@ -155,6 +158,11 @@ class FilterInterface(object):
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
     '''
+    rospy.logwarn("Call to deprecated method 'is_ignored_topic'. Please use"
+                   "'is_ignored_subscriber' and 'is_ignored_publisher' instead")
+    self._is_ignored_topic(node, topic, topictype)
+    
+  def _is_ignored_topic(self, node, topic, topictype):
     if not self.is_valid:
       return False
     # do not sync the bond message of the nodelets!!
@@ -172,10 +180,56 @@ class FilterInterface(object):
     return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_topics)
 
   def is_ignored_subscriber(self, node, topic, topictype):
-    return self._re_ignore_subscribers.match(topic) or self.is_ignored_topic(node, topic, topictype)
+    '''
+    Searches first in the `ignore_subscribers` ignore list
+    Then in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`. 
+    Finally in `sync_nodes` or `sync_topics`.
+    
+    :param node: the name of the node published or subscribed the topic.
+    
+    :type node: str
+
+    :param topic: the name of the topic to test.
+    
+    :type topic: str
+
+    :param topictype: the type of the topic. (e.g. the synchronization of bond/Status terminate the nodelets)
+    
+    :type topictype: str
+    
+    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes` 
+      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will 
+      be returned, too.
+    :note: If the filter object is not initialized by load() or from_list() the
+          returned value is `False`
+    '''
+    return self._re_ignore_subscribers.match(topic) or self._is_ignored_topic(node, topic, topictype)
 
   def is_ignored_publisher(self, node, topic, topictype):
-    return self._re_ignore_publishers.match(topic) or self.is_ignored_topic(node, topic, topictype)
+    '''
+    Searches first in the `ignore_publishers` ignore list
+    Then in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`. 
+    Finally in `sync_nodes` or `sync_topics`.
+    
+    :param node: the name of the node published or subscribed the topic.
+    
+    :type node: str
+
+    :param topic: the name of the topic to test.
+    
+    :type topic: str
+
+    :param topictype: the type of the topic. (e.g. the synchronization of bond/Status terminate the nodelets)
+    
+    :type topictype: str
+    
+    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes` 
+      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will 
+      be returned, too.
+    :note: If the filter object is not initialized by load() or from_list() the
+          returned value is `False`
+    '''
+    return self._re_ignore_publishers.match(topic) or self._is_ignored_topic(node, topic, topictype)
 
   def is_ignored_service(self, node, service):
     '''
@@ -227,11 +281,11 @@ class FilterInterface(object):
             _to_str(self._re_sync_nodes),
             _to_str(self._re_ignore_topics),
             _to_str(self._re_sync_topics),
-            _to_str(self._re_ignore_publishers),
-            _to_str(self._re_ignore_subscribers),
             _to_str(self._re_ignore_services),
             _to_str(self._re_sync_services),
-            _to_str(self._re_ignore_type))
+            _to_str(self._re_ignore_type),
+            _to_str(self._re_ignore_publishers),
+            _to_str(self._re_ignore_subscribers))
 
   @staticmethod
   def from_list(l):
@@ -259,11 +313,11 @@ class FilterInterface(object):
       result._re_sync_nodes = _from_str(l[2])
       result._re_ignore_topics = _from_str(l[3])
       result._re_sync_topics = _from_str(l[4])
-      result._re_ignore_publishers = _from_str(l[5])
-      result._re_ignore_subscribers = _from_str(l[6])
-      result._re_ignore_services = _from_str(l[7])
-      result._re_sync_services = _from_str(l[8])
-      result._re_ignore_type = _from_str(l[9])
+      result._re_ignore_services = _from_str(l[5])
+      result._re_sync_services = _from_str(l[6])
+      result._re_ignore_type = _from_str(l[7])
+      result._re_ignore_publishers = _from_str(l[8])
+      result._re_ignore_subscribers = _from_str(l[9])
       result.is_valid = True
       return result
     except:

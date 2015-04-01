@@ -103,10 +103,10 @@ class SyncThread(object):
     self._filter.load(self.name,
                       ['/rosout', rospy.get_name().replace('/', '/*')+'*', self.discoverer_name.replace('/', '/*')+'*', '/*node_manager', '/*zeroconf'], [],
                       ['/rosout', '/rosout_agg'], ['/'] if sync_on_demand else [],
-                      [], [],
                       ['/*get_loggers', '/*set_logger_level'], [],
                       # do not sync the bond message of the nodelets!!
-                      ['bond/Status'])
+                      ['bond/Status'],
+                      [], [])
 
     # congestion avoidance: wait for random.random*2 sec. If an update request 
     # is received try to cancel and restart the current timer. The timer can be
