@@ -105,7 +105,8 @@ class SyncThread(object):
                       ['/rosout', '/rosout_agg'], ['/'] if sync_on_demand else [],
                       ['/*get_loggers', '/*set_logger_level'], [],
                       # do not sync the bond message of the nodelets!!
-                      ['bond/Status'])
+                      ['bond/Status'],
+                      [], [])
 
     # congestion avoidance: wait for random.random*2 sec. If an update request 
     # is received try to cancel and restart the current timer. The timer can be
@@ -266,7 +267,7 @@ class SyncThread(object):
         for node in nodes:
           topictype = self._getTopicType(topic, topicTypes)
           nodeuri = self._getNodeUri(node, nodeProviders, remote_masteruri)
-          if topictype and nodeuri and not self._doIgnoreNT(node, topic, topictype):
+          if topictype and nodeuri and not self._doIgnoreNTP(node, topic, topictype):
             # register the nodes only once
             if not ((topic, node, nodeuri) in self.__publisher):
               publisher_to_register.append((topic, topictype, node, nodeuri))
@@ -293,7 +294,7 @@ class SyncThread(object):
 #              topictype = self.__own_state.topics[topic].type
           if not topictype:
             topictype = self.MSG_ANY_TYPE
-          if topictype and nodeuri and not self._doIgnoreNT(node, topic, topictype):
+          if topictype and nodeuri and not self._doIgnoreNTS(node, topic, topictype):
             # register the node as subscriber in local ROS master
             if not ((topic, node, nodeuri) in self.__subscriber):
               subscriber_to_register.append((topic, topictype, node, nodeuri))
@@ -425,8 +426,11 @@ class SyncThread(object):
         rospy.logwarn("SyncThread[%s] ERROR while ending: %s", self.name, traceback.format_exc())
       socket.setdefaulttimeout(None)
 
-  def _doIgnoreNT(self, node, topic, topictype):
-    return self._filter.is_ignored_topic(node, topic, topictype)
+  def _doIgnoreNTP(self, node, topic, topictype):
+    return self._filter.is_ignored_publisher(node, topic, topictype)
+
+  def _doIgnoreNTS(self, node, topic, topictype):
+    return self._filter.is_ignored_subscriber(node, topic, topictype)
 
   def _doIgnoreNS(self, node, service):
     return self._filter.is_ignored_service(node, service)
