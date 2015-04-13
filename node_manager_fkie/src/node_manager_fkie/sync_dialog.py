@@ -61,8 +61,9 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
     f.setForeground (QtCore.Qt.darkBlue)
     tagList = ["\\bignore_hosts\\b", "\\bsync_hosts\\b",
                "\\bignore_nodes\\b", "\\bsync_nodes\\b",
+               "\\bignore_topics\\b", "\\bignore_publishers\\b",
                "\\bignore_topics\\b", "\\bsync_topics\\b",
-               "\\bignore_services\\b", "\\bsync_services\\b",
+               "\\bignore_subscribers\\b", "\\bsync_services\\b",
                "\\bsync_topics_on_demand\\b", "\\bsync_remote_nodes\\b"]
     for tag in tagList:
       r.setPattern(tag)
@@ -234,6 +235,8 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_ignore_nodes:=', '[]']))
     self._sync_args.append(''.join(['_sync_nodes:=', '[]']))
     self._sync_args.append(''.join(['_ignore_topics:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_publishers:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_subscribers:=', '[]']))
     self._sync_args.append(''.join(['_sync_topics:=', '[]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
@@ -266,6 +269,8 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args.append(''.join(['_ignore_nodes:=', '[]']))
     self._sync_args.append(''.join(['_sync_nodes:=', '[]']))
     self._sync_args.append(''.join(['_ignore_topics:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_publishers:=', '[]']))
+    self._sync_args.append(''.join(['_ignore_subscribers:=', '[]']))
     self._sync_args.append(''.join(['_sync_topics:=', '[/only_on_demand]']))
     self._sync_args.append(''.join(['_ignore_services:=', '[/*]']))
     self._sync_args.append(''.join(['_sync_services:=', '[]']))
@@ -275,7 +280,7 @@ class SyncDialog(QtGui.QDialog):
 
   def _on_select_interface_clicked(self):
     self.toolButton_SyncAll.setVisible(False)
-    self.toolButton_SyncAllAnyMsg.setVisible(False)
+#    self.toolButton_SyncAllAnyMsg.setVisible(False)
     self.toolButton_SyncTopicOnDemand.setVisible(False)
     self.toolButton_SelectInterface.setVisible(False)
     self.interface_field.setVisible(True)
@@ -381,6 +386,8 @@ class SyncDialog(QtGui.QDialog):
                           "ignore_nodes:\n"
                           "sync_nodes:\n\n"
                           "ignore_topics:\n"
+                          "ignore_publishers:\n"
+                          "ignore_subscribers:\n"
                           "sync_topics:\n\n"
                           "ignore_services:\n"
                           "  - /*get_loggers\n"

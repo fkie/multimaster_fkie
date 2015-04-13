@@ -1114,7 +1114,9 @@ class MasterInfo(object):
              ``[ [str,str,str,int,str] ]``, 
              ``[ [str,str,str,str,str] ])``
     '''
-    iffilter = FilterInterface() if filter_interface is None else filter_interface
+    iffilter = filter_interface
+    if iffilter is None:
+      iffilter = FilterInterface.from_list()
     stamp = '%.9f'%self.timestamp
     stamp_local = '%.9f'%self.timestamp_local
     publishers = []

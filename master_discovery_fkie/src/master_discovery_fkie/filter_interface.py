@@ -56,7 +56,7 @@ class FilterInterface(object):
            ignore_topics=[], sync_topics=[],
            ignore_srv=[], sync_srv=[],
            ignore_type=[],
-           ignore_subscribers=[], ignore_publishers=[]):
+           ignore_publishers=[], ignore_subscribers=[]):
     '''
     Reads the parameter and creates the pattern using :mod:`master_discovery_fkie.common.create_pattern()`
     '''
@@ -275,7 +275,7 @@ class FilterInterface(object):
     :rtype: `(float, str, str, str, str, str, str, str)`
     '''
     if not self.is_valid:
-      return (False, '', '', '', '', '', '', '')
+      return (False, '', '', '', '', '', '', '','','')
     return (self._sync_remote_nodes,
             _to_str(self._re_ignore_nodes),
             _to_str(self._re_sync_nodes),
@@ -288,7 +288,7 @@ class FilterInterface(object):
             _to_str(self._re_ignore_subscribers))
 
   @staticmethod
-  def from_list(l):
+  def from_list(l=None):
     '''
     Reads the tuple of
       ::
@@ -297,7 +297,8 @@ class FilterInterface(object):
         ignore_nodes, sync_nodes, 
         ignore_topics, sync_topics,
         ignore_services, sync_services,
-        ignore_type)`
+        ignore_type,
+        ignore_publishers, ignore_subscribers)`
     
     with types
     `(float, str, str, str, str, str, str, str)`
@@ -308,6 +309,8 @@ class FilterInterface(object):
     '''
     try:
       result = FilterInterface()
+      if l is None:
+        l = (False, '', '', '', '', '', '', '','','')
       result._sync_remote_nodes = bool(l[0])
       result._re_ignore_nodes = _from_str(l[1])
       result._re_sync_nodes = _from_str(l[2])

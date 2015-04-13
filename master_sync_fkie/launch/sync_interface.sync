@@ -6,6 +6,8 @@ ignore_nodes:
 sync_nodes:
 
 ignore_topics:
+ignore_publishers:
+ignore_subscribers:
 sync_topics:
 
 ignore_services:
