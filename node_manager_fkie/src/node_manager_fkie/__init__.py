@@ -292,9 +292,9 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
   name = ''.join([prog_name, '_echo'])
-  rospy.init_node(name, anonymous=True, log_level=rospy.DEBUG)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
+  rospy.init_node(name, anonymous=True, log_level=rospy.INFO)
+  setTerminalName(name)
+  setProcessName(name)
   import echo_dialog
   global _ssh_handler
   _ssh_handler = SSHhandler()
@@ -303,15 +303,15 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
 def init_main_window(prog_name, masteruri, launch_files=[]):
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
-  rospy.init_node(prog_name, anonymous=False)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
   # setup the loglevel
-  log_level = rospy.get_param('~log_level', "DEBUG")
   try:
-    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%prog_name, "INFO"))
   except Exception as e:
-    rospy.logwarn("Error while set the log level: %s"%e)
+    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    log_level = rospy.INFO
+  rospy.init_node(prog_name, anonymous=False, log_level=log_level)
+  setTerminalName(prog_name)
+  setProcessName(prog_name)
   import main_window
   local_master = init_globals(masteruri)
   return main_window.MainWindow(launch_files, not local_master, launch_files)

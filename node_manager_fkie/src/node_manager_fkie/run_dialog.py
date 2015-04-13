@@ -88,6 +88,7 @@ class PackageDialog(QtGui.QDialog):
     QtCore.QMetaObject.connectSlotsByName(self)
     self.package_field.activated[str].connect(self.on_package_selected)
     self.package_field.textChanged.connect(self.on_package_selected)
+    self.binary_field.textChanged.connect(self.on_binary_selected)
 
   def _fill_packages(self, packages):
     # fill the input fields
@@ -129,8 +130,10 @@ class PackageDialog(QtGui.QDialog):
       binaries.sort()
       self.binary_field.addItems(binaries)
       self.package = package
-      self.binary = binaries[0] if binaries else ''
+      self.binary = self.binary_field.currentText()
 
+  def on_binary_selected(self, binary):
+    self.binary = binary
 
 class RunDialog(PackageDialog):
   '''

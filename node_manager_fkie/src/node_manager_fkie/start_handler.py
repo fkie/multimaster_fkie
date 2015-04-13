@@ -816,11 +816,11 @@ class StartHandler(object):
           if not CACHED_PKG_PATH.has_key(host):
             CACHED_PKG_PATH[host] = dict()
           _, stdout, stderr, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--package', pkg_name], user, pw, auto_pw_request, close_stdin=True)
-        if ok:
           output = stdout.read()
           error = stderr.read()
           stdout.close()
           stderr.close()
+        if ok:
           if error:
             rospy.logwarn("ERROR while transfer %s to %s: %s", path, host, error)
             raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))

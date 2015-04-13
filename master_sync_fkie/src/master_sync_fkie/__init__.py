@@ -45,7 +45,7 @@ import rospy
 
 import master_sync
 
-NODE_NAME = "master_sync"
+PROCESS_NAME = "master_sync"
 
 
 def setTerminalName(name):
@@ -76,15 +76,15 @@ def main():
   '''
   Creates and runs the ROS node.
   '''
-  rospy.init_node(NODE_NAME)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
   # setup the loglevel
-  log_level = rospy.get_param('~log_level', "DEBUG")
   try:
-    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%PROCESS_NAME, "INFO"))
   except Exception as e:
-    rospy.logwarn("Error while set the log level: %s"%e)
+    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    log_level = rospy.INFO
+  rospy.init_node(PROCESS_NAME, log_level=log_level)
+  setTerminalName(PROCESS_NAME)
+  setProcessName(PROCESS_NAME)
   # time to initialize the topics to receive these in rxconsole
   discoverer = master_sync.Main()
   if not rospy.is_shutdown():

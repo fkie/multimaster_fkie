@@ -1242,7 +1242,7 @@ class MasterViewProxy(QtGui.QWidget):
       text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
       text += '<dt><b>ORG.MASTERURI</b>: %s</dt>'%node.node_info.masteruri
       if not is_legal_name(node.name):
-        text += '<dt><font color="#CC0000"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
+        text += '<dt><font color="#FF6600"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
       if node.is_ghost:
         if node.name.endswith('master_sync') or node.name.endswith('node_manager'):
           text += '<dt><font color="#FF9900"><b>This node is not synchronized by default. To get info about this node select the related host.</b></font></dt>'
@@ -2389,7 +2389,7 @@ class MasterViewProxy(QtGui.QWidget):
         nodename = 'echo_%s%s%s%s'%('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(nm.nameres().getHostname(self.masteruri)), topic.name)
         cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s'%(topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename)
         rospy.loginfo("Echo topic: %s"%cmd)
-        ps = SupervisedPopen(shlex.split(cmd), env=env, close_fds=True, id=topic.name, description='Echo topic: %s'%topic.name)
+        ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, id=topic.name, description='Echo topic: %s'%topic.name)
         ps.finished.connect(self._topic_dialog_closed)
         self.__echo_topics_dialogs[topic.name] = ps
     except Exception, e:

@@ -114,9 +114,9 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
       ns, sep, name = text.rpartition('/')
       result = ''
       if sep:
-        result = '<div><span style="color:#CC0000;">%s%s<b>%s</b></span></div>'%(ns, sep, name)
+        result = '<div><span style="color:#FF6600;">%s%s<b>%s</b></span></div>'%(ns, sep, name)
       else:
-        result = '<div><span style="color:#CC0000;">%s</span></div>'%(name)
+        result = '<div><span style="color:#FF6600;">%s</span></div>'%(name)
     else: # handle all ROS names
       ns, sep, name = text.rpartition('/')
       result = ''

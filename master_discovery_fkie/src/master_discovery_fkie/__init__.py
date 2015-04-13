@@ -46,6 +46,7 @@ import rospy
 #MCAST_GROUP = "ff02::1"# ipv6 multicast group
 MCAST_GROUP = "226.0.0.0" # ipv4 multicast group
 MCAST_PORT = 11511
+PROCESS_NAME = "master_discovery"
 
 def getDefaultRPCPort(zeroconf=False):
   try:
@@ -88,15 +89,15 @@ def main():
   Creates and runs the ROS node using multicast messages for discovering
   '''
   import master_discovery
-  rospy.init_node("master_discovery")
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
   # setup the loglevel
-  log_level = rospy.get_param('~log_level', "INFO")
   try:
-    rospy.impl.rosout.load_rosout_handlers(getattr(rospy, log_level))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%PROCESS_NAME, "INFO"))
   except Exception as e:
-    rospy.logwarn("Error while set the log level: %s"%e)
+    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    log_level = rospy.INFO
+  rospy.init_node(PROCESS_NAME, log_level=log_level)
+  setTerminalName(PROCESS_NAME)
+  setProcessName(PROCESS_NAME)
   mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
   mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
   rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort())
@@ -116,7 +117,14 @@ def main_zeroconf():
   Creates and runs the ROS node using zeroconf/avahi for discovering
   '''
   import zeroconf
-  rospy.init_node("zeroconf", log_level=rospy.DEBUG)
+  PROCESS_NAME = "zeroconf"
+  # setup the loglevel
+  try:
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%PROCESS_NAME, "INFO"))
+  except Exception as e:
+    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    log_level = rospy.INFO
+  rospy.init_node(PROCESS_NAME, log_level=log_level)
   setTerminalName(rospy.get_name())
   setProcessName(rospy.get_name())
   rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort(True))

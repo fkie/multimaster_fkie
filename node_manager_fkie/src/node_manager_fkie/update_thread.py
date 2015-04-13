@@ -53,6 +53,12 @@ class UpdateThread(QtCore.QObject, threading.Thread):
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
 
+  master_errors_signal = QtCore.Signal(str, list)
+  '''
+  @ivar: master_errors_signal is a signal (masteruri, list of errors), 
+  which is emitted, if we get a list with errors from remote master_discovery.
+  '''
+
   error_signal = QtCore.Signal(str, str)
   '''
   @ivar: error_signal is a signal (masteruri, error message), which is emitted, 
@@ -85,6 +91,13 @@ class UpdateThread(QtCore.QObject, threading.Thread):
       #'print "request update", self._monitoruri
       socket.setdefaulttimeout(25)
       remote_monitor = xmlrpclib.ServerProxy(self._monitoruri)
+      # get first master errors
+      try:
+        muri, errors = remote_monitor.masterErrors()
+        self.master_errors_signal.emit(muri, errors)
+      except xmlrpclib.Fault as err:
+        rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!"%self._masteruri)
+      # now get master info from master discovery
       remote_info = remote_monitor.masterInfo()
       master_info = MasterInfo.from_list(remote_info)
       master_info.check_ts = time.time()

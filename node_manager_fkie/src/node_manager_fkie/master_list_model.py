@@ -113,6 +113,7 @@ class MasterItem(QtGui.QStandardItem):
                   'disconnected' : QtGui.QIcon(":/icons/stock_disconnect.png"),
                   'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png') }
     self.master_ip = None
+    self._master_errors = []
     self._threaded_get_ip()
     self.updateNameView(master, quality, self)
 
@@ -160,6 +161,10 @@ class MasterItem(QtGui.QStandardItem):
       self.__quality = value
       self.updateMasterView(self.parent_item)
 
+  def updateMasterErrors(self, error_list):
+    self._master_errors = error_list
+    self.updateNameView(self.master, self.quality, self)
+
   def updateMasterView(self, parent):
     '''
     This method is called after the master state is changed to update the 
@@ -202,9 +207,14 @@ class MasterItem(QtGui.QStandardItem):
       tooltip = ''.join([tooltip, item.descr])
     # update the icon
     if master.online:
-      if self.master_ip is None:
+      if self._master_errors or self.master_ip is None:
         item.setIcon(self.ICONS['warning'])
-        tooltip = ''.join([tooltip, '<h4>', 'Host not reachable by name!!! The ROS topics may not by connected!!!', '</h4>'])
+        if self.master_ip is None:
+          tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Host not reachable by name!!! The ROS topics may not by connected!!!</font>', '</h4>'])
+        if self._master_errors:
+          tooltip = ''.join([tooltip, '<h4>Errors reported by master_discovery:</h4>'])
+          for err in self._master_errors:
+            tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>'%err])
       elif not quality is None and quality != -1.:
         if quality > 30:
           item.setIcon(self.ICONS['green'])
@@ -219,11 +229,11 @@ class MasterItem(QtGui.QStandardItem):
 
     tooltip = ''.join([tooltip, '</body></html>'])
     item.setToolTip(tooltip)
-  
+
   def updateDescription(self, descr):
     self.descr = descr
     self.updateNameView(self.master, self.quality, self)
-  
+
   @classmethod
   def toHTML(cls, text):
     '''
@@ -404,6 +414,22 @@ class MasterModel(QtGui.QStandardItemModel):
           del self.pyqt_workaround_info[masterItem.master.name]
         except:
           pass
+        break
+
+  def updateMasterErrors(self, master, errors):
+    '''
+    Updates the errors reported by master_discovery. 
+
+    @param master: the ROS master to update
+    @type master: C{str}
+    @param errors: the list with errors
+    @type errors: C{[str]}
+    '''
+    root = self.invisibleRootItem()
+    for i in reversed(range(root.rowCount())):
+      masterItem = root.child(i, self.COL_NAME)
+      if masterItem.master.name in master:
+        masterItem.updateMasterErrors(errors)
         break
 
   def updateDescription(self, master, descr):

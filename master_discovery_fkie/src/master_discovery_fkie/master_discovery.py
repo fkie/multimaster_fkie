@@ -82,6 +82,9 @@ class DiscoveredMaster(object):
 
   MIN_HZ_FOR_QUALILTY = 0.3
 
+  ERR_RESOLVE_NAME = 1
+  ERR_SOCKET = 2
+
   def __init__(self, monitoruri, heartbeat_rate=1., timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
     '''
     Initialize method for the DiscoveredMaster class.
@@ -106,6 +109,7 @@ class DiscoveredMaster(object):
 
     :type callback_master_state: `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_}  (Default: ``None``)
     '''
+    self.__lock = threading.RLock()
     self.masteruri = None
     self.mastername = None
     self.timestamp = timestamp
@@ -121,6 +125,8 @@ class DiscoveredMaster(object):
     # The requests are sent using unicast messages. count_requests holds the
     # unanswered count of request.
     self.count_requests = 0
+    self._errors = dict() #ERR_*, msg
+    self.masteruriaddr = None
     # create a thread to retrieve additional information about the remote ROS master
     self._retrieveThread = threading.Thread(target = self.__retrieve_masterinfo)
     self._retrieveThread.setDaemon(True)
@@ -253,6 +259,26 @@ class DiscoveredMaster(object):
             quality = 100.0
     return quality
 
+  @property
+  def errors(self):
+    result = dict()
+    with self.__lock:
+      for k,v in self._errors.items():
+        result[k] = v
+    return result
+
+  def _add_error(self, error_id, msg):
+    with self.__lock:
+      if id not in self._errors:
+        self._errors[error_id] = msg
+
+  def _del_error(self, error_id):
+    try:
+      with self.__lock:
+        del self._errors[error_id]
+    except:
+      pass
+
   def __retrieve_masterinfo(self):
     '''
     Connects to the remote RPC server of the discoverer node and gets the 
@@ -265,9 +291,12 @@ class DiscoveredMaster(object):
         try:
           remote_monitor = xmlrpclib.ServerProxy(self.monitoruri)
           timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
+          self._del_error(self.ERR_SOCKET)
         except:
           import traceback
-          rospy.logwarn("socket error: %s", traceback.format_exc())
+          msg = "socket error: %s"%traceback.format_exc()
+          rospy.logwarn(msg)
+          self._add_error(self.ERR_SOCKET, msg)
           time.sleep(1)
         else:
           if float(timestamp) != 0:
@@ -280,11 +309,14 @@ class DiscoveredMaster(object):
             #resolve the masteruri. Print an error if not reachable
             try:
               o = urlparse(self.masteruri)
-              machine_addr = socket.gethostbyname(o.hostname)
+              self.masteruriaddr = socket.gethostbyname(o.hostname)
+              self._del_error(self.ERR_RESOLVE_NAME)
             except socket.gaierror:
               import traceback
               print traceback.format_exc()
-              rospy.logwarn("Master discovered with not reachable ROS_MASTER_URI:='%s'. Fix your network settings!", str(self.masteruri))
+              msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings and restart master_dicovery!"%str(self.masteruri)
+              rospy.logwarn(msg)
+              self._add_error(self.ERR_RESOLVE_NAME, msg)
               time.sleep(10)
             else:
               #publish new node 
@@ -539,7 +571,7 @@ class Discoverer(object):
       self.do_finish = True
       # finish the RPC server and timer
       self.master_monitor.shutdown()
-      for (k, v) in self.masters.iteritems():
+      for (_, v) in self.masters.iteritems():
         if not v.mastername is None:
           self.publish_masterstate(MasterState(MasterState.STATE_REMOVED, 
                                          ROSMaster(str(v.mastername), 
@@ -567,6 +599,7 @@ class Discoverer(object):
     # send as unicast
     for a in self.robots:
       self.msocket.send2addr(msg, a)
+    time.sleep(0.2)
     self.msocket.close()
 
   def send_heardbeat(self):
@@ -633,7 +666,7 @@ class Discoverer(object):
     try:
       rospy.logdebug('Send request to mcast group %s:%s'%(self.mcast_group, self.mcast_port))
       current_time = time.time()
-      for (k, v) in self.masters.iteritems():
+      for (_, v) in self.masters.iteritems():
         v.add_request(current_time)
       self.msocket.send2group(self._create_request_update_msg())
     except Exception as e:
@@ -683,6 +716,7 @@ class Discoverer(object):
       try:
         cputimes = os.times()
         cputime_init = cputimes[0] + cputimes[1]
+        self.update_master_errors()
         if self.master_monitor.checkState(self._changed):
           # publish the new state if frequetly publishing is disabled
           if not self.do_finish and self.HEARTBEAT_HZ < DiscoveredMaster.MIN_HZ_FOR_QUALILTY:
@@ -865,7 +899,7 @@ class Discoverer(object):
     result.header.stamp.secs = int(current_time)
     result.header.stamp.nsecs = int((current_time - result.header.stamp.secs) * 1000000000)
     with self.__lock:
-      for (k, v) in self.masters.iteritems():
+      for (_, v) in self.masters.iteritems():
         quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
         if not (v.mastername is None) and v.online:
           result.links.append(LinkState(v.mastername, quality))
@@ -908,6 +942,31 @@ class Discoverer(object):
         import traceback
         traceback.print_exc()
 
+  def update_master_errors(self):
+    result = []
+    with self.__lock:
+      try:
+        for (_, v) in self.masters.iteritems():
+          # add all errors to the responce
+          for _, msg in v.errors.items():
+            result.append(msg)
+          # test for resolved addr
+          if v.mastername is not None and not v.errors and v.masteruri != self.master_monitor.getMasteruri():
+            try:
+              o = urlparse(v.masteruri)
+              mo = urlparse(v.monitoruri)
+              if v.masteruriaddr != mo.hostname:
+                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_dicovery!"%(o.hostname, v.masteruriaddr, mo.hostname)
+                rospy.logwarn(msg)
+                result.append(msg)
+            except Exception as e:
+              result.append("%s"%e)
+              rospy.logwarn("%s"%e)
+      except Exception as e:
+        result.append("%s"%e)
+        rospy.logwarn("%s"%e)
+    self.master_monitor.update_master_errors(result)
+
   def rosservice_list_masters(self, req):
     '''
     Callback for the ROS service to get the current list of the known ROS masters.
@@ -915,7 +974,7 @@ class Discoverer(object):
     masters = list()
     with self.__lock:
       try:
-        for (k, v) in self.masters.iteritems():
+        for (_, v) in self.masters.iteritems():
           if not v.mastername is None:
             masters.append(ROSMaster(str(v.mastername), 
                                      v.masteruri, 
