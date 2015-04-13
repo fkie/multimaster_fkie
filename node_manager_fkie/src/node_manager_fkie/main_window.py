@@ -1544,7 +1544,7 @@ class MainWindow(QtGui.QMainWindow):
       self._accept_next_update = False
       self.descriptionDock.setWindowTitle(title)
       self.descriptionTextEdit.setText(text)
-      if text:
+      if text and not (self.launch_dock.hasFocus() or self.launch_dock.xmlFileView.hasFocus()):
         self.descriptionDock.raise_()
       else:
         self.launch_dock.raise_()
