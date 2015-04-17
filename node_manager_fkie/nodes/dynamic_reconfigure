@@ -46,6 +46,7 @@ def main(argv=sys.argv):
   node = args[1]
   try:
     from python_qt_binding.QtGui import QApplication
+    from python_qt_binding.QtGui import QScrollArea
   except:
     print >> sys.stderr, "please install 'python-pyside' package!!"
     sys.exit(-1)
@@ -65,9 +66,11 @@ def main(argv=sys.argv):
       #TODO(Isaac) Needs to show err msg on GUI too.
       return
 
-  _dynreconf_client = DynreconfClientWidget(dynreconf_client,
-                                            node)
-  _dynreconf_client.show()
+  _scroll_area = QScrollArea()
+  _dynreconf_client = DynreconfClientWidget(dynreconf_client, node)
+  _scroll_area.resize(_dynreconf_client.width()+20, 480 if _dynreconf_client.height() > 480 else _dynreconf_client.height())
+  _scroll_area.setWidget(_dynreconf_client)
+  _scroll_area.show()
   exit_code = -1
   rospy.on_shutdown(finish)
   exit_code = app.exec_()
