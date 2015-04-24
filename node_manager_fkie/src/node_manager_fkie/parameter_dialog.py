@@ -165,13 +165,12 @@ class ParameterDescription(object):
       elif value:
         nm.history().addParamCache(self.fullName(), value)
         if self.isArrayType():
-          value = value.lstrip('[').rstrip(']')
           if 'int' in self.baseType():
-            self._value = map(int, value.split(','))
+            self._value = map(int, value.lstrip('[').rstrip(']').split(','))
           elif 'float' in self.baseType():
-            self._value = map(float, value.split(','))
+            self._value = map(float, value.lstrip('[').rstrip(']').split(','))
           elif 'bool' in self.baseType():
-            self._value = map(str2bool, value.split(','))
+            self._value = map(str2bool, value.lstrip('[').rstrip(']').split(','))
           elif self.isBinaryType():
             self._value = value
           else:
