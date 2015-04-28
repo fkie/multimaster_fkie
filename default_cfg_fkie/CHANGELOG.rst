@@ -2,6 +2,11 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2015-04-28)
+------------------
+* multimaster_fkie: fixed double log output
+* Contributors: Alexander Tiderko
+
 0.4.0 (2015-02-20)
 ------------------
 * multimaster_fkie: added log_level parameter to all nodes

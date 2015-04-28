@@ -2,6 +2,16 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2015-04-28)
+------------------
+* Deprecate is_ignored_topic. Move new parameters to the end of the parameter list
+* Make configuration more granular
+  allows filtering of specific subscribers or publishers
+* multimaster_fkie: fixed double log output
+* multimaster_fkie: added network problem detection on remote hosts
+* multimaster_fkie: fixed error in launch files included in this package
+* Contributors: Alexander Tiderko, Julian Cerruti
+
 0.4.0 (2015-02-20)
 ------------------
 * master_discovery_fkie: discovery changed

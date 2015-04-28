@@ -2,6 +2,22 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2015-04-28)
+------------------
+* node_manager_fkie: fixed error while parsing list of lists in parameter dialog
+* node_manager_fkie: added scrollarea for dynamic_reconfigure widget
+* fixed the usage of new parameter in node_manager
+* node_manager_fkie: fixed binary selection while 'add node'
+* multimaster_fkie: fixed double log output
+* node_manager_fkie: fix to enable the master list if a master_discavery was started
+* node_manager_fkie: fixed recursive search
+* multimaster_fkie: added network problem detection on remote hosts
+* node_manager_fkie: older paramiko versions does not support get_pty parameter in exce_command
+* node_manager_fkie: fixed stdout error while transfer files to remote host
+* node_manager_fkie: ignore errors caused on after the echo dialog was closed
+* node_manager_fkie: changed the color of illegal ros node names
+* Contributors: Alexander Tiderko
+
 0.4.0 (2015-02-20)
 ------------------
 * multimaster_fkie: discovery changed
