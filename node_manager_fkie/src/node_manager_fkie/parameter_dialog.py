@@ -43,11 +43,11 @@ import roslib.msgs
 import rospy
 import node_manager_fkie as nm
 
-from parameter_handler import ParameterHandler
-from detailed_msg_box import WarningMessageBox
+from node_manager_fkie.parameter_handler import ParameterHandler
+from node_manager_fkie.detailed_msg_box import WarningMessageBox
 
-def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
+def str2bool(val):
+  return val.lower() in ("yes", "true", "t", "1")
 
 class MyComboBox(QtGui.QComboBox):
 
@@ -165,7 +165,7 @@ class ParameterDescription(object):
       elif value:
         nm.history().addParamCache(self.fullName(), value)
         if self.isArrayType():
-          if 'int' in self.baseType():
+          if 'int' in self.baseType() or 'byte' in self.baseType():
             self._value = map(int, value.lstrip('[').rstrip(']').split(','))
           elif 'float' in self.baseType():
             self._value = map(float, value.lstrip('[').rstrip(']').split(','))
@@ -188,7 +188,7 @@ class ParameterDescription(object):
           if not self.arrayLength() is None and self.arrayLength() != len(self._value):
             raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
         else:
-          if 'int' in self.baseType():
+          if 'int' in self.baseType() or 'byte' in self.baseType():
             self._value = int(value)
           elif 'float' in self.baseType():
             self._value = float(value)
@@ -220,7 +220,7 @@ class ParameterDescription(object):
           arr = []
           self._value = arr
         else:
-          if 'int' in self.baseType():
+          if 'int' in self.baseType() or 'byte' in self.baseType():
             self._value = 0
           elif 'float' in self.baseType():
             self._value = 0.0
@@ -358,7 +358,7 @@ class MainBox(QtGui.QWidget):
   def createFieldFromValue(self, value):
     self.setUpdatesEnabled(False)
     try:
-      if isinstance(value, dict):
+      if isinstance(value, (dict, list)):
         self._createFieldFromDict(value)
     finally:
       self.setUpdatesEnabled(True)
@@ -418,7 +418,7 @@ class MainBox(QtGui.QWidget):
     :raise Exception: on errors
     '''
     if isinstance(values, dict):
-      for param, value in values.items():
+      for param, (_type, value) in values.items():
         field = self.getField(param)
         if not field is None:
           if isinstance(field, (GroupBox, ArrayBox)):
@@ -593,6 +593,7 @@ class ArrayBox(MainBox):
       if isinstance(value, list):
         self.addDynamicBox()
         self._dynamic_value = value
+        self.set_values(value)
     finally:
       self.setUpdatesEnabled(True)
 
@@ -659,7 +660,7 @@ class ParameterDialog(QtGui.QDialog):
     @type params: C{dict(str:(str, {value, [..], dict()}))}
     '''
     QtGui.QDialog.__init__(self, parent=parent)
-    self.setObjectName(' - '.join(['ParameterDialog', str(params)]))
+    self.setObjectName('ParameterDialog - %s'%str(params))
 
     self.__current_path = nm.settings().current_dialog_path
     self.horizontalLayout = QtGui.QHBoxLayout(self)
@@ -875,6 +876,14 @@ class ParameterDialog(QtGui.QDialog):
         r = self._remove_unchanged_parameter(value, only_changed)
         if r:
           result[param] = r
+      elif isinstance(value, list):
+        new_val = []
+        for val in value:
+          r = self._remove_unchanged_parameter(val, only_changed)
+          if r:
+            new_val.append(r)
+        if new_val:
+          result[param] = new_val
       elif isinstance(value, tuple):
         if value[1] or not only_changed:
           result[param] = value[0]
@@ -1237,8 +1246,15 @@ class ServiceDialog(ParameterDialog):
       else:
         try:
           list_msg_class = roslib.message.get_message_class(base_type)
-          subresult = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
-          result[slot] = (msg_type, [subresult] if is_array else subresult)
+          if is_array and slot in values:
+            subresult = []
+            for slot_value in values[slot]:
+              subvalue = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, slot_value if slot in values and slot_value else {})
+              subresult.append(subvalue)
+            result[slot] = (msg_type, subresult)
+          else:
+            subresult = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
+            result[slot] = (msg_type, [subresult] if is_array else subresult)
         except ValueError, e:
           import traceback
           print traceback.format_exc(1)
