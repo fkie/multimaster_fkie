@@ -10,7 +10,7 @@ import rospy
 try:
   import node_manager_fkie as nm
 except:
-  import qt_free_nm as nm
+  import reduced_nm as nm
 
 
 

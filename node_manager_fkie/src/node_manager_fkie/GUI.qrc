@@ -53,6 +53,7 @@
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
     <file>icons/state_ghost.png</file>
+    <file>icons/state_notification.png</file>
     <file>icons/state_off.png</file>
     <file>icons/state_part.png</file>
     <file>icons/state_run.png</file>

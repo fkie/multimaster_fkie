@@ -45,6 +45,13 @@ from python_qt_binding import loadUi
 
 import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
+try:
+  from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+  DIAGNOSTICS_AVAILABLE = True
+except:
+  import sys
+  print >> sys.stderr, "Can not import 'diagnostic_msgs', feature disabled."
+  DIAGNOSTICS_AVAILABLE = False
 
 import gui_resources
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
@@ -79,6 +86,11 @@ class MainWindow(QtGui.QMainWindow):
   The class to create the main window of the application.
   '''
   DELAYED_NEXT_REQ_ON_ERR = 5.0
+
+  if DIAGNOSTICS_AVAILABLE:
+    diagnostics_signal  = QtCore.Signal(DiagnosticStatus)
+  '''@ivar: the signal is emitted if a message on topic nm_notifier was
+  reiceved (DiagnosticStatus)'''
 
   def __init__(self, files=[], restricted_to_one_master=False, parent=None):
     '''
@@ -294,6 +306,8 @@ class MainWindow(QtGui.QMainWindow):
 
     self._con_tries = dict()
     self._subscribe()
+    if DIAGNOSTICS_AVAILABLE:
+      self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
 
   def _dock_widget_in(self, area=QtCore.Qt.LeftDockWidgetArea, only_visible=False):
     result = []
@@ -447,6 +461,8 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].request_xml_editor.disconnect()
       self.masters[masteruri].stop_nodes_signal.disconnect()
       self.masters[masteruri].robot_icon_updated.disconnect()
+      if DIAGNOSTICS_AVAILABLE:
+        self.diagnostics_signal.disconnect(self.masters[masteruri])
       self.stackedLayout.removeWidget(self.masters[masteruri])
       self.tabPlace.layout().removeWidget(self.masters[masteruri])
       for cfg in self.masters[masteruri].default_cfgs:
@@ -472,6 +488,8 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].request_xml_editor.connect(self.on_launch_edit)
       self.masters[masteruri].stop_nodes_signal.connect(self.on_stop_nodes)
       self.masters[masteruri].robot_icon_updated.connect(self._on_robot_icon_changed)
+      if DIAGNOSTICS_AVAILABLE:
+        self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
       self.stackedLayout.addWidget(self.masters[masteruri])
       if masteruri == self.getMasteruri():
         if self.default_load_launch:
@@ -1670,3 +1688,11 @@ class MainWindow(QtGui.QMainWindow):
     master = self.getMaster(masteruri, False)
     if master:
       self._assigne_icon(master.mastername, resolve_url(path))
+
+  def _callback_diagnostics(self, data):
+    try:
+      for diagnostic in data.status:
+        if DIAGNOSTICS_AVAILABLE:
+          self.diagnostics_signal.emit(diagnostic)
+    except Exception as err:
+      rospy.logwarn('Error while process diagnostic messages: %s'%err)

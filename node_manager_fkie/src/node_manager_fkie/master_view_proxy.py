@@ -69,6 +69,7 @@ from progress_queue import ProgressQueue, InteractionNeededError #, ProgressThre
 from common import masteruri_from_ros, get_packages, package_name, resolve_paths
 from launch_server_handler import LaunchServerHandler
 from supervised_popen import SupervisedPopen
+from yaml import nodes
 
 
 
@@ -593,8 +594,8 @@ class MasterViewProxy(QtGui.QWidget):
   def _load_launchfile(self, launchfile, argv_forced=[], pqid=None):
     '''
     This method will be called in another thread. The configuration parameter
-    of the launch file will be requested using `LaunchArgsSelectionRequest` and 
-    `InteractionNeededError`. After the file is successful loaded a 
+    of the launch file will be requested using `LaunchArgsSelectionRequest` and
+    `InteractionNeededError`. After the file is successful loaded a
     `loaded_config` signal will be emitted.
     '''
     stored_argv = None
@@ -1259,6 +1260,14 @@ class MasterViewProxy(QtGui.QWidget):
         else:
           text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
           text += '<a href="unregister_node://%s">unregister</a></dt>'%node.name
+      if node.diagnostic_array and node.diagnostic_array[-1].level > 0:
+        diag_status = node.diagnostic_array[-1]
+        level_str = 'WARN'
+        if diag_status.level > 1:
+          level_str = 'ERROR'
+        text += '<dt><font color="#FF6600"><b>%s: %s</b></font></dt>'%(level_str, node.diagnostic_array[-1].message)
+#        if len(node.diagnostic_array) > 1:
+#          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
       text += '</dl>'
       text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
       text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
@@ -2714,6 +2723,11 @@ class MasterViewProxy(QtGui.QWidget):
       _, _, self._nm_materuri = master.getUri(rospy.get_name()) # reuslt: code, message, self._nm_materuri
     return self._nm_materuri
 
+
+  def append_diagnostic(self, diagnostic_status):
+    nodes = self.getNode(diagnostic_status.name)
+    for node in nodes:
+      node.append_diagnostic_status(diagnostic_status)
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%
