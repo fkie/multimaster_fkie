@@ -122,6 +122,13 @@ class MasterViewProxy(QtGui.QWidget):
   loaded_config = QtCore.Signal(str, object)
   '''@ivar: the signal is emitted, after a launchfile is successful loaded (launchfile, LaunchConfig)'''
 
+  DIAGNOSTIC_LEVELS = {0 : 'OK',
+                       1 : 'WARN',
+                       2 : 'ERROR',
+                       3 : 'STALE',
+                       4 : 'UNKNOWN',
+                       5 : 'UNKNOWN'}
+
   def __init__(self, masteruri, parent=None):
     '''
     Creates a new master.
@@ -1262,9 +1269,7 @@ class MasterViewProxy(QtGui.QWidget):
           text += '<a href="unregister_node://%s">unregister</a></dt>'%node.name
       if node.diagnostic_array and node.diagnostic_array[-1].level > 0:
         diag_status = node.diagnostic_array[-1]
-        level_str = 'WARN'
-        if diag_status.level > 1:
-          level_str = 'ERROR'
+        level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
         text += '<dt><font color="#FF6600"><b>%s: %s</b></font></dt>'%(level_str, node.diagnostic_array[-1].message)
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
