@@ -183,7 +183,7 @@ class SSHhandler(object):
         else:
           cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
         rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
-        return SupervisedPopen(shlex.split(cmd_str), id=str(title), description="REMOTE x11 execute on %s: %s"%(host, cmd_str))
+        return SupervisedPopen(shlex.split(cmd_str), object_id=str(title), description="REMOTE x11 execute on %s: %s"%(host, cmd_str))
       except:
         raise
 

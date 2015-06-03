@@ -1741,6 +1741,7 @@ class MasterViewProxy(QtGui.QWidget):
     if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
       try:
         rospy.loginfo("Stop node '%s'[%s]", str(node.name), str(node.uri))
+        nm.file_watcher().rem_binary(node.name)
         #'print "STOP set timeout", node
         socket.setdefaulttimeout(10)
         #'print "STOP create xmlrpc", node
@@ -2088,7 +2089,7 @@ class MasterViewProxy(QtGui.QWidget):
             env = dict(os.environ)
             env["ROS_MASTER_URI"] = str(self.master_info.masteruri)
             rospy.loginfo("Start dynamic reconfiguration for '%s'"%node)
-            ps = SupervisedPopen(['rosrun', 'node_manager_fkie', 'dynamic_reconfigure', node, '__ns:=dynamic_reconfigure'], env=env, id=node, description='Start dynamic reconfiguration for %s failed'%node)
+            ps = SupervisedPopen(['rosrun', 'node_manager_fkie', 'dynamic_reconfigure', node, '__ns:=dynamic_reconfigure'], env=env, object_id=node, description='Start dynamic reconfiguration for %s failed'%node)
         except Exception, e:
           rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s"%(n.name, e))
           WarningMessageBox(QtGui.QMessageBox.Warning, "Start dynamic reconfiguration error", 
@@ -2403,7 +2404,7 @@ class MasterViewProxy(QtGui.QWidget):
         nodename = 'echo_%s%s%s%s'%('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(nm.nameres().getHostname(self.masteruri)), topic.name)
         cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s'%(topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename)
         rospy.loginfo("Echo topic: %s"%cmd)
-        ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, id=topic.name, description='Echo topic: %s'%topic.name)
+        ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, object_id=topic.name, description='Echo topic: %s'%topic.name)
         ps.finished.connect(self._topic_dialog_closed)
         self.__echo_topics_dialogs[topic.name] = ps
     except Exception, e:

@@ -107,6 +107,7 @@ class MainWindow(QtGui.QMainWindow):
     self.__current_icon = None
     self.__current_master_label_name = None
     self._changed_files = dict()
+    self._changed_binaries = dict()
     self._changed_files_param = dict()
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     # setup main window frame
@@ -187,8 +188,9 @@ class MainWindow(QtGui.QMainWindow):
     self.currentMaster = None # MasterViewProxy
     self._close_on_exit = True
 
-    nm.file_watcher().file_changed.connect(self.on_configfile_changed)
-    nm.file_watcher_param().file_changed.connect(self.on_configparamfile_changed)
+    nm.file_watcher().config_changed.connect(self.on_configfile_changed)
+    nm.file_watcher().binary_changed.connect(self.on_binaryfile_changed)
+    nm.file_watcher_param().config_changed.connect(self.on_configparamfile_changed)
     self.__in_question = set()
 
     ############################################################################
@@ -1455,6 +1457,21 @@ class MainWindow(QtGui.QMainWindow):
     else:
       self._changed_files[changed] = affected
 
+  def on_binaryfile_changed(self, changed, affected):
+    '''
+    Signal hander to handle the changes started binaries.
+    @param changed: the changed file
+    @type changed: str
+    @param affected: list of tuples(node name, masteruri, launchfile), which are
+                     affected by file change
+    @type affected: list
+    '''
+    if self.isActiveWindow():
+      self._changed_binaries[changed] = affected
+      self._check_for_changed_files()
+    else:
+      self._changed_binaries[changed] = affected
+
   def _check_for_changed_files(self):
     '''
     Check the dictinary with changed files and notify the masters about changes.
@@ -1483,6 +1500,41 @@ class MainWindow(QtGui.QMainWindow):
       for c in cfgs:
         choices[c][0].launchfiles = choices[c][1]
     self._changed_files.clear()
+
+  def _check_for_changed_binaries(self):
+    '''
+    Check the dictinary with changed binaries and notify the masters about changes.
+    '''
+    new_affected = list()
+    for _, affected in self._changed_binaries.items():#:=changed
+      for (nname, muri, lfile) in affected:
+        if not (nname, muri, lfile) in self.__in_question:
+          self.__in_question.add((nname, muri, lfile))
+          new_affected.append((nname, muri, lfile))
+    # if there are no question to restart the nodes -> ask
+    if new_affected:
+      choices = dict()
+      for (nname, muri, lfile) in new_affected:
+        master = self.getMaster(muri)
+        if not master is None:
+          master_nodes = master.getNode(nname)
+          if master_nodes and master_nodes[0].is_running():
+            choices[nname] = (master, lfile)
+          else:
+            nm.file_watcher().rem_binary(nname)
+      if choices:
+        nodes, _ = SelectDialog.getValue('Restart nodes?',
+                                     '<b>%s</b> was changed.<br>Select affected nodes to restart:'%', '.join([os.path.basename(f) for f in self._changed_binaries.keys()]), choices.keys(),
+                                     False, True,
+                                     '',
+                                     self)
+        for (nname, muri, lfile) in new_affected:
+          self.__in_question.remove((nname, muri, lfile))
+        for nname in nodes:
+          choices[nname][0].stop_nodes_by_name([nname])
+        for nname in nodes:
+          choices[nname][0].start_nodes_by_name([nname], choices[nname][1], True)
+    self._changed_binaries.clear()
 
   def on_configparamfile_changed(self, changed, affected):
     '''
@@ -1541,6 +1593,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     QtGui.QMainWindow.changeEvent(self, event)
     self._check_for_changed_files()
+    self._check_for_changed_binaries()
     self._check_for_changed_files_param()
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

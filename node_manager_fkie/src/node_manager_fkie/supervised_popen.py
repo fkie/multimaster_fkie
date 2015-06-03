@@ -30,16 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import sys
 import subprocess
 import threading
-import roslib
 
 from python_qt_binding import QtCore, QtGui
 
-import node_manager_fkie as nm
-from detailed_msg_box import WarningMessageBox, DetailedError
+from .detailed_msg_box import WarningMessageBox
 
 
 class SupervisedPopen(QtCore.QObject, subprocess.Popen):
@@ -53,43 +49,52 @@ class SupervisedPopen(QtCore.QObject, subprocess.Popen):
   finished = QtCore.Signal(str)
   '''@ivar: the signal is emitted on exit (id)'''
 
-  def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None, stderr=subprocess.PIPE, preexec_fn=None, close_fds=False, shell=False, cwd=None, env=None, universal_newlines=False, startupinfo=None, creationflags=0, id='', description=''):
+  def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None,
+               stderr=subprocess.PIPE, preexec_fn=None, close_fds=False,
+               shell=False, cwd=None, env=None, universal_newlines=False,
+               startupinfo=None, creationflags=0, object_id='', description=''):
     '''
     For arguments see https://docs.python.org/2/library/subprocess.html
     Additional arguments:
-    :param id: the identification string of this object and title of the error message dialog 
-    :type id: str
-    :param description: the description string used as addiotional information 
+    :param object_id: the identification string of this object and title of the
+                      error message dialog
+    :type object_id: str
+    :param description: the description string used as addiotional information
                         in dialog if an error was occured
     :type description: str
     '''
     try:
-      subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout, stderr, preexec_fn, close_fds, shell, cwd, env, universal_newlines, startupinfo, creationflags)
+      subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout,
+                                stderr, preexec_fn, close_fds, shell, cwd, env,
+                                universal_newlines, startupinfo, creationflags)
       QtCore.QObject.__init__(self)
       self._args = args
-      self._id = id
+      self._object_id = object_id
       self._description = description
       self.error.connect(self.on_error)
       # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=self.supervise)
+      thread = threading.Thread(target=self._supervise)
       thread.setDaemon(True)
       thread.start()
-    except Exception as e:
+    except Exception as _:
       raise
 
 #   def __del__(self):
 #     print "Deleted:", self._description
 
-  def supervise(self):
-    # wait for process to avoid 'defunct' processes
+  def _supervise(self):
+    '''
+    Wait for process to avoid 'defunct' processes
+    '''
     self.wait()
     result_err = ''
     if not self.stderr is None:
       result_err = self.stderr.read()
     if result_err:
-      self.error.emit(self._id, self._description, result_err)
-    self.finished.emit(self._id)
+      self.error.emit(self._object_id, self._description, result_err)
+    self.finished.emit(self._object_id)
 
-  def on_error(self, id, descr, msg):
-    WarningMessageBox(QtGui.QMessageBox.Warning, id, '%s\n\n%s'%(descr, msg), ' '.join(self._args)).exec_()
+  def on_error(self, object_id, descr, msg):
+    WarningMessageBox(QtGui.QMessageBox.Warning, object_id, '%s\n\n'
+                      '%s'%(descr, msg), ' '.join(self._args)).exec_()
 

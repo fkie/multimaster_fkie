@@ -84,15 +84,15 @@ class LaunchConfig(QtCore.QObject):
     self.global_param_done = [] # masteruri's where the global parameters are registered 
     self.hostname = nm.nameres().getHostname(self.__masteruri)
     self.__launch_id = '%.9f'%time.time()
-    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
-#    nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
+    nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
+#    nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
 
 
   def __del__(self):
     # Delete to avoid segfault if the LaunchConfig class is destroyed recently 
     # after creation and xmlrpclib.ServerProxy process a method call.
 #    del self.file_watcher
-    nm.file_watcher().rem(self.__masteruri, self.__launchFile, self.__launch_id)
+    nm.file_watcher().rem_launch(self.__masteruri, self.__launchFile, self.__launch_id)
 
   @property
   def masteruri(self):
@@ -255,10 +255,10 @@ class LaunchConfig(QtCore.QObject):
       self.argv = self.resolveArgs(argv)
       loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
       self.__roscfg = roscfg
-      nm.file_watcher().add(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
+      nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
       if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
-        nm.file_watcher_param().add(self.__masteruri, self.__launchFile, self.__launch_id, 
-                                    self.getIncludedFiles(self.Filename, 
+        nm.file_watcher_param().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, 
+                                    self.getIncludedFiles(self.Filename,
                                                           regexp_list = [QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
                                                                          QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
                                                                          QtCore.QRegExp("\\bvalue=.*\$\(find\\b")])

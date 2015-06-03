@@ -244,7 +244,7 @@ class ScreenHandler(object):
     if nm.is_local(host):
       cmd = nm.settings().terminal_cmd([cls.SCREEN, '-x', screen_name], title_opt)
       rospy.loginfo("Open screen terminal: %s", cmd)
-      SupervisedPopen(shlex.split(cmd), id=title_opt, description="Open screen terminal: %s"%title_opt)
+      SupervisedPopen(shlex.split(cmd), object_id=title_opt, description="Open screen terminal: %s"%title_opt)
     else:
       ps = nm.ssh().ssh_x11_exec(host, [cls.SCREEN, '-x', screen_name], title_opt, user)
       rospy.loginfo("Open remote screen terminal: %s", ps)
@@ -331,7 +331,7 @@ class ScreenHandler(object):
                 import traceback
                 rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", str(pid), str(host), traceback.format_exc(1))
           if nm.is_local(host):
-            SupervisedPopen([cls.SCREEN, '-wipe'], id='screen -wipe', description="screen: clean up the socket with -wipe")
+            SupervisedPopen([cls.SCREEN, '-wipe'], object_id='screen -wipe', description="screen: clean up the socket with -wipe")
           else:
 #            output, error, ok = nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'])
             nm.ssh().ssh_exec(host, [cls.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)

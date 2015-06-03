@@ -436,7 +436,7 @@ class GroupItem(QtGui.QStandardItem):
     @param is_sync_running: If the master_sync is running, the nodes are marked 
       as ghost nodes. So they are handled as running nodes, but has not run 
       informations. This nodes are running on remote host, but are not
-      syncronized because of filter or errrors.
+      syncronized because of filter or errors.
     @type is_sync_running: bool
     '''
     ignore = ['/master_sync', '/master_discovery', '/node_manager']
@@ -1538,7 +1538,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @param is_sync_running: If the master_sync is running, the nodes are marked 
       as ghost nodes. So they are handled as running nodes, but has not run 
       informations. This nodes are running on remote host, but are not
-      syncronized because of filter or errrors.
+      syncronized because of filter or errors.
     @type is_sync_running: bool
     '''
     for i in reversed(range(self.invisibleRootItem().rowCount())):

@@ -42,67 +42,97 @@ class FileWatcher(QtCore.QObject):
   '''
   A class to watch for file changes.
   '''
-  file_changed = QtCore.Signal(str, list)
+  config_changed = QtCore.Signal(str, list)
   '''@ivar: a signal to inform the receiver about the changes on
-  launch file or included file. ParameterB{:} (changed file, list of tuples(masteruri, launch file))'''
-  
+  launch file or included file.
+  ParameterB{:} (changed file, list of tuples(masteruri, launch file))'''
+
+  binary_changed = QtCore.Signal(str, list)
+  '''@ivar: a signal to inform the receiver about the changes on
+  binary file or included file.
+  ParameterB{:} (binary file, list of tuples(node name, masteruri, launchfile))
+  '''
+
   def __init__(self):
     QtCore.QObject.__init__(self)
     self.file_watcher = QtCore.QFileSystemWatcher()
     self.file_watcher.fileChanged.connect(self.on_file_changed)
     self.changed = {}
     self.launches = {}
+    self.binaries = {}
 
   def __del__(self):
-    # Delete to avoid segfault if the LaunchConfig class is destroyed recently 
+    # Delete to avoid segfault if the LaunchConfig class is destroyed recently
     # after creation and xmlrpclib.ServerProxy process a method call.
     del self.file_watcher
 
-  def on_file_changed(self, file):
+  def on_file_changed(self, filepath):
     '''
-    callback method, which is called by L{QtCore.QFileSystemWatcher} if the 
-    launch file or included files are changed. In this case 
+    callback method, which is called by L{QtCore.QFileSystemWatcher} if the
+    launch file or included files are changed. In this case
     L{FileWatcher.file_changed} signal will be emitted.
     '''
     # to avoid to handle from QFileSystemWatcher fired the signal two times
-    if (not self.changed.has_key(file) or (self.changed.has_key(file) and self.changed[file] + 0.05 < time.time())):
-      self.changed[file] = time.time()
-      changes = []
+    if (not self.changed.has_key(filepath) or (self.changed.has_key(filepath) and self.changed[filepath] + 0.05 < time.time())):
+      self.changed[filepath] = time.time()
+      launch_changes = []
       for (uri, lfile, _), files in self.launches.items():#_:=id
-        if file in files:
-          changes.append((uri, lfile))
-      self.file_changed.emit(file, changes)
+        if filepath in files:
+          launch_changes.append((uri, lfile))
+      if launch_changes:
+        self.config_changed.emit(filepath, launch_changes)
+      binaries_changed = []
+      for node_name, (binary_file, masteruri, launchfile) in self.binaries.items():
+        if filepath == binary_file:
+          binaries_changed.append((node_name, masteruri, launchfile))
+      if binaries_changed:
+        self.binary_changed.emit(filepath, binaries_changed)
 
-  def add(self, masteruri, launch_file, launch_id, files):
+  def add_launch(self, masteruri, launch_file, launch_id, files):
     if self.launches.has_key((masteruri, launch_file, launch_id)):
       self.launches[(masteruri, launch_file, launch_id)].extend([os.path.normpath(f) for f in files])
     else:
       self.launches[(masteruri, launch_file, launch_id)] = [os.path.normpath(f) for f in files]
     self.update_files()
 
-  def rem(self, masteruri, launch_file='', launch_id=''):
+  def rem_launch(self, masteruri, launch_file='', launch_id=''):
     try:
       if launch_file:
         if launch_id:
           del self.launches[(masteruri, launch_file, launch_id)]
         else:
-          for (uri, file, id), files in self.launches.items():
-            if uri == masteruri and file == launch_file:
-              del self.launches[(uri, file, id)]
+          for (uri, cfgfile, cfgid), _ in self.launches.items():
+            if uri == masteruri and cfgfile == launch_file:
+              del self.launches[(uri, cfgfile, cfgid)]
       else:
-        for (uri, file, id), files in self.launches.items():
+        for (uri, cfgfile, cfgid), _ in self.launches.items():
           if uri == masteruri:
-            del self.launches[(uri, file, id)]
+            del self.launches[(uri, cfgfile, cfgid)]
     except:
 #      import traceback
 #      print traceback.format_exc(1)
       pass
     self.update_files()
 
+  def add_binary(self, binary_file, node_name, masteruri, launchfile):
+    self.binaries[node_name] = (binary_file, masteruri, launchfile)
+    self.update_files()
+
+  def rem_binary(self, node_name):
+    try:
+      del self.binaries[node_name]
+      self.update_files()
+    except:
+      pass
+
   def update_files(self):
     result = set()
     for files in self.launches.itervalues():
       result.update(set(files))
+    binaries = set()
+    for _, (binary_file, _, _) in self.binaries.items():
+      binaries.add(binary_file)
+    result.update(binaries)
     files = self.file_watcher.files()
     if files:
       self.file_watcher.removePaths(files)
