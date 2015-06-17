@@ -946,6 +946,7 @@ class Discoverer(object):
     result = []
     with self.__lock:
       try:
+        current_errors = self.master_monitor.getMasterErrors()[1]
         for (_, v) in self.masters.iteritems():
           # add all errors to the responce
           for _, msg in v.errors.items():
@@ -957,8 +958,13 @@ class Discoverer(object):
               mo = urlparse(v.monitoruri)
               if v.masteruriaddr != mo.hostname:
                 msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_dicovery!"%(o.hostname, v.masteruriaddr, mo.hostname)
-                rospy.logwarn(msg)
-                result.append(msg)
+                if not v.masteruriaddr.startswith('127.'):
+                  local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+                  # check 127/8 and local addresses
+                  if not v.masteruriaddr in local_addresses:
+                    if msg not in current_errors:
+                      rospy.logwarn(msg)
+                    result.append(msg)
             except Exception as e:
               result.append("%s"%e)
               rospy.logwarn("%s"%e)
