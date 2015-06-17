@@ -69,7 +69,7 @@ from progress_queue import ProgressQueue, InteractionNeededError #, ProgressThre
 from common import masteruri_from_ros, get_packages, package_name, resolve_paths
 from launch_server_handler import LaunchServerHandler
 from supervised_popen import SupervisedPopen
-from yaml import nodes
+#from yaml import nodes
 
 
 

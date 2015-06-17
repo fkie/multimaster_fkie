@@ -464,7 +464,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masters[masteruri].stop_nodes_signal.disconnect()
       self.masters[masteruri].robot_icon_updated.disconnect()
       if DIAGNOSTICS_AVAILABLE:
-        self.diagnostics_signal.disconnect(self.masters[masteruri])
+        self.diagnostics_signal.disconnect(self.masters[masteruri].append_diagnostic)
       self.stackedLayout.removeWidget(self.masters[masteruri])
       self.tabPlace.layout().removeWidget(self.masters[masteruri])
       for cfg in self.masters[masteruri].default_cfgs:

@@ -428,7 +428,7 @@ class MasterModel(QtGui.QStandardItemModel):
     root = self.invisibleRootItem()
     for i in reversed(range(root.rowCount())):
       masterItem = root.child(i, self.COL_NAME)
-      if masterItem.master.name in master:
+      if masterItem.master.name == master:
         masterItem.updateMasterErrors(errors)
         break
 
