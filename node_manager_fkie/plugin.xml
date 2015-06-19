@@ -5,7 +5,7 @@
     </description>
     <qtgui>
       <label>FKIE Node Manager</label>
-      <icon type="theme">applications-other</icon>
+      <icon type="file">rqt_icons/crystal_clear_prop_run.png</icon>
       <statustip>A Python GUI plugin for managing the ROS node and multimaster.</statustip>
     </qtgui>
   </class>

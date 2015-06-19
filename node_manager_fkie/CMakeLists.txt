@@ -18,6 +18,7 @@ install(
 install(
     DIRECTORY 
         images
+        rqt_icons
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
 
