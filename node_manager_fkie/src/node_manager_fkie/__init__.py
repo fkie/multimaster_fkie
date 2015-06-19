@@ -34,8 +34,8 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.4.1" # git describe --tags --dirty --always
-__date__ = "2015-04-28"    # git log -1 --date=iso
+__version__ = "0.4.1-7" # git describe --tags --dirty --always
+__date__ = "2015-06-17"    # git log -1 --date=iso
 
 import os
 import sys
