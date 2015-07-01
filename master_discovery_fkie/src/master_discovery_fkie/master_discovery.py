@@ -294,7 +294,7 @@ class DiscoveredMaster(object):
           self._del_error(self.ERR_SOCKET)
         except:
           import traceback
-          msg = "socket error: %s"%traceback.format_exc()
+          msg = "socket error [%s]: %s"%(self.monitoruri, traceback.format_exc())
           rospy.logwarn(msg)
           self._add_error(self.ERR_SOCKET, msg)
           time.sleep(1)
@@ -514,11 +514,6 @@ class Discoverer(object):
     rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
     rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
 
-    # create a thread to handle the received multicast messages
-    self._recvThread = threading.Thread(target = self.recv_loop)
-    self._recvThread.setDaemon(True)
-    self._recvThread.start()
-
     # create a thread to monitor the ROS master state
     self.master_monitor = MasterMonitor(monitor_port, ipv6=self._is_ipv6_group(mcast_group))
     # create timer to check for ros master changes
@@ -526,6 +521,11 @@ class Discoverer(object):
 #     self._masterMonitorThread = threading.Thread(target = self.checkROSMaster_loop)
 #     self._masterMonitorThread.setDaemon(True)
 #     self._masterMonitorThread.start()
+
+    # create a thread to handle the received multicast messages
+    self._recvThread = threading.Thread(target = self.recv_loop)
+    self._recvThread.setDaemon(True)
+    self._recvThread.start()
 
     # create a timer monitor the offline ROS master and calculate the link qualities
     self._timer_stats = threading.Timer(1, self.timed_stats_calculation)
