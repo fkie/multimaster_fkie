@@ -339,6 +339,7 @@ class StartHandler(object):
     p = None
     abs_paths = list() # tuples of (parameter name, old value, new value)
     not_found_packages = list() # packages names
+    param_errors = []
     try:
       socket.setdefaulttimeout(6+len(clear_params))
       # multi-call style xmlrpc
@@ -364,11 +365,14 @@ class StartHandler(object):
           abs_paths.append((p.key, p.value, value))
           if not found and package:
             not_found_packages.append(package)
-        if p.value is None:
-          rospy.logwarn("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
+#         if p.value is None:
+#           rospy.logwarn("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
           #raise StartException("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
         else:
           param_server_multi.setParam(rospy.get_name(), p.key, value if is_abs_path else p.value)
+        test_ret = cls._test_value(p.key, value if is_abs_path else p.value)
+        if test_ret:
+          param_errors.extend(test_ret)
       r  = param_server_multi()
       for code, msg, _ in r:
         if code != 1:
@@ -376,11 +380,31 @@ class StartHandler(object):
     except roslaunch.core.RLException, e:
       raise StartException(e)
     except Exception as e:
-      raise #re-raise as this is fatal
+      raise StartException("Failed to set parameter. ROS Parameter Server "
+                           "reports: %s\n\n%s"%(e, '\n'.join(param_errors)))
     finally:
       socket.setdefaulttimeout(None)
     return abs_paths, not_found_packages
-  
+
+  @classmethod
+  def _test_value(cls, key, value):
+    result = []
+    if value is None:
+      msg = "Invalid parameter value of '%s': '%s'"%(key, value)
+      result.append(msg)
+      rospy.logwarn(msg)
+    elif isinstance(value, list):
+      for val in value:
+        ret = cls._test_value(key, val)
+        if ret:
+          result.extend(ret)
+    elif isinstance(value, dict):
+      for subkey, val in value.items():
+        ret = cls._test_value("%s/%s"%(key, subkey), val)
+        if ret:
+          result.extend(ret)
+    return result
+ 
   @classmethod
   def _resolve_abs_paths(cls, value, host, user, pw, auto_pw_request):
     '''
@@ -688,7 +712,7 @@ class StartHandler(object):
           stdout.close()
           return output
         else:
-          raise StartException(str(''.join(['Get log path from "', host, '" failed:\n', error])))
+          raise StartException(str(''.join(['Get log path from "', host, '" failed'])))
       except nm.AuthenticationRequest as e:
         raise nm.InteractionNeededError(e, cls.copylogPath2Clipboards, (host, nodes, auto_pw_request))
       finally:
