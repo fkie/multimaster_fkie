@@ -368,8 +368,7 @@ class StartHandler(object):
 #         if p.value is None:
 #           rospy.logwarn("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
           #raise StartException("The parameter '%s' is invalid: '%s'"%(p.key, p.value))
-        else:
-          param_server_multi.setParam(rospy.get_name(), p.key, value if is_abs_path else p.value)
+        param_server_multi.setParam(rospy.get_name(), p.key, value if is_abs_path else p.value)
         test_ret = cls._test_value(p.key, value if is_abs_path else p.value)
         if test_ret:
           param_errors.extend(test_ret)
