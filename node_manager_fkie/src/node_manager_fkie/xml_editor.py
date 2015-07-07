@@ -1171,13 +1171,13 @@ class XmlEditor(QtGui.QDialog):
     self._insert_text('<env name="variable" value="value"/>')
 
   def _on_add_param_tag(self):
-    self._insert_text('<param name="namespace/name" value="value" />')
+    self._insert_text('<param name="ns_name" value="value" />')
 
   def _on_add_param_cap_group_tag(self):
     self._insert_text('<param name="capability_group" value="demo" />')
 
   def _on_add_param_tag_all(self):
-    self._insert_text('<param name="namespace/name" value="value"\n'
+    self._insert_text('<param name="ns_name" value="value"\n'
                       '       type="str|int|double|bool"\n'
                       '       textfile="$(find pkg-name)/path/file.txt"\n'
                       '       binfile="$(find pkg-name)/path/file"\n'
