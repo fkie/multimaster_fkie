@@ -1997,22 +1997,22 @@ class MasterViewProxy(QtGui.QWidget):
     Shows log files of the selected nodes.
     '''
     try:
+      only_screen = True
       key_mod = QtGui.QApplication.keyboardModifiers()
       if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
-        self.masterTab.logButton.showMenu()
-      else:
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-        ret = True
-        if len(selectedNodes) > 5:
-          ret = QtGui.QMessageBox.question(self, "Show Log", "You are going to open the logs of "+ str(len(selectedNodes)) + " nodes at once\nContinue?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
-          ret = (ret == QtGui.QMessageBox.Ok)
-        if ret:
-          for node in selectedNodes:
-            self._progress_queue.add2queue(str(uuid.uuid4()),
-                                           ''.join(['show log of ', node.name]),
-                                           nm.starter().openLog,
-                                           (node.name, self.getHostFromNode(node), self.current_user))
-          self._progress_queue.start()
+        only_screen = False
+      selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      ret = True
+      if len(selectedNodes) > 5:
+        ret = QtGui.QMessageBox.question(self, "Show Log", "You are going to open the logs of "+ str(len(selectedNodes)) + " nodes at once\nContinue?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
+        ret = (ret == QtGui.QMessageBox.Ok)
+      if ret:
+        for node in selectedNodes:
+          self._progress_queue.add2queue(str(uuid.uuid4()),
+                                         ''.join(['show log of ', node.name]),
+                                         nm.starter().openLog,
+                                         (node.name, self.getHostFromNode(node), self.current_user, only_screen))
+        self._progress_queue.start()
     except Exception, e:
       import traceback
       print traceback.format_exc(1)

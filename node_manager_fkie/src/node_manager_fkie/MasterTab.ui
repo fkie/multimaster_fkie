@@ -318,7 +318,7 @@ p, li { white-space: pre-wrap; }
              </size>
             </property>
             <property name="toolTip">
-             <string>Show log file of selected service</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show screen log file of selected service.&lt;/p&gt;&lt;p&gt;Hold &amp;lt;&lt;span style=&quot; font-weight:600;&quot;&gt;Strg&lt;/span&gt;&amp;gt; or &amp;lt;&lt;span style=&quot; font-weight:600;&quot;&gt;Shift&lt;/span&gt;&amp;gt; to get also ROS log file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="text">
              <string/>

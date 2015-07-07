@@ -719,7 +719,7 @@ class StartHandler(object):
 
 
   @classmethod
-  def openLog(cls, nodename, host, user=None):
+  def openLog(cls, nodename, host, user=None, only_screen=False):
     '''
     Opens the log file associated with the given node in a new terminal.
     @param nodename: the name of the node (with name space)
@@ -743,7 +743,7 @@ class StartHandler(object):
         found = True
       #open roslog file
       roslog = nm.screen().getROSLogFile(nodename)
-      if os.path.isfile(roslog):
+      if os.path.isfile(roslog) and not only_screen:
         title_opt = title_opt.replace('LOG', 'ROSLOG')
         cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, roslog], title_opt)
         rospy.loginfo("open ROS log: %s", cmd)
@@ -752,7 +752,8 @@ class StartHandler(object):
       return found
     else:
       ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
-      ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
+      if not only_screen:
+        ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
     return False
 
 

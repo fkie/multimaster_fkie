@@ -124,6 +124,7 @@ class MainWindow(QtGui.QMainWindow):
     self.masterInfoFrame.setEnabled(False)
     self.infoButton.clicked.connect(self.on_info_clicked)
     self.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
+    self.masterLogButton.clicked.connect(self.on_master_log_clicked)
     self.runButton.clicked.connect(self.on_run_node_clicked)
     self.syncButton.released.connect(self.on_sync_dialog_released)
 
@@ -810,6 +811,62 @@ class MainWindow(QtGui.QMainWindow):
     text = ''.join([text, '</dl>'])
     text = ''.join([text, '<dt><b>Version</b>: ', nm.__version__, ' (', nm.__date__,')', '</dt>'])
     QtGui.QMessageBox.about(self, 'About Node Manager', text)
+
+  def on_master_log_clicked(self):
+    '''
+    Tries to get the log of master_discovery node on the machine requested by a dialog.
+    '''
+    # get the history list
+    user_list = [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]
+    user_list.insert(0, 'last used')
+    params = {'Host' : ('string', 'localhost'),
+              'Show master discovery log' : ('bool', True),
+              'Show master sync log' : ('bool', False),
+              'Username' : ('string', user_list),
+              'Only screen log' : ('bool', True),
+              #'Optional Parameter' : ('list', params_optional)
+              }
+    dia = ParameterDialog(params, sidebar_var='Host')
+    dia.setFilterVisible(False)
+    dia.setWindowTitle('Show log')
+    dia.resize(450,150)
+    dia.setFocusField('Host')
+    if dia.exec_():
+      try:
+        params = dia.getKeywords()
+        hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
+        log_master_discovery = params['Show master discovery log']
+        log_master_sync = params['Show master sync log']
+        username = params['Username']
+        screen_only = params['Only screen log']
+        for hostname in hostnames:
+          try:
+            usr = username
+            if username == 'last used':
+              usr = nm.settings().host_user(hostname)
+            if log_master_discovery:
+              self._progress_queue.add2queue(str(uuid.uuid4()),
+                                             '%s: show log of master discovery'%hostname,
+                                           nm.starter().openLog,
+                                           ('/master_discovery', hostname, usr, screen_only))
+            if log_master_sync:
+              self._progress_queue.add2queue(str(uuid.uuid4()),
+                                             '%s: show log of master sync'%hostname,
+                                           nm.starter().openLog,
+                                           ('/master_sync', hostname, usr, screen_only))
+          except (Exception, nm.StartException) as err:
+            import traceback
+            print traceback.format_exc(1)
+            rospy.logwarn("Error while show LOG for master_discovery %s: %s"%(str(hostname), err))
+            WarningMessageBox(QtGui.QMessageBox.Warning, "Show log error",
+                              'Error while show log of master_discovery',
+                              '%s'%err).exec_()
+          self._progress_queue.start()
+      except Exception as err:
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Show log error",
+                          'Error while parse parameter',
+                          '%s'%err).exec_()
+
 
   def on_refresh_master_clicked(self):
     if not self.currentMaster is None:
