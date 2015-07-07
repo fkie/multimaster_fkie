@@ -31,15 +31,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
 import shutil
 
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
 import node_manager_fkie as nm
-from common import is_package, package_name
-from packages_thread import PackagesThread
+from .common import is_package, package_name
+from .packages_thread import PackagesThread
 from .detailed_msg_box import WarningMessageBox
 
 class LaunchItem(QtGui.QStandardItem):
@@ -135,7 +134,7 @@ class LaunchItem(QtGui.QStandardItem):
     return QtGui.QStandardItem.setData(self, value, role)
 
   @classmethod
-  def getItemList(self, name, path, id, root):
+  def getItemList(self, name, path, item_id, root):
     '''
     Creates the list of the items . This list is used for the 
     visualization of topic data as a table row.
@@ -147,7 +146,7 @@ class LaunchItem(QtGui.QStandardItem):
     @rtype: C{[L{LaunchItem} or L{PySide.QtGui.QStandardItem}, ...]}
     '''
     items = []
-    item = LaunchItem(name, path, id, parent=root)
+    item = LaunchItem(name, path, item_id, parent=root)
     items.append(item)
     return items
 
@@ -261,7 +260,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     # clear the cache for package names
     try:
-      from common import PACKAGE_CACHE
+      from .common import PACKAGE_CACHE
       PACKAGE_CACHE.clear()
       self.DIR_CACHE = {}
     except:
@@ -271,13 +270,13 @@ class LaunchListModel(QtGui.QStandardItemModel):
       if self.currentPath is None:
         self._setNewList(self._moveUp(self.currentPath))
       else:
-          self._setNewList(self._moveDown(self.currentPath))
+        self._setNewList(self._moveDown(self.currentPath))
     except:
       self._setNewList(self._moveUp(None))
 
-  def expandItem(self, path_item, path, id):
+  def expandItem(self, path_item, path, item_id):
     '''
-    Returns for the given item and path the file path if this is a file. Otherwise the 
+    Returns for the given item and path the file path if this is a file. Otherwise the
     folder will be expanded and None will be returned.
     @param path_item: the list item
     @type path_item: C{str}
@@ -288,13 +287,21 @@ class LaunchListModel(QtGui.QStandardItemModel):
     @raise Exception if no path to given item was found
     '''
     if path_item == '..':
-      root_path, items = self._moveUp(os.path.dirname(path))
+      goto_path = os.path.dirname(path)
+      key_mod = QtGui.QApplication.keyboardModifiers()
+      if key_mod & QtCore.Qt.ControlModifier:
+        goto_path = None
+      root_path, items = self._moveUp(goto_path)
     elif os.path.isfile(path):
       return path
-    elif id == LaunchItem.RECENT_FILE or id == LaunchItem.LAUNCH_FILE:
+    elif item_id == LaunchItem.RECENT_FILE or item_id == LaunchItem.LAUNCH_FILE:
       raise Exception("Invalid file path: %s", path)
     else:
-      root_path, items = self._moveDown(path)
+      key_mod = QtGui.QApplication.keyboardModifiers()
+      onestep = False
+      if key_mod & QtCore.Qt.ControlModifier:
+        onestep = True
+      root_path, items = self._moveDown(path, onestep)
     self._setNewList((root_path, items))
     return None
 
@@ -309,12 +316,12 @@ class LaunchListModel(QtGui.QStandardItemModel):
 #    if self._is_in_ros_packages(path):
     self._setNewList(self._moveDown(path))
 
-  def add2LoadHistory(self, file):
+  def add2LoadHistory(self, launch_file):
     try:
-      self.load_history.remove(file)
+      self.load_history.remove(launch_file)
     except:
       pass
-    self.load_history.append(file)
+    self.load_history.append(launch_file)
     try:
       while len(self.load_history) > nm.settings().launch_history_length:
         self.load_history.pop(0)
@@ -323,9 +330,9 @@ class LaunchListModel(QtGui.QStandardItemModel):
     self._storeLoadHistory(self.load_history)
 #    self.reloadCurrentPath() # todo: keep the item selected in list view after the reload the path
 
-  def removeFromLoadHistory(self, file):
+  def removeFromLoadHistory(self, launch_file):
     try:
-      self.load_history.remove(file)
+      self.load_history.remove(launch_file)
     except:
       pass
     self._storeLoadHistory(self.load_history)
@@ -377,7 +384,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         text = '%sfile://%s'%(prev, item.path)
     mimeData.setData('text/plain', text)
     QtGui.QApplication.clipboard().setMimeData(mimeData)
-        
+
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%              Functionality                         %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -508,7 +515,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
           return True
     return False
 
-  def _moveDown(self, path):
+  def _moveDown(self, path, onestep=False):
     '''
     Moves recursively down in the path tree until the current path contains a 
     launch file.
@@ -527,7 +534,8 @@ class LaunchListModel(QtGui.QStandardItemModel):
       if (pathId != LaunchItem.NOT_FOUND):
         result_list.append((pathItem, item, pathId))
     if len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
-      return self._moveDown(result_list[0][1])
+      if not onestep:
+        return self._moveDown(result_list[0][1])
     return path, result_list
 
   def _moveUp(self, path):
@@ -544,8 +552,8 @@ class LaunchListModel(QtGui.QStandardItemModel):
       path = None
     else:
       dirlist = os.listdir(path)
-    for file in dirlist:
-      item = os.path.normpath(os.path.join(path, file)) if not path is None else file
+    for dfile in dirlist:
+      item = os.path.normpath(os.path.join(path, dfile)) if not path is None else dfile
       pathItem = os.path.basename(item)
       if pathItem == 'src':
         pathItem = '%s (src)'%os.path.basename(os.path.dirname(item))
@@ -571,9 +579,9 @@ class LaunchListModel(QtGui.QStandardItemModel):
       historyFile.setArrayIndex(i)
       if i >= nm.settings().launch_history_length:
         break
-      file = historyFile.value("file")
-      if os.path.isfile(file):
-        result.append(file)
+      launch_file = historyFile.value("file")
+      if os.path.isfile(launch_file):
+        result.append(launch_file)
     historyFile.endArray()
     return result
 
@@ -585,7 +593,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     historyFile = nm.settings().qsettings(nm.settings().LAUNCH_HISTORY_FILE)
     historyFile.beginWriteArray("launch_history")
-    for i, file in enumerate(files):
+    for i, launch_file in enumerate(files):
       historyFile.setArrayIndex(i)
-      historyFile.setValue("file", file)
+      historyFile.setValue("file", launch_file)
     historyFile.endArray()

@@ -118,8 +118,10 @@ class LaunchFilesWidget(QtGui.QDockWidget):
           if item.isLaunchFile():
             self.launchlist_model.add2LoadHistory(item.path)
             key_mod = QtGui.QApplication.keyboardModifiers()
-            if (key_mod & QtCore.Qt.ShiftModifier):
+            if key_mod & QtCore.Qt.ShiftModifier:
               self.load_as_default_signal.emit(item.path, None)
+            elif key_mod & QtCore.Qt.ControlModifier:
+              self.launchlist_model.setPath(os.path.dirname(item.path))
             else:
               self.load_signal.emit(item.path)
           elif item.isConfigFile():
