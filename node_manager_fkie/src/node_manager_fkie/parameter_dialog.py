@@ -418,7 +418,11 @@ class MainBox(QtGui.QWidget):
     :raise Exception: on errors
     '''
     if isinstance(values, dict):
-      for param, (_type, value) in values.items():
+      for param, val in values.items():
+        value = val
+        _type = 'unknown'
+        if isinstance(val, tuple):
+          (_type, value) = val
         field = self.getField(param)
         if not field is None:
           if isinstance(field, (GroupBox, ArrayBox)):
@@ -850,7 +854,7 @@ class ParameterDialog(QtGui.QDialog):
       if len(sidebar_list) == 0 or self.sidebar_default_val != result_value[sidebar_name][0]:
         sidebar_list.append(result_value[sidebar_name])
       result_value[sidebar_name] = ([v for v, _ in set(sidebar_list)], True)#_:=changed
-    result = self._remove_unchanged_parameter(result_value, only_changed)
+    result = self._remove_change_state(result_value, only_changed)
     return result
 
   def keywords2params(self, keywords):
@@ -869,17 +873,17 @@ class ParameterDialog(QtGui.QDialog):
         result[param] = value
     return result
 
-  def _remove_unchanged_parameter(self, params, only_changed):
+  def _remove_change_state(self, params, only_changed):
     result = dict()
     for param, value in params.items():
       if isinstance(value, dict):
-        r = self._remove_unchanged_parameter(value, only_changed)
+        r = self._remove_change_state(value, only_changed)
         if r:
           result[param] = r
       elif isinstance(value, list):
         new_val = []
         for val in value:
-          r = self._remove_unchanged_parameter(val, only_changed)
+          r = self._remove_change_state(val, only_changed)
           if r:
             new_val.append(r)
         if new_val:
@@ -901,7 +905,8 @@ class ParameterDialog(QtGui.QDialog):
       if fileName:
         self.__current_path = os.path.dirname(fileName)
         nm.settings().current_dialog_path = os.path.dirname(fileName)
-        text = yaml.dump(self.content.value(), default_flow_style=False)
+        content = self._remove_change_state(self.content.value(), False)
+        text = yaml.dump(content, default_flow_style=False)
         with open(fileName, 'w+') as f:
           f.write(text)
     except Exception as e:
