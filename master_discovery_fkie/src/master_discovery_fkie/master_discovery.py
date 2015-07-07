@@ -515,7 +515,9 @@ class Discoverer(object):
     rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
 
     # create a thread to monitor the ROS master state
-    self.master_monitor = MasterMonitor(monitor_port, ipv6=self._is_ipv6_group(mcast_group))
+    mgroup = McastSocket.normalize_mgroup(mcast_group)
+    is_ip6 = self._is_ipv6_group(mgroup)
+    self.master_monitor = MasterMonitor(monitor_port, ipv6=is_ip6)
     # create timer to check for ros master changes
     self._timer_ros_changes = threading.Timer(0.1, self.checkROSMaster_loop)
 #     self._masterMonitorThread = threading.Thread(target = self.checkROSMaster_loop)

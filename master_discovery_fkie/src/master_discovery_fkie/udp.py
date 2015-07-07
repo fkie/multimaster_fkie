@@ -94,7 +94,7 @@ class McastSocket(socket.socket):
       self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
 
     #join to the multicast group 
-    group_bin = socket.inet_pton(addrinfo[0], mgroup)
+    group_bin = socket.inet_pton(addrinfo[0], McastSocket.normalize_mgroup(mgroup))
     try:
       if addrinfo[0] == socket.AF_INET: # IPv4
         mreq = group_bin + struct.pack('=I', socket.INADDR_ANY)
@@ -115,11 +115,13 @@ class McastSocket(socket.socket):
   @staticmethod
   def getaddrinfo(mgroup):
     # get info about the IP version (4 or 6)
-    addrinfos = socket.getaddrinfo(mgroup, None)
+    groupaddr, interface = McastSocket.normalize_mgroup(mgroup, True)
+    addrinfos = socket.getaddrinfo(groupaddr, None)
     addrinfo = None
     if len(addrinfos) > 1:
       addrinfo = addrinfos[0]
-      interface = rospy.get_param('~interface', '')
+      if not interface:
+        interface = rospy.get_param('~interface', '')
       if not interface and 'ROS_IP' in os.environ:
         interface = os.environ['ROS_IP']
       if interface:
@@ -131,6 +133,13 @@ class McastSocket(socket.socket):
     else:
       return addrinfos[0]
     return addrinfo
+
+  @staticmethod
+  def normalize_mgroup(mgroup, getinterface=False):
+    groupaddr, _, interface = mgroup.partition('@')
+    if getinterface:
+      return groupaddr, interface
+    return groupaddr
 
   def close(self):
     '''
