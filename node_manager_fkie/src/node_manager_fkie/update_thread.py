@@ -61,8 +61,14 @@ class UpdateThread(QtCore.QObject, threading.Thread):
 
   error_signal = QtCore.Signal(str, str)
   '''
-  @ivar: error_signal is a signal (masteruri, error message), which is emitted, 
+  @ivar: error_signal is a signal (masteruri, error message), which is emitted,
   if an error while retrieving a master info was occurred.
+  '''
+
+  timediff_signal = QtCore.Signal(str, float)
+  '''
+  @ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
+  after the difference of time to the remote host is determined.
   '''
 
   def __init__(self, monitoruri, masteruri, delayed_exec=0., parent=None):
@@ -96,6 +102,13 @@ class UpdateThread(QtCore.QObject, threading.Thread):
         muri, errors = remote_monitor.masterErrors()
         self.master_errors_signal.emit(muri, errors)
       except xmlrpclib.Fault as err:
+        rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!"%self._masteruri)
+      # get the time difference
+      try:
+        myts = time.time()
+        muri, remote_ts = remote_monitor.getCurrentTime()
+        self.timediff_signal.emit(muri, remote_ts-myts-(time.time()-myts)/2.0)
+      except xmlrpclib.Fault as errts:
         rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!"%self._masteruri)
       # now get master info from master discovery
       remote_info = remote_monitor.masterInfo()

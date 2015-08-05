@@ -59,6 +59,12 @@ class UpdateHandler(QtCore.QObject):
   if an error while retrieving a master info was occurred.
   '''
 
+  timediff_signal = QtCore.Signal(str, float)
+  '''
+  @ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
+  after the difference of time to the remote host is determined.
+  '''
+
   def __init__(self):
     QtCore.QObject.__init__(self)
     self.__updateThreads = {}
@@ -107,6 +113,9 @@ class UpdateHandler(QtCore.QObject):
   def _on_master_errors(self, masteruri, error_list):
     self.master_errors_signal.emit(masteruri, error_list)
 
+  def _on_timediff(self, masteruri, timediff):
+    self.timediff_signal.emit(masteruri, timediff)
+
   def _on_error(self, masteruri, error):
     self.error_signal.emit(masteruri, error)
     self.__handle_requests(masteruri)
@@ -131,5 +140,5 @@ class UpdateHandler(QtCore.QObject):
     self.__updateThreads[masteruri] = upthread
     upthread.update_signal.connect(self._on_master_info)
     upthread.master_errors_signal.connect(self._on_master_errors)
-    upthread.error_signal.connect(self._on_error)
+    upthread.timediff_signal.connect(self._on_timediff)
     upthread.start()

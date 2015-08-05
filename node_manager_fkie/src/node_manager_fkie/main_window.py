@@ -283,6 +283,7 @@ class MainWindow(QtGui.QMainWindow):
     self._update_handler = UpdateHandler()
     self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
     self._update_handler.master_errors_signal.connect(self.on_master_errors_retrieved)
+    self._update_handler.timediff_signal.connect(self.on_master_timediff_retrieved)
     self._update_handler.error_signal.connect(self.on_master_info_error)
 
     # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
@@ -772,6 +773,9 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_master_errors_retrieved(self, masteruri, error_list):
     self.master_model.updateMasterErrors(nm.nameres().mastername(masteruri), error_list)
+
+  def on_master_timediff_retrieved(self, masteruri, timediff):
+    self.master_model.updateTimeDiff(nm.nameres().mastername(masteruri), timediff)
 
   def on_master_info_error(self, masteruri, error):
     if not self._con_tries.has_key(masteruri):

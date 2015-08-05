@@ -155,6 +155,7 @@ class MasterMonitor(object):
         self.rpcServer.register_function(self.getListedMasterInfoFiltered, 'masterInfoFiltered')
         self.rpcServer.register_function(self.getMasterContacts, 'masterContacts')
         self.rpcServer.register_function(self.getMasterErrors, 'masterErrors')
+        self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
         self._rpcThread = threading.Thread(target = self.rpcServer.serve_forever)
         self._rpcThread.setDaemon(True)
         self._rpcThread.start()
@@ -788,9 +789,18 @@ class MasterMonitor(object):
     The RPC method called by XML-RPC server to request the occured network errors.
 
     :return: (``ROS master URI``, ``list with errors``)
-    :rtype: (str, str, [str])
+    :rtype: (str, [str])
     '''
     return (str(self.getMasteruri()), self._master_errors)
+
+  def getCurrentTime(self):
+    '''
+    The RPC method called by XML-RPC server to request the current host time.
+
+    :return: (``ROS master URI``, ``current time``)
+    :rtype: (str, float)
+    '''
+    return (str(self.getMasteruri()), time.time())
 
   def checkState(self, clear_cache=False):
     '''

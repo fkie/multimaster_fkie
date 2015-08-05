@@ -74,6 +74,7 @@ class Settings(object):
 
   STORE_GEOMETRY = True
   AUTOUPDATE = True
+  MAX_TIMEDIFF = 3.0
 
   def __init__(self):
     self.reload()
@@ -119,6 +120,7 @@ class Settings(object):
     self._store_geometry = self.str2bool(settings.value('store_geometry', self.STORE_GEOMETRY))
     self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
     self._autoupdate = self.str2bool(settings.value('autoupdate', self.AUTOUPDATE))
+    self._max_timediff = float(settings.value('max_timediff', self.MAX_TIMEDIFF))
 
   def masteruri(self):
     return self._masteruri
@@ -267,6 +269,18 @@ class Settings(object):
       self._autoupdate = v
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('autoupdate', self._autoupdate)
+
+  @property
+  def max_timediff(self):
+    return self._max_timediff
+
+  @max_timediff.setter
+  def max_timediff(self, value):
+    v = float(value)
+    if self._max_timediff != v:
+      self._max_timediff = v
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('max_timediff', self._max_timediff)
 
   def str2bool(self, v):
     if isinstance(v, bool):

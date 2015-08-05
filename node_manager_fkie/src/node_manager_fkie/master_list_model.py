@@ -111,9 +111,11 @@ class MasterItem(QtGui.QStandardItem):
                   'red'   : QtGui.QIcon(":/icons/stock_connect_red.png"),
                   'grey'  : QtGui.QIcon(":/icons/stock_connect.png"),
                   'disconnected' : QtGui.QIcon(":/icons/stock_disconnect.png"),
-                  'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png') }
+                  'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png'),
+                  'clock_warn' : QtGui.QIcon(':/icons/crystal_clear_xclock_fail.png') }
     self.master_ip = None
     self._master_errors = []
+    self._timediff = 0
     self._threaded_get_ip()
     self.updateNameView(master, quality, self)
 
@@ -165,6 +167,10 @@ class MasterItem(QtGui.QStandardItem):
     self._master_errors = error_list
     self.updateNameView(self.master, self.quality, self)
 
+  def updateTimeDiff(self, timediff):
+    self._timediff = timediff
+    self.updateNameView(self.master, self.quality, self)
+
   def updateMasterView(self, parent):
     '''
     This method is called after the master state is changed to update the 
@@ -207,8 +213,12 @@ class MasterItem(QtGui.QStandardItem):
       tooltip = ''.join([tooltip, item.descr])
     # update the icon
     if master.online:
-      if self._master_errors or self.master_ip is None:
+      timediff = self._timediff > nm.settings().max_timediff
+      if self._master_errors or self.master_ip is None or timediff:
         item.setIcon(self.ICONS['warning'])
+        if timediff:
+          tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %3.f seconds!</font>'%self._timediff, '</h4>'])
+          item.setIcon(self.ICONS['clock_warn'])
         if self.master_ip is None:
           tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Host not reachable by name!!! The ROS topics may not by connected!!!</font>', '</h4>'])
         if self._master_errors:
@@ -430,6 +440,22 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i, self.COL_NAME)
       if masterItem.master.name == master:
         masterItem.updateMasterErrors(errors)
+        break
+
+  def updateTimeDiff(self, master, timediff):
+    '''
+    Updates the time difference reported by master_discovery. 
+
+    @param master: the ROS master to update
+    @type master: C{str}
+    @param timediff: the time difference to the host
+    @type timediff: float
+    '''
+    root = self.invisibleRootItem()
+    for i in reversed(range(root.rowCount())):
+      masterItem = root.child(i, self.COL_NAME)
+      if masterItem.master.name == master:
+        masterItem.updateTimeDiff(timediff)
         break
 
   def updateDescription(self, master, descr):

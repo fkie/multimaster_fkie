@@ -138,6 +138,14 @@ class SettingsWidget(QtGui.QDockWidget):
                                    'value_default' : nm.settings().STORE_GEOMETRY,
                                    'tooltip'  : ''
                                    },),
+                'Max time difference:' : ({
+                                   'value' : nm.settings().max_timediff,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'max_timediff',
+                                   'value_default' : nm.settings().MAX_TIMEDIFF,
+                                   'tooltip'  : '<p>Shows a warning if the time difference to '
+                                      'remote host is greater than this value</p>'
+                                   },),
                 'Autoupdate:' : ({
                                    'value' : nm.settings().autoupdate,
                                    'settings' : nm.settings(),
