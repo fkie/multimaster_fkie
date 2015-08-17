@@ -140,5 +140,6 @@ class UpdateHandler(QtCore.QObject):
     self.__updateThreads[masteruri] = upthread
     upthread.update_signal.connect(self._on_master_info)
     upthread.master_errors_signal.connect(self._on_master_errors)
+    upthread.error_signal.connect(self._on_error)
     upthread.timediff_signal.connect(self._on_timediff)
     upthread.start()
