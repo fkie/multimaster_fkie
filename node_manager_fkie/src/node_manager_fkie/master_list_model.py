@@ -213,7 +213,7 @@ class MasterItem(QtGui.QStandardItem):
       tooltip = ''.join([tooltip, item.descr])
     # update the icon
     if master.online:
-      timediff = self._timediff > nm.settings().max_timediff
+      timediff = abs(self._timediff) > nm.settings().max_timediff
       if self._master_errors or self.master_ip is None or timediff:
         item.setIcon(self.ICONS['warning'])
         if timediff:
