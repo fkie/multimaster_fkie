@@ -883,7 +883,6 @@ class MainWindow(QtGui.QMainWindow):
         rospy.loginfo("Set remote host time to local time: %s"%self.currentMaster.master_state.uri)
         socket.setdefaulttimeout(10)
         p = xmlrpclib.ServerProxy(self.currentMaster.master_state.monitoruri)
-        localtime = time.time()
         uri, success, newtime, errormsg = p.setTime(time.time())
         if not success:
           if errormsg.find('password') > -1:
@@ -894,8 +893,7 @@ class MainWindow(QtGui.QMainWindow):
                           'Error while set time on %s'%uri,
                           '%s'%errormsg).exec_()
         else:
-          localtime2 = time.time()
-          timediff = localtime2 - newtime - (localtime2-localtime)/2.0
+          timediff = time.time() - newtime
           rospy.loginfo("  New time difference to %s is approx.: %.3fs"%(self.currentMaster.master_state.uri, timediff))
           self.on_master_timediff_retrieved(self.currentMaster.master_state.uri, timediff)
         #'print "STOP stop finished", node
