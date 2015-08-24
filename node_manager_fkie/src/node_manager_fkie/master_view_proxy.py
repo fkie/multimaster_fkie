@@ -2734,6 +2734,16 @@ class MasterViewProxy(QtGui.QWidget):
     nodes = self.getNode(diagnostic_status.name)
     for node in nodes:
       node.append_diagnostic_status(diagnostic_status)
+    if nodes:
+      # get node by selected items
+      if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
+        return
+      selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+      selectedNodes = self.nodesFromIndexes(selections)
+      if len(selectedNodes) == 1:
+        node = selectedNodes[0]
+        if node.name == diagnostic_status.name:
+          self.on_node_selection_changed(None, None)
 
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%
