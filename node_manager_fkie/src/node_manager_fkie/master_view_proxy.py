@@ -1773,7 +1773,7 @@ class MasterViewProxy(QtGui.QWidget):
       self.stop_nodes_signal.emit(node.masteruri, [node.name])
     return True
 
-  def stop_nodes(self, nodes):
+  def stop_nodes(self, nodes, force=False):
     '''
     Internal method to stop a list with nodes
     @param nodes: the list with nodes to stop
@@ -1784,10 +1784,10 @@ class MasterViewProxy(QtGui.QWidget):
       self._progress_queue.add2queue(str(uuid.uuid4()),
                                      'stop %s'%node.name,
                                      self.stop_node,
-                                     (node, (len(nodes)==1)))
+                                     (node, (len(nodes)==1) or force))
     self._progress_queue.start()
 
-  def stop_nodes_by_name(self, nodes):
+  def stop_nodes_by_name(self, nodes, force=False, ignore=[]):
     '''
     Stop nodes given in a list by their names.
     @param nodes: a list with full node names
@@ -1796,10 +1796,11 @@ class MasterViewProxy(QtGui.QWidget):
     result = []
     if not self.master_info is None:
       for n in nodes:
-        node = self.master_info.getNode(n)
-        if not node is None:
-          result.append(node)
-    self.stop_nodes(result)
+        if n not in ignore:
+          node = self.master_info.getNode(n)
+          if not node is None:
+            result.append(node)
+    self.stop_nodes(result, force)
 
   def kill_node(self, node, force=False):
     if not node is None and not node.uri is None and (not self._is_in_ignore_list(node.name) or force):
@@ -1828,6 +1829,22 @@ class MasterViewProxy(QtGui.QWidget):
           raise DetailedError("Kill error", 
                               ''.join(['Error while kill the node ', node.name]),
                               str(e))
+    return True
+
+  def killall_roscore(self):
+    host = nm.nameres().getHostname(self.masteruri)
+    if host:
+      try:
+        self._progress_queue.add2queue(str(uuid.uuid4()), 
+                                       'killall roscore on %s'%host,
+                                       nm.starter().killall_roscore,
+                                       (host, self.current_user))
+        self._progress_queue.start()
+      except Exception as e:
+        rospy.logwarn("Error while killall roscore on %s: %s"%(host, e))
+        raise DetailedError("Killall roscore error",
+                            'Error while killall roscore',
+                            '%s'%e)
     return True
 
 

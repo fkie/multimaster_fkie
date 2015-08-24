@@ -394,7 +394,8 @@ class MainWindow(QtGui.QMainWindow):
           try:
             m = self.masters[uri]
             if not m is None:
-              m.stop_nodes_by_name(m.getRunningNodesIfLocal())
+              m.stop_nodes_by_name(m.getRunningNodesIfLocal(), True, [rospy.get_name()])
+            m.killall_roscore()
           except Exception as e:
             rospy.logwarn("Error while stop nodes on %s: %s"%(uri, e))
         QtCore.QTimer.singleShot(200, self._test_for_finish)
@@ -728,6 +729,9 @@ class MainWindow(QtGui.QMainWindow):
     @param minfo: the ROS master Info
     @type minfo: L{master_discovery_fkie.MasterInfo}
     '''
+    if hasattr(self, "_on_finish"):
+      rospy.logdebug("ignore changes on %s, because currently on closing...", minfo.master.uri)
+      return;
     rospy.logdebug("MASTERINFO from %s (%s) received", minfo.mastername, minfo.masteruri)
     self._con_tries[minfo.masteruri] = 0
 #    cputimes_m = os.times()

@@ -822,6 +822,41 @@ class StartHandler(object):
         if output:
           rospy.logdebug("STDOUT while kill %s on %s: %s", str(pid), host, output)
 
+  def killall_roscore(self, host, auto_pw_request=False, user=None, pw=None):
+    '''
+    Kills all roscore processes on given host.
+    @param host: the name or address of the host, where the process must be killed.
+    @type host: C{str}
+    @param pid: the process id
+    @type pid: C{int}
+    @raise StartException: on error
+    @raise Exception: on errors while resolving host
+    @see: L{node_manager_fkie.is_local()}
+    '''
+    try:
+      self._killall_roscore_wo(host, auto_pw_request, user, pw)
+    except nm.AuthenticationRequest as e:
+      raise nm.InteractionNeededError(e, self.killall_roscore, (host, auto_pw_request))
+
+  def _killall_roscore_wo(self, host, auto_pw_request=False, user=None, pw=None):
+    rospy.loginfo("killall roscore on %s", host)
+    cmd = ['killall', 'roscore']
+    if nm.is_local(host): 
+      SupervisedPopen(cmd, object_id="killall roscore", description="killall roscore")
+    else:
+      # kill on a remote machine
+      _, stdout, stderr, ok = nm.ssh().ssh_exec(host, cmd, user, pw, False, close_stdin=True)
+      if ok:
+        output = stdout.read()
+        error = stderr.read()
+        stdout.close()
+        stderr.close()
+        if error:
+          rospy.logwarn("ERROR while killall roscore on %s: %s"%(host, error))
+          raise StartException('The host "%s" reports:\n%s'%(host, error))
+        if output:
+          rospy.logdebug("STDOUT while killall roscore on %s: %s"%(host, output))
+
   @classmethod
   def transfer_files(cls, host, path, auto_pw_request=False, user=None, pw=None):
     '''
