@@ -33,6 +33,7 @@
 import os
 import time
 import uuid
+import socket
 import xmlrpclib
 import getpass
 
@@ -123,6 +124,7 @@ class MainWindow(QtGui.QMainWindow):
     self.userComboBox.editTextChanged.connect(self.on_user_changed)
     self.masterInfoFrame.setEnabled(False)
     self.infoButton.clicked.connect(self.on_info_clicked)
+    self.setTimeButton.clicked.connect(self.on_set_time_clicked)
     self.refreshHostButton.clicked.connect(self.on_refresh_master_clicked)
     self.masterLogButton.clicked.connect(self.on_master_log_clicked)
     self.runButton.clicked.connect(self.on_run_node_clicked)
@@ -871,6 +873,40 @@ class MainWindow(QtGui.QMainWindow):
                           'Error while parse parameter',
                           '%s'%err).exec_()
 
+  def on_set_time_clicked(self):
+    if not self.currentMaster is None:# and not self.currentMaster.is_local:
+      try:
+        rospy.loginfo("Set remote host time to local time: %s"%self.currentMaster.master_state.uri)
+        socket.setdefaulttimeout(10)
+        p = xmlrpclib.ServerProxy(self.currentMaster.master_state.monitoruri)
+        localtime = time.time()
+        uri, success, newtime, errormsg = p.setTime(time.time())
+        if not success:
+          if errormsg.find('password') > -1:
+            errormsg += "\nTry to modify /etc/sudoers and add user privilege"
+            errormsg += "\n  %USER%  ALL=NOPASSWD: /bin/date"
+            errormsg += "\n!!!needed to be at the very end of file!!!"
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Time sync error",
+                          'Error while set time on %s'%uri,
+                          '%s'%errormsg).exec_()
+        else:
+          localtime2 = time.time()
+          timediff = localtime2 - newtime - (localtime2-localtime)/2.0
+          rospy.loginfo("  New time difference to %s is approx.: %.3fs"%(self.currentMaster.master_state.uri, timediff))
+          self.on_master_timediff_retrieved(self.currentMaster.master_state.uri, timediff)
+        #'print "STOP stop finished", node
+      except Exception as e:
+#            import traceback
+#            formatted_lines = traceback.format_exc(1).splitlines()
+        errormsg = '%s'%e
+        if errormsg.find('setTime') > -1:
+            errormsg += "\nUpdate remote multimaster_fkie!"
+        rospy.logwarn("Error while set time on %s: %s"%(self.currentMaster.master_state.uri, errormsg))
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Time sync error",
+                        'Error while set time on %s'%self.currentMaster.master_state.uri,
+                        '%s'%errormsg).exec_()
+      finally:
+        socket.setdefaulttimeout(None)
 
   def on_refresh_master_clicked(self):
     if not self.currentMaster is None:

@@ -37,6 +37,8 @@ import socket
 import time
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SocketServer import ThreadingMixIn
+from datetime import datetime
+import subprocess
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.network
@@ -156,6 +158,7 @@ class MasterMonitor(object):
         self.rpcServer.register_function(self.getMasterContacts, 'masterContacts')
         self.rpcServer.register_function(self.getMasterErrors, 'masterErrors')
         self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
+        self.rpcServer.register_function(self.setTime, 'setTime')
         self._rpcThread = threading.Thread(target = self.rpcServer.serve_forever)
         self._rpcThread.setDaemon(True)
         self._rpcThread.start()
@@ -801,6 +804,26 @@ class MasterMonitor(object):
     :rtype: (str, float)
     '''
     return (str(self.getMasteruri()), time.time())
+
+  def setTime(self, timestamp):
+    '''
+    The RPC method called by XML-RPC server to set new host time.
+    :param timestamp: UNIX timestamp
+    :type timestamp: float
+    :return: (``ROS master URI``, ``current time``)
+    :rtype: (str, float)
+    '''
+    dtime = datetime.fromtimestamp(timestamp)
+    args = ['sudo', '-n', '/bin/date', '-s', '%s'%dtime]
+    rospy.loginfo('Set time: %s'%args)
+    subp = subprocess.Popen(args, stderr=subprocess.PIPE)
+    success = True
+    result_err = ''
+    if not subp.stderr is None:
+      result_err = subp.stderr.read()
+      if result_err:
+        success = False
+    return (str(self.getMasteruri()), success, time.time(), result_err)
 
   def checkState(self, clear_cache=False):
     '''
