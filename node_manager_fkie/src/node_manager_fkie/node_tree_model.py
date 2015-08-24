@@ -461,6 +461,7 @@ class GroupItem(QtGui.QStandardItem):
     has_off = False
     has_duplicate = False
     has_ghosts = False
+    has_diag = False
     for i in range(self.rowCount()):
       item = self.child(i)
       if isinstance(item, NodeItem):
@@ -471,6 +472,8 @@ class GroupItem(QtGui.QStandardItem):
           has_off = True
         elif item.state == NodeItem.STATE_RUN:
           has_running = True
+          if item.diagnostic_array and item.diagnostic_array[-1].level > 0:
+            has_diag = True
         elif item.state == NodeItem.STATE_GHOST:
           has_ghosts = True
         elif item.state == NodeItem.STATE_DUPLICATE:
@@ -480,11 +483,17 @@ class GroupItem(QtGui.QStandardItem):
     elif has_ghosts:
       self.setIcon(QtGui.QIcon(':/icons/state_ghost.png'))
     elif has_running and has_off:
-      self.setIcon(QtGui.QIcon(':/icons/state_part.png'))
+      if has_diag:
+        self.setIcon(QtGui.QIcon(':/icons/state_notification.png'))
+      else:
+        self.setIcon(QtGui.QIcon(':/icons/state_part.png'))
     elif not has_running:
       self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
     elif not has_off and has_running:
-      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+      if has_diag:
+        self.setIcon(QtGui.QIcon(':/icons/state_notification.png'))
+      else:
+        self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
 
   def _create_html_list(self, title, items):
     result = ''
