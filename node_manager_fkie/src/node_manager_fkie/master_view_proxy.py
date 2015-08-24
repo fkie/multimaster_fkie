@@ -1270,7 +1270,14 @@ class MasterViewProxy(QtGui.QWidget):
       if node.diagnostic_array and node.diagnostic_array[-1].level > 0:
         diag_status = node.diagnostic_array[-1]
         level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
-        text += '<dt><font color="#FF6600"><b>%s: %s</b></font></dt>'%(level_str, node.diagnostic_array[-1].message)
+        diag_color = '#FF6600'
+        if diag_status.level == 2:
+          diag_color = '#CC0000'
+        elif diag_status.level == 3:
+          diag_color = '#FFCC00'
+        elif diag_status.level > 3:
+          diag_color = '#0000CC'
+        text += '<dt><font color="%s"><b>%s: %s</b></font></dt>'%(diag_color, level_str, node.diagnostic_array[-1].message)
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
       text += '</dl>'

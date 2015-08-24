@@ -54,6 +54,10 @@
     <file>icons/oxygen_view_refresh.png</file>
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
+    <file>icons/state_diag_error.png</file>
+    <file>icons/state_diag_other.png</file>
+    <file>icons/state_diag_stale.png</file>
+    <file>icons/state_diag_warn.png</file>
     <file>icons/state_ghost.png</file>
     <file>icons/state_notification.png</file>
     <file>icons/state_off.png</file>
