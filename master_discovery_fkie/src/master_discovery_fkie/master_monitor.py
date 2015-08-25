@@ -43,6 +43,7 @@ import subprocess
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.network
 import rospy
+import os
 
 try: # to avoid the problems with autodoc on ros.org/wiki site
   from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo, SyncServiceInfo
@@ -75,24 +76,24 @@ class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
 
 class MasterMonitor(object):
   '''
-  This class provides methods to get the state from the ROS master using his 
+  This class provides methods to get the state from the ROS master using his
   RPC API and test for changes. Furthermore an XML-RPC server will be created
   to offer the complete current state of the ROS master by one method call.
 
   :param rpcport: the port number for the XML-RPC server
-  
+
   :type rpcport:  int
-  
+
   :param do_retry: retry to create XML-RPC server
-  
+
   :type do_retry: bool
 
   :see: :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getCurrentState()`, respectively
         :mod:`master_discovery_fkie.master_monitor.MasterMonitor.updateState()`
-  
+
   :RPC Methods:
-      :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getListedMasterInfo()` or 
-      :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getMasterContacts()` as RPC: 
+      :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getListedMasterInfo()` or
+      :mod:`master_discovery_fkie.master_monitor.MasterMonitor.getMasterContacts()` as RPC:
       ``masterInfo()`` and ``masterContacts()``
   '''
 
@@ -105,17 +106,17 @@ class MasterMonitor(object):
     '''
     Initialize method. Creates an XML-RPC server on given port and starts this
     in its own thread.
-    
+
     :param rpcport: the port number for the XML-RPC server
-    
+
     :type rpcport:  int
-    
+
     :param do_retry: retry to create XML-RPC server
-    
+
     :type do_retry: bool
-    
+
     :param ipv6: Use ipv6
-    
+
     :type ipv6: bool
     '''
     self._state_access_lock = threading.RLock()
@@ -143,6 +144,19 @@ class MasterMonitor(object):
 
     self._master_errors = list()
 
+    # Get the interface to bind to for mcast discovery and xml-rpc.
+    # Use the ~interface param unless ROS_IP is set, use that explicitly
+    # otherwise.
+    self.interface = rospy.get_param('~interface', '')
+    if not self.interface and 'ROS_IP' in os.environ:
+      self.interface = os.environ['ROS_IP']
+      rospy.loginfo("Using user set ROS_IP for interface: %s", self.interface)
+    # Log what interface we're binding to.
+    if self.interface == "":
+      rospy.loginfo("Interface to bind: Default interface")
+    else:
+      rospy.loginfo("Interface to bind: %s", self.interface)
+
     # Create an XML-RPC server
     self.ready = False
     while not self.ready and (not rospy.is_shutdown()):
@@ -150,7 +164,7 @@ class MasterMonitor(object):
         RPCClass = RPCThreading
         if ipv6:
           RPCClass = RPCThreadingV6
-        self.rpcServer = RPCClass(('', rpcport), logRequests=False, allow_none=True)
+        self.rpcServer = RPCClass((self.interface, rpcport), logRequests=False, allow_none=True)
         rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
         self.rpcServer.register_introspection_functions()
         self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')
@@ -179,7 +193,7 @@ class MasterMonitor(object):
     # subscribe to get parameter updates
     rospy.loginfo("Subscribe to parameter `/roslaunch/uris`")
     self.__mycache_param_server = rospy.impl.paramserver.get_param_server_cache()
-    # HACK: use own method to get the updates also for parameters in the subgroup 
+    # HACK: use own method to get the updates also for parameters in the subgroup
     self.__mycache_param_server.update = self.__update_param
     # first access, make call to parameter server
     self._update_launch_uris_lock = threading.RLock()
@@ -252,13 +266,13 @@ class MasterMonitor(object):
     '''
     Gets process id of the node.
     This method blocks until the info is retrieved or socket timeout is reached (0.7 seconds).
-    
+
     :param nodename: the name of the node
-    
+
     :type nodename: str
-    
+
     :param uri: the uri of the node
-    
+
     :type uri: str
     '''
     for (nodename, uri) in nodes.items():
@@ -306,15 +320,15 @@ class MasterMonitor(object):
 
   def _getServiceInfo(self, services):
     '''
-    Gets service info through the RPC interface of the service. 
+    Gets service info through the RPC interface of the service.
     This method blocks until the info is retrieved or socket timeout is reached (0.5 seconds).
-    
+
     :param service: the name of the service
-    
+
     :type service: str
-    
+
     :param uri: the uri of the service
-    
+
     :type uri: str
     '''
     for (service, uri) in services.items():
@@ -378,8 +392,8 @@ class MasterMonitor(object):
   def getListedMasterInfo(self):
     '''
     :return: a extended ROS Master State.
-    
-    :rtype:  :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()` for result type 
+
+    :rtype:  :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()` for result type
     '''
     #'print "MASTERINFO ===================="
     t = str(time.time())
@@ -400,8 +414,8 @@ class MasterMonitor(object):
   def getListedMasterInfoFiltered(self, filter_list):
     '''
     :return: a extended filtered ROS Master State.
-    
-    :rtype:  :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()` for result type 
+
+    :rtype:  :mod:`master_discovery_fkie.master_info.MasterInfo.listedState()` for result type
     '''
     #'print "MASTERINFO ===================="
     t = str(time.time())
@@ -424,7 +438,7 @@ class MasterMonitor(object):
   def getCurrentState(self):
     '''
     :return: The current ROS Master State
-    
+
     :rtype: :mod:`master_discovery_fkie.master_info.MasterInfo` or ``None``
     '''
     #'print "getCurrentState _state_access_lock try...", threading.current_thread()
@@ -436,16 +450,16 @@ class MasterMonitor(object):
   def updateState(self, clear_cache=False):
     '''
     Gets state from the ROS Master through his RPC interface.
-    
+
     :param clear_cache: The URI of nodes and services will be cached to reduce the load.
-                        If remote hosted nodes or services was restarted, the cache must 
+                        If remote hosted nodes or services was restarted, the cache must
                         be cleared! The local nodes will be updated periodically after
                         :mod:`master_discovery_fkie.master_monitor.MasterMonitor.MAX_PING_SEC`.
-    
-    :type clear_cache: bool (Default: ``False``) 
-    
+
+    :type clear_cache: bool (Default: ``False``)
+
     :rtype: :mod:`master_discovery_fkie.master_info.MasterInfo`
-    
+
     :raise: ``MasterConnectionException``, if not complete information was get from the ROS master.
     '''
     #'print "updateState _create_access_lock try...", threading.current_thread()
@@ -517,7 +531,7 @@ class MasterMonitor(object):
 #        cputime_init2 = cputimes2[0] + cputimes2[1] ###################
 #        cputimes = os.times()                                            ###################
 #        print "Auswertung: ", (cputimes[0] + cputimes[1] - cputime_init) ###################
-  
+
         # add services
 #        cputimes = os.times()                    ###################
 #        cputime_init = cputimes[0] + cputimes[1] ###################
@@ -628,9 +642,9 @@ class MasterMonitor(object):
 
 #      cputimes = os.times()                    ###################
 #      cputime_init = cputimes[0] + cputimes[1] ###################
-      
+
 #      print "threads:", len(threads)
-      # wait for all threads are finished 
+      # wait for all threads are finished
       while threads:
         th = threads.pop()
         if th.isAlive():
@@ -668,9 +682,9 @@ class MasterMonitor(object):
   def updateSyncInfo(self):
     '''
     This method can be called to update the origin ROS master URI of the nodes
-    and services in new ``master_state``. This is only need, if a synchronization is 
+    and services in new ``master_state``. This is only need, if a synchronization is
     running. The synchronization service will be detect automatically by searching
-    for the service ending with ``get_sync_info``. The method will be called by 
+    for the service ending with ``get_sync_info``. The method will be called by
     :mod:`master_discovery_fkie.master_monitor.MasterMonitor.checkState()`.
     '''
     #'print "updateSyncInfo _create_access_lock try...", threading.current_thread()
@@ -732,11 +746,11 @@ class MasterMonitor(object):
 
   def getMasteruri(self):
     '''
-    Requests the ROS master URI from the ROS master through the RPC interface and 
+    Requests the ROS master URI from the ROS master through the RPC interface and
     returns it.
-    
+
     :return: ROS master URI
-    
+
     :rtype: str or ``None``
     '''
     code = -1
@@ -747,11 +761,11 @@ class MasterMonitor(object):
 
   def getMastername(self):
     '''
-    Returns the name of the master. If no name is set, the hostname of the 
+    Returns the name of the master. If no name is set, the hostname of the
     ROS master URI will be extracted.
-    
+
     :return: the name of the ROS master
-    
+
     :rtype: str or ``None``
     '''
     if self.__mastername is None:
@@ -767,11 +781,11 @@ class MasterMonitor(object):
       except:
         pass
     return self.__mastername
-  
+
   def getMasterContacts(self):
     '''
     The RPC method called by XML-RPC server to request the master contact information.
-    
+
     :return: (``timestamp of the ROS master state``, ``ROS master URI``, ``master name``, ``name of this service``, ``URI of this RPC server``)
     :rtype: (str, str, str, str, str)
     '''
@@ -829,14 +843,14 @@ class MasterMonitor(object):
     Gets the state from the ROS master and compares it to the stored state.
 
     :param clear_cache: The URI of nodes and services will be cached to reduce the load.
-                        If remote hosted nodes or services was restarted, the cache must 
+                        If remote hosted nodes or services was restarted, the cache must
                         be cleared! The local nodes will be updated periodically after
                         :mod:`master_discovery_fkie.master_monitor.MasterMonitor.MAX_PING_SEC`.
-    
-    :type clear_cache: bool (Default: ``False``) 
+
+    :type clear_cache: bool (Default: ``False``)
 
     :return: ``True`` if the ROS master state is changed
-    
+
     :rtype: bool
     '''
     result = False
@@ -867,7 +881,7 @@ class MasterMonitor(object):
 
   def reset(self):
     '''
-    Sets the master state to ``None``. 
+    Sets the master state to ``None``.
     '''
     #'print "reset _state_access_lock try...", threading.current_thread()
     with self._state_access_lock:
