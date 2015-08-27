@@ -74,7 +74,7 @@ class Settings(object):
 
   STORE_GEOMETRY = True
   AUTOUPDATE = True
-  MAX_TIMEDIFF = 3.0
+  MAX_TIMEDIFF = 0.5
 
   def __init__(self):
     self.reload()

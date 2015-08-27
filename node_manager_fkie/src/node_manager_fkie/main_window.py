@@ -886,10 +886,12 @@ class MainWindow(QtGui.QMainWindow):
         uri, success, newtime, errormsg = p.setTime(time.time())
         if not success:
           if errormsg.find('password') > -1:
-            errormsg += "\nTry to modify /etc/sudoers and add user privilege"
-            errormsg += "\n  %USER%  ALL=NOPASSWD: /bin/date"
-            errormsg += "\n!!!needed to be at the very end of file!!!"
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Time sync error",
+            errormsg += "\nPlease modify /etc/sudoers and add user privilege, e.g:"
+            errormsg += "\n%s  ALL=NOPASSWD: /bin/date"%self.currentMaster.current_user
+            errormsg += "\n!!!needed to be at the very end of file, don't forget a new line at the end!!!"
+            errormsg += "\n\nBe aware, it does not replace the time synchronization!"
+            errormsg += "\nIt sets approximate time without undue delays on communication layer."
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Time set error",
                           'Error while set time on %s'%uri,
                           '%s'%errormsg).exec_()
         else:
