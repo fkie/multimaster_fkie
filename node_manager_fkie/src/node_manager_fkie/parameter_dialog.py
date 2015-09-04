@@ -429,6 +429,8 @@ class MainBox(QtGui.QWidget):
             field.set_values(value)
           else:
             if isinstance(field, QtGui.QCheckBox):
+              if not isinstance(value, bool):
+                value = str2bool(value[0] if isinstance(value, list) else value)
               field.setChecked(value)
             elif isinstance(field, QtGui.QLineEdit):
               #avoid ' or " that escapes the string values
