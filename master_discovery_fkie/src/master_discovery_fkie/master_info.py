@@ -70,6 +70,7 @@ class NodeInfo(object):
     self.pid = None
     '''the process id of the node. Invalid id has a ``None`` value'''
     self.__local = False
+    self.__local_master = True
     self._publishedTopics = []
     self._subscribedTopics = []
     self._services = []
@@ -116,6 +117,7 @@ class NodeInfo(object):
     '''
     self.__org_masteruri = uri
     self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+    self.__local_master = (self.__masteruri == self.__org_masteruri)
 
   @property
   def isLocal(self):
@@ -125,6 +127,15 @@ class NodeInfo(object):
     :rtype: bool
     '''
     return self.__local
+
+  @property
+  def isLocalMaster(self):
+    '''
+    :return: ``True`` if the node is registered on the local machine.
+
+    :rtype: bool
+    '''
+    return self.__local_master
 
   @property
   def publishedTopics(self):
@@ -398,6 +409,7 @@ class ServiceInfo(object):
     self.__org_masteruri = masteruri
     self.__uri = None
     self.__local = False
+    self.__local_master = True
     self.type = None
     '''the type of the service. (Default: ``None``)'''
     self.__service_class = None
@@ -455,6 +467,7 @@ class ServiceInfo(object):
     :type uri: str
     '''
     self.__org_masteruri = uri
+    self.__local_master = (self.__masteruri == self.__org_masteruri)
     self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
 
   @property
@@ -466,6 +479,15 @@ class ServiceInfo(object):
     :rtype: bool
     '''
     return self.__local
+
+  @property
+  def isLocalMaster(self):
+    '''
+    :return: ``True`` if the service is registered on the local machine.
+
+    :rtype: bool
+    '''
+    return self.__local_master
 
   @property
   def serviceProvider(self):
@@ -1024,8 +1046,7 @@ class MasterInfo(object):
       n1 = self.getNode(name)
       n2 = other.getNode(name)
       if not n1 is None and not n2 is None:
-        local = n1.isLocal
-        if local:
+        if n1.isLocal or n1.isLocalMaster:
           if n1.pid != n2.pid:
             return True
           if n1.uri != n2.uri:
@@ -1037,13 +1058,13 @@ class MasterInfo(object):
           if set(n1.services) ^ set(n2.services):
             return True
         # after local start of asynchronized node. The next check of master state return the local node.
-        elif n2.isLocal:
+        elif n2.isLocal or n2.isLocalMaster:
           return True
       elif not n1 is None:
-        if n1.isLocal:
+        if n1.isLocal or n1.isLocalMaster:
           return True
       elif not n2 is None:
-        if n2.isLocal:
+        if n2.isLocal or n2.isLocalMaster:
           return True
 
     # test for services
@@ -1052,14 +1073,16 @@ class MasterInfo(object):
       s1 = self.getService(name)
       s2 = other.getService(name)
       if not s1 is None and not s2 is None:
-        local = s1.isLocal or s2.isLocal
-        if s1.uri != s2.uri:
+        if s1.isLocal or s1.isLocalMaster:
+          if s1.uri != s2.uri:
+            return True
+        elif s2.isLocal or s2.isLocalMaster:
           return True
       elif not s1 is None:
-        if s1.isLocal:
+        if s1.isLocal or s1.isLocalMaster:
           return True
       elif not s2 is None:
-        if s2.isLocal:
+        if s2.isLocal or s2.isLocalMaster:
           return True
     return False
 #    finally:
@@ -1244,10 +1267,11 @@ class MasterInfo(object):
         for n in nodes2remove:
           del self.__nodelist[n]
       else:
+        pass
         # if the node is in own master_info, but not in remote, replace only the masteruri. 
         # perhaps, if will be removed soon by master_sync
-        for n in nodes2remove:
-          own_remote_nodes[n].masteruri = self.masteruri
+#        for n in nodes2remove:
+#          own_remote_nodes[n].masteruri = self.masteruri
     # update nodes
     nodes2update = own_remote_nodes_set & other_local_nodes_set
     if nodes2update:
@@ -1279,7 +1303,7 @@ class MasterInfo(object):
         for n in nodes2add:
           if not (n in self.__nodelist):
             nodes_added.add(n)
-            self.__nodelist[n] = other_local_nodes[n].copy(self.masteruri)
+            self.__nodelist[n] = other_local_nodes[n].copy()#self.masteruri)
 
     # UPDATE SERVICES
     own_remote_srvs = dict()
@@ -1331,6 +1355,6 @@ class MasterInfo(object):
         for s in srv2add:
           if not (s in self.__servicelist):
             srvs_added.add(s)
-            self.__servicelist[s] = other_local_srvs[s].copy(self.masteruri)
+            self.__servicelist[s] = other_local_srvs[s].copy()#self.masteruri)
 
     return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
