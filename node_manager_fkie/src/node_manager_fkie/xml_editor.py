@@ -76,7 +76,8 @@ class Editor(QtGui.QTextEdit):
     self.regexp_list = [QtCore.QRegExp("\\binclude\\b"), QtCore.QRegExp("\\btextfile\\b"),
                         QtCore.QRegExp("\\bfile\\b"), QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
                         QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
-                        QtCore.QRegExp("\\bvalue=.*\$\(find\\b")]
+                        QtCore.QRegExp("\\bvalue=.*\$\(find\\b"),
+                        QtCore.QRegExp("\\bdefault=.*\$\(find\\b")]
     self.filename = filename
     self.file_info = None
     if self.filename:

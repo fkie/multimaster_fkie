@@ -202,8 +202,12 @@ class LaunchConfig(QtCore.QObject):
 
   @classmethod
   def getIncludedFiles(cls, inc_file, regexp_list=[QtCore.QRegExp("\\binclude\\b"),
-                                               QtCore.QRegExp("\\btextfile\\b"),
-                                               QtCore.QRegExp("\\bfile\\b")]):
+                                                   QtCore.QRegExp("\\btextfile\\b"),
+                                                   QtCore.QRegExp("\\bfile\\b"),
+                                                   QtCore.QRegExp("\\bdefault\\b"),
+                                                   QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                   QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                   QtCore.QRegExp("\\bvalue=.*\$\(find\\b")]):
     '''
     Reads the configuration file and searches for included files. This files
     will be returned in a list.
@@ -258,11 +262,7 @@ class LaunchConfig(QtCore.QObject):
       nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
       if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
         nm.file_watcher_param().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, 
-                                    self.getIncludedFiles(self.Filename,
-                                                          regexp_list = [QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                                                                         QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                                         QtCore.QRegExp("\\bvalue=.*\$\(find\\b")])
-                                                          )
+                                    self.getIncludedFiles(self.Filename))
     except roslaunch.XmlParseException, e:
       test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
       message = str(e)
