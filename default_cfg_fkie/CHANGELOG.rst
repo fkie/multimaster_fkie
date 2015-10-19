@@ -2,6 +2,9 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.2 (2015-10-19)
+------------------
+
 0.4.1 (2015-04-28)
 ------------------
 * multimaster_fkie: fixed double log output

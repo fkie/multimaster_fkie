@@ -2,6 +2,9 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.2 (2015-10-19)
+------------------
+
 0.4.1 (2015-04-28)
 ------------------
 * Deprecate is_ignored_topic. Move new parameters to the end of the parameter list

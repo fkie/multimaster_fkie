@@ -2,6 +2,16 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.2 (2015-10-19)
+------------------
+* master_discovery_fkie: fixed the updates of remote nodes registered on local master
+* multimaster_fkie: added a possibility to set time on remote host
+* node_manager_fkie: added a warning if the time difference to remote host is greater than a defined value (default 3 sec)
+* master_discovery_fkie: added @part to define interface with mcast group
+* master_discovery_fkie: add posibility to specify the interface to use
+* master_discover_fkie: check for local ip addresses to avoid wrong warning messages
+* Contributors: Alexander Tiderko
+
 0.4.1 (2015-04-28)
 ------------------
 * Deprecate is_ignored_topic. Move new parameters to the end of the parameter list

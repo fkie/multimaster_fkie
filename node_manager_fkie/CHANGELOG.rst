@@ -2,6 +2,36 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.2 (2015-10-19)
+------------------
+* node_manager_fkie: added further files to change detection
+* node_manager_fkie: fixed parameter dialog for some messages e.g. MarkerArray
+* node_manager_fkie: shutdown now all nodes and roscore at exit (if selected)
+* node_manager_fkie: changed diagnostic visualization
+* node_manager_fkie: propagate the diagnostic color of a node to his group
+* node_manager_fkie: update the description of selected node after a diagnostic message is recieved
+* multimaster_fkie: added a possibility to set time on remote host
+* node_manager_fkie: fixed the comparison of host time difference
+* node_manager_fkie: added a warning if the time difference to remote host is greater than a defined value (default 3 sec)
+* node_manager_fkie: added ControlModifier to package navigation
+  Ctrl+DoubleClick:
+  * History file: goto the package of the launch file
+  * ..: goto root
+  * folder: go only one step down, not until first config file
+* node_manager_fkie: changed param template for parameter name in editor
+* node_manager_fkie: added log button for remote master_discovery
+  * show now only the screen log
+* node_manager_fkie: fixed save/load in parameter dialog
+* node_manager_fkie: fix load parameter with absolute path
+* node_manager_fkie: added more info for error while set a parameter with None value
+* node_manager_fkie: added icon for rqt plugin
+* node_manager_fkie: fixed error which prevent display info and configuration dialogs
+* node_manager_fkie: check now for changes of local binaries and ask for restart if these are changed
+* node_manager_fkie: fixed problem while publishing to topic with lists and byte values
+* node_manager_fkie: added support diagnostics_agg topic
+* node_manager_fkie: added a remote script which does not use qt bindings
+* Contributors: Alexander Tiderko
+
 0.4.1 (2015-04-28)
 ------------------
 * node_manager_fkie: fixed error while parsing list of lists in parameter dialog
