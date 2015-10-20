@@ -326,6 +326,8 @@ class Editor(QtGui.QTextEdit):
       self.setMouseTracking(True)
     if event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_7:
       self.commentText()
+    if event.modifiers() == QtCore.Qt.ControlModifier|QtCore.Qt.ShiftModifier and event.key() == QtCore.Qt.Key_Slash:
+      self.commentText()
     elif event.modifiers() == QtCore.Qt.AltModifier and event.key() == QtCore.Qt.Key_Space:
       ext = os.path.splitext(self.filename)
       if ext[1] in self.CONTEXT_FILE_EXT:
@@ -968,6 +970,8 @@ class XmlEditor(QtGui.QDialog):
     self.find_dialog.show()
     self.find_dialog.raise_()
     self.find_dialog.activateWindow()
+    self.find_dialog.search_field.setFocus()
+    self.find_dialog.search_field.selectAll()
 
   def on_shortcut_goto(self):
     '''
@@ -996,7 +1000,7 @@ class XmlEditor(QtGui.QDialog):
   def __getTabName(self, lfile):
     base = os.path.basename(lfile).replace('.launch', '')
     (package, _) = package_name(os.path.dirname(lfile))
-    return ''.join([str(base), ' [', str(package),']'])
+    return '%s[%s]'%(base, package)
 
   def on_find_dialog_clicked(self, button):
     '''
@@ -1023,6 +1027,7 @@ class XmlEditor(QtGui.QDialog):
     @param recursive: search in included files if this is C{True}
     @type recursive: C{bool}
     '''
+    self.find_dialog.search_field.setText(search_text)
     found = False
     if self.find_dialog.search_text != search_text:
       self.find_dialog.search_pos = QtGui.QTextCursor()
