@@ -373,7 +373,7 @@ class MasterMonitor(object):
         except:
           import traceback
           with self._lock:
-            self._limited_log(service, "can't get service type: %s"%traceback.format_exc())
+            self._limited_log(service, "can't get service type: %s" % traceback.format_exc(), rospy.ERROR)
 #          print traceback.format_exc()
 #          print "_getServiceInfo _lock try..", threading.current_thread()
           with self._lock:
@@ -663,12 +663,21 @@ class MasterMonitor(object):
 
       return master_state
 
-  def _limited_log(self, provider, msg):
+  def _limited_log(self, provider, msg, level=rospy.WARN):
     if not provider in self._printed_errors:
       self._printed_errors[provider] = dict()
     if not msg in self._printed_errors[provider]:
       self._printed_errors[provider][msg] = time.time()
-      rospy.logwarn("MasterMonitor[%s]: %s"%(provider, msg))
+      if level == rospy.DEBUG:
+        rospy.logdebug("MasterMonitor[%s]: %s" % (provider, msg))
+      elif level == rospy.INFO:
+        rospy.loginfo("MasterMonitor[%s]: %s" % (provider, msg))
+      elif level == rospy.WARN:
+        rospy.logwarn("MasterMonitor[%s]: %s" % (provider, msg))
+      elif level == rospy.ERROR:
+        rospy.logerr("MasterMonitor[%s]: %s" % (provider, msg))
+      elif level == rospy.FATAL:
+        rospy.logfatal("MasterMonitor[%s]: %s" % (provider, msg))
 
   def _clearup_cached_logs(self, age=300):
     cts = time.time()

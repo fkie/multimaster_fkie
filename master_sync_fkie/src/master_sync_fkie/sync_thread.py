@@ -237,7 +237,7 @@ class SyncThread(object):
         handler(remote_state)
     except:
       import traceback
-      rospy.logwarn("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
+      rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
     finally:
       self.__on_update = False
       socket.setdefaulttimeout(None)
@@ -399,7 +399,7 @@ class SyncThread(object):
           self._update_timer.start()
     except:
       import traceback
-      rospy.logwarn("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
+      rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
     finally:
       socket.setdefaulttimeout(None)
 
@@ -423,7 +423,7 @@ class SyncThread(object):
         rospy.logdebug("    SyncThread[%s] finished", self.name)
       except:
         import traceback
-        rospy.logwarn("SyncThread[%s] ERROR while ending: %s", self.name, traceback.format_exc())
+        rospy.logerr("SyncThread[%s] ERROR while ending: %s", self.name, traceback.format_exc())
       socket.setdefaulttimeout(None)
 
   def _doIgnoreNTP(self, node, topic, topictype):
