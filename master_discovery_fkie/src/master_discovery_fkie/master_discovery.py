@@ -832,13 +832,13 @@ class Discoverer(object):
         import traceback
         rospy.logwarn("socket error: %s", traceback.format_exc())
       else:
-        self.process_recv_message(msg, address)
+        self.process_recv_message(msg, address, multicast=True)
 
   def unicast_recv_loop(self):
     '''
     This method handles the received unicast messages.
     '''
-    while self.msocket and (not rospy.is_shutdown()) and not self.do_finish:
+    while self.usocket and (not rospy.is_shutdown()) and not self.do_finish:
       try:
         (msg, address) = self.usocket.recvfrom(1024)
       except socket.timeout:
@@ -848,16 +848,17 @@ class Discoverer(object):
         import traceback
         rospy.logwarn("socket error: %s", traceback.format_exc())
       else:
-        self.process_recv_message(msg, address)
+        self.process_recv_message(msg, address, multicast=False)
 
 
-  def process_recv_message(self, msg, address):
+  def process_recv_message(self, msg, address, multicast=True):
     """
     Process the received message from either the unicast or multicast receive
     paths.
 
     :param msg: The message received
     :param address: The address the message was received from.
+    :param multicast: If the message was received through multicast or not.
     """
     if not self.do_finish:
       try:
@@ -873,7 +874,8 @@ class Discoverer(object):
             if (self._send_mcast or address[0].startswith('127')):
               with self.__lock:
                 self._send_current_state2addr(address[0])
-                add_to_list = not master_key in self.masters
+                # only register if the message has been received via multicast
+                add_to_list = not master_key in self.masters and multicast
           # remove master if sec and nsec are -1
           elif secs == -1 or secs_l == -1:
             with self.__lock:
@@ -902,7 +904,9 @@ class Discoverer(object):
                 self._changed = changed
           # or create <a new master
           else:
-            add_to_list = True
+            # only register new master if the message has been received via multicast
+            if multicast is True:
+                add_to_list = True
           if add_to_list:
             with self.__lock:
               rospy.loginfo("Detected master discovery: http://%s:%s"%(address[0], monitor_port))
