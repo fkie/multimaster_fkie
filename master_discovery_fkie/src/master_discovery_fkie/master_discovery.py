@@ -85,13 +85,17 @@ class DiscoveredMaster(object):
   ERR_RESOLVE_NAME = 1
   ERR_SOCKET = 2
 
-  def __init__(self, monitoruri, heartbeat_rate=1., timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
+  def __init__(self, monitoruri, is_local=False, heartbeat_rate=1., timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
     '''
     Initialize method for the DiscoveredMaster class.
 
     :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
 
     :type monitoruri:  str
+
+    :param is_local: is the URI of the remote RPC server local or not
+
+    :type is_local:  bool
 
     :param heartbeat_rate: The remote rate, which is used to send the heartbeat messages. 
 
@@ -116,10 +120,12 @@ class DiscoveredMaster(object):
     self.timestamp_local = timestamp_local
     self.discoverername = None
     self.monitoruri = monitoruri
+    self.is_local = is_local
     self.heartbeat_rate = heartbeat_rate
     self.heartbeats = list()
     self.requests = list()
     self.last_heartbeat_ts = time.time()
+    self.creation_ts = time.time()
     self.online = False
     self.callback_master_state = callback_master_state
     # The requests are sent using unicast messages. count_requests holds the
@@ -239,20 +245,22 @@ class DiscoveredMaster(object):
     '''
     quality = -1.0
     if not (self.mastername is None) and self.heartbeat_rate >= self.MIN_HZ_FOR_QUALILTY:
+      current_time = time.time()
       measurement_duration = interval
       if self.heartbeat_rate < 1.:
-        measurement_duration = interval / self.heartbeat_rate
-      current_time = time.time()
+        measurement_duration = measurement_duration / self.heartbeat_rate
+      if measurement_duration > current_time-self.creation_ts:
+        measurement_duration = current_time-self.creation_ts
       # remove all heartbeats, which are to old
       ts_oldest = current_time - measurement_duration
       removed_ts = self.remove_heartbeats(ts_oldest)
       # sets the master offline if the last received heartbeat is to old
       if current_time - self.last_heartbeat_ts > (measurement_duration * offline_after):
         self.set_offline()
-      # calculate the quality for inly online masters
+      # calculate the quality for online masters only
       if self.online:
         beats_count = len(self.heartbeats)
-        expected_count = self.heartbeat_rate * measurement_duration + len(self.requests)
+        expected_count = int(self.heartbeat_rate * measurement_duration + len(self.requests))
         if expected_count > 0:
           quality = float(beats_count) / float(expected_count) * 100.0
           if quality > 100.0:
@@ -836,7 +844,10 @@ class Discoverer(object):
                 with self.__lock:
                   rospy.loginfo("Detected master discovery: http://%s:%s"%(address[0], monitor_port))
                   self._add_address(address[0])
-                  self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]), 
+                  is_local = address[0].startswith('127.') or address[0] in roslib.network.get_local_addresses()
+                  print "IS LOCAL", address[0], is_local
+                  self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]),
+                                                              is_local=is_local,
                                                               heartbeat_rate=float(rate)/10.0,
                                                               timestamp=float(secs)+float(nsecs)/1000000000.0,
                                                               timestamp_local=float(secs_l)+float(nsecs_l)/1000000000.0,
@@ -905,6 +916,8 @@ class Discoverer(object):
         quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
         if not (v.mastername is None) and v.online:
           result.links.append(LinkState(v.mastername, quality))
+        if v.is_local:
+          result.header.frame_id = v.mastername
     #publish the results
     self.publish_stats(result)
     try:
