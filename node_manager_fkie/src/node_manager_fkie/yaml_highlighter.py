@@ -44,6 +44,8 @@ class YamlHighlighter(QtGui.QSyntaxHighlighter):
     self.rules = []
     self.commentStart = QtCore.QRegExp("#")
     self.commentEnd = QtCore.QRegExp("\n|\r")
+    self.default_format = QtGui.QTextCharFormat()
+    self.default_format.setForeground (QtGui.QColor(24,24,24))
     self.commentFormat = QtGui.QTextCharFormat()
     self.commentFormat.setFontItalic(True)
     self.commentFormat.setForeground(QtCore.Qt.darkGray)
@@ -100,6 +102,7 @@ class YamlHighlighter(QtGui.QSyntaxHighlighter):
 
 
   def highlightBlock(self, text):
+    self.setFormat(0, len(text), self.default_format)
     for pattern, form in self.rules:
       index = pattern.indexIn(text)
       while index >= 0:

@@ -155,6 +155,8 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     self.rules = []
     self.commentStart = QtCore.QRegExp("<!--")
     self.commentEnd = QtCore.QRegExp("-->")
+    self.default_format = QtGui.QTextCharFormat()
+    self.default_format.setForeground (QtGui.QColor(24,24,24))
     self.commentFormat = QtGui.QTextCharFormat()
     f = QtGui.QTextCharFormat()
     r = QtCore.QRegExp()
@@ -192,6 +194,7 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
 
 
   def highlightBlock(self, text):
+    self.setFormat(0, len(text), self.default_format)
     for pattern, form in self.rules:
       index = pattern.indexIn(text)
       while index >= 0:
