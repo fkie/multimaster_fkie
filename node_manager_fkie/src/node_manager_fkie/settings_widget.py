@@ -155,8 +155,17 @@ class SettingsWidget(QtGui.QDockWidget):
                                       'state on changes. You can deactivate this behavior to '
                                       'reduce the network load. If autoupdate is deactivated '
                                       'you must refresh the state manually.</p>'
+                                   },),
+                 'Rosconsole format:' : ({
+                                   'value' : nm.settings().rosconsole_format,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'rosconsole_format',
+                                   'value_default' : nm.settings().ROSCONSOLE_FORMAT,
+                                   'tooltip'  : "<p>rosconsole allows you to specify how you'd "
+                                      "like its output to show up in the console output through "
+                                      "the ROSCONSOLE_FORMAT environment variable.</p>"
                                    },)
-                }
+               }
     self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)
     self.settingsTreeView.sortByColumn(0, QtCore.Qt.AscendingOrder)

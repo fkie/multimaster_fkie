@@ -76,6 +76,8 @@ class Settings(object):
   AUTOUPDATE = True
   MAX_TIMEDIFF = 0.5
 
+  ROSCONSOLE_FORMAT = os.environ.get('ROSCONSOLE_FORMAT') if os.environ.get('ROSCONSOLE_FORMAT') else '[${severity}] [${time}]: ${message}'
+
   def __init__(self):
     self.reload()
 
@@ -121,6 +123,7 @@ class Settings(object):
     self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
     self._autoupdate = self.str2bool(settings.value('autoupdate', self.AUTOUPDATE))
     self._max_timediff = float(settings.value('max_timediff', self.MAX_TIMEDIFF))
+    self._rosconsole_format = settings.value('rosconsole_format', self.ROSCONSOLE_FORMAT)
 
   def masteruri(self):
     return self._masteruri
@@ -281,6 +284,17 @@ class Settings(object):
       self._max_timediff = v
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('max_timediff', self._max_timediff)
+
+  @property
+  def rosconsole_format(self):
+    return self._rosconsole_format
+
+  @rosconsole_format.setter
+  def rosconsole_format(self, value):
+    if self._rosconsole_format != value:
+      self._rosconsole_format = value
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('rosconsole_format', self._rosconsole_format)
 
   def str2bool(self, v):
     if isinstance(v, bool):

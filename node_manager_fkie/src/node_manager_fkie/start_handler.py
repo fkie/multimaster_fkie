@@ -96,6 +96,7 @@ class StartHandler(object):
       raise StartException(''.join(["Node '", node, "' not found!"]))
 
     env = list(n.env_args)
+    env.append(('ROSCONSOLE_FORMAT', '%s'%nm.settings().rosconsole_format))
     if n.respawn:
       # set the respawn environment variables
       respawn_params = cls._get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launch_config.Roscfg.params)
