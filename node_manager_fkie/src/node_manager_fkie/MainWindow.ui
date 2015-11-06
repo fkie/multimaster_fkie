@@ -367,7 +367,7 @@ p, li { white-space: pre-wrap; }
                    </property>
                    <layout class="QHBoxLayout" name="horizontalLayout_3">
                     <property name="spacing">
-                     <number>1</number>
+                     <number>0</number>
                     </property>
                     <property name="margin">
                      <number>0</number>
@@ -438,8 +438,8 @@ p, li { white-space: pre-wrap; }
                       </property>
                       <property name="maximumSize">
                        <size>
-                        <width>32</width>
-                        <height>16777215</height>
+                        <width>20</width>
+                        <height>20</height>
                        </size>
                       </property>
                       <property name="toolTip">

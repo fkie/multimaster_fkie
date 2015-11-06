@@ -61,7 +61,8 @@ def parse_options(args):
             'prefix' : '',
             'pidkill' : '',
             'node_respawn' : '',
-            'masteruri' : ''}
+            'masteruri' : '',
+            'loglevel' : ''}
   options = [''.join(['--', v]) for v in result.keys()]
   argv = []
   arg_added = False
@@ -117,7 +118,7 @@ def main(argv=sys.argv):
           os.remove(roslog)
       elif options['node_type'] and options['package'] and options['node_name']:
         runNode(options['package'], options['node_type'], options['node_name'], 
-                args, options['prefix'], options['node_respawn'], options['masteruri'])
+                args, options['prefix'], options['node_respawn'], options['masteruri'], loglevel=options['loglevel'])
       elif options['pidkill']:
         import signal
         os.kill(int(options['pidkill']), signal.SIGKILL)
@@ -131,7 +132,15 @@ def main(argv=sys.argv):
   except Exception, e:
     print >> sys.stderr, e
 
-def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
+def rosconsole_cfg_file(package, loglevel='INFO'):
+  result = os.path.join(nm.Settings.LOG_PATH, '%s.rosconsole.config'%package)
+  with open(result, 'w') as cfg_file:
+    cfg_file.write('log4j.logger.ros=%s\n'%loglevel)
+    cfg_file.write('log4j.logger.ros.roscpp=INFO\n')
+    cfg_file.write('log4j.logger.ros.roscpp.superdebug=WARN\n')
+  return result
+
+def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=None, loglevel=''):
   '''
   Runs a ROS node. Starts a roscore if needed.
   '''
@@ -141,7 +150,7 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
   nm.StartHandler._prepareROSMaster(masteruri)
   # start node
   try:
-    cmd = roslib.packages.find_node(package, type)
+    cmd = roslib.packages.find_node(package, executable)
   except roslib.packages.ROSPkgException as e:
     # multiple nodes, invalid package
     raise nm.StartException(str(e))
@@ -150,7 +159,7 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
   if isinstance(cmd, types.StringTypes):
     cmd = [cmd]
   if cmd is None or len(cmd) == 0:
-    raise nm.StartException(' '.join([type, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
+    raise nm.StartException(' '.join([executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
   # create string for node parameter. Set arguments with spaces into "'".
   node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
   cmd_args = [nm.ScreenHandler.getSceenCmd(name), nm.Settings.RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
@@ -166,6 +175,8 @@ def runNode(package, type, name, args, prefix='', repawn=False, masteruri=None):
   # set the masteruri to launch with other one master
   new_env = dict(os.environ)
   new_env['ROS_MASTER_URI'] = masteruri
+  if loglevel:
+    new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)
   subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
   if len(cmd) > 1:
     rospy.logwarn('Multiple executables are found! The first one was started! Exceutables:\n%s', str(cmd))

@@ -443,7 +443,11 @@ class MainBox(QtGui.QWidget):
   def getField(self, name):
     for child in self.children():
       for c in child.children():
-        if c.objectName() == name:
+        if isinstance(c, MainBox):
+          result = c.getField(name)
+          if result is not None:
+            return result
+        elif c.objectName() == name:
           return c
     return None
 

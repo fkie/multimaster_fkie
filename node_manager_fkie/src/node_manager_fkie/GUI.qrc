@@ -54,6 +54,8 @@
     <file>icons/oxygen_view_refresh.png</file>
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
+    <file>icons/sekkyumu_play.png</file>
+    <file>icons/sekkyumu_stop.png</file>
     <file>icons/state_diag_error.png</file>
     <file>icons/state_diag_other.png</file>
     <file>icons/state_diag_stale.png</file>

@@ -33,7 +33,46 @@
 import os
 import roslib
 
-from common import get_ros_home, masteruri_from_ros
+from node_manager_fkie.common import get_ros_home, masteruri_from_ros
+
+class LoggingConfig(object):
+  LOGLEVEL = 'DEFAULT'
+  LOGLEVEL_ROSCPP = 'INFO'
+  LOGLEVEL_SUPERDEBUG = 'WARN'
+  CONSOLE_FORMAT = 'DEFAULT'
+
+  def __init__(self):
+    self.loglevel = self.LOGLEVEL
+    self.loglevel_roscpp = self.LOGLEVEL_ROSCPP
+    self.loglevel_superdebug = self.LOGLEVEL_SUPERDEBUG
+    self.console_format = self.CONSOLE_FORMAT
+
+  def get_attributes(self):
+    return ['loglevel',
+            'loglevel_roscpp',
+            'loglevel_superdebug',
+            'console_format'
+            ]
+
+  def is_default(self, attribute):
+#    if hasattr(self, attribute) and hasattr(self, attribute.upper()):
+    return getattr(self, attribute) == getattr(self, attribute.upper())
+
+  def get_alternatives(self, attribute):
+    result = []
+    if attribute == 'console_format':
+      result = [self.CONSOLE_FORMAT,
+                '[${severity}] [${time}]: ${message}',
+                '[${severity}] [${time}] [${logger}]: ${message}']
+    elif attribute == 'loglevel':
+      result = ['DEFAULT', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL']
+    elif attribute == 'loglevel_roscpp':
+      result = ['INFO', 'DEBUG', 'WARN', 'ERROR', 'FATAL']
+    elif attribute == 'loglevel_superdebug':
+      result = ['WARN', 'DEBUG', 'INFO', 'ERROR', 'FATAL']
+    if not self.is_default(attribute):
+      result.insert(0, getattr(self, attribute))
+    return result
 
 class Settings(object):
 
@@ -75,8 +114,6 @@ class Settings(object):
   STORE_GEOMETRY = True
   AUTOUPDATE = True
   MAX_TIMEDIFF = 0.5
-
-  ROSCONSOLE_FORMAT = os.environ.get('ROSCONSOLE_FORMAT') if os.environ.get('ROSCONSOLE_FORMAT') else '[${severity}] [${time}]: ${message}'
 
   def __init__(self):
     self.reload()
@@ -123,7 +160,12 @@ class Settings(object):
     self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
     self._autoupdate = self.str2bool(settings.value('autoupdate', self.AUTOUPDATE))
     self._max_timediff = float(settings.value('max_timediff', self.MAX_TIMEDIFF))
-    self._rosconsole_format = settings.value('rosconsole_format', self.ROSCONSOLE_FORMAT)
+    self._rosconsole_cfg_file = 'rosconsole.config'
+    self.logging = LoggingConfig()
+    self.logging.loglevel = settings.value('logging/level', LoggingConfig.LOGLEVEL)
+    self.logging.loglevel_roscpp = settings.value('logging/level_roscpp', LoggingConfig.LOGLEVEL_ROSCPP)
+    self.logging.loglevel_superdebug = settings.value('logging/level_superdebug', LoggingConfig.LOGLEVEL_SUPERDEBUG)
+    self.logging.console_format = settings.value('logging/rosconsole_format', LoggingConfig.CONSOLE_FORMAT)
 
   def masteruri(self):
     return self._masteruri
@@ -285,16 +327,20 @@ class Settings(object):
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('max_timediff', self._max_timediff)
 
-  @property
-  def rosconsole_format(self):
-    return self._rosconsole_format
+  def rosconsole_cfg_file(self, package):
+    result = os.path.join(self.LOG_PATH, '%s.%s'%(package, self._rosconsole_cfg_file))
+    with open(result, 'w') as cfg_file:
+      cfg_file.write('log4j.logger.ros=%s\n'%self.logging.loglevel)
+      cfg_file.write('log4j.logger.ros.roscpp=%s\n'%self.logging.loglevel_roscpp)
+      cfg_file.write('log4j.logger.ros.roscpp.superdebug=%s\n'%self.logging.loglevel_superdebug)
+    return result
 
-  @rosconsole_format.setter
-  def rosconsole_format(self, value):
-    if self._rosconsole_format != value:
-      self._rosconsole_format = value
-      settings = self.qsettings(self.CFG_FILE)
-      settings.setValue('rosconsole_format', self._rosconsole_format)
+  def store_logging(self):
+    settings = self.qsettings(self.CFG_FILE)
+    settings.setValue('logging/level', self.logging.loglevel)
+    settings.setValue('logging/level_roscpp', self.logging.loglevel_roscpp)
+    settings.setValue('logging/level_superdebug', self.logging.loglevel_superdebug)
+    settings.setValue('logging/rosconsole_format', self.logging.console_format)
 
   def str2bool(self, v):
     if isinstance(v, bool):

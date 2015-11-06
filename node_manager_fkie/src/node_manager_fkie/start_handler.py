@@ -41,8 +41,8 @@ import rospy
 import xmlrpclib
 
 import node_manager_fkie as nm
-from .common import get_ros_home, masteruri_from_ros, package_name
-from .supervised_popen import SupervisedPopen
+from node_manager_fkie.common import get_ros_home, masteruri_from_ros, package_name
+from node_manager_fkie.supervised_popen import SupervisedPopen
 
 
 class StartException(Exception):
@@ -62,6 +62,24 @@ class BinarySelectionRequest(Exception):
 
 CACHED_PKG_PATH = dict() # {host : {pkg: path}}
 
+class AdvRunCfg(object):
+  def __init__(self, node, roslaunch_config, force2host=None, masteruri=None, executable=None, logging=None, auto_pw_request=False, user=None, pw=None):
+    '''
+    @param force2host: start the node on given host.
+    @type force2host: str
+    @param masteruri: force the masteruri.
+    @type masteruri: str
+    '''
+    self.node = node
+    self.roslaunch_config = roslaunch_config
+    self.force2host = force2host
+    self.masteruri = masteruri
+    self.logging = logging
+    self.executable = executable
+    self.auto_pw_request = auto_pw_request
+    self.user = user
+    self.pw = pw
+
 class StartHandler(object):
   '''
   This class contains the methods to run the nodes on local and remote machines
@@ -71,8 +89,7 @@ class StartHandler(object):
     pass
 
   @classmethod
-  def runNode(cls, node, launch_config, force2host=None, masteruri=None,
-              auto_pw_request=False, user=None, pw=None, item=None):
+  def runNode(cls, runcfg):
     '''
     Start the node with given name from the given configuration.
     @param node: the name of the node (with name space)
@@ -91,15 +108,18 @@ class StartHandler(object):
     @see: L{node_manager_fkie.is_local()}
     '''
     #'print "RUN node", node, time.time()
-    n = launch_config.getNode(node)
+    n = runcfg.roslaunch_config.getNode(runcfg.node)
     if n is None:
-      raise StartException(''.join(["Node '", node, "' not found!"]))
+      raise StartException(''.join(["Node '", runcfg.node, "' not found!"]))
 
     env = list(n.env_args)
-    env.append(('ROSCONSOLE_FORMAT', '%s'%nm.settings().rosconsole_format))
+    # set logging options
+    if runcfg.logging is not None:
+      if not runcfg.logging.is_default('console_format'):
+        env.append(('ROSCONSOLE_FORMAT', '%s'%runcfg.logging.console_format))
     if n.respawn:
       # set the respawn environment variables
-      respawn_params = cls._get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launch_config.Roscfg.params)
+      respawn_params = cls._get_respawn_params(rospy.names.ns_join(n.namespace, n.name), runcfg.roslaunch_config.Roscfg.params)
       if respawn_params['max'] > 0:
         env.append(('RESPAWN_MAX', '%d'%respawn_params['max']))
       if respawn_params['min_runtime'] > 0:
@@ -119,55 +139,55 @@ class StartHandler(object):
       args.append(''.join([remap[0], ':=', remap[1]]))
 
     # get host of the node
-    host = launch_config.hostname
+    host = runcfg.roslaunch_config.hostname
     env_loader = ''
     if n.machine_name:
-      machine = launch_config.Roscfg.machines[n.machine_name]
+      machine = runcfg.roslaunch_config.Roscfg.machines[n.machine_name]
       if not machine.address in ['localhost', '127.0.0.1']:
         host = machine.address
-        if masteruri is None:
-          masteruri = nm.nameres().masteruri(n.machine_name)
+        if runcfg.masteruri is None:
+          runcfg.masteruri = nm.nameres().masteruri(n.machine_name)
       #TODO: env-loader support?
 #      if hasattr(machine, "env_loader") and machine.env_loader:
 #        env_loader = machine.env_loader
     # set the host to the given host
-    if not force2host is None:
-      host = force2host
+    if not runcfg.force2host is None:
+      host = runcfg.force2host
 
     # set the ROS_MASTER_URI
-    if masteruri is None:
-      masteruri = masteruri_from_ros()
-      env.append(('ROS_MASTER_URI', masteruri))
+    if runcfg.masteruri is None:
+      runcfg.masteruri = masteruri_from_ros()
+      env.append(('ROS_MASTER_URI', runcfg.masteruri))
 
     abs_paths = list() # tuples of (parameter name, old value, new value)
     not_found_packages = list() # package names
     # set the global parameter
-    if masteruri is not None and masteruri not in launch_config.global_param_done:
-      global_node_names = cls.getGlobalParams(launch_config.Roscfg)
+    if runcfg.masteruri is not None and runcfg.masteruri not in runcfg.roslaunch_config.global_param_done:
+      global_node_names = cls.getGlobalParams(runcfg.roslaunch_config.Roscfg)
       rospy.loginfo("Register global parameter:\n  %s", '\n  '.join("%s%s"%(str(v)[:80],'...' if len(str(v))>80 else'') for v in global_node_names.values()))
-      abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, global_node_names, [], user, pw, auto_pw_request)
-      launch_config.global_param_done.append(masteruri)
+      abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(runcfg.masteruri, global_node_names, [], runcfg.user, runcfg.pw, runcfg.auto_pw_request)
+      runcfg.roslaunch_config.global_param_done.append(runcfg.masteruri)
 
     # add params
-    if not masteruri is None:
+    if not runcfg.masteruri is None:
       nodens = ''.join([n.namespace, n.name, rospy.names.SEP])
       params = dict()
-      for param, value in launch_config.Roscfg.params.items():
+      for param, value in runcfg.roslaunch_config.Roscfg.params.items():
         if param.startswith(nodens):
           params[param] = value
       clear_params = []
-      for cparam in launch_config.Roscfg.clear_params:
+      for cparam in runcfg.roslaunch_config.Roscfg.clear_params:
         if cparam.startswith(nodens):
           clear_params.append(cparam)
       rospy.loginfo("Delete parameter:\n  %s", '\n  '.join(clear_params))
       rospy.loginfo("Register parameter:\n  %s", '\n  '.join("%s%s"%(str(v)[:80],'...' if len(str(v))>80 else'') for v in params.values()))
-      abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(masteruri, params, clear_params, user, pw, auto_pw_request)
+      abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(runcfg.masteruri, params, clear_params, runcfg.user, runcfg.pw, runcfg.auto_pw_request)
     #'print "RUN prepared", node, time.time()
 
     if nm.is_local(host):
       nm.screen().testScreen()
-      if item:
-        cmd_type = item
+      if runcfg.executable:
+        cmd_type = runcfg.executable
       else:
         try:
           cmd = roslib.packages.find_node(n.package, n.type)
@@ -182,7 +202,7 @@ class StartHandler(object):
           raise StartException("%s in package [%s] not found!\n\nThe package "
                                "was created?\nIs the binary executable?\n"%(n.type, n.package))
         if len(cmd) > 1:
-          if auto_pw_request:
+          if runcfg.auto_pw_request:
             # Open selection for executables, only if the method is called from the main GUI thread
             try:
               from python_qt_binding import QtGui
@@ -199,7 +219,7 @@ class StartHandler(object):
           else:
             err = BinarySelectionRequest(cmd, 'Multiple executables')
             raise nm.InteractionNeededError(err, cls.runNode,
-                                            (node, launch_config, force2host, masteruri, auto_pw_request, user, pw))
+                                            (runcfg,))
         else:
           cmd_type = cmd[0]
       # determine the current working path, Default: the package of the node
@@ -209,29 +229,33 @@ class StartHandler(object):
           cwd = get_ros_home()
         elif n.cwd == 'node':
           cwd = os.path.dirname(cmd_type)
-      cls._prepareROSMaster(masteruri)
+      cls._prepareROSMaster(runcfg.masteruri)
       node_cmd = [nm.settings().respawn_script if n.respawn else '', prefix, cmd_type]
-      cmd_args = [nm.screen().getSceenCmd(node)]
+      cmd_args = [nm.screen().getSceenCmd(runcfg.node)]
       cmd_args[len(cmd_args):] = node_cmd
       cmd_args.append(str(n.args))
       cmd_args[len(cmd_args):] = args
       rospy.loginfo("RUN: %s", ' '.join(cmd_args))
       new_env = dict(os.environ)
-      new_env['ROS_MASTER_URI'] = masteruri
+      new_env['ROS_MASTER_URI'] = runcfg.masteruri
       # add the namespace environment parameter to handle some cases,
       # e.g. rqt_cpp plugins
       if n.namespace:
         new_env['ROS_NAMESPACE'] = n.namespace
+      # set logging options
+      if runcfg.logging is not None:
+        if not runcfg.logging.is_default('loglevel'):
+          env.append(('ROSCONSOLE_CONFIG_FILE', nm.settings().rosconsole_cfg_file(n.package)))
       for key, value in env:
         new_env[key] = value
       SupervisedPopen(shlex.split(str(' '.join(cmd_args))), cwd=cwd,
                       env=new_env, object_id="Run node", description="Run node "
                       "[%s]%s"%(str(n.package), str(n.type)))
-      nm.file_watcher().add_binary(cmd_type, node, masteruri, launch_config.Filename)
+      nm.file_watcher().add_binary(cmd_type, runcfg.node, runcfg.masteruri, runcfg.roslaunch_config.Filename)
     else:
       #'print "RUN REMOTE", node, time.time()
       # start remote
-      if launch_config.PackageName is None:
+      if runcfg.roslaunch_config.PackageName is None:
         raise StartException("Can't run remote without a valid package name!")
       # thus the prefix parameters while the transfer are not separated
       if prefix:
@@ -245,32 +269,36 @@ class StartHandler(object):
         new_env = dict()
         try:
           for (k, v) in env:
-            v_value, is_abs_path, found, package = cls._resolve_abs_paths(v, host, user, pw, auto_pw_request)
+            v_value, is_abs_path, found, package = cls._resolve_abs_paths(v, host, runcfg.user, runcfg.pw, runcfg.auto_pw_request)
             new_env[k] = v_value
             if is_abs_path:
               abs_paths.append(('ENV', "%s=%s"%(k,v), "%s=%s"%(k,v_value)))
               if not found and package:
                 not_found_packages.append(package)
-          env_command = "env "+' '.join(["%s=%s"%(k,v) for (k, v) in new_env.items()])
+          env_command = "env "+' '.join(["\"%s=%s\""%(k,v) for (k, v) in new_env.items()])
         except nm.AuthenticationRequest as e:
-          raise nm.InteractionNeededError(e, cls.runNode, (node, launch_config, force2host, masteruri, auto_pw_request))
+          raise nm.InteractionNeededError(e, cls.runNode, (runcfg,))
 
       startcmd = [env_command, nm.settings().start_remote_script,
                   '--package', str(n.package),
                   '--node_type', str(n.type),
-                  '--node_name', str(node),
+                  '--node_name', str(runcfg.node),
                   '--node_respawn true' if n.respawn else '']
-      if not masteruri is None:
+      if not runcfg.masteruri is None:
         startcmd.append('--masteruri')
-        startcmd.append(masteruri)
+        startcmd.append(runcfg.masteruri)
       if prefix:
         startcmd[len(startcmd):] = ['--prefix', prefix]
+      if runcfg.logging is not None:
+        if not runcfg.logging.is_default('loglevel'):
+          startcmd.append('--loglevel')
+          startcmd.append(nm.settings().logging.loglevel)
 
       #rename the absolute paths in the args of the node
       node_args = []
       try:
         for a in n.args.split():
-          a_value, is_abs_path, found, package = cls._resolve_abs_paths(a, host, user, pw, auto_pw_request)
+          a_value, is_abs_path, found, package = cls._resolve_abs_paths(a, host, runcfg.user, runcfg.pw, runcfg.auto_pw_request)
           node_args.append(a_value)
           if is_abs_path:
             abs_paths.append(('ARGS', a, a_value))
@@ -281,21 +309,21 @@ class StartHandler(object):
         startcmd[len(startcmd):] = args
         rospy.loginfo("Run remote on %s: %s", host, str(' '.join(startcmd)))
         #'print "RUN CALL", node, time.time()
-        _, stdout, stderr, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request, close_stdin=True)
+        _, stdout, stderr, ok = nm.ssh().ssh_exec(host, startcmd, runcfg.user, runcfg.pw, runcfg.auto_pw_request, close_stdin=True)
         output = stdout.read()
         error = stderr.read()
         stdout.close()
         stderr.close()
         #'print "RUN CALLOK", node, time.time()
       except nm.AuthenticationRequest as e:
-        raise nm.InteractionNeededError(e, cls.runNode, (node, launch_config, force2host, masteruri, auto_pw_request))
+        raise nm.InteractionNeededError(e, cls.runNode, (runcfg,))
 
       if ok:
         if error:
-          rospy.logwarn("ERROR while start '%s': %s", node, error)
+          rospy.logwarn("ERROR while start '%s': %s", runcfg.node, error)
           raise StartException(str(''.join(['The host "', host, '" reports:\n', error])))
         if output:
-          rospy.loginfo("STDOUT while start '%s': %s", node, output)
+          rospy.loginfo("STDOUT while start '%s': %s", runcfg.node, output)
       # inform about absolute paths in parameter value
       if len(abs_paths) > 0:
         rospy.loginfo("Absolute paths found while start:\n%s", str('\n'.join([''.join([p, '\n  OLD: ', ov, '\n  NEW: ', nv]) for p, ov, nv in abs_paths])))

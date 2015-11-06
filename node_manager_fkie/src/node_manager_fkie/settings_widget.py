@@ -155,15 +155,6 @@ class SettingsWidget(QtGui.QDockWidget):
                                       'state on changes. You can deactivate this behavior to '
                                       'reduce the network load. If autoupdate is deactivated '
                                       'you must refresh the state manually.</p>'
-                                   },),
-                 'Rosconsole format:' : ({
-                                   'value' : nm.settings().rosconsole_format,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'rosconsole_format',
-                                   'value_default' : nm.settings().ROSCONSOLE_FORMAT,
-                                   'tooltip'  : "<p>rosconsole allows you to specify how you'd "
-                                      "like its output to show up in the console output through "
-                                      "the ROSCONSOLE_FORMAT environment variable.</p>"
                                    },)
                }
     self.settings_model.init_settings(settings)
@@ -205,6 +196,14 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
       editor = PathEditor(item.value(), parent)
       editor.editing_finished_signal.connect(self.edit_finished)
       return editor
+    elif item.edit_type() == SettingsValueItem.EDIT_TYPE_LIST:
+      box = QtGui.QComboBox(parent)
+      box.addItems(item.value_list())
+      index = box.findText(item.value())
+      if index >= 0:
+        box.setCurrentIndex(index)
+      box.setEditable(False)
+      return box
     return QtGui.QStyledItemDelegate.createEditor(self, parent, option, index)
 
 #  def setEditorData(self, editor, index):

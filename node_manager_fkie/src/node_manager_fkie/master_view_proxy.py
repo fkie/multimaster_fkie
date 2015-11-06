@@ -39,7 +39,6 @@ import os
 import sys
 import socket
 import xmlrpclib
-import threading
 #import time
 import uuid
 import getpass
@@ -52,23 +51,24 @@ from rosgraph.names import is_legal_name
 
 
 import node_manager_fkie as nm
-from html_delegate import HTMLDelegate
-from topic_list_model import TopicModel, TopicItem
-from node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
-from service_list_model import ServiceModel, ServiceItem
-from parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
-from default_cfg_handler import DefaultConfigHandler
-from launch_config import LaunchConfig#, LaunchConfigException
-from master_discovery_fkie.master_info import NodeInfo 
-from parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
-from select_dialog import SelectDialog
+from node_manager_fkie.html_delegate import HTMLDelegate
+from node_manager_fkie.topic_list_model import TopicModel, TopicItem
+from node_manager_fkie.node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
+from node_manager_fkie.service_list_model import ServiceModel, ServiceItem
+from node_manager_fkie.parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
+from node_manager_fkie.default_cfg_handler import DefaultConfigHandler
+from node_manager_fkie.launch_config import LaunchConfig#, LaunchConfigException
+from master_discovery_fkie.master_info import NodeInfo
+from node_manager_fkie.parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
+from node_manager_fkie.select_dialog import SelectDialog
 #from echo_dialog import EchoDialog
-from parameter_handler import ParameterHandler
-from detailed_msg_box import WarningMessageBox, DetailedError
-from progress_queue import ProgressQueue, InteractionNeededError #, ProgressThread
-from common import masteruri_from_ros, get_packages, package_name, resolve_paths
-from launch_server_handler import LaunchServerHandler
-from supervised_popen import SupervisedPopen
+from node_manager_fkie.parameter_handler import ParameterHandler
+from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
+from node_manager_fkie.progress_queue import ProgressQueue, InteractionNeededError #, ProgressThread
+from node_manager_fkie.common import masteruri_from_ros, get_packages, package_name, resolve_paths
+from node_manager_fkie.launch_server_handler import LaunchServerHandler
+from node_manager_fkie.supervised_popen import SupervisedPopen
+from node_manager_fkie.start_handler import AdvRunCfg
 #from yaml import nodes
 
 
@@ -1244,7 +1244,8 @@ class MasterViewProxy(QtGui.QWidget):
       text += '<a href="kill_node://%s">kill</a> - '%node.name
       text += '<a href="kill_screen://%s">kill screen</a><br>'%node.name
       if launches:
-        text += '<a href="start_node_at_host://%s">start@host</a>'%node.name
+        text += '<a href="start_node_at_host://%s">start@host</a> - '%node.name
+        text += '<a href="start_node_adv://%s">start avd</a>'%node.name
       text += '<dl>'
       text += '<dt><b>URI</b>: %s</dt>'%node.node_info.uri
       text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
@@ -1310,7 +1311,8 @@ class MasterViewProxy(QtGui.QWidget):
       if unregisterble_nodes:
         text += '<a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
       if restartable_nodes:
-        text += '<br><a href="start_node_at_host://all_selected_nodes">start@host [%d]</a>'%len(restartable_nodes)
+        text += '<br><a href="start_node_at_host://all_selected_nodes">start@host [%d]</a> - '%len(restartable_nodes)
+        text += '<a href="start_node_adv://all_selected_nodes">start adv [%d]</a>'%len(restartable_nodes)
 
     if (self.__last_info_type == 'Node' and self.__last_info_text != text) or force_emit:
       self.__last_info_text = text
@@ -1536,21 +1538,33 @@ class MasterViewProxy(QtGui.QWidget):
     Starts the selected nodes. If for a node more then one configuration is 
     available, the selection dialog will be show.
     '''
-    key_mod = QtGui.QApplication.keyboardModifiers()
-    if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
-      self.masterTab.startButton.showMenu()
-    else:
-      cursor = self.cursor()
-      self.masterTab.startButton.setEnabled(False)
-      self.setCursor(QtCore.Qt.WaitCursor)
-      try:
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-        self.start_nodes(selectedNodes)
-      finally:
-        self.setCursor(cursor)
-        self.masterTab.startButton.setEnabled(True)
+#     key_mod = QtGui.QApplication.keyboardModifiers()
+#     if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
+#       self.masterTab.startButton.showMenu()
+#     else:
+    cursor = self.cursor()
+    self.masterTab.startButton.setEnabled(False)
+    self.setCursor(QtCore.Qt.WaitCursor)
+    try:
+      selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      self.start_nodes(selectedNodes)
+    finally:
+      self.setCursor(cursor)
+      self.masterTab.startButton.setEnabled(True)
 
-  def start_node(self, node, force, config, force_host=None):
+  def on_start_alt_clicked(self):
+    '''
+    Starts the selected nodes with additional options.
+    '''
+    cursor = self.cursor()
+    self.setCursor(QtCore.Qt.WaitCursor)
+    try:
+      selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+      self.start_nodes(selectedNodes, use_adv_cfg=True)
+    finally:
+      self.setCursor(cursor)
+
+  def start_node(self, node, force, config, force_host=None, logging=None):
 
     if node is None:
         raise DetailedError("Start error", 'None is not valid node name!') 
@@ -1561,7 +1575,7 @@ class MasterViewProxy(QtGui.QWidget):
                           'Error while start %s:\nNo configuration found!'%node.name)
       if isinstance(config, LaunchConfig):
         try:
-          nm.starter().runNode(node.name, config, force_host, self.masteruri, user=self.current_user)
+          nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
         except socket.error as se:
           rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
           raise DetailedError("Start error",
@@ -1588,7 +1602,7 @@ class MasterViewProxy(QtGui.QWidget):
                               'Error while call a service of node %s [%s]'%(node.name, self.master_info.getService(config).uri),
                               '%s'%e)
 
-  def start_nodes(self, nodes, force=False, force_host=None):
+  def start_nodes(self, nodes, force=False, force_host=None, use_adv_cfg=False):
     '''
     Internal method to start a list with nodes
     @param nodes: the list with nodes to start
@@ -1600,6 +1614,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     cfg_choices = dict()
     cfg_nodes = dict()
+    has_launch_files = False
     for node in nodes:
       # do not start node, if it is in ingnore list and multiple nodes are selected
       if (node.pid is None or (not node.pid is None and force)) and not node.is_ghost:
@@ -1619,6 +1634,8 @@ class MasterViewProxy(QtGui.QWidget):
             if not choice is None:
               cfg_choices[choises_str] = choices[choice]
               cfg_nodes[node.name] = choices[choice]
+              if isinstance(choices[choice], LaunchConfig):
+                has_launch_files = True
             elif ok:
               WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                                 'Error while start %s:\nNo configuration selected!'%node.name).exec_()
@@ -1627,13 +1644,44 @@ class MasterViewProxy(QtGui.QWidget):
           else:
             cfg_nodes[node.name] = cfg_choices[choises_str]
 
-    # put into the queue and start
-    for node in nodes:
-      if node.name in cfg_nodes:
-        self._progress_queue.add2queue(str(uuid.uuid4()), 
-                                       ''.join(['start ', node.node_info.name]), 
-                                       self.start_node, 
-                                       (node.node_info, force, cfg_nodes[node.node_info.name], force_host))
+    # get the advanced configuration
+    logging = None
+    diag_canceled = False
+    if use_adv_cfg and has_launch_files:
+      log_params = {'Level' : ('string', nm.settings().logging.get_alternatives('loglevel')),
+                    'Level (roscpp)' : ('string', nm.settings().logging.get_alternatives('loglevel_roscpp')),
+                    'Level (super)' : ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
+                    'Format' : ('string', nm.settings().logging.get_alternatives('console_format'))
+                    }
+      params = {'Logging' : ('dict', log_params)}
+      dia = ParameterDialog(params)
+      dia.setFilterVisible(False)
+      dia.setWindowTitle('Start with parameters')
+      dia.resize(480,120)
+      dia.setFocusField('Level')
+      diag_canceled = not dia.exec_()
+      if not diag_canceled:
+        try:
+          params = dia.getKeywords()
+          nm.settings().logging.loglevel = params['Logging']['Level']
+          nm.settings().logging.loglevel_roscpp = params['Logging']['Level (roscpp)']
+          nm.settings().logging.loglevel_superdebug = params['Logging']['Level (super)']
+          nm.settings().logging.console_format = params['Logging']['Format']
+          nm.settings().store_logging()
+          logging = nm.settings().logging
+        except Exception, e:
+          diag_canceled = True
+          WarningMessageBox(QtGui.QMessageBox.Warning, "Get advanced start parameter",
+                            'Error while parse parameter',
+                            str(e)).exec_()
+    if not diag_canceled:
+      # put into the queue and start
+      for node in nodes:
+        if node.name in cfg_nodes:
+          self._progress_queue.add2queue(str(uuid.uuid4()),
+                                         ''.join(['start ', node.node_info.name]),
+                                         self.start_node,
+                                         (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging))
     self._progress_queue.start()
 
   def start_nodes_by_name(self, nodes, cfg, force=False):

@@ -69,10 +69,11 @@ class SettingsValueItem(QtGui.QStandardItem):
 
   EDIT_TYPE_AUTODETECT = 0
   EDIT_TYPE_FOLDER = 1
+  EDIT_TYPE_LIST = 2
 
   def __init__(self, value, (settings, attrname)=(None, None),
                edit_type=0,
-               value_default=None, value_min=None, value_max=None):
+               value_default=None, value_min=None, value_max=None, value_list=[]):
     '''
     :param value: the current value
     :type value: any std types
@@ -88,6 +89,7 @@ class SettingsValueItem(QtGui.QStandardItem):
     :param value_default: the default value, is needed for reset functionality
     :param value_min: the maximum value (used by int or float)
     :param value_max: the minimum value (used by int or float)
+    :param value_list: the list of values used for comboboxes
     '''
     QtGui.QStandardItem.__init__(self, '%s'%value)
     self._attrname = attrname
@@ -97,6 +99,7 @@ class SettingsValueItem(QtGui.QStandardItem):
     self._value_max = value_max
     self._settings = settings
     self._edit_type = edit_type
+    self._value_list = value_list
 
   def type(self):
     return SettingsValueItem.ITEM_TYPE
@@ -118,6 +121,9 @@ class SettingsValueItem(QtGui.QStandardItem):
 
   def edit_type(self):
     return self._edit_type
+
+  def value_list(self):
+    return self._value_list
 
   def data(self, role):
     '''
@@ -193,7 +199,7 @@ class SettingsGroupItem(QtGui.QStandardItem):
   @classmethod
   def getSettingsItemList(self, name, value, (settings, attrname)=(None, None), 
                           tooltip='', edit_type=SettingsValueItem.EDIT_TYPE_AUTODETECT,
-                          value_default=None, value_min=None, value_max=None):
+                          value_default=None, value_min=None, value_max=None, value_list=[]):
     '''
     Creates the list of the items . This list is used for the 
     visualization of settings group data as a table row.
@@ -204,7 +210,7 @@ class SettingsGroupItem(QtGui.QStandardItem):
     item = SettingsNameItem(name, tooltip)
     items.append(item)
     item = SettingsValueItem(value, (settings, attrname), edit_type,
-                             value_default, value_min, value_max)
+                             value_default, value_min, value_max, value_list)
     items.append(item)
     return items
 
@@ -290,7 +296,8 @@ class SettingsModel(QtGui.QStandardItemModel):
                          SettingsValueItem.EDIT_TYPE_AUTODETECT),
                        self._get_settings_param(value, 'value_default'),
                        self._get_settings_param(value, 'value_min'),
-                       self._get_settings_param(value, 'value_max')
+                       self._get_settings_param(value, 'value_max'),
+                       self._get_settings_param(value, 'value_list')
                      )
       root.appendRow(new_item_row)
       self.pyqt_workaround[name] = new_item_row[0]
