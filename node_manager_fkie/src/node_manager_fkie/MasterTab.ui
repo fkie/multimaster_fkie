@@ -682,7 +682,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_show_io.png</normaloff>:/icons/crystal_clear_show_io.png</iconset>
+                 <normaloff>:/icons/sekkyumu_topic_echo.png</normaloff>:/icons/sekkyumu_topic_echo.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -717,7 +717,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_show_hz.png</normaloff>:/icons/crystal_clear_show_hz.png</iconset>
+                 <normaloff>:/icons/sekkyumu_topic_hz.png</normaloff>:/icons/sekkyumu_topic_hz.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -752,7 +752,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_show_hz_ssh.png</normaloff>:/icons/crystal_clear_show_hz_ssh.png</iconset>
+                 <normaloff>:/icons/sekkyumu_topic_echo_ssh_hz.png</normaloff>:/icons/sekkyumu_topic_echo_ssh_hz.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -791,7 +791,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/deleket_deviantart_play.png</normaloff>:/icons/deleket_deviantart_play.png</iconset>
+                 <normaloff>:/icons/sekkyumu_topic_pub.png</normaloff>:/icons/sekkyumu_topic_pub.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -823,7 +823,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/deleket_deviantart_stop.png</normaloff>:/icons/deleket_deviantart_stop.png</iconset>
+                 <normaloff>:/icons/sekkyumu_topic_pub_stop.png</normaloff>:/icons/sekkyumu_topic_pub_stop.png</iconset>
                </property>
                <property name="iconSize">
                 <size>

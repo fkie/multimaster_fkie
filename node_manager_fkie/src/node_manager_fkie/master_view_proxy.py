@@ -1234,18 +1234,59 @@ class MasterViewProxy(QtGui.QWidget):
     # add node description for one selected node
     if len(selectedNodes) == 1:
       node = selectedNodes[0]
+      text = self.get_node_description(node_name, node)
+      name = node.name
+    elif len(selectedNodes) > 1:
+#      stoppable_nodes = [sn for sn in selectedNodes if not sn.node_info.uri is None and not self._is_in_ignore_list(sn.name)]
+      restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
+      killable_nodes = [sn for sn in selectedNodes if not sn.node_info.pid is None and not self._is_in_ignore_list(sn.name)]
+      unregisterble_nodes = [sn for sn in selectedNodes if sn.node_info.pid is None and not sn.node_info.uri is None and sn.node_info.isLocal and not self._is_in_ignore_list(sn.name)]
+      # add description for multiple selected nodes
+      if restartable_nodes or killable_nodes or unregisterble_nodes:
+        text += '<b>Selected nodes:</b><br>'
+      if restartable_nodes:
+        text += '<a href="restart_node://all_selected_nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>'%len(restartable_nodes)
+#        if killable_nodes or unregisterble_nodes:
+#          text += ' - '
+      if killable_nodes:
+        text += '&nbsp;<a href="kill_node://all_selected_nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>'%len(killable_nodes)
+        text += '&nbsp;<a href="kill_screen://all_selected_nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>'%len(killable_nodes)
+#        if unregisterble_nodes:
+#          text += ' - '
+      if restartable_nodes:
+        text += '&nbsp;<a href="start_node_at_host://all_selected_nodes"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>'%len(restartable_nodes)
+        text += '&nbsp;<a href="start_node_adv://all_selected_nodes"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>'%len(restartable_nodes)
+      if unregisterble_nodes:
+        text += '<br><a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
+
+    if (self.__last_info_type == 'Node' and self.__last_info_text != text) or force_emit:
+      self.__last_info_text = text
+      self.description_signal.emit(name, text)
+    self.updateButtons()
+
+  def get_node_description(self, node_name, node=None):
+    text = ''
+    if node_name and node is None and not self.master_info is None:
+      # get node by name
+      selectedNodes = self.getNode(node_name)
+      if len(selectedNodes) == 1:
+        node = selectedNodes[0]
+    # add node description for one selected node
+    if node is not None:
       # create description for a node
       ns, sep, name = node.name.rpartition(rospy.names.SEP)
       text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
       launches = [c for c in node.cfgs if not isinstance(c, tuple)]
       default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
       if launches or default_cfgs:
-        text += '<a href="restart_node://%s">restart</a> - '%node.name
-      text += '<a href="kill_node://%s">kill</a> - '%node.name
-      text += '<a href="kill_screen://%s">kill screen</a><br>'%node.name
+#        text += '<a href="restart_node://%s">restart</a> - '%node.name
+        text += '<a href="restart_node://%s"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>&nbsp;'%node.name # height="24" width="24"
+      text += '<a href="kill_node://%s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>&nbsp;'%node.name
+      text += '<a href="kill_screen://%s"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>&nbsp;'%node.name
       if launches:
-        text += '<a href="start_node_at_host://%s">start@host</a> - '%node.name
-        text += '<a href="start_node_adv://%s">start avd</a>'%node.name
+        text += '<a href="start_node_at_host://%s"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>&nbsp;'%node.name
+        if node.node_info.pid is None or node.node_info.uri is None:
+          text += '<a href="start_node_adv://%s"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
       text += '<dl>'
       text += '<dt><b>URI</b>: %s</dt>'%node.node_info.uri
       text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
@@ -1289,44 +1330,17 @@ class MasterViewProxy(QtGui.QWidget):
       text += self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')
       text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
       text += '<dt><a href="copy_log_path://%s">copy log path to clipboard</a></dt>'%node.name
-      text = '<div>%s</div>'%text
-      name = node.name
-    elif len(selectedNodes) > 1:
-#      stoppable_nodes = [sn for sn in selectedNodes if not sn.node_info.uri is None and not self._is_in_ignore_list(sn.name)]
-      restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
-      killable_nodes = [sn for sn in selectedNodes if not sn.node_info.pid is None and not self._is_in_ignore_list(sn.name)]
-      unregisterble_nodes = [sn for sn in selectedNodes if sn.node_info.pid is None and not sn.node_info.uri is None and sn.node_info.isLocal and not self._is_in_ignore_list(sn.name)]
-      # add description for multiple selected nodes
-      if restartable_nodes or killable_nodes or unregisterble_nodes:
-        text += '<b>Selected nodes:</b><br>'
-      if restartable_nodes:
-        text += '<a href="restart_node://all_selected_nodes">restart [%d]</a>'%len(restartable_nodes)
-        if killable_nodes or unregisterble_nodes:
-          text += ' - '
-      if killable_nodes:
-        text += '<a href="kill_node://all_selected_nodes">kill [%d]</a> - '%len(killable_nodes)
-        text += '<a href="kill_screen://all_selected_nodes">kill screen [%d]</a>'%len(killable_nodes)
-        if unregisterble_nodes:
-          text += ' - '
-      if unregisterble_nodes:
-        text += '<a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
-      if restartable_nodes:
-        text += '<br><a href="start_node_at_host://all_selected_nodes">start@host [%d]</a> - '%len(restartable_nodes)
-        text += '<a href="start_node_adv://all_selected_nodes">start adv [%d]</a>'%len(restartable_nodes)
-
-    if (self.__last_info_type == 'Node' and self.__last_info_text != text) or force_emit:
-      self.__last_info_text = text
-      self.description_signal.emit(name, text)
-    self.updateButtons()
+    return text
 
   def on_topic_selection_changed(self, selected, deselected, force_emit=False, topic_name=''):
     '''
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected topic
     '''
+    selectedTopics = []
     if topic_name and not self.master_info is None:
       selectedTopics = [self.master_info.getTopic("%s"%topic_name)]
-      if selectedTopics[0] is None:
+      if len(selectedTopics) == 0:
         return
     else:
       if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Topics':
@@ -1339,14 +1353,31 @@ class MasterViewProxy(QtGui.QWidget):
       self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
     if len(selectedTopics) == 1:
       topic = selectedTopics[0]
+      text = self.get_topic_description(topic_name, topic)
+      info_text = '<div>%s</div>'%text
+      if (self.__last_info_type == 'Topic' and self.__last_info_text != info_text) or force_emit:
+        self.__last_info_text = info_text
+        self.description_signal.emit(topic.name, info_text)
+
+  def get_topic_description(self, topic_name, topic=None):
+    text = ''
+    if topic is None:
+      selectedTopics = []
+      if topic_name and not self.master_info is None:
+        selectedTopics = [self.master_info.getTopic("%s"%topic_name)]
+      else:
+        selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+      if len(selectedTopics) == 1:
+        topic = selectedTopics[0]
+    if topic is not None:
       ns, sep, name = topic.name.rpartition(rospy.names.SEP)
       text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
-      text += '<a href="topicecho://%s%s">echo</a>'%(self.mastername, topic.name)
-      text += '- <a href="topichz://%s%s">hz</a>'%(self.mastername, topic.name)
-      text += '- <a href="topichzssh://%s%s">sshhz</a>'%(self.mastername, topic.name)
-      text += '- <a href="topicpub://%s%s">pub</a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topicecho://%s%s"><img src=":icons/sekkyumu_topic_echo_24.png" alt="echo"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topichz://%s%s"><img src=":icons/sekkyumu_topic_hz_24.png" alt="hz"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topichzssh://%s%s"><img src=":icons/sekkyumu_topic_echo_ssh_hz_24.png" alt="sshhz"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topicpub://%s%s"><img src=":icons/sekkyumu_topic_pub_24.png" alt="pub"></a>'%(self.mastername, topic.name)
       if topic.name in self.__republish_params:
-        text += '- <a href="topicrepub://%s%s">repub</a>'%(self.mastername, topic.name)
+        text += '&nbsp;<a href="topicrepub://%s%s"><img src=":icons/sekkyumu_topic_repub_24.png" alt="repub"></a>'%(self.mastername, topic.name)
       topic_publisher = []
       topic_prefix = '/rostopic_pub%s_'%topic.name
       node_names = self.master_info.node_names
@@ -1354,7 +1385,7 @@ class MasterViewProxy(QtGui.QWidget):
         if n.startswith(topic_prefix):
           topic_publisher.append(n)
       if topic_publisher:
-        text += '- <a href="topicstop://%s%s">stop [%d]</a>'%(self.mastername, topic.name, len(topic_publisher))
+        text += '&nbsp;<a href="topicstop://%s%s"><img src=":icons/sekkyumu_topic_pub_stop_24.png" alt="stop"> [%d]</a>'%(self.mastername, topic.name, len(topic_publisher))
       text += '<p>'
       text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
       text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
@@ -1390,10 +1421,7 @@ class MasterViewProxy(QtGui.QWidget):
       except ValueError:
         pass
       text += '</dl>'
-      info_text = '<div>%s</div>'%text
-      if (self.__last_info_type == 'Topic' and self.__last_info_text != info_text) or force_emit:
-        self.__last_info_text = info_text
-        self.description_signal.emit(topic.name, info_text)
+    return text
 
   def _href_from_msgtype(self, msg_type):
     result = msg_type

@@ -440,11 +440,11 @@ class MainBox(QtGui.QWidget):
     elif isinstance(values, list):
       raise Exception("Setting 'list' values in MainBox or GroupBox not supported!!!")
 
-  def getField(self, name):
+  def getField(self, name, recursive=False):
     for child in self.children():
       for c in child.children():
-        if isinstance(c, MainBox):
-          result = c.getField(name)
+        if recursive and isinstance(c, MainBox):
+          result = c.getField(name, recursive=recursive)
           if result is not None:
             return result
         elif c.objectName() == name:
@@ -834,7 +834,7 @@ class ParameterDialog(QtGui.QDialog):
         self.filter_field.setFocus()
 
   def setFocusField(self, field_label):
-    field = self.content.getField(field_label)
+    field = self.content.getField(field_label, recursive=True)
     if not field is None:
       field.setFocus()
 

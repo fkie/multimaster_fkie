@@ -54,8 +54,26 @@
     <file>icons/oxygen_view_refresh.png</file>
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
+    <file>icons/sekkyumu_kill_24.png</file>
+    <file>icons/sekkyumu_kill_screen_24.png</file>
     <file>icons/sekkyumu_play.png</file>
+    <file>icons/sekkyumu_play_alt_24.png</file>
+    <file>icons/sekkyumu_restart.png</file>
+    <file>icons/sekkyumu_restart_24.png</file>
+    <file>icons/sekkyumu_start_athost_24.png</file>
     <file>icons/sekkyumu_stop.png</file>
+    <file>icons/sekkyumu_topic_echo.png</file>
+    <file>icons/sekkyumu_topic_echo_24.png</file>
+    <file>icons/sekkyumu_topic_echo_ssh_hz.png</file>
+    <file>icons/sekkyumu_topic_echo_ssh_hz_24.png</file>
+    <file>icons/sekkyumu_topic_hz.png</file>
+    <file>icons/sekkyumu_topic_hz_24.png</file>
+    <file>icons/sekkyumu_topic_pub.png</file>
+    <file>icons/sekkyumu_topic_pub_24.png</file>
+    <file>icons/sekkyumu_topic_pub_stop.png</file>
+    <file>icons/sekkyumu_topic_pub_stop_24.png</file>
+    <file>icons/sekkyumu_topic_repub.png</file>
+    <file>icons/sekkyumu_topic_repub_24.png</file>
     <file>icons/state_diag_error.png</file>
     <file>icons/state_diag_other.png</file>
     <file>icons/state_diag_stale.png</file>
