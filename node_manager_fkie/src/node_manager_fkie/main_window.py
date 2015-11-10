@@ -391,12 +391,17 @@ class MainWindow(QtGui.QMainWindow):
       masters2stop, self._close_on_exit = SelectDialog.getValue('Stop nodes?', "Select masters where to stop:", self.masters.keys(), False, False, '', self, select_if_single=False)
       if self._close_on_exit:
         self._on_finish = True
+        self._stop_local_master = None
         for uri in masters2stop:
           try:
             m = self.masters[uri]
             if not m is None:
+              print "Stop ", m.mastername
               m.stop_nodes_by_name(m.getRunningNodesIfLocal(), True, [rospy.get_name()])
-            m.killall_roscore()
+              if m.is_local:
+                self._stop_local_master = m
+              else:
+                m.killall_roscore()
           except Exception as e:
             rospy.logwarn("Error while stop nodes on %s: %s"%(uri, e))
         QtCore.QTimer.singleShot(200, self._test_for_finish)
@@ -417,6 +422,10 @@ class MainWindow(QtGui.QMainWindow):
       if m.in_process():
         QtCore.QTimer.singleShot(200, self._test_for_finish)
         return
+    if hasattr(self, '_stop_local_master') and self._stop_local_master is not None:
+      self.finish()
+      self._stop_local_master.killall_roscore()
+      del self._stop_local_master
     self._close_on_exit = False
     self.close()
 
