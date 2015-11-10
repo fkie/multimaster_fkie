@@ -1281,13 +1281,14 @@ class MasterViewProxy(QtGui.QWidget):
       default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
       if launches or default_cfgs:
 #        text += '<a href="restart_node://%s">restart</a> - '%node.name
-        text += '<a href="restart_node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>&nbsp;'%node.name # height="24" width="24"
-      text += '<a href="kill_node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>&nbsp;'%(node.name, node.pid)
-      text += '<a href="kill_screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>&nbsp;'%node.name
+        text += '<a href="restart_node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>'%node.name # height="24" width="24"
+      text += '&nbsp; <a href="kill_node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>'%(node.name, node.pid)
+      text += '&nbsp; <a href="kill_screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>'%node.name
       if launches:
-        text += '<a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>&nbsp;'%node.name
+        text += '&nbsp; <a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a'%node.name
         if node.node_info.pid is None or node.node_info.uri is None:
-          text += '<a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
+          text += '&nbsp; <a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
+      text += '&nbsp; <a href="copy_log_path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>'%node.name
       text += '<dl>'
       text += '<dt><b>URI</b>: %s</dt>'%node.node_info.uri
       text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
@@ -1330,7 +1331,7 @@ class MasterViewProxy(QtGui.QWidget):
       # set loaunch file paths
       text += self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')
       text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
-      text += '<dt><a href="copy_log_path://%s">copy log path to clipboard</a></dt>'%node.name
+#      text += '<dt><a href="copy_log_path://%s">copy log path to clipboard</a></dt>'%node.name
     return text
 
   def on_topic_selection_changed(self, selected, deselected, force_emit=False, topic_name=''):
@@ -2129,7 +2130,7 @@ class MasterViewProxy(QtGui.QWidget):
       nodenames.append(n.name)
     try:
       host = nm.nameres().getHostname(self.masteruri)
-      path_on_host = nm.starter().copylogPath2Clipboards(host, nodenames, True)
+      path_on_host = nm.starter().get_log_path(host, nodenames, True)
       QtGui.QApplication.clipboard().setText(''.join([getpass.getuser() if self.is_local else self.current_user, '@', host, ':', path_on_host]))
     except Exception as e:
       WarningMessageBox(QtGui.QMessageBox.Warning, "Get log path", 
@@ -2137,7 +2138,7 @@ class MasterViewProxy(QtGui.QWidget):
                         str(e)).exec_()
 #    self._progress_queue.add2queue(str(uuid.uuid4()),
 #                                   'Get log path',
-#                                   nm.starter().copylogPath2Clipboards,
+#                                   nm.starter().get_log_path,
 #                                   (nm.nameres().getHostname(self.masteruri), nodenames))
 #    self._progress_queue.start()
 

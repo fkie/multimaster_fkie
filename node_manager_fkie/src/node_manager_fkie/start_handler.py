@@ -724,7 +724,7 @@ class StartHandler(object):
     return result
 
   @classmethod
-  def copylogPath2Clipboards(cls, host, nodes=[], auto_pw_request=False, user=None, pw=None):
+  def get_log_path(cls, host, nodes=[], auto_pw_request=False, user=None, pw=None):
     if nm.is_local(host):
       if len(nodes) == 1:
         return nm.screen().getScreenLogFile(node=nodes[0])
@@ -738,11 +738,11 @@ class StartHandler(object):
         if ok:
           output = stdout.read()
           stdout.close()
-          return output
+          return output.strip()
         else:
           raise StartException(str(''.join(['Get log path from "', host, '" failed'])))
       except nm.AuthenticationRequest as e:
-        raise nm.InteractionNeededError(e, cls.copylogPath2Clipboards, (host, nodes, auto_pw_request))
+        raise nm.InteractionNeededError(e, cls.get_log_path, (host, nodes, auto_pw_request))
       finally:
         socket.setdefaulttimeout(None)
 
