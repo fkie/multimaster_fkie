@@ -355,11 +355,12 @@ class OwnMasterMonitoring(QtCore.QObject):
     '''
     Stop the local master monitoring
     '''
-    print "  Shutdown the local master monitoring..."
     self._do_finish = True
-    self._masterMonitorThread.join(15)
-    self._master_monitor.shutdown()
-    print "  Local master monitoring is off!"
+    if self._master_monitor.is_running():
+      print "  Shutdown the local master monitoring..."
+      self._masterMonitorThread.join(15)
+      self._master_monitor.shutdown()
+      print "  Local master monitoring is off!"
 
   def mastermonitor_loop(self):
     '''

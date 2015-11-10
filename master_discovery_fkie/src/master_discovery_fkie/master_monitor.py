@@ -221,7 +221,9 @@ class MasterMonitor(object):
         self._timer_update_launch_uris.cancel()
       del self.rpcServer.socket
       del self.rpcServer
-      rospy.loginfo("exit")
+
+  def is_running(self):
+    return hasattr(self, 'rpcServer')
 
   def _update_launch_uris(self, params={}):
     with self._update_launch_uris_lock:

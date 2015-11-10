@@ -120,7 +120,7 @@ class UpdateThread(QtCore.QObject, threading.Thread):
       import traceback
 #      print traceback.print_exc()
       formatted_lines = traceback.format_exc(1).splitlines()
-      rospy.logwarn("Can not update ROS state, connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
+      rospy.logwarn("Cannot update ROS state, connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
       #'print "request failed", self._monitoruri
       self.error_signal.emit(self._masteruri, formatted_lines[-1])
     finally:

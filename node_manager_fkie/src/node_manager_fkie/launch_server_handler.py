@@ -62,11 +62,12 @@ class LaunchServerHandler(QtCore.QObject):
     self._lock = threading.RLock()
 
   def stop(self):
-    print "  Shutdown launch update threads..."
-    self.__requestedUpdates.clear()
-    for _, thread in self.__updateThreads.iteritems():
-      thread.join(3)
-    print "  Launch update threads are off!"
+    if len(self.__updateThreads) > 0:
+      print "  Shutdown launch update threads..."
+      self.__requestedUpdates.clear()
+      for _, thread in self.__updateThreads.iteritems():
+        thread.join(3)
+      print "  Launch update threads are off!"
 
   def updateLaunchServerInfo(self, serveruri, delayed_exec=0.0):
     '''

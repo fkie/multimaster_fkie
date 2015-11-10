@@ -52,7 +52,7 @@ try:
   DIAGNOSTICS_AVAILABLE = True
 except:
   import sys
-  print >> sys.stderr, "Can not import 'diagnostic_msgs', feature disabled."
+  print >> sys.stderr, "Cannot import 'diagnostic_msgs', feature disabled."
   DIAGNOSTICS_AVAILABLE = False
 
 import gui_resources
@@ -396,11 +396,11 @@ class MainWindow(QtGui.QMainWindow):
           try:
             m = self.masters[uri]
             if not m is None:
-              print "Stop ", m.mastername
-              m.stop_nodes_by_name(m.getRunningNodesIfLocal(), True, [rospy.get_name()])
               if m.is_local:
+                self._stop_updating()
                 self._stop_local_master = m
-              else:
+              m.stop_nodes_by_name(m.getRunningNodesIfLocal(), True, [rospy.get_name(), '/rosout'])
+              if not m.is_local:
                 m.killall_roscore()
           except Exception as e:
             rospy.logwarn("Error while stop nodes on %s: %s"%(uri, e))
@@ -429,21 +429,24 @@ class MainWindow(QtGui.QMainWindow):
     self._close_on_exit = False
     self.close()
 
+  def _stop_updating(self):
+    self._progress_queue.stop()
+    self._progress_queue_sync.stop()
+    self._update_handler.stop()
+    self.state_topic.stop()
+    self.stats_topic.stop()
+    self.own_master_monitor.stop()
+    self.master_timecheck_timer.stop()
+    self.launch_dock.stop()
+    self.log_dock.stop()
+
   def finish(self):
     if not self._finished:
       self._finished = True
       print "Mainwindow finish..."
-      self._progress_queue.stop()
-      self._progress_queue_sync.stop()
-      self._update_handler.stop()
-      self.state_topic.stop()
-      self.stats_topic.stop()
+      self._stop_updating()
       for _, master in self.masters.iteritems():
         master.stop()
-      self.own_master_monitor.stop()
-      self.master_timecheck_timer.stop()
-      self.launch_dock.stop()
-      self.log_dock.stop()
       print "Mainwindow finished!"
 
   def getMasteruri(self):

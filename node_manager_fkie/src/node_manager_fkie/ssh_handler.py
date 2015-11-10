@@ -146,7 +146,7 @@ class SSHhandler(object):
         raise
       except Exception as e:
         raise
-    raise Exception('Can not login @%s'%host)
+    raise Exception('Cannot login @%s'%host)
 
 
   def ssh_x11_exec(self, host, cmd, title=None, user=None):
