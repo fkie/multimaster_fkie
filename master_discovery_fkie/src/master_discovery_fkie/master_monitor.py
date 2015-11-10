@@ -607,16 +607,15 @@ class MasterMonitor(object):
 
         master_state.timestamp = now
       except socket.error, e:
+        import traceback
         if isinstance(e, tuple):
           (errn, msg) = e
           if not errn in [100, 101, 102]:
-            import traceback
             formatted_lines = traceback.format_exc().splitlines()
       #      print "Service call failed: %s"%traceback.format_exc()
             raise MasterConnectionException(formatted_lines[-1])
         else:
-          import traceback
-          raise MasterConnectionException(traceback.format_exc())
+          raise MasterConnectionException(traceback.format_exc(1))
       except:
         import traceback
         formatted_lines = traceback.format_exc().splitlines()
