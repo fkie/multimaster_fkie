@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import threading
 import xmlrpclib
 import sys
@@ -50,13 +51,13 @@ try: # to avoid the problems with autodoc on ros.org/wiki site
 except:
   pass
 from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnectionException
-from master_discovery_fkie.udp import McastSocket
+from master_discovery_fkie.udp import McastSocket, UcastSocket
 
 class DiscoveredMaster(object):
   '''
   The class stores all information about the remote ROS master and the all
-  received heartbeat messages of the remote node. On first contact a theaded 
-  connection to remote discoverer will be established to get additional 
+  received heartbeat messages of the remote node. On first contact a theaded
+  connection to remote discoverer will be established to get additional
   information about the ROS master.
 
   :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
@@ -95,10 +96,6 @@ class DiscoveredMaster(object):
 
     :type monitoruri:  str
 
-    :param is_local: is the URI of the remote RPC server local or not
-
-    :type is_local:  bool
-
     :param heartbeat_rate: The remote rate, which is used to send the heartbeat messages.
 
     :type heartbeat_rate:  float (Default: `1.``)
@@ -136,7 +133,7 @@ class DiscoveredMaster(object):
     self._errors = dict() #ERR_*, msg
     self.masteruriaddr = None
     # create a thread to retrieve additional information about the remote ROS master
-    self._retrieveThread = threading.Thread(target = self.__retrieve_masterinfo)
+    self._retrieveThread = threading.Thread(target=self.__retrieve_masterinfo)
     self._retrieveThread.setDaemon(True)
     self._retrieveThread.start()
 
@@ -495,7 +492,7 @@ class Discoverer(object):
     self._send_mcast = rospy.get_param('~send_mcast', True)
     # for cases with more then one master_discovery on the same host and
     # heartbeat rate is less then 0.1. In this case we have to send a multicast
-    # request reply, because we are bind to the same port. Unicast replies are 
+    # request reply, because we are bind to the same port. Unicast replies are
     # not forward to the same port only once.
     self._addresses = dict() # {address : (int) ocurres}
 
@@ -524,12 +521,26 @@ class Discoverer(object):
     # test the reachability of the ROS master
     local_addr = roslib.network.get_local_address()
     if (local_addr in ['localhost', '127.0.0.1']):
-      sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!"% local_addr)
+      rospy.logwarn("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % local_addr)
+
+
+    # Get the interface to bind to for mcast discovery and xml-rpc.
+    # Use the ~interface param unless ROS_IP is set, use that explicitly
+    # otherwise.
+    self.interface = rospy.get_param('~interface', '')
+    if not self.interface and 'ROS_IP' in os.environ:
+      self.interface = os.environ['ROS_IP']
+      rospy.loginfo("Using user set ROS_IP for interface: %s", self.interface)
+    # Log what interface we're binding to.
+    if self.interface == "":
+      rospy.loginfo("Interface to bind: Default interface")
+    else:
+      rospy.loginfo("Interface to bind: %s", self.interface)
 
     self.mcast_port = mcast_port
     self.mcast_group = mcast_group
     rospy.loginfo("Start broadcasting at ('%s', %d)", mcast_group, mcast_port)
-    self._init_mcast_socket(True)
+    self._init_sockets(True)
     # initialize the ROS publishers
     self.pubchanges = rospy.Publisher("~changes", MasterState, queue_size=10)
     # initialize the ROS services
@@ -544,9 +555,14 @@ class Discoverer(object):
     self._timer_ros_changes = threading.Timer(0.1, self.checkROSMaster_loop)
 
     # create a thread to handle the received multicast messages
-    self._recv_thread = threading.Thread(target = self.recv_loop)
-    self._recv_thread.setDaemon(True)
-    self._recv_thread.start()
+    self._recvThread = threading.Thread(target=self.multicast_recv_loop)
+    self._recvThread.setDaemon(True)
+    self._recvThread.start()
+
+    # create a thread to handle the received unicast messages
+    self._recvThread = threading.Thread(target=self.unicast_recv_loop)
+    self._recvThread.setDaemon(True)
+    self._recvThread.start()
 
     # create a timer monitor the offline ROS master and calculate the link qualities
     self._timer_stats = threading.Timer(1, self.timed_stats_calculation)
@@ -573,13 +589,17 @@ class Discoverer(object):
       pass
     return False
 
-  def _init_mcast_socket(self, doexit_on_error=False):
+  def _init_sockets(self, doexit_on_error=False):
     rospy.loginfo("Init multicast socket")
     # create the multicast socket and join the multicast group
-    self.msocket = msocket = McastSocket(self.mcast_port, self.mcast_group)
+    self.msocket = msocket = McastSocket(self.interface, self.mcast_port, self.mcast_group)
 #    msocket.settimeout(3.0)
     if not msocket.hasEnabledMulticastIface() and doexit_on_error:
       sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast")
+
+    rospy.loginfo("Init unicast socket")
+    # create the multicast socket and join the multicast group
+    self.usocket = UcastSocket(self.interface, self.mcast_port)
 
   def finish(self, *arg):
     '''
@@ -621,7 +641,7 @@ class Discoverer(object):
     self.msocket.send2group(msg)
     # send as unicast
     for remote_master in self.robots:
-      self.msocket.send2addr(msg, remote_master)
+      self.usocket.send2addr(msg, remote_master)
     time.sleep(0.2)
     self.msocket.close()
 
@@ -651,7 +671,7 @@ class Discoverer(object):
             self._send_request2addr(remote_master)
         except Exception as err:
           rospy.logwarn(err)
-          self._init_mcast_socket()
+          self._init_sockets()
       if not self.do_finish and (self.HEARTBEAT_HZ > 0. or self._init_notifications < self.INIT_NOTIFICATION_COUNT):
         sleeptime = 1.0/self.HEARTBEAT_HZ if self.HEARTBEAT_HZ > 0. else 1.0
         self._timer_heartbeat = threading.Timer(sleeptime, self.send_heardbeat)
@@ -667,10 +687,10 @@ class Discoverer(object):
         else:
           # to receive own messages, send to localhost
           rospy.logdebug('Send current state only to localhost:%s'%(self.mcast_port))
-          self.msocket.send2addr(msg, 'localhost')
+          self.usocket.send2addr(msg, 'localhost')
     except Exception as e:
       rospy.logwarn('Send current state to mcast group %s:%s failed: %s\n'%(self.mcast_group, self.mcast_port, e))
-      self._init_mcast_socket()
+      self._init_sockets()
 
   def _send_current_state2addr(self, address):
     try:
@@ -678,12 +698,12 @@ class Discoverer(object):
       if not msg is None:
         if self._send_mcast:
           rospy.logdebug('Send current state to addr %s'%(address))
-          self.msocket.send2addr(msg, address)
+          self.usocket.send2addr(msg, address)
           if self._is_multi_address(address):
             self._send_current_state2group()
     except Exception as e:
       rospy.logwarn("Send current state to '%s' failed: %s"%(address, e))
-      self._init_mcast_socket()
+      self._init_sockets()
 
   def _send_request2group(self):
     try:
@@ -698,7 +718,7 @@ class Discoverer(object):
   def _send_request2addr(self, address, master=None):
     try:
       rospy.logdebug('Send a request for update: %s'%address)
-      self.msocket.send2addr(self._create_request_update_msg(), address)
+      self.usocket.send2addr(self._create_request_update_msg(), address)
       if self._is_multi_address(address):
         self._send_request2group()
       if not master is None:
@@ -798,7 +818,7 @@ class Discoverer(object):
         del self.masters[r]
 
 
-  def recv_loop(self):
+  def multicast_recv_loop(self):
     '''
     This method handles the received multicast messages.
     '''
@@ -806,69 +826,99 @@ class Discoverer(object):
       try:
         (msg, address) = self.msocket.recvfrom(1024)
       except socket.timeout:
-#        rospy.logwarn("TIMOUT ignored")
+        rospy.logwarn("TIMOUT ignored")
         pass
       except socket.error:
         import traceback
         rospy.logwarn("socket error: %s", traceback.format_exc())
       else:
-        if not self.do_finish:
-          try:
-            (version, msg_tuple) = self.msg2masterState(msg, address)
-            if (version in [2, 3]):
-              add_to_list = False
-              (r, version, rate, secs, nsecs, monitor_port, secs_l, nsecs_l) = msg_tuple
-              master_key = (address, monitor_port)
-              # is it a request to update the state
-              if version >= 3 and secs == 0 and nsecs == 0:
-                # send the current master state to the sender address
-                # if send_mcast is disabled responce only to local requests
-                if (self._send_mcast or address[0].startswith('127')):
-                  with self.__lock:
-                    self._send_current_state2addr(address[0])
-                    add_to_list = not master_key in self.masters
-              # remove master if sec and nsec are -1
-              elif secs == -1 or secs_l == -1:
-                with self.__lock:
-                  if self.masters.has_key(master_key):
-                    master = self.masters[master_key]
-                    if not master.mastername is None:
-                      self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
-                                                     ROSMaster(str(master.mastername),
-                                                               master.masteruri,
-                                                               master.timestamp,
-                                                               master.timestamp_local,
-                                                               False,
-                                                               master.discoverername,
-                                                               master.monitoruri)))
-                    rospy.loginfo("Remove master discovery: http://%s:%s, with ROS_MASTER_URI=%s"%(address[0], monitor_port, master.masteruri))
-                    self._rem_address(address[0])
-                    del self.masters[master_key]
-              # update the timestamp of existing master
-              elif self.masters.has_key(master_key):
-                with self.__lock:
-                  changed = self.masters[master_key].add_heartbeat(float(secs)+float(nsecs)/1000000000.0, float(secs_l)+float(nsecs_l)/1000000000.0, float(rate)/10.0,)
-                  if not self._changed:
-                    self._changed = changed
-              # or create <a new master
-              else:
-                add_to_list = True
-              if add_to_list:
-                with self.__lock:
-                  rospy.loginfo("Detected master discovery: http://%s:%s"%(address[0], monitor_port))
-                  self._add_address(address[0])
-                  is_local = address[0].startswith('127.') or address[0] in roslib.network.get_local_addresses()
-                  self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]),
-                                                              is_local=is_local,
-                                                              heartbeat_rate=float(rate)/10.0,
-                                                              timestamp=float(secs)+float(nsecs)/1000000000.0,
-                                                              timestamp_local=float(secs_l)+float(nsecs_l)/1000000000.0,
-                                                              callback_master_state=self.publish_masterstate)
+        self.process_recv_message(msg, address, multicast=True)
 
-          except Exception, e:
-#            import traceback
-#            print traceback.format_exc()
-            rospy.logwarn("Error while decode message: %s", str(e))
+  def unicast_recv_loop(self):
+    '''
+    This method handles the received unicast messages.
+    '''
+    while self.usocket and (not rospy.is_shutdown()) and not self.do_finish:
+      try:
+        (msg, address) = self.usocket.recvfrom(1024)
+      except socket.timeout:
+        rospy.logwarn("TIMOUT ignored")
+        pass
+      except socket.error:
+        import traceback
+        rospy.logwarn("socket error: %s", traceback.format_exc())
+      else:
+        self.process_recv_message(msg, address, multicast=False)
+
+
+  def process_recv_message(self, msg, address, multicast=True):
+    """
+    Process the received message from either the unicast or multicast receive
+    paths.
+
+    :param msg: The message received
+    :param address: The address the message was received from.
+    :param multicast: If the message was received through multicast or not.
+    """
+    if not self.do_finish:
+      try:
+        (version, msg_tuple) = self.msg2masterState(msg, address)
+        if (version in [2, 3]):
+          add_to_list = False
+          (r, version, rate, secs, nsecs, monitor_port, secs_l, nsecs_l) = msg_tuple
+          master_key = (address, monitor_port)
+          # is it a request to update the state
+          if version >= 3 and secs == 0 and nsecs == 0:
+            # send the current master state to the sender address
+            # if send_mcast is disabled responce only to local requests
+            if (self._send_mcast or address[0].startswith('127')):
+              with self.__lock:
+                self._send_current_state2addr(address[0])
+                # only register if the message has been received via multicast
+                add_to_list = not master_key in self.masters and multicast
+          # remove master if sec and nsec are -1
+          elif secs == -1 or secs_l == -1:
+            with self.__lock:
+              if self.masters.has_key(master_key):
+                master = self.masters[master_key]
+                if not master.mastername is None:
+                  self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
+                                                  ROSMaster(str(master.mastername),
+                                                            master.masteruri,
+                                                            master.timestamp,
+                                                            master.timestamp_local,
+                                                            False,
+                                                            master.discoverername,
+                                                            master.monitoruri)))
+                rospy.loginfo("Remove master discovery: http://%s:%s, with ROS_MASTER_URI=%s"
+                              %(address[0], monitor_port, master.masteruri))
+                self._rem_address(address[0])
+                del self.masters[master_key]
+          # update the timestamp of existing master
+          elif self.masters.has_key(master_key):
+            with self.__lock:
+              changed = self.masters[master_key].add_heartbeat(float(secs)+float(nsecs)/1000000000.0,
+                                                                float(secs_l)+float(nsecs_l)/1000000000.0,
+                                                                float(rate)/10.0,)
+              if not self._changed:
+                self._changed = changed
+          # or create <a new master
+          else:
+            # only register new master if the message has been received via multicast
+            if multicast is True:
+                add_to_list = True
+          if add_to_list:
+            with self.__lock:
+              rospy.loginfo("Detected master discovery: http://%s:%s"%(address[0], monitor_port))
+              self._add_address(address[0])
+              self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0],':',str(monitor_port)]),
+                                                          heartbeat_rate=float(rate)/10.0,
+                                                          timestamp=float(secs)+float(nsecs)/1000000000.0,
+                                                          timestamp_local=float(secs_l)+float(nsecs_l)/1000000000.0,
+                                                          callback_master_state=self.publish_masterstate)
+
+      except Exception, e:
+        rospy.logwarn("Error while decode message: %s", str(e))
 
   def _is_multi_address(self, address):
     return address in self._addresses and self._addresses[address] > 1
