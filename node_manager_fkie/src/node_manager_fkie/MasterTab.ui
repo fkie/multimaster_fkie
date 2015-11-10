@@ -955,7 +955,7 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="icon">
                 <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/deleket_deviantart_play.png</normaloff>:/icons/deleket_deviantart_play.png</iconset>
+                 <normaloff>:/icons/sekkyumu_call_service.png</normaloff>:/icons/sekkyumu_call_service.png</iconset>
                </property>
                <property name="iconSize">
                 <size>

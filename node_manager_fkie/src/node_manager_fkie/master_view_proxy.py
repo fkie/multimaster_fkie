@@ -1451,7 +1451,7 @@ class MasterViewProxy(QtGui.QWidget):
       service = selectedServices[0]
       ns, sep, name = service.name.rpartition(rospy.names.SEP)
       text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
-      text += '<a href="servicecall://%s%s">call</a>'%(self.mastername, service.name)
+      text += '<a href="servicecall://%s%s" title="call service"><img src=":icons/sekkyumu_call_service_24.png" alt="call"></a>'%(self.mastername, service.name)
       text += '<dl>'
       text += '<dt><b>URI</b>: %s</dt>'%service.uri
       text += '<dt><b>ORG.MASTERURI</b>: %s</dt>'%service.masteruri
