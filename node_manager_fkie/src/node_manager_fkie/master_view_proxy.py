@@ -1239,6 +1239,7 @@ class MasterViewProxy(QtGui.QWidget):
     elif len(selectedNodes) > 1:
 #      stoppable_nodes = [sn for sn in selectedNodes if not sn.node_info.uri is None and not self._is_in_ignore_list(sn.name)]
       restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
+      restartable_nodes_with_launchfiles = [sn for sn in selectedNodes if sn.has_launch_cfgs(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
       killable_nodes = [sn for sn in selectedNodes if not sn.node_info.pid is None and not self._is_in_ignore_list(sn.name)]
       unregisterble_nodes = [sn for sn in selectedNodes if sn.node_info.pid is None and not sn.node_info.uri is None and sn.node_info.isLocal and not self._is_in_ignore_list(sn.name)]
       # add description for multiple selected nodes
@@ -1253,9 +1254,9 @@ class MasterViewProxy(QtGui.QWidget):
         text += '&nbsp;<a href="kill_screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>'%(len(killable_nodes), len(killable_nodes))
 #        if unregisterble_nodes:
 #          text += ' - '
-      if restartable_nodes:
-        text += '&nbsp;<a href="start_node_at_host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>'%(len(restartable_nodes), len(restartable_nodes))
-        text += '&nbsp;<a href="start_node_adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>'%(len(restartable_nodes), len(restartable_nodes))
+      if restartable_nodes_with_launchfiles:
+        text += '&nbsp;<a href="start_node_at_host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>'%(len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
+        text += '&nbsp;<a href="start_node_adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>'%(len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
       if unregisterble_nodes:
         text += '<br><a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
 
