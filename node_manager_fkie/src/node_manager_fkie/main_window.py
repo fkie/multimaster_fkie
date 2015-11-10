@@ -77,7 +77,7 @@ from .menu_rqt import MenuRqt
 
 import node_manager_fkie as nm
 
-from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState#, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.msg import MasterState
 from master_discovery_fkie.common import resolve_url
 #from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
 
@@ -1712,7 +1712,10 @@ class MainWindow(QtGui.QMainWindow):
       master.stop_nodes_by_name(nodes)
 
   def on_description_update(self, title, text):
-    if (self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)) and (not self.descriptionTextEdit.hasFocus() or self._accept_next_update):
+    same_title = self.descriptionDock.windowTitle() == title
+    valid_sender = self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)
+    no_focus = not self.descriptionTextEdit.hasFocus()
+    if (valid_sender) and (same_title or no_focus or self._accept_next_update):
       self._accept_next_update = False
       self.descriptionDock.setWindowTitle(title)
       self.descriptionTextEdit.setText(text)
