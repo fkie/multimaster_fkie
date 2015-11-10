@@ -1245,17 +1245,17 @@ class MasterViewProxy(QtGui.QWidget):
       if restartable_nodes or killable_nodes or unregisterble_nodes:
         text += '<b>Selected nodes:</b><br>'
       if restartable_nodes:
-        text += '<a href="restart_node://all_selected_nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>'%len(restartable_nodes)
+        text += '<a href="restart_node://all_selected_nodes" title="Restart %s selected nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>'%(len(restartable_nodes), len(restartable_nodes))
 #        if killable_nodes or unregisterble_nodes:
 #          text += ' - '
       if killable_nodes:
-        text += '&nbsp;<a href="kill_node://all_selected_nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>'%len(killable_nodes)
-        text += '&nbsp;<a href="kill_screen://all_selected_nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>'%len(killable_nodes)
+        text += '&nbsp;<a href="kill_node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>'%(len(killable_nodes), len(killable_nodes))
+        text += '&nbsp;<a href="kill_screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>'%(len(killable_nodes), len(killable_nodes))
 #        if unregisterble_nodes:
 #          text += ' - '
       if restartable_nodes:
-        text += '&nbsp;<a href="start_node_at_host://all_selected_nodes"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>'%len(restartable_nodes)
-        text += '&nbsp;<a href="start_node_adv://all_selected_nodes"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>'%len(restartable_nodes)
+        text += '&nbsp;<a href="start_node_at_host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>'%(len(restartable_nodes), len(restartable_nodes))
+        text += '&nbsp;<a href="start_node_adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>'%(len(restartable_nodes), len(restartable_nodes))
       if unregisterble_nodes:
         text += '<br><a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
 
@@ -1280,13 +1280,13 @@ class MasterViewProxy(QtGui.QWidget):
       default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
       if launches or default_cfgs:
 #        text += '<a href="restart_node://%s">restart</a> - '%node.name
-        text += '<a href="restart_node://%s"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>&nbsp;'%node.name # height="24" width="24"
-      text += '<a href="kill_node://%s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>&nbsp;'%node.name
-      text += '<a href="kill_screen://%s"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>&nbsp;'%node.name
+        text += '<a href="restart_node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>&nbsp;'%node.name # height="24" width="24"
+      text += '<a href="kill_node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>&nbsp;'%(node.name, node.pid)
+      text += '<a href="kill_screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>&nbsp;'%node.name
       if launches:
-        text += '<a href="start_node_at_host://%s"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>&nbsp;'%node.name
+        text += '<a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>&nbsp;'%node.name
         if node.node_info.pid is None or node.node_info.uri is None:
-          text += '<a href="start_node_adv://%s"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
+          text += '<a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
       text += '<dl>'
       text += '<dt><b>URI</b>: %s</dt>'%node.node_info.uri
       text += '<dt><b>PID</b>: %s</dt>'%node.node_info.pid
