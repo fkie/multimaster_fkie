@@ -1393,11 +1393,17 @@ class MainWindow(QtGui.QMainWindow):
 
   def poweroff_host(self, host):
     try:
+      masteruris = nm.nameres().masterurisByHost(host)
+      for masteruri in masteruris:
+        master = self.getMaster(masteruri)
+        master.stop_nodes_by_name(['/master_discovery'])
       self._progress_queue.add2queue(str(uuid.uuid4()),
                                      'poweroff `%s`'%host,
                                      nm.starter().poweroff,
                                      ('%s'%host,))
       self._progress_queue.start()
+      self.on_description_update('Description', '')
+      self.launch_dock.raise_()
     except (Exception, nm.StartException), e:
       rospy.logwarn("Error while poweroff %s: %s", host, str(e))
       WarningMessageBox(QtGui.QMessageBox.Warning, "Run error",
