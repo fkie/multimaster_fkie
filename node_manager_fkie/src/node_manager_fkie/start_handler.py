@@ -886,6 +886,29 @@ class StartHandler(object):
         if output:
           rospy.logdebug("STDOUT while killall roscore on %s: %s"%(host, output))
 
+  def poweroff(self, host, auto_pw_request=False, user=None, pw=None):
+    '''
+    poweroff given host.
+    @param host: the name or address of the host, where the process must be killed.
+    @type host: C{str}
+    @raise StartException: on error
+    @raise Exception: on errors while resolving host
+    @see: L{node_manager_fkie.is_local()}
+    '''
+    try:
+      self._poweroff_wo(host, auto_pw_request, user, pw)
+    except nm.AuthenticationRequest as e:
+      raise nm.InteractionNeededError(e, self.poweroff, (host, auto_pw_request))
+
+  def _poweroff_wo(self, host, auto_pw_request=False, user=None, pw=None):
+    if nm.is_local(host):
+      rospy.logwarn("No poweroff on localhost supported!")
+    else:
+      rospy.loginfo("poweroff %s", host)
+      # kill on a remote machine
+      cmd = ['sudo poweroff']
+      _ = nm.ssh().ssh_x11_exec(host, cmd, 'Shutdown %s'%host, user)
+
   @classmethod
   def transfer_files(cls, host, path, auto_pw_request=False, user=None, pw=None):
     '''

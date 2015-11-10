@@ -733,6 +733,9 @@ class HostItem(GroupItem):
     tooltip += '<p>'
     tooltip += '<a href="show_all_screens://%s">show all screens</a>'%(str(self.id[0]).replace('http://', ''))
     tooltip += '<p>'
+    if not nm.is_local(self.id[1]):
+      tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>'%(self.id[1], self.id[1], self.id[1])
+      tooltip += '<p>'
     tooltip += '<a href="remove_all_launch_server://%s">kill all launch server</a>'%str(self.id[0]).replace('http://', '')
     tooltip += '<p>'
     # get sensors
@@ -1274,7 +1277,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     if masteruri is None:
       return None
     host = (unicode(masteruri), unicode(address))
-    local = (self.local_addr == host)
+    local = (self.local_addr in host)
     # find the host item by address
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):

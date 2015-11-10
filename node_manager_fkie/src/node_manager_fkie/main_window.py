@@ -46,6 +46,7 @@ from python_qt_binding import loadUi
 
 import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
+from oneconf import hosts
 try:
   from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
   DIAGNOSTICS_AVAILABLE = True
@@ -1378,6 +1379,19 @@ class MainWindow(QtGui.QMainWindow):
                         'Error while start master_discovery',
                         str(e)).exec_()
 
+  def poweroff_host(self, host):
+    try:
+      self._progress_queue.add2queue(str(uuid.uuid4()),
+                                     'poweroff `%s`'%host,
+                                     nm.starter().poweroff,
+                                     ('%s'%host,))
+      self._progress_queue.start()
+    except (Exception, nm.StartException), e:
+      rospy.logwarn("Error while poweroff %s: %s", host, str(e))
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Run error",
+                        'Error while poweroff %s'%host,
+                        '%s'%e).exec_()
+
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   #%%%%%%%%%%%%%         Handling of the launch view signals        %%%%%%%%
   #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1798,6 +1812,8 @@ class MainWindow(QtGui.QMainWindow):
       self.on_launch_edit([str(url.encodedPath())], '')
     elif url.toString().startswith('reload_globals://'):
       self._reload_globals_at_next_start(str(url.encodedPath()).replace('reload_globals://', ''))
+    elif url.toString().startswith('poweroff://'):
+      self.poweroff_host(url.encodedHost())
     else:
       QtGui.QDesktopServices.openUrl(url)
 
