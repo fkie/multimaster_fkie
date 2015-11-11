@@ -1,8 +1,11 @@
 <launch>
   <node name="master_discovery" pkg="master_discovery_fkie" type="master_discovery">
     <param name="log_level" value="INFO" />
+    <!-- Specifies the multicast group. You can bind the to defined interface by adding @address to the group -->
     <param name="mcast_group" value="226.0.0.0" />
     <param name="mcast_port" value="11511" />
+    <!-- Bind the master_discovery to an interface address. If this is not specified the ROS_IP or default interface will be used. -->
+    <param name="interface" value="" />
     <!-- The port number for XML-RPC server created by the node. (Default: ROS_MASTER_URI.port+300). -->
     <param name="rpc_port" value="11611" />
     <!-- the test rate of ROS master state in Hz (Default: 1 Hz). -->
@@ -10,7 +13,7 @@
     <!-- the send rate of the heartbeat packets in hz. Zero disables the heartbeats. (Default: 0.02 Hz)
       Only values between 0.1 and 25.5 are used to detemine the link quality. -->
     <param name="heartbeat_hz" value="0.02" />
-    <!-- the count of intervals (1 sec) used for a quality calculation. If 
+    <!-- the count of intervals (1 sec) used for a quality calculation. If
       `HEARTBEAT_HZ` is smaller then 1, `MEASUREMENT_INTERVALS` will be divided
       by `HEARTBEAT_HZ` value.
       (Default: 5 sec are used to determine the link qaulity) -->
@@ -21,11 +24,11 @@
     <param name="remove_after" value="300" />
     <!-- send an update request, if after this time no hearbeats are received [sec] (Default: 60 sec). -->
     <param name="active_request_after" value="60" />
-    <!-- in some network environments does multicast not work properly. In this 
-      case you can specify robots where a master discovery is running. These 
+    <!-- in some network environments does multicast not work properly. In this
+      case you can specify robots where a master discovery is running. These
       robots are pinged using unicast communication. -->
     <rosparam param="robot_hosts">[]</rosparam>
-    <!-- After the ROS master was changed the new state will be sent for 
+    <!-- After the ROS master was changed the new state will be sent for
       `CHANGE_NOTIFICATION_COUNT` times (Default: 3 sec). The new state will be
       sent with `ROSMASTER_HZ` and only if `HEARTBEAT_HZ` is zero. -->
     <param name="change_notification_count" value="3" />

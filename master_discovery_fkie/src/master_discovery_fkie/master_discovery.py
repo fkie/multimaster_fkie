@@ -55,8 +55,8 @@ from master_discovery_fkie.udp import McastSocket
 class DiscoveredMaster(object):
   '''
   The class stores all information about the remote ROS master and the all
-  received heartbeat messages of the remote node. On first contact a theaded 
-  connection to remote discoverer will be established to get additional 
+  received heartbeat messages of the remote node. On first contact a theaded
+  connection to remote discoverer will be established to get additional
   information about the ROS master.
 
   :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
@@ -136,7 +136,7 @@ class DiscoveredMaster(object):
     self._errors = dict() #ERR_*, msg
     self.masteruriaddr = None
     # create a thread to retrieve additional information about the remote ROS master
-    self._retrieveThread = threading.Thread(target = self.__retrieve_masterinfo)
+    self._retrieveThread = threading.Thread(target=self.__retrieve_masterinfo)
     self._retrieveThread.setDaemon(True)
     self._retrieveThread.start()
 
@@ -495,7 +495,7 @@ class Discoverer(object):
     self._send_mcast = rospy.get_param('~send_mcast', True)
     # for cases with more then one master_discovery on the same host and
     # heartbeat rate is less then 0.1. In this case we have to send a multicast
-    # request reply, because we are bind to the same port. Unicast replies are 
+    # request reply, because we are bind to the same port. Unicast replies are
     # not forward to the same port only once.
     self._addresses = dict() # {address : (int) ocurres}
 
@@ -524,7 +524,8 @@ class Discoverer(object):
     # test the reachability of the ROS master
     local_addr = roslib.network.get_local_address()
     if (local_addr in ['localhost', '127.0.0.1']):
-      sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!"% local_addr)
+      rospy.logwarn("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % local_addr)
+
 
     self.mcast_port = mcast_port
     self.mcast_group = mcast_group

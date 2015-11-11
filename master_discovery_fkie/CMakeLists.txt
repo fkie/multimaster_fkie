@@ -8,8 +8,14 @@ catkin_python_setup()
 catkin_package(CATKIN_DEPENDS multimaster_msgs_fkie)
 
 install(
-    PROGRAMS 
+    PROGRAMS
         nodes/master_discovery
         nodes/zeroconf
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+)
+
+install(
+    DIRECTORY
+    launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)

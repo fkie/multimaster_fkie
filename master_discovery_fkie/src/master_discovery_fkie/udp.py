@@ -41,7 +41,7 @@ import rospy
 
 class McastSocket(socket.socket):
   '''
-  The McastSocket class enables the send and receive UDP messages to a multicast 
+  The McastSocket class enables the send and receive UDP messages to a multicast
   group.
   
   :param port: the port to bind the socket
@@ -195,9 +195,9 @@ class McastSocket(socket.socket):
     '''
     Test all enabled interfaces for a MULTICAST flag. If no enabled interfaces 
     has a multicast support, False will be returned.
-    
+
     :return: ``True``, if any interfaces with multicast support are enabled.
-    
+
     :rtype: bool
     '''
     SIOCGIFFLAGS = 0x8913
@@ -219,18 +219,17 @@ class McastSocket(socket.socket):
     '''
     Used to get a list of the up interfaces and associated IP addresses
     on this machine (linux only).
-  
+
     :return:
         List of interface tuples.  Each tuple consists of
         ``(interface name, interface IP)``
-    
     :rtype: list of ``(str, str)``
     '''
     SIOCGIFCONF = 0x8912
     MAXBYTES = 8096
-  
+
     arch = platform.architecture()[0]
-  
+
     # I really don't know what to call these right now
     var1 = -1
     var2 = -1
@@ -242,7 +241,7 @@ class McastSocket(socket.socket):
       var2 = 40
     else:
       raise OSError("Unknown architecture: %s" % arch)
-  
+
     sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     names = array.array('B', '\0' * MAXBYTES)
     outbytes = struct.unpack('iL', fcntl.ioctl(
@@ -250,7 +249,7 @@ class McastSocket(socket.socket):
         SIOCGIFCONF,
         struct.pack('iL', MAXBYTES, names.buffer_info()[0])
         ))[0]
-  
+
     namestr = names.tostring()
     return [(namestr[i:i+var1].split('\0', 1)[0], socket.inet_ntoa(namestr[i+20:i+24])) \
             for i in xrange(0, outbytes, var2)]
