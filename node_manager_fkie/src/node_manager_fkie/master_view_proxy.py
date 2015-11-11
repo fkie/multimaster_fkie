@@ -1285,7 +1285,7 @@ class MasterViewProxy(QtGui.QWidget):
       text += '&nbsp; <a href="kill_node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>'%(node.name, node.pid)
       text += '&nbsp; <a href="kill_screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>'%node.name
       if launches:
-        text += '&nbsp; <a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a'%node.name
+        text += '&nbsp; <a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>'%node.name
         if node.node_info.pid is None or node.node_info.uri is None:
           text += '&nbsp; <a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
       text += '&nbsp; <a href="copy_log_path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>'%node.name
@@ -1374,12 +1374,12 @@ class MasterViewProxy(QtGui.QWidget):
     if topic is not None:
       ns, sep, name = topic.name.rpartition(rospy.names.SEP)
       text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>'%(ns, sep, name)
-      text += '&nbsp;<a href="topicecho://%s%s"><img src=":icons/sekkyumu_topic_echo_24.png" alt="echo"></a>'%(self.mastername, topic.name)
-      text += '&nbsp;<a href="topichz://%s%s"><img src=":icons/sekkyumu_topic_hz_24.png" alt="hz"></a>'%(self.mastername, topic.name)
-      text += '&nbsp;<a href="topichzssh://%s%s"><img src=":icons/sekkyumu_topic_echo_ssh_hz_24.png" alt="sshhz"></a>'%(self.mastername, topic.name)
-      text += '&nbsp;<a href="topicpub://%s%s"><img src=":icons/sekkyumu_topic_pub_24.png" alt="pub"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topicecho://%s%s" title="Show the content of the topic"><img src=":icons/sekkyumu_topic_echo_24.png" alt="echo"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topichz://%s%s" title="Show only the receive rate of the topic.<br>All data is sent through the network"><img src=":icons/sekkyumu_topic_hz_24.png" alt="hz"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topichzssh://%s%s" title="Show only the receive rate of the topic.<br>Uses an SSH connection to execute `rostopic hz` on remote host."><img src=":icons/sekkyumu_topic_echo_ssh_hz_24.png" alt="sshhz"></a>'%(self.mastername, topic.name)
+      text += '&nbsp;<a href="topicpub://%s%s" title="Start a publisher for selected topic"><img src=":icons/sekkyumu_topic_pub_24.png" alt="pub"></a>'%(self.mastername, topic.name)
       if topic.name in self.__republish_params:
-        text += '&nbsp;<a href="topicrepub://%s%s"><img src=":icons/sekkyumu_topic_repub_24.png" alt="repub"></a>'%(self.mastername, topic.name)
+        text += '&nbsp;<a href="topicrepub://%s%s" title="Start a publisher with last parameters"><img src=":icons/sekkyumu_topic_repub_24.png" alt="repub"></a>'%(self.mastername, topic.name)
       topic_publisher = []
       topic_prefix = '/rostopic_pub%s_'%topic.name
       node_names = self.master_info.node_names
