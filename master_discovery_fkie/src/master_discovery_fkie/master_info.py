@@ -1303,7 +1303,7 @@ class MasterInfo(object):
         for n in nodes2add:
           if not (n in self.__nodelist):
             nodes_added.add(n)
-            self.__nodelist[n] = other_local_nodes[n].copy()#self.masteruri)
+            self.__nodelist[n] = other_local_nodes[n].copy(self.masteruri)
 
     # UPDATE SERVICES
     own_remote_srvs = dict()
@@ -1355,6 +1355,6 @@ class MasterInfo(object):
         for s in srv2add:
           if not (s in self.__servicelist):
             srvs_added.add(s)
-            self.__servicelist[s] = other_local_srvs[s].copy()#self.masteruri)
+            self.__servicelist[s] = other_local_srvs[s].copy(self.masteruri)
 
     return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
