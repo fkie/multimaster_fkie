@@ -2566,12 +2566,13 @@ class MasterViewProxy(QtGui.QWidget):
     ns = '/'
     if selectedParameter:
       ns = roslib.names.namespace(selectedParameter[0][0])
-    fields = {'name' : ('string', ['', ns]), 'type' : ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
+    fields = {'name' : ('string', ns), 'type' : ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
     newparamDia = ParameterDialog(fields, parent=self)
     newparamDia.setWindowTitle('Add new parameter')
     newparamDia.setFilterVisible(False)
-    newparamDia.resize(300, 140)
+    newparamDia.resize(400, 120)
     newparamDia.accepted.connect(self._on_add_parameter_accepted)
+    newparamDia.setFocusField('name')
     newparamDia.show()
     newparamDia.raise_()
     newparamDia.activateWindow()
