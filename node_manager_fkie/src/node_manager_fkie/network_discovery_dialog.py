@@ -31,25 +31,25 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from python_qt_binding import QtCore, QtGui
-
-import time
 from datetime import datetime
+from python_qt_binding import QtCore, QtGui
+import socket
+import threading
+import time
 
 import roslib
 import roslib.message
 import rospy
-import threading
-import socket
 
-from master_discovery_fkie.udp import McastSocket
 from master_discovery_fkie.master_discovery import Discoverer
+from master_discovery_fkie.udp import DiscoverSocket
 import node_manager_fkie as nm
 
+
 class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
-  
+
   TIMEOUT = 0.1
-  
+
   display_clear_signal = QtCore.Signal()
   display_append_signal = QtCore.Signal(str)
   status_text_signal = QtCore.Signal(str)
@@ -70,7 +70,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
     self.setWindowTitle('Network Discovery')
-    self.resize(728,512)
+    self.resize(728, 512)
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
@@ -85,24 +85,24 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     self.status_label = QtGui.QLabel('0 messages', self)
     self.verticalLayout.addWidget(self.status_label)
     self.status_text_signal.connect(self.status_label.setText)
-    
+
     self._networks_count = networks_count
     self.sockets = []
     for p in range(networks_count):
-      msock = McastSocket(default_port+p, default_mcast_group)
+      msock = DiscoverSocket(default_port + p, default_mcast_group)
       self.sockets.append(msock)
       msock.settimeout(self.TIMEOUT)
     self._running = True
-    
+
     self._discovered = dict()
-    
-    self._hosts = dict() # resolution for hostname and address
-    
+
+    self._hosts = dict()  # resolution for hostname and address
+
     self.mutex = threading.RLock()
 #    thread = threading.Thread(target=self._listen)
     self.setDaemon(True)
     self.start()
-    
+
 
   def run(self):
     index = 0
@@ -176,7 +176,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     self.display_clear_signal.emit()
     text = '<div style="font-family:Fixedsys,Courier,monospace; padding:10px;">\n'
     for index, addr_dict in self._discovered.items():
-      text = ''.join([text, 'Network <b>', str(index), '</b>: <a href="', str(index),'">join</a><dl>'])
+      text = ''.join([text, 'Network <b>', str(index), '</b>: <a href="', str(index), '">join</a><dl>'])
       for addr, (hostname, ts) in addr_dict.items():
         text = ''.join([text, '<dt>', self._getTsStr(ts), '   <b><u>', str(hostname), '</u></b> ', str(addr), '</dt>\n'])
       text = ''.join([text, '</dl><br>'])
@@ -185,7 +185,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
 
   def _getTsStr(self, timestamp):
     dt = datetime.fromtimestamp(timestamp)
-    diff = time.time()-timestamp
+    diff = time.time() - timestamp
     diff_dt = datetime.fromtimestamp(diff)
     before = '0 sec'
     if (diff < 60):
@@ -197,7 +197,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     else:
       before = diff_dt.strftime('%d Day(s) %H:%M:%S')
     return ''.join([dt.strftime('%H:%M:%S'), ' (', before, ')'])
-  
+
   def on_anchorClicked(self, url):
     self._updateDisplay()
     try:
