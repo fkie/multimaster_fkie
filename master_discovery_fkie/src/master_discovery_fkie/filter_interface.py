@@ -319,8 +319,8 @@ class FilterInterface(object):
       result._re_ignore_services = _from_str(l[5])
       result._re_sync_services = _from_str(l[6])
       result._re_ignore_type = _from_str(l[7])
-      result._re_ignore_publishers = _from_str(l[8])
-      result._re_ignore_subscribers = _from_str(l[9])
+      result._re_ignore_publishers = _from_str(l[8] if len(l) > 8 else '')
+      result._re_ignore_subscribers = _from_str(l[9] if len(l) > 9 else '')
       result.is_valid = True
       return result
     except:
