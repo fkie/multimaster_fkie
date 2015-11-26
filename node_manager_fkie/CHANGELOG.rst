@@ -2,6 +2,28 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.3 (2015-11-26)
+------------------
+* node_manager_fkie: fixed the sort of paramerter in `add parameter` dialog
+* node_manager_fkie: adapt the chagnes in master_discovery_fkie
+* node_manager_fkie: fixed the tooltip of the buttons in the description dock
+* node_manager_fkie: stop /master_discovery node before poweroff host to avoid timout problems
+* multimaster_fkie: reduced logs and warnings on stop nodes while closing node_manager
+* node_manager_fkie: added a new button for call service
+* node_manager_fkie: added a "copy log path to clipboard" button
+* node_manager_fkie: fixed the displayed count of nodes with launch files in description dock
+* node_manager_fkie: fixed errors showed while stop nodes on close
+* multimaster_fkie: reduced logging of exceptions
+* node_manager_fkie: added poweroff command to the host description
+* node_manager_fkie: added tooltips to the buttons in description dock
+* node_manager_fkie: replaced some icons
+* node_manager_fkie: added advanced start link to set console format and loglevel while start of nodes
+* node_manager_fkie: skip commented nodes while open a configuration for a selected node
+* node_manager_fkie: fixed xml editor; some lines was hide
+* node_manager_fkie: added ctrl+shift+slash to shortcuts for un/comment text in editor
+  *some small changes in find dialog
+* Contributors: Alexander Tiderko
+
 0.4.2 (2015-10-19)
 ------------------
 * node_manager_fkie: added further files to change detection

@@ -2,6 +2,32 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.3 (2015-11-26)
+------------------
+* master_discovery_fkie: fixed compatibility to older versions
+* master_fiscovery_fkie: integrated pull request `#24 <https://github.com/fkie/multimaster_fkie/issues/24>`_
+  Thanks for creating the PR to @garyservin and @mikeodr!
+  The change lets you define an interface by `~interface`, `ROS_IP` envar
+  or append the interface to multicast group like
+  226.0.0.0@192.168.101.10. The master_discovery then binds to the
+  specified interface and creates also an unicast interface for active
+  requests on communication problems or if `~robot_hosts` are defined.
+  Now you can also disable the multicast communication by setting
+  `~send_mcast` to false. In this case the requests are send to hosts
+  defined in `~robot_hosts`.
+* master_discovery_fkie: fixed the 'local' assignment while updateInfo()
+* master_discovery_fkie: adopt some changes from pull request `#24 <https://github.com/fkie/multimaster_fkie/issues/24>`_
+  Thanks to @garyservin for pull request `#24 <https://github.com/fkie/multimaster_fkie/issues/24>`_:
+  * Don't exit if we're on localhost, just log a warning
+  * Added support for different logging levels in master_monitor:
+  currently all logs are marked as warnings, where some should be marked
+  as errors.
+* multimaster_fkie: reduced logs and warnings on stop nodes while closing node_manager
+* multimaster_fkie: reduced logging of exceptions
+* master_discovery_fkie: spaces and typos removed
+* master_discovery_fkie: fixed link quality calculation
+* Contributors: Alexander Tiderko
+
 0.4.2 (2015-10-19)
 ------------------
 * master_discovery_fkie: fixed the updates of remote nodes registered on local master
