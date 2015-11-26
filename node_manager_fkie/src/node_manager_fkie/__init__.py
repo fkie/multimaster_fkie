@@ -34,35 +34,38 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.4.2-7" # git describe --tags --dirty --always
-__date__ = "2015-11-06"    # git log -1 --date=iso
+__version__ = "0.4.3"  # git describe --tags --dirty --always
+__date__ = "2015-11-26"  # git log -1 --date=iso
 
-import os
-import sys
-import socket
-import threading
 import argparse
+import os
+import socket
+import sys
+import threading
+
+import roslib.network
+import rospy
+
+from common import get_ros_home, masteruri_from_ros
+from file_watcher import FileWatcher
+from history import History
+from master_view_proxy import LaunchArgsSelectionRequest
+from name_resolution import NameResolution
+from progress_queue import InteractionNeededError
+from screen_handler import ScreenHandler, ScreenSelectionRequest
+from settings import Settings
+from ssh_handler import SSHhandler, AuthenticationRequest
+from start_handler import StartHandler, StartException, BinarySelectionRequest
+
 
 PKG_NAME = 'node_manager_fkie'
 
 import roslib; roslib.load_manifest(PKG_NAME)
-import rospy
-import roslib.network
 
 #PYTHONVER = (2, 7, 1)
 #if sys.version_info < PYTHONVER:
 #  print 'For full scope of operation this application requires python version > %s, current: %s' % (str(PYTHONVER), sys.version_info)
 
-from settings import Settings
-from start_handler import StartHandler, StartException, BinarySelectionRequest
-from ssh_handler import SSHhandler, AuthenticationRequest
-from screen_handler import ScreenHandler, ScreenSelectionRequest
-from progress_queue import InteractionNeededError
-from name_resolution import NameResolution
-from history import History
-from file_watcher import FileWatcher
-from common import get_ros_home, masteruri_from_ros
-from master_view_proxy import LaunchArgsSelectionRequest
 
 HOSTS_CACHE = dict()
 '''
