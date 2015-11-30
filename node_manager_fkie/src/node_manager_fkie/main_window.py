@@ -30,23 +30,47 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from datetime import datetime
+from python_qt_binding import QtCore
+from python_qt_binding import QtGui
+from python_qt_binding import loadUi
+import getpass
 import os
+import socket
 import time
 import uuid
-import socket
 import xmlrpclib
-import getpass
 
-from datetime import datetime
-
-from python_qt_binding import QtGui
-from python_qt_binding import QtCore
-#from python_qt_binding import QtUiTools
-from python_qt_binding import loadUi
-
-import roslib; roslib.load_manifest('node_manager_fkie')
+from multimaster_msgs_fkie.msg import MasterState
 import rospy
-from oneconf import hosts
+
+from master_discovery_fkie.common import resolve_url
+import gui_resources
+import node_manager_fkie as nm
+
+from .capability_table import CapabilityTable
+from .common import masteruri_from_ros, package_name
+from .detailed_msg_box import WarningMessageBox
+from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
+from .launch_config import LaunchConfig  # , LaunchConfigException
+from .launch_files_widget import LaunchFilesWidget
+from .log_widget import LogWidget
+from .master_list_model import MasterModel, MasterSyncItem
+from .master_view_proxy import MasterViewProxy
+from .menu_rqt import MenuRqt
+from .network_discovery_dialog import NetworkDiscoveryDialog
+from .parameter_dialog import ParameterDialog
+from .progress_queue import ProgressQueue  # , ProgressThread
+from .screen_handler import ScreenHandler
+from .select_dialog import SelectDialog
+from .settings_widget import SettingsWidget
+from .sync_dialog import SyncDialog
+from .update_handler import UpdateHandler
+from .xml_editor import XmlEditor
+
+
+#from python_qt_binding import QtUiTools
+import roslib; roslib.load_manifest('node_manager_fkie')
 try:
   from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
   DIAGNOSTICS_AVAILABLE = True
@@ -55,32 +79,6 @@ except:
   print >> sys.stderr, "Cannot import 'diagnostic_msgs', feature disabled."
   DIAGNOSTICS_AVAILABLE = False
 
-import gui_resources
-from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
-from .update_handler import UpdateHandler
-from .master_view_proxy import MasterViewProxy
-from .launch_config import LaunchConfig#, LaunchConfigException
-from .capability_table import CapabilityTable
-from .xml_editor import XmlEditor
-from .detailed_msg_box import WarningMessageBox
-from .network_discovery_dialog import NetworkDiscoveryDialog
-from .parameter_dialog import ParameterDialog
-from .progress_queue import ProgressQueue#, ProgressThread
-from .screen_handler import ScreenHandler
-from .sync_dialog import SyncDialog
-from .common import masteruri_from_ros, package_name
-from .select_dialog import SelectDialog
-from .master_list_model import MasterModel, MasterSyncItem
-from .log_widget import LogWidget
-from .launch_files_widget import LaunchFilesWidget
-from .settings_widget import SettingsWidget
-from .menu_rqt import MenuRqt
-
-import node_manager_fkie as nm
-
-from multimaster_msgs_fkie.msg import MasterState
-from master_discovery_fkie.common import resolve_url
-#from master_discovery_fkie.srv import DiscoverMasters, GetSyncInfo
 
 
 class MainWindow(QtGui.QMainWindow):
