@@ -964,14 +964,19 @@ class MainWindow(QtGui.QMainWindow):
     if not self.currentMaster is None:
       try:
         args = []
+        tool = 'rqt_gui'
+        prefix = 'rqt'
+        if name == 'RViz':
+          prefix = 'rviz'
+          tool = 'rviz'
         if plugin:
           args = ['-s', plugin]
-        node_name = 'rqt_%s_%s'%(name.lower().replace(' ', '_'),
-                             self.currentMaster.master_state.name.replace('-', '_'))
+        node_name = '%s_%s_%s' % (prefix, name.lower().replace(' ', '_'),
+                                  self.currentMaster.master_state.name.replace('-', '_'))
         self.currentMaster._progress_queue.add2queue(str(uuid.uuid4()),
-                                       'start logger level',
+                                       'start %s' % name,
                                        nm.starter().runNodeWithoutConfig,
-                                       ('localhost', 'rqt_gui', 'rqt_gui',
+                                       ('localhost', tool, tool,
                                         node_name, args, 
                                         '%s'%self.currentMaster.master_state.uri, 
                                         False))
