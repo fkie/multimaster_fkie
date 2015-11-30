@@ -2,8 +2,9 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.3 (2015-11-26)
+0.4.3 (2015-11-30)
 ------------------
+* node_manager_fkie: start rviz now as NO rqt plugin
 * node_manager_fkie: fixed the sort of paramerter in `add parameter` dialog
 * node_manager_fkie: adapt the chagnes in master_discovery_fkie
 * node_manager_fkie: fixed the tooltip of the buttons in the description dock

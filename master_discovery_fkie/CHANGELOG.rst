@@ -2,7 +2,7 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.3 (2015-11-26)
+0.4.3 (2015-11-30)
 ------------------
 * master_discovery_fkie: fixed compatibility to older versions
 * master_fiscovery_fkie: integrated pull request `#24 <https://github.com/fkie/multimaster_fkie/issues/24>`_
