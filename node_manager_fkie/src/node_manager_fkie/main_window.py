@@ -594,6 +594,7 @@ class MainWindow(QtGui.QMainWindow):
       self.masterTableView.setToolTip("use 'Start' button to enable the master discovering")
     else:
       self.masterTableView.setToolTip('')
+      self.networkDock.setWindowTitle("ROS Network [disabled]")
     if on:
       # remove discovered ROS master and set the local master to selected
       for uri in self.masters.keys():
@@ -606,8 +607,23 @@ class MainWindow(QtGui.QMainWindow):
             self.master_model.removeMaster(master.master_state.name)
           self.removeMaster(uri)
 #      self.masterTableView.doItemsLayout()
-
-
+    else:
+      try:
+        # determine the ROS network ID
+        mcast_group = rospy.get_param('/master_discovery/mcast_port')
+        self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
+      except:
+        # try to get the multicast port of master discovery from log
+        port = 0
+        import re
+        with open(ScreenHandler.getROSLogFile(node='/master_discovery'), 'r') as mdfile:
+          for line in mdfile:
+            if line.find("Listen for multicast at") > -1:
+              port = map(int, re.findall(r'\d+', line))[-1]
+        if port > 0:
+          self.networkDock.setWindowTitle("ROS Network [id: %d]" % (port - 11511))
+        else:
+          self.networkDock.setWindowTitle("ROS Network")
 
   def on_master_list_err_retrieved(self, masteruri, error):
     '''
@@ -1304,7 +1320,8 @@ class MainWindow(QtGui.QMainWindow):
     try:
       self._discover_dialog.raise_()
     except:
-      self._discover_dialog = NetworkDiscoveryDialog('226.0.0.0', 11511, 100, self)
+      mcast_group = rospy.get_param('/master_discovery/mcast_group', '226.0.0.0')
+      self._discover_dialog = NetworkDiscoveryDialog(mcast_group, 11511, 100, self)
       self._discover_dialog.network_join_request.connect(self._join_network)
       self._discover_dialog.show()
 
@@ -1353,7 +1370,7 @@ class MainWindow(QtGui.QMainWindow):
         for hostname in hostnames:
           try:
             args = []
-            if not port is None and port and int(port) < 100 and int(port) >= 0:
+            if port is not None and port and int(port) < 100 and int(port) >= 0:
               args.append('_mcast_port:=%s'%(11511 + int(port)))
             else:
               args.append('_mcast_port:=%s'%(11511))
