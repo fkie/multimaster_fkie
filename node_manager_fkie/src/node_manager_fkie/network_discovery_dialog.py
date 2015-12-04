@@ -138,7 +138,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
       with self.mutex:
         status_text = 'received messages: %d' % (self._received_msgs)
         self.status_text_signal.emit(status_text)
-      self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
+#      self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
       time.sleep(3)
 
   def closeEvent (self, event):
