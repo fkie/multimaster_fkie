@@ -431,7 +431,7 @@ class MainWindow(QtGui.QMainWindow):
     self.close()
 
   def _stop_updating(self):
-    if hasattr(self, "_discover_dialog"):
+    if hasattr(self, "_discover_dialog") and self._discover_dialog is not None:
       self._discover_dialog.stop()
     self.masterlist_service.stop();
     self._progress_queue.stop()
@@ -574,8 +574,7 @@ class MainWindow(QtGui.QMainWindow):
         result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
         result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
         self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
-        if not result_1 or not result_2:
-          self._setLocalMonitoring(True)
+        self._setLocalMonitoring(not result_1 or not result_2)
       except:
         pass
     else:
