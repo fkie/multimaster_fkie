@@ -172,10 +172,13 @@ class MainWindow(QtGui.QMainWindow):
 
     # initialize the view for the discovered ROS master
     self.master_model = MasterModel(self.getMasteruri())
+    self.master_model.sync_start.connect(self.on_sync_start)
+    self.master_model.sync_stop.connect(self.on_sync_stop)
     self.masterTableView.setModel(self.master_model)
+    self.master_model.parent_view = self.masterTableView
 #    self.masterTableView.setAlternatingRowColors(True)
-    self.masterTableView.clicked.connect(self.on_master_table_clicked)
-    self.masterTableView.pressed.connect(self.on_master_table_pressed)
+#    self.masterTableView.clicked.connect(self.on_master_table_clicked)
+#    self.masterTableView.pressed.connect(self.on_master_table_pressed)
     self.masterTableView.activated.connect(self.on_master_table_activated)
     sm = self.masterTableView.selectionModel()
     sm.currentRowChanged.connect(self.on_masterTableView_selection_changed)
@@ -1022,61 +1025,65 @@ class MainWindow(QtGui.QMainWindow):
         master.stop_nodes([sync_node])
     self.syncButton.setEnabled(True)
 
-  def on_sync_released(self, external_call=False):
+  def on_sync_start(self, masteruri=None):
     '''
     Enable or disable the synchronization of the master cores
     '''
     key_mod = QtGui.QApplication.keyboardModifiers()
     if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
-      if external_call:
-        self.on_sync_dialog_released(external_call=external_call)
-#      else:
-#        self.syncButton.showMenu()
-      if not self.currentMaster.master_info is None:
-        node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
-        self.syncButton.setChecked(not node is None)
+      self.on_sync_dialog_released(masteruri=masteruri, external_call=True)
+#       if not master.master_info is None:
+#         node = master.master_info.getNodeEndsWith('master_sync')
+#         self.syncButton.setChecked(not node is None)
     else:
       self.syncButton.setEnabled(False)
-      if not self.currentMaster is None:
-        if self.syncButton.isChecked():
-          # ask the user to start the master_sync with loaded launch file
-          if not self.currentMaster.master_info is None:
-            node = self.currentMaster.getNode('/master_sync')
-            if node and node[0].has_configs():
-              def_cfg_info = '\nNote: default_cfg parameter will be changed!' if node[0].has_default_cfgs(node[0].cfgs) else ''
-              ret = QtGui.QMessageBox.question(self, 'Start synchronization','Start the synchronization using loaded configuration?\n\n `No` starts the master_sync with default parameter.%s'%def_cfg_info, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-              if ret == QtGui.QMessageBox.Yes:
-                self.currentMaster.start_nodes([node[0]])
-                return
+      master = self.currentMaster
+      if masteruri is not None:
+        master = self.getMaster(masteruri, False)
+      if master is not None:
+        # ask the user to start the master_sync with loaded launch file
+        if not master.master_info is None:
+          node = master.getNode('/master_sync')
+          if node and node[0].has_configs():
+            def_cfg_info = '\nNote: default_cfg parameter will be changed!' if node[0].has_default_cfgs(node[0].cfgs) else ''
+            ret = QtGui.QMessageBox.question(self, 'Start synchronization','Start the synchronization using loaded configuration?\n\n `No` starts the master_sync with default parameter.%s'%def_cfg_info, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            if ret == QtGui.QMessageBox.Yes:
+              master.start_nodes([node[0]])
+              return
 
-          # start the master sync with default settings
-          sync_args = []
-          sync_args.append(''.join(['_interface_url:=', "'.'"]))
-          sync_args.append(''.join(['_sync_topics_on_demand:=', 'False']))
-          sync_args.append(''.join(['_ignore_hosts:=', '[]']))
-          sync_args.append(''.join(['_sync_hosts:=', '[]']))
-          sync_args.append(''.join(['_ignore_nodes:=', '[]']))
-          sync_args.append(''.join(['_sync_nodes:=', '[]']))
-          sync_args.append(''.join(['_ignore_topics:=', '[]']))
-          sync_args.append(''.join(['_sync_topics:=', '[]']))
-          sync_args.append(''.join(['_ignore_services:=', '[]']))
-          sync_args.append(''.join(['_sync_services:=', '[]']))
-          sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
+        # start the master sync with default settings
+        sync_args = []
+        sync_args.append(''.join(['_interface_url:=', "'.'"]))
+        sync_args.append(''.join(['_sync_topics_on_demand:=', 'False']))
+        sync_args.append(''.join(['_ignore_hosts:=', '[]']))
+        sync_args.append(''.join(['_sync_hosts:=', '[]']))
+        sync_args.append(''.join(['_ignore_nodes:=', '[]']))
+        sync_args.append(''.join(['_sync_nodes:=', '[]']))
+        sync_args.append(''.join(['_ignore_topics:=', '[]']))
+        sync_args.append(''.join(['_sync_topics:=', '[]']))
+        sync_args.append(''.join(['_ignore_services:=', '[]']))
+        sync_args.append(''.join(['_sync_services:=', '[]']))
+        sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
 
-          try:
-            host = nm.nameres().getHostname(self.currentMaster.masteruri)
-            self._progress_queue_sync.add2queue(str(uuid.uuid4()), 
-                                           'start sync on '+str(host), 
-                                           nm.starter().runNodeWithoutConfig, 
-                                           (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(self.currentMaster.masteruri), False, self.currentMaster.current_user))
-            self._progress_queue_sync.start()
-          except:
-            pass
-        elif not self.currentMaster.master_info is None:
-          node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
-          if not node is None:
-            self.currentMaster.stop_nodes([node])
+        try:
+          host = nm.nameres().getHostname(master.masteruri)
+          self._progress_queue_sync.add2queue(str(uuid.uuid4()), 
+                                         'start sync on '+str(host), 
+                                         nm.starter().runNodeWithoutConfig, 
+                                         (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(master.masteruri), False, master.current_user))
+          self._progress_queue_sync.start()
+        except:
+          pass
       self.syncButton.setEnabled(True)
+
+  def on_sync_stop(self, masteruri=None):
+    master = self.currentMaster
+    if masteruri is not None:
+      master = self.getMaster(masteruri, False)
+    if master is not None and master.master_info is not None:
+      node = master.master_info.getNodeEndsWith('master_sync')
+      if node is not None:
+        master.stop_nodes([node])
 
   def on_master_timecheck(self):
     # HACK: sometimes the local monitoring will not be activated. This is the detection.
@@ -1203,12 +1210,10 @@ class MainWindow(QtGui.QMainWindow):
     On click on the sync item, the master_sync node will be started or stopped,
     depending on run state.
     '''
-    item = self.master_model.itemFromIndex(selected)
-    if isinstance(item, MasterSyncItem):
-      if MasterSyncItem.START_SYNC != item.synchronized:
-        self.syncButton.setChecked(item.synchronized != MasterSyncItem.SYNC)
-        item.synchronized = MasterSyncItem.START_SYNC
-        self.on_sync_released(True)
+    pass
+#     item = self.master_model.itemFromIndex(selected)
+#     if isinstance(item, MasterSyncItem):
+#       pass
 
   def on_master_table_activated(self, selected):
     item = self.master_model.itemFromIndex(selected)

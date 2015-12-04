@@ -196,8 +196,6 @@ def __is_local(hostname):
   try:
     machine_addr = socket.gethostbyname(hostname)
   except socket.gaierror:
-    import traceback
-    print traceback.format_exc()
     with _lock:
       HOSTS_CACHE[hostname] = False
     return False

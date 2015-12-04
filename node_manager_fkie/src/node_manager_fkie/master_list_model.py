@@ -32,49 +32,57 @@
 
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
-
-import threading
-
-from urlparse import urlparse
 from socket import getaddrinfo, AF_INET, AF_INET6
+from urlparse import urlparse
+import threading
 
 import node_manager_fkie as nm
 
-class MasterSyncItem(QtGui.QStandardItem):
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 35
+class MasterSyncButtonHelper(QtCore.QObject):
+  '''
+  This is helper class to which contains a button and can emit signals. The
+  MasterSyncItem can not emit signals, but is used in QStandardModel.
+  '''
+  clicked = QtCore.Signal(bool, str)
 
   NOT_SYNC = 0
-  START_SYNC = 1
+  SWITCHED = 1
   SYNC = 2
 
   ICON_PREFIX = 'irondevil'
 #  ICON_PREFIX = 'crystal_clear'
 
-  def __init__(self, master, parent=None):
+  def __init__(self, master):
+    QtCore.QObject.__init__(self)
     self.name = master.name
-    QtGui.QStandardItem.__init__(self, self.name)
-    self.parent_item = None
     self._master = master
-    self._syncronized = MasterSyncItem.NOT_SYNC
-    self.ICONS = {MasterSyncItem.SYNC : QtGui.QIcon(":/icons/%s_sync.png"%self.ICON_PREFIX),
-                  MasterSyncItem.NOT_SYNC : QtGui.QIcon(":/icons/%s_not_sync.png"%self.ICON_PREFIX),
-                  MasterSyncItem.START_SYNC: QtGui.QIcon(":/icons/%s_start_sync.png"%self.ICON_PREFIX) }
-    self.setIcon(self.ICONS[MasterSyncItem.NOT_SYNC])
+    self._syncronized = MasterSyncButtonHelper.NOT_SYNC
+    self.ICONS = {MasterSyncButtonHelper.SYNC : QtGui.QIcon(":/icons/%s_sync.png" % self.ICON_PREFIX),
+                  MasterSyncButtonHelper.NOT_SYNC : QtGui.QIcon(":/icons/%s_not_sync.png" % self.ICON_PREFIX),
+                  MasterSyncButtonHelper.SWITCHED: QtGui.QIcon(":/icons/%s_start_sync.png" % self.ICON_PREFIX) }
+    self.widget = QtGui.QPushButton()
+#    self.widget.setFlat(True)
+    self.widget.setIcon(self.ICONS[MasterSyncButtonHelper.NOT_SYNC])
+    self.widget.setMaximumSize(48, 48)
+    self.widget.setCheckable(True)
+    self.widget.clicked.connect(self.on_sync_clicked)
 
-  @property
+  def on_sync_clicked(self, checked):
+    self.set_sync_state(MasterSyncButtonHelper.SWITCHED)
+    self.clicked.emit(checked, self._master.uri)
+
   def master(self):
     return self._master
-  
-  @property
-  def synchronized(self):
+
+  def get_sync_state(self):
     return self._syncronized
 
-  @synchronized.setter
-  def synchronized(self, value):
+  def set_sync_state(self, value):
     if self._syncronized != value:
       self._syncronized = value
       if value in self.ICONS:
-        self.setIcon(self.ICONS[value])
+        self.widget.setIcon(self.ICONS[value])
+        self.widget.setChecked(value == MasterSyncButtonHelper.SYNC)
 
   def __eq__(self, item):
     if isinstance(item, str) or isinstance(item, unicode):
@@ -91,6 +99,37 @@ class MasterSyncItem(QtGui.QStandardItem):
     return False
 
 
+class MasterSyncItem(QtGui.QStandardItem):
+  '''
+  This object is needed to insert into the QStandardModel.
+  '''
+  ITEM_TYPE = QtGui.QStandardItem.UserType + 35
+
+  def __init__(self, master):
+    QtGui.QStandardItem.__init__(self)
+    self.name = master.name
+    self.button = MasterSyncButtonHelper(master)
+    self.parent_item = None
+
+  @property
+  def master(self):
+    return self.button.master()
+
+  @property
+  def synchronized(self):
+    return self.button.get_sync_state()
+
+  @synchronized.setter
+  def synchronized(self, value):
+    self.button.set_sync_state(value)
+
+  def __eq__(self, item):
+    return self.button == item
+
+  def __gt__(self, item):
+    return self.button > item
+
+
 class MasterItem(QtGui.QStandardItem):
   '''
   The master item stored in the master model. This class stores the master as
@@ -104,6 +143,7 @@ class MasterItem(QtGui.QStandardItem):
     QtGui.QStandardItem.__init__(self, self.name)
     self.parent_item = None
     self._master = master
+    self.local = local
     self.__quality = quality
     self.descr = ''
     self.ICONS = {'green' : QtGui.QIcon(":/icons/stock_connect_green.png"),
@@ -263,25 +303,6 @@ class MasterItem(QtGui.QStandardItem):
   def type(self):
     return MasterItem.ITEM_TYPE
 
-  @classmethod
-  def getItemList(self, master, local):
-    '''
-    Creates the list of the items from master. This list is used for the 
-    visualization of master data as a table row.
-    @param master the master data
-    @type master master_discovery_fkie.ROSMaster
-    @param local: whether the master is local or not
-    @type local: bool
-    @return: the list for the representation as a row
-    @rtype: C{[L{MasterItem} or L{PySide.QtGui.QStandardItem}, ...]}
-    '''
-    items = []
-    item = MasterSyncItem(master)
-    items.append(item)
-    item = MasterItem(master, local)
-    items.append(item)
-    return items
-
   def __eq__(self, item):
     if isinstance(item, str) or isinstance(item, unicode):
       return self.master.name.lower() == item.lower()
@@ -291,8 +312,17 @@ class MasterItem(QtGui.QStandardItem):
 
   def __gt__(self, item):
     if isinstance(item, str) or isinstance(item, unicode):
+      local = False
+      try:
+        local = nm.is_local(item)
+      except:
+        pass
+      if self.local and not local:  # local hosts are at the top
+        return False
       return self.master.name.lower() > item.lower()
     elif not (item is None):
+      if self.local and not item.local:  # local hosts are at the top
+        return False
       return self.master.name.lower() > item.master.name.lower()
     return False
 
@@ -302,10 +332,14 @@ class MasterModel(QtGui.QStandardItemModel):
   '''
   The model to manage the list with masters in ROS network.
   '''
-  header = [('Sync', 22), ('Name', -1)]
+  sync_start = QtCore.Signal(str)
+  sync_stop = QtCore.Signal(str)
+
+  header = [('Sync', 28), ('Name', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
   COL_SYNC = 0
   COL_NAME = 1
+  COL_SYNCBTN = 2
 
   def __init__(self, local_masteruri=None):
     '''
@@ -314,6 +348,7 @@ class MasterModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(MasterModel.header))
     self._masteruri = local_masteruri
+    self.parent_view = None
     self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
 
   def flags(self, index):
@@ -354,8 +389,9 @@ class MasterModel(QtGui.QStandardItemModel):
     # update or add a the item
     root = self.invisibleRootItem()
     doAddItem = True
-    for i in range(root.rowCount()):
-      masterItem = root.child(i, self.COL_NAME)
+    is_local = nm.is_local(nm.nameres().getHostname(master.uri))
+    for index in range(root.rowCount()):
+      masterItem = root.child(index, self.COL_NAME)
       if (masterItem == master.name):
         # update item
         masterItem.master = master
@@ -363,17 +399,41 @@ class MasterModel(QtGui.QStandardItemModel):
         doAddItem = False
         break
       elif (masterItem > master.name):
-        mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
-        self.pyqt_workaround[master.name] = mitem  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
-        root.insertRow(i, mitem)
-        mitem[self.COL_NAME].parent_item = root
+        self.addRow(master, is_local, root, index)
         doAddItem = False
         break
     if doAddItem:
-      mitem = MasterItem.getItemList(master, (nm.is_local(nm.nameres().getHostname(master.uri))))
-      self.pyqt_workaround[master.name] = mitem  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
-      root.appendRow(mitem)
-      mitem[self.COL_NAME].parent_item = root
+      self.addRow(master, is_local, root, -1)
+
+  def addRow(self, master, local, root, index):
+    '''
+    Creates the list of the items from master. This list is used for the 
+    visualization of master data as a table row.
+    @param master the master data
+    @type master master_discovery_fkie.ROSMaster
+    @param local: whether the master is local or not
+    @type local: bool
+    @return: the list for the representation as a row
+    @rtype: C{[L{MasterItem} or L{PySide.QtGui.QStandardItem}, ...]}
+    '''
+    items = []
+    sync_item = MasterSyncItem(master)
+    items.append(sync_item)
+    name_item = MasterItem(master, local)
+    items.append(name_item)
+    name_item.parent_item = root
+    self.pyqt_workaround[master.name] = items  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+    # add the items to the data model
+    if index > -1:
+      root.insertRow(index, items)
+    else:
+      root.appendRow(items)
+    # add the sync botton and connect the signals
+    if self.parent_view is not None:
+      newindex = index if index > -1 else root.rowCount() - 1
+      self.parent_view.setIndexWidget(self.index(newindex, self.COL_SYNC), sync_item.button.widget)
+      sync_item.button.clicked.connect(self.on_sync_clicked)
+    return items
 
   def updateMasterStat(self, master, quality):
     '''
@@ -404,7 +464,7 @@ class MasterModel(QtGui.QStandardItemModel):
     for i in reversed(range(root.rowCount())):
       masterItem = root.child(i, self.COL_SYNC)
       if masterItem.master.name == master:
-        masterItem.synchronized = MasterSyncItem.SYNC if state else MasterSyncItem.NOT_SYNC
+        masterItem.synchronized = MasterSyncButtonHelper.SYNC if state else MasterSyncButtonHelper.NOT_SYNC
         break
 
   def removeMaster(self, master):
@@ -472,3 +532,9 @@ class MasterModel(QtGui.QStandardItemModel):
       masterItem = root.child(i, self.COL_NAME)
       if masterItem and masterItem.master.name == master:
         masterItem.updateDescription(descr)
+
+  def on_sync_clicked(self, checked, masteruri):
+    if checked:
+      self.sync_start.emit(masteruri)
+    else:
+      self.sync_stop.emit(masteruri)
