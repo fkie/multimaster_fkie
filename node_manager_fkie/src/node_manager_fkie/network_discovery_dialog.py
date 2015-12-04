@@ -36,9 +36,8 @@ from python_qt_binding import QtCore, QtGui
 import socket
 import threading
 import time
+import traceback
 
-import roslib
-import roslib.message
 import rospy
 
 from master_discovery_fkie.master_discovery import Discoverer
@@ -66,6 +65,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     '''
     QtGui.QDialog.__init__(self, parent=parent)
     threading.Thread.__init__(self)
+    self.default_port = default_port
     self.setObjectName('NetworkDiscoveryDialog')
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
@@ -87,82 +87,65 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     self.status_text_signal.connect(self.status_label.setText)
 
     self._networks_count = networks_count
-    self.sockets = []
-    for p in range(networks_count):
-      msock = DiscoverSocket(default_port + p, default_mcast_group)
-      self.sockets.append(msock)
-      msock.settimeout(self.TIMEOUT)
     self._running = True
-
+    self._received_msgs = 0
     self._discovered = dict()
-
     self._hosts = dict()  # resolution for hostname and address
-
     self.mutex = threading.RLock()
-#    thread = threading.Thread(target=self._listen)
+    self.sockets = []
+    with self.mutex:
+      for p in range(networks_count):
+        msock = DiscoverSocket(default_port + p, default_mcast_group)
+        self.sockets.append(msock)
+        msock.settimeout(self.TIMEOUT)
+        msock.set_message_callback(self.on_heartbeat_received)
     self.setDaemon(True)
     self.start()
 
+  def on_heartbeat_received(self, msg, address):
+    force_update = False
+    with self.mutex:
+      try:
+        hostname = self._hosts[address[0]]
+      except:
+        hostname = nm.nameres().hostname(str(address[0]))
+        if hostname is None or hostname == str(address[0]):
+          self.status_text_signal.emit("resolve %s" % address[0])
+          try:
+            (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
+            nm.nameres().addInfo(None, hostname, hostname)
+            nm.nameres().addInfo(None, address[0], hostname)
+          except:
+            print traceback.format_exc(1)
+            pass
+        self._hosts[address[0]] = hostname
+      try:
+        (version, msg_tuple) = Discoverer.msg2masterState(msg, address)
+        index = address[1] - self.default_port
+        if not self._discovered.has_key(index):
+          self._discovered[index] = dict()
+        self._discovered[index][address] = (hostname, time.time())
+        self._received_msgs += 1
+        force_update = True
+      except:
+        print traceback.format_exc(1)
+    if force_update:
+      self._updateDisplay()
 
   def run(self):
-    index = 0
     self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
     while (not rospy.is_shutdown()) and self._running:
-      msg = None
-      address = None
-      status_text = ''.join(['listen on network: ', str(index), ' (', str(self._networks_count), ')'])
-      self.status_text_signal.emit(status_text)
       with self.mutex:
-        while True:
-          try:
-            (msg, address) = self.sockets[index].recvfrom(1024)
-            hostname = None
-            force_update = False
-            if not address is None:
-              try:
-                hostname = self._hosts[address[0]]
-              except:
-                hostname = nm.nameres().hostname(str(address[0]))
-                if hostname is None or hostname == str(address[0]):
-                  self.status_text_signal.emit(''.join(['resolve: ', str(address[0])]))
-                  try:
-                    (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
-                    nm.nameres().addInfo(None, hostname, hostname)
-                    nm.nameres().addInfo(None, address[0], hostname)
-                  except:
-                    import traceback
-                    print traceback.format_exc(1)
-                    pass
-                self._hosts[address[0]] = hostname
-            if not msg is None:
-              try:
-                (version, msg_tuple) = Discoverer.msg2masterState(msg, address)
-                if not self._discovered.has_key(index):
-                  self._discovered[index] = dict()
-                  force_update = True
-                self._discovered[index][address] = (hostname, time.time())
-              except Exception, e:
-                import traceback
-                print traceback.format_exc(1)
-                pass
-            if force_update:
-              self._updateDisplay()
-          except socket.timeout:
-    #        rospy.logwarn("TIMOUT ignored")
-            break
-          except socket.error:
-            import traceback
-            rospy.logwarn("socket error: %s", traceback.format_exc(1))
-            break
-          except:
-            break
-      index += 1
-      if index >= len(self.sockets):
-        index = 0
-        self._updateDisplay()
-        self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
+        status_text = 'received messages: %d' % (self._received_msgs)
+        self.status_text_signal.emit(status_text)
+      self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
+      time.sleep(3)
 
   def closeEvent (self, event):
+    self.stop()
+    QtGui.QDialog.closeEvent(self, event)
+
+  def stop(self):
     self._running = False
     with self.mutex:
       for p in range(len(self.sockets)):
@@ -170,7 +153,6 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
           self.sockets[p].close()
         except:
           pass
-    QtGui.QDialog.closeEvent(self, event)
 
   def _updateDisplay(self):
     self.display_clear_signal.emit()
@@ -203,5 +185,4 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     try:
       self.network_join_request.emit(int(url.toString()))
     except:
-      import traceback
       print traceback.format_exc(1)

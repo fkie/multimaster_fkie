@@ -79,6 +79,7 @@ class DiscoverSocket(socket.socket):
     @param unicast_only: send only unicast messages
     @type unicast_only: bool (Default: False)
     '''
+    self.port = port
     self._lock = threading.RLock()
     self.unicast_only = unicast_only
     self._closed = False
@@ -109,7 +110,7 @@ class DiscoverSocket(socket.socket):
 
     socket.socket.__init__(self, addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     if not unicast_only:
-      rospy.loginfo("Start broadcasting at ('%s', %d)", self.mgroup, port)
+      rospy.loginfo("Listen for multicast at ('%s', %d)", self.mgroup, port)
       # initialize multicast socket
       # Allow multiple copies of this program on one machine
       self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -208,6 +209,7 @@ class DiscoverSocket(socket.socket):
         self.setsockopt(socket.IPPROTO_IPV6,
                         socket.IPV6_LEAVE_GROUP,
                         self.group_bing)
+      rospy.loginfo("Stop receiving multicast at ('%s', %s)", self.mgroup, self.port)
       socket.socket.close(self)
     # close the unicast socket
     if self.unicast_socket is not None:
@@ -327,14 +329,14 @@ class DiscoverSocket(socket.socket):
     while not rospy.is_shutdown() and not self._closed:
       try:
         (msg, address) = self.recvfrom(1024)
+        with self._lock:
+          if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
+            self._msg_callback(msg, address)
       except socket.timeout:
         pass
       except socket.error:
         import traceback
         rospy.logwarn("socket error: %s", traceback.format_exc())
-      with self._lock:
-        if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
-          self._msg_callback(msg, address)
 
   def recv_loop_unicast(self):
     '''
@@ -344,14 +346,14 @@ class DiscoverSocket(socket.socket):
       while not rospy.is_shutdown() and not self._closed:
         try:
           (msg, address) = self.unicast_socket.recvfrom(1024)
+          with self._lock:
+            if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
+              self._msg_callback(msg, address)
         except socket.timeout:
           pass
         except socket.error:
           import traceback
           rospy.logwarn("unicast socket error: %s", traceback.format_exc())
-        with self._lock:
-          if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
-            self._msg_callback(msg, address)
 
 
 

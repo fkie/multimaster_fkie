@@ -431,6 +431,9 @@ class MainWindow(QtGui.QMainWindow):
     self.close()
 
   def _stop_updating(self):
+    if hasattr(self, "_discover_dialog"):
+      self._discover_dialog.stop()
+    self.masterlist_service.stop();
     self._progress_queue.stop()
     self._progress_queue_sync.stop()
     self._update_handler.stop()
@@ -807,7 +810,7 @@ class MainWindow(QtGui.QMainWindow):
       if self._con_tries[masteruri] > 2:
         self._setLocalMonitoring(True)
     master = self.getMaster(masteruri, False)
-    if master and not master.master_state is None:
+    if master and master.master_state is not None:
       self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri, self.DELAYED_NEXT_REQ_ON_ERR)
 
   def on_conn_stats_updated(self, stats):
