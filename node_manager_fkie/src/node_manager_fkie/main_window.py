@@ -109,6 +109,7 @@ class MainWindow(QtGui.QMainWindow):
     self._changed_files = dict()
     self._changed_binaries = dict()
     self._changed_files_param = dict()
+    self._syncs_to_start = []  # hostnames
     #self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
     # setup main window frame
     self.setObjectName('MainWindow')
@@ -732,6 +733,15 @@ class MainWindow(QtGui.QMainWindow):
         self.master_model.removeMaster(msg.master.name)
 #        self.masterTableView.doItemsLayout()
         self.removeMaster(msg.master.uri)
+    # start master_sync, if it was selected in the start dialog to start with master_dsicovery
+    if self._syncs_to_start:
+      if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+        if host in self._syncs_to_start:
+          self.on_sync_start(msg.master.uri)
+          self._syncs_to_start.remove(host)
+        if msg.master.name in self._syncs_to_start:
+          self.on_sync_start(msg.master.uri)
+          self._syncs_to_start.remove(msg.master.name)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
     #'print "**on_master_state_changed"
@@ -1070,25 +1080,19 @@ class MainWindow(QtGui.QMainWindow):
               return
 
         # start the master sync with default settings
-        sync_args = []
-        sync_args.append(''.join(['_interface_url:=', "'.'"]))
-        sync_args.append(''.join(['_sync_topics_on_demand:=', 'False']))
-        sync_args.append(''.join(['_ignore_hosts:=', '[]']))
-        sync_args.append(''.join(['_sync_hosts:=', '[]']))
-        sync_args.append(''.join(['_ignore_nodes:=', '[]']))
-        sync_args.append(''.join(['_sync_nodes:=', '[]']))
-        sync_args.append(''.join(['_ignore_topics:=', '[]']))
-        sync_args.append(''.join(['_sync_topics:=', '[]']))
-        sync_args.append(''.join(['_ignore_services:=', '[]']))
-        sync_args.append(''.join(['_sync_services:=', '[]']))
-        sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
-
+        default_sync_args = ["_interface_url:='.'",
+                             '_sync_topics_on_demand:=False',
+                             '_ignore_hosts:=[]', '_sync_hosts:=[]',
+                             '_ignore_nodes:=[]', '_sync_nodes:=[]',
+                             '_ignore_topics:=[]', '_sync_topics:=[]',
+                             '_ignore_services:=[]', '_sync_services:=[]',
+                             '_sync_remote_nodes:=False']
         try:
           host = nm.nameres().getHostname(master.masteruri)
           self._progress_queue_sync.add2queue(str(uuid.uuid4()), 
                                          'start sync on '+str(host), 
                                          nm.starter().runNodeWithoutConfig, 
-                                         (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', sync_args, str(master.masteruri), False, master.current_user))
+                                         (str(host), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, str(master.masteruri), False, master.current_user))
           self._progress_queue_sync.start()
         except:
           pass
@@ -1342,17 +1346,19 @@ class MainWindow(QtGui.QMainWindow):
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
+              'Start sync' : ('bool', 'False'),
               'Optional Parameter' : ('list', params_optional) }
     dia = ParameterDialog(params, sidebar_var='Host')
     dia.setFilterVisible(False)
     dia.setWindowTitle('Start discovery')
-    dia.resize(450,300)
+    dia.resize(450, 330)
     dia.setFocusField('Host')
     if dia.exec_():
       try:
         params = dia.getKeywords()
         hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
         port = params['Network(0..99)']
+        start_sync = params['Start sync']
         discovery_type = params['Optional Parameter']['Discovery type']
         mastername = 'autodetect'
         masteruri = 'ROS_MASTER_URI'
@@ -1383,12 +1389,30 @@ class MainWindow(QtGui.QMainWindow):
             usr = username
             if username == 'last used':
               usr = nm.settings().host_user(hostname)
+            muri = None if masteruri == 'ROS_MASTER_URI' else str(masteruri)
             self._progress_queue.add2queue(str(uuid.uuid4()), 
                                            'start discovering on %s'%hostname,
                                            nm.starter().runNodeWithoutConfig, 
-                                           (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, (None if masteruri == 'ROS_MASTER_URI' else str(masteruri)), False, usr))
+                                           (str(hostname), 'master_discovery_fkie', str(discovery_type), str(discovery_type), args, muri, False, usr))
 
-          except (Exception, nm.StartException), e:
+            # start the master sync with default settings
+            if start_sync:
+              if nm.is_local(hostname):
+                default_sync_args = ["_interface_url:='.'",
+                                     '_sync_topics_on_demand:=False',
+                                     '_ignore_hosts:=[]', '_sync_hosts:=[]',
+                                     '_ignore_nodes:=[]', '_sync_nodes:=[]',
+                                     '_ignore_topics:=[]', '_sync_topics:=[]',
+                                     '_ignore_services:=[]', '_sync_services:=[]',
+                                     '_sync_remote_nodes:=False']
+                self._progress_queue_sync.add2queue(str(uuid.uuid4()),
+                                               'start sync on %s' % hostname,
+                                               nm.starter().runNodeWithoutConfig,
+                                               (str(hostname), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, muri, False, usr))
+                self._progress_queue_sync.start()
+              else:
+                self._syncs_to_start.append(hostname)
+          except (Exception, nm.StartException) as e:
             import traceback
             print traceback.format_exc(1)
             rospy.logwarn("Error while start master_discovery for %s: %s"%(str(hostname), e))
@@ -1396,7 +1420,7 @@ class MainWindow(QtGui.QMainWindow):
                               'Error while start master_discovery',
                               str(e)).exec_()
           self._progress_queue.start()
-      except Exception, e:
+      except Exception as e:
         WarningMessageBox(QtGui.QMessageBox.Warning, "Start error", 
                           'Error while parse parameter',
                           str(e)).exec_()
