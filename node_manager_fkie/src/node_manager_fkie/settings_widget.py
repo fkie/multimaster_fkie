@@ -29,11 +29,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import os
-
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+import os
 
 import node_manager_fkie as nm
 
@@ -155,6 +154,14 @@ class SettingsWidget(QtGui.QDockWidget):
                                       'state on changes. You can deactivate this behavior to '
                                       'reduce the network load. If autoupdate is deactivated '
                                       'you must refresh the state manually.</p>'
+                                   },),
+                'Start sync with discovery:' : ({
+                                   'value' : nm.settings().start_sync_with_discovery,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'start_sync_with_discovery',
+                                   'value_default' : nm.settings().START_SYNC_WITH_DISCOVERY,
+                                   'tooltip'  : "<p>Sets 'start sync' in 'Start' master discovery "
+                                                "dialog to True, if this option is set to true.</p>"
                                    },)
                }
     self.settings_model.init_settings(settings)

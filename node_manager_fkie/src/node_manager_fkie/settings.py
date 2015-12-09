@@ -115,6 +115,8 @@ class Settings(object):
   AUTOUPDATE = True
   MAX_TIMEDIFF = 0.5
 
+  START_SYNC_WITH_DISCOVERY = False
+
   def __init__(self):
     self.reload()
 
@@ -166,6 +168,7 @@ class Settings(object):
     self.logging.loglevel_roscpp = settings.value('logging/level_roscpp', LoggingConfig.LOGLEVEL_ROSCPP)
     self.logging.loglevel_superdebug = settings.value('logging/level_superdebug', LoggingConfig.LOGLEVEL_SUPERDEBUG)
     self.logging.console_format = settings.value('logging/rosconsole_format', LoggingConfig.CONSOLE_FORMAT)
+    self._start_sync_with_discovery = self.str2bool(settings.value('start_sync_with_discovery', self.START_SYNC_WITH_DISCOVERY))
 
   def masteruri(self):
     return self._masteruri
@@ -341,6 +344,18 @@ class Settings(object):
     settings.setValue('logging/level_roscpp', self.logging.loglevel_roscpp)
     settings.setValue('logging/level_superdebug', self.logging.loglevel_superdebug)
     settings.setValue('logging/rosconsole_format', self.logging.console_format)
+
+  @property
+  def start_sync_with_discovery(self):
+    return self._start_sync_with_discovery
+
+  @start_sync_with_discovery.setter
+  def start_sync_with_discovery(self, value):
+    v = self.str2bool(value)
+    if self._start_sync_with_discovery != v:
+      self._start_sync_with_discovery = v
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('start_sync_with_discovery', self._start_sync_with_discovery)
 
   def str2bool(self, v):
     if isinstance(v, bool):

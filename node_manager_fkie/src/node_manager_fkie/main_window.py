@@ -1346,7 +1346,7 @@ class MainWindow(QtGui.QMainWindow):
                       }
     params = {'Host' : ('string', 'localhost'),
               'Network(0..99)' : ('int', '0'),
-              'Start sync' : ('bool', 'False'),
+              'Start sync' : ('bool', nm.settings().start_sync_with_discovery),
               'Optional Parameter' : ('list', params_optional) }
     dia = ParameterDialog(params, sidebar_var='Host')
     dia.setFilterVisible(False)
