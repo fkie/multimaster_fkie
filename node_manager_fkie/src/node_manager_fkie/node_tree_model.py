@@ -32,19 +32,20 @@
 
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
-
 import re
+import traceback
+
 import roslib
 import rospy
-import node_manager_fkie as nm
+
 from master_discovery_fkie.master_info import NodeInfo
 from parameter_handler import ParameterHandler
+import node_manager_fkie as nm
 
 
 ################################################################################
 ##############                  GrouptItem                        ##############
 ################################################################################
-
 class GroupItem(QtGui.QStandardItem):
   '''
   The GroupItem stores the information about a group of nodes. 
@@ -122,8 +123,7 @@ class GroupItem(QtGui.QStandardItem):
           else:
             self._re_cap_nodes[(config, ns, groupname)] = re.compile('\b', re.I)
         except:
-          import traceback
-          print traceback.format_exc(1)
+          rospy.logwarn("create_cap_nodes_pattern: %s" % traceback.format_exc(1))
 
 
   def addCapabilities(self, config, capabilities, masteruri):
@@ -161,7 +161,6 @@ class GroupItem(QtGui.QStandardItem):
               row = self.takeRow(i)
               groupItem._addRow_sorted(row)
               group_changed = True
-#              row[0].parent_item = groupItem
 
           # create new or update existing items in the group
           for node_name in nodes:
@@ -183,7 +182,6 @@ class GroupItem(QtGui.QStandardItem):
           if group_changed:
             groupItem.updateDisplayedConfig()
             groupItem.updateIcon()
-#          groupItem.updateTooltip()
 
 
   def remCapablities(self, config):
@@ -538,7 +536,6 @@ class GroupItem(QtGui.QStandardItem):
             tooltip += '<b><u>Detailed description:</u></b>'
             tooltip += examples.html_body(unicode(self.descr))
         except:
-          import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
           tooltip += '<br>'
       # get nodes
@@ -650,12 +647,11 @@ class HostItem(GroupItem):
     @type local: C{bool}
     '''
     name = self.hostNameFrom(masteruri, address)
-    self._hostname = nm.nameres().mastername(masteruri, address)
     self._masteruri = masteruri
-    if self._hostname is None:
-      self._hostname = str(address)
+    self._host = address
+    self._mastername = address
+    self._local = local
     GroupItem.__init__(self, name, parent)
-    self.id = (unicode(masteruri), unicode(address))
     image_file = nm.settings().robot_image_file(name)
     if QtCore.QFile.exists(image_file):
       self.setIcon(QtGui.QIcon(image_file))
@@ -668,11 +664,22 @@ class HostItem(GroupItem):
 
   @property
   def hostname(self):
-    return self._hostname
+    return nm.nameres().hostname(self._host)
+
+  @property
+  def address(self):
+    return nm.nameres().resolve(self._host)
 
   @property
   def masteruri(self):
     return self._masteruri
+
+  @property
+  def mastername(self):
+    result = nm.nameres().mastername(self._masteruri, self._host)
+    if not result:
+      result = self.hostname
+    return result
 
   @classmethod
   def hostNameFrom(cls, masteruri, address):
@@ -696,8 +703,8 @@ class HostItem(GroupItem):
       result += '[%s]'%masteruri
     #'print "- hostNameFrom"
     return result
-    
-  
+
+
   def updateTooltip(self):
     '''
     Creates a tooltip description based on text set by L{updateDescription()} 
@@ -723,20 +730,19 @@ class HostItem(GroupItem):
             tooltip += '<b><u>Detailed description:</u></b>'
             tooltip += examples.html_body(self.descr, input_encoding='utf8')
         except:
-          import traceback
           rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
           tooltip += '<br>'
-    tooltip += '<h3>%s</h3>'%self._hostname
-    tooltip += '<font size="+1"><i>%s</i></font><br>'%self.id[0]
-    tooltip += '<font size="+1">Host: <b>%s</b></font><br>'%self.id[1]
-    tooltip += '<a href="open_sync_dialog://%s">open sync dialog</a>'%(str(self.id[0]).replace('http://', ''))
+    tooltip += '<h3>%s</h3>' % self.mastername
+    tooltip += '<font size="+1"><i>%s</i></font><br>'%self.masteruri
+    tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' [%s]' % self.address if self.address is not None else '')
+    tooltip += '<a href="open_sync_dialog://%s">open sync dialog</a>'%(str(self.masteruri).replace('http://', ''))
     tooltip += '<p>'
-    tooltip += '<a href="show_all_screens://%s">show all screens</a>'%(str(self.id[0]).replace('http://', ''))
+    tooltip += '<a href="show_all_screens://%s">show all screens</a>'%(str(self.masteruri).replace('http://', ''))
     tooltip += '<p>'
-    if not nm.is_local(self.id[1]):
-      tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>'%(self.id[1], self.id[1], self.id[1])
+    if not nm.is_local(self.address):
+      tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
       tooltip += '<p>'
-    tooltip += '<a href="remove_all_launch_server://%s">kill all launch server</a>'%str(self.id[0]).replace('http://', '')
+    tooltip += '<a href="remove_all_launch_server://%s">kill all launch server</a>'%str(self.masteruri).replace('http://', '')
     tooltip += '<p>'
     # get sensors
     capabilities = []
@@ -749,7 +755,6 @@ class HostItem(GroupItem):
       try:
         tooltip += examples.html_body('- %s'%('\n- '.join(capabilities)), input_encoding='utf8')
       except:
-        import traceback
         rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
     return '<div>%s</div>'%tooltip if tooltip else ''
 
@@ -761,11 +766,14 @@ class HostItem(GroupItem):
     Compares the address of the host.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return str(self.id).lower() == item.lower()
+      rospy.logwarn("compare HostItem with unicode depricated")
+      return False
     elif isinstance(item, tuple):
-      return str(self.id).lower() == str(item).lower()
+      if self.masteruri == item[0]:
+        return item[1] in [self.hostname, self.address]
     elif isinstance(item, HostItem):
-      return str(self.id).lower() == str(item.id).lower()
+      if self.masteruri == item.masteruri:
+        return self.hostname == item.hostname or self.address == item.address
     return False
 
   def __gt__(self, item):
@@ -773,11 +781,18 @@ class HostItem(GroupItem):
     Compares the address of the host.
     '''
     if isinstance(item, str) or isinstance(item, unicode):
-      return str(self.id).lower() > item.lower()
+      rospy.logwarn("compare HostItem with unicode depricated")
+      return False
     elif isinstance(item, tuple):
-      return str(self.id).lower() > str(item).lower()
+      if self.address > item[1]:
+        return True
+      elif self.address == item[1]:
+        return self.hostname > item[1]
     elif isinstance(item, HostItem):
-      return str(self.id).lower() > str(item.id).lower()
+      if self.address > item.address:
+        return True
+      elif self.address == item.address:
+        return self.hostname > item.hostname
     return False
 
 
@@ -1276,8 +1291,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     if masteruri is None:
       return None
-    host = (unicode(masteruri), unicode(address))
-    local = (self.local_addr in host)
+    host = (masteruri, address)
+    local = (self.local_addr in [address, nm.nameres().resolve(address)])
     # find the host item by address
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):
@@ -1318,7 +1333,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if not hosts.has_key(host.id):
+      if (host.masteruri, host.hostname) not in hosts and (host.masteruri, host.address) not in hosts:
         host.updateRunningNodeState({})
     self.removeEmptyHosts()
     # request for all nodes in host the parameter capability_group

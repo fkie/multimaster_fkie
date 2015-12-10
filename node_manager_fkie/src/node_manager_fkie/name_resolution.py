@@ -34,6 +34,8 @@ from threading import Thread, RLock
 import socket
 import rospy
 
+RESOLVES = {}  # hostname : address
+
 class MasterEntry(object):
 
   def __init__(self, masteruri=None, mastername=None, address=None, hostname=None):
@@ -42,7 +44,6 @@ class MasterEntry(object):
     self._hostnames = [hostname] if hostname else []
     self.mutex = RLock()
     self._addresses = []
-    self._resolves = {}  # hostname : address
     self.addAddress(address)
 
   def __repr__(self):
@@ -77,15 +78,15 @@ class MasterEntry(object):
   def addAddress(self, address):
     with self.mutex:
       host = address
-      if address in self._resolves:
-        host = self._resolves[address]
+      if address in RESOLVES:
+        host = RESOLVES[address]
       if host and not self.hasAddress(host):
         self._add_address(host)
 
   def _add_address(self, address):
     host = address
-    if address in self._resolves:
-      host = self._resolves[address]
+    if address in RESOLVES:
+      host = RESOLVES[address]
     try:
       socket.inet_pton(socket.AF_INET, host)
       # ok, it is a legal IPv4 address
@@ -120,7 +121,7 @@ class MasterEntry(object):
       # we prefer IPv4
       machine_addr = ip4_addr if ip4_addr else ip6_addr
       with self.mutex:
-        self._resolves[hostname] = machine_addr
+        RESOLVES[hostname] = machine_addr
         if not self.hasAddress(machine_addr):
           self._addresses.append(machine_addr)
     except socket.gaierror:
@@ -338,6 +339,11 @@ class NameResolution(object):
           result = m.getHostname()
           return result if result else address
       return address
+
+  def resolve(self, hostname):
+    if hostname in RESOLVES:
+      return RESOLVES[hostname]
+    return hostname
 
   @classmethod
   def getHostname(cls, url):

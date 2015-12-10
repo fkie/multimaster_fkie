@@ -30,49 +30,45 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 from python_qt_binding import loadUi
-
-import re
-import os
-import sys
-import socket
-import xmlrpclib
-#import time
-import uuid
-import getpass
-
 from urlparse import urlparse
+import getpass
+import os
+import re
+import socket
+import sys
+import uuid
+import xmlrpclib
 
-import rospy
-import roslib
 from rosgraph.names import is_legal_name
+import roslib
+import rospy
 
-
-import node_manager_fkie as nm
-from node_manager_fkie.html_delegate import HTMLDelegate
-from node_manager_fkie.topic_list_model import TopicModel, TopicItem
-from node_manager_fkie.node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
-from node_manager_fkie.service_list_model import ServiceModel, ServiceItem
-from node_manager_fkie.parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
-from node_manager_fkie.default_cfg_handler import DefaultConfigHandler
-from node_manager_fkie.launch_config import LaunchConfig#, LaunchConfigException
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_fkie.parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
-from node_manager_fkie.select_dialog import SelectDialog
-#from echo_dialog import EchoDialog
-from node_manager_fkie.parameter_handler import ParameterHandler
-from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
-from node_manager_fkie.progress_queue import ProgressQueue, InteractionNeededError #, ProgressThread
 from node_manager_fkie.common import masteruri_from_ros, get_packages, package_name, resolve_paths
+from node_manager_fkie.default_cfg_handler import DefaultConfigHandler
+from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
+from node_manager_fkie.html_delegate import HTMLDelegate
+from node_manager_fkie.launch_config import LaunchConfig  # , LaunchConfigException
 from node_manager_fkie.launch_server_handler import LaunchServerHandler
-from node_manager_fkie.supervised_popen import SupervisedPopen
+from node_manager_fkie.node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
+from node_manager_fkie.parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
+from node_manager_fkie.parameter_handler import ParameterHandler
+from node_manager_fkie.parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
+from node_manager_fkie.progress_queue import ProgressQueue, InteractionNeededError  # , ProgressThread
+from node_manager_fkie.select_dialog import SelectDialog
+from node_manager_fkie.service_list_model import ServiceModel, ServiceItem
 from node_manager_fkie.start_handler import AdvRunCfg
-#from yaml import nodes
+from node_manager_fkie.supervised_popen import SupervisedPopen
+from node_manager_fkie.topic_list_model import TopicModel, TopicItem
+import node_manager_fkie as nm
 
 
-
+# import time
+# from echo_dialog import EchoDialog
+# from yaml import nodes
 class LaunchArgsSelectionRequest(Exception):
   ''' Request needed to set the args of a launchfile from another thread.
   @param args: a dictionary with args and values
@@ -1114,7 +1110,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.on_service_selection_changed(None, None, True)
 
   def on_host_inserted(self, item):
-    if item.id == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
+    if item == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
       index = self.node_tree_model.indexFromItem(item)
       if index.isValid():
         self.masterTab.nodeTreeView.expand(index)
