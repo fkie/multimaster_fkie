@@ -705,7 +705,6 @@ class MainWindow(QtGui.QMainWindow):
       self.getMaster(msg.master.uri).master_state = msg.master
       self._assigne_icon(msg.master.name)
       self.master_model.updateMaster(msg.master)
-#      self.masterTableView.doItemsLayout()
       if nm.settings().autoupdate:
         self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
       else:
@@ -719,7 +718,6 @@ class MainWindow(QtGui.QMainWindow):
       self.getMaster(msg.master.uri).master_state = msg.master
       self._assigne_icon(msg.master.name)
       self.master_model.updateMaster(msg.master)
-#      self.masterTableView.doItemsLayout()
       if nm.settings().autoupdate:
         self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
       else:
@@ -731,17 +729,22 @@ class MainWindow(QtGui.QMainWindow):
       else:
         nm.nameres().removeMasterEntry(msg.master.uri)
         self.master_model.removeMaster(msg.master.name)
-#        self.masterTableView.doItemsLayout()
         self.removeMaster(msg.master.uri)
     # start master_sync, if it was selected in the start dialog to start with master_dsicovery
     if self._syncs_to_start:
       if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+        # we don't know which name for host was used to start master discovery
         if host in self._syncs_to_start:
           self.on_sync_start(msg.master.uri)
           self._syncs_to_start.remove(host)
-        if msg.master.name in self._syncs_to_start:
+        elif msg.master.name in self._syncs_to_start:
           self.on_sync_start(msg.master.uri)
           self._syncs_to_start.remove(msg.master.name)
+        else:
+          address = nm.nameres().address(msg.master.uri)
+          if address in self._syncs_to_start:
+            self.on_sync_start(msg.master.uri)
+            self._syncs_to_start.remove(address)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
     #'print "**on_master_state_changed"
@@ -1411,7 +1414,8 @@ class MainWindow(QtGui.QMainWindow):
                                                (str(hostname), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, muri, False, usr))
                 self._progress_queue_sync.start()
               else:
-                self._syncs_to_start.append(hostname)
+                if hostname not in self._syncs_to_start:
+                  self._syncs_to_start.append(hostname)
           except (Exception, nm.StartException) as e:
             import traceback
             print traceback.format_exc(1)

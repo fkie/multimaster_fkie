@@ -30,22 +30,27 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from threading import RLock
+from threading import Thread, RLock
+import socket
+import rospy
 
 class MasterEntry(object):
-  
+
   def __init__(self, masteruri=None, mastername=None, address=None, hostname=None):
     self.masteruri = masteruri
     self._masternames = [mastername] if mastername else []
     self._hostnames = [hostname] if hostname else []
-    self._addresses = [address] if address else []
-    
+    self.mutex = RLock()
+    self._addresses = []
+    self._resolves = {}  # hostname : address
+    self.addAddress(address)
+
   def __repr__(self):
     return ''.join([str(self.masteruri), ':\n',
                    '  masternames: ', str(self._masternames), '\n',
                    '  hostnames: ', str(self._hostnames), '\n',
                    '  addresses: ', str(self._addresses), '\n'])
-  
+
   def hasMastername(self, mastername):
     if mastername in self._masternames:
       return True
@@ -70,47 +75,97 @@ class MasterEntry(object):
       self._hostnames.append(hostname)
 
   def addAddress(self, address):
-    if address and not self.hasAddress(address):
-      self._addresses.append(address)
-      
+    with self.mutex:
+      host = address
+      if address in self._resolves:
+        host = self._resolves[address]
+      if host and not self.hasAddress(host):
+        self._add_address(host)
+
+  def _add_address(self, address):
+    host = address
+    if address in self._resolves:
+      host = self._resolves[address]
+    try:
+      socket.inet_pton(socket.AF_INET, host)
+      # ok, it is a legal IPv4 address
+      with self.mutex:
+        self._addresses.append(host)
+    except socket.error:
+      # try for IPv6
+      try:
+        socket.inet_pton(socket.AF_INET6, host)
+        # ok, it is a legal IPv6 address
+        with self.mutex:
+          if not self.hasAddress(host):
+            self._addresses.append(host)
+      except socket.error:
+        # not legal IP address, resolve the name in a thread
+        thread = Thread(target=self._get_address, args=((address,)))
+        thread.daemon = True
+        thread.start()
+
+  def _get_address(self, hostname):
+    try:
+      # resolve hostname
+      addr_infos = socket.getaddrinfo(hostname, 0)
+      ip4_addr = ''
+      ip6_addr = ''
+      for (family, socktype, _, _, sockaddr) in addr_infos:
+        if socktype == socket.SOCK_DGRAM:
+          if family == socket.AF_INET:
+            ip4_addr = sockaddr[0]
+          elif family == socket.AF_INET6:
+            ip6_addr = sockaddr[0]
+      # we prefer IPv4
+      machine_addr = ip4_addr if ip4_addr else ip6_addr
+      with self.mutex:
+        self._resolves[hostname] = machine_addr
+        if not self.hasAddress(machine_addr):
+          self._addresses.append(machine_addr)
+    except socket.gaierror:
+      # no suitable address found
+      pass
+
   def getMastername(self):
-    if len(self._masternames) > 0:
+    try:
       return self._masternames[0]
-    return None
-  
+    except:
+      return None
+
   def getMasternames(self):
     return list(self._masternames)
 
   def getAddress(self):
-    if len(self._addresses) > 0:
-      return self._addresses[0]
-    return None
+    with self.mutex:
+      try:
+        return self._addresses[0]
+      except:
+        return None
 
   def getHostname(self):
-    if len(self._hostnames) > 0:
+    try:
       return self._hostnames[0]
-    return None
+    except:
+      return None
 
   def removeExtMastername(self, mastername):
-    if len(self._masternames) > 1:
-      try:
-        self._masternames.remove(mastername)
-      except:
-        pass
+    try:
+      self._masternames.remove(mastername)
+    except:
+      pass
 
   def removeExtHostname(self, hostname):
-    if len(self._hostnames) > 1:
-      try:
-        self._hostnames.remove(hostname)
-      except:
-        pass
+    try:
+      self._hostnames.remove(hostname)
+    except:
+      pass
 
   def removeExtAddress(self, address):
-    if len(self._addresses) > 1:
-      try:
-        self._addresses.remove(address)
-      except:
-        pass
+    try:
+      self._addresses.remove(address)
+    except:
+      pass
 
 
 class NameResolution(object):
@@ -118,13 +173,13 @@ class NameResolution(object):
   This class stores the association between master URI, master name and 
   host name or IP. Both the setter and the getter methods are thread safe.
   '''
-  
+
   def __init__(self):
     self.mutex = RLock()
     self._masters = [] #sets with masters
     self._hosts = [] #sets with hosts
     self._address = [] # avoid the mixing of ip and name as address
-  
+
   def removeMasterEntry(self, masteruri):
     with self.mutex:
       for m in self._masters:
@@ -211,15 +266,15 @@ class NameResolution(object):
     '''
     Not thead safe
     '''
-#    with self.mutex:
     mm = self.masteruri(mastername)
     if mm and mm != masteruri:
-      print "EROROR name", mastername, "bereits fuer", mm, "vergeben!"
       nr = 2
+      new_name = '%s_%d' % (mastername, nr)
       while mm and mm != masteruri:
-        mm = self.masteruri('_'.join([mastername, str(nr)]))
+        new_name = '%s_%d' % (mastername, nr)
         nr = nr + 1
-      return '_'.join([mastername, str(nr)])
+      rospy.logwarn("master name '%s' is already assigned to '%s', rename to '%s'"(mastername, mm, new_name))
+      return new_name
     return mastername
 
   def hasMaster(self, masteruri):
@@ -288,7 +343,7 @@ class NameResolution(object):
   def getHostname(cls, url):
     '''
     Returns the host name used in a url
-    
+
     @return: host or None if url is invalid
     @rtype:  C{str}
     '''
@@ -297,4 +352,3 @@ class NameResolution(object):
     from urlparse import urlparse
     o = urlparse(url)
     return o.hostname
- 
