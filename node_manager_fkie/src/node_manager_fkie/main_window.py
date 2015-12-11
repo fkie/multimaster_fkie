@@ -676,7 +676,7 @@ class MainWindow(QtGui.QMainWindow):
     for m in master_list:
       if not m.uri is None:
         host = nm.nameres().getHostname(m.uri)
-        nm.nameres().addMasterEntry(m.uri, m.name, host, host)
+        nm.nameres().add_master_entry(m.uri, m.name, host)
         m.name = nm.nameres().mastername(m.uri)
         master = self.getMaster(m.uri)
         master.master_state = m
@@ -698,9 +698,9 @@ class MainWindow(QtGui.QMainWindow):
     if hasattr(self, "_on_finish"):
       rospy.logdebug("ignore changes on %s, because currently on closing...", msg.master.uri)
       return;
-    host=nm.nameres().getHostname(msg.master.uri)
+    host = nm.nameres().getHostname(msg.master.uri)
     if msg.state == MasterState.STATE_CHANGED:
-      nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
+      nm.nameres().add_master_entry(msg.master.uri, msg.master.name, host)
       msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
       self._assigne_icon(msg.master.name)
@@ -713,7 +713,7 @@ class MainWindow(QtGui.QMainWindow):
       # if new master with uri of the local master is received update the master list 
       if msg.master.uri == self.getMasteruri():
         self.masterlist_service.retrieveMasterList(msg.master.uri, False)
-      nm.nameres().addMasterEntry(msg.master.uri, msg.master.name, host, host)
+      nm.nameres().add_master_entry(msg.master.uri, msg.master.name, host)
       msg.master.name = nm.nameres().mastername(msg.master.uri)
       self.getMaster(msg.master.uri).master_state = msg.master
       self._assigne_icon(msg.master.name)
@@ -727,7 +727,7 @@ class MainWindow(QtGui.QMainWindow):
         # switch to locale monitoring, if the local master discovering was removed
         self._setLocalMonitoring(True)
       else:
-        nm.nameres().removeMasterEntry(msg.master.uri)
+        nm.nameres().remove_master_entry(msg.master.uri)
         self.master_model.removeMaster(msg.master.name)
         self.removeMaster(msg.master.uri)
     # start master_sync, if it was selected in the start dialog to start with master_dsicovery
@@ -741,10 +741,11 @@ class MainWindow(QtGui.QMainWindow):
           self.on_sync_start(msg.master.uri)
           self._syncs_to_start.remove(msg.master.name)
         else:
-          address = nm.nameres().address(msg.master.uri)
-          if address in self._syncs_to_start:
-            self.on_sync_start(msg.master.uri)
-            self._syncs_to_start.remove(address)
+          addresses = nm.nameres().addresses(msg.master.uri)
+          for address in addresses:
+            if address in self._syncs_to_start:
+              self.on_sync_start(msg.master.uri)
+              self._syncs_to_start.remove(address)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
     #'print "**on_master_state_changed"
@@ -1448,7 +1449,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def poweroff_host(self, host):
     try:
-      masteruris = nm.nameres().masterurisByHost(host)
+      masteruris = nm.nameres().masterurisbyaddr(host)
       for masteruri in masteruris:
         master = self.getMaster(masteruri)
         master.stop_nodes_by_name(['/master_discovery'])
@@ -1829,6 +1830,7 @@ class MainWindow(QtGui.QMainWindow):
         master.on_remove_all_launch_server()
     elif url.toString().startswith('node://'):
       if not self.currentMaster is None:
+        print "CHANGE ndoe"
         self.currentMaster.on_node_selection_changed(None, None, True, url.encodedPath())
     elif url.toString().startswith('topic://'):
       if not self.currentMaster is None:

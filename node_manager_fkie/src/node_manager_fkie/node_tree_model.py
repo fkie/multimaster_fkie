@@ -668,7 +668,14 @@ class HostItem(GroupItem):
 
   @property
   def address(self):
-    return nm.nameres().resolve(self._host)
+    result = nm.nameres().resolve_cached(self._host)
+    if result:
+      return result[0]
+    return None
+
+  @property
+  def addresses(self):
+    return nm.nameres().resolve_cached(self._host)
 
   @property
   def masteruri(self):
@@ -690,20 +697,16 @@ class HostItem(GroupItem):
     @param address: the address of the host
     @type address: C{str}
     '''
-    #'print "hostNameFrom - mastername"
     name = nm.nameres().mastername(masteruri, address)
     if not name:
       name = address
-    #'print "hostNameFrom - hostname"
     hostname = nm.nameres().hostname(address)
     if hostname is None:
       hostname = str(address)
     result = '%s@%s'%(name, hostname)
     if nm.nameres().getHostname(masteruri) != hostname:
       result += '[%s]'%masteruri
-    #'print "- hostNameFrom"
     return result
-
 
   def updateTooltip(self):
     '''
@@ -734,7 +737,7 @@ class HostItem(GroupItem):
           tooltip += '<br>'
     tooltip += '<h3>%s</h3>' % self.mastername
     tooltip += '<font size="+1"><i>%s</i></font><br>'%self.masteruri
-    tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' [%s]' % self.address if self.address is not None else '')
+    tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' %s' % self.addresses if self.addresses else '')
     tooltip += '<a href="open_sync_dialog://%s">open sync dialog</a>'%(str(self.masteruri).replace('http://', ''))
     tooltip += '<p>'
     tooltip += '<a href="show_all_screens://%s">show all screens</a>'%(str(self.masteruri).replace('http://', ''))
@@ -996,7 +999,7 @@ class NodeItem(QtGui.QStandardItem):
     tooltip += '<dt><b>PID:</b> %s</dt>'%self.node_info.pid
     tooltip += '<dt><b>ORG.MASTERURI:</b> %s</dt></dl>'%self.node_info.masteruri
     #'print "updateDispayedName - hasMaster"
-    master_discovered = nm.nameres().hasMaster(self.node_info.masteruri)
+    master_discovered = nm.nameres().has_master(self.node_info.masteruri)
 #    local = False
 #    if not self.node_info.uri is None and not self.node_info.masteruri is None:
 #      local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
@@ -1242,6 +1245,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     self.setColumnCount(len(NodeTreeModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in NodeTreeModel.header])
     self._local_host_address = host_address
+    self._local_masteruri = masteruri
     self._std_capabilities = {'': {'SYSTEM': {'images': [], 
                                               'nodes': [ '/rosout', 
                                                          '/master_discovery', 
@@ -1269,10 +1273,10 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
   def _set_std_capabilities(self, host_item):
-    if not host_item is None:
+    if host_item is not None:
       cap = self._std_capabilities
       hostname = roslib.names.SEP.join(['', host_item.hostname, '*', 'default_cfg'])
-      if not hostname in cap['']['SYSTEM']['nodes']:
+      if hostname not in cap['']['SYSTEM']['nodes']:
         cap['']['SYSTEM']['nodes'].append(hostname)
       host_item.addCapabilities('', cap, host_item.masteruri)
       return cap
@@ -1292,7 +1296,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     if masteruri is None:
       return None
     host = (masteruri, address)
-    local = (self.local_addr in [address, nm.nameres().resolve(address)])
+    local = (self.local_addr in [address, nm.nameres().resolve_cached(address)]
+             and self._local_masteruri == masteruri)
     # find the host item by address
     root = self.invisibleRootItem()
     for i in range(root.rowCount()):

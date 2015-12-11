@@ -39,6 +39,7 @@ import os
 import re
 import socket
 import sys
+import time
 import uuid
 import xmlrpclib
 
@@ -66,9 +67,7 @@ from node_manager_fkie.topic_list_model import TopicModel, TopicItem
 import node_manager_fkie as nm
 
 
-# import time
-# from echo_dialog import EchoDialog
-# from yaml import nodes
+
 class LaunchArgsSelectionRequest(Exception):
   ''' Request needed to set the args of a launchfile from another thread.
   @param args: a dictionary with args and values
@@ -156,7 +155,6 @@ class MasterViewProxy(QtGui.QWidget):
 
     self.__echo_topics_dialogs = dict() # [topic name] = EchoDialog
     '''@ivar: stores the open EchoDialogs '''
-    self.__last_info_type = None # {Node, Topic, Service}
     self.__last_info_text = None
     self.__use_sim_time = False
     self.__current_user = nm.settings().host_user(self.mastername)
@@ -164,6 +162,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.__current_robot_icon = None
     self.__current_parameter_robot_icon = ''
     self.__republish_params = {} # { topic : params, created by dialog}
+    self.__last_selection = 0
     # store the running_nodes to update to duplicates after load a launch file
     self.__running_nodes = dict() # dict (node name : masteruri)
     self.default_cfg_handler = DefaultConfigHandler()
@@ -632,7 +631,7 @@ class MasterViewProxy(QtGui.QWidget):
       # update the names of the hosts stored in the launch file
       for _, machine in launchConfig.Roscfg.machines.items():#_:=name
         if machine.name:
-          nm.nameres().addInfo(machine.name, machine.address, machine.address)
+          nm.nameres().add_info(machine.name, machine.address, machine.address)
       # do not load if the loadings process was canceled
       if self._progress_queue.has_id(pqid):
         self.loaded_config.emit(launchfile, launchConfig)
@@ -1083,8 +1082,8 @@ class MasterViewProxy(QtGui.QWidget):
       self.on_log_clicked()
 
   def on_node_clicked(self, index):
-    self.__last_info_type = 'Node'
-    self.on_node_selection_changed(None, None, True)
+    if time.time() - self.__last_selection > 1.:
+      self.on_node_selection_changed(None, None, True)
 
 
   def on_topic_activated(self, index):
@@ -1095,8 +1094,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.on_topic_echo_clicked()
 
   def on_topic_clicked(self, index):
-    self.__last_info_type = 'Topic'
-    self.on_topic_selection_changed(None, None, True)
+    if time.time() - self.__last_selection > 1.:
+      self.on_topic_selection_changed(None, None, True)
 
   def on_service_activated(self, index):
     '''
@@ -1106,8 +1105,8 @@ class MasterViewProxy(QtGui.QWidget):
     self.on_service_call_clicked()
 
   def on_service_clicked(self, index):
-    self.__last_info_type = 'Service'
-    self.on_service_selection_changed(None, None, True)
+    if time.time() - self.__last_selection > 1.:
+      self.on_service_selection_changed(None, None, True)
 
   def on_host_inserted(self, item):
     if item == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
@@ -1195,6 +1194,9 @@ class MasterViewProxy(QtGui.QWidget):
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of host, group or node. 
     '''
+    if selected is not None:
+      # it is a workaround to avoid double updates a after click on an item
+      self.__last_selection = time.time()
     if node_name and not self.master_info is None:
       # get node by name
       selectedNodes = self.getNode(node_name)
@@ -1214,7 +1216,7 @@ class MasterViewProxy(QtGui.QWidget):
     name = ''
     text = ''
     # add host description, if only the one host is selected
-    if len(selectedHosts) == 1 and len(selections) / 2 == 1:
+    if len(selectedHosts) == 1:  # and len(selections) / 2 == 1:
       host = selectedHosts[0]
       name = '%s - Robot'%host.name
       text = host.generateDescription()
@@ -1228,12 +1230,11 @@ class MasterViewProxy(QtGui.QWidget):
         text = group.generateDescription()
         text += '<br>'
     # add node description for one selected node
-    if len(selectedNodes) == 1:
+    if len(selectedHosts) != 1 and len(selectedNodes) == 1:
       node = selectedNodes[0]
       text = self.get_node_description(node_name, node)
       name = node.name
     elif len(selectedNodes) > 1:
-#      stoppable_nodes = [sn for sn in selectedNodes if not sn.node_info.uri is None and not self._is_in_ignore_list(sn.name)]
       restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
       restartable_nodes_with_launchfiles = [sn for sn in selectedNodes if sn.has_launch_cfgs(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
       killable_nodes = [sn for sn in selectedNodes if not sn.node_info.pid is None and not self._is_in_ignore_list(sn.name)]
@@ -1243,20 +1244,17 @@ class MasterViewProxy(QtGui.QWidget):
         text += '<b>Selected nodes:</b><br>'
       if restartable_nodes:
         text += '<a href="restart_node://all_selected_nodes" title="Restart %s selected nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>'%(len(restartable_nodes), len(restartable_nodes))
-#        if killable_nodes or unregisterble_nodes:
-#          text += ' - '
       if killable_nodes:
         text += '&nbsp;<a href="kill_node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>'%(len(killable_nodes), len(killable_nodes))
         text += '&nbsp;<a href="kill_screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>'%(len(killable_nodes), len(killable_nodes))
-#        if unregisterble_nodes:
-#          text += ' - '
       if restartable_nodes_with_launchfiles:
         text += '&nbsp;<a href="start_node_at_host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>'%(len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
         text += '&nbsp;<a href="start_node_adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>'%(len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
       if unregisterble_nodes:
         text += '<br><a href="unregister_node://all_selected_nodes">unregister [%d]</a>'%len(unregisterble_nodes)
 
-    if (self.__last_info_type == 'Node' and self.__last_info_text != text) or force_emit:
+    current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
+    if (current_tab == 'Nodes' and self.__last_info_text != text) or force_emit:
       self.__last_info_text = text
       self.description_signal.emit(name, text)
     self.updateButtons()
@@ -1335,6 +1333,9 @@ class MasterViewProxy(QtGui.QWidget):
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected topic
     '''
+    if selected is not None:
+      # it is a workaround to avoid double updates a after click on an item
+      self.__last_selection = time.time()
     selectedTopics = []
     if topic_name and not self.master_info is None:
       selectedTopics = [self.master_info.getTopic("%s"%topic_name)]
@@ -1353,7 +1354,8 @@ class MasterViewProxy(QtGui.QWidget):
       topic = selectedTopics[0]
       text = self.get_topic_description(topic_name, topic)
       info_text = '<div>%s</div>'%text
-      if (self.__last_info_type == 'Topic' and self.__last_info_text != info_text) or force_emit:
+      current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
+      if (current_tab == 'Topics' and self.__last_info_text != info_text) or force_emit:
         self.__last_info_text = info_text
         self.description_signal.emit(topic.name, info_text)
 
@@ -1432,6 +1434,9 @@ class MasterViewProxy(QtGui.QWidget):
     updates the Buttons, create a description and emit L{description_signal} to
     show the description of selected service
     '''
+    if selected is not None:
+      # it is a workaround to avoid double updates a after click on an item
+      self.__last_selection = time.time()
     if service_name and not self.master_info is None:
       # get service by name
       selectedServices = [self.master_info.getService("%s"%service_name)]
@@ -1469,7 +1474,8 @@ class MasterViewProxy(QtGui.QWidget):
         else:
           text += '<font color=red>Try to refresh <b>all</b> hosts. Is provider node running?</font>'
       info_text = '<div>%s</div>'%text
-      if (self.__last_info_type == 'Service' and self.__last_info_text != info_text) or force_emit:
+      current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
+      if (current_tab == 'Services' and self.__last_info_text != info_text) or force_emit:
         self.__last_info_text = info_text
         self.description_signal.emit(service.name, info_text)
 
@@ -2286,7 +2292,7 @@ class MasterViewProxy(QtGui.QWidget):
         try:
           for _, machine in self.__configs[cfg].Roscfg.machines.items():#_:=name
             if machine.name:
-              nm.nameres().removeInfo(machine.name, machine.address)
+              nm.nameres().remove_info(machine.name, machine.address)
         except:
           pass
       del self.__configs[cfg]

@@ -113,8 +113,8 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
           self.status_text_signal.emit("resolve %s" % address[0])
           try:
             (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
-            nm.nameres().addInfo(None, hostname, hostname)
-            nm.nameres().addInfo(None, address[0], hostname)
+            nm.nameres().add_info(None, hostname, hostname)
+            nm.nameres().add_info(None, address[0], hostname)
           except:
             print traceback.format_exc(1)
             pass
