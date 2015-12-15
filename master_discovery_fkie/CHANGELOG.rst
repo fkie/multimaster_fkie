@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.4 (2015-12-15)
+------------------
+
 0.4.3 (2015-11-30)
 ------------------
 * master_discovery_fkie: fixed compatibility to older versions

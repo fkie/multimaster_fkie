@@ -2,6 +2,23 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.4 (2015-12-15)
+------------------
+* node_manager_fkie: reviewed the name resolution
+* node_manager_fkie: added an IP to hostname resolution
+  it is usefull for detection of automatic master_sync start if an IP was
+  entered while start of master_discovery
+* node_manager_fkie: added a settings parameter 'start_sync_with_discovery'
+  The start_sync_with_discovery determine the default behaviour to start
+  master_sync with master_discover or not. This presets the 'Start sync'
+  parameter in Start-dialog.
+* node_manager_fkie: added an option to start master_sync with master_discovery
+* node_manager_fkie: added network ID visualization
+* node_manager_fkie: fixed joining from discovery dialog
+* node_manager_fkie: fixed discovery dialog, which was broken after changes in master_discovery
+* node_manager_fkie: highlighted the sync button in ROS network dock
+* Contributors: Alexander Tiderko
+
 0.4.3 (2015-11-30)
 ------------------
 * node_manager_fkie: start rviz now as NO rqt plugin
