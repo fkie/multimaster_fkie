@@ -631,7 +631,7 @@ class MasterViewProxy(QtGui.QWidget):
       # update the names of the hosts stored in the launch file
       for _, machine in launchConfig.Roscfg.machines.items():#_:=name
         if machine.name:
-          nm.nameres().add_info(machine.name, machine.address, machine.address)
+          nm.nameres().add_info(machine.name, machine.address)
       # do not load if the loadings process was canceled
       if self._progress_queue.has_id(pqid):
         self.loaded_config.emit(launchfile, launchConfig)

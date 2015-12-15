@@ -203,18 +203,13 @@ class NameResolution(object):
           return
       self._masters.append(MasterEntry(masteruri, mastername, address))
 
-  def add_info(self, mastername, address, hostname=None):
+  def add_info(self, mastername, address):
     with self.mutex:
       for m in self._masters:
         if m.has_mastername(mastername):
           m.add_mastername(mastername)
-          m.addHostname(hostname)
-          m.addAddress(address)
+          m.add_address(address)
           return
-        elif mastername is None:
-          if m.hasHostname(hostname) or m.has_address(address):
-            m.addHostname(hostname)
-            m.addAddress(address)
       if not mastername is None:
         self._masters.append(MasterEntry(None, mastername, address))
 
@@ -294,17 +289,28 @@ class NameResolution(object):
           return m.addresses()
       return []
 
-  def hostname(self, address):
+  def hostname(self, address, resolve=False):
     with self.mutex:
       for m in self._masters:
         if m.has_address(address) or m.has_mastername(address):
           result = m.get_address()
-          return result if result else address
-      return address
+          if result and not MasterEntry.is_legal_ip(result):
+            return result
+          else:
+            break
+    if MasterEntry.is_legal_ip(address):
+      try:
+        (hostname, _, _) = socket.gethostbyaddr(address)
+        return hostname
+      except:
+        pass
+    return address
 
   def resolve_cached(self, hostname):
-    if hostname in RESOLVE_CACHE:
+    try:
       return RESOLVE_CACHE[hostname]
+    except:
+      pass
     return [hostname]
 
   @classmethod

@@ -108,16 +108,8 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
       try:
         hostname = self._hosts[address[0]]
       except:
-        hostname = nm.nameres().hostname(str(address[0]))
-        if hostname is None or hostname == str(address[0]):
-          self.status_text_signal.emit("resolve %s" % address[0])
-          try:
-            (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(str(address[0]))
-            nm.nameres().add_info(None, hostname, hostname)
-            nm.nameres().add_info(None, address[0], hostname)
-          except:
-            print traceback.format_exc(1)
-            pass
+        self.status_text_signal.emit("resolve %s" % address[0])
+        hostname = nm.nameres().hostname(str(address[0]), resolve=True)
         self._hosts[address[0]] = hostname
       try:
         (version, msg_tuple) = Discoverer.msg2masterState(msg, address)
