@@ -2,8 +2,9 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.4 (2015-12-15)
+0.4.4 (2015-12-18)
 ------------------
+* node_manager_fkie: fixed republish of array values in paraeter dialog
 * node_manager_fkie: reviewed the name resolution
 * node_manager_fkie: added an IP to hostname resolution
   it is usefull for detection of automatic master_sync start if an IP was
