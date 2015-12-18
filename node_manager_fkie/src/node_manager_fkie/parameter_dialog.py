@@ -31,20 +31,20 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding import QtCore, QtGui
-
+from xmlrpclib import Binary
 import os
 import sys
-import time
 import threading
-from xmlrpclib import Binary
+import time
 
-import roslib.names
 import roslib.msgs
+import roslib.names
 import rospy
+
+from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.parameter_handler import ParameterHandler
 import node_manager_fkie as nm
 
-from node_manager_fkie.parameter_handler import ParameterHandler
-from node_manager_fkie.detailed_msg_box import WarningMessageBox
 
 def str2bool(val):
   return val.lower() in ("yes", "true", "t", "1")
@@ -270,7 +270,10 @@ class ParameterDescription(object):
         result.remove_item_signal.connect(self.removeCachedValue)
         items = []
         if isinstance(value, list):
-          items[len(items):] = value
+          if self.isArrayType():
+            items.append(','.join([str(val) for val in value]))
+          else:
+            items[len(items):] = value
         else:
           if not value is None and value:
             items.append(unicode(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
