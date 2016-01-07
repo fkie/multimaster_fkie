@@ -31,18 +31,18 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os, shlex
-import socket
-import types
-import time
 import signal
+import socket
+import time
+import types
+import xmlrpclib
 
 import roslib
 import rospy
-import xmlrpclib
 
-import node_manager_fkie as nm
 from node_manager_fkie.common import get_ros_home, masteruri_from_ros, package_name
 from node_manager_fkie.supervised_popen import SupervisedPopen
+import node_manager_fkie as nm
 
 
 class StartException(Exception):
@@ -275,7 +275,7 @@ class StartHandler(object):
               abs_paths.append(('ENV', "%s=%s"%(k,v), "%s=%s"%(k,v_value)))
               if not found and package:
                 not_found_packages.append(package)
-          env_command = "env "+' '.join(["\"%s=%s\""%(k,v) for (k, v) in new_env.items()])
+          env_command = "env " + ' '.join(["%s=\'%s\'" % (k, v) for (k, v) in new_env.items()])
         except nm.AuthenticationRequest as e:
           raise nm.InteractionNeededError(e, cls.runNode, (runcfg,))
 
