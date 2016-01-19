@@ -1449,6 +1449,12 @@ class MainWindow(QtGui.QMainWindow):
 
   def poweroff_host(self, host):
     try:
+      if nm.is_local(str(host)):
+        ret = QtGui.QMessageBox.warning(self, "ROS Node Manager",
+                                 "Do you really want to shutdown localhost?",
+                                 QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+        if ret == QtGui.QMessageBox.Cancel:
+          return
       masteruris = nm.nameres().masterurisbyaddr(host)
       for masteruri in masteruris:
         master = self.getMaster(masteruri)
@@ -1830,7 +1836,6 @@ class MainWindow(QtGui.QMainWindow):
         master.on_remove_all_launch_server()
     elif url.toString().startswith('node://'):
       if not self.currentMaster is None:
-        print "CHANGE ndoe"
         self.currentMaster.on_node_selection_changed(None, None, True, url.encodedPath())
     elif url.toString().startswith('topic://'):
       if not self.currentMaster is None:

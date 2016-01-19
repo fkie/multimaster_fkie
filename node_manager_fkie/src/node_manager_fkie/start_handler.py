@@ -902,7 +902,9 @@ class StartHandler(object):
 
   def _poweroff_wo(self, host, auto_pw_request=False, user=None, pw=None):
     if nm.is_local(host):
-      rospy.logwarn("No poweroff on localhost supported!")
+      rospy.logwarn("shutdown localhost localhost!")
+      cmd = nm.settings().terminal_cmd(['sudo poweroff'], "poweroff")
+      SupervisedPopen(shlex.split(cmd), object_id="poweroff", description="poweroff")
     else:
       rospy.loginfo("poweroff %s", host)
       # kill on a remote machine

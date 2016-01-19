@@ -742,9 +742,9 @@ class HostItem(GroupItem):
     tooltip += '<p>'
     tooltip += '<a href="show_all_screens://%s">show all screens</a>'%(str(self.masteruri).replace('http://', ''))
     tooltip += '<p>'
-    if not nm.is_local(self.address):
-      tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
-      tooltip += '<p>'
+#    if not nm.is_local(self.address):
+    tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
+    tooltip += '<p>'
     tooltip += '<a href="remove_all_launch_server://%s">kill all launch server</a>'%str(self.masteruri).replace('http://', '')
     tooltip += '<p>'
     # get sensors
