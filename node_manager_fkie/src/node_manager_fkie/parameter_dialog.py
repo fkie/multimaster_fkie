@@ -242,10 +242,10 @@ class ParameterDescription(object):
       return self.widget().value()
     elif self.isPrimitiveType():
       self.updateValueFromField()
-      if self.isTimeType() and self._value == 'now':
-        # FIX: rostopic does not support 'now' values in sub-headers
-        t = time.time()
-        return ({'secs': int(t), 'nsecs': int((t-int(t))*1000000)}, self.changed())
+#      if self.isTimeType() and self._value == 'now':
+#        # FIX: rostopic does not support 'now' values in sub-headers
+#        t = time.time()
+#        return ({'secs': int(t), 'nsecs': int((t-int(t))*1000000)}, self.changed())
     return (self._value, self.changed())
 
   def removeCachedValue(self, value):
