@@ -55,7 +55,7 @@ from progress_queue import InteractionNeededError
 from screen_handler import ScreenHandler, ScreenSelectionRequest
 from settings import Settings
 from ssh_handler import SSHhandler, AuthenticationRequest
-from start_handler import StartHandler, StartException, BinarySelectionRequest
+from start_handler import StartHandler, AdvRunCfg, StartException, BinarySelectionRequest
 
 
 PKG_NAME = 'node_manager_fkie'

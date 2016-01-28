@@ -30,14 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import threading
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
+import threading
 
 import rospy
 
-import node_manager_fkie as nm
 from detailed_msg_box import WarningMessageBox, DetailedError
+import node_manager_fkie as nm
+
 
 class InteractionNeededError(Exception):
   ''' 
@@ -181,7 +182,12 @@ class ProgressQueue(QtCore.QObject):
       if not res:
         self._on_progress_canceled()
         return
-      pt = ProgressThread(ident, descr, req.method, (req.args+(user, pw)))
+      if req.args and isinstance(req.args[0], nm.AdvRunCfg):
+        req.args[0].user = user
+        req.args[0].pw = pw
+      else:
+        req.args = req.args + (user, pw)
+      pt = ProgressThread(ident, descr, req.method, (req.args))
       pt.finished_signal.connect(self._progress_thread_finished)
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
@@ -205,7 +211,11 @@ class ProgressQueue(QtCore.QObject):
         self._progress_thread_finished(ident)
         return
       res = items[0]
-      pt = ProgressThread(ident, descr, req.method, (req.args+(res,)))
+      if req.args and isinstance(req.args[0], nm.AdvRunCfg):
+        req.args[0].executable = res
+      else:
+        req.args = req.args + (res,)
+      pt = ProgressThread(ident, descr, req.method, (req.args))
       pt.finished_signal.connect(self._progress_thread_finished)
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
@@ -292,4 +302,4 @@ class ProgressThread(QtCore.QObject, threading.Thread):
         index += 1
         last_line = formatted_lines[-index]
       rospy.logwarn("%s failed:\n\t%s", str(self.descr), last_line)
-      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr)+" failed:\n"+last_line, traceback.format_exc(3))
+      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr) + " failed:\n" + last_line, traceback.format_exc(4))
