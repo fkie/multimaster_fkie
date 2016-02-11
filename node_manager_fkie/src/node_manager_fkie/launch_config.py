@@ -261,8 +261,15 @@ class LaunchConfig(QtCore.QObject):
       self.__roscfg = roscfg
       nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
       if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
-        nm.file_watcher_param().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, 
-                                    self.getIncludedFiles(self.Filename))
+        files = self.getIncludedFiles(self.Filename,
+                                      regexp_list=[QtCore.QRegExp("\\bdefault\\b"),
+                                                   QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                   QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                   QtCore.QRegExp("\\bvalue=.*\$\(find\\b")])
+        nm.file_watcher_param().add_launch(self.__masteruri,
+                                           self.__launchFile,
+                                           self.__launch_id,
+                                           files)
     except roslaunch.XmlParseException, e:
       test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
       message = str(e)
