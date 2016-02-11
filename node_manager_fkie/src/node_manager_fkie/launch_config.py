@@ -30,22 +30,22 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from python_qt_binding import QtCore
+from xml.dom.minidom import parse  # , parseString
 import os
 import re
 import sys
 import time
+
 import roslaunch
 import roslib
 
-from xml.dom.minidom import parse#, parseString
-#from xml.dom import Node as DomNode #avoid aliasing
-
-from python_qt_binding import QtCore
-
+from common import package_name, resolve_paths
 from master_discovery_fkie.common import resolve_url
 import node_manager_fkie as nm
-from common import package_name, resolve_paths
 
+
+# from xml.dom import Node as DomNode #avoid aliasing
 class LaunchConfigException(Exception):
   pass
 
@@ -406,6 +406,8 @@ class LaunchConfig(QtCore.QObject):
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
         if cap_ns == node_fullname:
           cap_ns = item.namespace.rstrip(roslib.names.SEP)
+          if not cap_ns:
+            cap_ns = roslib.names.SEP
         # if the 'capability_group' parameter found, assign node to the group
         if self.Roscfg.params.has_key(cap_param) and self.Roscfg.params[cap_param].value:
           p = self.Roscfg.params[cap_param]
@@ -423,12 +425,18 @@ class LaunchConfig(QtCore.QObject):
               result[machine_name][ns] = dict()
             if not result[machine_name][ns].has_key(p.value):
               try:
-                result[machine_name][ns][p.value] = { 'type' : capabilies_descr[p.value]['type'], 'images': capabilies_descr[p.value]['images'], 'description' : capabilies_descr[p.value]['description'], 'nodes' : [] }
+                result[machine_name][ns][p.value] = {'type' : capabilies_descr[p.value]['type'],
+                                                     'images': capabilies_descr[p.value]['images'],
+                                                     'description' : capabilies_descr[p.value]['description'],
+                                                     'nodes' : [] }
               except:
-                result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
+                result[machine_name][ns][p.value] = { 'type' : '',
+                                                     'images': [],
+                                                     'description' : '',
+                                                     'nodes' : [] }
             result[machine_name][ns][p.value]['nodes'].append(node_fullname)
     return result
-  
+
   def argvToDict(self, argv):
     result = dict()
     for a in argv:

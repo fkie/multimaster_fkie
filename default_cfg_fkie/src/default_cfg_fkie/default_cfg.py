@@ -31,24 +31,24 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
 import shlex
 import subprocess
+import sys
 import threading
 
-import roslib.names
-import roslib.network
-import rospy
+from multimaster_msgs_fkie.msg import Capability
+from multimaster_msgs_fkie.srv import ListDescription, ListNodes, Task, ListDescriptionResponse, ListNodesResponse  # , LoadLaunch
+from rosgraph.rosenv import ROS_NAMESPACE
 from roslaunch import ROSLaunchConfig, XmlLoader
 import rosgraph.masterapi
 import rosgraph.names
-from rosgraph.rosenv import ROS_NAMESPACE
-
+import roslib.names
+import roslib.network
+import rospy
 import std_srvs.srv
 
-from multimaster_msgs_fkie.msg import Capability
-from multimaster_msgs_fkie.srv import ListDescription, ListNodes, Task, ListDescriptionResponse, ListNodesResponse#, LoadLaunch
-from screen_handler import ScreenHandler#, ScreenHandlerException
+from screen_handler import ScreenHandler  # , ScreenHandlerException
+
 
 class LoadException(Exception):
   ''' The exception throwing while searching for the given launch file. '''
@@ -246,6 +246,8 @@ class DefaultCfg(object):
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
         if cap_ns == node_fullname:
           cap_ns = item.namespace.rstrip(roslib.names.SEP)        # if the parameter group parameter found, assign node to the group
+          if not cap_ns:
+            cap_ns = roslib.names.SEP
         # if the 'capability_group' parameter found, assign node to the group
         if self.roscfg.params.has_key(cap_param) and self.roscfg.params[cap_param].value:
           p = self.roscfg.params[cap_param]
@@ -263,9 +265,15 @@ class DefaultCfg(object):
               result[machine_name][ns] = dict()
             if not result[machine_name][ns].has_key(p.value):
               try:
-                result[machine_name][ns][p.value] = { 'type' : capabilies_descr[p.value]['type'], 'images': capabilies_descr[p.value]['images'], 'description' : capabilies_descr[p.value]['description'], 'nodes' : [] }
+                result[machine_name][ns][p.value] = { 'type' : capabilies_descr[p.value]['type'],
+                                                     'images': capabilies_descr[p.value]['images'],
+                                                     'description' : capabilies_descr[p.value]['description'],
+                                                     'nodes' : [] }
               except:
-                result[machine_name][ns][p.value] = { 'type' : '', 'images': [], 'description' : '', 'nodes' : [] }
+                result[machine_name][ns][p.value] = { 'type' : '',
+                                                     'images': [],
+                                                     'description' : '',
+                                                     'nodes' : [] }
             result[machine_name][ns][p.value]['nodes'].append(node_fullname)
     return result
 
