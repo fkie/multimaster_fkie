@@ -1378,6 +1378,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       for p, (code_n, _, val) in params.items():#_:=msg_n
         nodename = roslib.names.namespace(p).rstrip(roslib.names.SEP)
         ns = roslib.names.namespace(nodename).rstrip(roslib.names.SEP)
+        if not ns:
+          ns = roslib.names.SEP
         available_ns.add(ns)
         if code_n == 1:
           # add group
