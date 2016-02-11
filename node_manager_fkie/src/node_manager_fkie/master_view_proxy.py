@@ -1280,8 +1280,8 @@ class MasterViewProxy(QtGui.QWidget):
       text += '&nbsp; <a href="kill_screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>'%node.name
       if launches:
         text += '&nbsp; <a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>'%node.name
-        if node.node_info.pid is None or node.node_info.uri is None:
-          text += '&nbsp; <a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>'%node.name
+#        if node.node_info.pid is None or node.node_info.uri is None:
+        text += '&nbsp; <a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>' % node.name
       text += '&nbsp; <a href="copy_log_path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>'%node.name
       text += '<dl>'
       text += '<dt><b>URI</b>: %s</dt>'%node.node_info.uri
@@ -1592,7 +1592,7 @@ class MasterViewProxy(QtGui.QWidget):
     self.setCursor(QtCore.Qt.WaitCursor)
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-      self.start_nodes(selectedNodes, use_adv_cfg=True)
+      self.start_nodes(selectedNodes, force=True, use_adv_cfg=True)
     finally:
       self.setCursor(cursor)
 
