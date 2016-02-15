@@ -361,7 +361,7 @@ class MasterMonitor(object):
         except:
           import traceback
           with self._lock:
-            self._limited_log(service, "can't get service type: %s" % traceback.format_exc(), rospy.ERROR)
+            self._limited_log(service, "can't get service type: %s" % traceback.format_exc(), rospy.WARN)
 #          print traceback.format_exc()
 #          print "_getServiceInfo _lock try..", threading.current_thread()
           with self._lock:
