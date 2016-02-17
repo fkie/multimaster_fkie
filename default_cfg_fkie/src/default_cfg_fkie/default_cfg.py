@@ -77,6 +77,9 @@ class DefaultCfg(object):
     rospy.loginfo("package: %s"%self.package)
     self.do_autostart = rospy.get_param('~autostart', False)
     rospy.loginfo("do_autostart: %s"%self.do_autostart)
+    self.load_params_at_start = rospy.get_param('~load_params_at_start', True)
+    self.parameter_loaded = False
+    rospy.loginfo("load_params_at_start: %s" % self.load_params_at_start)
     self.argv = rospy.get_param('~argv', [])
     rospy.loginfo("argv: %s"%self.argv)
     if not isinstance(self.argv, list):
@@ -173,7 +176,8 @@ class DefaultCfg(object):
                 cap.nodes = list(descr_dict['nodes'])
                 dr.capabilities.append(cap)
       # load parameters into the ROS parameter server
-      self.loadParams()
+      if self.load_params_at_start:
+        self.loadParams()
       # initialize the ROS services
       #HACK to let the node_manager to update the view
       if delay_service_creation > 0.:
@@ -189,6 +193,8 @@ class DefaultCfg(object):
 #      import traceback
 #      print traceback.format_exc()
       if self.do_autostart:
+        if not self.parameter_loaded:
+          self.loadParams()
         for n in self.nodes:
           try:
             self.runNode(n, self.do_autostart)
@@ -372,6 +378,7 @@ class DefaultCfg(object):
       params[param] = value
 #      rospy.loginfo("register PARAMS:\n%s", '\n'.join(params))
     self._load_parameters(self.masteruri, params, self.roscfg.clear_params)
+    self.parameter_loaded = True
 
   def runNode(self, node, autostart=False):
     '''
@@ -380,6 +387,8 @@ class DefaultCfg(object):
     @type node: C{str}
     @raise StartException: if an error occurred while start.
     '''
+    if not self.parameter_loaded:
+      self.loadParams()
     n = None
     nodename = os.path.basename(node)
     namespace = os.path.dirname(node).strip('/')
