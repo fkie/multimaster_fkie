@@ -1046,7 +1046,7 @@ class NodeItem(QtGui.QStandardItem):
     elif self.has_running:
       self._state = NodeItem.STATE_DUPLICATE
       self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
-      tooltip = '<h4>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'
+      tooltip = '<h4>There are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'
       self.setToolTip('<div>%s</div>'%tooltip)
     else:
       self._state = NodeItem.STATE_OFF

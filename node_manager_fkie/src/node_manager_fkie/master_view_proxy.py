@@ -1296,7 +1296,7 @@ class MasterViewProxy(QtGui.QWidget):
           text += '<dt><font color="#FF9900"><b>The node is running on remote host, but is not synchronized, because of filter or errors while sync, see log of <i>master_sync</i></b></font></dt>'
           text += '<dt><font color="#FF9900"><i>Are you use the same ROS packages?</i></font></dt>'
       if node.has_running and node.node_info.pid is None and node.node_info.uri is None:
-        text += '<dt><font color="#FF9900"><b>Where are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'
+        text += '<dt><font color="#FF9900"><b>There are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</b></font></dt>'
       if not node.node_info.uri is None and node.node_info.masteruri != self.masteruri:
         text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
       if node.node_info.pid is None and not node.node_info.uri is None:
