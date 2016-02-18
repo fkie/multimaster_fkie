@@ -723,7 +723,10 @@ class XmlEditor(QtGui.QDialog):
     self._error_icon = QtGui.QIcon(":/icons/crystal_clear_warning.png")
     self._empty_icon = QtGui.QIcon()
     self.setWindowIcon(self.mIcon)
-    self.setWindowTitle("ROSLaunch Editor");
+    window_title = "ROSLaunch Editor"
+    if filenames:
+      window_title = self.__getTabName(filenames[0])
+    self.setWindowTitle(window_title);
 #    self.finished.connect(self.closeEvent)
     self.init_filenames = list(filenames)
 
@@ -1000,7 +1003,7 @@ class XmlEditor(QtGui.QDialog):
   def __getTabName(self, lfile):
     base = os.path.basename(lfile).replace('.launch', '')
     (package, _) = package_name(os.path.dirname(lfile))
-    return '%s[%s]'%(base, package)
+    return '%s [%s]'%(base, package)
 
   def on_find_dialog_clicked(self, button):
     '''
