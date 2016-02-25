@@ -34,8 +34,8 @@
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.4.4-7"  # git describe --tags --dirty --always
-__date__ = "2016-02-11"  # git log -1 --date=iso
+__version__ = "0.4.4-19"  # git describe --tags --dirty --always
+__date__ = "2016-02-25"  # git log -1 --date=iso
 
 import argparse
 import os
@@ -46,16 +46,17 @@ import threading
 import roslib.network
 import rospy
 
-from common import get_ros_home, masteruri_from_ros
-from file_watcher import FileWatcher
-from history import History
-from master_view_proxy import LaunchArgsSelectionRequest
-from name_resolution import NameResolution
-from progress_queue import InteractionNeededError
-from screen_handler import ScreenHandler, ScreenSelectionRequest
-from settings import Settings
-from ssh_handler import SSHhandler, AuthenticationRequest
-from start_handler import StartHandler, AdvRunCfg, StartException, BinarySelectionRequest
+from node_manager_fkie.common import get_ros_home, masteruri_from_ros
+from node_manager_fkie.file_watcher import FileWatcher
+from node_manager_fkie.history import History
+from node_manager_fkie.master_view_proxy import LaunchArgsSelectionRequest
+from node_manager_fkie.name_resolution import NameResolution
+from node_manager_fkie.progress_queue import InteractionNeededError
+from node_manager_fkie.screen_handler import ScreenHandler, ScreenSelectionRequest
+from node_manager_fkie.settings import Settings
+from node_manager_fkie.ssh_handler import SSHhandler, AuthenticationRequest
+from node_manager_fkie.start_handler import StartException, AdvRunCfg
+from node_manager_fkie.start_handler import StartHandler, BinarySelectionRequest
 
 
 PKG_NAME = 'node_manager_fkie'
@@ -73,34 +74,32 @@ the cache directory to store the results of tests for local hosts.
 @see: L{is_local()}
 '''
 
-_lock = threading.RLock()
+_LOCK = threading.RLock()
 
-main_form = None
-_settings = None
-_ssh_handler = None
-_screen_handler = None
-_start_handler = None
-_name_resolution = None
-_history = None
-_file_watcher = None
-_file_watcher_param = None
-app = None
+_MAIN_FORM = None
+_SETTINGS = None
+_SSH_HANDLER = None
+_SCREEN_HANDLER = None
+_START_HANDLER = None
+_NAME_RESOLUTION = None
+_HISTORY = None
+_FILE_WATCHER = None
+_FILE_WATCHER_PARAM = None
+_QAPP = None
 
 def settings():
   '''
   @return: The global settings
   @rtype: L{Settings}
   '''
-  global _settings
-  return _settings
+  return _SETTINGS
 
 def ssh():
   '''
   @return: The SSH handler to handle the SSH connections
   @rtype: L{SSHhandler}
   '''
-  global _ssh_handler
-  return _ssh_handler
+  return _SSH_HANDLER
 
 def screen():
   '''
@@ -108,8 +107,7 @@ def screen():
   @rtype: L{ScreenHandler}
   @see: U{http://linuxwiki.de/screen}
   '''
-  global _screen_handler
-  return _screen_handler
+  return _SCREEN_HANDLER
 
 def starter():
   '''
@@ -117,8 +115,7 @@ def starter():
   remote machines.
   @rtype: L{StartHandler}
   '''
-  global _start_handler
-  return _start_handler
+  return _START_HANDLER
 
 def nameres():
   '''
@@ -126,32 +123,29 @@ def nameres():
   ROS master URI.
   @rtype: L{NameResolution}
   '''
-  global _name_resolution
-  return _name_resolution
+  return _NAME_RESOLUTION
 
 def history():
   '''
   @return: The history of entered parameter.
   @rtype: L{History}
   '''
-  global _history
-  return _history
+  return _HISTORY
 
 def file_watcher():
   '''
   @return: The file watcher object with all loaded configuration files.
   @rtype: L{FileWatcher}
   '''
-  global _file_watcher
-  return _file_watcher
+  return _FILE_WATCHER
 
 def file_watcher_param():
   '''
-  @return: The file watcher object with all configuration files referenced by parameter value.
+  @return: The file watcher object with all configuration files referenced by
+           parameter value.
   @rtype: L{FileWatcher}
   '''
-  global _file_watcher_param
-  return _file_watcher_param
+  return _FILE_WATCHER_PARAM
 
 
 def is_local(hostname, wait=False):
@@ -163,9 +157,9 @@ def is_local(hostname, wait=False):
   @rtype: C{bool}
   @raise Exception: on errors while resolving host
   '''
-  if (hostname is None):
+  if hostname is None:
     return True
-  with _lock:
+  with _LOCK:
     if hostname in HOSTS_CACHE:
       if isinstance(HOSTS_CACHE[hostname], threading.Thread):
         return False
@@ -176,7 +170,7 @@ def is_local(hostname, wait=False):
     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
     # check 127/8 and local addresses
     result = hostname.startswith('127.') or hostname in local_addresses
-    with _lock:
+    with _LOCK:
       HOSTS_CACHE[hostname] = result
     return result
   except socket.error:
@@ -187,22 +181,25 @@ def is_local(hostname, wait=False):
     else:
       thread = threading.Thread(target=__is_local, args=((hostname,)))
       thread.daemon = True
-      with _lock:
+      with _LOCK:
         HOSTS_CACHE[hostname] = thread
       thread.start()
   return False
 
 def __is_local(hostname):
+  '''
+  Test the hostname whether it is local or not. Uses socket.gethostbyname().
+  '''
   try:
     machine_addr = socket.gethostbyname(hostname)
   except socket.gaierror:
-    with _lock:
+    with _LOCK:
       HOSTS_CACHE[hostname] = False
     return False
   local_addresses = ['localhost'] + roslib.network.get_local_addresses()
   # check 127/8 and local addresses
   result = machine_addr.startswith('127.') or machine_addr in local_addresses
-  with _lock:
+  with _LOCK:
     HOSTS_CACHE[hostname] = result
   return result
 
@@ -211,25 +208,23 @@ def finish(*arg):
   Callback called on exit of the ros node.
   '''
   # close all ssh sessions
-  global _ssh_handler
-  if not _ssh_handler is None:
-    _ssh_handler.close()
-  global _history
-  if not _history is None:
+  if not _SSH_HANDLER is None:
+    _SSH_HANDLER.close()
+  # save the launch history
+  if not _HISTORY is None:
     try:
-      _history.storeAll()
-    except Exception as e:
-      print >> sys.stderr, "Error while store history: %s"%e
-  global main_form
-  import main_window
-  if isinstance(main_form, main_window.MainWindow):
-    main_form.finish()
-  global app
-  if not app is None:
-    app.exit()
+      _HISTORY.storeAll()
+    except Exception as err:
+      print >> sys.stderr, "Error while store history: %s" % err
+  from node_manager_fkie.main_window import MainWindow
+  # stop all threads in the main window
+  if isinstance(_MAIN_FORM, MainWindow):
+    _MAIN_FORM.finish()
+  if not _QAPP is None:
+    _QAPP.exit()
 
 
-def setTerminalName(name):
+def set_terminal_name(name):
   '''
   Change the terminal name.
   @param name: New name of the terminal
@@ -237,7 +232,7 @@ def setTerminalName(name):
   '''
   sys.stdout.write("\x1b]2;%s\x07"%name)
 
-def setProcessName(name):
+def set_process_name(name):
   '''
   Change the process name.
   @param name: New process name
@@ -253,29 +248,33 @@ def setProcessName(name):
     pass
 
 def init_settings():
-  global _settings
-  _settings = Settings()
+  global _SETTINGS
+  _SETTINGS = Settings()
 
 def init_globals(masteruri):
+  '''
+  :return: True if the masteruri referred to localhost
+  :rtype: bool
+  '''
   # initialize the global handler
-  global _ssh_handler
-  global _screen_handler
-  global _start_handler
-  global _name_resolution
-  global _history
-  global _file_watcher
-  global _file_watcher_param
-  _ssh_handler = SSHhandler()
-  _screen_handler = ScreenHandler()
-  _start_handler = StartHandler()
-  _name_resolution = NameResolution()
-  _history = History()
-  _file_watcher = FileWatcher()
-  _file_watcher_param = FileWatcher()
+  global _SSH_HANDLER
+  global _SCREEN_HANDLER
+  global _START_HANDLER
+  global _NAME_RESOLUTION
+  global _HISTORY
+  global _FILE_WATCHER
+  global _FILE_WATCHER_PARAM
+  _SSH_HANDLER = SSHhandler()
+  _SCREEN_HANDLER = ScreenHandler()
+  _START_HANDLER = StartHandler()
+  _NAME_RESOLUTION = NameResolution()
+  _HISTORY = History()
+  _FILE_WATCHER = FileWatcher()
+  _FILE_WATCHER_PARAM = FileWatcher()
 
   # test where the roscore is running (local or remote)
   __is_local('localhost') ## fill cache
-  return __is_local(_name_resolution.getHostname(masteruri)) ## fill cache
+  return __is_local(_NAME_RESOLUTION.getHostname(masteruri))  # # fill cache
 
 def init_arg_parser():
   parser = argparse.ArgumentParser()
@@ -290,38 +289,49 @@ def init_arg_parser():
   return parser
 
 def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use_ssh=False):
+  '''
+  Intialize the environment to start an echo window.
+  '''
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
-  name = ''.join([prog_name, '_echo'])
+  name = '%s_echo' % prog_name
   rospy.init_node(name, anonymous=True, log_level=rospy.INFO)
-  setTerminalName(name)
-  setProcessName(name)
-  import echo_dialog
-  global _ssh_handler
-  _ssh_handler = SSHhandler()
-  return echo_dialog.EchoDialog(topic_name, topic_type, hz, masteruri, use_ssh=use_ssh)
+  set_terminal_name(name)
+  set_process_name(name)
+  from node_manager_fkie.echo_dialog import EchoDialog
+  global _SSH_HANDLER
+  _SSH_HANDLER = SSHhandler()
+  return EchoDialog(topic_name, topic_type, hz, masteruri, use_ssh=use_ssh)
 
 def init_main_window(prog_name, masteruri, launch_files=[]):
+  '''
+  Intialize the environment to start Node Manager.
+  '''
   # start ROS-Master, if not currently running
   StartHandler._prepareROSMaster(masteruri)
   # setup the loglevel
   try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%prog_name, "INFO"))
-  except Exception as e:
-    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "INFO"))
+  except Exception as err:
+    print "Error while set the log level: %s\n->INFO level will be used!" % err
     log_level = rospy.INFO
   rospy.init_node(prog_name, anonymous=False, log_level=log_level)
-  setTerminalName(prog_name)
-  setProcessName(prog_name)
-  import main_window
+  set_terminal_name(prog_name)
+  set_process_name(prog_name)
+  from node_manager_fkie.main_window import MainWindow
   local_master = init_globals(masteruri)
-  return main_window.MainWindow(launch_files, not local_master, launch_files)
+  return MainWindow(launch_files, not local_master, launch_files)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%                 MAIN                               %%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 def main(name):
+  '''
+  Start the NodeManager or EchoDialog.
+  :param name: the name propagated to the rospy.init_node()
+  :type name: str
+  '''
   try:
     from python_qt_binding import QtGui
   except:
@@ -334,30 +344,34 @@ def main(name):
   args = rospy.myargv(argv=sys.argv)
   parsed_args = parser.parse_args(args[1:])
   # Initialize Qt
-  global app
-  app = QtGui.QApplication(sys.argv)
+  global _QAPP
+  _QAPP = QtGui.QApplication(sys.argv)
 
   # decide to show main or echo dialog
-  global main_form
+  global _MAIN_FORM
   try:
     if parsed_args.echo:
-      main_form = init_echo_dialog(name, masteruri, parsed_args.echo[0], parsed_args.echo[1], parsed_args.hz, parsed_args.ssh)
+      _MAIN_FORM = init_echo_dialog(name, masteruri, parsed_args.echo[0],
+                                    parsed_args.echo[1], parsed_args.hz,
+                                    parsed_args.ssh)
     else:
-      main_form = init_main_window(name, masteruri, parsed_args.file)
-  except Exception as e:
-    sys.exit("%s"%e)
+      _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file)
+  except Exception as err:
+    sys.exit("%s" % err)
 
   exit_code = 0
   # resize and show the qt window
   if not rospy.is_shutdown():
-    os.chdir(settings().PACKAGE_DIR) # change path to be able to the images of descriptions
-#    main_form.resize(1024, 720)
+    # change path for access to the images of descriptions
+    os.chdir(settings().PACKAGE_DIR)
+#    _MAIN_FORM.resize(1024, 720)
     screen_size = QtGui.QApplication.desktop().availableGeometry()
-    if main_form.size().width() >= screen_size.width() or main_form.size().height() >= screen_size.height()-24:
-      main_form.showMaximized()
+    if (_MAIN_FORM.size().width() >= screen_size.width()
+        or _MAIN_FORM.size().height() >= screen_size.height() - 24):
+      _MAIN_FORM.showMaximized()
     else:
-      main_form.show()
+      _MAIN_FORM.show()
     exit_code = -1
     rospy.on_shutdown(finish)
-    exit_code = app.exec_()
+    exit_code = _QAPP.exec_()
   return exit_code

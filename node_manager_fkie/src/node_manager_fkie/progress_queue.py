@@ -36,14 +36,14 @@ import threading
 
 import rospy
 
-from detailed_msg_box import WarningMessageBox, DetailedError
+from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
 import node_manager_fkie as nm
 
 
 class InteractionNeededError(Exception):
-  ''' 
+  '''
   request: AuthenticationRequest
-  '''  
+  '''
   def __init__(self, request, method, args):
     Exception.__init__(self)
     self.method = method
@@ -55,7 +55,9 @@ class InteractionNeededError(Exception):
 
 
 class ProgressQueue(QtCore.QObject):
-
+  '''
+  The queue provides a threaded execution of given tasks.
+  '''
   def __init__(self, progress_frame, progress_bar, progress_cancel_button):
     QtCore.QObject.__init__(self)
     self.__ignore_err_list = []
@@ -68,6 +70,10 @@ class ProgressQueue(QtCore.QObject):
     progress_cancel_button.clicked.connect(self._on_progress_canceled)
 
   def stop(self):
+    '''
+    Deletes all queued tasks and wait 3 seconds for the end of current running
+    thread.
+    '''
     try:
       val = self._progress_bar.value()
       if val < len(self.__progress_queue):
@@ -81,14 +87,27 @@ class ProgressQueue(QtCore.QObject):
 
 
   def add2queue(self, ident, descr, target=None, args=()):
-    pt = ProgressThread(ident, descr, target, args)
-    pt.finished_signal.connect(self._progress_thread_finished)
-    pt.error_signal.connect(self._progress_thread_error)
-    pt.request_interact_signal.connect(self._on_request_interact)
-    self.__progress_queue.append(pt)
+    '''
+    Adds new task to the queue. After the task was added you need call start().
+    :param ident: the unique identification string
+    :type ident: str
+    :param descr: the description of the task
+    :type descr: str
+    :param target: is the callable object to be invoked in a new thread.
+                   Defaults to None, meaning nothing is called.
+    :param args: is the argument tuple for the target invocation. Defaults to ()
+    '''
+    pthread = ProgressThread(ident, descr, target, args)
+    pthread.finished_signal.connect(self._progress_thread_finished)
+    pthread.error_signal.connect(self._progress_thread_error)
+    pthread.request_interact_signal.connect(self._on_request_interact)
+    self.__progress_queue.append(pthread)
     self._progress_bar.setMaximum(len(self.__progress_queue))
 
   def start(self):
+    '''
+    Starts the execution of tasks in the queue.
+    '''
     if not self.__running and self.__progress_queue:
       self._progress_frame.setVisible(True)
       self.__running = True
@@ -99,22 +118,27 @@ class ProgressQueue(QtCore.QObject):
       self.__progress_queue[0].start()
 
   def count(self):
+    '''
+    :return: the count of tasks in the queue
+    :rtype: int
+    '''
     return len(self.__progress_queue)
 
   def has_id(self, ident):
     '''
-    Searches the current and planed threads for given id and returns `True` if 
+    Searches the current and planed threads for given id and returns `True` if
     one is found.
     '''
-    for th in self.__progress_queue:
-      if th.id() == ident:
+    for thread in self.__progress_queue:
+      if thread.id() == ident:
         return True
     return False
 
   def _progress_thread_finished(self, ident):
     try:
       val = self._progress_bar.value()
-      # be on the safe side that the finished thread is the first thread in the queue (avoid calls from canceled threads)
+      # be on the safe side that the finished thread is the first thread in the
+      # queue (avoid calls from canceled threads)
       if ident == self.__progress_queue[val].id():
         val = val + 1
       th = self.__progress_queue[val]
@@ -123,16 +147,16 @@ class ProgressQueue(QtCore.QObject):
       self._progress_bar.setFormat(''.join(['%v/%m - ', th.descr[0:dscr_len]]))
       self.__progress_queue[val].start()
       self._progress_bar.setValue(val)
-      #'print "PG finished ok", id
+      # print "PG finished ok", id
     except:
-      #'print "PG finished err", id
+      # print "PG finished err", id
       for thread in self.__progress_queue:
         thread.join(1)
       self._progress_frame.setVisible(False)
       self.__running = False
-      #'print "PG finished delete all..."
+      # print "PG finished delete all..."
       self.__progress_queue = []
-      #'print "PG finished delete all ok"
+      # print "PG finished delete all ok"
 
   def _progress_thread_error(self, ident, title, msg, detailed_msg):
     if detailed_msg in self.__ignore_err_list:
@@ -148,7 +172,9 @@ class ProgressQueue(QtCore.QObject):
       self._progress_frame.setVisible(False)
       self.__running = False
     else:
-      if res == 1 or res == 0: # HACK: the number is returned, if "Don't show again" is pressed, instead 'QtGui.QMessageBox.HelpRole' (4)
+      # HACK: the number is returned, if "Don't show again" is pressed,
+      # instead 'QtGui.QMessageBox.HelpRole' (4)
+      if res == 1 or res == 0:
         self.__ignore_err_list.append(detailed_msg)
       self._progress_thread_finished(ident)
 
@@ -157,9 +183,10 @@ class ProgressQueue(QtCore.QObject):
 #      self.__progress_queue[self._progress_bar.value()].wait()
       if self.__progress_queue:
         try:
-          self.__progress_queue[self._progress_bar.value()].finished_signal.disconnect(self._progress_thread_finished)
-          self.__progress_queue[self._progress_bar.value()].error_signal.disconnect(self._progress_thread_error)
-          self.__progress_queue[self._progress_bar.value()].request_interact_signal.disconnect(self._on_request_interact)
+          pthread = self.__progress_queue[self._progress_bar.value()]
+          pthread.finished_signal.disconnect(self._progress_thread_finished)
+          pthread.error_signal.disconnect(self._progress_thread_error)
+          pthread.request_interact_signal.disconnect(self._on_request_interact)
 #          self.__progress_queue[self._progress_bar.value()].terminate()
         except:
 #          print str(self.__progress_queue[self._progress_bar.value()].getName()), 'could not be terminated'
@@ -193,7 +220,7 @@ class ProgressQueue(QtCore.QObject):
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
     elif isinstance(req.request, nm.ScreenSelectionRequest):
-      from select_dialog import SelectDialog
+      from node_manager_fkie.select_dialog import SelectDialog
       items, _ = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False)
       if not items:
         self._progress_thread_finished(ident)
@@ -205,7 +232,7 @@ class ProgressQueue(QtCore.QObject):
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
     elif isinstance(req.request, nm.BinarySelectionRequest):
-      from select_dialog import SelectDialog
+      from node_manager_fkie.select_dialog import SelectDialog
       items, _ = SelectDialog.getValue('Multiple executables', '', req.request.choices, True)
       if not items:
         self._progress_thread_finished(ident)
@@ -221,16 +248,16 @@ class ProgressQueue(QtCore.QObject):
       pt.request_interact_signal.connect(self._on_request_interact)
       pt.start()
     elif isinstance(req.request, nm.LaunchArgsSelectionRequest):
-      from parameter_dialog import ParameterDialog
-      inputDia = ParameterDialog(req.request.args_dict)
-      inputDia.setFilterVisible(False)
-      inputDia.setWindowTitle(''.join(['Enter the argv for ', req.request.launchfile]))
-      if inputDia.exec_():
-        params = inputDia.getKeywords()
+      from node_manager_fkie.parameter_dialog import ParameterDialog
+      input_dia = ParameterDialog(req.request.args_dict)
+      input_dia.setFilterVisible(False)
+      input_dia.setWindowTitle('Enter the argv for %s' % req.request.launchfile)
+      if input_dia.exec_():
+        params = input_dia.getKeywords()
         argv = []
-        for p,v in params.items():
-          if v:
-            argv.append(''.join([p, ':=', v]))
+        for prm, val in params.items():
+          if val:
+            argv.append('%s:=%s' % (prm, val))
         res = argv
         pt = ProgressThread(ident, descr, req.method, (req.args+(argv,)))
         pt.finished_signal.connect(self._progress_thread_finished)
@@ -254,8 +281,8 @@ class ProgressThread(QtCore.QObject, threading.Thread):
 
   error_signal = QtCore.Signal(str, str, str, str)
   '''
-  @ivar: error_signal is a signal (id, title, error message, detailed error message), which is emitted, 
-  if an error while run of the thread was occurred.
+  @ivar: error_signal is a signal (id, title, error message, detailed error message),
+  which is emitted, if an error while run of the thread was occurred.
   '''
 
   request_interact_signal = QtCore.Signal(str, str, InteractionNeededError)
@@ -277,21 +304,21 @@ class ProgressThread(QtCore.QObject, threading.Thread):
     '''
     try:
       if not self._target is None:
-        #'print "PG call "
-        #'print "  .. ", self._target
-        #print "  -- args:", self._args
+        # print "PG call "
+        # print "  .. ", self._target
+        # print "  -- args:", self._args
         if 'pqid' in self._target.func_code.co_varnames:
           self._target(*self._args, pqid=self._id)
         else:
           self._target(*self._args)
-        #print "PG call finished"
+        # print "PG call finished"
         self.finished_signal.emit(self._id)
       else:
         self.error_signal.emit(self._id, 'No target specified')
-    except InteractionNeededError as e:
-      self.request_interact_signal.emit(self._id, self.descr, e)
-    except DetailedError as e:
-      self.error_signal.emit(self._id, e.title, e.value, e.detailed_text)
+    except InteractionNeededError as ine:
+      self.request_interact_signal.emit(self._id, self.descr, ine)
+    except DetailedError as err:
+      self.error_signal.emit(self._id, err.title, err.value, err.detailed_text)
     except:
       import traceback
 #      print traceback.print_exc()
@@ -302,4 +329,6 @@ class ProgressThread(QtCore.QObject, threading.Thread):
         index += 1
         last_line = formatted_lines[-index]
       rospy.logwarn("%s failed:\n\t%s", str(self.descr), last_line)
-      self.error_signal.emit(self._id, 'Progress Job Error', str(self.descr) + " failed:\n" + last_line, traceback.format_exc(4))
+      self.error_signal.emit(self._id, 'Progress Job Error',
+                             "%s failed:\n%s" % (str(self.descr), last_line),
+                             traceback.format_exc(4))
