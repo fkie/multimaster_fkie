@@ -346,15 +346,9 @@ class MasterViewProxy(QtGui.QWidget):
     print "  Shutdown master", self.masteruri, "..."
     self.default_cfg_handler.stop()
     self.launch_server_handler.stop()
+    self._progress_queue.stop()
     if self._on_stop_kill_roscore:
       self.killall_roscore()
-    if not (self._on_stop_kill_roscore or self._on_stop_poweroff):
-      print "    wait 10 seconds for all process are finished..."
-      cnt = 0
-      while cnt < 10 and self._progress_queue.count() > 0:
-        time.sleep(1)
-        cnt += 1
-      self._progress_queue.stop()
     for ps in self.__echo_topics_dialogs.values():
       try:
         ps.terminate()

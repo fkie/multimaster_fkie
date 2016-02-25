@@ -30,14 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import time
-import socket
+from python_qt_binding import QtCore
 import random
+import socket
 import threading
+import time
 import xmlrpclib
 
-from python_qt_binding import QtCore
 import rospy
+
 
 class LaunchServerHandler(QtCore.QObject):
   '''
@@ -65,8 +66,10 @@ class LaunchServerHandler(QtCore.QObject):
     if len(self.__updateThreads) > 0:
       print "  Shutdown launch update threads..."
       self.__requestedUpdates.clear()
-      for _, thread in self.__updateThreads.iteritems():
-        thread.join(3)
+      with self._lock:
+        for _, thread in self.__updateThreads.iteritems():
+          thread.launch_server_signal.disconnect()
+          thread.error_signal.disconnect()
       print "  Launch update threads are off!"
 
   def updateLaunchServerInfo(self, serveruri, delayed_exec=0.0):

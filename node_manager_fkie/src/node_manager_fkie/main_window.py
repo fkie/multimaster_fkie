@@ -415,6 +415,11 @@ class MainWindow(QtGui.QMainWindow):
       else:
         self._close_on_exit = True
       event.ignore()
+    elif self._are_master_in_process():
+      QtCore.QTimer.singleShot(200, self._test_for_finish)
+      self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s ...closing...</span>' % self.masternameLabel.text())
+      rospy.loginfo("Wait for running processes are finished...")
+      event.ignore()
     else:
       try:
         self.storeSetting()
@@ -423,12 +428,17 @@ class MainWindow(QtGui.QMainWindow):
       self.finish()
       QtGui.QMainWindow.closeEvent(self, event)
 
-  def _test_for_finish(self):
-    # this method test on exit for running process queues with stopping jobs
+  def _are_master_in_process(self):
     for uri, m in self.masters.items():
       if m.in_process():
-        QtCore.QTimer.singleShot(200, self._test_for_finish)
-        return
+        return True
+    return False
+
+  def _test_for_finish(self):
+    # this method test on exit for running process queues with stopping jobs
+    if self._are_master_in_process():
+      QtCore.QTimer.singleShot(200, self._test_for_finish)
+      return
     if hasattr(self, '_stop_local_master') and self._stop_local_master is not None:
       self.finish()
       self._stop_local_master.killall_roscore()
