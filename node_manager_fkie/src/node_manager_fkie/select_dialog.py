@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import re
 from python_qt_binding import QtCore, QtGui
+import re
 
 
 class SelectDialog(QtGui.QDialog):
@@ -39,7 +39,7 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True):
+  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True, checkitem1='', checkitem2=''):
     '''
     Creates an input dialog.
     @param items: a list with strings
@@ -79,29 +79,39 @@ class SelectDialog(QtGui.QDialog):
       self.verticalLayout.addWidget(self.description_frame)
 
     # create area for the parameter
-    self.scrollArea = scrollArea = QtGui.QScrollArea(self);
-    self.scrollArea.setFocusPolicy(QtCore.Qt.NoFocus)
-    scrollArea.setObjectName("scrollArea")
-    scrollArea.setWidgetResizable(True)
     self.content = MainBox(self)
-    scrollArea.setWidget(self.content)
-    self.verticalLayout.addWidget(scrollArea)
+    if items:
+      self.scroll_area = QtGui.QScrollArea(self)
+      self.scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
+      self.scroll_area.setObjectName("scroll_area")
+      self.scroll_area.setWidgetResizable(True)
+      self.scroll_area.setWidget(self.content)
+      self.verticalLayout.addWidget(self.scroll_area)
+
+    self.checkitem1 = checkitem1
+    self.checkitem1_result = False
+    self.checkitem2 = checkitem2
+    self.checkitem2_result = False
 
     # add select all option
-    if not exclusive:
+    if not exclusive and items:
       self._ignore_next_toggle = False
-      options = QtGui.QWidget(self)
-      hLayout = QtGui.QHBoxLayout(options)
-      hLayout.setContentsMargins(1, 1, 1, 1)
-      self.select_all_checkbox = QtGui.QCheckBox('all')
+      self.select_all_checkbox = QtGui.QCheckBox('all entries')
       self.select_all_checkbox.setTristate(True)
       self.select_all_checkbox.stateChanged.connect(self._on_select_all_checkbox_stateChanged)
-      hLayout.addWidget(self.select_all_checkbox)
+      self.verticalLayout.addWidget(self.select_all_checkbox)
       self.content.toggled.connect(self._on_main_toggle)
-      # add spacer
-      spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-      hLayout.addItem(spacerItem)
-      self.verticalLayout.addWidget(options)
+    if self.checkitem1:
+      self.checkitem1_checkbox = QtGui.QCheckBox(self.checkitem1)
+      self.checkitem1_checkbox.stateChanged.connect(self._on_select_checkitem1_checkbox_stateChanged)
+      self.verticalLayout.addWidget(self.checkitem1_checkbox)
+    if self.checkitem2:
+      self.checkitem2_checkbox = QtGui.QCheckBox(self.checkitem2)
+      self.checkitem2_checkbox.stateChanged.connect(self._on_select_checkitem2_checkbox_stateChanged)
+      self.verticalLayout.addWidget(self.checkitem2_checkbox)
+    if not items:
+      spacerItem = QtGui.QSpacerItem(1, 1, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+      self.verticalLayout.addItem(spacerItem)
 
     # create buttons
     self.buttonBox = QtGui.QDialogButtonBox(self)
@@ -118,7 +128,7 @@ class SelectDialog(QtGui.QDialog):
       if (select_if_single and len(items) == 1) or preselect_all:
         self.select_all_checkbox.setCheckState(QtCore.Qt.Checked)
 
-    if not items or len(items) < 11:
+    if not items or len(items) < 7:
       self.filter_frame.setVisible(False)
 #    print '=============== create', self.objectName()
 #
@@ -134,6 +144,18 @@ class SelectDialog(QtGui.QDialog):
       self.content.setState(state)
     self._ignore_next_toggle = False
 
+  def _on_select_checkitem1_checkbox_stateChanged(self, state):
+    if state == QtCore.Qt.Checked:
+      self.checkitem1_result = True
+    elif state == QtCore.Qt.Unchecked:
+      self.checkitem1_result = False
+
+  def _on_select_checkitem2_checkbox_stateChanged(self, state):
+    if state == QtCore.Qt.Checked:
+      self.checkitem2_result = True
+    elif state == QtCore.Qt.Unchecked:
+      self.checkitem2_result = False
+
   def _on_filter_changed(self):
     self.content.filter(self.filter_field.text())
 
@@ -141,12 +163,20 @@ class SelectDialog(QtGui.QDialog):
     return self.content.getSelected()
 
   @staticmethod
-  def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True):
-    selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single)
+  def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2=''):
+    selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2)
     selectDia.setWindowTitle(title)
     selectDia.resize(480, 256)
     if selectDia.exec_():
+      if selectDia.checkitem2:
+        return selectDia.getSelected(), True, selectDia.checkitem1_result, selectDia.checkitem2_result
+      if selectDia.checkitem1:
+        return selectDia.getSelected(), True, selectDia.checkitem1_result
       return selectDia.getSelected(), True
+    if selectDia.checkitem2:
+      return list(), False, False, False
+    if selectDia.checkitem1:
+      return list(), False, False
     return list(), False
 
 

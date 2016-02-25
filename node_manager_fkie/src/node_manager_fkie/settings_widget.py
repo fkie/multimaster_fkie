@@ -162,6 +162,14 @@ class SettingsWidget(QtGui.QDockWidget):
                                    'value_default' : nm.settings().START_SYNC_WITH_DISCOVERY,
                                    'tooltip'  : "<p>Sets 'start sync' in 'Start' master discovery "
                                                 "dialog to True, if this option is set to true.</p>"
+                                   },),
+                'Confirm exit when closing:' : ({
+                                   'value' : nm.settings().confirm_exit_when_closing,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'confirm_exit_when_closing',
+                                   'value_default' : nm.settings().CONFIRM_EXIT_WHEN_CLOSING,
+                                   'tooltip'  : "<p>Shows on closing of node_manager a dialog to stop "
+                                                "all ROS nodes if this option is set to true.</p>"
                                    },)
                }
     self.settings_model.init_settings(settings)
