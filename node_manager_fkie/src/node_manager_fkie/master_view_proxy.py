@@ -2285,8 +2285,10 @@ class MasterViewProxy(QtGui.QWidget):
       else:
         package = str(package_name(os.path.dirname(path))[0])
         choices['%s [%s]' % (os.path.basename(path), package)] = path
+    cfg_items = choices.keys()
+    cfg_items.sort()
     res = SelectDialog.getValue('Close/Stop/Shutdown', '',
-                                choices.keys(), False, False,
+                                cfg_items, False, False,
                                 self, checkitem1='stop ROS',
                                 checkitem2='shutdown host')
     cfgs, _, stop_nodes, shutdown = res[0], res[1], res[2], res[3]
