@@ -492,6 +492,9 @@ class Discoverer(object):
     self.TIMEOUT_FACTOR = rospy.get_param('~timeout_factor', Discoverer.TIMEOUT_FACTOR)
     self.REMOVE_AFTER = rospy.get_param('~remove_after', Discoverer.REMOVE_AFTER)
     self.ACTIVE_REQUEST_AFTER = rospy.get_param('~active_request_after', Discoverer.ACTIVE_REQUEST_AFTER)
+    if self.ACTIVE_REQUEST_AFTER <= 0:
+      rospy.logwarn("active_request_after [sec]: %s <= 0 set to 60" % self.ACTIVE_REQUEST_AFTER)
+      self.ACTIVE_REQUEST_AFTER = 60
     self.robots = rospy.get_param('~robot_hosts', [])
     self.CHANGE_NOTIFICATION_COUNT = rospy.get_param('~change_notification_count', Discoverer.CHANGE_NOTIFICATION_COUNT)
     self._current_change_notification_count = 0
@@ -505,8 +508,11 @@ class Discoverer(object):
     # some parameter checks and info outputs
     if not self._send_mcast and not self.robots:
       rospy.logwarn("This master_discovery is invisible because it send no heart beat messages! Set ~send_mcast to true or add hosts to ~robot_hosts.")
+    if not self._send_mcast:
+      self.HEARTBEAT_HZ = 1. / self.ACTIVE_REQUEST_AFTER
+      rospy.logwarn("Multicast is disabled. Use ~active_request_after(%.2f) ot set ~heartbeat_hz to new value: %.4f" % (self.ACTIVE_REQUEST_AFTER, self.HEARTBEAT_HZ))
     rospy.loginfo("Check the ROS Master[Hz]: " + str(self.ROSMASTER_HZ))
-    if self.HEARTBEAT_HZ < 0.:
+    if self.HEARTBEAT_HZ <= 0.:
       rospy.logwarn("Heart beat [Hz]: %s is increased to 0.02" % self.HEARTBEAT_HZ)
       self.HEARTBEAT_HZ = 0.02
     if self.HEARTBEAT_HZ > 25.5:
@@ -520,9 +526,9 @@ class Discoverer(object):
       rospy.logwarn("'Active request after' should be less than 'remove after' to avoid removing masters from list!")
     rospy.loginfo("Robot hosts: " + str(self.robots))
     if self.HEARTBEAT_HZ > 0.:
-      count_packets = len(self.robots) + 1 if self._send_mcast else 0
+      count_packets = len(self.robots) + (1 if self._send_mcast else 0)
       netload = self.HEARTBEAT_HZ * self.NETPACKET_SIZE * count_packets
-      rospy.loginfo("Approx. mininum network load: %s bytes/s" % netload)
+      rospy.loginfo("Approx. mininum avg. network load: %.2f bytes/s" % netload)
     self.current_check_hz = self.ROSMASTER_HZ
     self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped, queue_size=1)
 
