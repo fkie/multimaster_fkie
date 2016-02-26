@@ -31,8 +31,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
+
 
 class XmlHighlighter(QtGui.QSyntaxHighlighter):
   '''
@@ -157,6 +158,7 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     self.commentEnd = QtCore.QRegExp("-->")
     self.default_format = QtGui.QTextCharFormat()
     self.default_format.setForeground (QtGui.QColor(24,24,24))
+    self.mark_background = QtGui.QBrush(QtGui.QColor(251, 247, 222))
     self.commentFormat = QtGui.QTextCharFormat()
     f = QtGui.QTextCharFormat()
     r = QtCore.QRegExp()
@@ -192,15 +194,18 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     self.commentFormat.setFontItalic(True)
     self.commentFormat.setForeground(QtCore.Qt.darkGray)
 
+    # part to select an XML block
+    self._current_mark_range = (-1, -1)  # absolute (start, end) positions
 
   def highlightBlock(self, text):
-    self.setFormat(0, len(text), self.default_format)
+    self._format(0, len(text), self.default_format)
     for pattern, form in self.rules:
       index = pattern.indexIn(text)
       while index >= 0:
         length = pattern.matchedLength()
-        self.setFormat(index, length, form)
+        self._format(index, index + length, form)
         index = pattern.indexIn(text, index + length)
+    # detection for comments
     self.setCurrentBlockState(0)
     startIndex = 0
     if self.previousBlockState() != 1:
@@ -213,5 +218,114 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
         commentLength = len(text) - startIndex
       else:
         commentLength = endIndex - startIndex + self.commentEnd.matchedLength()
-      self.setFormat(startIndex, commentLength, self.commentFormat)
+      self._format(startIndex, startIndex + commentLength, self.commentFormat)
       startIndex = self.commentStart.indexIn(text, startIndex + commentLength)
+
+  def _format(self, start, end, format):
+    start += self.currentBlock().position()
+    end += self.currentBlock().position()
+    mark = {}
+    do_mark = self._inrange(start, self._current_mark_range)
+    for val in range(start+1, end):
+      res = self._inrange(val, self._current_mark_range)
+      if do_mark != res:
+        mark[val] = res
+        do_mark = res
+    do_end_mark = do_mark
+    last_pos = start
+    for pos, do_mark in mark.items():
+      if not do_mark:
+        format.setBackground(self.mark_background)
+      else:
+        format.clearBackground()
+      self.setFormat(last_pos - self.currentBlock().position(), pos - last_pos, format)
+      last_pos = pos
+    if do_end_mark:
+      format.setBackground(self.mark_background)
+    else:
+      format.clearBackground()
+    self.setFormat(last_pos - self.currentBlock().position(), end - last_pos, format)
+    return format
+
+  def _inrange(self, value, (start, end)):
+    return value >= start and value <= end
+
+  def mark_tag_block(self, position):
+    '''
+    Select an XML block, depending on the cursor position.
+    '''
+    text = self.document().toPlainText()
+    pos = position
+    if len(text) <= pos:
+      return
+    open_pos = -1
+    close_pos = -1
+    # find the start position of the start/end tag
+    try:
+      while text[pos] not in ['<', ' ']:
+        pos -= 1
+      if text[pos] == '<':
+        open_pos = pos
+        search_tag = ''
+      else:
+        pos = position
+    except:
+      pass
+    if open_pos > -1:
+      # the position was found
+      try:
+        while text[pos] not in [' ', '!', '>']:
+          pos += 1
+        if text[pos] == '!':
+          # skip comment start
+          pass
+        elif text[pos] == '>' and text[open_pos + 1] == '/':
+          # it is an end tag: determine the tag name and searches for start
+          search_tag = text[open_pos + 2:pos]
+          open_tag_pos = text.rfind('<%s' % search_tag, 0, open_pos)
+          if open_tag_pos > -1:
+            close_pos = pos + 1
+            open_pos = open_tag_pos
+        elif text[pos] == ' ' or text[pos] == '>':
+          # it is a start tag: determine the name and search for end
+          search_tag = text[open_pos + 1:pos]
+          while (text[pos + 1:pos + 3] not in ['/>']) and ('>' not in text[pos:pos + 2]):
+            pos += 1
+          if text[pos] == '>' or text[pos + 1] == '>':
+            close_tag_pos = text.find('</%s>' % search_tag, pos)
+            if close_tag_pos > -1:
+              close_pos = close_tag_pos + len(search_tag) + 3
+          else:
+            # it is closed by />
+            close_pos = pos + 2
+      except:
+        pass
+    elif text[pos:pos + 2] == '/>':
+      # handle the case of the position in front of />
+      close_pos = pos + 1
+      # this is the end, search for open tag
+      try:
+        while pos >= 0 and open_pos == -1:
+          if text[pos] == '<':
+            open_pos = pos
+          pos -= 1
+      except:
+        pass
+    # now let mark the block
+    new_block = open_pos != -1 and close_pos != -1
+    if self._current_mark_range[1] != -1 and new_block:
+      # demark old block
+      first_block = self.document().findBlock(self._current_mark_range[0])
+      end_block = self.document().findBlock(self._current_mark_range[1])
+      self._current_mark_range = (-1, -1)
+      for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
+        block = self.document().findBlockByNumber(blocknr)
+        self.rehighlightBlock(block)
+    if new_block:
+      # mark the block
+      self._current_mark_range = (open_pos, close_pos)
+      first_block = self.document().findBlock(open_pos)
+      end_block = self.document().findBlock(close_pos)
+      for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
+        block = self.document().findBlockByNumber(blocknr)
+        self.rehighlightBlock(block)

@@ -30,20 +30,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
+import os
 
 import roslib
 import rospy
-from node_manager_fkie.xml_highlighter import XmlHighlighter
-from node_manager_fkie.yaml_highlighter import YamlHighlighter
-from node_manager_fkie.detailed_msg_box import WarningMessageBox
 
-import node_manager_fkie as nm
 from master_discovery_fkie.common import resolve_url
 from node_manager_fkie.common import package_name
+from node_manager_fkie.detailed_msg_box import WarningMessageBox
 from node_manager_fkie.run_dialog import PackageDialog
+from node_manager_fkie.xml_highlighter import XmlHighlighter
+from node_manager_fkie.yaml_highlighter import YamlHighlighter
+import node_manager_fkie as nm
+
 
 class Editor(QtGui.QTextEdit):
   '''
@@ -63,6 +64,8 @@ class Editor(QtGui.QTextEdit):
     self.parent = parent
     QtGui.QTextEdit.__init__(self, parent)
     self.setObjectName(' - '.join(['Editor', filename]))
+    self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+    self.customContextMenuRequested.connect(self.show_custom_context_menu)
     font = QtGui.QFont()
     font.setFamily("Fixed".decode("utf-8"))
     font.setPointSize(12)
@@ -91,9 +94,13 @@ class Editor(QtGui.QTextEdit):
     self.setAcceptDrops(True)
     if filename.endswith('.launch'):
       self.hl = XmlHighlighter(self.document())
+      self.cursorPositionChanged.connect(self._document_position_changed)
     else:
       self.hl = YamlHighlighter(self.document())
 
+  def _document_position_changed(self):
+    if isinstance(self.hl, XmlHighlighter):
+      self.hl.mark_tag_block(self.textCursor().position())
 #  def __del__(self):
 #    print "********** desctroy:", self.objectName()
 
@@ -148,8 +155,8 @@ class Editor(QtGui.QTextEdit):
 
   def setCurrentPath(self, path):
     '''
-    Sets the current working path. This path is to open the included files, which
-    contains the relative path.
+    Sets the current working path. This path is to open the included files,
+    which contains the relative path.
     @param path: the path of the current opened file (without the file)
     @type path: C{str}
     '''
@@ -157,13 +164,13 @@ class Editor(QtGui.QTextEdit):
 
   def interpretPath(self, path):
     '''
-    Tries to determine the path of the included file. The statement of 
+    Tries to determine the path of the included file. The statement of
     C{$(find 'package')} will be resolved.
     @param path: the sting which contains the included path
     @type path: C{str}
-    @return: if no leading C{os.sep} is detected, the path setted by L{setCurrentPath()}
-    will be prepend. C{$(find 'package')} will be resolved. Otherwise the parameter 
-    itself will be returned
+    @return: if no leading C{os.sep} is detected, the path setted by
+    L{setCurrentPath()} will be prepend. C{$(find 'package')} will be resolved.
+    Otherwise the parameter itself will be returned
     @rtype: C{str} 
     '''
     path = path.strip()
@@ -528,11 +535,24 @@ class Editor(QtGui.QTextEdit):
   ########## Ctrl&Space  Context menu                                    ###### 
   #############################################################################
 
+  def show_custom_context_menu(self, pos):
+    menu = QtGui.QTextEdit.createStandardContextMenu(self)
+    submenu = self._create_context_tag_menu()
+    if submenu is not None:
+      menu.addMenu(submenu)
+    argmenu = self._create_context_substitution_menu()
+    if argmenu is not None:
+      menu.addMenu(argmenu)
+    menu.exec_(self.mapToGlobal(pos))
+
+  def contextMenuEvent(self, event):
+    QtGui.QTextEdit.contextMenuEvent(self, event)
+
   def _create_context_tag_menu(self):
     parent_tag, inblock, attrs = self._get_parent_tag()
     if not parent_tag:
       return None
-    menu = QtGui.QMenu(self)
+    menu = QtGui.QMenu("ROS Launch Tags", self)
     menu.triggered.connect(self._context_activated)
     text = self.toPlainText()
     pos = self.textCursor().position() - 1
@@ -565,7 +585,7 @@ class Editor(QtGui.QTextEdit):
     pos = self.textCursor().position() - 1
     try:
       if text[pos] == '$' or (text[pos] == '(' and text[pos-1] == '$'):
-        menu = QtGui.QMenu(self)
+        menu = QtGui.QMenu("ROS Add Arg", self)
         menu.triggered.connect(self._context_activated)
         for arg in self.SUBSTITUTION_ARGS:
           action = menu.addAction("%s"%arg)
@@ -849,7 +869,7 @@ class XmlEditor(QtGui.QDialog):
         self.files.append(filename)
         editor.setCurrentPath(os.path.basename(filename))
         editor.load_request_signal.connect(self.on_load_request)
-        editor.textChanged.connect(self.on_editor_textChanged)
+        editor.document().modificationChanged.connect(self.on_editor_modificationChanged)
         editor.cursorPositionChanged.connect(self.on_editor_positionChanged)
         editor.setFocus(QtCore.Qt.OtherFocusReason)
         self.tabWidget.setCurrentIndex(tab_index)
@@ -950,7 +970,7 @@ class XmlEditor(QtGui.QDialog):
       self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
       self.on_editor_textChanged()
 
-  def on_editor_textChanged(self):
+  def on_editor_modificationChanged(self, value=None):
     '''
     If the content was changed, a '*' will be shown in the tab name.
     '''
