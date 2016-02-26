@@ -574,6 +574,7 @@ class ArrayBox(MainBox):
             entry_frame._createFieldFromDict(v)
             self._dynamic_items_count += 1
             self.count_label.setText(str(self._dynamic_items_count))
+            break
     finally:
       self.setUpdatesEnabled(True)
 
