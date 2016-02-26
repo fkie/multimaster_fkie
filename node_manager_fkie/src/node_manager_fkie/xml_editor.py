@@ -99,7 +99,7 @@ class Editor(QtGui.QTextEdit):
       self.hl = YamlHighlighter(self.document())
 
   def _document_position_changed(self):
-    if isinstance(self.hl, XmlHighlighter):
+    if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:
       self.hl.mark_tag_block(self.textCursor().position())
 #  def __del__(self):
 #    print "********** desctroy:", self.objectName()

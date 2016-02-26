@@ -170,6 +170,14 @@ class SettingsWidget(QtGui.QDockWidget):
                                    'value_default' : nm.settings().CONFIRM_EXIT_WHEN_CLOSING,
                                    'tooltip'  : "<p>Shows on closing of node_manager a dialog to stop "
                                                 "all ROS nodes if this option is set to true.</p>"
+                                   },),
+                'Highlight xml blocks:' : ({
+                                   'value' : nm.settings().highlight_xml_blocks,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'highlight_xml_blocks',
+                                   'value_default' : nm.settings().HIGHLIGHT_XML_BLOCKS,
+                                   'tooltip'  : "<p>Highlights the current selected XML block, while "
+                                                "editing ROS launch file.</p>"
                                    },)
                }
     self.settings_model.init_settings(settings)
