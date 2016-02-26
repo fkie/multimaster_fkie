@@ -255,24 +255,62 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     Select an XML block, depending on the cursor position.
     '''
     text = self.document().toPlainText()
+    search_tag, open_pos, close_pos = self.get_tag_of_current_block(text, position)
+    force_clear = not search_tag and close_pos != -1
+    # now let mark the block
+    new_block = open_pos != -1 and close_pos != -1
+    if self._current_mark_range[1] != -1 and (new_block or force_clear):
+      # demark old block
+      first_block = self.document().findBlock(self._current_mark_range[0])
+      end_block = self.document().findBlock(self._current_mark_range[1])
+      self._current_mark_range = (-1, -1)
+      for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
+        block = self.document().findBlockByNumber(blocknr)
+        self.rehighlightBlock(block)
+    if new_block and search_tag != 'launch':
+      # mark the block
+      self._current_mark_range = (open_pos, close_pos)
+      first_block = self.document().findBlock(open_pos)
+      end_block = self.document().findBlock(close_pos)
+      for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
+        block = self.document().findBlockByNumber(blocknr)
+        self.rehighlightBlock(block)
+
+  def get_tag_of_current_block(self, text, position):
     pos = position
     if len(text) <= pos:
-      return
+      return '', -1, -1
     open_pos = -1
     close_pos = -1
+    search_tag = ''
     # find the start position of the start/end tag
+    closed_tags = 0
+    has_close_brace = False
     try:
-      while text[pos] not in ['<', ' ']:
+      while text[pos] not in ['<'] or closed_tags > 0:
+        if text[pos - 2:pos] in ['/>', '->']:
+          closed_tags += 1
+          pos -= 2
+        elif text[pos - 2:pos] in ['</'] and has_close_brace:
+          # handle the case the cursor is in the name of closed tag
+          has_close_brace = False
+          closed_tags += 1
+          pos -= 2
+        elif text[pos] == '<':
+          closed_tags -= 1
+        elif text[pos] == '>':
+          has_close_brace = True
         pos -= 1
       if text[pos] == '<':
         open_pos = pos
-        search_tag = ''
+      elif text[pos] == '>':
+        close_pos = pos
       else:
         pos = position
     except:
       pass
     if open_pos > -1:
-      # the position was found
+      # the start position was found, determine the tag and end of the group
       try:
         while text[pos] not in [' ', '!', '>']:
           pos += 1
@@ -300,32 +338,4 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
             close_pos = pos + 2
       except:
         pass
-    elif text[pos:pos + 2] == '/>':
-      # handle the case of the position in front of />
-      close_pos = pos + 1
-      # this is the end, search for open tag
-      try:
-        while pos >= 0 and open_pos == -1:
-          if text[pos] == '<':
-            open_pos = pos
-          pos -= 1
-      except:
-        pass
-    # now let mark the block
-    new_block = open_pos != -1 and close_pos != -1
-    if self._current_mark_range[1] != -1 and new_block:
-      # demark old block
-      first_block = self.document().findBlock(self._current_mark_range[0])
-      end_block = self.document().findBlock(self._current_mark_range[1])
-      self._current_mark_range = (-1, -1)
-      for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
-        block = self.document().findBlockByNumber(blocknr)
-        self.rehighlightBlock(block)
-    if new_block:
-      # mark the block
-      self._current_mark_range = (open_pos, close_pos)
-      first_block = self.document().findBlock(open_pos)
-      end_block = self.document().findBlock(close_pos)
-      for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
-        block = self.document().findBlockByNumber(blocknr)
-        self.rehighlightBlock(block)
+    return search_tag, open_pos, close_pos
