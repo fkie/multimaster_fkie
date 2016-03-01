@@ -828,6 +828,7 @@ class XmlEditor(QtGui.QDialog):
       if self.find(search_text, False, exclude_xml_comments=True):
         if not self.find_dialog.search_pos.isNull():
           self.tabWidget.currentWidget().moveCursor(QtGui.QTextCursor.StartOfLine)
+          self.tabWidget.currentWidget().moveCursor(QtGui.QTextCursor.NextWord)
 
   def on_close_tab(self, tab_index):
     '''
