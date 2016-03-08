@@ -296,7 +296,7 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
   Intialize the environment to start an echo window.
   '''
   # start ROS-Master, if not currently running
-  StartHandler._prepareROSMaster(masteruri)
+#  StartHandler._prepareROSMaster(masteruri)
   name = '%s_echo' % prog_name
   rospy.init_node(name, anonymous=True, log_level=rospy.INFO)
   set_terminal_name(name)
