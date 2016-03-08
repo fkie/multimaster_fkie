@@ -32,13 +32,16 @@
 
 import os
 import shlex
-import subprocess
 import socket
+import subprocess
 import time
 import xmlrpclib
 
-import rospy
 from roslib.network import get_local_addresses
+import rospy
+
+from node_manager_fkie.name_resolution import NameResolution
+
 
 class StartException(Exception):
   pass
@@ -265,6 +268,9 @@ class StartHandler(object):
         master_port = urlparse(masteruri).port
         new_env = dict(os.environ)
         new_env['ROS_MASTER_URI'] = masteruri
+        ros_hostname = NameResolution.get_ros_hostname(masteruri)
+        if ros_hostname:
+          new_env['ROS_HOSTNAME'] = ros_hostname
         cmd_args = '%s roscore --port %d'%(ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
         print "    %s"%cmd_args
         try:

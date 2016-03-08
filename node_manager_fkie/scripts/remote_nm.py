@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import shlex, subprocess
-
+import sys
 import time
-import roslib; roslib.load_manifest('node_manager_fkie')
+
 import rospy
+
+
+import roslib; roslib.load_manifest('node_manager_fkie')
 try:
   import node_manager_fkie as nm
 except:
@@ -175,6 +177,9 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
   # set the masteruri to launch with other one master
   new_env = dict(os.environ)
   new_env['ROS_MASTER_URI'] = masteruri
+  ros_hostname = nm.NameResolution.get_ros_hostname(masteruri)
+  if ros_hostname:
+    new_env['ROS_HOSTNAME'] = ros_hostname
   if loglevel:
     new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)
   subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)

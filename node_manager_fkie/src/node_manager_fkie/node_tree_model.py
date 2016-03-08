@@ -39,6 +39,7 @@ import roslib
 import rospy
 
 from master_discovery_fkie.master_info import NodeInfo
+from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
 import node_manager_fkie as nm
 
@@ -668,9 +669,12 @@ class HostItem(GroupItem):
 
   @property
   def address(self):
-    result = nm.nameres().resolve_cached(self._host)
-    if result:
-      return result[0]
+    if NameResolution.is_legal_ip(self._host):
+      return self._host
+    else:
+      result = nm.nameres().resolve_cached(self._host)
+      if result:
+        return result[0]
     return None
 
   @property
@@ -1296,7 +1300,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     if masteruri is None:
       return None
     host = (masteruri, address)
-    local = (self.local_addr in [address, nm.nameres().resolve_cached(address)]
+    local = (self.local_addr in [address] + nm.nameres().resolve_cached(address)
              and self._local_masteruri == masteruri)
     # find the host item by address
     root = self.invisibleRootItem()

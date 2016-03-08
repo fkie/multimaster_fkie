@@ -306,6 +306,10 @@ class NameResolution(object):
         pass
     return address
 
+  @classmethod
+  def is_legal_ip(cls, address):
+    return MasterEntry.is_legal_ip(address)
+
   def resolve_cached(self, hostname):
     try:
       return RESOLVE_CACHE[hostname]
@@ -326,3 +330,19 @@ class NameResolution(object):
     from urlparse import urlparse
     o = urlparse(url)
     return o.hostname
+
+  @classmethod
+  def get_ros_hostname(cls, url):
+    '''
+    Returns the host name used in a url, if it is a name. If it is an IP an
+    empty string will be returned.
+
+    @return: host or '' if url is an IP or invalid
+    @rtype:  C{str}
+    '''
+    hostname = cls.getHostname(url)
+    if hostname is not None:
+      if hostname != 'localhost':
+        if '.' not in hostname and ':' not in hostname:
+          return hostname
+    return ''

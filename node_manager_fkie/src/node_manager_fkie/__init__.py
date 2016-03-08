@@ -280,6 +280,9 @@ def init_arg_parser():
   parser = argparse.ArgumentParser()
   parser.add_argument("--version", action="version", version="%s %s" % ( "%(prog)s", __version__))
   parser.add_argument("-f", "--file", nargs=1, help="loads the given file as default on start")
+  parser.add_argument("-m", "--muri", nargs=1, default='', help="starts ROS master with given URI, usefull on hosts "
+                                                                "with multiple interfaces. ROS_HOSTNAME will be set "
+                                                                "to the host of this URI, but only if it is not an IP.")
 
   group = parser.add_argument_group('echo')
   group.add_argument("--echo", nargs=2, help="starts an echo dialog instead of node manager", metavar=('name', 'type'))
@@ -339,10 +342,16 @@ def main(name):
     sys.exit(-1)
 
   init_settings()
-  masteruri = settings().masteruri()
   parser = init_arg_parser()
   args = rospy.myargv(argv=sys.argv)
   parsed_args = parser.parse_args(args[1:])
+  if parsed_args.muri:
+    masteruri = parsed_args.muri[0]
+    os.environ['ROS_MASTER_URI'] = masteruri
+    hostname = NameResolution.get_ros_hostname(masteruri)
+    if hostname:
+      os.environ['ROS_HOSTNAME'] = hostname
+  masteruri = settings().masteruri()
   # Initialize Qt
   global _QAPP
   _QAPP = QtGui.QApplication(sys.argv)
