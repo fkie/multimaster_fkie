@@ -540,7 +540,7 @@ class StartHandler(object):
       new_env=dict(os.environ)
       if namespace:
         new_env['ROS_NAMESPACE'] = namespace
-      if not masteruri is None:
+      if masteruri is not None:
         cls._prepareROSMaster(masteruri)
         new_env['ROS_MASTER_URI'] = masteruri
         ros_hostname = NameResolution.get_ros_hostname(masteruri)
@@ -554,7 +554,7 @@ class StartHandler(object):
                   '--node_type', str(binary),
                   '--node_name', str(fullname)]
       startcmd[len(startcmd):] = args2
-      if not masteruri is None:
+      if masteruri is not None:
         startcmd.append('--masteruri')
         startcmd.append(masteruri)
       rospy.loginfo("Run remote on %s: %s", host, ' '.join(startcmd))
@@ -584,21 +584,23 @@ class StartHandler(object):
   @classmethod
   def _prepareROSMaster(cls, masteruri):
     if masteruri is None:
-      masteruri_env = masteruri_from_ros()
+      masteruri = masteruri_from_ros()
     #start roscore, if needed
     try:
       if not os.path.isdir(nm.ScreenHandler.LOG_PATH):
         os.makedirs(nm.ScreenHandler.LOG_PATH)
       socket.setdefaulttimeout(3)
-      master = xmlrpclib.ServerProxy(masteruri_env)
-      master_uri = master.getUri(rospy.get_name())
-      if masteruri != master_uri[2]:
-        raise
-#        raise Exception("new masteruri, restart ROS master")
+      master = xmlrpclib.ServerProxy(masteruri)
+      master.getUri(rospy.get_name())
+      # restart ROSCORE on different masteruri?, not now...
+#      master_uri = master.getUri(rospy.get_name())
+#      if masteruri != master_uri[2]:
+#        # kill the local roscore...
+#        raise
     except:
 #      socket.setdefaulttimeout(None)
 #      import traceback
-#      print traceback.format_exc(1)
+#      print traceback.format_exc(3)
       # run a roscore
       from urlparse import urlparse
       master_host = urlparse(masteruri).hostname
