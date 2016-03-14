@@ -97,6 +97,7 @@ class MainWindow(QtGui.QMainWindow):
     Creates the window, connects the signals and init the class.
     '''
     QtGui.QMainWindow.__init__(self)
+    self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
     restricted_to_one_master = False
     self._finished = False
     self._history_selected_robot = ''
@@ -221,7 +222,6 @@ class MainWindow(QtGui.QMainWindow):
     flags = self.windowFlags()
     self.setWindowFlags(flags | QtCore.Qt.WindowContextHelpButtonHint)
 
-    self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
     if self.default_load_launch:
       if os.path.isdir(self.default_load_launch):
         self.launch_dock.launchlist_model.setPath(self.default_load_launch)
