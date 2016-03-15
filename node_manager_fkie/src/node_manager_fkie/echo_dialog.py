@@ -31,20 +31,20 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from python_qt_binding import QtCore, QtGui
-
-import time
-import math
 from datetime import datetime
+from python_qt_binding import QtCore, QtGui
+import math
+import threading
+import time
 
-#import roslib
 from roslib import message
 import rospy
-import threading
 
 import gui_resources
 import node_manager_fkie as nm
 
+
+# import roslib
 class EchoDialog(QtGui.QDialog):
 
   MESSAGE_LINE_LIMIT = 128
@@ -352,12 +352,13 @@ class EchoDialog(QtGui.QDialog):
       if isinstance(msg, tuple):
         msg = msg[0]
       msg = self._trim_width(msg)
+      msg = msg.replace('<', '&lt;').replace('>', '&gt;')
       # create a notification about scrapped messages
       if self._scrapped_msgs_sl > 0:
         txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>'%self._scrapped_msgs_sl
         self.display.append(txt)
         self._scrapped_msgs_sl = 0
-      txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>'%(datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
+      txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
       # set the count of the displayed messages on receiving the first message
       self._update_max_msg_count(txt)
       self.display.append(txt)
