@@ -911,7 +911,7 @@ class XmlEditor(QtGui.QDialog):
     elif saved:
       self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
       self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
-      self.on_editor_textChanged()
+#      self.on_editor_textChanged()
 
   def on_editor_modificationChanged(self, value=None):
     '''
