@@ -2,6 +2,12 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2016-03-17)
+------------------
+* master_discovery: fixed avg. network load calculation, added checks for some parameters
+* multimaster_fkie: Set correct logging level to warning
+* Contributors: Alexander Tiderko, Gary Servin
+
 0.4.4 (2015-12-18)
 ------------------
 

@@ -2,6 +2,38 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2016-03-17)
+------------------
+New Features:
+* node_manager_fkie: the start with different ROS_MASTER_URI
+  sets now the ROS_HOSTNAME environment variable if a new masteruri was
+  selected to start node_manager or master_discovery
+* node_manager_fkie: added parameter to disable the highlighting of xml blocks
+* node_manager_fkie: added ROS-Launch tags to context menu in XML editor
+* node_manager_fkie: mark XML tag blocks
+* node_manager_fkie: show the filename in the XML editor dialog title
+* node_manager_fkie: close configuration items are now sorted
+* node_manager_fkie: the confirmation dialog at exit can be deaktivated
+  to stop all nodes and roscore or shutdown the host you can use the close
+  button of each master
+* node_manager_fkie: allow to shutdown localhost
+* node_manager_fkie: shows 'advanced start' button also if the selected node laready runs
+
+Fixes:
+* node_manager_fkie: fixed print XML content in echo_dialog
+* node_manager_fkie: avoids the print of an error, while loads a wrongs file on start of the node_manager
+* node_manager_fkie: fixed check of running remote roscore
+* node_manager_fkie: fixed problem while echo topics on remote hosts
+* node_manager_fkie: changed cursor position in XML editor after open node configuration
+* node_manager_fkie: fixed replay of topics with array elements
+* node_manager_fkie: fixed close process while start/stop nodes
+* node_manager_fkie: fixed namespace of capability groups, fixed the missing leading SEP
+* node_manager_fkie: fixed - avoid transmition of some included/changed but not needed files to remote host
+* node_manager_fkie: fixed start node after a binary was selected from multiple binaries
+* node_manager_fkie: removed "'now' FIX" while publish messages to topics
+* node_manager_fkie: fixed log format on remote hosts
+* Contributors: Alexander Tiderko
+
 0.4.4 (2015-12-18)
 ------------------
 * node_manager_fkie: fixed republish of array values in paraeter dialog

@@ -2,6 +2,15 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2016-03-17)
+------------------
+* default_cfg_fkie: added 'load_params_at_start' parameter.
+  On start of default_cfg_fkie all parameters are loaded into ROS
+  parameter server. If this parameter is set to `False` the parameter are
+  loaded on first run of an included node.
+* mulitmaster_fkie: fixed the missing leading SEP by groups
+* Contributors: Alexander Tiderko
+
 0.4.4 (2015-12-18)
 ------------------
 
