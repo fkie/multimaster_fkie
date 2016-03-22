@@ -188,13 +188,23 @@ class DiscoverSocket(socket.socket):
   @staticmethod
   def normalize_mgroup(mgroup, getinterface=False):
     groupaddr, _, interface = mgroup.partition('@')
-    if getinterface:
-      if not interface:
-        interface = rospy.get_param('~interface', '')
-      if not interface and 'ROS_IP' in os.environ:
-        interface = os.environ['ROS_IP']
+    if not getinterface:
+      return groupaddr
+    # Interface parameter takes precedence
+    if not interface:
+      interface = rospy.get_param('~interface', '')
+    if interface:
       return groupaddr, interface
-    return groupaddr
+    # Otherwise, resolve interface with ROS_HOSTNAME or ROS_IP as per:
+    # http://wiki.ros.org/ROS/EnvironmentVariables#ROS_IP.2BAC8-ROS_HOSTNAME
+    if 'ROS_HOSTNAME' in os.environ:
+      addr = socket.gethostbyname(os.environ['ROS_HOSTNAME'])
+      if addr[:4] != '127.': # 127.x.y.z is loopback
+        return groupaddr, addr
+    if 'ROS_IP' in os.environ:
+      return groupaddr, os.environ['ROS_IP']
+    # Cannot determine network interface
+    return groupaddr, None
 
   def close(self):
     '''
