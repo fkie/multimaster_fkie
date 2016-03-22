@@ -189,10 +189,18 @@ class DiscoverSocket(socket.socket):
   def normalize_mgroup(mgroup, getinterface=False):
     groupaddr, _, interface = mgroup.partition('@')
     if getinterface:
+      # Use interface param variable above all else to determine interface to use.
       if not interface:
         interface = rospy.get_param('~interface', '')
-      if not interface and 'ROS_IP' in os.environ:
-        interface = os.environ['ROS_IP']
+      # Otherwise use ROS_HOSTNAME before ROS_IP as per:
+      # http://wiki.ros.org/ROS/EnvironmentVariables#ROS_IP.2BAC8-ROS_HOSTNAME
+      if not interface and 'ROS_HOSTNAME' in os.environ:
+        addr = socket.gethostbyname(os.environ['ROS_HOSTNAME'])
+        # By default hostname resolves to localhost, don't set that
+        if addr != '127.0.0.1':
+          interface = addr
+      elif not interface and 'ROS_IP' in os.environ:
+          interface = os.environ['ROS_IP']
       return groupaddr, interface
     return groupaddr
 
