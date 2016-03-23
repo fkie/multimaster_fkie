@@ -2,6 +2,15 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.1 (2016-03-23)
+------------------
+* Use ROS_HOSTNAME before ROS_IP.
+  To determine which interface to use follow ROS master convention
+  of ROS_HOSTNAME being used before ROS_IP.
+  This is as per:
+  http://wiki.ros.org/ROS/EnvironmentVariables#ROS_IP.2BAC8-ROS_HOSTNAME
+* Contributors: Mike O'Driscoll, Timo Röhling
+
 0.5.0 (2016-03-17)
 ------------------
 New Features:

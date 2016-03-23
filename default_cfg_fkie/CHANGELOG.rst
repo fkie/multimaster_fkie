@@ -2,6 +2,9 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.1 (2016-03-23)
+------------------
+
 0.5.0 (2016-03-17)
 ------------------
 * default_cfg_fkie: added 'load_params_at_start' parameter.
