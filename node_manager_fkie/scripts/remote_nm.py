@@ -177,7 +177,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
   # set the masteruri to launch with other one master
   new_env = dict(os.environ)
   new_env['ROS_MASTER_URI'] = masteruri
-  ros_hostname = nm.NameResolution.get_ros_hostname(masteruri)
+  ros_hostname = nm.get_ros_hostname(masteruri)
   if ros_hostname:
     new_env['ROS_HOSTNAME'] = ros_hostname
   if loglevel:

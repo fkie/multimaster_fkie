@@ -40,9 +40,6 @@ import xmlrpclib
 from roslib.network import get_local_addresses
 import rospy
 
-from node_manager_fkie.name_resolution import NameResolution
-
-
 class StartException(Exception):
   pass
 
@@ -85,6 +82,34 @@ def masteruri_from_ros():
   except:
     return os.environ['ROS_MASTER_URI']
 
+
+def getHostname(url):
+  '''
+  Returns the host name used in a url
+
+  @return: host or None if url is invalid
+  @rtype:  C{str}
+  '''
+  if url is None:
+    return None
+  from urlparse import urlparse
+  o = urlparse(url)
+  return o.hostname
+
+def get_ros_hostname(url):
+  '''
+  Returns the host name used in a url, if it is a name. If it is an IP an
+  empty string will be returned.
+
+  @return: host or '' if url is an IP or invalid
+  @rtype:  C{str}
+  '''
+  hostname = getHostname(url)
+  if hostname is not None:
+    if hostname != 'localhost':
+      if '.' not in hostname and ':' not in hostname:
+        return hostname
+  return ''
 
 
 class Settings(object):
@@ -268,7 +293,7 @@ class StartHandler(object):
         master_port = urlparse(masteruri).port
         new_env = dict(os.environ)
         new_env['ROS_MASTER_URI'] = masteruri
-        ros_hostname = NameResolution.get_ros_hostname(masteruri)
+        ros_hostname = get_ros_hostname(masteruri)
         if ros_hostname:
           new_env['ROS_HOSTNAME'] = ros_hostname
         cmd_args = '%s roscore --port %d'%(ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
