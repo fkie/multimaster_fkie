@@ -2,6 +2,11 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.2 (2016-03-31)
+------------------
+* node_manager_fkie: fixed start process on remote hosts without Qt
+* Contributors: Alexander Tiderko
+
 0.5.1 (2016-03-23)
 ------------------
 

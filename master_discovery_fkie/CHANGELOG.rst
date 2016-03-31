@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.2 (2016-03-31)
+------------------
+
 0.5.1 (2016-03-23)
 ------------------
 * Use ROS_HOSTNAME before ROS_IP.
