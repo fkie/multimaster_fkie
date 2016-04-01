@@ -147,6 +147,16 @@ def file_watcher_param():
   '''
   return _FILE_WATCHER_PARAM
 
+def get_ros_hostname(url):
+  '''
+  Returns the host name used in a url, if it is a name. If it is an IP an
+  empty string will be returned.
+
+  @return: host or '' if url is an IP or invalid
+
+  @rtype:  C{str}
+  '''
+  return NameResolution.get_ros_hostname(url)
 
 def is_local(hostname, wait=False):
   '''
