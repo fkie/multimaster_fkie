@@ -2,6 +2,11 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.3 (2016-04-01)
+------------------
+* node_manager_fkie: fix remote start
+* Contributors: Alexander Tiderko
+
 0.5.2 (2016-03-31)
 ------------------
 * node_manager_fkie: fixed start process on remote hosts without Qt
