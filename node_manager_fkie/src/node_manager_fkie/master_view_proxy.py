@@ -1324,8 +1324,12 @@ class MasterViewProxy(QtGui.QWidget):
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
       text += '</dl>'
-      text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
-      text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
+      if nm.settings().transpose_pub_sub_descr:
+        text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
+        text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
+      else:
+        text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
+        text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
       text += self._create_html_list('Services:', node.services, 'SERVICE', node.name)
       # set loaunch file paths
       text += self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')
@@ -1392,8 +1396,12 @@ class MasterViewProxy(QtGui.QWidget):
       if topic_publisher:
         text += '&nbsp;<a href="topicstop://%s%s"><img src=":icons/sekkyumu_topic_pub_stop_24.png" alt="stop"> [%d]</a>'%(self.mastername, topic.name, len(topic_publisher))
       text += '<p>'
-      text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
-      text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
+      if nm.settings().transpose_pub_sub_descr:
+        text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
+        text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
+      else:
+        text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
+        text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
       text += '<b><u>Type:</u></b> %s'%self._href_from_msgtype(topic.type)
       text += '<dl>'
       try:

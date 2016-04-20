@@ -178,6 +178,13 @@ class SettingsWidget(QtGui.QDockWidget):
                                    'value_default' : nm.settings().HIGHLIGHT_XML_BLOCKS,
                                    'tooltip'  : "<p>Highlights the current selected XML block, while "
                                                 "editing ROS launch file.</p>"
+                                   },),
+                'Transpose pub/sub description:' : ({
+                                   'value' : nm.settings().transpose_pub_sub_descr,
+                                   'settings' : nm.settings(),
+                                   'attrname' : 'transpose_pub_sub_descr',
+                                   'value_default' : nm.settings().TRANSPOSE_PUB_SUB_DESCR,
+                                   'tooltip'  : "<p>Transpose publisher/subscriber in description dock.</p>"
                                    },)
                }
     self.settings_model.init_settings(settings)

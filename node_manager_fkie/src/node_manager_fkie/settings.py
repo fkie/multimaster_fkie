@@ -119,6 +119,8 @@ class Settings(object):
   CONFIRM_EXIT_WHEN_CLOSING = True
   HIGHLIGHT_XML_BLOCKS = True
 
+  TRANSPOSE_PUB_SUB_DESCR = False
+
   def __init__(self):
     self.reload()
 
@@ -173,6 +175,7 @@ class Settings(object):
     self._start_sync_with_discovery = self.str2bool(settings.value('start_sync_with_discovery', self.START_SYNC_WITH_DISCOVERY))
     self._confirm_exit_when_closing = self.str2bool(settings.value('confirm_exit_when_closing', self.CONFIRM_EXIT_WHEN_CLOSING))
     self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
+    self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
 
   def masteruri(self):
     return self._masteruri
@@ -384,6 +387,18 @@ class Settings(object):
       self._highlight_xml_blocks = val
       settings = self.qsettings(self.CFG_FILE)
       settings.setValue('highlight_xml_blocks', self._highlight_xml_blocks)
+
+  @property
+  def transpose_pub_sub_descr(self):
+    return self._transpose_pub_sub_descr
+
+  @transpose_pub_sub_descr.setter
+  def transpose_pub_sub_descr(self, value):
+    val = self.str2bool(value)
+    if self._transpose_pub_sub_descr != val:
+      self._transpose_pub_sub_descr = val
+      settings = self.qsettings(self.CFG_FILE)
+      settings.setValue('transpose_pub_sub_descr', self._transpose_pub_sub_descr)
 
   def str2bool(self, v):
     if isinstance(v, bool):
