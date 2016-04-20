@@ -102,7 +102,7 @@ class MasterViewProxy(QtGui.QWidget):
   remove_config_signal  = QtCore.Signal(str)
   '''@ivar: the signal is emitted if a default_cfg was removed'''
 
-  description_signal  = QtCore.Signal(str, str)
+  description_signal = QtCore.Signal(str, str, bool)
   '''@ivar: the signal is emitted to show a description (title, description)'''
 
   request_xml_editor = QtCore.Signal(list, str)
@@ -1261,7 +1261,7 @@ class MasterViewProxy(QtGui.QWidget):
     current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
     if (current_tab == 'Nodes' and self.__last_info_text != text) or force_emit:
       self.__last_info_text = text
-      self.description_signal.emit(name, text)
+      self.description_signal.emit(name, text, True if selected or deselected else False)
     self.updateButtons()
 
   def get_node_description(self, node_name, node=None):
@@ -1362,7 +1362,7 @@ class MasterViewProxy(QtGui.QWidget):
       current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
       if (current_tab == 'Topics' and self.__last_info_text != info_text) or force_emit:
         self.__last_info_text = info_text
-        self.description_signal.emit(topic.name, info_text)
+        self.description_signal.emit(topic.name, info_text, True if selected or deselected else False)
 
   def get_topic_description(self, topic_name, topic=None):
     text = ''
@@ -1482,7 +1482,7 @@ class MasterViewProxy(QtGui.QWidget):
       current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
       if (current_tab == 'Services' and self.__last_info_text != info_text) or force_emit:
         self.__last_info_text = info_text
-        self.description_signal.emit(service.name, info_text)
+        self.description_signal.emit(service.name, info_text, True if selected or deselected else False)
 
   def _href_from_svrtype(self, srv_type):
     result = srv_type

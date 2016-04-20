@@ -1820,7 +1820,7 @@ class MainWindow(QtGui.QMainWindow):
       master = self.getMaster(masteruri)
       master.stop_nodes_by_name(nodes)
 
-  def on_description_update(self, title, text):
+  def on_description_update(self, title, text, force=False):
     same_title = self.descriptionDock.windowTitle() == title
     valid_sender = self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)
     no_focus = not self.descriptionTextEdit.hasFocus()
@@ -1828,10 +1828,10 @@ class MainWindow(QtGui.QMainWindow):
       self._accept_next_update = False
       self.descriptionDock.setWindowTitle(title)
       self.descriptionTextEdit.setText(text)
-      if text and not (self.launch_dock.hasFocus() or self.launch_dock.xmlFileView.hasFocus()):
+      if text and force:  # and not (self.launch_dock.hasFocus() or self.launch_dock.xmlFileView.hasFocus()):
         self.descriptionDock.raise_()
-      else:
-        self.launch_dock.raise_()
+#      else:
+#        self.launch_dock.raise_()
 
   def on_description_update_cap(self, title, text):
     self.descriptionDock.setWindowTitle(title)
