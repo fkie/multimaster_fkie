@@ -119,7 +119,7 @@ class Settings(object):
   CONFIRM_EXIT_WHEN_CLOSING = True
   HIGHLIGHT_XML_BLOCKS = True
 
-  TRANSPOSE_PUB_SUB_DESCR = False
+  TRANSPOSE_PUB_SUB_DESCR = True
 
   def __init__(self):
     self.reload()
