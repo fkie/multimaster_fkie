@@ -536,8 +536,9 @@ class Editor(QtGui.QTextEdit):
   #############################################################################
 
   def show_custom_context_menu(self, pos):
-    self.setTextCursor(self.cursorForPosition(pos))
     menu = QtGui.QTextEdit.createStandardContextMenu(self)
+#    if not self.textCursor().selectedText():
+#      self.setTextCursor(self.cursorForPosition(pos))
     submenu = self._create_context_menu_for_tag()
     if submenu is not None:
       menu.addMenu(submenu)
