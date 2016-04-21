@@ -2,6 +2,15 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.4 (2016-04-21)
+------------------
+* multimaster_fkie: added '/do_not_sync' parameter
+  this allows to hide some topics/services, topic types, from
+  synchronisation. It can be defined as string or as list.
+* master_sync_fkie: fixed unnecessary update requests
+  wrong timestamps leads to updates
+* Contributors: Alexander Tiderko
+
 0.5.3 (2016-04-01)
 ------------------
 

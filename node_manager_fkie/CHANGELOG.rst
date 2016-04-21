@@ -2,6 +2,16 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.4 (2016-04-21)
+------------------
+* node_manager_fkie: added visualisation for not synchronized topics/services
+* node_manager_fkie: add parameter to the order of publisher/subscriber in description dock
+  new parameter: 'Transpose pub/sub description'
+* node_manager_fkie: changed behaviour of description dock while update info
+* node_manager_fkie: fixed deselection of text on context menu
+* node_manager_fkie: fixed threading problem while searching for sync interfaces
+* Contributors: Alexander Tiderko
+
 0.5.3 (2016-04-01)
 ------------------
 * node_manager_fkie: fix remote start
