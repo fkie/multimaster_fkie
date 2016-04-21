@@ -1154,17 +1154,35 @@ class MasterViewProxy(QtGui.QWidget):
           # determine the count of publisher or subscriber
           count = None
           try:
-            count = len(self.__master_info.getTopic(i).publisherNodes) if list_type == 'TOPIC_SUB' else len(self.__master_info.getTopic(i).subscriberNodes)
+            tpc = self.__master_info.getTopic(i)
+            if list_type == 'TOPIC_SUB':
+              count = len(tpc.publisherNodes)
+              if name not in tpc.subscriberNodes:
+                count = None
+            else:
+              count = len(tpc.subscriberNodes)
+              if name not in tpc.publisherNodes:
+                count = None
           except:
             pass
-          item = '<a href="topic://%s">%s</a>'%(i, item_name)
-          item += '   <a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a>'%(self.mastername, i)
           # add the count
-          if not count is None:
+          if count is not None:
+            item = '<a href="topic://%s">%s</a>' % (i, item_name)
+            item += '   <a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a>' % (self.mastername, i)
             item = '<span style="color:gray;">_%d_/ </span>%s'%(count, item)
+          else:
+            item = '<a>%s</a>' % (item_name)
+            item = '<span style="color:red;">!sync </span>%s' % (item)
         elif list_type == 'SERVICE':
-          item = '<a href="service://%s%s">%s</a>'%(self.mastername, i, item_name)
-          item += '   <a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a>'%(self.mastername, i)
+          try:
+            srv = self.__master_info.getService(i)
+            if name in srv.serviceProvider:
+              item = '<a href="service://%s%s">%s</a>' % (self.mastername, i, item_name)
+              item += '   <a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a>' % (self.mastername, i)
+            else:
+              item = '<span style="color:red;">!sync </span>%s' % (item_name)
+          except:
+            item = '<span style="color:red;">!sync </span>%s' % (item_name)
         elif list_type == 'LAUNCH':
           item = '<a href="launch://%s">%s</a>'%(i, item_name)
           if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
