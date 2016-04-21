@@ -795,7 +795,7 @@ class MasterMonitor(object):
         t = self.__master_state.timestamp
       #'print "getMasterContacts _state_access_lock RET", threading.current_thread()
     #'print "MASTERCONTACTS <<<<<<<<<<<<<<<<<<<<"
-    return (str(t), str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
+    return ('%.9f' % t, str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
 
   def getMasterErrors(self):
     '''

@@ -156,13 +156,13 @@ class SyncThread(object):
     '''
 #    rospy.logdebug("SyncThread[%s]: update request", self.name)
     with self.__lock_intern:
+      self.timestamp_remote = timestamp
       if (self.timestamp_local != timestamp):
         rospy.logdebug("SyncThread[%s]: update notify new timestamp(%.9f), old(%.9f)", self.name, timestamp, self.timestamp_local)
         self.name = name
         self.uri = uri
         self.discoverer_name = discoverer_name
         self.monitoruri = monitoruri
-        self.timestamp_remote = timestamp
         self._request_update()
 #    rospy.logdebug("SyncThread[%s]: update exit", self.name)
 
