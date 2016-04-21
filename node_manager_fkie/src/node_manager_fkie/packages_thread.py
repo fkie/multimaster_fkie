@@ -30,12 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from python_qt_binding import QtCore
 import os
 import threading
-from python_qt_binding import QtCore
 
 import rospy
-from common import get_packages
+
+from .common import get_packages
 
 
 class PackagesThread(QtCore.QObject, threading.Thread):
@@ -70,4 +71,8 @@ class PackagesThread(QtCore.QObject, threading.Thread):
     except:
       import traceback
       formatted_lines = traceback.format_exc(1).splitlines()
-      rospy.logwarn("Error while list packages:\n\t%s", formatted_lines[-1])
+      print "Error while list packages:\n\t%s" % traceback.format_exc()
+      try:
+        rospy.logwarn("Error while list packages:\n\t%s", formatted_lines[-1])
+      except:
+        pass

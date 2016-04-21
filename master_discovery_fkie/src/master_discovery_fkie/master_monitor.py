@@ -30,29 +30,33 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import cStringIO
-import threading
-import xmlrpclib
-import socket
-import time
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SocketServer import ThreadingMixIn
 from datetime import datetime
+import cStringIO
+import socket
 import subprocess
+import threading
+import time
+import xmlrpclib
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.network
 import rospy
+
+import interface_finder
+
+from .common import masteruri_from_ros
+from .filter_interface import FilterInterface
+from .master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
+
+
+import roslib; roslib.load_manifest('master_discovery_fkie')
 
 try: # to avoid the problems with autodoc on ros.org/wiki site
   from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo, SyncServiceInfo
   from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo
 except:
   pass
-from common import masteruri_from_ros
-from filter_interface import FilterInterface
-from master_info import MasterInfo, NodeInfo, TopicInfo, ServiceInfo
-import interface_finder
 
 class MasterConnectionException(Exception):
   '''

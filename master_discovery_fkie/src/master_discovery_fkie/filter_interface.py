@@ -34,29 +34,34 @@ import re
 
 import rospy
 
-from common import resolve_url, read_interface, create_pattern, is_empty_pattern, EMPTY_PATTERN
+from .common import create_pattern, gen_pattern, is_empty_pattern, EMPTY_PATTERN
+from .common import resolve_url, read_interface
+
 
 class FilterInterface(object):
   '''
-  The class represents a filter used by sync node to filter nodes, topics or 
-  services. The filter is based on regular expressions. The filter object can 
-  be converted to a tuple of strings and then passed to the XML-RPC method to 
+  The class represents a filter used by sync node to filter nodes, topics or
+  services. The filter is based on regular expressions. The filter object can
+  be converted to a tuple of strings and then passed to the XML-RPC method to
   get a filtered ROS master state.
-  After creation of the filter object you must call 
-  :mod:`master_discovery_fkie.filter_interface.FilterInterface.load()` or 
-  :mod:`master_discovery_fkie.filter_interface.FilterInterface.from_list()`. 
+  After creation of the filter object you must call
+  :mod:`master_discovery_fkie.filter_interface.FilterInterface.load()` or
+  :mod:`master_discovery_fkie.filter_interface.FilterInterface.from_list()`.
   Otherwise the object is invalid and the test methods return always `False`.
   '''
-  
+
   def __init__(self):
     self.is_valid = False
+    self._re_do_not_sync = EMPTY_PATTERN
+    self._re_do_not_sync_from_list = EMPTY_PATTERN
 
   def load(self, mastername='',
            ignore_nodes=[], sync_nodes=[],
            ignore_topics=[], sync_topics=[],
            ignore_srv=[], sync_srv=[],
            ignore_type=[],
-           ignore_publishers=[], ignore_subscribers=[]):
+           ignore_publishers=[], ignore_subscribers=[],
+           do_not_sync=[]):
     '''
     Reads the parameter and creates the pattern using :mod:`master_discovery_fkie.common.create_pattern()`
     '''
@@ -88,7 +93,20 @@ class FilterInterface(object):
         self._sync_remote_nodes = data['sync_remote_nodes']
     elif rospy.has_param('~sync_remote_nodes'):
       self._sync_remote_nodes = rospy.get_param('~sync_remote_nodes')
+    if do_not_sync:
+      self._re_do_not_sync = gen_pattern(do_not_sync, 'do_not_sync')
+    else:
+      self.read_do_not_sync()
     self.is_valid = True
+
+  def read_do_not_sync(self):
+    _do_not_sync = rospy.get_param('do_not_sync', [])
+    if isinstance(_do_not_sync, (str, unicode)):
+      # create a list from string
+      _do_not_sync = _do_not_sync.strip('[').rstrip(']').replace(' ', ',').split(',')
+      # remove empty values
+      _do_not_sync = [val for val in _do_not_sync if val]
+    self._re_do_not_sync = gen_pattern(_do_not_sync, 'do_not_sync')
 
   def update_sync_topics_pattern(self, topics=[]):
     '''
@@ -125,7 +143,7 @@ class FilterInterface(object):
     '''
     if not self.is_valid:
       return False
-    if self._re_ignore_nodes.match(node):
+    if self.do_not_sync(node):
       return True
     if self._re_sync_nodes.match(node):
       return False
@@ -165,6 +183,8 @@ class FilterInterface(object):
   def _is_ignored_topic(self, node, topic, topictype):
     if not self.is_valid:
       return False
+    if self.do_not_sync([node, topic, topictype]):
+      return True
     # do not sync the bond message of the nodelets!!
     if self._re_ignore_type.match(topictype):
       return True
@@ -203,6 +223,8 @@ class FilterInterface(object):
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
     '''
+    if self.do_not_sync([node, topic, topictype]):
+      return True
     return self._re_ignore_subscribers.match(topic) or self._is_ignored_topic(node, topic, topictype)
 
   def is_ignored_publisher(self, node, topic, topictype):
@@ -229,6 +251,8 @@ class FilterInterface(object):
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
     '''
+    if self.do_not_sync([node, topic, topictype]):
+      return True
     return self._re_ignore_publishers.match(topic) or self._is_ignored_topic(node, topic, topictype)
 
   def is_ignored_service(self, node, service):
@@ -252,6 +276,8 @@ class FilterInterface(object):
     '''
     if not self.is_valid:
       return False
+    if self.do_not_sync([node, service]):
+      return True
     if self._re_ignore_nodes.match(node):
       return True
     if self._re_ignore_services.match(service.strip()):
@@ -261,6 +287,15 @@ class FilterInterface(object):
     if self._re_sync_services.match(service):
       return False
     return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_services)
+
+  def do_not_sync(self, name):
+    if isinstance(name, list):
+      for nval in name:
+        if self._re_do_not_sync.match(nval) or self._re_do_not_sync_from_list.match(nval):
+          return True
+    elif self._re_do_not_sync.match(name) or self._re_do_not_sync_from_list.match(name):
+      return True
+    return False
 
   def to_list(self):
     '''
@@ -272,10 +307,10 @@ class FilterInterface(object):
         ignore_services, sync_services,
         ignore_type)
 
-    :rtype: `(float, str, str, str, str, str, str, str)`
+    :rtype: `(bool, str, str, str, str, str, str, str)`
     '''
     if not self.is_valid:
-      return (False, '', '', '', '', '', '', '','','')
+      return (False, '', '', '', '', '', '', '', '', '', '')
     return (self._sync_remote_nodes,
             _to_str(self._re_ignore_nodes),
             _to_str(self._re_sync_nodes),
@@ -285,7 +320,8 @@ class FilterInterface(object):
             _to_str(self._re_sync_services),
             _to_str(self._re_ignore_type),
             _to_str(self._re_ignore_publishers),
-            _to_str(self._re_ignore_subscribers))
+            _to_str(self._re_ignore_subscribers),
+            _to_str(self._re_do_not_sync))
 
   @staticmethod
   def from_list(l=None):
@@ -301,7 +337,7 @@ class FilterInterface(object):
         ignore_publishers, ignore_subscribers)`
     
     with types
-    `(float, str, str, str, str, str, str, str)`
+    `(bool, str, str, str, str, str, str, str)`
      
     and creates the `FilterInterface` object.
     
@@ -310,7 +346,9 @@ class FilterInterface(object):
     try:
       result = FilterInterface()
       if l is None:
-        l = (False, '', '', '', '', '', '', '','','')
+        l = (False, '', '', '', '', '', '', '', '', '', '')
+      else:
+        result.read_do_not_sync()
       result._sync_remote_nodes = bool(l[0])
       result._re_ignore_nodes = _from_str(l[1])
       result._re_sync_nodes = _from_str(l[2])
@@ -321,6 +359,7 @@ class FilterInterface(object):
       result._re_ignore_type = _from_str(l[7])
       result._re_ignore_publishers = _from_str(l[8] if len(l) > 8 else '')
       result._re_ignore_subscribers = _from_str(l[9] if len(l) > 9 else '')
+      result._re_do_not_sync_from_list = _from_str(l[10] if len(l) > 10 else '')
       result.is_valid = True
       return result
     except:

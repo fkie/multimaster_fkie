@@ -30,21 +30,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 import os
 import sys
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
-
 import rospy
+
 import node_manager_fkie as nm
-from common import resolve_paths
+
+from .common import resolve_paths
 
 
 ################################################################################
 ##############                  CapabilityHeader                  ##############
 ################################################################################
-
 class CapabilityHeader(QtGui.QHeaderView):
   '''
   This class is used for visualization of robots or capabilities in header of 

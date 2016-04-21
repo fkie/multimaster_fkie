@@ -30,12 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import re
 import os
+import re
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
 import roslib.names
 import rospy
+
+
+import roslib; roslib.load_manifest('master_discovery_fkie')
 
 EMPTY_PATTERN = re.compile('\b', re.I)
 
@@ -191,8 +193,11 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
       else:
         def_list.append(rph)
   def_list = list(set(def_list))
-  rospy.loginfo("%s: %s", param, str(def_list))
-  def_list[:] = [''.join(['\A', n.strip().replace('*','.*'), '\Z']) for n in def_list]
+  return gen_pattern(def_list, param)
+
+def gen_pattern(filter_list, name):
+  rospy.loginfo("%s: %s", name, str(filter_list))
+  def_list = [''.join(['\A', n.strip().replace('*', '.*'), '\Z']) for n in filter_list]
   if def_list:
     return re.compile('|'.join(def_list), re.I)
   return EMPTY_PATTERN

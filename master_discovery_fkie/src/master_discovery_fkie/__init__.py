@@ -50,7 +50,7 @@ PROCESS_NAME = "master_discovery"
 
 def getDefaultRPCPort(zeroconf=False):
   try:
-    from common import masteruri_from_ros
+    from master_discovery_fkie.common import masteruri_from_ros
     masteruri = masteruri_from_ros()
     rospy.loginfo("ROS Master URI: %s", masteruri)
     from urlparse import urlparse

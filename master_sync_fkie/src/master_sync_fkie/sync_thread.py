@@ -31,18 +31,21 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-import threading
-import xmlrpclib
 import random
 import socket
+import threading
+import xmlrpclib
 
-import roslib; roslib.load_manifest('master_sync_fkie')
+from multimaster_msgs_fkie.msg import SyncTopicInfo, SyncServiceInfo, SyncMasterInfo
 import roslib.message
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.filter_interface import FilterInterface
-from multimaster_msgs_fkie.msg import SyncTopicInfo, SyncServiceInfo, SyncMasterInfo
+
+
+import roslib; roslib.load_manifest('master_sync_fkie')
+
 
 class SyncThread(object):
   '''
@@ -106,7 +109,8 @@ class SyncThread(object):
                       ['/*get_loggers', '/*set_logger_level'], [],
                       # do not sync the bond message of the nodelets!!
                       ['bond/Status'],
-                      [], [])
+                      [], [],
+                      [])
 
     # congestion avoidance: wait for random.random*2 sec. If an update request 
     # is received try to cancel and restart the current timer. The timer can be

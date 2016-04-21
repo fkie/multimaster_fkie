@@ -33,7 +33,7 @@
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
-from filter_interface import FilterInterface
+from .filter_interface import FilterInterface
 
 class NodeInfo(object):
   '''

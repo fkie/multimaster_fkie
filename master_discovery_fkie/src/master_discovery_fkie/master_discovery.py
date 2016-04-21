@@ -42,8 +42,8 @@ import roslib.network
 import rospy
 import std_srvs.srv
 
-from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnectionException
-from master_discovery_fkie.udp import DiscoverSocket
+from .master_monitor import MasterMonitor, MasterConnectionException
+from .udp import DiscoverSocket
 
 
 import roslib; roslib.load_manifest('master_discovery_fkie')

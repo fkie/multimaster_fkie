@@ -40,9 +40,10 @@ import time
 import roslaunch
 import roslib
 
-from common import package_name, resolve_paths
 from master_discovery_fkie.common import resolve_url
 import node_manager_fkie as nm
+
+from .common import package_name, resolve_paths
 
 
 # from xml.dom import Node as DomNode #avoid aliasing

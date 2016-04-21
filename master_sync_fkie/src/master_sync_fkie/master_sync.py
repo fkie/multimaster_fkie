@@ -30,21 +30,25 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import uuid
+import socket
 import threading
 import time
+import uuid
 import xmlrpclib
-import socket
 
-import roslib; roslib.load_manifest('master_sync_fkie')
+from multimaster_msgs_fkie.msg import MasterState  # , LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros, resolve_url, read_interface, create_pattern, is_empty_pattern
-from sync_thread import SyncThread
-from multimaster_msgs_fkie.msg import MasterState#, LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
-from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
-import master_discovery_fkie.interface_finder as interface_finder
 from master_discovery_fkie.master_info import MasterInfo
+import master_discovery_fkie.interface_finder as interface_finder
+
+from .sync_thread import SyncThread
+
+
+import roslib; roslib.load_manifest('master_sync_fkie')
+
 
 
 

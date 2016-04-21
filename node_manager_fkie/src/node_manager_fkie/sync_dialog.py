@@ -30,17 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
-import rospy
-
+from python_qt_binding import QtGui
 import os
 import threading
 
+import rospy
+
+from node_manager_fkie.common import is_package
+from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.xml_editor import Editor
 import node_manager_fkie as nm
-from common import is_package
-from detailed_msg_box import WarningMessageBox
-from xml_editor import Editor
+
 
 class SyncHighlighter(QtGui.QSyntaxHighlighter):
   '''
