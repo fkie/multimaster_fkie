@@ -361,7 +361,7 @@ class GroupItem(QtGui.QStandardItem):
       item = self.child(i)
       if isinstance(item, NodeItem):
         # set the running state of the node to None
-        if not fixed_node_names is None and not item.name in fixed_node_names:
+        if fixed_node_names is not None and item.name not in fixed_node_names:
           item.node_info = NodeInfo(item.name, item.node_info.masteruri)
         if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
           removed = True
@@ -776,11 +776,9 @@ class HostItem(GroupItem):
       rospy.logwarn("compare HostItem with unicode depricated")
       return False
     elif isinstance(item, tuple):
-      if self.masteruri == item[0]:
-        return item[1] in [self.hostname, self.address]
+      return self.masteruri == item[0]
     elif isinstance(item, HostItem):
-      if self.masteruri == item.masteruri:
-        return self.hostname == item.hostname or self.address == item.address
+      return self.masteruri == item.masteruri
     return False
 
   def __gt__(self, item):
@@ -791,15 +789,9 @@ class HostItem(GroupItem):
       rospy.logwarn("compare HostItem with unicode depricated")
       return False
     elif isinstance(item, tuple):
-      if self.address > item[1]:
-        return True
-      elif self.address == item[1]:
-        return self.hostname > item[1]
+      return self.masteruri > item[0]
     elif isinstance(item, HostItem):
-      if self.address > item.address:
-        return True
-      elif self.address == item.address:
-        return self.hostname > item.hostname
+      return self.masteruri > item.masteruri
     return False
 
 
@@ -1300,7 +1292,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     if masteruri is None:
       return None
     host = (masteruri, address)
-    local = (self.local_addr in [address] + nm.nameres().resolve_cached(address)
+    local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) + nm.nameres().addresses(masteruri)
              and self._local_masteruri == masteruri)
     # find the host item by address
     root = self.invisibleRootItem()
@@ -1327,7 +1319,9 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     # separate into different hosts
     hosts = dict()
+    muris = []
     for (name, node) in nodes.items():
+      muris.append(node.masteruri)
       addr = nm.nameres().getHostname(node.uri if not node.uri is None else node.masteruri)
       host = (node.masteruri, addr)
       if not hosts.has_key(host):
@@ -1339,16 +1333,14 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       # rename the host item if needed
       if not hostItem is None:
         hostItem.updateRunningNodeState(nodes_filtered)
+      # request for all nodes in host the parameter capability_group
+      self._requestCapabilityGroupParameter(hostItem)
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if (host.masteruri, host.hostname) not in hosts and (host.masteruri, host.address) not in hosts:
+      if host.masteruri not in muris:
         host.updateRunningNodeState({})
     self.removeEmptyHosts()
-    # request for all nodes in host the parameter capability_group
-    for ((masteruri, host), nodes_filtered) in hosts.items():
-      hostItem = self.getHostItem(masteruri, host)
-      self._requestCapabilityGroupParameter(hostItem)
     # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
 
