@@ -265,7 +265,7 @@ class CapabilityControlWidget(QtGui.QFrame):
     frame_layout = QtGui.QVBoxLayout(self)
     frame_layout.setContentsMargins(0, 0, 0, 0)
     # create frame for warning label
-    self.warning_frame = warning_frame = QtGui.QFrame()
+    self.warning_frame = warning_frame = QtGui.QFrame(self)
     warning_layout = QtGui.QHBoxLayout(warning_frame)
     warning_layout.setContentsMargins(0, 0, 0, 0)
     warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
@@ -456,7 +456,11 @@ class CapabilityTable(QtGui.QTableWidget):
         self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
       else:
         self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
-        self._capabilityHeader.controlWidget[cap_index].updateNodes(cfg_name, c.namespace, c.nodes)
+        try:
+          self._capabilityHeader.controlWidget[cap_index].updateNodes(cfg_name, c.namespace, c.nodes)
+        except:
+          import traceback
+          print traceback.format_exc()
 
   def removeConfig(self, cfg):
     '''
