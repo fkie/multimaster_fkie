@@ -31,10 +31,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
 import shlex
 import subprocess
+import sys
 import threading
+
+import rospy
+
+from supervised_popen import SupervisedPopen
+import node_manager_fkie as nm
+
 
 try:
   import paramiko
@@ -42,9 +48,6 @@ except Exception, e:
   print  >> sys.stderr, e
   sys.exit(1)
 
-import rospy
-import node_manager_fkie as nm
-from supervised_popen import SupervisedPopen
 
 class AuthenticationRequest(Exception):
   ''' '''
@@ -69,6 +72,15 @@ class SSHhandler(object):
 
   def __init__(self):
     self.mutex = threading.RLock()
+
+  def remove(self, host):
+    '''
+    Removes an existing ssh session, so the new one can be created.
+    '''
+    try:
+      del SSHhandler.SSH_SESSIONS[host]
+    except:
+      pass
 
   def close(self):
     '''

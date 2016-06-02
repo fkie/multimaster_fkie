@@ -724,6 +724,10 @@ class MainWindow(QtGui.QMainWindow):
         self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
       else:
         rospy.loginfo("Autoupdate disabled, the data will not be updated for %s"%msg.master.uri)
+      if not msg.master.online:
+        host = nm.nameres().getHostname(msg.master.uri)
+        rospy.loginfo("remove SSH connection for '%s' because the master is now offline" % host)
+        nm.ssh().remove(host)
     if msg.state == MasterState.STATE_NEW:
       # if new master with uri of the local master is received update the master list 
       if msg.master.uri == self.getMasteruri():
