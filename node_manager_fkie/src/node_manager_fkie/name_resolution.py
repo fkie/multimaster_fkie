@@ -31,8 +31,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from threading import Thread, RLock
+from urlparse import urlparse
 import socket
+
 import rospy
+
 
 RESOLVE_CACHE = {}  # hostname : address
 
@@ -298,13 +301,27 @@ class NameResolution(object):
             return result
           else:
             break
-    if MasterEntry.is_legal_ip(address):
-      try:
+    try:
+      if MasterEntry.is_legal_ip(address):
         (hostname, _, _) = socket.gethostbyaddr(address)
         return hostname
-      except:
-        pass
+    except:
+      import traceback
+      print traceback.format_exc()
     return address
+
+  @classmethod
+  def masteruri2name(cls, masteruri):
+    result = masteruri
+    try:
+      url = urlparse(masteruri)
+      if url.port == 11311:
+        result = '%s' % url.hostname
+      else:
+        result = '%s_%d' % (url.hostname, url.port)
+    except:
+      pass
+    return result
 
   @classmethod
   def is_legal_ip(cls, address):
@@ -329,6 +346,8 @@ class NameResolution(object):
       return None
     from urlparse import urlparse
     o = urlparse(url)
+    if o.hostname is None:
+      return url
     return o.hostname
 
   @classmethod

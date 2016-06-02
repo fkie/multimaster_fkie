@@ -1279,9 +1279,9 @@ class NodeTreeModel(QtGui.QStandardItemModel):
   def _set_std_capabilities(self, host_item):
     if host_item is not None:
       cap = self._std_capabilities
-      hostname = roslib.names.SEP.join(['', host_item.hostname, '*', 'default_cfg'])
-      if hostname not in cap['']['SYSTEM']['nodes']:
-        cap['']['SYSTEM']['nodes'].append(hostname)
+      mastername = roslib.names.SEP.join(['', host_item.mastername, '*', 'default_cfg'])
+      if mastername not in cap['']['SYSTEM']['nodes']:
+        cap['']['SYSTEM']['nodes'].append(mastername)
       host_item.addCapabilities('', cap, host_item.masteruri)
       return cap
     return dict(self._std_capabilities)

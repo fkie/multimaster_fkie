@@ -41,10 +41,10 @@ import time
 import uuid
 import xmlrpclib
 
-from multimaster_msgs_fkie.msg import MasterState
 import rospy
 
 from master_discovery_fkie.common import resolve_url
+from multimaster_msgs_fkie.msg import MasterState
 import gui_resources
 import node_manager_fkie as nm
 
@@ -539,13 +539,13 @@ class MainWindow(QtGui.QMainWindow):
               args.append('_package:=%s'%(package_name(os.path.dirname(self.default_load_launch))[0]))
               args.append('_launch_file:="%s"'%os.path.basename(self.default_load_launch))
               host = '%s'%nm.nameres().address(masteruri)
-              node_name = roslib.names.SEP.join(['%s'%(nm.nameres().mastername(masteruri)),
+              node_name = roslib.names.SEP.join(['%s' % (nm.nameres().masteruri2name(masteruri)),
                                     os.path.basename(self.default_load_launch).replace('.launch',''),
                                     'default_cfg'])
               self.launch_dock.progress_queue.add2queue('%s'%uuid.uuid4(),
                                              'start default config @%s'%host,
                                              nm.starter().runNodeWithoutConfig, 
-                                             ('%s'%(nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
+                                             ('%s' % (nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
                                               'default_cfg', node_name,
                                               args, masteruri, False,
                                               self.masters[masteruri].current_user))
@@ -1393,7 +1393,8 @@ class MainWindow(QtGui.QMainWindow):
         mcast_group = params['Optional Parameter']['MCast Group']
         heartbeat_hz = params['Optional Parameter']['Heartbeat [Hz]']
         if robot_hosts:
-          robot_hosts = robot_hosts.replace(' ', '')
+          robot_hosts = robot_hosts.replace(' ', ',')
+          robot_hosts = robot_hosts.replace(',,', ',')
           robot_hosts = robot_hosts.replace('[', '')
           robot_hosts = robot_hosts.replace(']', '')
         for hostname in hostnames:
@@ -1553,7 +1554,7 @@ class MainWindow(QtGui.QMainWindow):
         rospy.logwarn('Error while load %s as default: %s'%(path, traceback.format_exc(1)))
       hostname = host if host else nm.nameres().address(master_proxy.masteruri)
       name_file_prefix = os.path.basename(path).replace('.launch','').replace(' ', '_')
-      node_name = roslib.names.SEP.join([hostname,
+      node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
                                          name_file_prefix,
                                          'default_cfg'])
       self.launch_dock.progress_queue.add2queue('%s'%uuid.uuid4(),
