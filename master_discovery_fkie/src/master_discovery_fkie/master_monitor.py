@@ -776,7 +776,7 @@ class MasterMonitor(object):
           from urlparse import urlparse
           master_port = urlparse(self.__masteruri).port
           if master_port != 11311:
-            self.__mastername = '--'.join([self.__mastername, str(master_port)])
+            self.__mastername = '%s_%d' % (self.__mastername, master_port)
         except:
           pass
       except:
