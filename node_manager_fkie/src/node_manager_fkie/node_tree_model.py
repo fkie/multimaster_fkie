@@ -361,7 +361,7 @@ class GroupItem(QtGui.QStandardItem):
       item = self.child(i)
       if isinstance(item, NodeItem):
         # set the running state of the node to None
-        if fixed_node_names is not None and item.name not in fixed_node_names:
+        if fixed_node_names is not None and not item.name in fixed_node_names:
           item.node_info = NodeInfo(item.name, item.node_info.masteruri)
         if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
           removed = True
