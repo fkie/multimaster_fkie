@@ -393,7 +393,7 @@ class UcastSocket(socket.socket):
       addrinfo = UcastSocket.getaddrinfo(self.interface)
     else:
       # Otherwise get the address info for the interface specified.
-      rospy.loginfo("+ Bind to unicast socket @(%s:%s)", self.interface, port)
+      rospy.loginfo("+ Bind to specified unicast socket @(%s:%s)", self.interface, port)
       addrinfo = UcastSocket.getaddrinfo(self.interface)
 
     # Configure socket type

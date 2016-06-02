@@ -339,8 +339,6 @@ class DiscoveredMaster(object):
               self.masteruriaddr = socket.gethostbyname(uri.hostname)
               self._del_error(self.ERR_RESOLVE_NAME)
             except socket.gaierror:
-              import traceback
-              print traceback.format_exc()
               msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings and restart master_dicovery!" % str(self.masteruri)
               rospy.logwarn(msg)
               self._add_error(self.ERR_RESOLVE_NAME, msg)
@@ -980,7 +978,7 @@ class Discoverer(object):
               mo = urlparse(v.monitoruri)
               if v.masteruriaddr != mo.hostname:
                 msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_dicovery!" % (o.hostname, v.masteruriaddr, mo.hostname)
-                if not v.masteruriaddr.startswith('127.'):
+                if v.masteruriaddr is None or not v.masteruriaddr.startswith('127.'):
                   local_addresses = ['localhost'] + roslib.network.get_local_addresses()
                   # check 127/8 and local addresses
                   if not v.masteruriaddr in local_addresses:
@@ -989,7 +987,7 @@ class Discoverer(object):
                     result.append(msg)
             except Exception as e:
               result.append("%s" % e)
-              rospy.logwarn("%s" % e)
+              rospy.logwarn("Error while resolve address for %s: %s" % (v.masteruri, e))
       except Exception as e:
         result.append("%s" % e)
         rospy.logwarn("%s" % e)

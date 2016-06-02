@@ -106,7 +106,7 @@ class FilterInterface(object):
       _do_not_sync = _do_not_sync.strip('[').rstrip(']').replace(' ', ',').split(',')
       # remove empty values
       _do_not_sync = [val for val in _do_not_sync if val]
-    self._re_do_not_sync = gen_pattern(_do_not_sync, 'do_not_sync')
+    self._re_do_not_sync = gen_pattern(_do_not_sync, 'do_not_sync', print_info=False)
 
   def update_sync_topics_pattern(self, topics=[]):
     '''
