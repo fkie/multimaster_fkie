@@ -302,12 +302,15 @@ class Editor(QtGui.QTextEdit):
                   with open(qf.fileName(), 'w') as f:
                     if qf.fileName().endswith('.launch'):
                       f.write('<launch>\n\n</launch>')
+                  event.setAccepted(True)
                   self.load_request_signal.emit(qf.fileName())
               else:
+                event.setAccepted(True)
                 self.load_request_signal.emit(qf.fileName())
             except Exception, e:
               WarningMessageBox(QtGui.QMessageBox.Warning, "File not found %s" % fileName, str(e)).exec_()
-    QtGui.QTextEdit.mouseReleaseEvent(self, event)
+    if not event.isAccepted():
+      QtGui.QTextEdit.mouseReleaseEvent(self, event)
 
   def mouseMoveEvent(self, event):
     '''
@@ -661,6 +664,21 @@ class FindDialog(QtGui.QDialog):
 #    print "********** desctroy:", self.objectName()
 
 
+class EditorTabWidget(QtGui.QTabWidget):
+  '''
+  This class was overloaded to close tabs on middle mouse click
+  '''
+
+  def mouseReleaseEvent(self, event):
+    if event.button() == QtCore.Qt.MidButton:
+      close_index = self.tabBar().tabAt(event.pos())
+      if close_index > -1:
+        self.tabCloseRequested.emit(close_index)
+        event.setAccepted(True)
+    if not event.isAccepted():
+      QtGui.QTabWidget.mouseReleaseEvent(event)
+
+
 class XmlEditor(QtGui.QDialog):
   '''
   Creates a dialog to edit a launch file.
@@ -700,7 +718,7 @@ class XmlEditor(QtGui.QDialog):
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setContentsMargins(0, 0, 0, 0)
     self.verticalLayout.setObjectName("verticalLayout")
-    self.tabWidget = QtGui.QTabWidget(self)
+    self.tabWidget = EditorTabWidget(self)
     self.tabWidget.setTabPosition(QtGui.QTabWidget.North)
     self.tabWidget.setDocumentMode(True)
     self.tabWidget.setTabsClosable(True)
