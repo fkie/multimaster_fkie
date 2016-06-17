@@ -478,6 +478,7 @@ class Discoverer(object):
 #    threading.Thread.__init__(self)
     self.do_finish = False
     self.__lock = threading.RLock()
+    self._send_errors = dict()
     # the list with all ROS master neighbors
     self.masters = dict()  # (ip, DiscoveredMaster)
     # this parameter stores the state of the remote nodes. If the state is changed
@@ -533,7 +534,6 @@ class Discoverer(object):
     local_addr = roslib.network.get_local_address()
     if (local_addr in ['localhost', '127.0.0.1']):
       rospy.logwarn("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % local_addr)
-
 
     self.mcast_port = mcast_port
     self.mcast_group = mcast_group
@@ -707,8 +707,14 @@ class Discoverer(object):
         self._send_request2group()
       if master is not None:
         master.add_request(time.time())
+      try:
+        del self._send_errors[address]
+      except:
+        pass
     except Exception as e:
-      rospy.logwarn("Send to robot host '%s' failed: %s" % (address, e))
+      msg = "Send to robot host '%s' failed: %s" % (address, e)
+      rospy.logwarn(msg)
+      self._send_errors[address] = msg
 
   def _create_current_state_msg(self):
     t = 0
@@ -729,7 +735,6 @@ class Discoverer(object):
                       int(self.HEARTBEAT_HZ * 10), 0, 0,
                       self.master_monitor.rpcport, 0, 0)
     return msg
-
 
   def checkROSMaster_loop(self):
     '''
@@ -987,6 +992,11 @@ class Discoverer(object):
             except Exception as e:
               result.append("%s" % e)
               rospy.logwarn("Error while resolve address for %s: %s" % (v.masteruri, e))
+        try:
+          for addr, msg in self._send_errors.items():
+            result.append('%s' % msg)
+        except:
+          pass
       except Exception as e:
         result.append("%s" % e)
         rospy.logwarn("%s" % e)
