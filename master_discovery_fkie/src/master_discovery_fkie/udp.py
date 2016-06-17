@@ -177,7 +177,6 @@ class DiscoverSocket(socket.socket):
       self._recv_thread.setDaemon(True)
       self._recv_thread.start()
 
-
   def set_message_callback(self, callback):
     '''
     This callback methos is called if the message is recieved.
@@ -199,7 +198,7 @@ class DiscoverSocket(socket.socket):
     # http://wiki.ros.org/ROS/EnvironmentVariables#ROS_IP.2BAC8-ROS_HOSTNAME
     if 'ROS_HOSTNAME' in os.environ:
       addr = socket.gethostbyname(os.environ['ROS_HOSTNAME'])
-      if addr[:4] != '127.': # 127.x.y.z is loopback
+      if addr[:4] != '127.':  # 127.x.y.z is loopback
         return groupaddr, addr
     if 'ROS_IP' in os.environ:
       return groupaddr, os.environ['ROS_IP']
@@ -243,7 +242,7 @@ class DiscoverSocket(socket.socket):
         self.sendto(msg, (self.mgroup, self.getsockname()[1]))
     except socket.error as errobj:
       msg = str(errobj)
-      if not errobj.errno in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET]:
+      if errobj.errno not in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET]:
         raise
 
   def send2addr(self, msg, addr):
@@ -267,10 +266,10 @@ class DiscoverSocket(socket.socket):
     except socket.error as errobj:
       msg = str(errobj)
       if errobj.errno in [-5]:
-        if not addr in self.sock_5_error_printed:
+        if addr not in self.sock_5_error_printed:
           rospy.logwarn("socket.error[%d]: %s, addr: %s", errobj.errno, msg, addr)
           self.sock_5_error_printed.append(addr)
-      elif not errobj.errno in [100, 101, 102]:
+      elif errobj.errno not in [100, 101, 102]:
         raise
 
   def hasEnabledMulticastIface(self):
@@ -323,13 +322,12 @@ class DiscoverSocket(socket.socket):
       raise OSError("Unknown architecture: %s" % arch)
     sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     names = array.array('B', '\0' * MAXBYTES)
-    outbytes = struct.unpack('iL', fcntl.ioctl(
-        sockfd.fileno(),
-        SIOCGIFCONF,
-        struct.pack('iL', MAXBYTES, names.buffer_info()[0])
-        ))[0]
+    outbytes = struct.unpack('iL', fcntl.ioctl(sockfd.fileno(),
+                                               SIOCGIFCONF,
+                                               struct.pack('iL', MAXBYTES, names.buffer_info()[0])
+                                               ))[0]
     namestr = names.tostring()
-    return [(namestr[i:i + var1].split('\0', 1)[0], socket.inet_ntoa(namestr[i + 20:i + 24])) \
+    return [(namestr[i:i + var1].split('\0', 1)[0], socket.inet_ntoa(namestr[i + 20:i + 24]))
             for i in xrange(0, outbytes, var2)]
 
   def recv_loop_multicast(self):
@@ -364,7 +362,6 @@ class DiscoverSocket(socket.socket):
         except socket.error:
           import traceback
           rospy.logwarn("unicast socket error: %s", traceback.format_exc())
-
 
 
 class UcastSocket(socket.socket):
@@ -429,12 +426,12 @@ class UcastSocket(socket.socket):
     except socket.error as errobj:
       msg = str(errobj)
       if errobj.errno in [-5]:
-        if not addr in self.sock_5_error_printed:
+        if addr not in self.sock_5_error_printed:
           rospy.logwarn("socket.error[%d]: %s, addr: %s", errobj.errno, msg, addr)
           self.sock_5_error_printed.append(addr)
       elif errobj.errno in [errno.EINVAL, -2]:
         raise Exception('Cannot send to `%s`, try to change the interface, message: %s' % (addr, msg))
-      elif not errobj.errno in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET]:
+      elif errobj.errno not in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET]:
         raise
 
   def close(self):
