@@ -30,14 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from python_qt_binding import QtCore
+import socket
 import threading
 import time
-import socket
 
-from python_qt_binding import QtCore
+import rospy
+
+from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnectionException
+import master_discovery_fkie.interface_finder as interface_finder
+
 
 import roslib; roslib.load_manifest('node_manager_fkie')
-import rospy
 
 try:
   import std_srvs.srv
@@ -48,8 +52,6 @@ except ImportError, e:
   print >> sys.stderr, "Can't import massages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
   raise ImportError(str(e))
 
-import master_discovery_fkie.interface_finder as interface_finder
-from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnectionException
 
 
 class MasterListService(QtCore.QObject):
@@ -158,7 +160,6 @@ class MasterListThread(QtCore.QObject, threading.Thread):
     '''
     '''
     if self._masteruri:
-      found = False
       service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait)
       err_msg = ''
       for service_name in service_names:
@@ -170,16 +171,15 @@ class MasterListThread(QtCore.QObject, threading.Thread):
         try:
           resp = discoverMasters()
         except rospy.ServiceException, e:
-          rospy.logwarn("ERROR Service call 'list_masters' failed: %s", str(e))
-          err_msg = ''.join([err_msg, '\n', service_name, ': ', str(e)])
+          rospy.logwarn("Service call 'list_masters' failed: %s", str(e))
+          self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (service_name, err_msg))
         else:
-          self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
           if resp.masters:
-            found = True
+            self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
+          else:
+            self.err_signal.emit(self._masteruri, "local 'master_discovery' reports empty master list, it seems he has a problem")
         finally:
           socket.setdefaulttimeout(None)
-      if not found:
-        self.err_signal.emit(self._masteruri, "ERROR Service call 'list_masters' failed: %s"%err_msg)
 
 class MasterRefreshThread(QtCore.QObject, threading.Thread):
   '''

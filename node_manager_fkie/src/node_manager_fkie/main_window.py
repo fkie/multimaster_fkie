@@ -584,10 +584,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     if not self.restricted_to_one_master:
       try:
-        result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
-        result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
         self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
-        self._setLocalMonitoring(not result_1 or not result_2)
       except:
         pass
     else:
@@ -644,6 +641,7 @@ class MainWindow(QtGui.QMainWindow):
     while call the service to determine the discovered ROS master. On the error
     the local monitoring will be enabled.
     '''
+    rospy.logwarn(error)
     self._setLocalMonitoring(True)
 
   def hasDiscoveryService(self, minfo):
@@ -672,7 +670,10 @@ class MainWindow(QtGui.QMainWindow):
     @param master_list: a list with ROS masters
     @type master_list: C{[L{master_discovery_fkie.msg.MasterState}]}
     '''
-    self._setLocalMonitoring(False)
+    result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
+    result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
+    local_mon = not result_1 or not result_2
+    self._setLocalMonitoring(local_mon)
     self._con_tries[masteruri] = 0
     # remove ROS master which are not in the new list
     new_uris = [m.uri for m in master_list if m.uri is not None]
