@@ -11,6 +11,7 @@ except ImportError:
 
 PACKAGE_CACHE = {}
 
+
 def get_ros_home():
   '''
   Returns the ROS HOME depending on ROS distribution API.
@@ -27,8 +28,6 @@ def get_ros_home():
       from rospkg import get_ros_home
       return get_ros_home()
   except:
-#    import traceback
-#    print traceback.format_exc(1)
     from roslib import rosenv
     return rosenv.get_ros_home()
 
@@ -51,16 +50,17 @@ def masteruri_from_ros():
   except:
     return os.environ['ROS_MASTER_URI']
 
+
 def get_packages(path):
   result = {}
   if os.path.isdir(path):
     fileList = os.listdir(path)
     if MANIFEST_FILE in fileList:
-      return {os.path.basename(path) : path}
+      return {os.path.basename(path): path}
     if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
       try:
         pkg = parse_package(path)
-        return {pkg.name : path}
+        return {pkg.name: path}
       except:
         pass
       return {}
@@ -68,6 +68,7 @@ def get_packages(path):
       ret = get_packages(os.path.join(path, f))
       result = dict(ret.items() + result.items())
   return result
+
 
 def resolve_paths(text):
   '''
@@ -77,8 +78,8 @@ def resolve_paths(text):
   result = text
   startIndex = text.find('$(')
   if startIndex > -1:
-    endIndex = text.find(')', startIndex+2)
-    script = text[startIndex+2:endIndex].split()
+    endIndex = text.find(')', startIndex + 2)
+    script = text[startIndex + 2: endIndex].split()
     if len(script) == 2 and (script[0] == 'find'):
       pkg = ''
       try:
@@ -88,8 +89,9 @@ def resolve_paths(text):
       except:
         import roslib
         pkg = roslib.packages.get_pkg_dir(script[1])
-      return result.replace(text[startIndex:endIndex+1], pkg)
+      return result.replace(text[startIndex: endIndex + 1], pkg)
   return result
+
 
 def package_name(path):
   '''
@@ -98,7 +100,7 @@ def package_name(path):
   @rtype: C{(name, path)}
   '''
   if not (path is None) and path and path != os.path.sep and os.path.isdir(path):
-    if PACKAGE_CACHE.has_key(path):
+    if path in PACKAGE_CACHE:
       return PACKAGE_CACHE[path]
     package = os.path.basename(path)
     fileList = os.listdir(path)
@@ -112,10 +114,11 @@ def package_name(path):
           PACKAGE_CACHE[path] = (pkg.name, path)
           return (pkg.name, path)
         except:
-          return (None,None)
+          return (None, None)
     PACKAGE_CACHE[path] = package_name(os.path.dirname(path))
     return PACKAGE_CACHE[path]
   return (None, None)
+
 
 def is_package(file_list):
   return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))
