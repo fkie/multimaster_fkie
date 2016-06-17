@@ -641,7 +641,8 @@ class MainWindow(QtGui.QMainWindow):
     while call the service to determine the discovered ROS master. On the error
     the local monitoring will be enabled.
     '''
-    rospy.logwarn(error)
+    if 'no service' not in error:
+      rospy.logwarn(error)
     self._setLocalMonitoring(True)
 
   def hasDiscoveryService(self, minfo):

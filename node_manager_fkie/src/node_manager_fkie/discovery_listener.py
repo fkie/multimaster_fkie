@@ -160,6 +160,7 @@ class MasterListThread(QtCore.QObject, threading.Thread):
     '''
     '''
     if self._masteruri:
+      found = False
       service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait)
       err_msg = ''
       for service_name in service_names:
@@ -176,10 +177,13 @@ class MasterListThread(QtCore.QObject, threading.Thread):
         else:
           if resp.masters:
             self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
+            found = True
           else:
             self.err_signal.emit(self._masteruri, "local 'master_discovery' reports empty master list, it seems he has a problem")
         finally:
           socket.setdefaulttimeout(None)
+      if not found:
+        self.err_signal.emit(self._masteruri, "no service 'list_masters' found on %s" % self._masteruri)
 
 class MasterRefreshThread(QtCore.QObject, threading.Thread):
   '''
