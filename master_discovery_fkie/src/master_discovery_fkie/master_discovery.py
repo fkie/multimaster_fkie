@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from urlparse import urlparse
+import errno
 import socket
 import struct
 import sys
@@ -140,9 +141,8 @@ class DiscoveredMaster(object):
     self._errors = dict()  # ERR_*, msg
     self.masteruriaddr = None
     # create a thread to retrieve additional information about the remote ROS master
-    self._retrieveThread = threading.Thread(target=self.__retrieve_masterinfo)
-    self._retrieveThread.setDaemon(True)
-    self._retrieveThread.start()
+    self._get_into_timer = threading.Timer(0.1, self.__retrieve_masterinfo)
+    self._get_into_timer.start()
 
   def add_heartbeat(self, timestamp, timestamp_local, rate):
     '''
@@ -314,17 +314,29 @@ class DiscoveredMaster(object):
     reestablished until the information will be get successful.
     '''
     if self.monitoruri is not None:
-      while self._retrieveThread.is_alive() and not rospy.is_shutdown() and (self.mastername is None):
+      if not rospy.is_shutdown() and self.mastername is None:
+        timetosleep = 1
         try:
+          rospy.logdebug("Get additional connection info from %s" % self.monitoruri)
           remote_monitor = xmlrpclib.ServerProxy(self.monitoruri)
           timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
           self._del_error(self.ERR_SOCKET)
-        except:
-          import traceback
-          msg = "socket error [%s]: %s" % (self.monitoruri, traceback.format_exc())
+          rospy.logdebug("Got [%s, %s, %s, %s] from %s" % (timestamp, masteruri, mastername, nodename, monitoruri))
+        except socket.error as errobj:
+          msg = "socket error [%s]: %s" % (self.monitoruri, str(errobj))
           rospy.logwarn(msg)
           self._add_error(self.ERR_SOCKET, msg)
-          time.sleep(1)
+          if errobj.errno in [errno.EHOSTUNREACH]:
+            timetosleep = 30
+          self._get_into_timer = threading.Timer(timetosleep, self.__retrieve_masterinfo)
+          self._get_into_timer.start()
+        except:
+          import traceback
+          msg = "connection error [%s]: %s" % (self.monitoruri, traceback.format_exc())
+          rospy.logwarn(msg)
+          self._add_error(self.ERR_SOCKET, msg)
+          self._get_into_timer = threading.Timer(timetosleep, self.__retrieve_masterinfo)
+          self._get_into_timer.start()
         else:
           if float(timestamp) != 0:
             self.masteruri = masteruri
@@ -339,10 +351,11 @@ class DiscoveredMaster(object):
               self.masteruriaddr = socket.gethostbyname(uri.hostname)
               self._del_error(self.ERR_RESOLVE_NAME)
             except socket.gaierror:
-              msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings and restart master_dicovery!" % str(self.masteruri)
+              msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(self.masteruri)
               rospy.logwarn(msg)
               self._add_error(self.ERR_RESOLVE_NAME, msg)
-              time.sleep(3)
+              self._get_into_timer = threading.Timer(3., self.__retrieve_masterinfo)
+              self._get_into_timer.start()
             else:
               # publish new node
               if self.callback_master_state is not None:
@@ -355,8 +368,6 @@ class DiscoveredMaster(object):
                                                                  self.online,
                                                                  self.discoverername,
                                                                  self.monitoruri)))
-          else:
-            time.sleep(1)
 
 
 class Discoverer(object):
