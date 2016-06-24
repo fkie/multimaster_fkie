@@ -38,37 +38,42 @@ __license__ = "BSD"
 __version__ = "0.2.0"
 __date__ = "2012-02-01"
 
+import os
+import signal
 import sys
 
 import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
-#MCAST_GROUP = "ff02::1"# ipv6 multicast group
-MCAST_GROUP = "226.0.0.0" # ipv4 multicast group
+# MCAST_GROUP = "ff02::1"# ipv6 multicast group
+MCAST_GROUP = "226.0.0.0"  # ipv4 multicast group
 MCAST_PORT = 11511
 PROCESS_NAME = "master_discovery"
 
-def getDefaultRPCPort(zeroconf=False):
+
+def get_default_rtcp_port(zeroconf=False):
   try:
     from master_discovery_fkie.common import masteruri_from_ros
     masteruri = masteruri_from_ros()
     rospy.loginfo("ROS Master URI: %s", masteruri)
     from urlparse import urlparse
-    return urlparse(masteruri).port+(600 if zeroconf else 300) 
+    return urlparse(masteruri).port + (600 if zeroconf else 300)
   except:
     import traceback
     print traceback.format_exc()
     return 11911 if zeroconf else 11611
 
-def setTerminalName(name):
+
+def set_terminal_name(name):
   '''
   Change the terminal name.
   @param name: New name of the terminal
   @type name:  str
   '''
-  sys.stdout.write("".join(["\x1b]2;",name,"\x07"]))
+  sys.stdout.write("\x1b]2;%s\x07" % name)
 
-def setProcessName(name):
+
+def set_process_name(name):
   '''
   Change the process name.
   @param name: New process name
@@ -77,7 +82,7 @@ def setProcessName(name):
   try:
     from ctypes import cdll, byref, create_string_buffer
     libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(len(name)+1)
+    buff = create_string_buffer(len(name) + 1)
     buff.value = name
     libc.prctl(15, byref(buff), 0, 0, 0)
   except:
@@ -88,46 +93,46 @@ def main():
   '''
   Creates and runs the ROS node using multicast messages for discovering
   '''
-  import master_discovery
+  import master_discovery_fkie.master_discovery as master_discovery
   # setup the loglevel
   try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%PROCESS_NAME, "INFO"))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
   except Exception as e:
-    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    print "Error while set the log level: %s\n->INFO level will be used!" % e
     log_level = rospy.INFO
   rospy.init_node(PROCESS_NAME, log_level=log_level)
-  setTerminalName(PROCESS_NAME)
-  setProcessName(PROCESS_NAME)
+  set_terminal_name(PROCESS_NAME)
+  set_process_name(PROCESS_NAME)
   mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
   mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
-  rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort())
+  rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port())
   try:
     discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
     discoverer.start()
     rospy.spin()
   except Exception as e:
     rospy.logerr("Error while start master_discovery: %s", str(e))
-    import os, signal
     os.kill(os.getpid(), signal.SIGKILL)
     import time
     time.sleep(10)
+
 
 def main_zeroconf():
   '''
   Creates and runs the ROS node using zeroconf/avahi for discovering
   '''
-  import zeroconf
+  import master_discovery_fkie.zeroconf as zeroconf
   PROCESS_NAME = "zeroconf"
   # setup the loglevel
   try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level'%PROCESS_NAME, "INFO"))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
   except Exception as e:
-    print "Error while set the log level: %s\n->INFO level will be used!"%e
+    print "Error while set the log level: %s\n->INFO level will be used!" % e
     log_level = rospy.INFO
   rospy.init_node(PROCESS_NAME, log_level=log_level)
-  setTerminalName(rospy.get_name())
-  setProcessName(rospy.get_name())
-  rpc_port = rospy.get_param('~rpc_port', getDefaultRPCPort(True))
+  set_terminal_name(rospy.get_name())
+  set_process_name(rospy.get_name())
+  rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port(True))
   discoverer = zeroconf.Discoverer(rpc_port)
   discoverer.start()
   rospy.spin()

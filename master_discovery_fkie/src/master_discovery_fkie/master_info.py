@@ -35,6 +35,7 @@ import rospy
 
 from .filter_interface import FilterInterface
 
+
 class NodeInfo(object):
   '''
   The NodeInfo class stores informations about a ROS node.
@@ -240,7 +241,7 @@ class NodeInfo(object):
     if new_masteruri is None:
       new_masteruri = self.masteruri
     result = NodeInfo(self.name, new_masteruri)
-    result.uri = ''.join([self.uri]) if not self.uri is None else None
+    result.uri = str(self.uri) if self.uri is not None else None
     result.masteruri = self.masteruri
     result.pid = self.pid
     result._publishedTopics = list(self._publishedTopics)
@@ -516,7 +517,6 @@ class ServiceInfo(object):
   def serviceProvider(self):
     del self._serviceProvider
 
-
   def get_service_class(self, allow_get_type=False):
     '''
     Get the service class using the type of the service. NOTE: this
@@ -532,7 +532,7 @@ class ServiceInfo(object):
 
     :raise: ``ROSServiceException``, if service class cannot be retrieved
     '''
-    if not self.__service_class is None:
+    if self.__service_class is not None:
       return self.__service_class
 
     srv_type = self.type
@@ -551,8 +551,8 @@ class ServiceInfo(object):
           # connect to service and probe it to get the headers
           s.settimeout(0.5)
           s.connect((dest_addr, dest_port))
-          header = { 'probe':'1', 'md5sum':'*',
-                    'callerid':rospy.get_name(), 'service':self.name}
+          header = {'probe': '1', 'md5sum': '*',
+                    'callerid': rospy.get_name(), 'service': self.name}
           roslib.network.write_ros_handshake_header(s, header)
           srv_type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
           srv_type = srv_type['type']
@@ -566,7 +566,7 @@ class ServiceInfo(object):
 
     import rosservice
     if not srv_type:
-      raise rosservice.ROSServiceException("Not valid type of service [%s]."%str(srv_type))
+      raise rosservice.ROSServiceException("Not valid type of service [%s]." % str(srv_type))
 
     # get the Service class so we can populate the request
     service_class = roslib.message.get_service_class(srv_type)
@@ -579,8 +579,8 @@ class ServiceInfo(object):
 
     if service_class is None:
         pkg = roslib.names.resource_name_package(self.type)
-        raise rosservice.ROSServiceException("Unable to load type [%s].\n"%self.type+
-                                             "Have you typed 'make' in [%s]?"%pkg)
+        raise rosservice.ROSServiceException("Unable to load type [%s].\n" % self.type +
+                                             "Have you typed 'make' in [%s]?" % pkg)
     self.__service_class = service_class
     return service_class
 
@@ -616,7 +616,7 @@ class MasterInfo(object):
 
   :type mastername: str or ``None`` (Default: ``None``)
   '''
-  def __init__(self, masteruri, mastername = None):
+  def __init__(self, masteruri, mastername=None):
     '''
     Creates a new instance of the MasterInfo. The mastername will be extracted
     from the masterui, if no name is given.
@@ -999,7 +999,7 @@ class MasterInfo(object):
     for name in self.node_names:
       n1 = self.getNode(name)
       n2 = other.getNode(name)
-      if not n1 is None and not n2 is None:
+      if n1 is not None and n2 is not None:
         if n1.pid != n2.pid:
           return False
 #        if n1.uri != n2.uri:
@@ -1014,7 +1014,6 @@ class MasterInfo(object):
 #    finally:
 #      cputimes = os.times() ###################
 #      print "EQ:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
-
 
   def __ne__(self, other):
     return not self.__eq__(other)
@@ -1045,7 +1044,7 @@ class MasterInfo(object):
     for name in node_names:
       n1 = self.getNode(name)
       n2 = other.getNode(name)
-      if not n1 is None and not n2 is None:
+      if n1 is not None and n2 is not None:
         if n1.isLocal or n1.isLocalMaster:
           if n1.pid != n2.pid:
             return True
@@ -1060,10 +1059,10 @@ class MasterInfo(object):
         # after local start of asynchronized node. The next check of master state return the local node.
         elif n2.isLocal or n2.isLocalMaster:
           return True
-      elif not n1 is None:
+      elif n1 is not None:
         if n1.isLocal or n1.isLocalMaster:
           return True
-      elif not n2 is None:
+      elif n2 is not None:
         if n2.isLocal or n2.isLocalMaster:
           return True
 
@@ -1072,16 +1071,16 @@ class MasterInfo(object):
     for name in service_names:
       s1 = self.getService(name)
       s2 = other.getService(name)
-      if not s1 is None and not s2 is None:
+      if s1 is not None and s2 is not None:
         if s1.isLocal or s1.isLocalMaster:
           if s1.uri != s2.uri:
             return True
         elif s2.isLocal or s2.isLocalMaster:
           return True
-      elif not s1 is None:
+      elif s1 is not None:
         if s1.isLocal or s1.isLocalMaster:
           return True
-      elif not s2 is None:
+      elif s2 is not None:
         if s2.isLocal or s2.isLocalMaster:
           return True
     return False
@@ -1140,8 +1139,8 @@ class MasterInfo(object):
     iffilter = filter_interface
     if iffilter is None:
       iffilter = FilterInterface.from_list()
-    stamp = '%.9f'%self.timestamp
-    stamp_local = '%.9f'%self.timestamp_local
+    stamp = '%.9f' % self.timestamp
+    stamp_local = '%.9f' % self.timestamp_local
     publishers = []
     subscribers = []
     services = []
@@ -1187,7 +1186,7 @@ class MasterInfo(object):
             nodes_last_check.add(sp)
       if srv_prov:
         services.append((name, srv_prov))
-        serviceProvider.append((name, service.uri, str(service.masteruri), service.type if not service.type is None else '', 'local' if service.isLocal else 'remote'))
+        serviceProvider.append((name, service.uri, str(service.masteruri), service.type if service.type is not None else '', 'local' if service.isLocal else 'remote'))
 
     # creates the nodes list
     for name, node in self.nodes.items():
@@ -1249,7 +1248,7 @@ class MasterInfo(object):
     services_changed = set()
 
     # UPDATE NODES
-    #get local nodes from other
+    # get local nodes from other
     own_remote_nodes = dict()
     other_local_nodes = dict()
     for nodename, n in self.nodes.items():
@@ -1295,7 +1294,7 @@ class MasterInfo(object):
           if set(own_node._services) ^ set(other_node.services):
             nodes_changed.add(n)
             own_node._services = other_node.services
-    #add new nodes
+    # add new nodes
     nodes_added = set()
     if local_info:
       nodes2add = other_local_nodes_set - own_remote_nodes_set
@@ -1347,7 +1346,7 @@ class MasterInfo(object):
           if set(own_srv._serviceProvider) ^ set(other_srv.serviceProvider):
             services_changed.add(s)
             own_srv._serviceProvider = other_srv.serviceProvider
-    #add new services
+    # add new services
     srvs_added = set()
     if local_info:
       srv2add = other_local_srvs_set - own_remote_srvs_set

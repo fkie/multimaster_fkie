@@ -39,7 +39,7 @@ import rospy
 
 def hostFromUri(uri):
   '''
-  Extracts the hostname from given uri. 
+  Extracts the hostname from given uri.
 
   :param uri: the uri to parse
 
@@ -64,7 +64,7 @@ def hostFromUri(uri):
 
 def get_changes_topic(masteruri, wait=True):
   '''
-  Search in publishers of ROS master for a topic with type `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_ and 
+  Search in publishers of ROS master for a topic with type `master_discovery_fkie.msg.MasterState <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/MasterState.html>`_ and
   returns his name, if it runs on the local host. Returns empty list if no topic
   was found and `wait` is ``False``.
 
@@ -82,29 +82,31 @@ def get_changes_topic(masteruri, wait=True):
   '''
   return _get_topic(masteruri, 'MasterState', wait)
 
+
 def get_stats_topic(masteruri, wait=True):
   '''
-  Search in publishers of ROS master for a topic with type LinkStatesStamped and 
+  Search in publishers of ROS master for a topic with type LinkStatesStamped and
   returns his name, if it runs on the local host. Returns empty list if no topic
   was found and `wait` is ``False``.
-  
+
   :param masteruri: the URI of the ROS master
-  
+
   :type masteruri: str
-  
+
   :param wait: check every second for the topic
-  
+
   :type wait: bool
-  
+
   :return: the list of names of the topic with type `master_discovery_fkie.msg.LinkStatesStamped <http://www.ros.org/doc/api/master_discovery_fkie/html/msg/LinkStatesStamped.html>`_
 
   :rtype: list of strings
   '''
   return _get_topic(masteruri, 'LinkStatesStamped', wait)
 
+
 def _get_topic(masteruri, ttype, wait=True):
   '''
-  Search in publishers of ROS master for a topic with given type and 
+  Search in publishers of ROS master for a topic with given type and
   returns his name, if it runs on the local host. Returns empty list if no topic
   was found and `wait` is ``False``.
 
@@ -145,10 +147,10 @@ def _get_topic(masteruri, ttype, wait=True):
                 if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
                   result.append(topic)
       if not result and wait:
-        rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type '%s."%ttype)
+        rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type '%s." % ttype)
         time.sleep(1)
     elif not result and wait:
-      rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!"%(code, msg))
+      rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!" % (code, msg))
       time.sleep(1)
     if not wait:
       return result
@@ -157,8 +159,8 @@ def _get_topic(masteruri, ttype, wait=True):
 
 def get_listmaster_service(masteruri, wait=True):
   '''
-  Search in services of ROS master for a service with name ending by 
-  `list_masters` and returns his name, if it runs on the local host. Returns 
+  Search in services of ROS master for a service with name ending by
+  `list_masters` and returns his name, if it runs on the local host. Returns
   empty list if no service was found and `wait` is ``False``.
 
   :param masteruri: the URI of the ROS master
@@ -175,10 +177,11 @@ def get_listmaster_service(masteruri, wait=True):
   '''
   return _get_service(masteruri, 'list_masters', wait)
 
+
 def get_refresh_service(masteruri, wait=True):
   '''
-  Search in services of ROS master for a service with name ending by 
-  `refresh` and returns his name, if it runs on the local host. Returns 
+  Search in services of ROS master for a service with name ending by
+  `refresh` and returns his name, if it runs on the local host. Returns
   empty list if no service was found and `wait` is ``False``.
 
   :param masteruri: the URI of the ROS master
@@ -195,10 +198,11 @@ def get_refresh_service(masteruri, wait=True):
   '''
   return _get_service(masteruri, 'refresh', wait)
 
+
 def _get_service(masteruri, name, wait=True):
   '''
-  Search in services of ROS master for a service with name ending by 
-  given name and returns his name, if it runs on the local host. Returns 
+  Search in services of ROS master for a service with name ending by
+  given name and returns his name, if it runs on the local host. Returns
   empty list if no service was found and `wait` is ``False``.
 
   :param masteruri: the URI of the ROS master
@@ -231,10 +235,10 @@ def _get_service(masteruri, name, wait=True):
           if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
             result.append(srv)
       if not result and wait:
-        rospy.logwarn("Master_discovery node appear not to running. Wait for service '%s'."%name)
+        rospy.logwarn("Master_discovery node appear not to running. Wait for service '%s'." % name)
         time.sleep(1)
     elif not result and wait:
-      rospy.logwarn("can't get state from ROS master: %s, %s"%(code, msg))
+      rospy.logwarn("can't get state from ROS master: %s, %s" % (code, msg))
       time.sleep(1)
     if not wait:
       return result

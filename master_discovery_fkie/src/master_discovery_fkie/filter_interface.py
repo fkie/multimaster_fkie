@@ -69,27 +69,27 @@ class FilterInterface(object):
     self.__mastername = mastername
     self.__data = data = read_interface(interface_file) if interface_file else {}
     # set the pattern for ignore and sync lists
-    self._re_ignore_nodes = create_pattern('ignore_nodes', data, interface_file, 
-                                          ignore_nodes, mastername)
-    self._re_sync_nodes = create_pattern('sync_nodes', data, interface_file, 
+    self._re_ignore_nodes = create_pattern('ignore_nodes', data, interface_file,
+                                           ignore_nodes, mastername)
+    self._re_sync_nodes = create_pattern('sync_nodes', data, interface_file,
                                          sync_nodes, mastername)
     self._re_ignore_topics = create_pattern('ignore_topics', data, interface_file,
                                             ignore_topics, mastername)
-    self._re_sync_topics = create_pattern('sync_topics', data, interface_file, 
+    self._re_sync_topics = create_pattern('sync_topics', data, interface_file,
                                           sync_topics, mastername)
-    self._re_ignore_services = create_pattern('ignore_services', data, interface_file, 
+    self._re_ignore_services = create_pattern('ignore_services', data, interface_file,
                                               ignore_srv, mastername)
-    self._re_sync_services = create_pattern('sync_services', data, interface_file, 
+    self._re_sync_services = create_pattern('sync_services', data, interface_file,
                                             sync_srv, mastername)
-    self._re_ignore_type = create_pattern('ignore_type', data, interface_file, 
-                                            ignore_type, mastername)
+    self._re_ignore_type = create_pattern('ignore_type', data, interface_file,
+                                          ignore_type, mastername)
     self._re_ignore_publishers = create_pattern('ignore_publishers', data, interface_file,
-                                            ignore_publishers, mastername)
+                                                ignore_publishers, mastername)
     self._re_ignore_subscribers = create_pattern('ignore_subscribers', data, interface_file,
-                                            ignore_subscribers, mastername)
+                                                 ignore_subscribers, mastername)
     self._sync_remote_nodes = False
     if interface_file:
-      if data.has_key('sync_remote_nodes'):
+      if 'sync_remote_nodes' in data:
         self._sync_remote_nodes = data['sync_remote_nodes']
     elif rospy.has_param('~sync_remote_nodes'):
       self._sync_remote_nodes = rospy.get_param('~sync_remote_nodes')
@@ -111,13 +111,12 @@ class FilterInterface(object):
   def update_sync_topics_pattern(self, topics=[]):
     '''
     Updates the sync topics pattern.
-    
+
     :param topics: the list of topics to sync.
-    
+
     :type topics: list of strings
     '''
-    self._re_sync_topics = create_pattern('sync_topics', self.__data, self.__interface_file, 
-                                          topics, self.__mastername)
+    self._re_sync_topics = create_pattern('sync_topics', self.__data, self.__interface_file, topics, self.__mastername)
 
   def sync_remote_nodes(self):
     '''
@@ -129,14 +128,14 @@ class FilterInterface(object):
 
   def is_ignored_node(self, node):
     '''
-    Searches the given node in `ignore_nodes` and `sync_nodes` lists. 
-    
+    Searches the given node in `ignore_nodes` and `sync_nodes` lists.
+
     :param node: the name of the node to test.
-    
+
     :type node: str
-    
-    :return: `True`, if the node was found in the `ignore_nodes` list or the 
-      `sync_nodes` is not empty. 
+
+    :return: `True`, if the node was found in the `ignore_nodes` list or the
+      `sync_nodes` is not empty.
 
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
@@ -155,31 +154,31 @@ class FilterInterface(object):
     NOTE: This function is deprecated. Please use `is_ignored_subscriber` and
     `is_ignored_publisher` instead
 
-    Searches firstly in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`. 
+    Searches firstly in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`.
     Then in `sync_nodes` or `sync_topics`.
-    
+
     :param node: the name of the node published or subscribed the topic.
-    
+
     :type node: str
 
     :param topic: the name of the topic to test.
-    
+
     :type topic: str
 
     :param topictype: the type of the topic. (e.g. the synchronization of bond/Status terminate the nodelets)
-    
+
     :type topictype: str
-    
-    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes` 
-      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will 
+
+    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes`
+      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will
       be returned, too.
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
     '''
     rospy.logwarn("Call to deprecated method 'is_ignored_topic'. Please use"
-                   "'is_ignored_subscriber' and 'is_ignored_publisher' instead")
+                  "'is_ignored_subscriber' and 'is_ignored_publisher' instead")
     self._is_ignored_topic(node, topic, topictype)
-    
+
   def _is_ignored_topic(self, node, topic, topictype):
     if not self.is_valid:
       return False
@@ -202,23 +201,23 @@ class FilterInterface(object):
   def is_ignored_subscriber(self, node, topic, topictype):
     '''
     Searches first in the `ignore_subscribers` ignore list
-    Then in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`. 
+    Then in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`.
     Finally in `sync_nodes` or `sync_topics`.
-    
+
     :param node: the name of the node published or subscribed the topic.
-    
+
     :type node: str
 
     :param topic: the name of the topic to test.
-    
+
     :type topic: str
 
     :param topictype: the type of the topic. (e.g. the synchronization of bond/Status terminate the nodelets)
-    
+
     :type topictype: str
-    
-    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes` 
-      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will 
+
+    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes`
+      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will
       be returned, too.
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
@@ -230,23 +229,23 @@ class FilterInterface(object):
   def is_ignored_publisher(self, node, topic, topictype):
     '''
     Searches first in the `ignore_publishers` ignore list
-    Then in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`. 
+    Then in ignore lists `ignore_type`, `ignore_nodes` and `ignore_topics`.
     Finally in `sync_nodes` or `sync_topics`.
-    
+
     :param node: the name of the node published or subscribed the topic.
-    
+
     :type node: str
 
     :param topic: the name of the topic to test.
-    
+
     :type topic: str
 
     :param topictype: the type of the topic. (e.g. the synchronization of bond/Status terminate the nodelets)
-    
+
     :type topictype: str
-    
-    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes` 
-      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will 
+
+    :return: `True`, if the values are found in `ignore_type`, `ignore_nodes`
+      or `ignore_topics`. If `sync_nodes` or `sync_topics` is empty `True` will
       be returned, too.
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
@@ -257,20 +256,20 @@ class FilterInterface(object):
 
   def is_ignored_service(self, node, service):
     '''
-    Searches firstly in ignore lists `ignore_nodes` and `ignore_services`. 
+    Searches firstly in ignore lists `ignore_nodes` and `ignore_services`.
     Then in `sync_nodes` or `sync_services`.
-    
+
     :param node: the name of the node provided the service.
-    
+
     :type node: str
 
     :param topic: the name of the service to test.
-    
+
     :type topic: str
 
-    :return: `True`, if the values are found in `ignore_nodes` or `ignore_services`. 
+    :return: `True`, if the values are found in `ignore_nodes` or `ignore_services`.
             If `sync_nodes` or `sync_services` is empty `True` will be returned, too.
-    
+
     :note: If the filter object is not initialized by load() or from_list() the
           returned value is `False`
     '''
@@ -301,8 +300,8 @@ class FilterInterface(object):
     '''
     :returns: the tuple of the all filter patterns.
       ::
-        (sync_remote_nodes, 
-        ignore_nodes, sync_nodes, 
+        (sync_remote_nodes,
+        ignore_nodes, sync_nodes,
         ignore_topics, sync_topics,
         ignore_services, sync_services,
         ignore_type)
@@ -328,19 +327,19 @@ class FilterInterface(object):
     '''
     Reads the tuple of
       ::
-      
-        (sync_remote_nodes, 
-        ignore_nodes, sync_nodes, 
+
+        (sync_remote_nodes,
+        ignore_nodes, sync_nodes,
         ignore_topics, sync_topics,
         ignore_services, sync_services,
         ignore_type,
         ignore_publishers, ignore_subscribers)`
-    
+
     with types
     `(bool, str, str, str, str, str, str, str)`
-     
+
     and creates the `FilterInterface` object.
-    
+
     :return: `FilterInterface` object or `None` on failure
     '''
     try:
@@ -367,14 +366,15 @@ class FilterInterface(object):
       print traceback.format_exc()
     return None
 
+
 def _to_str(re_object):
   if is_empty_pattern(re_object):
     return ''
   return re_object.pattern
+
 
 def _from_str(msg):
   if msg:
     return re.compile(msg, re.I)
   else:
     return EMPTY_PATTERN
-
