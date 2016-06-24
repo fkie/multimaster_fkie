@@ -81,6 +81,7 @@ class SyncThread(object):
     self.timestamp = timestamp
     self.timestamp_local = 0.
     self.timestamp_remote = 0.
+    self._online = True
 
     self.masteruri_local = masteruri_from_ros()
     rospy.logdebug("SyncThread[%s]: create this sync thread", self.name)
@@ -142,6 +143,25 @@ class SyncThread(object):
           result_set.add(n_n)
         self.__sync_info = SyncMasterInfo(self.uri, list(result_set), result_publisher, result_subscriber, result_services)
       return self.__sync_info
+
+  def set_online(self, value):
+    if value:
+      if not self._online:
+        with self.__lock_intern:
+          self._online = True
+          rospy.loginfo("SyncThread[%s]: perform resync after the host was offline (unregister and register again to avoid connection losses to python topic. These does not suppot reconnection!)", self.name)
+          if self._update_timer is not None:
+            self._update_timer.cancel()
+          self._unreg_on_finish()
+          self.__unregistered = False
+          self.__publisher = []
+          self.__subscriber = []
+          self.__services = []
+          self.timestamp = 0.
+          self.timestamp_local = 0.
+          self.timestamp_remote = 0.
+    else:
+      self._online = False
 
   def update(self, name, uri, discoverer_name, monitoruri, timestamp):
     '''

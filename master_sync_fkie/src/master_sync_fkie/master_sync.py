@@ -100,7 +100,7 @@ class Main(object):
           self.remove_master(data.master.name)
         elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
           m = data.master
-          self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri)
+          self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri, m.online)
 
   def obtain_masters(self):
     '''
@@ -124,7 +124,7 @@ class Main(object):
               for m in resp.masters:
                 if not self._re_ignore_hosts.match(m.name) or self._re_sync_hosts.match(m.name):  # do not sync to the master, if it is in ignore list
                   masters.append(m.name)
-                self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri)
+                self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri, m.online)
               for key in set(self.masters.keys()) - set(masters):
                 self.remove_master(self.masters[key].name)
             except rospy.ServiceException, e:
@@ -137,7 +137,7 @@ class Main(object):
       self.update_timer = threading.Timer(self.UPDATE_INTERVALL, self.obtain_masters)
       self.update_timer.start()
 
-  def update_master(self, mastername, masteruri, timestamp, timestamp_local, discoverer_name, monitoruri):
+  def update_master(self, mastername, masteruri, timestamp, timestamp_local, discoverer_name, monitoruri, online):
     '''
     Updates the timestamp of the given ROS master, or creates a new SyncThread to
     synchronize the local master with given ROS master.
@@ -153,6 +153,8 @@ class Main(object):
     @type discoverer_name: C{str}
     @param monitoruri: the URI of the RPC interface of the remote master_discoverer node.
     @type monitoruri: C{str}
+    @param online: the current state on the master.
+    @type online: C{bool}
     '''
     try:
       with self.__lock:
@@ -160,16 +162,17 @@ class Main(object):
           if (is_empty_pattern(self._re_ignore_hosts) or not self._re_ignore_hosts.match(mastername) or
              (not is_empty_pattern(self._re_sync_hosts) and self._re_sync_hosts.match(mastername) is not None)):
             # do not sync to the master, if it is in ignore list
-            if (mastername in self.masters):
-              # updates only, if local changes are occured
-              self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
-            else:
-              self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand)
-              if self.__own_state is not None:
-                self.masters[mastername].set_own_masterstate(MasterInfo.from_list(self.__own_state))
-              self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
-#              self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
-#              self.own_state_getter.start()
+            if self.__resync_on_reconnect and mastername in self.masters:
+              self.masters[mastername].set_online(online)
+            if online:
+              if mastername in self.masters:
+                  # updates only, if local changes are occured
+                  self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
+              else:
+                self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand)
+                if self.__own_state is not None:
+                  self.masters[mastername].set_own_masterstate(MasterInfo.from_list(self.__own_state))
+                self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
         elif self.__timestamp_local != timestamp_local and self.__sync_topics_on_demand:
           # get the master info from local discovery master and set it to all sync threads
           self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
@@ -209,7 +212,7 @@ class Main(object):
     '''
     try:
       with self.__lock:
-        if (ros_master_name in self.masters):
+        if ros_master_name in self.masters:
           m = self.masters.pop(ros_master_name)
           ident = uuid.uuid4()
           thread = threading.Thread(target=self._threading_stop_sync, args=(m, ident))
@@ -285,6 +288,7 @@ class Main(object):
       elif rospy.has_param('~sync_topics_on_demand'):
         self.__sync_topics_on_demand = rospy.get_param('~sync_topics_on_demand')
       rospy.loginfo("sync_topics_on_demand: %s", self.__sync_topics_on_demand)
+      self.__resync_on_reconnect = rospy.get_param('~resync_on_reconnect', True)
     except:
       import traceback
       # kill the ros node, to notify the user about the error

@@ -2,5 +2,7 @@
   <node name="master_sync" pkg="master_sync_fkie" type="master_sync">
     <rosparam param="ignore_nodes">[]</rosparam>
     <rosparam param="ignore_hosts">[]</rosparam>
+    <!-- Performs resync after the host was offline: unregister and register again to avoid connection losses to python topic. These does not suppot reconnection! -->
+    <param name="resync_on_reconnect" value="True" />
   </node>
 </launch>
