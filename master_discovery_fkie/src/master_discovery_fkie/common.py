@@ -32,6 +32,7 @@
 
 import os
 import re
+import xmlrpclib
 
 import roslib.names
 import rospy
@@ -40,6 +41,7 @@ import rospy
 import roslib; roslib.load_manifest('master_discovery_fkie')
 
 EMPTY_PATTERN = re.compile('\b', re.I)
+MASTERURI = None
 
 
 def masteruri_from_ros():
@@ -64,6 +66,27 @@ def masteruri_from_ros():
       return rosgraph.rosenv.get_master_uri()
   except:
     return os.environ['ROS_MASTER_URI']
+
+
+def masteruri_from_master():
+  '''
+  Requests the ROS master URI from the ROS master through the RPC interface and
+  returns it. The 'materuri' attribute will be set to the requested value.
+
+  :return: ROS master URI
+
+  :rtype: C{str} or C{None}
+  '''
+  global MASTERURI
+  result = MASTERURI
+  if MASTERURI is None:
+    masteruri = masteruri_from_ros()
+    result = masteruri
+    master = xmlrpclib.ServerProxy(masteruri)
+    code, _, MASTERURI = master.getUri(rospy.get_name())
+    if code == 1:
+      result = MASTERURI
+  return result
 
 
 def resolve_url(interface_url):

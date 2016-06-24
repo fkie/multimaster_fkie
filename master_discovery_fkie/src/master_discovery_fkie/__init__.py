@@ -32,12 +32,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-__author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
-__copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE"
-__license__ = "BSD"
-__version__ = "0.2.0"
-__date__ = "2012-02-01"
-
 import os
 import signal
 import sys
