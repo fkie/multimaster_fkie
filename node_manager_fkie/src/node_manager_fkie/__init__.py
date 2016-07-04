@@ -31,12 +31,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-__author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
-__copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
-__license__ = "BSD"
-__version__ = "0.5.4"  # git describe --tags --dirty --always
-__date__ = "2016-04-21"  # git log -1 --date=iso
-
 import argparse
 import os
 import socket
@@ -58,13 +52,16 @@ from node_manager_fkie.ssh_handler import SSHhandler, AuthenticationRequest
 from node_manager_fkie.start_handler import StartException, AdvRunCfg
 from node_manager_fkie.start_handler import StartHandler, BinarySelectionRequest
 
-
 PKG_NAME = 'node_manager_fkie'
 
-import roslib; roslib.load_manifest(PKG_NAME)
+__author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
+__copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
+__license__ = "BSD"
+__version__ = "0.5.4-20"  # git describe --tags --dirty --always
+__date__ = "2016-06-24"  # git log -1 --date=iso
 
-#PYTHONVER = (2, 7, 1)
-#if sys.version_info < PYTHONVER:
+# PYTHONVER = (2, 7, 1)
+# if sys.version_info < PYTHONVER:
 #  print 'For full scope of operation this application requires python version > %s, current: %s' % (str(PYTHONVER), sys.version_info)
 
 
@@ -87,6 +84,7 @@ _FILE_WATCHER = None
 _FILE_WATCHER_PARAM = None
 _QAPP = None
 
+
 def settings():
   '''
   @return: The global settings
@@ -94,12 +92,14 @@ def settings():
   '''
   return _SETTINGS
 
+
 def ssh():
   '''
   @return: The SSH handler to handle the SSH connections
   @rtype: L{SSHhandler}
   '''
   return _SSH_HANDLER
+
 
 def screen():
   '''
@@ -109,6 +109,7 @@ def screen():
   '''
   return _SCREEN_HANDLER
 
+
 def starter():
   '''
   @return: The start handler to handle the start of new ROS nodes on local or
@@ -116,6 +117,7 @@ def starter():
   @rtype: L{StartHandler}
   '''
   return _START_HANDLER
+
 
 def nameres():
   '''
@@ -125,12 +127,14 @@ def nameres():
   '''
   return _NAME_RESOLUTION
 
+
 def history():
   '''
   @return: The history of entered parameter.
   @rtype: L{History}
   '''
   return _HISTORY
+
 
 def file_watcher():
   '''
@@ -139,6 +143,7 @@ def file_watcher():
   '''
   return _FILE_WATCHER
 
+
 def file_watcher_param():
   '''
   @return: The file watcher object with all configuration files referenced by
@@ -146,6 +151,7 @@ def file_watcher_param():
   @rtype: L{FileWatcher}
   '''
   return _FILE_WATCHER_PARAM
+
 
 def get_ros_hostname(url):
   '''
@@ -157,6 +163,7 @@ def get_ros_hostname(url):
   @rtype:  C{str}
   '''
   return NameResolution.get_ros_hostname(url)
+
 
 def is_local(hostname, wait=False):
   '''
@@ -196,6 +203,7 @@ def is_local(hostname, wait=False):
       thread.start()
   return False
 
+
 def __is_local(hostname):
   '''
   Test the hostname whether it is local or not. Uses socket.gethostbyname().
@@ -213,15 +221,16 @@ def __is_local(hostname):
     HOSTS_CACHE[hostname] = result
   return result
 
+
 def finish(*arg):
   '''
   Callback called on exit of the ros node.
   '''
   # close all ssh sessions
-  if not _SSH_HANDLER is None:
+  if _SSH_HANDLER is not None:
     _SSH_HANDLER.close()
   # save the launch history
-  if not _HISTORY is None:
+  if _HISTORY is not None:
     try:
       _HISTORY.storeAll()
     except Exception as err:
@@ -230,7 +239,7 @@ def finish(*arg):
   # stop all threads in the main window
   if isinstance(_MAIN_FORM, MainWindow):
     _MAIN_FORM.finish()
-  if not _QAPP is None:
+  if _QAPP is not None:
     _QAPP.exit()
 
 
@@ -240,7 +249,8 @@ def set_terminal_name(name):
   @param name: New name of the terminal
   @type name:  C{str}
   '''
-  sys.stdout.write("\x1b]2;%s\x07"%name)
+  sys.stdout.write("\x1b]2;%s\x07" % name)
+
 
 def set_process_name(name):
   '''
@@ -251,15 +261,17 @@ def set_process_name(name):
   try:
     from ctypes import cdll, byref, create_string_buffer
     libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(len(name)+1)
+    buff = create_string_buffer(len(name) + 1)
     buff.value = name
     libc.prctl(15, byref(buff), 0, 0, 0)
   except:
     pass
 
+
 def init_settings():
   global _SETTINGS
   _SETTINGS = Settings()
+
 
 def init_globals(masteruri):
   '''
@@ -283,12 +295,13 @@ def init_globals(masteruri):
   _FILE_WATCHER_PARAM = FileWatcher()
 
   # test where the roscore is running (local or remote)
-  __is_local('localhost') ## fill cache
-  return __is_local(_NAME_RESOLUTION.getHostname(masteruri))  # # fill cache
+  __is_local('localhost')  # fill cache
+  return __is_local(_NAME_RESOLUTION.getHostname(masteruri))  # fill cache
+
 
 def init_arg_parser():
   parser = argparse.ArgumentParser()
-  parser.add_argument("--version", action="version", version="%s %s" % ( "%(prog)s", __version__))
+  parser.add_argument("--version", action="version", version="%s %s" % ("%(prog)s", __version__))
   parser.add_argument("-f", "--file", nargs=1, help="loads the given file as default on start")
   parser.add_argument("-m", "--muri", nargs=1, default='', help="starts ROS master with given URI, usefull on hosts "
                                                                 "with multiple interfaces. ROS_HOSTNAME will be set "
@@ -300,6 +313,7 @@ def init_arg_parser():
   group.add_argument("--ssh", action="store_true", help="connects via SSH")
 
   return parser
+
 
 def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use_ssh=False):
   '''
@@ -316,6 +330,7 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
   _SSH_HANDLER = SSHhandler()
   return EchoDialog(topic_name, topic_type, hz, masteruri, use_ssh=use_ssh)
 
+
 def init_main_window(prog_name, masteruri, launch_files=[]):
   '''
   Intialize the environment to start Node Manager.
@@ -324,7 +339,7 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
   StartHandler._prepareROSMaster(masteruri)
   # setup the loglevel
   try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "INFO"))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "DEBUG"))
   except Exception as err:
     print "Error while set the log level: %s\n->INFO level will be used!" % err
     log_level = rospy.INFO
@@ -335,9 +350,10 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
   local_master = init_globals(masteruri)
   return MainWindow(launch_files, not local_master, launch_files)
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%                 MAIN                               %%%%%%%%
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%                 MAIN                               %%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 def main(name):
   '''
@@ -357,8 +373,8 @@ def main(name):
   parsed_args = parser.parse_args(args[1:])
   if parsed_args.muri:
     masteruri = parsed_args.muri[0]
-    os.environ['ROS_MASTER_URI'] = masteruri
     hostname = NameResolution.get_ros_hostname(masteruri)
+    os.environ['ROS_MASTER_URI'] = masteruri
     if hostname:
       os.environ['ROS_HOSTNAME'] = hostname
   masteruri = settings().masteruri()
@@ -385,8 +401,8 @@ def main(name):
     os.chdir(settings().PACKAGE_DIR)
 #    _MAIN_FORM.resize(1024, 720)
     screen_size = QtGui.QApplication.desktop().availableGeometry()
-    if (_MAIN_FORM.size().width() >= screen_size.width()
-        or _MAIN_FORM.size().height() >= screen_size.height() - 24):
+    if (_MAIN_FORM.size().width() >= screen_size.width() or
+       _MAIN_FORM.size().height() >= screen_size.height() - 24):
       _MAIN_FORM.showMaximized()
     else:
       _MAIN_FORM.show()

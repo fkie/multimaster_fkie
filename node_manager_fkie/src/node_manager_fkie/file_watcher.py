@@ -38,6 +38,7 @@ try:
 except:
   pass
 
+
 class FileWatcher(QtCore.QObject):
   '''
   A class to watch for file changes.
@@ -73,10 +74,10 @@ class FileWatcher(QtCore.QObject):
     L{FileWatcher.file_changed} signal will be emitted.
     '''
     # to avoid to handle from QFileSystemWatcher fired the signal two times
-    if (not self.changed.has_key(filepath) or (self.changed.has_key(filepath) and self.changed[filepath] + 0.05 < time.time())):
+    if (filepath not in self.changed or (filepath in self.changed and self.changed[filepath] + 0.05 < time.time())):
       self.changed[filepath] = time.time()
       launch_changes = []
-      for (uri, lfile, _), files in self.launches.items():#_:=id
+      for (uri, lfile, _), files in self.launches.items():  # _:=id
         if filepath in files:
           launch_changes.append((uri, lfile))
       if launch_changes:
@@ -89,7 +90,7 @@ class FileWatcher(QtCore.QObject):
         self.binary_changed.emit(filepath, binaries_changed)
 
   def add_launch(self, masteruri, launch_file, launch_id, files):
-    if self.launches.has_key((masteruri, launch_file, launch_id)):
+    if (masteruri, launch_file, launch_id) in self.launches:
       self.launches[(masteruri, launch_file, launch_id)].extend([os.path.normpath(f) for f in files])
     else:
       self.launches[(masteruri, launch_file, launch_id)] = [os.path.normpath(f) for f in files]
@@ -109,8 +110,6 @@ class FileWatcher(QtCore.QObject):
           if uri == masteruri:
             del self.launches[(uri, cfgfile, cfgid)]
     except:
-#      import traceback
-#      print traceback.format_exc(1)
       pass
     self.update_files()
 
@@ -138,4 +137,3 @@ class FileWatcher(QtCore.QObject):
       self.file_watcher.removePaths(files)
     if list(result):
       self.file_watcher.addPaths(list(result))
-

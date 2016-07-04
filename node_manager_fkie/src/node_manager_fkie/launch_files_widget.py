@@ -29,20 +29,19 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import os
-#from datetime import datetime
-
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+import os
 
 import rospy
 
-from .common import package_name#, masteruri_from_ros
+from .common import package_name  # , masteruri_from_ros
 from .detailed_msg_box import WarningMessageBox
 from .launch_list_model import LaunchListModel, LaunchItem
-from .progress_queue import ProgressQueue#, ProgressThread
 from .parameter_dialog import ParameterDialog
+from .progress_queue import ProgressQueue  # , ProgressThread
+
 
 class LaunchFilesWidget(QtGui.QDockWidget):
   '''
@@ -95,7 +94,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     self.loadDeafaultAtHostAct = QtGui.QAction("&Load default config on host", self, statusTip="Loads the default config at given host", triggered=self.on_load_as_default_at_host)
     start_menu.addAction(self.loadDeafaultAtHostAct)
     self.loadXmlAsDefaultButton.setMenu(start_menu)
-    #initialize the progress queue
+    # initialize the progress queue
     self.progress_queue = ProgressQueue(self.progressFrame_cfg, self.progressBar_cfg, self.progressCancelButton_cfg)
 
   def stop(self):
@@ -114,7 +113,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
       try:
         lfile = self.launchlist_model.expandItem(item.name, item.path, item.id)
         self.searchPackageLine.setText('')
-        if not lfile is None:
+        if lfile is not None:
           if item.isLaunchFile():
             self.launchlist_model.add2LoadHistory(item.path)
             key_mod = QtGui.QApplication.keyboardModifiers()
@@ -127,10 +126,10 @@ class LaunchFilesWidget(QtGui.QDockWidget):
           elif item.isConfigFile():
             self.edit_signal.emit([lfile])
       except Exception as e:
-        rospy.logwarn("Error while load launch file %s: %s"%(item, e))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Load error", 
-                          'Error while load launch file:\n%s'%item.name,
-                          "%s"%e).exec_()
+        rospy.logwarn("Error while load launch file %s: %s" % (item, e))
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Load error",
+                          'Error while load launch file:\n%s' % item.name,
+                          "%s" % e).exec_()
 #        self.launchlist_model.reloadCurrentPath()
 
   def on_xmlFileView_selection_changed(self, selected, deselected):
@@ -164,12 +163,12 @@ class LaunchFilesWidget(QtGui.QDockWidget):
 
   def on_edit_xml_clicked(self):
     '''
-    Opens an XML editor to edit the launch file. 
+    Opens an XML editor to edit the launch file.
     '''
     selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
     for item in selected:
       path = self.launchlist_model.expandItem(item.name, item.path, item.id)
-      if not path is None:
+      if path is not None:
         self.edit_signal.emit([path])
 
   def on_new_xml_clicked(self):
@@ -178,18 +177,18 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     '''
     # get new file from open dialog, use last path if one exists
     open_path = self.__current_path
-    if not self.launchlist_model.currentPath is None:
+    if self.launchlist_model.currentPath is not None:
       open_path = self.launchlist_model.currentPath
     (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
-                                                 "New launch file",
-                                                 open_path,
-                                                 "Config files (*.launch *.yaml);;All files (*)")
+                                                      "New launch file",
+                                                      open_path,
+                                                      "Config files (*.launch *.yaml);;All files (*)")
     if fileName:
       try:
-        (pkg, _) = package_name(os.path.dirname(fileName))#_:=pkg_path
+        (pkg, _) = package_name(os.path.dirname(fileName))  # _:=pkg_path
         if pkg is None:
-          WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
-                         'The new file is not in a ROS package').exec_()
+          WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error",
+                            'The new file is not in a ROS package').exec_()
           return
         with open(fileName, 'w+') as f:
           f.write("<launch>\n"
@@ -207,15 +206,15 @@ class LaunchFilesWidget(QtGui.QDockWidget):
         self.launchlist_model.setPath(self.__current_path)
         self.edit_signal.emit([fileName])
       except EnvironmentError as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error", 
-                         'Error while create a new file',
-                          '%s'%e).exec_()
+        WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error",
+                          'Error while create a new file',
+                          '%s' % e).exec_()
 
   def on_open_xml_clicked(self):
     (fileName, _) = QtGui.QFileDialog.getOpenFileName(self,
-                                                 "Load launch file", 
-                                                 self.__current_path, 
-                                                 "Config files (*.launch);;All files (*)")
+                                                      "Load launch file",
+                                                      self.__current_path,
+                                                      "Config files (*.launch);;All files (*)")
     if fileName:
       self.__current_path = os.path.dirname(fileName)
       self.launchlist_model.add2LoadHistory(fileName)
@@ -229,7 +228,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     paths = list()
     for item in selected:
       path = self.launchlist_model.expandItem(item.name, item.path, item.id)
-      if not path is None:
+      if path is not None:
         paths.append(path)
     if paths:
       self.transfer_signal.emit(paths)
@@ -242,43 +241,42 @@ class LaunchFilesWidget(QtGui.QDockWidget):
     selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
     for item in selected:
       path = self.launchlist_model.expandItem(item.name, item.path, item.id)
-      if not path is None:
+      if path is not None:
         self.launchlist_model.add2LoadHistory(path)
         self.load_signal.emit(path)
 
   def on_load_as_default_at_host(self):
     '''
-    Tries to load the selected launch file as default configuration. The button 
-    is only enabled and this method is called, if the button was enabled by 
+    Tries to load the selected launch file as default configuration. The button
+    is only enabled and this method is called, if the button was enabled by
     on_launch_selection_clicked()
     '''
     selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
     for item in selected:
       path = self.launchlist_model.expandItem(item.name, item.path, item.id)
-      if not path is None:
-        params = {'Host' : ('string', 'localhost') }
+      if path is not None:
+        params = {'Host': ('string', 'localhost')}
         dia = ParameterDialog(params)
         dia.setFilterVisible(False)
         dia.setWindowTitle('Start node on...')
-        dia.resize(350,120)
+        dia.resize(350, 120)
         dia.setFocusField('Host')
         if dia.exec_():
           try:
             params = dia.getKeywords()
             host = params['Host']
-            rospy.loginfo("LOAD the launch file on host %s as default: %s"%(host, path))
+            rospy.loginfo("LOAD the launch file on host %s as default: %s" % (host, path))
             self.launchlist_model.add2LoadHistory(path)
             self.load_as_default_signal.emit(path, host)
           except Exception, e:
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Load default config error", 
-                             'Error while parse parameter',
-                              '%s'%e).exec_()
-
+            WarningMessageBox(QtGui.QMessageBox.Warning, "Load default config error",
+                              'Error while parse parameter',
+                              '%s' % e).exec_()
 
   def on_load_as_default(self):
     '''
-    Tries to load the selected launch file as default configuration. The button 
-    is only enabled and this method is called, if the button was enabled by 
+    Tries to load the selected launch file as default configuration. The button
+    is only enabled and this method is called, if the button was enabled by
     on_launch_selection_clicked()
     '''
     key_mod = QtGui.QApplication.keyboardModifiers()
@@ -288,7 +286,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
       selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
       for item in selected:
         path = self.launchlist_model.expandItem(item.name, item.path, item.id)
-        if not path is None:
+        if path is not None:
           rospy.loginfo("LOAD the launch file as default: %s", path)
           self.launchlist_model.add2LoadHistory(path)
           self.load_as_default_signal.emit(path, None)
@@ -299,7 +297,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
       if index.column() == 0:
         model_index = self.launchlist_proxyModel.mapToSource(index)
         item = self.launchlist_model.itemFromIndex(model_index)
-        if not item is None and isinstance(item, LaunchItem):
+        if item is not None and isinstance(item, LaunchItem):
           result.append(item)
     return result
 
@@ -334,7 +332,7 @@ class LaunchFilesWidget(QtGui.QDockWidget):
           indexes.append(self.launchlist_proxyModel.mapToSource(s))
         self.launchlist_model.copy_to_clipboard(indexes)
     if self.searchPackageLine.hasFocus() and event.key() == QtCore.Qt.Key_Escape:
-      # cancel package filtering on pressing ESC 
+      # cancel package filtering on pressing ESC
       self.launchlist_model.show_packages(False)
       self.searchPackageLine.setText('')
       self.xmlFileView.setFocus(QtCore.Qt.ActiveWindowFocusReason)

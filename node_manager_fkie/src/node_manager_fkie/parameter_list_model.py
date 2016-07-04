@@ -37,7 +37,7 @@ from xmlrpclib import Binary
 
 class ParameterValueItem(QtGui.QStandardItem):
   '''
-  The parameter item is stored in the parameter model. This class stores the name 
+  The parameter item is stored in the parameter model. This class stores the name
   and value of a parameter of ROS parameter server and shows the value.
   '''
 
@@ -110,9 +110,10 @@ class ParameterValueItem(QtGui.QStandardItem):
       return unicode(self.value) > unicode(item.value)
     return False
 
+
 class ParameterNameItem(QtGui.QStandardItem):
   '''
-  The parameter item is stored in the parameter model. This class stores the name 
+  The parameter item is stored in the parameter model. This class stores the name
   and value of a parameter of ROS parameter server and shows the name.
   '''
 
@@ -184,7 +185,7 @@ class ParameterNameItem(QtGui.QStandardItem):
 
 class ParameterTypeItem(QtGui.QStandardItem):
   '''
-  The parameter item is stored in the parameter model. This class stores the name 
+  The parameter item is stored in the parameter model. This class stores the name
   and value of a parameter of ROS parameter server and shows the name.
   '''
 
@@ -254,7 +255,6 @@ class ParameterTypeItem(QtGui.QStandardItem):
     return False
 
 
-
 class ParameterModel(QtGui.QStandardItemModel):
   '''
   The model to manage the list with parameter in ROS network.
@@ -263,7 +263,7 @@ class ParameterModel(QtGui.QStandardItemModel):
             ('Type', 50),
             ('Value', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
-  
+
   def __init__(self):
     '''
     Creates a new list model.
@@ -288,9 +288,9 @@ class ParameterModel(QtGui.QStandardItemModel):
 
   def updateModelData(self, parameters):
     '''
-    Updates the parameter list model. New parameter will be inserted in sorting 
+    Updates the parameter list model. New parameter will be inserted in sorting
     order. Not available parameter removed from the model.
-    @param parameters: The dictionary with parameter 
+    @param parameters: The dictionary with parameter
     @type parameters: C{dict(parameter name : value)}
     '''
     parameter_names = parameters.keys()
@@ -298,7 +298,7 @@ class ParameterModel(QtGui.QStandardItemModel):
     # remove not available items
     for i in reversed(range(root.rowCount())):
       parameterItem = root.child(i)
-      if not parameterItem.name in parameter_names:
+      if parameterItem.name not in parameter_names:
         root.removeRow(i)
     # add new items
     for (name, value) in parameters.items():
@@ -320,7 +320,7 @@ class ParameterModel(QtGui.QStandardItemModel):
 
   def createParameter(self, name, value):
     '''
-    Creates the list of the items. This list is used for the 
+    Creates the list of the items. This list is used for the
     visualization of the parameter as a table row.
     @param name: the parameter name
     @type name: C{str}

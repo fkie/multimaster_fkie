@@ -30,32 +30,32 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import time
+from python_qt_binding import QtCore
+import random
 import socket
 import threading
+import time
 import xmlrpclib
-import random
-from python_qt_binding import QtCore
 
-#import roslib; roslib.load_manifest('node_manager_fkie')
 import rospy
 
 from master_discovery_fkie.master_info import MasterInfo
 
+
 class UpdateThread(QtCore.QObject, threading.Thread):
   '''
-  A thread to retrieve the state about ROS master from remote discovery node and 
+  A thread to retrieve the state about ROS master from remote discovery node and
   publish it be sending a QT signal.
   '''
   update_signal = QtCore.Signal(MasterInfo)
   '''
-  @ivar: update_signal is a signal, which is emitted, if a new 
+  @ivar: update_signal is a signal, which is emitted, if a new
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
 
   master_errors_signal = QtCore.Signal(str, list)
   '''
-  @ivar: master_errors_signal is a signal (masteruri, list of errors), 
+  @ivar: master_errors_signal is a signal (masteruri, list of errors),
   which is emitted, if we get a list with errors from remote master_discovery.
   '''
 
@@ -91,10 +91,10 @@ class UpdateThread(QtCore.QObject, threading.Thread):
     '''
     '''
     try:
-      delay = self._delayed_exec+0.5+random.random()
-      #'print "wait request update", self._monitoruri, delay
+      delay = self._delayed_exec + 0.5 + random.random()
+      # 'print "wait request update", self._monitoruri, delay
       time.sleep(delay)
-      #'print "request update", self._monitoruri
+      # 'print "request update", self._monitoruri
       socket.setdefaulttimeout(25)
       remote_monitor = xmlrpclib.ServerProxy(self._monitoruri)
       # get first master errors
@@ -102,27 +102,27 @@ class UpdateThread(QtCore.QObject, threading.Thread):
         muri, errors = remote_monitor.masterErrors()
         self.master_errors_signal.emit(muri, errors)
       except xmlrpclib.Fault as err:
-        rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!"%self._masteruri)
+        rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
       # get the time difference
       try:
         myts = time.time()
         muri, remote_ts = remote_monitor.getCurrentTime()
-        self.timediff_signal.emit(muri, remote_ts-myts-(time.time()-myts)/2.0)
+        self.timediff_signal.emit(muri, remote_ts - myts - (time.time() - myts) / 2.0)
       except xmlrpclib.Fault as errts:
-        rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!"%self._masteruri)
+        rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
       # now get master info from master discovery
       remote_info = remote_monitor.masterInfo()
       master_info = MasterInfo.from_list(remote_info)
       master_info.check_ts = time.time()
-      #'print "request success", self._monitoruri
+      # 'print "request success", self._monitoruri
       self.update_signal.emit(master_info)
     except:
       import traceback
 #      print traceback.print_exc()
       formatted_lines = traceback.format_exc(1).splitlines()
       rospy.logwarn("Cannot update ROS state, connection to %s failed:\n\t%s", str(self._monitoruri), formatted_lines[-1])
-      #'print "request failed", self._monitoruri
+      # 'print "request failed", self._monitoruri
       self.error_signal.emit(self._masteruri, formatted_lines[-1])
     finally:
-      if not socket is None:
+      if socket is not None:
         socket.setdefaulttimeout(None)

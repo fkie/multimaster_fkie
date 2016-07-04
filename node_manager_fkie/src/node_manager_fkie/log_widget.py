@@ -29,18 +29,18 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import os
 from datetime import datetime
-
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+import os
 
 from .rosout_listener import RosoutListener
 
+
 class LogWidget(QtGui.QDockWidget):
   '''
-  The collect the the warning log messages from rosout and print it in a text 
+  The collect the the warning log messages from rosout and print it in a text
   browser.
   '''
 
@@ -104,9 +104,9 @@ class LogWidget(QtGui.QDockWidget):
     self._log_info_count += 1
     text = ('<pre style="padding:10px;"><dt><font color="#000000">'
             '<b>[INFO]</b> %s (%s:%s:%s):'
-            '<br>%s</font></dt></pre>'%(self._formated_ts(msg.header.stamp),
-                                        msg.file, msg.function, msg.line,
-                                        msg.msg))
+            '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
     self.textBrowser.append(text)
     self._update_info_label()
 
@@ -114,9 +114,9 @@ class LogWidget(QtGui.QDockWidget):
     self._log_warn_count += 1
     text = ('<pre style="padding:10px;"><dt><font color="#FE9A2E">'
             '<b>[WARN]</b> %s (%s:%s:%s):'
-            '<br>%s</font></dt></pre>'%(self._formated_ts(msg.header.stamp),
-                                        msg.file, msg.function, msg.line,
-                                        msg.msg))
+            '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
     self.textBrowser.append(text)
     self._update_info_label()
 
@@ -124,9 +124,9 @@ class LogWidget(QtGui.QDockWidget):
     self._log_err_count += 1
     text = ('<pre style="padding:10px;"><dt><font color="#DF0101">'
             '<b>[ERROR]</b> %s (%s:%s:%s):'
-            '<br>%s</font></dt></pre>'%(self._formated_ts(msg.header.stamp),
-                                        msg.file, msg.function, msg.line,
-                                        msg.msg))
+            '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
     self.textBrowser.append(text)
     self._update_info_label()
 
@@ -134,9 +134,9 @@ class LogWidget(QtGui.QDockWidget):
     self._log_fatal_count += 1
     text = ('<pre style="padding:10px;"><dt><font color="#610B0B">'
             '<b>[FATAL]</b> %s (%s:%s:%s):'
-            '<br>%s</font></dt></pre>'%(self._formated_ts(msg.header.stamp),
-                                        msg.file, msg.function, msg.line,
-                                        msg.msg))
+            '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
     self.textBrowser.append(text)
     self._update_info_label()
 
@@ -147,13 +147,13 @@ class LogWidget(QtGui.QDockWidget):
   def _update_info_label(self):
     info_text = ''
     if self._log_info_count > 0:
-      info_text = '%s INFO: %d   '%(info_text, self._log_info_count)
+      info_text = '%s INFO: %d   ' % (info_text, self._log_info_count)
     if self._log_warn_count > 0:
-      info_text = '%s WARN: %d   '%(info_text, self._log_warn_count)
+      info_text = '%s WARN: %d   ' % (info_text, self._log_warn_count)
     if self._log_err_count > 0:
-      info_text = '%s ERROR: %d   '%(info_text, self._log_err_count)
+      info_text = '%s ERROR: %d   ' % (info_text, self._log_err_count)
     if self._log_fatal_count > 0:
-      info_text = '%s FATAL: %d'%(info_text, self._log_fatal_count)
+      info_text = '%s FATAL: %d' % (info_text, self._log_fatal_count)
     self.infoLabel.setText(info_text)
     self.added_signal.emit(self._log_info_count, self._log_warn_count,
                            self._log_err_count, self._log_fatal_count)

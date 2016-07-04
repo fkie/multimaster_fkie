@@ -30,10 +30,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from python_qt_binding import QtCore, QtGui
 import subprocess
 import threading
-
-from python_qt_binding import QtCore, QtGui
 
 from .detailed_msg_box import WarningMessageBox
 
@@ -88,7 +87,7 @@ class SupervisedPopen(QtCore.QObject, subprocess.Popen):
     '''
     self.wait()
     result_err = ''
-    if not self.stderr is None:
+    if self.stderr is not None:
       result_err = self.stderr.read()
     if result_err:
       self.error.emit(self._object_id, self._description, result_err)
@@ -96,5 +95,4 @@ class SupervisedPopen(QtCore.QObject, subprocess.Popen):
 
   def on_error(self, object_id, descr, msg):
     WarningMessageBox(QtGui.QMessageBox.Warning, object_id, '%s\n\n'
-                      '%s'%(descr, msg), ' '.join(self._args)).exec_()
-
+                      '%s' % (descr, msg), ' '.join(self._args)).exec_()

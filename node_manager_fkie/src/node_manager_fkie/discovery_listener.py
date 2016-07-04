@@ -41,17 +41,14 @@ from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnection
 import master_discovery_fkie.interface_finder as interface_finder
 
 
-import roslib; roslib.load_manifest('node_manager_fkie')
-
 try:
   import std_srvs.srv
-  from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster#, LinkState, SyncMasterInfo, SyncTopicInfo
-  from multimaster_msgs_fkie.srv import DiscoverMasters#, GetSyncInfo
+  from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster  # , LinkState, SyncMasterInfo, SyncTopicInfo
+  from multimaster_msgs_fkie.srv import DiscoverMasters  # , GetSyncInfo
 except ImportError, e:
   import sys
   print >> sys.stderr, "Can't import massages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
   raise ImportError(str(e))
-
 
 
 class MasterListService(QtCore.QObject):
@@ -64,10 +61,10 @@ class MasterListService(QtCore.QObject):
   '''@ivar: a signal with a list of the masters retrieved from the master_discovery service 'list_masters'.
   ParameterB{:} C{masteruri}, C{service name}, C{[L{master_discovery_fkie.ROSMaster}, ...]}'''
   masterlist_err_signal = QtCore.Signal(str, str)
-  '''@ivar: this signal is emitted if an error while calling #list_masters' 
+  '''@ivar: this signal is emitted if an error while calling #list_masters'
   service of master_discovery is failed.
   ParameterB{:} C{masteruri}, C{error}'''
-  
+
   def __init__(self):
     QtCore.QObject.__init__(self)
     self.__serviceThreads = {}
@@ -81,8 +78,8 @@ class MasterListService(QtCore.QObject):
 
   def retrieveMasterList(self, masteruri, wait=False):
     '''
-    This method use the service 'list_masters' of the master_discovery to get 
-    the list of discovered ROS master. The retrieved list will be emitted as 
+    This method use the service 'list_masters' of the master_discovery to get
+    the list of discovered ROS master. The retrieved list will be emitted as
     masterlist_signal.
     @param masteruri: the ROS master URI
     @type masteruri: C{str}
@@ -90,7 +87,7 @@ class MasterListService(QtCore.QObject):
     @type wait: C{boolean}
     '''
     with self._lock:
-      if not (self.__serviceThreads.has_key(masteruri)):
+      if masteruri not in self.__serviceThreads:
         upthread = MasterListThread(masteruri, wait)
         upthread.master_list_signal.connect(self._on_master_list)
         upthread.err_signal.connect(self._on_err)
@@ -107,7 +104,7 @@ class MasterListService(QtCore.QObject):
     @type wait: C{boolean}
     '''
     with self._lock:
-      if not (self.__serviceThreads.has_key(masteruri)):
+      if masteruri not in self.__serviceThreads:
         upthread = MasterRefreshThread(masteruri, wait)
         upthread.ok_signal.connect(self._on_ok)
         upthread.err_signal.connect(self._on_err)
@@ -143,7 +140,7 @@ class MasterListService(QtCore.QObject):
 
 class MasterListThread(QtCore.QObject, threading.Thread):
   '''
-  A thread to to retrieve the list of discovered ROS master from master_discovery 
+  A thread to to retrieve the list of discovered ROS master from master_discovery
   service and publish it by sending a QT signal.
   '''
   master_list_signal = QtCore.Signal(str, str, list)
@@ -185,6 +182,7 @@ class MasterListThread(QtCore.QObject, threading.Thread):
       if not found:
         self.err_signal.emit(self._masteruri, "no service 'list_masters' found on %s" % self._masteruri)
 
+
 class MasterRefreshThread(QtCore.QObject, threading.Thread):
   '''
   A thread to call the refresh service of master discovery.
@@ -212,11 +210,11 @@ class MasterRefreshThread(QtCore.QObject, threading.Thread):
         socket.setdefaulttimeout(3)
         refreshMasters = rospy.ServiceProxy(service_name, std_srvs.srv.Empty)
         try:
-          resp = refreshMasters()
+          _ = refreshMasters()
           self.ok_signal.emit(self._masteruri)
         except rospy.ServiceException, e:
           rospy.logwarn("ERROR Service call 'refresh' failed: %s", str(e))
-          self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s"%err_msg)
+          self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % err_msg)
         finally:
           socket.setdefaulttimeout(None)
 
@@ -227,12 +225,12 @@ class MasterStateTopic(QtCore.QObject):
   will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
   '''
   state_signal = QtCore.Signal(MasterState)
-  '''@ivar: a signal to inform the receiver about new master state. 
+  '''@ivar: a signal to inform the receiver about new master state.
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
 
   def registerByROS(self, masteruri, wait=False):
     '''
-    This method creates a ROS subscriber to received the notifications of ROS 
+    This method creates a ROS subscriber to received the notifications of ROS
     master updates. The retrieved messages will be emitted as state_signal.
     @param masteruri: the ROS master URI
     @type masteruri: C{str}
@@ -259,7 +257,7 @@ class MasterStateTopic(QtCore.QObject):
         try:
           s.unregister()
         except Exception as e:
-          rospy.logwarn("Error while unregister master state topic %s"%e)
+          rospy.logwarn("Error while unregister master state topic %s" % e)
       del self.sub_changes
 
   def handlerMasterStateMsg(self, msg):
@@ -283,7 +281,7 @@ class MasterStatisticTopic(QtCore.QObject):
 
   def registerByROS(self, masteruri, wait=False):
     '''
-    This method creates a ROS subscriber to received the notifications of 
+    This method creates a ROS subscriber to received the notifications of
     connection updates. The retrieved messages will be emitted as stats_signal.
     @param masteruri: the ROS master URI
     @type masteruri: str
@@ -312,7 +310,7 @@ class MasterStatisticTopic(QtCore.QObject):
 
   def handlerMasterStatsMsg(self, msg):
     '''
-    The method to handle the received LinkStatesStamped messages. The received 
+    The method to handle the received LinkStatesStamped messages. The received
     message will be emitted as stats_signal.
     @param msg: the received message
     @type msg: L{master_discovery_fkie.LinkStatesStamped}
@@ -322,21 +320,21 @@ class MasterStatisticTopic(QtCore.QObject):
 
 class OwnMasterMonitoring(QtCore.QObject):
   '''
-  A class to monitor the state of the master. Will be used, if no master 
-  discovering is available. On changes the 'state_signal' of type 
+  A class to monitor the state of the master. Will be used, if no master
+  discovering is available. On changes the 'state_signal' of type
   L{master_discovery_fkie.msg.MasterState} will be emitted.
   '''
   state_signal = QtCore.Signal(MasterState)
-  '''@ivar: a signal to inform the receiver about new master state. 
+  '''@ivar: a signal to inform the receiver about new master state.
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
-  
+
   err_signal = QtCore.Signal(str)
-  '''@ivar: a signal to inform about an error. 
+  '''@ivar: a signal to inform about an error.
   Parameter: L{str}'''
-  
+
   ROSMASTER_HZ = 1
   '''@ivar: the rate to test ROS master for changes.'''
-  
+
   def init(self, monitor_port):
     '''
     Creates the local monitoring. Call start() to run the local monitoring.
@@ -346,14 +344,12 @@ class OwnMasterMonitoring(QtCore.QObject):
     self._master_monitor = MasterMonitor(monitor_port, False)
     self._do_pause = True
     self._do_finish = False
-#    self._local_addr = roslib.network.get_local_address()
-#    self._masteruri = roslib.rosenv.get_master_uri()
     self._masteruri = self._master_monitor.getMasteruri()
     self._local_addr = self._master_monitor.getMastername()
-    self._masterMonitorThread = threading.Thread(target = self.mastermonitor_loop)
+    self._masterMonitorThread = threading.Thread(target=self.mastermonitor_loop)
     self._masterMonitorThread.setDaemon(True)
     self._masterMonitorThread.start()
-    self._last_error = (time.time(),None)
+    self._last_error = (time.time(), None)
 
   def stop(self):
     '''
@@ -381,33 +377,33 @@ class OwnMasterMonitoring(QtCore.QObject):
           if self._master_monitor.checkState():
             mon_state = self._master_monitor.getCurrentState()
             # publish the new state
-            state = MasterState(MasterState.STATE_CHANGED, 
-                                ROSMaster(str(self._local_addr), 
-                                          str(self._masteruri), 
-                                          mon_state.timestamp, 
+            state = MasterState(MasterState.STATE_CHANGED,
+                                ROSMaster(str(self._local_addr),
+                                          str(self._masteruri),
+                                          mon_state.timestamp,
                                           mon_state.timestamp_local,
-                                          True, 
-                                          rospy.get_name(), 
-                                          ''.join(['http://localhost:',str(self._master_monitor.rpcport)])))
+                                          True,
+                                          rospy.get_name(),
+                                          ''.join(['http://localhost:', str(self._master_monitor.rpcport)])))
             self.state_signal.emit(state)
           # adapt the check rate to the CPU usage time
           cputimes = os.times()
           cputime = cputimes[0] + cputimes[1] - cputime_init
-          if current_check_hz*cputime > 0.20:
-            current_check_hz = float(current_check_hz)/2.0
-          elif current_check_hz*cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
-            current_check_hz = float(current_check_hz)*2.0
+          if current_check_hz * cputime > 0.20:
+            current_check_hz = float(current_check_hz) / 2.0
+          elif current_check_hz * cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
+            current_check_hz = float(current_check_hz) * 2.0
       except MasterConnectionException, mce:
         self._handle_exception("MasterConnectionException while master check loop", mce)
       except RuntimeError, ree:
         # will thrown on exit of the app while try to emit the signal
         self._handle_exception("RuntimeError while master check loop", ree)
       if not rospy.is_shutdown() and not self._do_finish:
-        time.sleep(1.0/current_check_hz)
+        time.sleep(1.0 / current_check_hz)
 
   def _handle_exception(self, prefix, exception):
-    text = '%s: %s'%(prefix, exception)
-    if self._last_error[1] != text or time.time()-self._last_error[0] > 60:
+    text = '%s: %s' % (prefix, exception)
+    if self._last_error[1] != text or time.time() - self._last_error[0] > 60:
       self._last_error = (time.time(), text)
       rospy.logwarn(text)
     self.err_signal.emit(text)
@@ -428,4 +424,3 @@ class OwnMasterMonitoring(QtCore.QObject):
     @rtype: C{boolean}
     '''
     return self._do_pause
-

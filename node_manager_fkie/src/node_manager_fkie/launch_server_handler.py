@@ -42,17 +42,17 @@ import rospy
 
 class LaunchServerHandler(QtCore.QObject):
   '''
-  A class to retrieve the state of launch servers. To retrieve the state a new 
+  A class to retrieve the state of launch servers. To retrieve the state a new
   thread will be created.
   '''
   launch_server_signal = QtCore.Signal(str, int, list)
   '''
-  @ivar: launch_server_signal is a signal (serveruri, pid, nodes), which is emitted, if a info from 
+  @ivar: launch_server_signal is a signal (serveruri, pid, nodes), which is emitted, if a info from
   launch server was successful retrieved.
   '''
   error_signal = QtCore.Signal(str, str)
   '''
-  @ivar: error_signal is a signal (serveruri, error message), which is emitted, 
+  @ivar: error_signal is a signal (serveruri, error message), which is emitted,
   if an error while retrieving a launch server info was occurred.
   '''
 
@@ -78,9 +78,9 @@ class LaunchServerHandler(QtCore.QObject):
     the given RCP uri of the launch server. If all informations are
     retrieved, a C{launch_server_signal} of this class will be emitted. If for given
     serveruri a thread is already running, it will be inserted to the requested
-    updates. For the same serveruri only one requested update can be stored. 
+    updates. For the same serveruri only one requested update can be stored.
     On update error the requested update will be ignored.
-    This method is thread safe. 
+    This method is thread safe.
 
     @param serveruri: the URI of the remote launch server
     @type serveruri: C{str}
@@ -89,7 +89,7 @@ class LaunchServerHandler(QtCore.QObject):
     '''
     with self._lock:
       try:
-        if (self.__updateThreads.has_key(serveruri)):
+        if serveruri in self.__updateThreads:
           self.__requestedUpdates[serveruri] = delayed_exec
         else:
           self.__create_update_thread(serveruri, delayed_exec)
@@ -112,8 +112,6 @@ class LaunchServerHandler(QtCore.QObject):
         delayed_exec = self.__requestedUpdates.pop(serveruri)
         self.__create_update_thread(serveruri, delayed_exec)
       except KeyError:
-  #      import traceback
-  #      print traceback.format_exc(1)
         pass
       except:
         import traceback
@@ -146,20 +144,20 @@ class LaunchServerUpdateThread(QtCore.QObject, threading.Thread):
     '''
     '''
     try:
-      delay = self._delayed_exec+0.5+random.random()
+      delay = self._delayed_exec + 0.5 + random.random()
       time.sleep(delay)
       socket.setdefaulttimeout(25)
       server = xmlrpclib.ServerProxy(self._launch_serveruri)
-      _, _, pid = server.get_pid()#_:=code, msg
-      _, _, nodes = server.get_node_names()#_:=code, msg
+      _, _, pid = server.get_pid()  # _:=code, msg
+      _, _, nodes = server.get_node_names()  # _:=code, msg
       self.launch_server_signal.emit(self._launch_serveruri, pid, nodes)
     except:
       import traceback
 #      print traceback.print_exc()
       formatted_lines = traceback.format_exc(1).splitlines()
       rospy.logwarn("Connection to launch server @ %s failed:\n\t%s", str(self._launch_serveruri), formatted_lines[-1])
-      #'print "request failed", self._monitoruri
+      # 'print "request failed", self._monitoruri
       self.error_signal.emit(self._launch_serveruri, formatted_lines[-1])
     finally:
-      if not socket is None:
+      if socket is not None:
         socket.setdefaulttimeout(None)

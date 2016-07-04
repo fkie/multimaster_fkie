@@ -29,12 +29,13 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import os
 from python_qt_binding import QtCore
+import os
 
 import rospy
 
 import node_manager_fkie as nm
+
 
 class History(QtCore.QObject):
 
@@ -82,7 +83,7 @@ class History(QtCore.QObject):
             if line:
               key, sep, value = line.partition(':=')
               if sep:
-                if not key in result.keys():
+                if key not in result.keys():
                   result[key] = [value]
                 elif len(result[key]) <= nm.settings().param_history_length:
                   result[key].append(value)
@@ -121,9 +122,9 @@ class History(QtCore.QObject):
   def _add2Cache(self, cache, key, value):
     uvalue = unicode(value)
     if key and uvalue:
-      if not cache.has_key(key):
+      if key not in cache:
         cache[key] = [uvalue]
-      elif not uvalue in cache[key]:
+      elif uvalue not in cache[key]:
         cache[key].insert(0, uvalue)
         if len(cache[key]) >= nm.settings().param_history_length:
           cache[key].pop()
@@ -134,7 +135,7 @@ class History(QtCore.QObject):
   def _removeFromCache(self, cache, key, value):
     uvalue = unicode(value)
     if key and uvalue:
-      if cache.has_key(key):
+      if key in cache:
         value_list = cache[key]
         try:
           value_list.remove(uvalue)

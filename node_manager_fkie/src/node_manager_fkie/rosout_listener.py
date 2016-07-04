@@ -35,6 +35,7 @@ from rosgraph_msgs.msg import Log
 
 import rospy
 
+
 class RosoutListener(QtCore.QObject):
   '''
   A class to receive the ROS master state updates from a ROS topic. The topic
@@ -47,7 +48,7 @@ class RosoutListener(QtCore.QObject):
 
   def registerByROS(self):
     '''
-    This method creates a ROS subscriber to received the notifications of ROS 
+    This method creates a ROS subscriber to received the notifications of ROS
     Logs. The retrieved messages will be emitted as *_signal.
     '''
     self.sub_rosout = None
@@ -64,7 +65,7 @@ class RosoutListener(QtCore.QObject):
 
   def _on_log(self, msg):
     '''
-    The method to handle the received Log messages. 
+    The method to handle the received Log messages.
     @param msg: the received message
     @type msg: L{rosgraph_msgs.Log}
     '''

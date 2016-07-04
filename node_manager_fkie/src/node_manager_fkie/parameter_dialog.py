@@ -35,7 +35,6 @@ from xmlrpclib import Binary
 import os
 import sys
 import threading
-import time
 
 import roslib.msgs
 import roslib.names
@@ -48,6 +47,7 @@ import node_manager_fkie as nm
 
 def str2bool(val):
   return val.lower() in ("yes", "true", "t", "1")
+
 
 class MyComboBox(QtGui.QComboBox):
 
@@ -72,6 +72,7 @@ class MyComboBox(QtGui.QComboBox):
         import traceback
         print traceback.format_exc(1)
     QtGui.QComboBox.keyPressEvent(self, event)
+
 
 class ParameterDescription(object):
   '''
@@ -108,7 +109,7 @@ class ParameterDescription(object):
 
   def setWidget(self, widget):
     self._widget = widget
-    if not widget is None:
+    if widget is not None:
       widget.parameter_description = self
       self.addCachedValuesToWidget()
 
@@ -118,7 +119,7 @@ class ParameterDescription(object):
   def fullName(self):
     result = self.name()
     widget = self._widget
-    while not widget is None:
+    while widget is not None:
       if isinstance(widget, (MainBox, GroupBox, ArrayBox)):
         result = roslib.names.ns_join(widget.name, result)
       widget = widget.parent()
@@ -132,7 +133,7 @@ class ParameterDescription(object):
     return self._array_length
 
   def isPrimitiveType(self):
-    result = self._base_type in roslib.msgs.PRIMITIVE_TYPES 
+    result = self._base_type in roslib.msgs.PRIMITIVE_TYPES
     result = result or self._base_type in ['int', 'float', 'time', 'duration', 'binary']
     # if value is a string, the list is represented as a string, see `rosparam`
     result = result or self._type in ['[]']
@@ -174,17 +175,16 @@ class ParameterDescription(object):
           elif self.isBinaryType():
             self._value = value
           else:
-#            self._value = map(str, value)#[ s.encode(sys.getfilesystemencoding()) for s in value]
             try:
               import yaml
-              self._value = yaml.load("[%s]"%value)
+              self._value = yaml.load("[%s]" % value)
               # if there is no YAML, load() will return an
               # empty string.  We want an empty dictionary instead
               # for our representation of empty.
               if self._value is None:
                 self._value = []
             except yaml.MarkedYAMLError, e:
-              raise Exception("Field [%s] yaml error: %s"%(self.fullName(), str(e)))
+              raise Exception("Field [%s] yaml error: %s" % (self.fullName(), str(e)))
           if not self.arrayLength() is None and self.arrayLength() != len(self._value):
             raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
         else:
@@ -275,7 +275,7 @@ class ParameterDescription(object):
           else:
             items[len(items):] = value
         else:
-          if not value is None and value:
+          if value is not None and value:
             items.append(unicode(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
           elif self.isTimeType():
             items.append('now')
@@ -299,7 +299,6 @@ class ParameterDescription(object):
       if self.widget().count() == 0:
         values.insert(0, '')
       self.widget().addItems(values)
-
 
 
 class MainBox(QtGui.QWidget):
@@ -327,7 +326,7 @@ class MainBox(QtGui.QWidget):
     if collapsible:
       self.hide_button = QtGui.QPushButton('-')
       self.hide_button.setFlat(True)
-      self.hide_button.setMaximumSize(20,20)
+      self.hide_button.setMaximumSize(20, 20)
       self.hide_button.clicked.connect(self._on_hide_clicked)
       self.options_layout.addWidget(self.hide_button)
       self.options_layout.addWidget(self.name_label)
@@ -427,7 +426,7 @@ class MainBox(QtGui.QWidget):
         if isinstance(val, tuple):
           (_type, value) = val
         field = self.getField(param)
-        if not field is None:
+        if field is not None:
           if isinstance(field, (GroupBox, ArrayBox)):
             field.set_values(value)
           else:
@@ -436,7 +435,7 @@ class MainBox(QtGui.QWidget):
                 value = str2bool(value[0] if isinstance(value, list) else value)
               field.setChecked(value)
             elif isinstance(field, QtGui.QLineEdit):
-              #avoid ' or " that escapes the string values
+              # avoid ' or " that escapes the string values
               field.setText(', '.join([unicode(v) for v in value]) if isinstance(value, list) else unicode(value))
             elif isinstance(field, QtGui.QComboBox):
               field.setEditText(', '.join([unicode(v) for v in value]) if isinstance(value, list) else unicode(value))
@@ -456,7 +455,7 @@ class MainBox(QtGui.QWidget):
 
   def removeAllFields(self):
     '''
-    Remove the references between parameter and corresponding widgets 
+    Remove the references between parameter and corresponding widgets
     (ComboBox, CheckBox, ..) and remove these widgets from layouts.
     '''
     for child in self.param_widget.children():
@@ -483,9 +482,9 @@ class MainBox(QtGui.QWidget):
         if show:
           child.setCollapsed(False)
           result = True
-      elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)) and  not isinstance(child, (QtGui.QFrame)):
+      elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)) and not isinstance(child, (QtGui.QFrame)):
         label = child.parentWidget().layout().labelForField(child)
-        if not label is None:
+        if label is not None:
           has_text = child.objectName().lower().find(arg.lower()) == -1
           show = not arg or (not has_text or (hasattr(child, 'currentText') and not has_text))
           # set the parent group visible if it is not visible
@@ -503,10 +502,9 @@ class MainBox(QtGui.QWidget):
     QtGui.QWidget.setVisible(self, arg)
 
 
-
 class GroupBox(MainBox):
   '''
-  Groups the parameter of a dictionary, struct or class using the group box for 
+  Groups the parameter of a dictionary, struct or class using the group box for
   visualization.
   '''
   def __init__(self, name, param_type, parent=None):
@@ -514,14 +512,12 @@ class GroupBox(MainBox):
     self.setObjectName(name)
 
 
-
 class ArrayEntry(MainBox):
   '''
   A part of the ArrayBox to represent the elements of a list.
   '''
   def __init__(self, index, param_type, parent=None):
-#    QtGui.QFrame.__init__(self, parent)
-    MainBox.__init__(self, ''.join(['#',str(index)]), param_type, True, parent)
+    MainBox.__init__(self, ''.join(['#', str(index)]), param_type, True, parent)
     self.index = index
     self.setObjectName(''.join(['[', str(index), ']']))
     self.param_widget.setFrameShape(QtGui.QFrame.Box)
@@ -553,20 +549,20 @@ class ArrayBox(MainBox):
   def addDynamicBox(self):
     self._dynamic_items_count = 0
     addButton = QtGui.QPushButton("+")
-    addButton.setMaximumSize(25,25)
+    addButton.setMaximumSize(25, 25)
     addButton.clicked.connect(self._on_add_dynamic_entry)
     self.options_layout.addWidget(addButton)
     self.count_label = QtGui.QLabel('0')
     self.options_layout.addWidget(self.count_label)
     remButton = QtGui.QPushButton("-")
-    remButton.setMaximumSize(25,25)
+    remButton.setMaximumSize(25, 25)
     remButton.clicked.connect(self._on_rem_dynamic_entry)
     self.options_layout.addWidget(remButton)
 
   def _on_add_dynamic_entry(self):
     self.setUpdatesEnabled(False)
     try:
-      if not self._dynamic_value is None:
+      if self._dynamic_value is not None:
         for v in self._dynamic_value:
           if isinstance(v, dict):
             entry_frame = ArrayEntry(self._dynamic_items_count, self.type)
@@ -630,7 +626,7 @@ class ArrayBox(MainBox):
     '''
     if isinstance(values, list):
       count_entries = 0
-      #determine the count of existing elements
+      # determine the count of existing elements
       for i in range(self.param_widget.layout().rowCount()):
         item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
         if item and isinstance(item.widget(), ArrayEntry):
@@ -648,6 +644,7 @@ class ArrayBox(MainBox):
         if item and isinstance(item.widget(), ArrayEntry):
           item.widget().set_values(values[i])
 
+
 class ScrollArea(QtGui.QScrollArea):
   '''
   ScrollArea provides the maximal width of the internal widget.
@@ -659,22 +656,21 @@ class ScrollArea(QtGui.QScrollArea):
     return QtGui.QScrollArea.viewportEvent(self, arg)
 
 
-
 class ParameterDialog(QtGui.QDialog):
   '''
   This dialog creates an input mask for the given parameter and their types.
   '''
 
-  def __init__(self, params=dict(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, sidebar_var='', parent=None):
+  def __init__(self, params=dict(), buttons=QtGui.QDialogButtonBox.Cancel | QtGui.QDialogButtonBox.Ok, sidebar_var='', parent=None):
     '''
     Creates an input dialog.
-    @param params: a dictionary with parameter names and (type, values). 
-    The C{value}, can be a primitive value, a list with values or parameter 
+    @param params: a dictionary with parameter names and (type, values).
+    The C{value}, can be a primitive value, a list with values or parameter
     dictionary to create groups. In this case the type is the name of the group.
     @type params: C{dict(str:(str, {value, [..], dict()}))}
     '''
     QtGui.QDialog.__init__(self, parent=parent)
-    self.setObjectName('ParameterDialog - %s'%str(params))
+    self.setObjectName('ParameterDialog - %s' % str(params))
 
     self.__current_path = nm.settings().current_dialog_path
     self.horizontalLayout = QtGui.QHBoxLayout(self)
@@ -697,7 +693,7 @@ class ParameterDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.filter_frame)
 
     # create area for the parameter
-    self.scrollArea = scrollArea = ScrollArea(self);
+    self.scrollArea = scrollArea = ScrollArea(self)
     scrollArea.setObjectName("scrollArea")
     scrollArea.setWidgetResizable(True)
     self.content = MainBox('/', 'str', False, self)
@@ -720,7 +716,7 @@ class ParameterDialog(QtGui.QDialog):
     self.info_field.setPalette(palette)
     self.info_field.setFrameShadow(QtGui.QFrame.Plain)
     self.info_field.setReadOnly(True)
-    self.info_field.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByKeyboard|QtCore.Qt.LinksAccessibleByMouse|QtCore.Qt.TextBrowserInteraction|QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+    self.info_field.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByKeyboard | QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextBrowserInteraction | QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
     self.info_field.setObjectName("dialog_info_field")
     self.verticalLayout.addWidget(self.info_field)
 
@@ -735,7 +731,7 @@ class ParameterDialog(QtGui.QDialog):
     self.horizontalLayout.addLayout(self.verticalLayout)
 
     # add side bar for checklist
-    values = nm.history().cachedParamValues('/%s'%sidebar_var)
+    values = nm.history().cachedParamValues('/%s' % sidebar_var)
     self.sidebar_frame = QtGui.QFrame()
     self.sidebar_frame.setObjectName(sidebar_var)
     sidebarframe_verticalLayout = QtGui.QVBoxLayout(self.sidebar_frame)
@@ -761,11 +757,9 @@ class ParameterDialog(QtGui.QDialog):
 
     if self.filter_frame.isVisible():
       self.filter_field.setFocus()
-    self.setMinimumSize(350,200)
-#    print '=============== create', self.objectName()
-#
+    self.setMinimumSize(350, 200)
+
   def __del__(self):
-#    print "************ destroy", self.objectName()
     self.content.removeAllFields()
 
   def _on_sidebar_stateChanged(self, state):
@@ -776,7 +770,7 @@ class ParameterDialog(QtGui.QDialog):
     if self._sidebar_selected in [0, 1]:
       try:
         field = self.content.getField(self.sidebar_frame.objectName())
-        if not field is None and field.currentText() == self.sidebar_default_val:
+        if field is not None and field.currentText() == self.sidebar_default_val:
           field.setEnabled(True if self._sidebar_selected == 0 else False)
       except:
         pass
@@ -803,7 +797,7 @@ class ParameterDialog(QtGui.QDialog):
     Shows or hides the filter row.
     '''
     self.filter_visible = val
-    self.filter_frame.setVisible(val&self.scrollArea.isHidden())
+    self.filter_frame.setVisible(val & self.scrollArea.isHidden())
 
   def add_warning(self, message):
     label = QtGui.QLabel()
@@ -824,14 +818,14 @@ class ParameterDialog(QtGui.QDialog):
     '''
     Activates or deactivates the info field of this dialog. If info field is
     activated, the filter frame and the input field are deactivated.
-    @type val: C{bool} 
+    @type val: C{bool}
     '''
     if val and self.info_field.isHidden():
-      self.filter_frame.setVisible(False&self.filter_visible)
+      self.filter_frame.setVisible(False & self.filter_visible)
       self.scrollArea.setVisible(False)
       self.info_field.setVisible(True)
     elif not val and self.scrollArea.isHidden():
-      self.filter_frame.setVisible(True&self.filter_visible)
+      self.filter_frame.setVisible(True & self.filter_visible)
       self.scrollArea.setVisible(True)
       self.info_field.setVisible(False)
       if self.filter_frame.isVisible():
@@ -839,7 +833,7 @@ class ParameterDialog(QtGui.QDialog):
 
   def setFocusField(self, field_label):
     field = self.content.getField(field_label, recursive=True)
-    if not field is None:
+    if field is not None:
       field.setFocus()
 
   def getKeywords(self, only_changed=False):
@@ -852,7 +846,7 @@ class ParameterDialog(QtGui.QDialog):
     # get the results of sidebar
     sidebar_list = []
     sidebar_name = self.sidebar_frame.objectName()
-    for j in range(self.sidebar_frame.layout().count()-1):
+    for j in range(self.sidebar_frame.layout().count() - 1):
       w = self.sidebar_frame.layout().itemAt(j).widget()
       if isinstance(w, QtGui.QCheckBox):
         if w.checkState() == QtCore.Qt.Checked:
@@ -863,7 +857,7 @@ class ParameterDialog(QtGui.QDialog):
       # skip the default value, if elements are selected in the side_bar
       if len(sidebar_list) == 0 or self.sidebar_default_val != result_value[sidebar_name][0]:
         sidebar_list.append(result_value[sidebar_name])
-      result_value[sidebar_name] = ([v for v, _ in set(sidebar_list)], True)#_:=changed
+      result_value[sidebar_name] = ([v for v, _ in set(sidebar_list)], True)  # _:=changed
     result = self._remove_change_state(result_value, only_changed)
     return result
 
@@ -909,9 +903,9 @@ class ParameterDialog(QtGui.QDialog):
     try:
       import yaml
       (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
-                                               "Save parameter", 
-                                               self.__current_path, 
-                                               "YAML files (*.yaml);;All files (*)")
+                                                        "Save parameter",
+                                                        self.__current_path,
+                                                        "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
         nm.settings().current_dialog_path = os.path.dirname(fileName)
@@ -922,34 +916,32 @@ class ParameterDialog(QtGui.QDialog):
     except Exception as e:
       import traceback
       print traceback.format_exc(1)
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error", 
-                       'Error while save parameter',
-                        str(e)).exec_()
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error",
+                        'Error while save parameter', str(e)).exec_()
 
   def _load_parameter(self):
     try:
       import yaml
-      (fileName, _) = QtGui.QFileDialog.getOpenFileName(self,
-                                                   "Load parameter", 
-                                                   self.__current_path, 
-                                                   "YAML files (*.yaml);;All files (*)")
+      (fileName, _) = QtGui.QFileDialog.getOpenFileName(self, "Load parameter",
+                                                        self.__current_path,
+                                                        "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
         nm.settings().current_dialog_path = os.path.dirname(fileName)
         with open(fileName, 'r') as f:
-#          print yaml.load(f.read())
+          # print yaml.load(f.read())
           self.content.set_values(yaml.load(f.read()))
     except Exception as e:
       import traceback
       print traceback.format_exc(1)
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Load parameter Error", 
-                       'Error while load parameter',
+      WarningMessageBox(QtGui.QMessageBox.Warning, "Load parameter Error",
+                        'Error while load parameter',
                         str(e)).exec_()
 
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def accept(self):
     self.setResult(QtGui.QDialog.Accepted)
@@ -965,7 +957,7 @@ class ParameterDialog(QtGui.QDialog):
   def hideEvent(self, event):
     self.close()
 
-  def closeEvent (self, event):
+  def closeEvent(self, event):
     '''
     Test the open files for changes and save this if needed.
     '''
@@ -973,12 +965,11 @@ class ParameterDialog(QtGui.QDialog):
     QtGui.QDialog.closeEvent(self, event)
 
 
-
 class MasterParameterDialog(ParameterDialog):
   '''
-  This dialog is an extension to the L{ParameterDialog}. The parameter and their 
-  values are requested from the ROS master parameter server. The requests are 
-  threaded and allows the also threaded changed of ROS parameter assigned to 
+  This dialog is an extension to the L{ParameterDialog}. The parameter and their
+  values are requested from the ROS master parameter server. The requests are
+  threaded and allows the also threaded changed of ROS parameter assigned to
   given namespace.
   '''
 
@@ -996,7 +987,7 @@ class MasterParameterDialog(ParameterDialog):
     self.is_send = False
     self.mIcon = QtGui.QIcon(":/icons/default_cfg.png")
     self.setWindowIcon(self.mIcon)
-    self.resize(450,300)
+    self.resize(450, 300)
     self.add_new_button = QtGui.QPushButton()
     self.add_new_button.setIcon(QtGui.QIcon(':/icons/crystal_clear_add.png'))
     self.add_new_button.clicked.connect(self._on_add_parameter)
@@ -1017,12 +1008,12 @@ class MasterParameterDialog(ParameterDialog):
 #    self.apply_button.setFocus(QtCore.Qt.OtherFocusReason)
 
   def accept(self):
-    if not self.masteruri is None and not self.is_send:
+    if self.masteruri is not None and not self.is_send:
       try:
         params = self.getKeywords(True)
         params = self.keywords2params(params)
         ros_params = dict()
-        for p,v in params.items():
+        for p, v in params.items():
           rospy.logdebug("updated parameter: %s, %s, %s", p, unicode(v), type(v))
           ros_params[roslib.names.ns_join(self.ns, p)] = v
         if ros_params:
@@ -1038,15 +1029,15 @@ class MasterParameterDialog(ParameterDialog):
     elif self.masteruri is None:
       QtGui.QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QtGui.QMessageBox.Ok)
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%%          ROS parameter handling       %%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%          ROS parameter handling       %%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def _on_add_parameter(self):
-    params_arg = {'namespace' : ('string', self.ns), 'name' : ('string', ''), 'type' : ('string', ['string', 'int', 'float', 'bool', 'list']), 'value' : ('string', '') }
+    params_arg = {'namespace': ('string', self.ns), 'name': ('string', ''), 'type': ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
     dia = ParameterDialog(params_arg)
     dia.setWindowTitle('Add new parameter')
-    dia.resize(360,150)
+    dia.resize(360, 150)
     dia.setFilterVisible(False)
     if dia.exec_():
       try:
@@ -1061,17 +1052,17 @@ class MasterParameterDialog(ParameterDialog):
           elif params['type'] == 'list':
             try:
               import yaml
-              value = yaml.load("[%s]"%params['value'])
+              value = yaml.load("[%s]" % params['value'])
               # if there is no YAML, load() will return an
               # empty string.  We want an empty dictionary instead
               # for our representation of empty.
               if value is None:
                 value = []
             except yaml.MarkedYAMLError, e:
-              QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s"%str(e), QtGui.QMessageBox.Ok)
+              QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QtGui.QMessageBox.Ok)
           else:
             value = params['value']
-          self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']) : (1, '', value)})
+          self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)})
         else:
           QtGui.QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QtGui.QMessageBox.Ok)
       except ValueError, e:
@@ -1085,7 +1076,7 @@ class MasterParameterDialog(ParameterDialog):
     @type masteruri: C{str}
     @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
     @type code: C{int}
-    @param msg: The message of the result. 
+    @param msg: The message of the result.
     @type msg: C{str}
     @param params: The list the parameter names.
     @type param: C{[str]}
@@ -1102,14 +1093,14 @@ class MasterParameterDialog(ParameterDialog):
     @type masteruri: C{str}
     @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
     @type code: C{int}
-    @param msg: The message of the result. 
+    @param msg: The message of the result.
     @type msg: C{str}
     @param params: The dictionary the parameter names and request result.
     @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
     '''
     if code == 1:
       dia_params = dict()
-      for p, (code_n, _, val) in params.items():#_:=msg_n
+      for p, (code_n, _, val) in params.items():  # _:=msg_n
         if code_n != 1:
           val = ''
         type_str = 'string'
@@ -1137,7 +1128,7 @@ class MasterParameterDialog(ParameterDialog):
           group = dia_params
           for n in names_sep:
             group_name = n
-            if group.has_key(group_name):
+            if group_name in group:
               group = group[group_name][1]
             else:
               tmp_dict = dict()
@@ -1162,7 +1153,7 @@ class MasterParameterDialog(ParameterDialog):
     @type masteruri: C{str}
     @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
     @type code: C{int}
-    @param msg: The message of the result. 
+    @param msg: The message of the result.
     @type msg: C{str}
     @param params: The dictionary the parameter names and request result.
     @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
@@ -1170,7 +1161,7 @@ class MasterParameterDialog(ParameterDialog):
     self.is_delivered = True
     errmsg = ''
     if code == 1:
-      for _, (code_n, msg, _) in params.items():#_:=param, val
+      for _, (code_n, msg, _) in params.items():  # _:=param, val
         if code_n != 1:
           errmsg = '\n'.join([errmsg, msg])
     else:
@@ -1186,11 +1177,10 @@ class MasterParameterDialog(ParameterDialog):
       self.close()
 
 
-
 class ServiceDialog(ParameterDialog):
   '''
-  Adds a support for calling a service to the L{ParameterDialog}. The needed 
-  input fields are created from the service request message type. The service 
+  Adds a support for calling a service to the L{ParameterDialog}. The needed
+  input fields are created from the service request message type. The service
   call is executed in a thread to avoid blocking GUI.
   '''
   service_resp_signal = QtCore.Signal(str, str)
@@ -1206,7 +1196,7 @@ class ServiceDialog(ParameterDialog):
     ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QtGui.QDialogButtonBox.Close, parent=parent)
     self.setWindowTitle(''.join(['Call ', service.name]))
     self.service_resp_signal.connect(self._handle_resp)
-    self.resize(450,300)
+    self.resize(450, 300)
     if not slots:
       self.setText(''.join(['Wait for response ...']))
       thread = threading.Thread(target=self._callService)
@@ -1252,7 +1242,7 @@ class ServiceDialog(ParameterDialog):
   def _params_from_slots(cls, slots, types, values={}):
     result = dict()
     for slot, msg_type in zip(slots, types):
-      base_type, is_array, _ = roslib.msgs.parse_type(msg_type)#_:=array_length
+      base_type, is_array, _ = roslib.msgs.parse_type(msg_type)  # _:=array_length
       if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
         default_value = 'now' if base_type in ['time', 'duration'] else ''
         if slot in values and values[slot]:

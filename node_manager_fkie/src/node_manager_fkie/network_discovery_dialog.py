@@ -33,7 +33,6 @@
 
 from datetime import datetime
 from python_qt_binding import QtCore, QtGui
-import socket
 import threading
 import time
 import traceback
@@ -53,7 +52,6 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
   display_append_signal = QtCore.Signal(str)
   status_text_signal = QtCore.Signal(str)
   network_join_request = QtCore.Signal(int)
-
 
   def __init__(self, default_mcast_group, default_port, networks_count, parent=None):
     '''
@@ -77,7 +75,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
 
     self.display = QtGui.QTextBrowser(self)
     self.display.setReadOnly(True)
-    self.verticalLayout.addWidget(self.display);
+    self.verticalLayout.addWidget(self.display)
     self.display_clear_signal.connect(self.display.clear)
     self.display_append_signal.connect(self.display.append)
     self.display.anchorClicked.connect(self.on_anchorClicked)
@@ -114,7 +112,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
       try:
         (version, msg_tuple) = Discoverer.msg2masterState(msg, address)
         index = address[1] - self.default_port
-        if not self._discovered.has_key(index):
+        if index not in self._discovered:
           self._discovered[index] = dict()
         self._discovered[index][address] = (hostname, time.time())
         self._received_msgs += 1
@@ -133,7 +131,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
 #      self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
       time.sleep(3)
 
-  def closeEvent (self, event):
+  def closeEvent(self, event):
     self.stop()
     QtGui.QDialog.closeEvent(self, event)
 

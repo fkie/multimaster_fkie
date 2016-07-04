@@ -30,36 +30,39 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import time
-import threading
-
 from python_qt_binding import QtCore
+import threading
+import time
+
 import rospy
+
 import node_manager_fkie as nm
+
+
 try:
-#  from default_cfg_fkie.msg import Capability
-  from multimaster_msgs_fkie.srv import ListDescription, ListNodes#, LoadLaunch, Task
+  from multimaster_msgs_fkie.srv import ListDescription, ListNodes  # , LoadLaunch, Task
 except ImportError, e:
   import sys
   print >> sys.stderr, "Can't import services of default_cfg_fkie. Is default_cfg_fkie package compiled?"
   raise ImportError(str(e))
 
+
 class DefaultConfigHandler(QtCore.QObject):
   '''
-  A class to retrieve the list of nodes from the default configuration service. 
-  The received node list will be published by sending a QT signal. To retrieve 
+  A class to retrieve the list of nodes from the default configuration service.
+  The received node list will be published by sending a QT signal. To retrieve
   the configuration a new thread will be created.
   '''
   node_list_signal = QtCore.Signal(str, str, list)
   '''
-  node_list_signal is a signal, which is emitted, if a new list with nodes is 
-  retrieved. The signal has the URI of the service, the name of the service and 
+  node_list_signal is a signal, which is emitted, if a new list with nodes is
+  retrieved. The signal has the URI of the service, the name of the service and
   a list with node names as parameter.
   '''
   description_signal = QtCore.Signal(str, str, list)
   '''
-  description_signal is a signal, which is emitted, if a new list with descriptions is 
-  retrieved. The signal has the URI of the service, the name of the service and 
+  description_signal is a signal, which is emitted, if a new list with descriptions is
+  retrieved. The signal has the URI of the service, the name of the service and
   a list with descriptions (L{default_cfg_fkie.Description}) parameter.
   '''
   err_signal = QtCore.Signal(str, str, str)
@@ -68,7 +71,7 @@ class DefaultConfigHandler(QtCore.QObject):
     QtCore.QObject.__init__(self)
     self.__serviceThreads = {}
     self._lock = threading.RLock()
-  
+
   def stop(self):
     print "    Shutdown default config update threads..."
     for _, service in self.__serviceThreads.iteritems():
@@ -78,11 +81,11 @@ class DefaultConfigHandler(QtCore.QObject):
   def requestNodeList(self, service_uri, service, delay_exec=0.0):
     '''
     This method starts a thread to get the informations about the default
-    configured nodes. If all informations are retrieved, a C{node_list_signal} of 
-    this class will be emitted. If for given service a thread is 
+    configured nodes. If all informations are retrieved, a C{node_list_signal} of
+    this class will be emitted. If for given service a thread is
     already running, the request will be ignored.
-    This method is thread safe. 
-    
+    This method is thread safe.
+
     @param service_uri: the URI of the service
     @type service_uri: C{str}
     @param service: the name of service to get the node list
@@ -91,7 +94,7 @@ class DefaultConfigHandler(QtCore.QObject):
     @type delay_exec: C{float}
     '''
     with self._lock:
-      if not (self.__serviceThreads.has_key((service_uri, service))):
+      if (service_uri, service) not in self.__serviceThreads:
         upthread = ServiceThread(service_uri, service, delay_exec)
         upthread.update_signal.connect(self._on_node_list)
         upthread.err_signal.connect(self._on_err)
@@ -101,11 +104,11 @@ class DefaultConfigHandler(QtCore.QObject):
   def requestDescriptionList(self, service_uri, service, delay_exec=0.0):
     '''
     This method starts a thread to get the descriptions from the default
-    configuration node. If all informations are retrieved, a C{description_signal} of 
-    this class will be emitted. If for given service a thread is 
+    configuration node. If all informations are retrieved, a C{description_signal} of
+    this class will be emitted. If for given service a thread is
     already running, the request will be ignored.
-    This method is thread safe. 
-    
+    This method is thread safe.
+
     @param service_uri: the URI of the service
     @type service_uri: C{str}
     @param service: the name of service to get the description
@@ -114,7 +117,7 @@ class DefaultConfigHandler(QtCore.QObject):
     @type delay_exec: C{float}
     '''
     with self._lock:
-      if not (self.__serviceThreads.has_key((service_uri, service))):
+      if (service_uri, service) not in self.__serviceThreads:
         upthread = ServiceDescriptionThread(service_uri, service, delay_exec)
         upthread.update_signal.connect(self._on_descr_list)
         upthread.err_signal.connect(self._on_err)
@@ -149,10 +152,9 @@ class DefaultConfigHandler(QtCore.QObject):
     self.err_signal.emit(service_uri, service, msg)
 
 
-
 class ServiceThread(QtCore.QObject, threading.Thread):
   '''
-  A thread to to retrieve the list of nodes from the default configuration 
+  A thread to to retrieve the list of nodes from the default configuration
   service and publish it by sending a QT signal.
   '''
   update_signal = QtCore.Signal(str, str, list)
@@ -181,9 +183,10 @@ class ServiceThread(QtCore.QObject, threading.Thread):
         rospy.logwarn("Error while retrieve the node list from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
 
+
 class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
   '''
-  A thread to to retrieve the list with descriptions from the default configuration 
+  A thread to to retrieve the list with descriptions from the default configuration
   service and publish it by sending a QT signal.
   '''
   update_signal = QtCore.Signal(str, str, list)

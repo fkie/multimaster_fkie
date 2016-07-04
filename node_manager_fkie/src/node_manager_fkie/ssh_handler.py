@@ -32,7 +32,6 @@
 
 import os
 import shlex
-import subprocess
 import sys
 import threading
 
@@ -45,30 +44,29 @@ import node_manager_fkie as nm
 try:
   import paramiko
 except Exception, e:
-  print  >> sys.stderr, e
+  print >> sys.stderr, e
   sys.exit(1)
 
 
 class AuthenticationRequest(Exception):
   ''' '''
-  
+
   def __init__(self, user, host, error):
     Exception.__init__(self)
     self.user = user
     self.host = host
     self.error = error
-  
+
   def __str__(self):
-    return "AuthenticationRequest on "  + self.host + " for " + self.user + "::" + repr(self.error)
+    return "AuthenticationRequest on " + self.host + " for " + self.user + "::" + repr(self.error)
 
 
 class SSHhandler(object):
   '''
   The class to handle the SSH sessions to the remote hosts.
   '''
-  SSH_SESSIONS = {} # host :session
-  SSH_AUTH = {} # host : user
-
+  SSH_SESSIONS = {}  # host :session
+  SSH_AUTH = {}  # host : user
 
   def __init__(self):
     self.mutex = threading.RLock()
@@ -89,7 +87,7 @@ class SSHhandler(object):
     # close all ssh sessions
     for ssh in SSHhandler.SSH_SESSIONS.keys():
       s = SSHhandler.SSH_SESSIONS.pop(ssh)
-      if not s._transport is None:
+      if s._transport is not None:
         s.close()
       del s
 
@@ -108,7 +106,7 @@ class SSHhandler(object):
     with self.mutex:
       try:
         ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
-        if not ssh is None:
+        if ssh is not None:
           sftp = ssh.open_sftp()
           try:
             sftp.mkdir(os.path.dirname(remote_file))
@@ -123,8 +121,8 @@ class SSHhandler(object):
 
   def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False, get_pty=False, close_stdin=False, close_stdout=False, close_stderr=False):
     '''
-    Executes a command on remote host. Returns the output channels with 
-    execution result or None. The connection will be established using paramiko 
+    Executes a command on remote host. Returns the output channels with
+    execution result or None. The connection will be established using paramiko
     SSH library.
     @param host: the host
     @type host: C{str}
@@ -139,7 +137,7 @@ class SSHhandler(object):
     with self.mutex:
       try:
         ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
-        if not ssh is None:
+        if ssh is not None:
           cmd_str = str(' '.join(cmd))
           rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
           (stdin, stdout, stderr) = (None, None, None)
@@ -158,12 +156,11 @@ class SSHhandler(object):
         raise
       except Exception as e:
         raise
-    raise Exception('Cannot login @%s'%host)
-
+    raise Exception('Cannot login @%s' % host)
 
   def ssh_x11_exec(self, host, cmd, title=None, user=None):
     '''
-    Executes a command on remote host using a terminal with X11 forwarding. 
+    Executes a command on remote host using a terminal with X11 forwarding.
     @todo: establish connection using paramiko SSH library.
     @param host: the host
     @type host: C{str}
@@ -172,14 +169,14 @@ class SSHhandler(object):
     @param title: the title of the new opened terminal, if it is None, no new terminal will be created
     @type title: C{str} or C{None}
     @param user: user name
-    @return: the result of C{subprocess.Popen(command)} 
+    @return: the result of C{subprocess.Popen(command)}
     @see: U{http://docs.python.org/library/subprocess.html?highlight=subproces#subprocess}
     '''
     with self.mutex:
       try:
         # workaround: use ssh in a terminal with X11 forward
         user = nm.settings().host_user(host) if user is None else user
-        if self.SSH_AUTH.has_key(host):
+        if host in self.SSH_AUTH:
           user = self.SSH_AUTH[host]
         # generate string for SSH command
         ssh_str = ' '.join(['/usr/bin/ssh',
@@ -190,19 +187,19 @@ class SSHhandler(object):
                             '-oVerifyHostKeyDNS=no',
                             '-oCheckHostIP=no',
                             ''.join([user, '@', host])])
-        if not title is None:
+        if title is not None:
           cmd_str = nm.settings().terminal_cmd([ssh_str, ' '.join(cmd)], title)
         else:
           cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
         rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
-        return SupervisedPopen(shlex.split(cmd_str), object_id=str(title), description="REMOTE x11 execute on %s: %s"%(host, cmd_str))
+        return SupervisedPopen(shlex.split(cmd_str), object_id=str(title), description="REMOTE x11 execute on %s: %s" % (host, cmd_str))
       except:
         raise
 
   def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=False):
     '''
     @return: the paramiko ssh client
-    @rtype: L{paramiko.SSHClient} 
+    @rtype: L{paramiko.SSHClient}
     @raise BadHostKeyException: - if the server's host key could not be verified
     @raise AuthenticationException: - if authentication failed
     @raise SSHException: - if there was any other error connecting or establishing an SSH session
@@ -212,7 +209,7 @@ class SSHhandler(object):
     if session is None or (not session.get_transport() is None and (not session.get_transport().is_active() or session._transport.get_username() != user)):
       t = SSHhandler.SSH_SESSIONS.pop(host)
       del t
-      if self.SSH_AUTH.has_key(host):
+      if host in self.SSH_AUTH:
         del self.SSH_AUTH[host]
       session = SSHhandler.SSH_SESSIONS.get(host, paramiko.SSHClient())
     if session._transport is None:
@@ -222,11 +219,9 @@ class SSHhandler(object):
           session.connect(host, username=user, password=pw, timeout=3, compress=True)
           self.SSH_AUTH[host] = user
         except Exception, e:
-#          import traceback
-#          print traceback.format_exc(1)
           if str(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
             if auto_pw_request:
-              #'print "REQUEST PW-AUTO"
+              # 'print "REQUEST PW-AUTO"
               res, user, pw = self._requestPW(user, host)
               if not res:
                 return None
@@ -244,12 +239,11 @@ class SSHhandler(object):
 
   def _requestPW(self, user, host):
     '''
-    Open the dialog to input the user name and password to open an SSH connection. 
+    Open the dialog to input the user name and password to open an SSH connection.
     '''
     from python_qt_binding import QtCore
     from python_qt_binding import loadUi
     from python_qt_binding import QtGui
-    import os
     result = False
     pw = None
     pwInput = QtGui.QDialog()

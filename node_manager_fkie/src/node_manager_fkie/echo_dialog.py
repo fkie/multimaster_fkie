@@ -91,12 +91,12 @@ class EchoDialog(QtGui.QDialog):
     '''
     QtGui.QDialog.__init__(self, parent=parent)
     self._masteruri = masteruri
-    masteruri_str = '' if masteruri is None else '[%s]'%masteruri
+    masteruri_str = '' if masteruri is None else '[%s]' % masteruri
     self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
     self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
     self.setWindowFlags(QtCore.Qt.Window)
-    self.setWindowTitle('%s %s %s'%('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
-    self.resize(728,512)
+    self.setWindowTitle('%s %s %s' % ('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
+    self.resize(728, 512)
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
@@ -109,7 +109,7 @@ class EchoDialog(QtGui.QDialog):
     self.last_printed_count = 0
     self.msg_t0 = -1.
     self.msg_tn = 0
-    self.times =[]
+    self.times = []
 
     self.message_count = 0
     self._rate_message = ''
@@ -175,7 +175,7 @@ class EchoDialog(QtGui.QDialog):
 
     self.display = QtGui.QTextBrowser(self)
     self.display.setReadOnly(True)
-    self.verticalLayout.addWidget(self.display);
+    self.verticalLayout.addWidget(self.display)
     self.display.document().setMaximumBlockCount(500)
     self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
     self._blocks_in_msg = None
@@ -190,11 +190,11 @@ class EchoDialog(QtGui.QDialog):
     try:
       self.__msg_class = message.get_message_class(msg_type)
       if not self.__msg_class:
-        errmsg = "Cannot load message class for [%s]. Did you build messages?"%msg_type
+        errmsg = "Cannot load message class for [%s]. Did you build messages?" % msg_type
 #        raise Exception("Cannot load message class for [%s]. Did you build messages?"%msg_type)
     except Exception as e:
       self.__msg_class = None
-      errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e)
+      errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s" % (msg_type, e)
 #      raise Exception("Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e))
     # variables for Subscriber
     self.msg_signal.connect(self._append_message)
@@ -215,8 +215,8 @@ class EchoDialog(QtGui.QDialog):
       self.__msg_class = None
       self._on_display_anchorClicked(QtCore.QUrl(self._masteruri))
     elif self.__msg_class is None:
-      errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>'%(errmsg)
-      self.display.setText('<a href="%s">open using SSH</a>'%(masteruri))
+      errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>' % (errmsg)
+      self.display.setText('<a href="%s">open using SSH</a>' % (masteruri))
       self.display.append(errtxt)
     else:
       self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
@@ -233,15 +233,15 @@ class EchoDialog(QtGui.QDialog):
 #  def hideEvent(self, event):
 #    self.close()
 
-  def closeEvent (self, event):
-    if not self.sub is None:
+  def closeEvent(self, event):
+    if self.sub is not None:
       self.sub.unregister()
       del self.sub
     try:
       self.ssh_output_file.close()
       self.ssh_error_file.close()
       # send Ctrl+C to remote process
-      self.ssh_input_file.write('%s\n'%chr(3))
+      self.ssh_input_file.write('%s\n' % chr(3))
       self.ssh_input_file.close()
     except:
       pass
@@ -254,8 +254,8 @@ class EchoDialog(QtGui.QDialog):
   def create_field_filter(self, echo_nostr, echo_noarr):
     def field_filter(val):
       try:
-#        fields = val.__slots__
-#        field_types = val._slot_types
+        # fields = val.__slots__
+        # field_types = val._slot_types
         for f, t in zip(val.__slots__, val._slot_types):
           if echo_noarr and '[' in t:
             continue
@@ -314,10 +314,10 @@ class EchoDialog(QtGui.QDialog):
         self.topic_control_button.setText('stop')
         self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
       else:
-        if not self.sub is None:
+        if self.sub is not None:
           self.sub.unregister()
           self.sub = None
-        elif not self.ssh_output_file is None:
+        elif self.ssh_output_file is not None:
           self.ssh_output_file.close()
           self.ssh_error_file.close()
           self.ssh_output_file = None
@@ -326,7 +326,7 @@ class EchoDialog(QtGui.QDialog):
         self.no_str_checkbox.setEnabled(True)
         self.no_arr_checkbox.setEnabled(True)
     except Exception as e:
-      rospy.logwarn('Error while stop/play echo for topic %s: %s'%(self.topic, e))
+      rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, e))
 
   def _msg_handle(self, data):
     self.msg_signal.emit(data, (data._connection_header['latching'] != '0'))
@@ -339,12 +339,12 @@ class EchoDialog(QtGui.QDialog):
     '''
     current_time = time.time()
     self._count_messages(current_time)
-    # skip messages, if they are received often then MESSAGE_HZ_LIMIT 
+    # skip messages, if they are received often then MESSAGE_HZ_LIMIT
     if self._last_received_ts != 0 and self.receiving_hz != 0:
       if not latched and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
         self._scrapped_msgs += 1
         self._scrapped_msgs_sl += 1
-        return 
+        return
     self._last_received_ts = current_time
     if not self.show_only_rate:
       # convert message to string and reduce line width to current limit
@@ -355,7 +355,7 @@ class EchoDialog(QtGui.QDialog):
       msg = msg.replace('<', '&lt;').replace('>', '&gt;')
       # create a notification about scrapped messages
       if self._scrapped_msgs_sl > 0:
-        txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>'%self._scrapped_msgs_sl
+        txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>' % self._scrapped_msgs_sl
         self.display.append(txt)
         self._scrapped_msgs_sl = 0
       txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
@@ -383,7 +383,6 @@ class EchoDialog(QtGui.QDialog):
         self.times.pop(0)
       self.message_count += 1
 
-
   def _trim_width(self, msg):
     '''
     reduce line width to current limit
@@ -395,7 +394,7 @@ class EchoDialog(QtGui.QDialog):
     if self.line_limit != 0:
       a = ''
       for l in msg.splitlines():
-        a = a + (l if len(l)<=self.line_limit else l[0:self.line_limit-3]+'...') + '\n'
+        a = a + (l if len(l) <= self.line_limit else l[0:self.line_limit - 3] + '...') + '\n'
       result = a
     return result
 
@@ -408,7 +407,7 @@ class EchoDialog(QtGui.QDialog):
     if self._blocks_in_msg is None:
       td = QtGui.QTextDocument(txt)
       self._blocks_in_msg = td.blockCount()
-      self.display.document().setMaximumBlockCount(self._blocks_in_msg*self.max_displayed_msgs)
+      self.display.document().setMaximumBlockCount(self._blocks_in_msg * self.max_displayed_msgs)
 
   def _on_calc_hz(self):
     if rospy.is_shutdown():
@@ -422,22 +421,22 @@ class EchoDialog(QtGui.QDialog):
       if n < 2:
         return
       mean = sum(self.times) / n
-      rate = 1./mean if mean > 0. else 0
-      #std dev
-      std_dev = math.sqrt(sum((x - mean)**2 for x in self.times) /n)
+      rate = 1. / mean if mean > 0. else 0
+      # std dev
+      std_dev = math.sqrt(sum((x - mean) ** 2 for x in self.times) / n)
       # min and max
       max_delta = max(self.times)
       min_delta = min(self.times)
       self.last_printed_count = self.message_count
-      self._rate_message = "average rate: %.3f\tmin: %.3fs   max: %.3fs   std dev: %.5fs   window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
+      self._rate_message = "average rate: %.3f\tmin: %.3fs   max: %.3fs   std dev: %.5fs   window: %s" % (rate, min_delta, max_delta, std_dev, n + 1)
       if self._scrapped_msgs > 0:
-        self._rate_message +=" --- scrapped msgs: %s"%self._scrapped_msgs
+        self._rate_message += " --- scrapped msgs: %s" % self._scrapped_msgs
       self._print_status()
       if self.show_only_rate:
         self.display.append(self._rate_message)
 
   def _print_status(self):
-    self.status_label.setText('%s messages   %s'%(self.message_count, self._rate_message))
+    self.status_label.setText('%s messages   %s' % (self.message_count, self._rate_message))
 
   def _append_text(self, text):
     '''
@@ -452,7 +451,7 @@ class EchoDialog(QtGui.QDialog):
           self._count_messages(current_time)
           # limit the displayed text width
           m = self._trim_width(m)
-          txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>'%(datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
+          txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
           # set the count of the displayed messages on receiving the first message
           self._update_max_msg_count(txt)
           self.display.append(txt)
@@ -468,7 +467,7 @@ class EchoDialog(QtGui.QDialog):
       if self._current_errmsg.find('\n') != -1:
         messages = self._current_errmsg.split('\n')
         for m in messages[:-1]:
-          txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">%s</pre>'%m
+          txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">%s</pre>' % m
           self.display.append(txt)
         self._current_errmsg = messages[-1]
 
@@ -481,7 +480,7 @@ class EchoDialog(QtGui.QDialog):
       if self._current_msg.find('\n') != -1:
         messages = self._current_msg.split('\n')
         for m in messages[:-1]:
-          txt = '<div style="font-family:Fixedsys,Courier;">%s</div>'%(m)
+          txt = '<div style="font-family:Fixedsys,Courier;">%s</div>' % (m)
           self.display.append(txt)
         self._current_msg = messages[-1]
 
@@ -489,13 +488,13 @@ class EchoDialog(QtGui.QDialog):
     try:
       ok = False
       if self.show_only_rate:
-        self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s'%(self.topic)], user, pw, auto_pw_request=True, get_pty=True)
-        self.status_label.setText('connected to %s over SSH'%url.host())
+        self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s' % (self.topic)], user, pw, auto_pw_request=True, get_pty=True)
+        self.status_label.setText('connected to %s over SSH' % url.host())
       else:
         self.combobox_displ_hz.setEnabled(False)
         nostr = '--nostr' if self.no_str_checkbox.isChecked() else ''
         noarr = '--noarr' if self.no_arr_checkbox.isChecked() else ''
-        self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s'%(nostr, noarr, self.topic)], user, pw, auto_pw_request=True, get_pty=True)
+        self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s' % (nostr, noarr, self.topic)], user, pw, auto_pw_request=True, get_pty=True)
       if ok:
         self.display.clear()
         target = self._read_output_hz if self.show_only_rate else self._read_output
@@ -509,7 +508,7 @@ class EchoDialog(QtGui.QDialog):
         self.ssh_output_file.close()
         self.ssh_error_file.close()
     except Exception as e:
-      self._append_error_text('%s\n'%e)
+      self._append_error_text('%s\n' % e)
 #      import traceback
 #      print traceback.format_exc()
 

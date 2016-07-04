@@ -30,21 +30,22 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import threading
 from python_qt_binding import QtCore
+import threading
 
 from master_discovery_fkie.master_info import MasterInfo
 from update_thread import UpdateThread
 
+
 class UpdateHandler(QtCore.QObject):
   '''
-  A class to retrieve the state about ROS master from remote discovery node and 
+  A class to retrieve the state about ROS master from remote discovery node and
   publish it be sending a QT signal. To retrieve the state a new thread will be
   created.
   '''
   master_info_signal = QtCore.Signal(MasterInfo)
   '''
-  @ivar: master_info_signal is a signal, which is emitted, if a new 
+  @ivar: master_info_signal is a signal, which is emitted, if a new
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
   master_errors_signal = QtCore.Signal(str, list)
@@ -55,7 +56,7 @@ class UpdateHandler(QtCore.QObject):
 
   error_signal = QtCore.Signal(str, str)
   '''
-  @ivar: error_signal is a signal (masteruri, error message), which is emitted, 
+  @ivar: error_signal is a signal (masteruri, error message), which is emitted,
   if an error while retrieving a master info was occurred.
   '''
 
@@ -85,10 +86,10 @@ class UpdateHandler(QtCore.QObject):
     the given RCP uri of the master_discovery node. If all informations are
     retrieved, a C{master_info_signal} of this class will be emitted. If for given
     masteruri a thread is already running, it will be inserted to the requested
-    updates. For the same masteruri only one requested update can be stored. 
+    updates. For the same masteruri only one requested update can be stored.
     On update error the requested update will be ignored.
-    This method is thread safe. 
-    
+    This method is thread safe.
+
     @param masteruri: the URI of the remote ROS master
     @type masteruri: C{str}
     @param monitoruri: the URI of the monitor RPC interface of the master_discovery node
@@ -98,7 +99,7 @@ class UpdateHandler(QtCore.QObject):
     '''
     with self._lock:
       try:
-        if (self.__updateThreads.has_key(masteruri)):
+        if masteruri in self.__updateThreads:
           self.__requestedUpdates[masteruri] = (monitoruri, delayed_exec)
         else:
           self.__create_update_thread(monitoruri, masteruri, delayed_exec)
@@ -129,8 +130,6 @@ class UpdateHandler(QtCore.QObject):
         monitoruri, delayed_exec = self.__requestedUpdates.pop(masteruri)
         self.__create_update_thread(monitoruri, masteruri, delayed_exec)
       except KeyError:
-  #      import traceback
-  #      print traceback.format_exc(1)
         pass
       except:
         import traceback

@@ -40,8 +40,10 @@ import xmlrpclib
 from roslib.network import get_local_addresses
 import rospy
 
+
 class StartException(Exception):
   pass
+
 
 def get_ros_home():
   '''
@@ -59,10 +61,9 @@ def get_ros_home():
       from rospkg import get_ros_home
       return get_ros_home()
   except:
-#    import traceback
-#    print traceback.format_exc(1)
     from roslib import rosenv
     return rosenv.get_ros_home()
+
 
 def masteruri_from_ros():
   '''
@@ -96,6 +97,7 @@ def getHostname(url):
   o = urlparse(url)
   return o.hostname
 
+
 def get_ros_hostname(url):
   '''
   Returns the host name used in a url, if it is a name. If it is an IP an
@@ -104,11 +106,12 @@ def get_ros_hostname(url):
   @return: host or '' if url is an IP or invalid
   @rtype:  C{str}
   '''
-  hostname = getHostname(url)
-  if hostname is not None:
-    if hostname != 'localhost':
-      if '.' not in hostname and ':' not in hostname:
-        return hostname
+  if masteruri_from_ros() != url:
+    hostname = getHostname(url)
+    if hostname is not None:
+      if hostname != 'localhost':
+        if '.' not in hostname and ':' not in hostname:
+          return hostname
   return ''
 
 
@@ -118,9 +121,10 @@ class Settings(object):
   STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
   RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
 
+
 class ScreenHandler(object):
   '''
-  The class to handle the running screen sessions and create new sessions on 
+  The class to handle the running screen sessions and create new sessions on
   start of the ROS nodes.
   '''
 
@@ -131,7 +135,7 @@ class ScreenHandler(object):
   @classmethod
   def createSessionName(cls, node=None):
     '''
-    Creates a name for the screen session. All slash separators are replaced by 
+    Creates a name for the screen session. All slash separators are replaced by
     L{SLASH_SEP}
     @param node: the name of the node
     @type node: C{str}
@@ -140,7 +144,7 @@ class ScreenHandler(object):
     '''
 #    package_name = str(package) if not package is None else ''
 #    lanchfile_name = str(launchfile).replace('.launch', '') if not launchfile is None else ''
-    node_name = str(node).replace('/',cls.SLASH_SEP) if not node is None else ''
+    node_name = str(node).replace('/', cls.SLASH_SEP) if node is not None else ''
 #    result = ''.join([node_name, '.', package_name, '.', lanchfile_name])
     return node_name
 
@@ -153,10 +157,10 @@ class ScreenHandler(object):
     @return: the log file name
     @rtype: C{str}
     '''
-    if not session is None:
-      return os.path.join(cls.LOG_PATH, session+'.log')
-    elif not node is None:
-      return os.path.join(cls.LOG_PATH, cls.createSessionName(node)+'.log')
+    if session is not None:
+      return os.path.join(cls.LOG_PATH, session + '.log')
+    elif node is not None:
+      return os.path.join(cls.LOG_PATH, cls.createSessionName(node) + '.log')
     else:
       return os.path.join(cls.LOG_PATH, 'unknown.log')
 
@@ -171,8 +175,8 @@ class ScreenHandler(object):
     @todo: get the run_id from the ROS parameter server and search in this log folder
     for the log file (handle the node started using a launch file).
     '''
-    if not node is None:
-      return os.path.join(cls.LOG_PATH, node.strip(rospy.names.SEP).replace(rospy.names.SEP,'_')+'.log')
+    if node is not None:
+      return os.path.join(cls.LOG_PATH, node.strip(rospy.names.SEP).replace(rospy.names.SEP, '_') + '.log')
     else:
       return ''
 
@@ -185,10 +189,10 @@ class ScreenHandler(object):
     @return: the configuration file name
     @rtype: C{str}
     '''
-    if not session is None:
-      return os.path.join(cls.LOG_PATH, session+'.conf')
-    elif not node is None:
-      return os.path.join(cls.LOG_PATH, cls.createSessionName(node)+'.conf')
+    if session is not None:
+      return os.path.join(cls.LOG_PATH, session + '.conf')
+    elif node is not None:
+      return os.path.join(cls.LOG_PATH, cls.createSessionName(node) + '.conf')
     else:
       return os.path.join(cls.LOG_PATH, 'unknown.conf')
 
@@ -201,10 +205,10 @@ class ScreenHandler(object):
     @return: the PID file name
     @rtype: C{str}
     '''
-    if not session is None:
-      return os.path.join(cls.LOG_PATH, session+'.pid')
-    elif not node is None:
-      return os.path.join(cls.LOG_PATH, cls.createSessionName(node)+'.pid')
+    if session is not None:
+      return os.path.join(cls.LOG_PATH, session + '.pid')
+    elif node is not None:
+      return os.path.join(cls.LOG_PATH, cls.createSessionName(node) + '.pid')
     else:
       return os.path.join(cls.LOG_PATH, 'unknown.pid')
 
@@ -230,6 +234,7 @@ class ScreenHandler(object):
       f.write(' '.join(['setenv', 'ROS_ETC_DIR', ros_etc_dir, "\n"]))
     f.close()
     return ' '.join([cls.SCREEN, '-c', cls.getScreenCfgFile(node=node), '-L', '-dmS', cls.createSessionName(node=node)])
+
 
 class StartHandler(object):
   @classmethod
@@ -272,9 +277,9 @@ class StartHandler(object):
 
   @classmethod
   def _prepareROSMaster(cls, masteruri):
-    if not masteruri: 
+    if not masteruri:
       masteruri = masteruri_from_ros()
-    #start roscore, if needed
+    # start roscore, if needed
     try:
       if not os.path.isdir(ScreenHandler.LOG_PATH):
         os.makedirs(ScreenHandler.LOG_PATH)
@@ -282,9 +287,6 @@ class StartHandler(object):
       master = xmlrpclib.ServerProxy(masteruri)
       master.getUri(rospy.get_name())
     except:
-#      socket.setdefaulttimeout(None)
-#      import traceback
-#      print traceback.format_exc(1)
       # run a roscore
       from urlparse import urlparse
       master_host = urlparse(masteruri).hostname
@@ -296,8 +298,7 @@ class StartHandler(object):
         ros_hostname = get_ros_hostname(masteruri)
         if ros_hostname:
           new_env['ROS_HOSTNAME'] = ros_hostname
-        cmd_args = '%s roscore --port %d'%(ScreenHandler.getSceenCmd('/roscore--%d'%master_port), master_port)
-        print "    %s"%cmd_args
+        cmd_args = '%s roscore --port %d' % (ScreenHandler.getSceenCmd('/roscore--%d' % master_port), master_port)
         try:
           subprocess.Popen(shlex.split(cmd_args), env=new_env)
           # wait for roscore to avoid connection problems while init_node
@@ -307,17 +308,17 @@ class StartHandler(object):
             try:
               print "  retry connect to ROS master", count, '/', 10
               master = xmlrpclib.ServerProxy(masteruri)
-              result, _, _ = master.getUri(rospy.get_name())#_:=uri, msg
+              result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
             except:
               time.sleep(1)
               count += 1
           if count >= 11:
-            raise StartException('Cannot connect to the ROS-Master: '+  str(masteruri))
+            raise StartException('Cannot connect to the ROS-Master: ' + str(masteruri))
         except Exception as e:
           import sys
-          print  >> sys.stderr, e
+          print >> sys.stderr, e
           raise
       else:
-        raise Exception("ROS master '%s' is not reachable"%masteruri)
+        raise Exception("ROS master '%s' is not reachable" % masteruri)
     finally:
       socket.setdefaulttimeout(None)

@@ -33,6 +33,7 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
+
 class SettingsNameItem(QtGui.QStandardItem):
 
   ITEM_TYPE = QtGui.QStandardItem.UserType + 80
@@ -80,7 +81,7 @@ class SettingsValueItem(QtGui.QStandardItem):
     :param settings: the object, which contains `attrname` as property and
                      provide the parameter changes
     :type settings: object (Settings)
-    :param attrname: the parameter name, which is available as property in 
+    :param attrname: the parameter name, which is available as property in
                        `settings` object.
     :type attrname: str
     :param edit_type: the editor type will be detected automatically by default.
@@ -91,7 +92,7 @@ class SettingsValueItem(QtGui.QStandardItem):
     :param value_max: the minimum value (used by int or float)
     :param value_list: the list of values used for comboboxes
     '''
-    QtGui.QStandardItem.__init__(self, '%s'%value)
+    QtGui.QStandardItem.__init__(self, '%s' % value)
     self._attrname = attrname
     self._value = value
     self._value_default = value_default
@@ -134,7 +135,7 @@ class SettingsValueItem(QtGui.QStandardItem):
     '''
     if role == QtCore.Qt.DisplayRole:
       # return the displayed item name
-      return '%s'%self._value
+      return '%s' % self._value
 #     elif role == QtCore.Qt.DecorationRole:
 #       pass
     elif role == QtCore.Qt.EditRole:
@@ -183,7 +184,7 @@ class SettingsGroupItem(QtGui.QStandardItem):
   @classmethod
   def getGroupItemList(self, name):
     '''
-    Creates the list of the items . This list is used for the 
+    Creates the list of the items . This list is used for the
     visualization of settings group data as a table row.
     @param name: the group name
     @type name: C{str}
@@ -197,11 +198,11 @@ class SettingsGroupItem(QtGui.QStandardItem):
     return items
 
   @classmethod
-  def getSettingsItemList(self, name, value, (settings, attrname)=(None, None), 
+  def getSettingsItemList(self, name, value, (settings, attrname)=(None, None),
                           tooltip='', edit_type=SettingsValueItem.EDIT_TYPE_AUTODETECT,
                           value_default=None, value_min=None, value_max=None, value_list=[]):
     '''
-    Creates the list of the items . This list is used for the 
+    Creates the list of the items . This list is used for the
     visualization of settings group data as a table row.
     For paramters see `SettingsValueItem()`
     @rtype: C{[L{SettingsGroupItem} and L{PySide.QtGui.QStandardItem}]}
@@ -229,11 +230,11 @@ class SettingsModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(SettingsModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in SettingsModel.header])
-    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+    self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
 
-  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  #%%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
-  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  # %%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def flags(self, index):
     '''
@@ -256,9 +257,9 @@ class SettingsModel(QtGui.QStandardItemModel):
       print traceback.format_exc(1)
       return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  #%%%%%%%%%%%%%              External usage                        %%%%%%%%
-  #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  # %%%%%%%%%%%%%              External usage                        %%%%%%%%
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def init_settings(self, settings):
     '''
@@ -283,22 +284,21 @@ class SettingsModel(QtGui.QStandardItemModel):
     if isinstance(value, dict):
       new_item_row = SettingsGroupItem.getGroupItemList(name)
       root.appendRow(new_item_row)
-      self.pyqt_workaround['group_%s'%name] = new_item_row[0]
+      self.pyqt_workaround['group_%s' % name] = new_item_row[0]
       for name, value in value.items():
         self._add_item(new_item_row[0], name, value)
     else:
-      new_item_row = SettingsGroupItem.getSettingsItemList(name,
-                       self._get_settings_param(value, 'value'),
-                       (self._get_settings_param(value, 'settings'),
-                       self._get_settings_param(value, 'attrname')),
-                       self._get_settings_param(value, 'tooltip', ''),
-                       self._get_settings_param(value, 'edit_type',
-                         SettingsValueItem.EDIT_TYPE_AUTODETECT),
-                       self._get_settings_param(value, 'value_default'),
-                       self._get_settings_param(value, 'value_min'),
-                       self._get_settings_param(value, 'value_max'),
-                       self._get_settings_param(value, 'value_list')
-                     )
+      args = (name,
+              self._get_settings_param(value, 'value'),
+              (self._get_settings_param(value, 'settings'), self._get_settings_param(value, 'attrname')),
+              self._get_settings_param(value, 'tooltip', ''),
+              self._get_settings_param(value, 'edit_type', SettingsValueItem.EDIT_TYPE_AUTODETECT),
+              self._get_settings_param(value, 'value_default'),
+              self._get_settings_param(value, 'value_min'),
+              self._get_settings_param(value, 'value_max'),
+              self._get_settings_param(value, 'value_list')
+              )
+      new_item_row = SettingsGroupItem.getSettingsItemList(*args)
       root.appendRow(new_item_row)
       self.pyqt_workaround[name] = new_item_row[0]
 
@@ -307,4 +307,3 @@ class SettingsModel(QtGui.QStandardItemModel):
       return entry[0][param]
     except:
       return default
-

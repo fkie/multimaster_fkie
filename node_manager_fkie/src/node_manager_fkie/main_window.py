@@ -42,6 +42,7 @@ import uuid
 import xmlrpclib
 
 from multimaster_msgs_fkie.msg import MasterState
+import roslib
 import rospy
 
 from master_discovery_fkie.common import resolve_url
@@ -68,8 +69,8 @@ from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
 from .xml_editor import XmlEditor
 
+
 # from python_qt_binding import QtUiTools
-import roslib; roslib.load_manifest('node_manager_fkie')
 try:
   from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
   DIAGNOSTICS_AVAILABLE = True
@@ -1502,7 +1503,7 @@ class MainWindow(QtGui.QMainWindow):
 #      self.setCursor(cursor)
     else:
       QtGui.QMessageBox.information(self, "Load of launch file",
-                                    "Select a master first!", )
+                                    "Select a master first!",)
 
   def on_load_launch_as_default(self, path, host=None):
     '''
@@ -1552,7 +1553,7 @@ class MainWindow(QtGui.QMainWindow):
       self.launch_dock.progress_queue.start()
     else:
       QtGui.QMessageBox.information(self, "Load of launch file",
-                                    "Select a master first!", )
+                                    "Select a master first!",)
 
   def on_launch_edit(self, files, search_text='', trynr=1):
     '''

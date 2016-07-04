@@ -60,7 +60,7 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
     r = QtCore.QRegExp()
     r.setMinimal(True)
     f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground (QtCore.Qt.darkBlue)
+    f.setForeground(QtCore.Qt.darkBlue)
     tagList = ["\\bignore_hosts\\b", "\\bsync_hosts\\b",
                "\\bignore_nodes\\b", "\\bsync_nodes\\b",
                "\\bignore_topics\\b", "\\bignore_publishers\\b",
@@ -84,7 +84,6 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
 #    for attr in attrList:
 #      r.setPattern(attr)
 #      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
-
 
   def highlightBlock(self, text):
     for pattern, myformat in self.rules:
@@ -115,7 +114,7 @@ class SyncDialog(QtGui.QDialog):
     self.setWindowTitle('Sync')
     self.verticalLayout = QtGui.QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
-    self.resize(350,190)
+    self.resize(350, 190)
 
     self.toolButton_SyncAll = QtGui.QToolButton(self)
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -202,12 +201,11 @@ class SyncDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(self.textedit)
     self.textedit.setVisible(False)
 
-
     self._fill_interface_thread = None
     self._interfaces_files = None
     self._sync_args = []
     self._interface_filename = None
-    
+
     self.buttonBox = QtGui.QDialogButtonBox(self)
     self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel)
     self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
@@ -217,7 +215,7 @@ class SyncDialog(QtGui.QDialog):
     QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
 
     self._new_iface = True
-  
+
   @property
   def sync_args(self):
     return self._sync_args
@@ -226,7 +224,6 @@ class SyncDialog(QtGui.QDialog):
   def interface_filename(self):
     return self._interface_filename
 
-  
   def _on_sync_all_clicked(self):
     self.setResult(QtGui.QDialog.Accepted)
     self._sync_args = []
@@ -298,11 +295,11 @@ class SyncDialog(QtGui.QDialog):
       self._fill_interface_thread.interfaces.connect(self._fill_interfaces)
       self._fill_interface_thread.start()
     else:
-      self.toolButton_EditInterface.setEnabled(self._interfaces_files.has_key(self.interface_field.currentText()))
+      self.toolButton_EditInterface.setEnabled(self.interface_field.currentText() in self._interfaces_files)
     self.buttonBox.clear()
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
     self.interface_field.setFocus(QtCore.Qt.TabFocusReason)
-    self.resize(350,80)
+    self.resize(350, 80)
 
   def _fill_interfaces(self, interfaces_files):
     self._interfaces_files = interfaces_files
@@ -311,7 +308,7 @@ class SyncDialog(QtGui.QDialog):
     self.interface_field.addItems(self._interfaces_files.keys())
 
   def _on_interface_selected(self, interface):
-    if self._interfaces_files and self._interfaces_files.has_key(interface):
+    if self._interfaces_files and interface in self._interfaces_files:
       self._sync_args = []
       self._sync_args.append(''.join(['_interface_url:=', interface]))
       self.toolButton_EditInterface.setEnabled(True)
@@ -322,16 +319,16 @@ class SyncDialog(QtGui.QDialog):
     if self.textedit.isVisible():
       try:
         tmp_file = os.path.join(nm.screen().LOG_PATH, 'tmp_sync_interface.sync')
-        with open(tmp_file, 'w+') as f: 
+        with open(tmp_file, 'w+') as f:
           f.write(self.textedit.toPlainText())
         from master_discovery_fkie.common import read_interface
         read_interface(tmp_file)
-        if not self._new_iface and self._interfaces_files.has_key(self.interface_field.currentText()):
+        if not self._new_iface and self.interface_field.currentText() in self._interfaces_files:
           fileName = self._interfaces_files[self.interface_field.currentText()]
         else:
           fileName, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save sync interface', '/home', "Sync Files (*.sync)")
         if fileName:
-          with open(fileName, 'w+') as f: 
+          with open(fileName, 'w+') as f:
             self._interface_filename = fileName
             f.write(self.textedit.toPlainText())
             if self._new_iface:
@@ -341,12 +338,12 @@ class SyncDialog(QtGui.QDialog):
 #        QtGui.QDialog.accept(self)
 #        self.resetView()
       except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Create sync interface", 
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Create sync interface",
                           "Error while create interface",
                           str(e)).exec_()
     elif self.interface_field.isVisible():
       interface = self.interface_field.currentText()
-      if self._interfaces_files and self._interfaces_files.has_key(interface):
+      if self._interfaces_files and interface in self._interfaces_files:
         self._interface_filename = self._interfaces_files[interface]
         self._sync_args = []
         self._sync_args.append(''.join(['_interface_url:=', interface]))
@@ -355,7 +352,6 @@ class SyncDialog(QtGui.QDialog):
     else:
       QtGui.QDialog.accept(self)
       self.resetView()
-
 
   def reject(self):
     if self.textedit.isVisible():
@@ -398,7 +394,7 @@ class SyncDialog(QtGui.QDialog):
                           "# synchronized by default. Use sync_remote_nodes to sync these nodes also.\n"
                           "sync_remote_nodes: False\n\n"
                           )
-    self.resize(350,300)
+    self.resize(350, 300)
 
   def _on_edit_interface_clicked(self):
     self._new_iface = False
@@ -406,16 +402,16 @@ class SyncDialog(QtGui.QDialog):
     self.toolButton_CreateInterface.setVisible(False)
     self.toolButton_EditInterface.setVisible(False)
     self.textedit.setVisible(True)
-    if self._interfaces_files.has_key(self.interface_field.currentText()):
+    if self.interface_field.currentText() in self._interfaces_files:
       try:
-        with open(self._interfaces_files[self.interface_field.currentText()], 'rw') as f: 
+        with open(self._interfaces_files[self.interface_field.currentText()], 'rw') as f:
           iface = f.read()
           self.textedit.setText(iface)
       except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Edit sync interface", 
+        WarningMessageBox(QtGui.QMessageBox.Warning, "Edit sync interface",
                           "Error while open interface",
                           str(e)).exec_()
-    self.resize(350,300)
+    self.resize(350, 300)
 
   def resetView(self):
     self.toolButton_SyncAll.setVisible(True)
@@ -428,7 +424,7 @@ class SyncDialog(QtGui.QDialog):
     self.textedit.setVisible(False)
     self.buttonBox.clear()
     self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel)
-    self.resize(350,160)
+    self.resize(350, 160)
 
 
 class InterfacesThread(QtCore.QObject, threading.Thread):
@@ -479,5 +475,5 @@ class InterfacesThread(QtCore.QObject, threading.Thread):
         result = dict(ret.items() + result.items())
     elif package and os.path.isfile(path) and path.endswith('.sync'):
       # create a selection for binaries
-      return {''.join(['pkg://', package, '///', os.path.basename(path)]) : path}
+      return {''.join(['pkg://', package, '///', os.path.basename(path)]): path}
     return result

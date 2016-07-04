@@ -85,7 +85,6 @@ class ProgressQueue(QtCore.QObject):
     except:
       pass
 
-
   def add2queue(self, ident, descr, target=None, args=()):
     '''
     Adds new task to the queue. After the task was added you need call start().
@@ -112,7 +111,7 @@ class ProgressQueue(QtCore.QObject):
       self._progress_frame.setVisible(True)
       self.__running = True
       self._progress_bar.setToolTip(self.__progress_queue[0].descr)
-      dscr_len = self._progress_bar.size().width()/10
+      dscr_len = self._progress_bar.size().width() / 10
       self._progress_bar.setFormat(''.join(['%v/%m - ', self.__progress_queue[0].descr[0:dscr_len]]))
       self._progress_bar.setValue(0)
       self.__progress_queue[0].start()
@@ -143,7 +142,7 @@ class ProgressQueue(QtCore.QObject):
         val = val + 1
       th = self.__progress_queue[val]
       self._progress_bar.setToolTip(th.descr)
-      dscr_len = self._progress_bar.size().width()/10
+      dscr_len = self._progress_bar.size().width() / 10
       self._progress_bar.setFormat(''.join(['%v/%m - ', th.descr[0:dscr_len]]))
       self.__progress_queue[val].start()
       self._progress_bar.setValue(val)
@@ -164,9 +163,9 @@ class ProgressQueue(QtCore.QObject):
       return
     btns = (QtGui.QMessageBox.Ignore)
     if len(self.__progress_queue) > 1:
-      btns = (QtGui.QMessageBox.Ignore|QtGui.QMessageBox.Abort)
+      btns = (QtGui.QMessageBox.Ignore | QtGui.QMessageBox.Abort)
     res = WarningMessageBox(QtGui.QMessageBox.Warning, title, msg, detailed_msg,
-                            buttons=btns ).exec_()
+                            buttons=btns).exec_()
     if res == QtGui.QMessageBox.Abort:
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
@@ -180,7 +179,6 @@ class ProgressQueue(QtCore.QObject):
 
   def _on_progress_canceled(self):
     try:
-#      self.__progress_queue[self._progress_bar.value()].wait()
       if self.__progress_queue:
         try:
           pthread = self.__progress_queue[self._progress_bar.value()]
@@ -189,7 +187,6 @@ class ProgressQueue(QtCore.QObject):
           pthread.request_interact_signal.disconnect(self._on_request_interact)
 #          self.__progress_queue[self._progress_bar.value()].terminate()
         except:
-#          print str(self.__progress_queue[self._progress_bar.value()].getName()), 'could not be terminated'
           pass
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
@@ -200,7 +197,7 @@ class ProgressQueue(QtCore.QObject):
 
   def _on_request_interact(self, ident, descr, req):
     '''
-    If the interaction of the user is needed a message dialog must be exceuted 
+    If the interaction of the user is needed a message dialog must be exceuted
     in the main Qt thread. The requests are done by different request exceptinos.
     These are handled by this method.
     '''
@@ -226,7 +223,7 @@ class ProgressQueue(QtCore.QObject):
         self._progress_thread_finished(ident)
         return
       res = [req.request.choices[i] for i in items]
-      pt = ProgressThread(ident, descr, req.method, (req.args+(res,)))
+      pt = ProgressThread(ident, descr, req.method, (req.args + (res,)))
       pt.finished_signal.connect(self._progress_thread_finished)
       pt.error_signal.connect(self._progress_thread_error)
       pt.request_interact_signal.connect(self._on_request_interact)
@@ -259,7 +256,7 @@ class ProgressQueue(QtCore.QObject):
           if val:
             argv.append('%s:=%s' % (prm, val))
         res = argv
-        pt = ProgressThread(ident, descr, req.method, (req.args+(argv,)))
+        pt = ProgressThread(ident, descr, req.method, (req.args + (argv,)))
         pt.finished_signal.connect(self._progress_thread_finished)
         pt.error_signal.connect(self._progress_thread_error)
         pt.request_interact_signal.connect(self._on_request_interact)
@@ -267,7 +264,6 @@ class ProgressQueue(QtCore.QObject):
       else:
         self._progress_thread_finished(ident)
         return
-
 
 
 class ProgressThread(QtCore.QObject, threading.Thread):
@@ -303,15 +299,11 @@ class ProgressThread(QtCore.QObject, threading.Thread):
     '''
     '''
     try:
-      if not self._target is None:
-        # print "PG call "
-        # print "  .. ", self._target
-        # print "  -- args:", self._args
+      if self._target is not None:
         if 'pqid' in self._target.func_code.co_varnames:
           self._target(*self._args, pqid=self._id)
         else:
           self._target(*self._args)
-        # print "PG call finished"
         self.finished_signal.emit(self._id)
       else:
         self.error_signal.emit(self._id, 'No target specified')

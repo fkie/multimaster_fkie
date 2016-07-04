@@ -125,7 +125,7 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
                    'test'     : LAUNCH_TEST_CHILDS
                    }
 
-  LAUNCH_ATT_GLOBAL = {'if=' : '""', 'unless=' : '""'}
+  LAUNCH_ATT_GLOBAL = {'if=': '""', 'unless=': '""'}
   LAUNCH_LAUNCH_ATTR.update(LAUNCH_ATT_GLOBAL)
   LAUNCH_GROUP_ATTR.update(LAUNCH_ATT_GLOBAL)
   LAUNCH_MACHINE_ATTR.update(LAUNCH_ATT_GLOBAL)
@@ -138,7 +138,7 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
   LAUNCH_ARG_ATTR.update(LAUNCH_ATT_GLOBAL)
   LAUNCH_TEST_ATTR.update(LAUNCH_ATT_GLOBAL)
 
-  LAUNCH_ATTR  =  {'launch'   : LAUNCH_LAUNCH_ATTR,
+  LAUNCH_ATTR = {'launch'   : LAUNCH_LAUNCH_ATTR,
                    'group'    : LAUNCH_GROUP_ATTR,
                    'machine'  : LAUNCH_MACHINE_ATTR,
                    'node'     : LAUNCH_NODE_ATTR,
@@ -157,22 +157,22 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     self.commentStart = QtCore.QRegExp("<!--")
     self.commentEnd = QtCore.QRegExp("-->")
     self.default_format = QtGui.QTextCharFormat()
-    self.default_format.setForeground (QtGui.QColor(24,24,24))
+    self.default_format.setForeground(QtGui.QColor(24, 24, 24))
     self.mark_background = QtGui.QBrush(QtGui.QColor(251, 247, 222))
     self.commentFormat = QtGui.QTextCharFormat()
     f = QtGui.QTextCharFormat()
     r = QtCore.QRegExp()
     r.setMinimal(True)
     f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground (QtCore.Qt.darkBlue)
+    f.setForeground(QtCore.Qt.darkBlue)
     # create patterns for TAG
-    tagList = ["\\b%s\\b"%t for t in self.LAUNCH_CHILDS.keys()]
+    tagList = ["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()]
     for tag in tagList:
       r.setPattern(tag)
       self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
     # create patterns for ATTRIBUTES
     f.setForeground(QtCore.Qt.darkGreen)
-    attrList = set(["\\b%s"%attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()])
+    attrList = set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()])
     for attr in attrList:
       r.setPattern(attr)
       self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
@@ -181,14 +181,14 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     r.setPattern("\".*\"")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
     # create patterns for substitutions
-    f.setForeground(QtGui.QColor(127,64,127))
-    r.setPattern ("\\$\\(.*\\)")
+    f.setForeground(QtGui.QColor(127, 64, 127))
+    r.setPattern("\\$\\(.*\\)")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
     # create patterns for DOCTYPE
     f.setForeground (QtCore.Qt.lightGray)
-    r.setPattern ("<!DOCTYPE.*>")
+    r.setPattern("<!DOCTYPE.*>")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
-    r.setPattern ("<\\?xml.*\\?>")
+    r.setPattern("<\\?xml.*\\?>")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
 
     self.commentFormat.setFontItalic(True)
@@ -221,12 +221,12 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
       self._format(startIndex, startIndex + commentLength, self.commentFormat)
       startIndex = self.commentStart.indexIn(text, startIndex + commentLength)
 
-  def _format(self, start, end, format):
+  def _format(self, start, end, frmt):
     start += self.currentBlock().position()
     end += self.currentBlock().position()
     mark = {}
     do_mark = self._inrange(start, self._current_mark_range)
-    for val in range(start+1, end):
+    for val in range(start + 1, end):
       res = self._inrange(val, self._current_mark_range)
       if do_mark != res:
         mark[val] = res
@@ -235,17 +235,17 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
     last_pos = start
     for pos, do_mark in mark.items():
       if not do_mark:
-        format.setBackground(self.mark_background)
+        frmt.setBackground(self.mark_background)
       else:
-        format.clearBackground()
-      self.setFormat(last_pos - self.currentBlock().position(), pos - last_pos, format)
+        frmt.clearBackground()
+      self.setFormat(last_pos - self.currentBlock().position(), pos - last_pos, frmt)
       last_pos = pos
     if do_end_mark:
-      format.setBackground(self.mark_background)
+      frmt.setBackground(self.mark_background)
     else:
-      format.clearBackground()
-    self.setFormat(last_pos - self.currentBlock().position(), end - last_pos, format)
-    return format
+      frmt.clearBackground()
+    self.setFormat(last_pos - self.currentBlock().position(), end - last_pos, frmt)
+    return frmt
 
   def _inrange(self, value, (start, end)):
     return value >= start and value <= end

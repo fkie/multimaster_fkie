@@ -35,6 +35,7 @@ import roslib
 
 from node_manager_fkie.common import get_ros_home, masteruri_from_ros
 
+
 class LoggingConfig(object):
   LOGLEVEL = 'DEFAULT'
   LOGLEVEL_ROSCPP = 'INFO'
@@ -55,7 +56,6 @@ class LoggingConfig(object):
             ]
 
   def is_default(self, attribute):
-#    if hasattr(self, attribute) and hasattr(self, attribute.upper()):
     return getattr(self, attribute) == getattr(self, attribute.upper())
 
   def get_alternatives(self, attribute):
@@ -73,6 +73,7 @@ class LoggingConfig(object):
     if not self.is_default(attribute):
       result.insert(0, getattr(self, attribute))
     return result
+
 
 class Settings(object):
 
@@ -233,7 +234,7 @@ class Settings(object):
     if host and user:
       self._default_user_hosts[host] = user
       settings = self.qsettings(self.CFG_FILE)
-      settings.setValue('default_user_hosts/%s'%host, user)
+      settings.setValue('default_user_hosts/%s' % host, user)
 
   @property
   def launch_history_length(self):
@@ -264,7 +265,7 @@ class Settings(object):
     self._current_dialog_path = path
 
   def robot_image_file(self, robot_name):
-    return os.path.join(self.ROBOTS_DIR, '%s.png'%robot_name)
+    return os.path.join(self.ROBOTS_DIR, '%s.png' % robot_name)
 
   @property
   def log_viewer(self):
@@ -296,7 +297,7 @@ class Settings(object):
 
   @launch_view_file_ext.setter
   def launch_view_file_ext(self, exts):
-    self._launch_view_file_ext = self.str2list('%s'%exts)
+    self._launch_view_file_ext = self.str2list('%s' % exts)
     settings = self.qsettings(self.CFG_FILE)
     settings.setValue('launch_view_file_ext', self._launch_view_file_ext)
     self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
@@ -338,11 +339,11 @@ class Settings(object):
       settings.setValue('max_timediff', self._max_timediff)
 
   def rosconsole_cfg_file(self, package):
-    result = os.path.join(self.LOG_PATH, '%s.%s'%(package, self._rosconsole_cfg_file))
+    result = os.path.join(self.LOG_PATH, '%s.%s' % (package, self._rosconsole_cfg_file))
     with open(result, 'w') as cfg_file:
-      cfg_file.write('log4j.logger.ros=%s\n'%self.logging.loglevel)
-      cfg_file.write('log4j.logger.ros.roscpp=%s\n'%self.logging.loglevel_roscpp)
-      cfg_file.write('log4j.logger.ros.roscpp.superdebug=%s\n'%self.logging.loglevel_superdebug)
+      cfg_file.write('log4j.logger.ros=%s\n' % self.logging.loglevel)
+      cfg_file.write('log4j.logger.ros.roscpp=%s\n' % self.logging.loglevel_roscpp)
+      cfg_file.write('log4j.logger.ros.roscpp.superdebug=%s\n' % self.logging.loglevel_superdebug)
     return result
 
   def store_logging(self):
@@ -432,13 +433,14 @@ class Settings(object):
       self._terminal_emulator = ""
       for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm']:
         if os.path.isfile(t) and os.access(t, os.X_OK):
-          #workaround to support the command parameter in different terminal
+          # workaround to support the command parameter in different terminal
           if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
             self._terminal_command_arg = 'x'
           self._terminal_emulator = t
           break
-    if self._terminal_emulator == "": return ""
-    return '%s -T "%s" -%s %s'%(self._terminal_emulator, title, self._terminal_command_arg, ' '.join(cmd))
+    if self._terminal_emulator == "":
+      return ""
+    return '%s -T "%s" -%s %s' % (self._terminal_emulator, title, self._terminal_command_arg, ' '.join(cmd))
 
   def qsettings(self, settings_file):
     from python_qt_binding import QtCore

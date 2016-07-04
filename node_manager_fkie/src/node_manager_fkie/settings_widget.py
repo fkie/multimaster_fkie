@@ -71,122 +71,109 @@ class SettingsWidget(QtGui.QDockWidget):
     Load the current settings data into the model. The settings itself will not
     be loaded.
     '''
-    settings = {'Default user:' : ({
-                                   'value' : nm.settings().default_user,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'default_user',
-                                   'value_default' : nm.settings().USER_DEFAULT,
-                                   'tooltip'  : '<p>The user used for ssh connection to remote hosts</p>'
+    settings = {'Default user:': ({'value': nm.settings().default_user,
+                                   'settings': nm.settings(),
+                                   'attrname': 'default_user',
+                                   'value_default': nm.settings().USER_DEFAULT,
+                                   'tooltip': '<p>The user used for ssh connection to remote hosts</p>'
                                    },),
-                'Launch history length:' : ({
-                                   'value' : nm.settings().launch_history_length,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'launch_history_length',
-                                   'value_default' : nm.settings().LAUNCH_HISTORY_LENGTH,
-                                   'value_min' : 0,
-                                   'value_max' : 25,
-                                   'tooltip'  : '<p>The count of recent '
-                                      'loaded launch files displayed in the root '
-                                      'of the <span style=" font-weight:600;">launch '
-                                      'files</span> view.</p>'
-                                   },),
-                'Param history length:' : ({
-                                   'value' : nm.settings().param_history_length,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'param_history_length',
-                                   'value_default' : nm.settings().PARAM_HISTORY_LENGTH,
-                                   'value_min' : 0,
-                                   'value_max' : 25,
-                                   'tooltip'  : '<p>The count of parameters stored which '
-                                      'are entered in a parameter dialog (Launch file arguments, '
-                                      'paramter server, publishing to a topic, service call)</p>'
-                                   },),
+                'Launch history length:': ({'value': nm.settings().launch_history_length,
+                                            'settings': nm.settings(),
+                                            'attrname': 'launch_history_length',
+                                            'value_default': nm.settings().LAUNCH_HISTORY_LENGTH,
+                                            'value_min': 0,
+                                            'value_max': 25,
+                                            'tooltip': '<p>The count of recent '
+                                            'loaded launch files displayed in the root '
+                                            'of the <span style=" font-weight:600;">launch '
+                                            'files</span> view.</p>'
+                                            },),
+                'Param history length:': ({'value': nm.settings().param_history_length,
+                                           'settings': nm.settings(),
+                                           'attrname': 'param_history_length',
+                                           'value_default': nm.settings().PARAM_HISTORY_LENGTH,
+                                           'value_min': 0,
+                                           'value_max': 25,
+                                           'tooltip': '<p>The count of parameters stored which '
+                                           'are entered in a parameter dialog (Launch file arguments, '
+                                           'paramter server, publishing to a topic, service call)</p>'
+                                           },),
 
-                'Settings path:' : ({
-                                   'value' : nm.settings().cfg_path,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'cfg_path',
-                                   'edit_type' : SettingsValueItem.EDIT_TYPE_FOLDER,
-                                   'value_default' : nm.settings().CFG_PATH,
-                                   'tooltip'  : ''
-                                   },),
-                'Robot icon path:' : ({
-                                   'value' : nm.settings().robots_path,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'robots_path',
-                                   'edit_type' : SettingsValueItem.EDIT_TYPE_FOLDER,
-                                   'value_default' : nm.settings().ROBOTS_DIR,
-                                   'tooltip'  : '<p>The path to the folder with robot images '
+                'Settings path:': ({'value': nm.settings().cfg_path,
+                                    'settings': nm.settings(),
+                                    'attrname': 'cfg_path',
+                                    'edit_type': SettingsValueItem.EDIT_TYPE_FOLDER,
+                                    'value_default': nm.settings().CFG_PATH,
+                                    'tooltip': ''
+                                    },),
+                'Robot icon path:': ({'value': nm.settings().robots_path,
+                                      'settings': nm.settings(),
+                                      'attrname': 'robots_path',
+                                      'edit_type': SettingsValueItem.EDIT_TYPE_FOLDER,
+                                      'value_default': nm.settings().ROBOTS_DIR,
+                                      'tooltip': '<p>The path to the folder with robot images '
                                       '(<span style=" font-weight:600;">.png</span>).'
                                       'The images with robot name will be displayed in the '
                                       'info bar.</p>'
-                                   },),
-                'Show files extensions:' : ({
-                                   'value' : ', '.join(nm.settings().launch_view_file_ext),
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'launch_view_file_ext',
-                                   'value_default' : ', '.join(nm.settings().LAUNCH_VIEW_EXT),
-                                   'tooltip'  : '<p>Files that are displayed next to Launch '
-                                      'files in the <span style="font-weight:600;">'
-                                      'launch files</span> view</p>'
-                                   },),
-                'Store window layout:' : ({
-                                   'value' : nm.settings().store_geometry,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'store_geometry',
-                                   'value_default' : nm.settings().STORE_GEOMETRY,
-                                   'tooltip'  : ''
-                                   },),
-                'Max time difference:' : ({
-                                   'value' : nm.settings().max_timediff,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'max_timediff',
-                                   'value_default' : nm.settings().MAX_TIMEDIFF,
-                                   'tooltip'  : '<p>Shows a warning if the time difference to '
-                                      'remote host is greater than this value</p>'
-                                   },),
-                'Autoupdate:' : ({
-                                   'value' : nm.settings().autoupdate,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'autoupdate',
-                                   'value_default' : nm.settings().AUTOUPDATE,
-                                   'tooltip'  : '<p>By default node manager updates the current '
-                                      'state on changes. You can deactivate this behavior to '
-                                      'reduce the network load. If autoupdate is deactivated '
-                                      'you must refresh the state manually.</p>'
-                                   },),
-                'Start sync with discovery:' : ({
-                                   'value' : nm.settings().start_sync_with_discovery,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'start_sync_with_discovery',
-                                   'value_default' : nm.settings().START_SYNC_WITH_DISCOVERY,
-                                   'tooltip'  : "<p>Sets 'start sync' in 'Start' master discovery "
+                                      },),
+                'Show files extensions:': ({'value': ', '.join(nm.settings().launch_view_file_ext),
+                                            'settings': nm.settings(),
+                                            'attrname': 'launch_view_file_ext',
+                                            'value_default': ', '.join(nm.settings().LAUNCH_VIEW_EXT),
+                                            'tooltip': '<p>Files that are displayed next to Launch '
+                                            'files in the <span style="font-weight:600;">'
+                                            'launch files</span> view</p>'
+                                            },),
+                'Store window layout:': ({'value': nm.settings().store_geometry,
+                                          'settings': nm.settings(),
+                                          'attrname': 'store_geometry',
+                                          'value_default': nm.settings().STORE_GEOMETRY,
+                                          'tooltip': ''
+                                          },),
+                'Max time difference:': ({'value': nm.settings().max_timediff,
+                                          'settings': nm.settings(),
+                                          'attrname': 'max_timediff',
+                                          'value_default': nm.settings().MAX_TIMEDIFF,
+                                          'tooltip': '<p>Shows a warning if the time difference to '
+                                          'remote host is greater than this value</p>'
+                                          },),
+                'Autoupdate:': ({'value': nm.settings().autoupdate,
+                                 'settings': nm.settings(),
+                                 'attrname': 'autoupdate',
+                                 'value_default': nm.settings().AUTOUPDATE,
+                                 'tooltip': '<p>By default node manager updates the current '
+                                 'state on changes. You can deactivate this behavior to '
+                                 'reduce the network load. If autoupdate is deactivated '
+                                 'you must refresh the state manually.</p>'
+                                 },),
+                'Start sync with discovery:': ({'value': nm.settings().start_sync_with_discovery,
+                                                'settings': nm.settings(),
+                                                'attrname': 'start_sync_with_discovery',
+                                                'value_default': nm.settings().START_SYNC_WITH_DISCOVERY,
+                                                'tooltip': "<p>Sets 'start sync' in 'Start' master discovery "
                                                 "dialog to True, if this option is set to true.</p>"
-                                   },),
-                'Confirm exit when closing:' : ({
-                                   'value' : nm.settings().confirm_exit_when_closing,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'confirm_exit_when_closing',
-                                   'value_default' : nm.settings().CONFIRM_EXIT_WHEN_CLOSING,
-                                   'tooltip'  : "<p>Shows on closing of node_manager a dialog to stop "
+                                                },),
+                'Confirm exit when closing:': ({'value': nm.settings().confirm_exit_when_closing,
+                                                'settings': nm.settings(),
+                                                'attrname': 'confirm_exit_when_closing',
+                                                'value_default': nm.settings().CONFIRM_EXIT_WHEN_CLOSING,
+                                                'tooltip': "<p>Shows on closing of node_manager a dialog to stop "
                                                 "all ROS nodes if this option is set to true.</p>"
-                                   },),
-                'Highlight xml blocks:' : ({
-                                   'value' : nm.settings().highlight_xml_blocks,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'highlight_xml_blocks',
-                                   'value_default' : nm.settings().HIGHLIGHT_XML_BLOCKS,
-                                   'tooltip'  : "<p>Highlights the current selected XML block, while "
-                                                "editing ROS launch file.</p>"
-                                   },),
-                'Transpose pub/sub description:' : ({
-                                   'value' : nm.settings().transpose_pub_sub_descr,
-                                   'settings' : nm.settings(),
-                                   'attrname' : 'transpose_pub_sub_descr',
-                                   'value_default' : nm.settings().TRANSPOSE_PUB_SUB_DESCR,
-                                   'tooltip'  : "<p>Transpose publisher/subscriber in description dock.</p>"
-                                   },)
-               }
+                                                },),
+                'Highlight xml blocks:': ({'value': nm.settings().highlight_xml_blocks,
+                                           'settings': nm.settings(),
+                                           'attrname': 'highlight_xml_blocks',
+                                           'value_default': nm.settings().HIGHLIGHT_XML_BLOCKS,
+                                           'tooltip': "<p>Highlights the current selected XML block, while "
+                                           "editing ROS launch file.</p>"
+                                           },),
+                'Transpose pub/sub description:': ({'value': nm.settings().transpose_pub_sub_descr,
+                                                    'settings': nm.settings(),
+                                                    'attrname': 'transpose_pub_sub_descr',
+                                                    'value_default': nm.settings().TRANSPOSE_PUB_SUB_DESCR,
+                                                    'tooltip': "<p>Transpose publisher/subscriber in description dock.</p>"
+                                                    },)
+                }
     self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)
     self.settingsTreeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
@@ -259,7 +246,7 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
     @see: U{http://www.pyside.org/docs/pyside/PySide/QtGui/QAbstractItemDelegate.html#PySide.QtGui.QAbstractItemDelegate}
     '''
     options = QtGui.QStyleOptionViewItemV4(option)
-    self.initStyleOption(options,index)
+    self.initStyleOption(options, index)
     return QtCore.QSize(options.rect.width(), 25)
 
   def edit_finished(self, arg=None):

@@ -30,13 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
-
+from python_qt_binding import QtGui
 import os
 
-import node_manager_fkie as nm
 from packages_thread import PackagesThread
+import node_manager_fkie as nm
 
 
 class PackageDialog(QtGui.QDialog):
@@ -67,7 +66,7 @@ class PackageDialog(QtGui.QDialog):
     self.contentLayout.addRow(binary_label, self.binary_field)
 
     self.buttonBox = QtGui.QDialogButtonBox(self)
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
     self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
     self.buttonBox.setObjectName("buttonBox")
     self.verticalLayout.addWidget(self.buttonBox)
@@ -104,17 +103,17 @@ class PackageDialog(QtGui.QDialog):
     if os.path.isdir(path):
       fileList = os.listdir(path)
       for f in fileList:
-        if f and f[0] != '.' and not f in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
+        if f and f[0] != '.' and f not in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
           ret = self._getBinaries(os.path.join(path, f))
           result = dict(ret.items() + result.items())
     elif os.path.isfile(path) and os.access(path, os.X_OK):
       # create a selection for binaries
-      return {os.path.basename(path) : path}
+      return {os.path.basename(path): path}
     return result
 
   def on_package_selected(self, package):
     self.binary_field.clear()
-    if self.packages and self.packages.has_key(package):
+    if self.packages and package in self.packages:
       self.binary_field.setEnabled(True)
       path = self.packages[package]
       binaries = self._getBinaries(path).keys()
@@ -134,6 +133,7 @@ class PackageDialog(QtGui.QDialog):
 
   def on_binary_selected(self, binary):
     self.binary = binary
+
 
 class RunDialog(PackageDialog):
   '''
@@ -206,7 +206,7 @@ class RunDialog(PackageDialog):
     self.binary = self.binary_field.currentText()
     self.host = self.host_field.currentText() if self.host_field.currentText() else self.host
     self.masteruri = self.master_field.currentText() if self.master_field.currentText() else self.masteruri
-    if not self.host in self.host_history and self.host != 'localhost' and self.host != '127.0.0.1':
+    if self.host not in self.host_history and self.host != 'localhost' and self.host != '127.0.0.1':
       nm.history().add2HostHistory(self.host)
     ns = self.ns_field.currentText()
     if ns and ns != '/':
@@ -216,12 +216,12 @@ class RunDialog(PackageDialog):
       nm.history().addParamCache('run_dialog/Args', args)
     if self.package and self.binary:
       nm.history().addParamCache('/Host', self.host)
-      return (self.host, self.package, self.binary, self.name_field.text(), ('__ns:=%s %s'%(ns, args)).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
+      return (self.host, self.package, self.binary, self.name_field.text(), ('__ns:=%s %s' % (ns, args)).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
     return ()
 
   def on_package_selected(self, package):
     PackageDialog.on_package_selected(self, package)
-    if self.packages and self.packages.has_key(package):
+    if self.packages and package in self.packages:
       self.args_field.setEnabled(True)
       self.ns_field.setEnabled(True)
       self.name_field.setEnabled(True)

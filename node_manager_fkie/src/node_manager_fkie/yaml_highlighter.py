@@ -31,21 +31,22 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtGui
 from python_qt_binding import QtCore
+from python_qt_binding import QtGui
+
 
 class YamlHighlighter(QtGui.QSyntaxHighlighter):
   '''
   Enabled the syntax highlightning for the yaml files.
   '''
-  
+
   def __init__(self, parent=None):
     QtGui.QSyntaxHighlighter.__init__(self, parent)
     self.rules = []
     self.commentStart = QtCore.QRegExp("#")
     self.commentEnd = QtCore.QRegExp("\n|\r")
     self.default_format = QtGui.QTextCharFormat()
-    self.default_format.setForeground (QtGui.QColor(24,24,24))
+    self.default_format.setForeground(QtGui.QColor(24, 24, 24))
     self.commentFormat = QtGui.QTextCharFormat()
     self.commentFormat.setFontItalic(True)
     self.commentFormat.setForeground(QtCore.Qt.darkGray)
@@ -54,14 +55,14 @@ class YamlHighlighter(QtGui.QSyntaxHighlighter):
     r = QtCore.QRegExp()
     r.setMinimal(True)
     f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground (QtCore.Qt.blue)
+    f.setForeground(QtCore.Qt.blue)
     tagList = ["\\btrue\\b", "\\bfalse\\b"]
     for tag in tagList:
       r.setPattern(tag)
       self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
 
-    f.setForeground(QtGui.QColor(127,64,127))
-    r.setPattern ("\\d+")
+    f.setForeground(QtGui.QColor(127, 64, 127))
+    r.setPattern("\\d+")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
 
     f.setForeground(QtCore.Qt.darkBlue)
@@ -90,16 +91,15 @@ class YamlHighlighter(QtGui.QSyntaxHighlighter):
     r.setPattern("\".*\"|\'.*\'")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
 
-    f.setForeground(QtGui.QColor(127,64,127))
-    r.setPattern ("\\$\\(.*\\)")
+    f.setForeground(QtGui.QColor(127, 64, 127))
+    r.setPattern("\\$\\(.*\\)")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
 
-    f.setForeground (QtCore.Qt.lightGray)
-    r.setPattern ("<!DOCTYPE.*>")
+    f.setForeground(QtCore.Qt.lightGray)
+    r.setPattern("<!DOCTYPE.*>")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
-    r.setPattern ("<\\?xml.*\\?>")
+    r.setPattern("<\\?xml.*\\?>")
     self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
-
 
   def highlightBlock(self, text):
     self.setFormat(0, len(text), self.default_format)

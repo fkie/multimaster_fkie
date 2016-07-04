@@ -32,6 +32,7 @@
 
 from python_qt_binding import QtGui
 
+
 class DetailedError(Exception):
   ''' '''
 
@@ -64,7 +65,7 @@ class WarningMessageBox(QtGui.QMessageBox):
       self.setEscapeButton(buttons)
 
     self.textEdit = textEdit = self.findChild(QtGui.QTextEdit)
-    if textEdit != None :
+    if textEdit is not None:
       textEdit.setMinimumHeight(0)
       textEdit.setMaximumHeight(600)
       textEdit.setMinimumWidth(0)
@@ -74,6 +75,6 @@ class WarningMessageBox(QtGui.QMessageBox):
     self.ignore_all_btn = QtGui.QPushButton('Don\'t display again')
     self.addButton(self.ignore_all_btn, QtGui.QMessageBox.HelpRole)
 
-  def paintEvent (self, event):
+  def paintEvent(self, event):
     QtGui.QMessageBox.paintEvent(self, event)
     self.ignore_all_btn.setVisible(self.textEdit.isVisible() if self.textEdit else False)

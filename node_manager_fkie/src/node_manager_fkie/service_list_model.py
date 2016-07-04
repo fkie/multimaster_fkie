@@ -35,6 +35,7 @@ from python_qt_binding import QtGui
 
 import node_manager_fkie as nm
 
+
 class ServiceItem(QtGui.QStandardItem):
   '''
   The service item stored in the service model. This class stores the service as
@@ -62,10 +63,10 @@ class ServiceItem(QtGui.QStandardItem):
     @param parent: the item containing this item
     @type parent: L{PySide.QtGui.QStandardItem}
     '''
-    if not parent is None:
+    if parent is not None:
       # update type view
       child = parent.child(self.row(), 1)
-      if not child is None:
+      if child is not None:
         self.updateTypeView(self.service, child)
 
   def type(self):
@@ -74,7 +75,7 @@ class ServiceItem(QtGui.QStandardItem):
   @classmethod
   def getItemList(self, service):
     '''
-    Creates the list of the items from service. This list is used for the 
+    Creates the list of the items from service. This list is used for the
     visualization of service data as a table row.
     @param service: the service data
     @type service: L{master_discovery_fkie.ServiceInfo}
@@ -120,12 +121,9 @@ class ServiceItem(QtGui.QStandardItem):
 #      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
       item.setToolTip('')
     except:
-#       import traceback
-#       print traceback.format_exc(1)
       if not service.isLocal:
         tooltip = ''.join(['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
         item.setToolTip(''.join(['<div>', tooltip, '</div>']))
-
 
   def data(self, role):
     if role == self.NAME_ROLE:
@@ -165,7 +163,7 @@ class ServiceModel(QtGui.QStandardItemModel):
   header = [('Name', 300),
             ('Type', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
-  
+
   def __init__(self):
     '''
     Creates a new list model.
@@ -173,7 +171,7 @@ class ServiceModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(ServiceModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in ServiceModel.header])
-    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
+    self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
 
   def flags(self, index):
     '''
@@ -189,9 +187,9 @@ class ServiceModel(QtGui.QStandardItemModel):
 
   def updateModelData(self, services, added_srvs, updated_srvs, removed_srvs):
     '''
-    Updates the service list model. New services will be inserted in sorting 
+    Updates the service list model. New services will be inserted in sorting
     order. Not available services removed from the model.
-    @param services: The dictionary with services 
+    @param services: The dictionary with services
     @type services: C{dict(service name : L{master_discovery_fkie.ServiceInfo})}
     @param added_srvs: the list of new services in the :service: list
     @type added_srvs: list or set
@@ -221,7 +219,7 @@ class ServiceModel(QtGui.QStandardItemModel):
         doAddItem = True
         service = services[srv_name]
         for i in range(root.rowCount()):
-          if not srv_name in updated_srvs:
+          if srv_name not in updated_srvs:
             serviceItem = root.child(i)
             if cmp(serviceItem.service.name, service.name) > 0:
               service_item_row = ServiceItem.getItemList(service)

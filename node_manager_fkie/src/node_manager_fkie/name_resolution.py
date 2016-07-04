@@ -36,8 +36,10 @@ import socket
 
 import rospy
 
+from node_manager_fkie.common import masteruri_from_ros
 
 RESOLVE_CACHE = {}  # hostname : address
+
 
 class MasterEntry(object):
 
@@ -52,8 +54,8 @@ class MasterEntry(object):
 
   def __repr__(self):
     return ''.join([str(self.masteruri), ':\n',
-                   '  masternames: ', str(self._masternames), '\n',
-                   '  addresses: ', str(self._addresses), '\n'])
+                    '  masternames: ', str(self._masternames), '\n',
+                    '  addresses: ', str(self._addresses), '\n'])
 
   def entry(self):
     return (self.masteruri, list(self._masternames), list(self._addresses))
@@ -164,17 +166,18 @@ class MasterEntry(object):
     except:
       pass
 
+
 class NameResolution(object):
   '''
-  This class stores the association between master URI, master name and 
+  This class stores the association between master URI, master name and
   host name or IP. Both the setter and the getter methods are thread safe.
   '''
 
   def __init__(self):
     self.mutex = RLock()
-    self._masters = [] #sets with masters
-    self._hosts = [] #sets with hosts
-    self._address = [] # avoid the mixing of ip and name as address
+    self._masters = []  # sets with masters
+    self._hosts = []  # sets with hosts
+    self._address = []  # avoid the mixing of ip and name as address
 
   def remove_master_entry(self, masteruri):
     with self.mutex:
@@ -213,7 +216,7 @@ class NameResolution(object):
           m.add_mastername(mastername)
           m.add_address(address)
           return
-      if not mastername is None:
+      if mastername is not None:
         self._masters.append(MasterEntry(None, mastername, address))
 
   def _validate_mastername(self, mastername, masteruri):
@@ -242,7 +245,7 @@ class NameResolution(object):
     with self.mutex:
       for m in self._masters:
         if m.masteruri == masteruri:
-          if not address is None:
+          if address is not None:
             if m.has_address(address):
               return m.get_mastername()
           else:
@@ -274,7 +277,7 @@ class NameResolution(object):
     with self.mutex:
       result = []
       for m in self._masters:
-        if m.has_address(address) and m.masteruri and not m.masteruri in result:
+        if m.has_address(address) and m.masteruri and m.masteruri not in result:
           result.append(m.masteruri)
       return result
 
@@ -344,7 +347,6 @@ class NameResolution(object):
     '''
     if url is None:
       return None
-    from urlparse import urlparse
     o = urlparse(url)
     if o.hostname is None:
       return url
@@ -359,9 +361,11 @@ class NameResolution(object):
     @return: host or '' if url is an IP or invalid
     @rtype:  C{str}
     '''
-    hostname = cls.getHostname(url)
-    if hostname is not None:
-      if hostname != 'localhost':
-        if '.' not in hostname and ':' not in hostname:
-          return hostname
+    print "test", masteruri_from_ros(), url
+    if masteruri_from_ros() != url:
+      hostname = cls.getHostname(url)
+      if hostname is not None:
+        if hostname != 'localhost':
+          if '.' not in hostname and ':' not in hostname:
+            return hostname
     return ''

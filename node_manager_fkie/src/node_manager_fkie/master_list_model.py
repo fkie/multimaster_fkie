@@ -32,11 +32,12 @@
 
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
-from socket import getaddrinfo, AF_INET, AF_INET6
+from socket import getaddrinfo, AF_INET6
 from urlparse import urlparse
 import threading
 
 import node_manager_fkie as nm
+
 
 class MasterSyncButtonHelper(QtCore.QObject):
   '''
@@ -57,9 +58,9 @@ class MasterSyncButtonHelper(QtCore.QObject):
     self.name = master.name
     self._master = master
     self._syncronized = MasterSyncButtonHelper.NOT_SYNC
-    self.ICONS = {MasterSyncButtonHelper.SYNC : QtGui.QIcon(":/icons/%s_sync.png" % self.ICON_PREFIX),
-                  MasterSyncButtonHelper.NOT_SYNC : QtGui.QIcon(":/icons/%s_not_sync.png" % self.ICON_PREFIX),
-                  MasterSyncButtonHelper.SWITCHED: QtGui.QIcon(":/icons/%s_start_sync.png" % self.ICON_PREFIX) }
+    self.ICONS = {MasterSyncButtonHelper.SYNC: QtGui.QIcon(":/icons/%s_sync.png" % self.ICON_PREFIX),
+                  MasterSyncButtonHelper.NOT_SYNC: QtGui.QIcon(":/icons/%s_not_sync.png" % self.ICON_PREFIX),
+                  MasterSyncButtonHelper.SWITCHED: QtGui.QIcon(":/icons/%s_start_sync.png" % self.ICON_PREFIX)}
     self.widget = QtGui.QPushButton()
 #    self.widget.setFlat(True)
     self.widget.setIcon(self.ICONS[MasterSyncButtonHelper.NOT_SYNC])
@@ -135,7 +136,7 @@ class MasterItem(QtGui.QStandardItem):
   The master item stored in the master model. This class stores the master as
   master_discovery_fkie.ROSMaster.
   '''
-  
+
   ITEM_TYPE = QtGui.QStandardItem.UserType + 34
 
   def __init__(self, master, local=False, quality=None, parent=None):
@@ -146,13 +147,13 @@ class MasterItem(QtGui.QStandardItem):
     self.local = local
     self.__quality = quality
     self.descr = ''
-    self.ICONS = {'green' : QtGui.QIcon(":/icons/stock_connect_green.png"),
+    self.ICONS = {'green': QtGui.QIcon(":/icons/stock_connect_green.png"),
                   'yellow': QtGui.QIcon(":/icons/stock_connect_yellow.png"),
-                  'red'   : QtGui.QIcon(":/icons/stock_connect_red.png"),
-                  'grey'  : QtGui.QIcon(":/icons/stock_connect.png"),
-                  'disconnected' : QtGui.QIcon(":/icons/stock_disconnect.png"),
-                  'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png'),
-                  'clock_warn' : QtGui.QIcon(':/icons/crystal_clear_xclock_fail.png') }
+                  'red': QtGui.QIcon(":/icons/stock_connect_red.png"),
+                  'grey': QtGui.QIcon(":/icons/stock_connect.png"),
+                  'disconnected': QtGui.QIcon(":/icons/stock_disconnect.png"),
+                  'warning': QtGui.QIcon(':/icons/crystal_clear_warning.png'),
+                  'clock_warn': QtGui.QIcon(':/icons/crystal_clear_xclock_fail.png')}
     self.master_ip = None
     self._master_errors = []
     self._timediff = 0
@@ -177,7 +178,7 @@ class MasterItem(QtGui.QStandardItem):
           (family, socktype, proto, canonname, (ip, port)) = r
         if self.master_ip is None and ip:
           self.master_ip = ''
-        if ip and not ip in ips:
+        if ip and ip not in ips:
           self.master_ip = ' '.join([self.master_ip, ip])
           ips.append(ip)
 #      self.updateNameView(self.master, self.quality, self)
@@ -213,17 +214,17 @@ class MasterItem(QtGui.QStandardItem):
 
   def updateMasterView(self, parent):
     '''
-    This method is called after the master state is changed to update the 
-    representation of the master. The name will not be changed, but all other 
+    This method is called after the master state is changed to update the
+    representation of the master. The name will not be changed, but all other
     data.
-    @param parent: Item which contains this master item. This is needed to update 
+    @param parent: Item which contains this master item. This is needed to update
     other columns of this master.
     @type parent: L{PySide.QtGui.QStandardItem}
     '''
-    if not parent is None:
-      #update the name decoration
+    if parent is not None:
+      # update the name decoration
       child = parent.child(self.row(), MasterModel.COL_NAME)
-      if not child is None:
+      if child is not None:
         self.updateNameView(self.master, self.quality, child)
 
   def updateNameView(self, master, quality, item):
@@ -239,17 +240,14 @@ class MasterItem(QtGui.QStandardItem):
     tooltip = ''.join([tooltip, '<dl>'])
     tooltip = ''.join([tooltip, '<dt>', 'IP: ', str(self.master_ip), '</dt>'])
     if master.online:
-      if not quality is None and quality != -1.:
-        tooltip = ''.join([tooltip, '<dt>', 'Quality: ', str(quality),' %', '</dt>'])
+      if quality is not None and quality != -1.:
+        tooltip = ''.join([tooltip, '<dt>', 'Quality: ', str(quality), ' %', '</dt>'])
       else:
         tooltip = ''.join([tooltip, '<dt>', 'Quality: not available</dt>'])
-#      if item.checkState() == QtCore.Qt.Checked:
-#        tooltip = ''.join([tooltip, '<dt>', 'synchronized', '</dt>'])
     else:
       tooltip = ''.join([tooltip, '<dt>', 'offline', '</dt>'])
     tooltip = ''.join([tooltip, '</dl>'])
     if item.descr:
-#      tooltip = ''.join([tooltip, '<b><u>Description:</u></b>'])
       tooltip = ''.join([tooltip, item.descr])
     # update the icon
     if master.online:
@@ -257,15 +255,15 @@ class MasterItem(QtGui.QStandardItem):
       if self._master_errors or self.master_ip is None or timediff:
         item.setIcon(self.ICONS['warning'])
         if timediff:
-          tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %3.f seconds!</font>'%self._timediff, '</h4>'])
+          tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %3.f seconds!</font>' % self._timediff, '</h4>'])
           item.setIcon(self.ICONS['clock_warn'])
         if self.master_ip is None:
           tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Host not reachable by name!!! The ROS topics may not by connected!!!</font>', '</h4>'])
         if self._master_errors:
           tooltip = ''.join([tooltip, '<h4>Errors reported by master_discovery:</h4>'])
           for err in self._master_errors:
-            tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>'%err])
-      elif not quality is None and quality != -1.:
+            tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>' % err])
+      elif quality is not None and quality != -1.:
         if quality > 30:
           item.setIcon(self.ICONS['green'])
         elif quality > 5:
@@ -327,7 +325,6 @@ class MasterItem(QtGui.QStandardItem):
     return False
 
 
-
 class MasterModel(QtGui.QStandardItemModel):
   '''
   The model to manage the list with masters in ROS network.
@@ -349,7 +346,7 @@ class MasterModel(QtGui.QStandardItemModel):
     self.setColumnCount(len(MasterModel.header))
     self._masteruri = local_masteruri
     self.parent_view = None
-    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+    self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
 
   def flags(self, index):
     '''
@@ -368,9 +365,9 @@ class MasterModel(QtGui.QStandardItemModel):
 
   def updateMaster(self, master):
     '''
-    Updates the information of the ros master. If the ROS master not exists, it 
+    Updates the information of the ros master. If the ROS master not exists, it
     will be added.
-    
+
     @param master: the ROS master to update
     @type master: L{master_discovery_fkie.msg.ROSMaster}
     '''
@@ -407,7 +404,7 @@ class MasterModel(QtGui.QStandardItemModel):
 
   def addRow(self, master, local, root, index):
     '''
-    Creates the list of the items from master. This list is used for the 
+    Creates the list of the items from master. This list is used for the
     visualization of master data as a table row.
     @param master the master data
     @type master master_discovery_fkie.ROSMaster
@@ -437,8 +434,8 @@ class MasterModel(QtGui.QStandardItemModel):
 
   def updateMasterStat(self, master, quality):
     '''
-    Updates the information of the ros master. 
-    
+    Updates the information of the ros master.
+
     @param master: the ROS master to update
     @type master: C{str}
     @param quality: the quality of the connection to master
@@ -454,7 +451,7 @@ class MasterModel(QtGui.QStandardItemModel):
   def setChecked(self, master, state):
     '''
     Set the master to checked state
-    
+
     @param master: the ROS master to update
     @type master: C{str}
     @param state: new state
@@ -470,7 +467,7 @@ class MasterModel(QtGui.QStandardItemModel):
   def removeMaster(self, master):
     '''
     Remove the master with given name.
-    
+
     @param master: the ROS master to add
     @type master: C{str}
     '''
@@ -488,7 +485,7 @@ class MasterModel(QtGui.QStandardItemModel):
 
   def updateMasterErrors(self, master, errors):
     '''
-    Updates the errors reported by master_discovery. 
+    Updates the errors reported by master_discovery.
 
     @param master: the ROS master to update
     @type master: C{str}
@@ -504,7 +501,7 @@ class MasterModel(QtGui.QStandardItemModel):
 
   def updateTimeDiff(self, master, timediff):
     '''
-    Updates the time difference reported by master_discovery. 
+    Updates the time difference reported by master_discovery.
 
     @param master: the ROS master to update
     @type master: C{str}
@@ -521,7 +518,7 @@ class MasterModel(QtGui.QStandardItemModel):
   def updateDescription(self, master, descr):
     '''
     Updates the description of the master with given name.
-    
+
     @param master: the ROS master to add
     @type master: C{str}
     @param descr: the description of the master coded as HTML

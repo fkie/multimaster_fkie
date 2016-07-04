@@ -39,7 +39,9 @@ class SelectDialog(QtGui.QDialog):
   This dialog creates an input mask for a string list and return selected entries.
   '''
 
-  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok, exclusive=False, preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True, checkitem1='', checkitem2=''):
+  def __init__(self, items=list(), buttons=QtGui.QDialogButtonBox.Cancel | QtGui.QDialogButtonBox.Ok, exclusive=False,
+               preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True,
+               checkitem1='', checkitem2=''):
     '''
     Creates an input dialog.
     @param items: a list with strings
@@ -180,14 +182,14 @@ class SelectDialog(QtGui.QDialog):
     return list(), False
 
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def accept(self):
     self.setResult(QtGui.QDialog.Accepted)
     self.hide()
-  
+
   def reject(self):
     self.setResult(QtGui.QDialog.Rejected)
     self.hide()
@@ -195,7 +197,7 @@ class SelectDialog(QtGui.QDialog):
   def hideEvent(self, event):
     self.close()
 
-  def closeEvent (self, event):
+  def closeEvent(self, event):
     '''
     Test the open files for changes and save this if needed.
     '''
@@ -207,9 +209,9 @@ class MainBox(QtGui.QWidget):
   '''
   A widget with entries.
   '''
-  
+
   toggled = QtCore.Signal(QtCore.Qt.CheckState)
-  
+
   def __init__(self, parent=None):
     QtGui.QWidget.__init__(self, parent)
     self.setObjectName("MainBox")
@@ -263,7 +265,7 @@ class MainBox(QtGui.QWidget):
         if item.isChecked():
           result.append(item.text())
     return result
-  
+
   def setState(self, state):
     self.__on_intern_change = True
     for i in range(self.layout().count()):

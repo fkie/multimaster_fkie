@@ -33,23 +33,22 @@
 from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 
-
-from master_discovery_fkie.master_info import TopicInfo
 from detailed_msg_box import WarningMessageBox
+from master_discovery_fkie.master_info import TopicInfo
+
 
 class TopicItem(QtGui.QStandardItem):
   '''
   The topic item stored in the topic model. This class stores the topic as
   L{master_discovery_fkie.TopicInfo}. The name of the topic represented in HTML.
   '''
-  
+
   ITEM_TYPE = QtGui.QStandardItem.UserType + 36
   NAME_ROLE = QtCore.Qt.UserRole + 1
   NODENAMES_ROLE = QtCore.Qt.UserRole + 2
   COL_PUB = 1
   COL_SUB = 2
   COL_TYPE = 3
-
 
   def __init__(self, name, topic=None, parent=None):
     '''
@@ -78,9 +77,9 @@ class TopicItem(QtGui.QStandardItem):
     '''
     Updates the representation of the column contains the publisher state.
     '''
-    if not self.parent_item is None:
+    if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_PUB)
-      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
         cfg_col.setText(str(len(self.topic.publisherNodes)))
         tooltip = ''.join(['<h4>', 'Publisher [', self.topic.name, ']:</h4><dl>'])
         for p in self.topic.publisherNodes:
@@ -93,9 +92,9 @@ class TopicItem(QtGui.QStandardItem):
     '''
     Updates the representation of the column contains the subscriber state.
     '''
-    if not self.parent_item is None:
+    if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_SUB)
-      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
         cfg_col.setText(str(len(self.topic.subscriberNodes)))
         tooltip = ''.join(['<h4>', 'Subscriber [', self.topic.name, ']:</h4><dl>'])
         for p in self.topic.subscriberNodes:
@@ -108,9 +107,9 @@ class TopicItem(QtGui.QStandardItem):
     '''
     Updates the representation of the column contains the type of the topic.
     '''
-    if not self.parent_item is None:
+    if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_TYPE)
-      if not cfg_col is None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
         cfg_col.setText(self.topic.type if self.topic.type and self.topic.type != 'None' else 'unknown type')
         # removed tooltip for clarity!!!
 #         if not self.topic.type is None and not cfg_col.toolTip():
@@ -148,15 +147,15 @@ class TopicItem(QtGui.QStandardItem):
 
   def _on_publishing(self):
     self.updateIconView(QtGui.QIcon(':/icons/state_run.png'))
-  
+
   def _publish_finished(self):
     self._publish_thread = None
     self.setIcon(QtGui.QIcon())
-  
+
   def show_error_msg(self, msg):
-    WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error", 
-                  'Error while publish to %s'%self.topic.name,
-                  str(msg)).exec_()
+    WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error",
+                      'Error while publish to %s' % self.topic.name,
+                      tr(msg)).exec_()
 
   def type(self):
     return TopicItem.ITEM_TYPE
@@ -165,14 +164,14 @@ class TopicItem(QtGui.QStandardItem):
     if role == self.NAME_ROLE:
       return self.topic.name
     elif role == self.NODENAMES_ROLE:
-      return str(self.topic.publisherNodes)+str(self.topic.subscriberNodes)
+      return str(self.topic.publisherNodes) + str(self.topic.subscriberNodes)
     else:
       return QtGui.QStandardItem.data(self, role)
 
   @classmethod
   def getItemList(self, topic, root):
     '''
-    Creates the list of the items from topic. This list is used for the 
+    Creates the list of the items from topic. This list is used for the
     visualization of topic data as a table row.
     @param name: the topic name
     @type name: C{str}
@@ -222,11 +221,11 @@ class TopicModel(QtGui.QStandardItemModel):
   The model to manage the list with topics in ROS network.
   '''
   header = [('Name', 300),
-            ('Publisher', 50), 
+            ('Publisher', 50),
             ('Subscriber', 50),
             ('Type', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
-  
+
   def __init__(self):
     '''
     Creates a new list model.
@@ -234,7 +233,7 @@ class TopicModel(QtGui.QStandardItemModel):
     QtGui.QStandardItemModel.__init__(self)
     self.setColumnCount(len(TopicModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in TopicModel.header])
-    self.pyqt_workaround = dict() # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+    self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
 
   def flags(self, index):
     '''
@@ -250,9 +249,9 @@ class TopicModel(QtGui.QStandardItemModel):
 
   def updateModelData(self, topics, added_topics, updated_topics, removed_topics):
     '''
-    Updates the topics model. New topic will be inserted in sorting order. Not 
+    Updates the topics model. New topic will be inserted in sorting order. Not
     available topics removed from the model.
-    @param topics: The dictionary with topics 
+    @param topics: The dictionary with topics
     @type topics: C{dict(topic name : L{master_discovery_fkie.TopicInfo}, ...)}
     @param added_topics: the list of new topics in the :topics: list
     @type added_topics: list or set
@@ -262,13 +261,13 @@ class TopicModel(QtGui.QStandardItemModel):
     @type removed_topics: list or set
     '''
     root = self.invisibleRootItem()
-    #remove or update the existing items
+    # remove or update the existing items
     for i in reversed(range(root.rowCount())):
       topicItem = root.child(i)
       if topicItem.topic.name in removed_topics:
         root.removeRow(i)
         try:
-          del self.pyqt_workaround[topicItem.topic.name] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+          del self.pyqt_workaround[topicItem.topic.name]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
         except:
           pass
       elif topicItem.topic.name in updated_topics:
@@ -281,12 +280,12 @@ class TopicModel(QtGui.QStandardItemModel):
         doAddItem = True
         topic = topics[topic_name]
         for i in range(root.rowCount()):
-          if not topic_name in updated_topics:
+          if topic_name not in updated_topics:
             topicItem = root.child(i)
             if cmp(topicItem.topic.name, topic_name) > 0:
               new_item_row = TopicItem.getItemList(topic, root)
               root.insertRow(i, new_item_row)
-              self.pyqt_workaround[topic_name] = new_item_row[0] # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+              self.pyqt_workaround[topic_name] = new_item_row[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
               new_item_row[0].updateView()
               doAddItem = False
               break
@@ -320,8 +319,8 @@ class TopicModel(QtGui.QStandardItemModel):
       topicItem = root.child(i)
       if topicItem.topic.name in publisher:
         result.append(self.index(i, 0))
-        result.append(self.index(i, 1)) # select also the publishers column
+        result.append(self.index(i, 1))  # select also the publishers column
       if topicItem.topic.name in subscriber:
         result.append(self.index(i, 0))
-        result.append(self.index(i, 2)) # select also the subscribers column
+        result.append(self.index(i, 2))  # select also the subscribers column
     return result
