@@ -106,11 +106,17 @@ def get_ros_hostname(url):
   @return: host or '' if url is an IP or invalid
   @rtype:  C{str}
   '''
-  if masteruri_from_ros() != url:
-    hostname = getHostname(url)
-    if hostname is not None:
-      if hostname != 'localhost':
-        if '.' not in hostname and ':' not in hostname:
+  hostname = getHostname(url)
+  if hostname is not None:
+    if hostname != 'localhost':
+      if '.' not in hostname and ':' not in hostname:
+        # ROS resolves the 'localhost' to local hostname
+        local_hostname = 'localhost'
+        try:
+          local_hostname = socket.gethostname()
+        except:
+          pass
+        if hostname != local_hostname:
           return hostname
   return ''
 

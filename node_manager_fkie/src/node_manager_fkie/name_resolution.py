@@ -36,8 +36,6 @@ import socket
 
 import rospy
 
-from node_manager_fkie.common import masteruri_from_ros
-
 RESOLVE_CACHE = {}  # hostname : address
 
 
@@ -361,11 +359,16 @@ class NameResolution(object):
     @return: host or '' if url is an IP or invalid
     @rtype:  C{str}
     '''
-    print "test", masteruri_from_ros(), url
-    if masteruri_from_ros() != url:
-      hostname = cls.getHostname(url)
-      if hostname is not None:
-        if hostname != 'localhost':
-          if '.' not in hostname and ':' not in hostname:
+    hostname = cls.getHostname(url)
+    if hostname is not None:
+      if hostname != 'localhost':
+        if '.' not in hostname and ':' not in hostname:
+          local_hostname = 'localhost'
+          try:
+            # ROS resolves the 'localhost' to local hostname
+            local_hostname = socket.gethostname()
+          except:
+            pass
+          if hostname != local_hostname:
             return hostname
     return ''
