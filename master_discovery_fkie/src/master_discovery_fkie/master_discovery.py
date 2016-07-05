@@ -485,6 +485,7 @@ class Discoverer(object):
     '''
 #    threading.Thread.__init__(self)
     self.do_finish = False
+    self._services_initialized = False
     self.__lock = threading.RLock()
     self._send_errors = dict()
     # the list with all ROS master neighbors
@@ -547,9 +548,6 @@ class Discoverer(object):
     self.mcast_group = mcast_group
     # initialize the ROS publishers
     self.pubchanges = rospy.Publisher("~changes", MasterState, queue_size=10)
-    # initialize the ROS services
-    rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
-    rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
     # create a thread to monitor the ROS master state
     mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
     is_ip6 = self._is_ipv6_group(mgroup)
@@ -955,6 +953,11 @@ class Discoverer(object):
     with self.__lock:
       try:
         self.pubchanges.publish(master_state)
+        if not self._services_initialized:
+          # initialize the ROS services
+          self._services_initialized = True
+          rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
+          rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
       except:
         import traceback
         traceback.print_exc()
