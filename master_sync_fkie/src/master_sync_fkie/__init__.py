@@ -33,7 +33,7 @@
 
 import sys
 
-import roslib; roslib.load_manifest('master_sync_fkie')
+import roslib
 import rospy
 
 import master_sync

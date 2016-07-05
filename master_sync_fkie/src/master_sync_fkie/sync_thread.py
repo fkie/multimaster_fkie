@@ -44,9 +44,6 @@ from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.filter_interface import FilterInterface
 
 
-import roslib; roslib.load_manifest('master_sync_fkie')
-
-
 class SyncThread(object):
   '''
   A thread to synchronize the local ROS master with a remote master. While the

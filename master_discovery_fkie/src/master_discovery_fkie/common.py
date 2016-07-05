@@ -38,8 +38,6 @@ import roslib.names
 import rospy
 
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
-
 EMPTY_PATTERN = re.compile('\b', re.I)
 MASTERURI = None
 

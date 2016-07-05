@@ -36,7 +36,7 @@ import os
 import signal
 import sys
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
+import roslib
 import rospy
 
 # MCAST_GROUP = "ff02::1"# ipv6 multicast group

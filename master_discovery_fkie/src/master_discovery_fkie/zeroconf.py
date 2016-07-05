@@ -51,9 +51,6 @@ import rospy
 from master_monitor import MasterMonitor
 
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
-
-
 ZEROCONF_NAME = "zeroconf"
 
 

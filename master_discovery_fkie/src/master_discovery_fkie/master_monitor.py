@@ -51,8 +51,6 @@ from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
-
 try:  # to avoid the problems with autodoc on ros.org/wiki site
   from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo, SyncServiceInfo
   from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo

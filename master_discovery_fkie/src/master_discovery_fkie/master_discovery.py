@@ -47,9 +47,6 @@ from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket
 
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
-
-
 try:  # to avoid the problems with autodoc on ros.org/wiki site
   from multimaster_msgs_fkie.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster  # , SyncMasterInfo, SyncTopicInfo
   from multimaster_msgs_fkie.srv import DiscoverMasters, DiscoverMastersResponse

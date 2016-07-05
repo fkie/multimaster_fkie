@@ -33,7 +33,6 @@
 import time
 import xmlrpclib
 
-import roslib; roslib.load_manifest('master_discovery_fkie')
 import rospy
 
 

@@ -47,9 +47,6 @@ import master_discovery_fkie.interface_finder as interface_finder
 from .sync_thread import SyncThread
 
 
-import roslib; roslib.load_manifest('master_sync_fkie')
-
-
 class Main(object):
   '''
   '''
