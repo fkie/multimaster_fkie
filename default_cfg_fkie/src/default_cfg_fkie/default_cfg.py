@@ -53,15 +53,17 @@ from screen_handler import ScreenHandler  # , ScreenHandlerException
 class LoadException(Exception):
   ''' The exception throwing while searching for the given launch file. '''
   pass
+
+
 class StartException(Exception):
   ''' The exception throwing while run a node containing in the loaded configuration. '''
   pass
 
 
 class DefaultCfg(object):
-  
+
   def __init__(self):
-    self.nodes = [] 
+    self.nodes = []
     '''@var: the list with names of nodes with name spaces '''
     self.sensors = {}
     '''@ivar: Sensor description: C{dict(node name : [(sensor type, sensor name, sensor description), ...])}'''
@@ -72,18 +74,18 @@ class DefaultCfg(object):
     self.__lock = threading.RLock()
     # Load parameter
     self.launch_file = rospy.get_param('~launch_file', '')
-    rospy.loginfo("launch_file: %s"%self.launch_file)
+    rospy.loginfo("launch_file: %s" % self.launch_file)
     self.package = rospy.get_param('~package', '')
-    rospy.loginfo("package: %s"%self.package)
+    rospy.loginfo("package: %s" % self.package)
     self.do_autostart = rospy.get_param('~autostart', False)
-    rospy.loginfo("do_autostart: %s"%self.do_autostart)
+    rospy.loginfo("do_autostart: %s" % self.do_autostart)
     self.load_params_at_start = rospy.get_param('~load_params_at_start', True)
     self.parameter_loaded = False
     rospy.loginfo("load_params_at_start: %s" % self.load_params_at_start)
     self.argv = rospy.get_param('~argv', [])
-    rospy.loginfo("argv: %s"%self.argv)
+    rospy.loginfo("argv: %s" % self.argv)
     if not isinstance(self.argv, list):
-      self.argv = ["%s"%self.argv]
+      self.argv = ["%s" % self.argv]
     sys.argv.extend(self.argv)
     if self.do_autostart:
       rospy.set_param('~autostart', False)
@@ -98,7 +100,7 @@ class DefaultCfg(object):
     '''@ivar: The service will be created on each load of a launch file to
     inform the caller about a new configuration. '''
     self.description_response = ListDescriptionResponse()
-    # variables to print the pending autostart nodes 
+    # variables to print the pending autostart nodes
     self._pending_starts = set()
     self._pending_starts_last_printed = set()
 
@@ -109,14 +111,14 @@ class DefaultCfg(object):
     with self.__lock:
       self._pending_starts.clear()
       # shutdown the services to inform the caller about a new configuration.
-      if not self.runService is None:
+      if self.runService is not None:
         self.runService.shutdown('reload config')
       self.runService = None
-      if not self.listService is None:
+      if self.listService is not None:
         self.listService.shutdown('reload config')
       self.listService = None
-      self.nodes = [] # the name of nodes with namespace
-      self.sensors = {} # sensor descriptions
+      self.nodes = []  # the name of nodes with namespace
+      self.sensors = {}  # sensor descriptions
       launch_path = self.getPath(self.launch_file, self.package)
       rospy.loginfo("loading launch file: %s", launch_path)
       self.masteruri = self._masteruri_from_ros()
@@ -161,7 +163,7 @@ class DefaultCfg(object):
       # get the sensor description
       tmp_cap_dict = self.getCapabilitiesDesrc()
       for machine, ns_dict in tmp_cap_dict.items():
-        if self.roscfg.machines.has_key(machine):
+        if machine in self.roscfg.machines:
           machine = self.roscfg.machines[machine].address
         if not machine or roslib.network.is_local_address(machine):
           for ns, group_dict in ns_dict.items():
@@ -179,7 +181,7 @@ class DefaultCfg(object):
       if self.load_params_at_start:
         self.loadParams()
       # initialize the ROS services
-      #HACK to let the node_manager to update the view
+      # HACK to let the node_manager to update the view
       if delay_service_creation > 0.:
         t = threading.Timer(delay_service_creation, self._timed_service_creation)
         t.start()
@@ -204,7 +206,7 @@ class DefaultCfg(object):
 
   def _decode(self, val):
     '''
-    Replaces the '\\n' by '\n' and decode the string entry from system default 
+    Replaces the '\\n' by '\n' and decode the string entry from system default
     coding to unicode.
     @param val: the string coding as system default
     @return: the decoded string
@@ -219,14 +221,14 @@ class DefaultCfg(object):
 
   def getCapabilitiesDesrc(self):
     '''
-    Parses the launch file for C{capabilities} and C{capability_group} parameter 
+    Parses the launch file for C{capabilities} and C{capability_group} parameter
     and creates  dictionary for grouping the nodes.
     @return: the capabilities description stored in this configuration
     @rtype: C{dict(machine : dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str]))))}
     '''
     result = dict()
     capabilies_descr = dict()
-    if not self.roscfg is None:
+    if self.roscfg is not None:
       # get the capabilities description
       # use two separate loops, to create the description list first
       for param, p in self.roscfg.params.items():
@@ -236,50 +238,50 @@ class DefaultCfg(object):
               print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
             else:
               for entry in p.value:
-                capabilies_descr[entry[0]] = { 'type' : ''.join([entry[1]]), 'images' : entry[2].split(','), 'description' : self._decode(entry[3])}
+                capabilies_descr[entry[0]] = {'type': ''.join([entry[1]]), 'images': entry[2].split(','), 'description': self._decode(entry[3])}
       # get the capability nodes
       for item in self.roscfg.nodes:
         node_fullname = roslib.names.ns_join(item.namespace, item.name)
-        machine_name = item.machine_name if not item.machine_name is None and not item.machine_name == 'localhost' else ''
+        machine_name = item.machine_name if item.machine_name is not None and not item.machine_name == 'localhost' else ''
         added = False
         cap_param = roslib.names.ns_join(node_fullname, 'capability_group')
         cap_ns = node_fullname
-        #find the capability group parameter in namespace
-        while not self.roscfg.params.has_key(cap_param) and cap_param.count(roslib.names.SEP) > 1:
+        # find the capability group parameter in namespace
+        while cap_param not in self.roscfg.params and cap_param.count(roslib.names.SEP) > 1:
           cap_ns = roslib.names.namespace(cap_ns).rstrip(roslib.names.SEP)
           if not cap_ns:
             cap_ns = roslib.names.SEP
           cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
         if cap_ns == node_fullname:
-          cap_ns = item.namespace.rstrip(roslib.names.SEP)        # if the parameter group parameter found, assign node to the group
+          cap_ns = item.namespace.rstrip(roslib.names.SEP)  # if the parameter group parameter found, assign node to the group
           if not cap_ns:
             cap_ns = roslib.names.SEP
         # if the 'capability_group' parameter found, assign node to the group
-        if self.roscfg.params.has_key(cap_param) and self.roscfg.params[cap_param].value:
+        if cap_param in self.roscfg.params and self.roscfg.params[cap_param].value:
           p = self.roscfg.params[cap_param]
-          if not result.has_key(machine_name):
+          if machine_name not in result:
             result[machine_name] = dict()
           for (ns, groups) in result[machine_name].items():
-            if ns == cap_ns and groups.has_key(p.value):
+            if ns == cap_ns and p.value in groups:
               groups[p.value]['nodes'].append(node_fullname)
               added = True
               break
           if not added:
             ns = cap_ns
             # add new group in the namespace of the node
-            if not result[machine_name].has_key(ns):
+            if ns not in result[machine_name]:
               result[machine_name][ns] = dict()
-            if not result[machine_name][ns].has_key(p.value):
+            if p.value not in result[machine_name][ns]:
               try:
-                result[machine_name][ns][p.value] = { 'type' : capabilies_descr[p.value]['type'],
+                result[machine_name][ns][p.value] = {'type': capabilies_descr[p.value]['type'],
                                                      'images': capabilies_descr[p.value]['images'],
-                                                     'description' : capabilies_descr[p.value]['description'],
-                                                     'nodes' : [] }
+                                                     'description': capabilies_descr[p.value]['description'],
+                                                     'nodes': []}
               except:
-                result[machine_name][ns][p.value] = { 'type' : '',
+                result[machine_name][ns][p.value] = {'type': '',
                                                      'images': [],
-                                                     'description' : '',
-                                                     'nodes' : [] }
+                                                     'description': '',
+                                                     'nodes': []}
             result[machine_name][ns][p.value]['nodes'].append(node_fullname)
     return result
 
@@ -313,16 +315,16 @@ class DefaultCfg(object):
   def getPath(self, path, package=''):
     '''
     Searches for a launch file. If package is given, try first to find the launch
-    file in the given package. If more then one launch file with the same name 
+    file in the given package. If more then one launch file with the same name
     found in the package, the first one will be tacked.
     @param path: the file name of the launch file
     @type path: C{str}
-    @param package: the package containing the launch file or an empty string, 
+    @param package: the package containing the launch file or an empty string,
     if the C{file} is an absolute path
     @type package: C{str}
     @return: the absolute path of the launch file
     @rtype: C{str}
-    @raise LoadException: if the given file is not found 
+    @raise LoadException: if the given file is not found
     '''
     launch_file = path
     # if package is set, try to find the launch file in the given package
@@ -333,7 +335,7 @@ class DefaultCfg(object):
         launch_file = paths[0]
     if os.path.isfile(launch_file) and os.path.exists(launch_file):
       return launch_file
-    raise LoadException('File %s in package [%s] not found!'%(path, package))
+    raise LoadException('File %s in package [%s] not found!' % (path, package))
 
   def rosservice_list_nodes(self, req):
     '''
@@ -397,7 +399,7 @@ class DefaultCfg(object):
         n = item
         break
     if n is None:
-      raise StartException("Node '%s' not found!"%node)
+      raise StartException("Node '%s' not found!" % node)
 
     if autostart and self._get_start_exclude(rospy.names.ns_join(n.namespace, n.name)):
       # skip autostart
@@ -405,20 +407,20 @@ class DefaultCfg(object):
       return
 
 #    env = n.env_args
-    prefix = n.launch_prefix if not n.launch_prefix is None else ''
-    args = ['__ns:=%s'%n.namespace, '__name:=%s'%n.name]
+    prefix = n.launch_prefix if n.launch_prefix is not None else ''
+    args = ['__ns:=%s' % n.namespace, '__name:=%s' % n.name]
     if not (n.cwd is None):
-      args.append('__cwd:=%s'%n.cwd)
+      args.append('__cwd:=%s' % n.cwd)
 
     # add remaps
     for remap in n.remap_args:
-      args.append('%s:=%s'%(remap[0], remap[1]))
+      args.append('%s:=%s' % (remap[0], remap[1]))
 
 #    masteruri = self.masteruri
 
 #    if n.machine_name and not n.machine_name == 'localhost':
 #      machine = self.roscfg.machines[n.machine_name]
-      #TODO: env-loader support?
+      # TODO: env-loader support?
 #      if machine.env_args:
 #        env[len(env):] = machine.env_args
 
@@ -437,11 +439,11 @@ class DefaultCfg(object):
       # set the respawn environment variables
       respawn_params = self._get_respawn_params(rospy.names.ns_join(n.namespace, n.name))
       if respawn_params['max'] > 0:
-        n.env_args.append(('RESPAWN_MAX', '%d'%respawn_params['max']))
+        n.env_args.append(('RESPAWN_MAX', '%d' % respawn_params['max']))
       if respawn_params['min_runtime'] > 0:
-        n.env_args.append(('RESPAWN_MIN_RUNTIME', '%d'%respawn_params['min_runtime']))
+        n.env_args.append(('RESPAWN_MIN_RUNTIME', '%d' % respawn_params['min_runtime']))
       if respawn_params['delay'] > 0:
-        n.env_args.append(('RESPAWN_DELAY', '%d'%respawn_params['delay']))
+        n.env_args.append(('RESPAWN_DELAY', '%d' % respawn_params['delay']))
     node_cmd = [respawn[0], prefix, cmd[0]]
     cmd_args = [ScreenHandler.getSceenCmd(node)]
     cmd_args[len(cmd_args):] = node_cmd
@@ -463,7 +465,7 @@ class DefaultCfg(object):
     # set delayed autostart parameter
     self._run_node(popen_cmd, cwd, new_env, rospy.names.ns_join(n.namespace, n.name), autostart)
     if len(cmd) > 1:
-      raise StartException('Multiple executables are found! The first one was started! Exceutables:\n%s'%str(cmd))
+      raise StartException('Multiple executables are found! The first one was started! Exceutables:\n%s' % str(cmd))
 
   def _run_node(self, cmd, cwd, env, node, autostart=False):
     self._pending_starts.add(node)
@@ -518,7 +520,7 @@ class DefaultCfg(object):
     if isinstance(cmd, types.StringTypes):
       cmd = [cmd]
     if cmd is None or len(cmd) == 0:
-      raise StartException('%s in package [%s] not found!'%(filename, pkg))
+      raise StartException('%s in package [%s] not found!' % (filename, pkg))
     return cmd
 
   def _get_start_exclude(self, node):
@@ -543,7 +545,7 @@ class DefaultCfg(object):
     try:
       topic = self.roscfg.params[param_name].value
       if rosgraph.names.is_private(topic):
-        rospy.logwarn('Private for autostart required topic `%s` is ignored!'%topic)
+        rospy.logwarn('Private for autostart required topic `%s` is ignored!' % topic)
         topic = ''
       elif not rosgraph.names.is_global(topic):
         topic = rospy.names.ns_join(rosgraph.names.namespace(node), topic)
@@ -552,7 +554,7 @@ class DefaultCfg(object):
     return topic
 
   def _get_respawn_params(self, node):
-    result = { 'max' : 0, 'min_runtime' : 0, 'delay': 0 }
+    result = {'max': 0, 'min_runtime': 0, 'delay': 0 }
     respawn_max = rospy.names.ns_join(node, 'respawn/max')
     respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
     respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
@@ -616,11 +618,11 @@ class DefaultCfg(object):
       param_server_multi = xmlrpclib.MultiCall(param_server)
       for p in params.itervalues():
         # suppressing this as it causes too much spam
-        #printlog("setting parameter [%s]"%p.key)
+        # printlog("setting parameter [%s]"%p.key)
         param_server_multi.setParam(rospy.get_name(), p.key, p.value)
-      r  = param_server_multi()
+      r = param_server_multi()
       for code, msg, _ in r:
         if code != 1:
-          raise StartException("Failed to set parameter: %s"%(msg))
+          raise StartException("Failed to set parameter: %s" % (msg))
     except Exception:
-      raise #re-raise as this is fatal
+      raise  # re-raise as this is fatal
