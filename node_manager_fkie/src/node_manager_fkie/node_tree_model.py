@@ -643,7 +643,7 @@ class HostItem(GroupItem):
     @param local: is this host the localhost where the node_manager is running.
     @type local: C{bool}
     '''
-    name = self.hostNameFrom(masteruri, address)
+    name = self.create_host_description(masteruri, address)
     self._masteruri = masteruri
     self._host = address
     self._mastername = address
@@ -658,6 +658,10 @@ class HostItem(GroupItem):
       else:
         self.setIcon(QtGui.QIcon(':/icons/remote.png'))
     self.descr_type = self.descr_name = self.descr = ''
+
+  @property
+  def host(self):
+    return self._host
 
   @property
   def hostname(self):
@@ -689,7 +693,7 @@ class HostItem(GroupItem):
     return result
 
   @classmethod
-  def hostNameFrom(cls, masteruri, address):
+  def create_host_description(cls, masteruri, address):
     '''
     Returns the name generated from masteruri and address
     @param masteruri: URI of the ROS master assigned to the host
@@ -772,9 +776,9 @@ class HostItem(GroupItem):
       rospy.logwarn("compare HostItem with unicode depricated")
       return False
     elif isinstance(item, tuple):
-      return self.masteruri == item[0]
+      return self.host == item[1]
     elif isinstance(item, HostItem):
-      return self.masteruri == item.masteruri
+      return self.host == item.host
     return False
 
   def __gt__(self, item):
@@ -785,9 +789,9 @@ class HostItem(GroupItem):
       rospy.logwarn("compare HostItem with unicode depricated")
       return False
     elif isinstance(item, tuple):
-      return self.masteruri > item[0]
+      return self.host > item[1]
     elif isinstance(item, HostItem):
-      return self.masteruri > item.masteruri
+      return self.host > item.host
     return False
 
 
@@ -1269,7 +1273,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
       return cap
     return dict(self._std_capabilities)
 
-  def getHostItem(self, masteruri, address):
+  def get_hostitem(self, masteruri, address):
     '''
     Searches for the host item in the model. If no item is found a new one will
     created and inserted in sorted order.
@@ -1310,17 +1314,17 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     '''
     # separate into different hosts
     hosts = dict()
-    muris = []
+    addresses = []
     for (name, node) in nodes.items():
-      muris.append(node.masteruri)
       addr = nm.nameres().getHostname(node.uri if node.uri is not None else node.masteruri)
+      addresses.append(addr)
       host = (node.masteruri, addr)
       if host not in hosts:
         hosts[host] = dict()
       hosts[host][name] = node
     # update nodes for each host
     for ((masteruri, host), nodes_filtered) in hosts.items():
-      hostItem = self.getHostItem(masteruri, host)
+      hostItem = self.get_hostitem(masteruri, host)
       # rename the host item if needed
       if hostItem is not None:
         hostItem.updateRunningNodeState(nodes_filtered)
@@ -1329,7 +1333,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     # update nodes of the hosts, which are not more exists
     for i in reversed(range(self.invisibleRootItem().rowCount())):
       host = self.invisibleRootItem().child(i)
-      if host.masteruri not in muris:
+      if host.host not in addresses:
         host.updateRunningNodeState({})
     self.removeEmptyHosts()
     # update the duplicate state
@@ -1355,7 +1359,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
     '''
     host = nm.nameres().address(masteruri)
-    hostItem = self.getHostItem(masteruri, host)
+    hostItem = self.get_hostitem(masteruri, host)
     changed = False
     if hostItem is not None and code == 1:
       capabilities = self._set_std_capabilities(hostItem)
@@ -1440,7 +1444,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @param capabilities: the structure for capabilities
     @type capabilities: C{dict(namespace: dict(group:dict('type' : str, 'description' : str, 'nodes' : [str])))}
     '''
-    hostItem = self.getHostItem(masteruri, host_address)
+    hostItem = self.get_hostitem(masteruri, host_address)
     if hostItem is not None:
       # add new capabilities
       hostItem.addCapabilities(cfg, capabilities, hostItem.masteruri)
@@ -1457,7 +1461,7 @@ class NodeTreeModel(QtGui.QStandardItemModel):
     @param nodes: a dictionary with node names and their configurations
     @type nodes: C{dict(str : str)}
     '''
-    hostItem = self.getHostItem(masteruri, host_address)
+    hostItem = self.get_hostitem(masteruri, host_address)
     if hostItem is not None:
       groups = set()
       for (name, cfg) in nodes.items():
