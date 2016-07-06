@@ -236,8 +236,9 @@ class MasterStateTopic(QtCore.QObject):
     @type masteruri: C{str}
     @param wait: wait for the topic
     @type wait: C{boolean}
+    @return: the topic name or an empty string
     '''
-    found = False
+    result = ''
     topic_names = interface_finder.get_changes_topic(masteruri, wait)
     self.stop()
     self.sub_changes = []
@@ -245,8 +246,8 @@ class MasterStateTopic(QtCore.QObject):
       rospy.loginfo("listen for updates on %s", topic_name)
       sub_changes = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
       self.sub_changes.append(sub_changes)
-      found = True
-    return found
+      result = topic_name
+    return result
 
   def stop(self):
     '''
@@ -287,8 +288,9 @@ class MasterStatisticTopic(QtCore.QObject):
     @type masteruri: str
     @param wait: wait for the topic
     @type wait: boolean
+    @return: the topic name or an empty string
     '''
-    found = False
+    result = ''
     self.stop()
     self.sub_stats = []
     topic_names = interface_finder.get_stats_topic(masteruri, wait)
@@ -296,8 +298,8 @@ class MasterStatisticTopic(QtCore.QObject):
       rospy.loginfo("listen for connection statistics on %s", topic_name)
       sub_stats = rospy.Subscriber(topic_name, LinkStatesStamped, self.handlerMasterStatsMsg)
       self.sub_stats.append(sub_stats)
-      found = True
-    return found
+      result = topic_name
+    return result
 
   def stop(self):
     '''

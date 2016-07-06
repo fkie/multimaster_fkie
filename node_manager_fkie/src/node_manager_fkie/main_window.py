@@ -41,11 +41,11 @@ import time
 import uuid
 import xmlrpclib
 
-from multimaster_msgs_fkie.msg import MasterState
 import roslib
 import rospy
 
 from master_discovery_fkie.common import resolve_url
+from multimaster_msgs_fkie.msg import MasterState
 import gui_resources
 import node_manager_fkie as nm
 
@@ -591,7 +591,7 @@ class MainWindow(QtGui.QMainWindow):
     else:
       self._setLocalMonitoring(True)
 
-  def _setLocalMonitoring(self, on):
+  def _setLocalMonitoring(self, on, discoverer=''):
     '''
     Enables the local monitoring of the ROS master state and disables the view of
     the discoved ROS master.
@@ -603,9 +603,9 @@ class MainWindow(QtGui.QMainWindow):
     self.own_master_monitor.pause(not on)
     if on:
       self.masterTableView.setToolTip("use 'Start' button to enable the master discovering")
+      self.networkDock.setWindowTitle("ROS Network [disabled]")
     else:
       self.masterTableView.setToolTip('')
-      self.networkDock.setWindowTitle("ROS Network [disabled]")
     if on:
       # remove discovered ROS master and set the local master to selected
       for uri in self.masters.keys():
@@ -621,16 +621,20 @@ class MainWindow(QtGui.QMainWindow):
     else:
       try:
         # determine the ROS network ID
-        mcast_group = rospy.get_param('/master_discovery/mcast_port')
+        mcast_group = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
         self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
       except:
         # try to get the multicast port of master discovery from log
         port = 0
+        network_id = -1
         import re
-        with open(ScreenHandler.getROSLogFile(node='/master_discovery'), 'r') as mdfile:
+        with open(ScreenHandler.getROSLogFile(node=discoverer.rstrip('/')), 'r') as mdfile:
           for line in mdfile:
             if line.find("Listen for multicast at") > -1:
               port = map(int, re.findall(r'\d+', line))[-1]
+            elif line.find("Network ID") > -1:
+              network_id = map(int, re.findall(r'\d+', line))[-1]
+              port = 11511 + network_id
         if port > 0:
           self.networkDock.setWindowTitle("ROS Network [id: %d]" % (port - 11511))
         else:
@@ -675,7 +679,7 @@ class MainWindow(QtGui.QMainWindow):
     result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
     result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
     local_mon = not result_1 or not result_2
-    self._setLocalMonitoring(local_mon)
+    self._setLocalMonitoring(local_mon, rospy.names.namespace(result_1))
     self._con_tries[masteruri] = 0
     # remove ROS master which are not in the new list
     new_uris = [m.uri for m in master_list if m.uri is not None]
