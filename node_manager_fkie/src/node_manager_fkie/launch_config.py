@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, QRegExp
 from xml.dom.minidom import parse  # , parseString
 import os
 import re
@@ -51,7 +51,7 @@ class LaunchConfigException(Exception):
   pass
 
 
-class LaunchConfig(QtCore.QObject):
+class LaunchConfig(QObject):
   '''
   A class to handle the ROS configuration stored in launch file.
   '''
@@ -74,7 +74,7 @@ class LaunchConfig(QtCore.QObject):
     @type argv: C{[str]}
     @raise roslaunch.XmlParseException: if the launch file can't be found.
     '''
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.__launchFile = launch_file
     self.__package = package_name(os.path.dirname(self.__launchFile))[0] if package is None else package
     self.__masteruri = masteruri if masteruri is not None else 'localhost'
@@ -200,13 +200,13 @@ class LaunchConfig(QtCore.QObject):
     return path
 
   @classmethod
-  def getIncludedFiles(cls, inc_file, regexp_list=[QtCore.QRegExp("\\binclude\\b"),
-                                                   QtCore.QRegExp("\\btextfile\\b"),
-                                                   QtCore.QRegExp("\\bfile\\b"),
-                                                   QtCore.QRegExp("\\bdefault\\b"),
-                                                   QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                                                   QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                   QtCore.QRegExp("\\bvalue=.*\$\(find\\b")]):
+  def getIncludedFiles(cls, inc_file, regexp_list=[QRegExp("\\binclude\\b"),
+                                                   QRegExp("\\btextfile\\b"),
+                                                   QRegExp("\\bfile\\b"),
+                                                   QRegExp("\\bdefault\\b"),
+                                                   QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                   QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                   QRegExp("\\bvalue=.*\$\(find\\b")]):
     '''
     Reads the configuration file and searches for included files. This files
     will be returned in a list.
@@ -219,7 +219,7 @@ class LaunchConfig(QtCore.QObject):
     with open(inc_file, 'r') as f:
       content = f.read()
       # remove the comments
-      comment_pattern = QtCore.QRegExp("<!--.*?-->")
+      comment_pattern = QRegExp("<!--.*?-->")
       pos = comment_pattern.indexIn(content)
       while pos != -1:
         content = content[:pos] + content[pos + comment_pattern.matchedLength():]
@@ -261,10 +261,10 @@ class LaunchConfig(QtCore.QObject):
       nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
       if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
         files = self.getIncludedFiles(self.Filename,
-                                      regexp_list=[QtCore.QRegExp("\\bdefault\\b"),
-                                                   QtCore.QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                                                   QtCore.QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                   QtCore.QRegExp("\\bvalue=.*\$\(find\\b")])
+                                      regexp_list=[QRegExp("\\bdefault\\b"),
+                                                   QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                   QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                   QRegExp("\\bvalue=.*\$\(find\\b")])
         nm.file_watcher_param().add_launch(self.__masteruri,
                                            self.__launchFile,
                                            self.__launch_id,

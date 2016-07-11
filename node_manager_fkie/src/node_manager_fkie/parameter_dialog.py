@@ -30,7 +30,16 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore, QtGui
+from python_qt_binding.QtCore import Qt, Signal
+from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette
+try:
+  from python_qt_binding.QtGui import QApplication, QComboBox, QCheckBox, QLineEdit, QMessageBox, QScrollArea, QWidget
+  from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+  from python_qt_binding.QtGui import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
+except:
+  from python_qt_binding.QtWidgets import QApplication, QComboBox, QCheckBox, QLineEdit, QMessageBox, QScrollArea, QWidget
+  from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+  from python_qt_binding.QtWidgets import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
 from xmlrpclib import Binary
 import os
 import sys
@@ -49,17 +58,17 @@ def str2bool(val):
   return val.lower() in ("yes", "true", "t", "1")
 
 
-class MyComboBox(QtGui.QComboBox):
+class MyComboBox(QComboBox):
 
-  remove_item_signal = QtCore.Signal(str)
+  remove_item_signal = Signal(str)
 
   def __init__(self, parent=None):
-    QtGui.QComboBox.__init__(self, parent=parent)
+    QComboBox.__init__(self, parent=parent)
     self.parameter_description = None
 
   def keyPressEvent(self, event):
-    key_mod = QtGui.QApplication.keyboardModifiers()
-    if key_mod & QtCore.Qt.ShiftModifier and (event.key() == QtCore.Qt.Key_Delete):
+    key_mod = QApplication.keyboardModifiers()
+    if key_mod & Qt.ShiftModifier and (event.key() == Qt.Key_Delete):
       try:
         curr_text = self.currentText()
         if curr_text:
@@ -71,7 +80,7 @@ class MyComboBox(QtGui.QComboBox):
       except:
         import traceback
         print traceback.format_exc(1)
-    QtGui.QComboBox.keyPressEvent(self, event)
+    QComboBox.keyPressEvent(self, event)
 
 
 class ParameterDescription(object):
@@ -151,11 +160,11 @@ class ParameterDescription(object):
   def updateValueFromField(self):
     field = self.widget()
     result = ''
-    if isinstance(field, QtGui.QCheckBox):
+    if isinstance(field, QCheckBox):
       result = repr(field.isChecked())
-    elif isinstance(field, QtGui.QLineEdit):
+    elif isinstance(field, QLineEdit):
       result = field.text()
-    elif isinstance(field, QtGui.QComboBox):
+    elif isinstance(field, QComboBox):
       result = field.currentText()
     self.updateValue(result)
 
@@ -256,7 +265,7 @@ class ParameterDescription(object):
     if self.isPrimitiveType():
       value = self._value
       if 'bool' in self.baseType():
-        result = QtGui.QCheckBox(parent=parent)
+        result = QCheckBox(parent=parent)
         result.setObjectName(self.name())
         if not isinstance(value, bool):
           value = str2bool(value[0] if isinstance(value, list) else value)
@@ -265,7 +274,7 @@ class ParameterDescription(object):
       else:
         result = MyComboBox(parent=parent)
         result.setObjectName(self.name())
-        result.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+        result.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
         result.setEditable(True)
         result.remove_item_signal.connect(self.removeCachedValue)
         items = []
@@ -289,7 +298,7 @@ class ParameterDescription(object):
     return result
 
   def addCachedValuesToWidget(self):
-    if isinstance(self.widget(), QtGui.QComboBox):
+    if isinstance(self.widget(), QComboBox):
       values = nm.history().cachedParamValues(self.fullName())
       for i in range(self.widget().count()):
         try:
@@ -301,30 +310,30 @@ class ParameterDescription(object):
       self.widget().addItems(values)
 
 
-class MainBox(QtGui.QWidget):
+class MainBox(QWidget):
   '''
   Groups the parameter without visualization of the group. It is the main widget.
   '''
   def __init__(self, name, param_type, collapsible=True, parent=None):
-    QtGui.QWidget.__init__(self, parent)
+    QWidget.__init__(self, parent)
     self.setObjectName(name)
     self.name = name
     self.type = param_type
     self.params = []
     self.collapsed = False
     self.parameter_description = None
-    vLayout = QtGui.QVBoxLayout()
+    vLayout = QVBoxLayout()
     vLayout.setSpacing(0)
-    self.options_layout = QtGui.QHBoxLayout()
-    self.param_widget = QtGui.QFrame()
-    self.name_label = QtGui.QLabel(name)
+    self.options_layout = QHBoxLayout()
+    self.param_widget = QFrame()
+    self.name_label = QLabel(name)
     font = self.name_label.font()
     font.setBold(True)
     self.name_label.setFont(font)
-    self.type_label = QtGui.QLabel(''.join([' (', param_type, ')']))
+    self.type_label = QLabel(''.join([' (', param_type, ')']))
 
     if collapsible:
-      self.hide_button = QtGui.QPushButton('-')
+      self.hide_button = QPushButton('-')
       self.hide_button.setFlat(True)
       self.hide_button.setMaximumSize(20, 20)
       self.hide_button.clicked.connect(self._on_hide_clicked)
@@ -335,10 +344,10 @@ class MainBox(QtGui.QWidget):
 
       vLayout.addLayout(self.options_layout)
 
-      self.param_widget.setFrameShape(QtGui.QFrame.Box)
-      self.param_widget.setFrameShadow(QtGui.QFrame.Raised)
+      self.param_widget.setFrameShape(QFrame.Box)
+      self.param_widget.setFrameShadow(QFrame.Raised)
 
-    boxLayout = QtGui.QFormLayout()
+    boxLayout = QFormLayout()
     boxLayout.setVerticalSpacing(0)
     self.param_widget.setLayout(boxLayout)
     vLayout.addWidget(self.param_widget)
@@ -395,7 +404,7 @@ class MainBox(QtGui.QWidget):
           layout.addRow(field)
         else:
           label_name = name if _type == 'string' else ''.join([name, ' (', _type, ')'])
-          label = QtGui.QLabel(label_name, self)
+          label = QLabel(label_name, self)
           label.setObjectName(''.join([name, '_label']))
           label.setBuddy(field)
           layout.addRow(label, field)
@@ -430,14 +439,14 @@ class MainBox(QtGui.QWidget):
           if isinstance(field, (GroupBox, ArrayBox)):
             field.set_values(value)
           else:
-            if isinstance(field, QtGui.QCheckBox):
+            if isinstance(field, QCheckBox):
               if not isinstance(value, bool):
                 value = str2bool(value[0] if isinstance(value, list) else value)
               field.setChecked(value)
-            elif isinstance(field, QtGui.QLineEdit):
+            elif isinstance(field, QLineEdit):
               # avoid ' or " that escapes the string values
               field.setText(', '.join([unicode(v) for v in value]) if isinstance(value, list) else unicode(value))
-            elif isinstance(field, QtGui.QComboBox):
+            elif isinstance(field, QComboBox):
               field.setEditText(', '.join([unicode(v) for v in value]) if isinstance(value, list) else unicode(value))
     elif isinstance(values, list):
       raise Exception("Setting 'list' values in MainBox or GroupBox not supported!!!")
@@ -482,7 +491,7 @@ class MainBox(QtGui.QWidget):
         if show:
           child.setCollapsed(False)
           result = True
-      elif isinstance(child, (QtGui.QWidget)) and not isinstance(child, (QtGui.QLabel)) and not isinstance(child, (QtGui.QFrame)):
+      elif isinstance(child, (QWidget)) and not isinstance(child, (QLabel)) and not isinstance(child, (QFrame)):
         label = child.parentWidget().layout().labelForField(child)
         if label is not None:
           has_text = child.objectName().lower().find(arg.lower()) == -1
@@ -499,7 +508,7 @@ class MainBox(QtGui.QWidget):
   def setVisible(self, arg):
     if arg and not self.parentWidget() is None and not self.parentWidget().isVisible():
       self.parentWidget().setVisible(arg)
-    QtGui.QWidget.setVisible(self, arg)
+    QWidget.setVisible(self, arg)
 
 
 class GroupBox(MainBox):
@@ -520,12 +529,12 @@ class ArrayEntry(MainBox):
     MainBox.__init__(self, ''.join(['#', str(index)]), param_type, True, parent)
     self.index = index
     self.setObjectName(''.join(['[', str(index), ']']))
-    self.param_widget.setFrameShape(QtGui.QFrame.Box)
-    self.param_widget.setFrameShadow(QtGui.QFrame.Plain)
+    self.param_widget.setFrameShape(QFrame.Box)
+    self.param_widget.setFrameShadow(QFrame.Plain)
     self.type_label.setVisible(False)
-#    boxLayout = QtGui.QFormLayout()
+#    boxLayout = QFormLayout()
 #    boxLayout.setVerticalSpacing(0)
-#    label = QtGui.QLabel(''.join(['[', str(index), ']']))
+#    label = QLabel(''.join(['[', str(index), ']']))
 #    self.param_widget.layout().addRow(label)
 #    self.setLayout(boxLayout)
 
@@ -548,13 +557,13 @@ class ArrayBox(MainBox):
 
   def addDynamicBox(self):
     self._dynamic_items_count = 0
-    addButton = QtGui.QPushButton("+")
+    addButton = QPushButton("+")
     addButton.setMaximumSize(25, 25)
     addButton.clicked.connect(self._on_add_dynamic_entry)
     self.options_layout.addWidget(addButton)
-    self.count_label = QtGui.QLabel('0')
+    self.count_label = QLabel('0')
     self.options_layout.addWidget(self.count_label)
-    remButton = QtGui.QPushButton("-")
+    remButton = QPushButton("-")
     remButton.setMaximumSize(25, 25)
     remButton.clicked.connect(self._on_rem_dynamic_entry)
     self.options_layout.addWidget(remButton)
@@ -613,7 +622,7 @@ class ArrayBox(MainBox):
     '''
     result = list()
     for i in range(self.param_widget.layout().rowCount()):
-      item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
+      item = self.param_widget.layout().itemAt(i, QFormLayout.SpanningRole)
       if item and isinstance(item.widget(), ArrayEntry):
         result.append(item.widget().value())
     return result
@@ -628,7 +637,7 @@ class ArrayBox(MainBox):
       count_entries = 0
       # determine the count of existing elements
       for i in range(self.param_widget.layout().rowCount()):
-        item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
+        item = self.param_widget.layout().itemAt(i, QFormLayout.SpanningRole)
         if item and isinstance(item.widget(), ArrayEntry):
           count_entries += 1
       # create the list of the elements of the length of values
@@ -640,12 +649,12 @@ class ArrayBox(MainBox):
           self._on_rem_dynamic_entry()
       # set the values
       for i in range(self.param_widget.layout().rowCount()):
-        item = self.param_widget.layout().itemAt(i, QtGui.QFormLayout.SpanningRole)
+        item = self.param_widget.layout().itemAt(i, QFormLayout.SpanningRole)
         if item and isinstance(item.widget(), ArrayEntry):
           item.widget().set_values(values[i])
 
 
-class ScrollArea(QtGui.QScrollArea):
+class ScrollArea(QScrollArea):
   '''
   ScrollArea provides the maximal width of the internal widget.
   '''
@@ -653,15 +662,15 @@ class ScrollArea(QtGui.QScrollArea):
   def viewportEvent(self, arg):
     if self.widget() and self.viewport().size().width() != self.widget().maximumWidth():
       self.widget().setMaximumWidth(self.viewport().size().width())
-    return QtGui.QScrollArea.viewportEvent(self, arg)
+    return QScrollArea.viewportEvent(self, arg)
 
 
-class ParameterDialog(QtGui.QDialog):
+class ParameterDialog(QDialog):
   '''
   This dialog creates an input mask for the given parameter and their types.
   '''
 
-  def __init__(self, params=dict(), buttons=QtGui.QDialogButtonBox.Cancel | QtGui.QDialogButtonBox.Ok, sidebar_var='', parent=None):
+  def __init__(self, params=dict(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, sidebar_var='', parent=None):
     '''
     Creates an input dialog.
     @param params: a dictionary with parameter names and (type, values).
@@ -669,22 +678,22 @@ class ParameterDialog(QtGui.QDialog):
     dictionary to create groups. In this case the type is the name of the group.
     @type params: C{dict(str:(str, {value, [..], dict()}))}
     '''
-    QtGui.QDialog.__init__(self, parent=parent)
+    QDialog.__init__(self, parent=parent)
     self.setObjectName('ParameterDialog - %s' % str(params))
 
     self.__current_path = nm.settings().current_dialog_path
-    self.horizontalLayout = QtGui.QHBoxLayout(self)
+    self.horizontalLayout = QHBoxLayout(self)
     self.horizontalLayout.setObjectName("horizontalLayout")
     self.horizontalLayout.setContentsMargins(1, 1, 1, 1)
-    self.verticalLayout = QtGui.QVBoxLayout()
+    self.verticalLayout = QVBoxLayout()
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
     # add filter row
-    self.filter_frame = QtGui.QFrame(self)
-    filterLayout = QtGui.QHBoxLayout(self.filter_frame)
+    self.filter_frame = QFrame(self)
+    filterLayout = QHBoxLayout(self.filter_frame)
     filterLayout.setContentsMargins(1, 1, 1, 1)
-    label = QtGui.QLabel("Filter:", self.filter_frame)
-    self.filter_field = QtGui.QLineEdit(self.filter_frame)
+    label = QLabel("Filter:", self.filter_frame)
+    self.filter_field = QLineEdit(self.filter_frame)
     filterLayout.addWidget(label)
     filterLayout.addWidget(self.filter_field)
     self.filter_field.textChanged.connect(self._on_filter_changed)
@@ -701,29 +710,29 @@ class ParameterDialog(QtGui.QDialog):
     self.verticalLayout.addWidget(scrollArea)
 
     # add info text field
-    self.info_field = QtGui.QTextEdit(self)
+    self.info_field = QTextEdit(self)
     self.info_field.setVisible(False)
-    palette = QtGui.QPalette()
-    brush = QtGui.QBrush(QtGui.QColor(255, 254, 242))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Base, brush)
-    brush = QtGui.QBrush(QtGui.QColor(255, 254, 242))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
-    brush = QtGui.QBrush(QtGui.QColor(244, 244, 244))
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Base, brush)
+    palette = QPalette()
+    brush = QBrush(QColor(255, 254, 242))
+    brush.setStyle(Qt.SolidPattern)
+    palette.setBrush(QPalette.Active, QPalette.Base, brush)
+    brush = QBrush(QColor(255, 254, 242))
+    brush.setStyle(Qt.SolidPattern)
+    palette.setBrush(QPalette.Inactive, QPalette.Base, brush)
+    brush = QBrush(QColor(244, 244, 244))
+    brush.setStyle(Qt.SolidPattern)
+    palette.setBrush(QPalette.Disabled, QPalette.Base, brush)
     self.info_field.setPalette(palette)
-    self.info_field.setFrameShadow(QtGui.QFrame.Plain)
+    self.info_field.setFrameShadow(QFrame.Plain)
     self.info_field.setReadOnly(True)
-    self.info_field.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByKeyboard | QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextBrowserInteraction | QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
+    self.info_field.setTextInteractionFlags(Qt.LinksAccessibleByKeyboard | Qt.LinksAccessibleByMouse | Qt.TextBrowserInteraction | Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
     self.info_field.setObjectName("dialog_info_field")
     self.verticalLayout.addWidget(self.info_field)
 
     # create buttons
-    self.buttonBox = QtGui.QDialogButtonBox(self)
+    self.buttonBox = QDialogButtonBox(self)
     self.buttonBox.setObjectName("buttonBox")
-    self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+    self.buttonBox.setOrientation(Qt.Horizontal)
     self.buttonBox.setStandardButtons(buttons)
     self.buttonBox.accepted.connect(self.accept)
     self.buttonBox.rejected.connect(self.reject)
@@ -732,9 +741,9 @@ class ParameterDialog(QtGui.QDialog):
 
     # add side bar for checklist
     values = nm.history().cachedParamValues('/%s' % sidebar_var)
-    self.sidebar_frame = QtGui.QFrame()
+    self.sidebar_frame = QFrame()
     self.sidebar_frame.setObjectName(sidebar_var)
-    sidebarframe_verticalLayout = QtGui.QVBoxLayout(self.sidebar_frame)
+    sidebarframe_verticalLayout = QVBoxLayout(self.sidebar_frame)
     sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
     sidebarframe_verticalLayout.setContentsMargins(1, 1, 1, 1)
     self._sidebar_selected = 0
@@ -746,10 +755,10 @@ class ParameterDialog(QtGui.QDialog):
         self.sidebar_default_val = ''
       values.sort()
       for v in values:
-        checkbox = QtGui.QCheckBox(v)
+        checkbox = QCheckBox(v)
         checkbox.stateChanged.connect(self._on_sidebar_stateChanged)
         self.sidebar_frame.layout().addWidget(checkbox)
-      self.sidebar_frame.layout().addItem(QtGui.QSpacerItem(100, 20, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
+      self.sidebar_frame.layout().addItem(QSpacerItem(100, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
     # set the input fields
     if params:
       self.content.createFieldFromValue(params)
@@ -763,9 +772,9 @@ class ParameterDialog(QtGui.QDialog):
     self.content.removeAllFields()
 
   def _on_sidebar_stateChanged(self, state):
-    if state == QtCore.Qt.Checked:
+    if state == Qt.Checked:
       self._sidebar_selected += 1
-    elif state == QtCore.Qt.Unchecked:
+    elif state == Qt.Unchecked:
       self._sidebar_selected -= 1
     if self._sidebar_selected in [0, 1]:
       try:
@@ -776,18 +785,18 @@ class ParameterDialog(QtGui.QDialog):
         pass
 
   def showLoadSaveButtons(self):
-    self.load_button = QtGui.QPushButton()
-    self.load_button.setIcon(QtGui.QIcon(':/icons/load.png'))
+    self.load_button = QPushButton()
+    self.load_button.setIcon(QIcon(':/icons/load.png'))
     self.load_button.clicked.connect(self._load_parameter)
     self.load_button.setToolTip('Load parameters from YAML file')
     self.load_button.setFlat(True)
-    self.buttonBox.addButton(self.load_button, QtGui.QDialogButtonBox.ActionRole)
-    self.save_button = QtGui.QPushButton()
+    self.buttonBox.addButton(self.load_button, QDialogButtonBox.ActionRole)
+    self.save_button = QPushButton()
     self.save_button.clicked.connect(self._save_parameter)
-    self.save_button.setIcon(QtGui.QIcon(':/icons/save.png'))
+    self.save_button.setIcon(QIcon(':/icons/save.png'))
     self.save_button.setToolTip('Save parameters to YAML file')
     self.save_button.setFlat(True)
-    self.buttonBox.addButton(self.save_button, QtGui.QDialogButtonBox.ActionRole)
+    self.buttonBox.addButton(self.save_button, QDialogButtonBox.ActionRole)
 
   def _on_filter_changed(self):
     self.content.filter(self.filter_field.text())
@@ -800,7 +809,7 @@ class ParameterDialog(QtGui.QDialog):
     self.filter_frame.setVisible(val & self.scrollArea.isHidden())
 
   def add_warning(self, message):
-    label = QtGui.QLabel()
+    label = QLabel()
     label.setWordWrap(True)
     label.setText(''.join(["<font color='red'>Warning!\n", message, "</font>"]))
     self.verticalLayout.insertWidget(1, label)
@@ -848,8 +857,8 @@ class ParameterDialog(QtGui.QDialog):
     sidebar_name = self.sidebar_frame.objectName()
     for j in range(self.sidebar_frame.layout().count() - 1):
       w = self.sidebar_frame.layout().itemAt(j).widget()
-      if isinstance(w, QtGui.QCheckBox):
-        if w.checkState() == QtCore.Qt.Checked:
+      if isinstance(w, QCheckBox):
+        if w.checkState() == Qt.Checked:
           sidebar_list.append((w.text(), True))
     result_value = self.content.value()
     # add the sidebar results
@@ -902,10 +911,10 @@ class ParameterDialog(QtGui.QDialog):
   def _save_parameter(self):
     try:
       import yaml
-      (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
-                                                        "Save parameter",
-                                                        self.__current_path,
-                                                        "YAML files (*.yaml);;All files (*)")
+      (fileName, _) = QFileDialog.getSaveFileName(self,
+                                                  "Save parameter",
+                                                  self.__current_path,
+                                                  "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
         nm.settings().current_dialog_path = os.path.dirname(fileName)
@@ -916,13 +925,13 @@ class ParameterDialog(QtGui.QDialog):
     except Exception as e:
       import traceback
       print traceback.format_exc(1)
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error",
+      WarningMessageBox(QMessageBox.Warning, "Save parameter Error",
                         'Error while save parameter', str(e)).exec_()
 
   def _load_parameter(self):
     try:
       import yaml
-      (fileName, _) = QtGui.QFileDialog.getOpenFileName(self, "Load parameter",
+      (fileName, _) = QFileDialog.getOpenFileName(self, "Load parameter",
                                                         self.__current_path,
                                                         "YAML files (*.yaml);;All files (*)")
       if fileName:
@@ -934,7 +943,7 @@ class ParameterDialog(QtGui.QDialog):
     except Exception as e:
       import traceback
       print traceback.format_exc(1)
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Load parameter Error",
+      WarningMessageBox(QMessageBox.Warning, "Load parameter Error",
                         'Error while load parameter',
                         str(e)).exec_()
 
@@ -944,13 +953,13 @@ class ParameterDialog(QtGui.QDialog):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   def accept(self):
-    self.setResult(QtGui.QDialog.Accepted)
+    self.setResult(QDialog.Accepted)
     self.accepted.emit()
     if self.isModal():
       self.hide()
 
   def reject(self):
-    self.setResult(QtGui.QDialog.Rejected)
+    self.setResult(QDialog.Rejected)
     self.rejected.emit()
     self.hide()
 
@@ -961,8 +970,8 @@ class ParameterDialog(QtGui.QDialog):
     '''
     Test the open files for changes and save this if needed.
     '''
-    self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-    QtGui.QDialog.closeEvent(self, event)
+    self.setAttribute(Qt.WA_DeleteOnClose, True)
+    QDialog.closeEvent(self, event)
 
 
 class MasterParameterDialog(ParameterDialog):
@@ -985,19 +994,19 @@ class MasterParameterDialog(ParameterDialog):
     self.ns = ns
     self.is_delivered = False
     self.is_send = False
-    self.mIcon = QtGui.QIcon(":/icons/default_cfg.png")
+    self.mIcon = QIcon(":/icons/default_cfg.png")
     self.setWindowIcon(self.mIcon)
     self.resize(450, 300)
-    self.add_new_button = QtGui.QPushButton()
-    self.add_new_button.setIcon(QtGui.QIcon(':/icons/crystal_clear_add.png'))
+    self.add_new_button = QPushButton()
+    self.add_new_button.setIcon(QIcon(':/icons/crystal_clear_add.png'))
     self.add_new_button.clicked.connect(self._on_add_parameter)
     self.add_new_button.setToolTip('Adds a new parameter to the list')
     self.add_new_button.setFlat(True)
-    self.buttonBox.addButton(self.add_new_button, QtGui.QDialogButtonBox.ActionRole)
+    self.buttonBox.addButton(self.add_new_button, QDialogButtonBox.ActionRole)
     self.showLoadSaveButtons()
-#    self.apply_button = QtGui.QPushButton(self.tr("&Ok"))
+#    self.apply_button = QPushButton(self.tr("&Ok"))
 #    self.apply_button.clicked.connect(self._on_apply)
-#    self.buttonBox.addButton(self.apply_button, QtGui.QDialogButtonBox.ApplyRole)
+#    self.buttonBox.addButton(self.apply_button, QDialogButtonBox.ApplyRole)
 #    self.buttonBox.accepted.connect(self._on_apply)
     self.setText(' '.join(['Obtaining parameters from the parameter server', masteruri, '...']))
     self.parameterHandler = ParameterHandler()
@@ -1005,7 +1014,7 @@ class MasterParameterDialog(ParameterDialog):
     self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
     self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
     self.parameterHandler.requestParameterList(masteruri, ns)
-#    self.apply_button.setFocus(QtCore.Qt.OtherFocusReason)
+#    self.apply_button.setFocus(Qt.OtherFocusReason)
 
   def accept(self):
     if self.masteruri is not None and not self.is_send:
@@ -1025,9 +1034,9 @@ class MasterParameterDialog(ParameterDialog):
       except Exception, e:
         import traceback
         print traceback.format_exc(1)
-        QtGui.QMessageBox.warning(self, self.tr("Warning"), str(e), QtGui.QMessageBox.Ok)
+        QMessageBox.warning(self, self.tr("Warning"), str(e), QMessageBox.Ok)
     elif self.masteruri is None:
-      QtGui.QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QtGui.QMessageBox.Ok)
+      QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QMessageBox.Ok)
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%          ROS parameter handling       %%%%%%%%%%%%%%%%%%%%%
@@ -1059,16 +1068,16 @@ class MasterParameterDialog(ParameterDialog):
               if value is None:
                 value = []
             except yaml.MarkedYAMLError, e:
-              QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QtGui.QMessageBox.Ok)
+              QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QMessageBox.Ok)
           else:
             value = params['value']
           self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)})
         else:
-          QtGui.QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QtGui.QMessageBox.Ok)
+          QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QMessageBox.Ok)
       except ValueError, e:
         import traceback
         print traceback.format_exc(1)
-        QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
+        QMessageBox.warning(self, self.tr("Warning"), unicode(e), QMessageBox.Ok)
 
   def _on_param_list(self, masteruri, code, msg, params):
     '''
@@ -1143,7 +1152,7 @@ class MasterParameterDialog(ParameterDialog):
       except Exception, e:
         import traceback
         print traceback.format_exc(1)
-        QtGui.QMessageBox.warning(self, self.tr("Warning"), unicode(e), QtGui.QMessageBox.Ok)
+        QMessageBox.warning(self, self.tr("Warning"), unicode(e), QMessageBox.Ok)
     else:
       self.setText(msg)
 
@@ -1169,7 +1178,7 @@ class MasterParameterDialog(ParameterDialog):
     if errmsg:
       import traceback
       print traceback.format_exc(1)
-      QtGui.QMessageBox.warning(self, self.tr("Warning"), errmsg, QtGui.QMessageBox.Ok)
+      QMessageBox.warning(self, self.tr("Warning"), errmsg, QMessageBox.Ok)
       self.is_delivered = False
       self.is_send = False
       self.setInfoActive(False)
@@ -1183,7 +1192,7 @@ class ServiceDialog(ParameterDialog):
   input fields are created from the service request message type. The service
   call is executed in a thread to avoid blocking GUI.
   '''
-  service_resp_signal = QtCore.Signal(str, str)
+  service_resp_signal = Signal(str, str)
 
   def __init__(self, service, parent=None):
     '''
@@ -1193,7 +1202,7 @@ class ServiceDialog(ParameterDialog):
     self.service = service
     slots = service.get_service_class(True)._request_class.__slots__
     types = service.get_service_class()._request_class._slot_types
-    ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QtGui.QDialogButtonBox.Close, parent=parent)
+    ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QDialogButtonBox.Close, parent=parent)
     self.setWindowTitle(''.join(['Call ', service.name]))
     self.service_resp_signal.connect(self._handle_resp)
     self.resize(450, 300)
@@ -1203,12 +1212,12 @@ class ServiceDialog(ParameterDialog):
       thread.setDaemon(True)
       thread.start()
     else:
-      self.call_service_button = QtGui.QPushButton(self.tr("&Call"))
+      self.call_service_button = QPushButton(self.tr("&Call"))
       self.call_service_button.clicked.connect(self._on_call_service)
-      self.buttonBox.addButton(self.call_service_button, QtGui.QDialogButtonBox.ActionRole)
-      self.hide_button = QtGui.QPushButton(self.tr("&Hide/Show output"))
+      self.buttonBox.addButton(self.call_service_button, QDialogButtonBox.ActionRole)
+      self.hide_button = QPushButton(self.tr("&Hide/Show output"))
       self.hide_button.clicked.connect(self._on_hide_output)
-      self.buttonBox.addButton(self.hide_button, QtGui.QDialogButtonBox.ActionRole)
+      self.buttonBox.addButton(self.hide_button, QDialogButtonBox.ActionRole)
       self.hide_button.setVisible(False)
       self.showLoadSaveButtons()
 

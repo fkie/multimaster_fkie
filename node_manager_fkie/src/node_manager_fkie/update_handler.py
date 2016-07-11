@@ -30,44 +30,44 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 import threading
 
 from master_discovery_fkie.master_info import MasterInfo
 from update_thread import UpdateThread
 
 
-class UpdateHandler(QtCore.QObject):
+class UpdateHandler(QObject):
   '''
   A class to retrieve the state about ROS master from remote discovery node and
   publish it be sending a QT signal. To retrieve the state a new thread will be
   created.
   '''
-  master_info_signal = QtCore.Signal(MasterInfo)
+  master_info_signal = Signal(MasterInfo)
   '''
   @ivar: master_info_signal is a signal, which is emitted, if a new
   L{aster_discovery_fkie.MasterInfo} is retrieved.
   '''
-  master_errors_signal = QtCore.Signal(str, list)
+  master_errors_signal = Signal(str, list)
   '''
   @ivar: master_errors_signal is a signal (masteruri, error list) with errors which
   are occured on remote master_discovery.
   '''
 
-  error_signal = QtCore.Signal(str, str)
+  error_signal = Signal(str, str)
   '''
   @ivar: error_signal is a signal (masteruri, error message), which is emitted,
   if an error while retrieving a master info was occurred.
   '''
 
-  timediff_signal = QtCore.Signal(str, float)
+  timediff_signal = Signal(str, float)
   '''
   @ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
   after the difference of time to the remote host is determined.
   '''
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.__updateThreads = {}
     self.__requestedUpdates = {}
     self._lock = threading.RLock()

@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QFile, Qt, Signal
+from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 import re
 import traceback
 
@@ -47,11 +47,11 @@ import node_manager_fkie as nm
 ################################################################################
 ##############                  GrouptItem                        ##############
 ################################################################################
-class GroupItem(QtGui.QStandardItem):
+class GroupItem(QStandardItem):
   '''
   The GroupItem stores the information about a group of nodes.
   '''
-  ITEM_TYPE = QtCore.Qt.UserRole + 25
+  ITEM_TYPE = Qt.UserRole + 25
 
   def __init__(self, name, parent=None):
     '''
@@ -62,10 +62,10 @@ class GroupItem(QtGui.QStandardItem):
     variable is used to determine the different columns of the NodeItem.
     @type parent: L{PySide.QtGui.QStandardItem}
     '''
-    QtGui.QStandardItem.__init__(self, name if name.rfind('@') > 0 else '{' + name + '}')
+    QStandardItem.__init__(self, name if name.rfind('@') > 0 else '{' + name + '}')
     self.parent_item = parent
     self._name = name
-    self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+    self.setIcon(QIcon(':/icons/state_off.png'))
     self.descr_type = self.descr_name = self.descr = ''
     self.descr_images = []
     self._capcabilities = dict()
@@ -296,14 +296,14 @@ class GroupItem(QtGui.QStandardItem):
           items = []
           newItem = GroupItem(group_name, self)
           items.append(newItem)
-          cfgitem = QtGui.QStandardItem()
+          cfgitem = QStandardItem()
           items.append(cfgitem)
           self.insertRow(i, items)
           return newItem
     items = []
     newItem = GroupItem(group_name, self)
     items.append(newItem)
-    cfgitem = QtGui.QStandardItem()
+    cfgitem = QStandardItem()
     items.append(cfgitem)
     self.appendRow(items)
     return newItem
@@ -462,7 +462,7 @@ class GroupItem(QtGui.QStandardItem):
       item = self.child(i)
       if isinstance(item, NodeItem):
         if item.state == NodeItem.STATE_WARNING:
-          self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
+          self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
           return
         elif item.state == NodeItem.STATE_OFF:
           has_off = True
@@ -481,21 +481,21 @@ class GroupItem(QtGui.QStandardItem):
     if diag_level > 0:
       diag_icon = NodeItem._diagnostic_level2icon(diag_level)
     if has_duplicate:
-      self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
+      self.setIcon(QIcon(':/icons/imacadam_stop.png'))
     elif has_ghosts:
-      self.setIcon(QtGui.QIcon(':/icons/state_ghost.png'))
+      self.setIcon(QIcon(':/icons/state_ghost.png'))
     elif has_running and has_off:
       if diag_icon is not None:
         self.setIcon(diag_icon)
       else:
-        self.setIcon(QtGui.QIcon(':/icons/state_part.png'))
+        self.setIcon(QIcon(':/icons/state_part.png'))
     elif not has_running:
-      self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+      self.setIcon(QIcon(':/icons/state_off.png'))
     elif not has_off and has_running:
       if diag_icon is not None:
         self.setIcon(diag_icon)
       else:
-        self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+        self.setIcon(QIcon(':/icons/state_run.png'))
 
   def _create_html_list(self, title, items):
     result = ''
@@ -571,7 +571,7 @@ class GroupItem(QtGui.QStandardItem):
       if cfgs:
         cfgs = list(set(cfgs))
       cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
-      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QStandardItem):
         cfg_col.setText('[%d]' % len(cfgs) if len(cfgs) > 1 else "")
         # set tooltip
         # removed for clarity !!!
@@ -591,13 +591,13 @@ class GroupItem(QtGui.QStandardItem):
         has_launches = NodeItem.has_launch_cfgs(cfgs)
         has_defaults = NodeItem.has_default_cfgs(cfgs)
         if has_launches and has_defaults:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
+          cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
         elif has_launches:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
+          cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file.png'))
         elif has_defaults:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/default_cfg.png'))
+          cfg_col.setIcon(QIcon(':/icons/default_cfg.png'))
         else:
-          cfg_col.setIcon(QtGui.QIcon())
+          cfg_col.setIcon(QIcon())
 
   def type(self):
     return GroupItem.ITEM_TYPE
@@ -631,7 +631,7 @@ class HostItem(GroupItem):
   '''
   The HostItem stores the information about a host.
   '''
-  ITEM_TYPE = QtCore.Qt.UserRole + 26
+  ITEM_TYPE = Qt.UserRole + 26
 
   def __init__(self, masteruri, address, local, parent=None):
     '''
@@ -650,13 +650,13 @@ class HostItem(GroupItem):
     self._local = local
     GroupItem.__init__(self, name, parent)
     image_file = nm.settings().robot_image_file(name)
-    if QtCore.QFile.exists(image_file):
-      self.setIcon(QtGui.QIcon(image_file))
+    if QFile.exists(image_file):
+      self.setIcon(QIcon(image_file))
     else:
       if local:
-        self.setIcon(QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'))
+        self.setIcon(QIcon(':/icons/crystal_clear_miscellaneous.png'))
       else:
-        self.setIcon(QtGui.QIcon(':/icons/remote.png'))
+        self.setIcon(QIcon(':/icons/remote.png'))
     self.descr_type = self.descr_name = self.descr = ''
 
   @property
@@ -799,15 +799,15 @@ class HostItem(GroupItem):
 ##############                   NodeItem                         ##############
 ################################################################################
 
-class NodeItem(QtGui.QStandardItem):
+class NodeItem(QStandardItem):
   '''
   The NodeItem stores the information about the node using the ExtendedNodeInfo
   class and represents it in a L{PySide.QtGui.QTreeModel} using the
   L{PySide.QtGui.QStandardItemModel}
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 35
-  NAME_ROLE = QtCore.Qt.UserRole + 1
+  ITEM_TYPE = QStandardItem.UserType + 35
+  NAME_ROLE = Qt.UserRole + 1
   COL_CFG = 1
 #  COL_URI = 2
 
@@ -823,23 +823,23 @@ class NodeItem(QtGui.QStandardItem):
     @param node_info: the node information
     @type node_info: L{master_discovery_fkie.NodeInfo}
     '''
-    QtGui.QStandardItem.__init__(self, node_info.name)
+    QStandardItem.__init__(self, node_info.name)
     self.parent_item = None
     self._node_info = node_info.copy()
-#    self.ICONS = {'empty' : QtGui.QIcon(),
-#                  'run'    : QtGui.QIcon(':/icons/state_run.png'),
-#                  'off'     :QtGui.QIcon(':/icons/state_off.png'),
-#                  'warning' : QtGui.QIcon(':/icons/crystal_clear_warning.png'),
-#                  'stop'    : QtGui.QIcon('icons/imacadam_stop.png'),
-#                  'cfg+def' : QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'),
-#                  'cfg'     : QtGui.QIcon(':/icons/crystal_clear_launch_file.png'),
-#                  'default_cfg' : QtGui.QIcon(':/icons/default_cfg.png')
+#    self.ICONS = {'empty' : QIcon(),
+#                  'run'    : QIcon(':/icons/state_run.png'),
+#                  'off'     :QIcon(':/icons/state_off.png'),
+#                  'warning' : QIcon(':/icons/crystal_clear_warning.png'),
+#                  'stop'    : QIcon('icons/imacadam_stop.png'),
+#                  'cfg+def' : QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'),
+#                  'cfg'     : QIcon(':/icons/crystal_clear_launch_file.png'),
+#                  'default_cfg' : QIcon(':/icons/default_cfg.png')
 #                  }
     self._cfgs = []
     self._std_config = None  # it's config with empty name. for default proposals
     self._is_ghost = False
     self._has_running = False
-    self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+    self.setIcon(QIcon(':/icons/state_off.png'))
     self._state = NodeItem.STATE_OFF
     self.diagnostic_array = []
 
@@ -973,18 +973,18 @@ class NodeItem(QtGui.QStandardItem):
     if role == self.NAME_ROLE:
       return self.name
     else:
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
   @staticmethod
   def _diagnostic_level2icon(level):
     if level == 1:
-      return QtGui.QIcon(':/icons/state_diag_warn.png')
+      return QIcon(':/icons/state_diag_warn.png')
     elif level == 2:
-      return QtGui.QIcon(':/icons/state_diag_error.png')
+      return QIcon(':/icons/state_diag_error.png')
     elif level == 3:
-      return QtGui.QIcon(':/icons/state_diag_stale.png')
+      return QIcon(':/icons/state_diag_stale.png')
     else:
-      return QtGui.QIcon(':/icons/state_diag_other.png')
+      return QIcon(':/icons/state_diag_other.png')
 
   def updateDispayedName(self):
     '''
@@ -1005,46 +1005,46 @@ class NodeItem(QtGui.QStandardItem):
         self.setIcon(self._diagnostic_level2icon(level))
         self.setToolTip(self.diagnostic_array[-1].message)
       else:
-        self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+        self.setIcon(QIcon(':/icons/state_run.png'))
         self.setToolTip('')
     elif self.node_info.uri is not None and not self.node_info.isLocal:
       self._state = NodeItem.STATE_RUN
-      self.setIcon(QtGui.QIcon(':/icons/state_unknown.png'))
+      self.setIcon(QIcon(':/icons/state_unknown.png'))
       tooltip += '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'
       tooltip += '</dl>'
       self.setToolTip('<div>%s</div>' % tooltip)
 #    elif not self.node_info.isLocal and not master_discovered and not self.node_info.uri is None:
 # #    elif not local and not master_discovered and not self.node_info.uri is None:
 #      self._state = NodeItem.STATE_RUN
-#      self.setIcon(QtGui.QIcon(':/icons/state_run.png'))
+#      self.setIcon(QIcon(':/icons/state_run.png'))
 #      tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
 #      tooltip = ''.join([tooltip, '</dl>'])
 #      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
     elif self.node_info.pid is None and self.node_info.uri is None and (self.node_info.subscribedTopics or self.node_info.publishedTopics or self.node_info.services):
-      self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
+      self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
       self._state = NodeItem.STATE_WARNING
       tooltip += '<dl><dt>Can\'t get node contact information, but there exists publisher, subscriber or services of this node.</dt></dl>'
       tooltip += '</dl>'
       self.setToolTip('<div>%s</div>' % tooltip)
     elif self.node_info.uri is not None:
       self._state = NodeItem.STATE_WARNING
-      self.setIcon(QtGui.QIcon(':/icons/crystal_clear_warning.png'))
+      self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
       if not self.node_info.isLocal and master_discovered:
         tooltip = '<h4>%s is not local, however the ROS master on this host is discovered, but no information about this node received!</h4>' % self.node_info.name
         self.setToolTip('<div>%s</div>' % tooltip)
     elif self.is_ghost:
       self._state = NodeItem.STATE_GHOST
-      self.setIcon(QtGui.QIcon(':/icons/state_ghost.png'))
+      self.setIcon(QIcon(':/icons/state_ghost.png'))
       tooltip = '<h4>The node is running, but not synchronized because of filter or errors, see master_sync log.</h4>'
       self.setToolTip('<div>%s</div>' % tooltip)
     elif self.has_running:
       self._state = NodeItem.STATE_DUPLICATE
-      self.setIcon(QtGui.QIcon(':/icons/imacadam_stop.png'))
+      self.setIcon(QIcon(':/icons/imacadam_stop.png'))
       tooltip = '<h4>There are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'
       self.setToolTip('<div>%s</div>' % tooltip)
     else:
       self._state = NodeItem.STATE_OFF
-      self.setIcon(QtGui.QIcon(':/icons/state_off.png'))
+      self.setIcon(QIcon(':/icons/state_off.png'))
       self.setToolTip('')
     # removed common tooltip for clarity !!!
 #    self.setToolTip(''.join(['<div>', tooltip, '</div>']))
@@ -1055,7 +1055,7 @@ class NodeItem(QtGui.QStandardItem):
     '''
     if self.parent_item is not None:
       uri_col = self.parent_item.child(self.row(), NodeItem.COL_URI)
-      if uri_col is not None and isinstance(uri_col, QtGui.QStandardItem):
+      if uri_col is not None and isinstance(uri_col, QStandardItem):
         uri_col.setText(str(self.node_info.uri) if self.node_info.uri is not None else "")
 
   @property
@@ -1101,7 +1101,7 @@ class NodeItem(QtGui.QStandardItem):
     '''
     if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
-      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QStandardItem):
         cfg_count = len(self._cfgs)
         cfg_col.setText(str(''.join(['[', str(cfg_count), ']'])) if cfg_count > 1 else "")
         # set tooltip
@@ -1122,13 +1122,13 @@ class NodeItem(QtGui.QStandardItem):
         has_launches = NodeItem.has_launch_cfgs(self._cfgs)
         has_defaults = NodeItem.has_default_cfgs(self._cfgs)
         if has_launches and has_defaults:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
+          cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
         elif has_launches:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/crystal_clear_launch_file.png'))
+          cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file.png'))
         elif has_defaults:
-          cfg_col.setIcon(QtGui.QIcon(':/icons/default_cfg.png'))
+          cfg_col.setIcon(QIcon(':/icons/default_cfg.png'))
         else:
-          cfg_col.setIcon(QtGui.QIcon())
+          cfg_col.setIcon(QIcon())
 #      the update of the group will be perform in node_tree_model to reduce calls
 #        if isinstance(self.parent_item, GroupItem):
 #          self.parent_item.updateDisplayedConfig()
@@ -1151,9 +1151,9 @@ class NodeItem(QtGui.QStandardItem):
     items = []
     item = NodeItem(NodeInfo(name, masteruri))
     items.append(item)
-    cfgitem = QtGui.QStandardItem()
+    cfgitem = QStandardItem()
     items.append(cfgitem)
-#    uriitem = QtGui.QStandardItem()
+#    uriitem = QStandardItem()
 #    items.append(uriitem)
     return items
 
@@ -1209,23 +1209,23 @@ class NodeItem(QtGui.QStandardItem):
 ##############                NodeTreeModel                       ##############
 ################################################################################
 
-class NodeTreeModel(QtGui.QStandardItemModel):
+class NodeTreeModel(QStandardItemModel):
   '''
   The model to show the nodes running in a ROS system or loaded by a launch
   configuration.
   '''
-#  ICONS = {'default'        : QtGui.QIcon(),
-#           'run'            : QtGui.QIcon(":/icons/state_run.png"),
-#           'warning'        : QtGui.QIcon(":/icons/crystal_clear_warning.png"),
-#           'def_launch_cfg' : QtGui.QIcon(":/icons/crystal_clear_launch_file_def_cfg.png"),
-#           'launch_cfg'     : QtGui.QIcon(":/icons/crystal_clear_launch_file.png"),
-#           'def_cfg'        : QtGui.QIcon(":/icons/default_cfg.png") }
+#  ICONS = {'default'        : QIcon(),
+#           'run'            : QIcon(":/icons/state_run.png"),
+#           'warning'        : QIcon(":/icons/crystal_clear_warning.png"),
+#           'def_launch_cfg' : QIcon(":/icons/crystal_clear_launch_file_def_cfg.png"),
+#           'launch_cfg'     : QIcon(":/icons/crystal_clear_launch_file.png"),
+#           'def_cfg'        : QIcon(":/icons/default_cfg.png") }
 
   header = [('Name', 450),
             ('Cfgs', -1)]
 #            ('URI', -1)]
 
-  hostInserted = QtCore.Signal(HostItem)
+  hostInserted = Signal(HostItem)
   '''@ivar: the Qt signal, which is emitted, if a new host was inserted.
   Parameter: L{QtCore.QModelIndex} of the inserted host item'''
 
@@ -1260,8 +1260,8 @@ class NodeTreeModel(QtGui.QStandardItemModel):
 
   def flags(self, index):
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
-    return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+      return Qt.NoItemFlags
+    return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
   def _set_std_capabilities(self, host_item):
     if host_item is not None:

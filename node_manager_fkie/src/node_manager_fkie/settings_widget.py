@@ -29,9 +29,18 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+from python_qt_binding.QtCore import QSize, Qt, Signal
+try:
+  from python_qt_binding.QtGui import QSortFilterProxyModel
+  from python_qt_binding.QtGui import QAbstractItemDelegate, QStyledItemDelegate, QHBoxLayout
+  from python_qt_binding.QtGui import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QPushButton, QWidget
+  from python_qt_binding.QtGui import QStyleOptionViewItemV4 as QStyleOptionViewItem
+except:
+  from python_qt_binding.QtWidgets import QAbstractItemDelegate, QStyledItemDelegate, QHBoxLayout
+  from python_qt_binding.QtWidgets import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QPushButton, QWidget
+  from python_qt_binding.QtWidgets import QStyleOptionViewItem
+  from python_qt_binding.QtCore import QSortFilterProxyModel
 import os
 
 import node_manager_fkie as nm
@@ -39,7 +48,7 @@ import node_manager_fkie as nm
 from .settings_model import SettingsModel, SettingsValueItem
 
 
-class SettingsWidget(QtGui.QDockWidget):
+class SettingsWidget(QDockWidget):
   '''
   Settings widget to handle the settings changes. The changes will direct change
   the settings of the GUI.
@@ -49,13 +58,13 @@ class SettingsWidget(QtGui.QDockWidget):
     '''
     Creates the window, connects the signals and init the class.
     '''
-    QtGui.QDockWidget.__init__(self, parent)
+    QDockWidget.__init__(self, parent)
     # load the UI file
     settings_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'SettingsDockWidget.ui')
     loadUi(settings_dock_file, self)
     # initialize the settings view model
     self.settings_model = SettingsModel()
-    self.settings_proxyModel = QtGui.QSortFilterProxyModel(self)
+    self.settings_proxyModel = QSortFilterProxyModel(self)
     self.settings_proxyModel.setSourceModel(self.settings_model)
     self.settingsTreeView.setModel(self.settings_proxyModel)
     self.settingsTreeView.setAlternatingRowColors(True)
@@ -176,16 +185,16 @@ class SettingsWidget(QtGui.QDockWidget):
                 }
     self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)
-    self.settingsTreeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+    self.settingsTreeView.sortByColumn(0, Qt.AscendingOrder)
     self.settingsTreeView.expandAll()
 
 
-class ItemDelegate(QtGui.QStyledItemDelegate):
+class ItemDelegate(QStyledItemDelegate):
   '''
   This ItemDelegate provides editors for different setting types in settings view.
   '''
 
-  settings_path_changed_signal = QtCore.Signal()
+  settings_path_changed_signal = Signal()
 
   reload_settings = False
 
@@ -196,13 +205,13 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
     item = self._itemFromIndex(index)
     if item.edit_type() == SettingsValueItem.EDIT_TYPE_AUTODETECT:
       if isinstance(item.value(), bool):
-        box = QtGui.QCheckBox(parent)
-        box.setFocusPolicy(QtCore.Qt.StrongFocus)
+        box = QCheckBox(parent)
+        box.setFocusPolicy(Qt.StrongFocus)
         box.setAutoFillBackground(True)
         box.stateChanged.connect(self.edit_finished)
         return box
       elif isinstance(item.value(), int):
-        box = QtGui.QSpinBox(parent)
+        box = QSpinBox(parent)
         box.setValue(item.value())
         if not item.value_min() is None:
           box.setMinimum(item.value_min())
@@ -214,23 +223,23 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
       editor.editing_finished_signal.connect(self.edit_finished)
       return editor
     elif item.edit_type() == SettingsValueItem.EDIT_TYPE_LIST:
-      box = QtGui.QComboBox(parent)
+      box = QComboBox(parent)
       box.addItems(item.value_list())
       index = box.findText(item.value())
       if index >= 0:
         box.setCurrentIndex(index)
       box.setEditable(False)
       return box
-    return QtGui.QStyledItemDelegate.createEditor(self, parent, option, index)
+    return QStyledItemDelegate.createEditor(self, parent, option, index)
 
 #  def setEditorData(self, editor, index):
 #    print "setEditorData"
-#    QtGui.QStyledItemDelegate.setEditorData(self, editor, index)
+#    QStyledItemDelegate.setEditorData(self, editor, index)
 
 #  def updateEditorGeometry(self, editor, option, index):
 #    print "updateEditorGeometry", option.rect.width()
 #    editor.setMaximumSize(option.rect.width(), option.rect.height())
-#    QtGui.QStyledItemDelegate.updateEditorGeometry(self, editor, option, index)
+#    QStyledItemDelegate.updateEditorGeometry(self, editor, option, index)
 
   def setModelData(self, editor, model, index):
     if isinstance(editor, PathEditor):
@@ -238,54 +247,54 @@ class ItemDelegate(QtGui.QStyledItemDelegate):
       model.setData(index, editor.path)
       self.reload_settings = (cfg_path != nm.settings().cfg_path)
     else:
-      QtGui.QStyledItemDelegate.setModelData(self, editor, model, index)
+      QStyledItemDelegate.setModelData(self, editor, model, index)
 
   def sizeHint(self, option, index):
     '''
     Determines and returns the size of the text after the format.
     @see: U{http://www.pyside.org/docs/pyside/PySide/QtGui/QAbstractItemDelegate.html#PySide.QtGui.QAbstractItemDelegate}
     '''
-    options = QtGui.QStyleOptionViewItemV4(option)
+    options = QStyleOptionViewItem(option)
     self.initStyleOption(options, index)
-    return QtCore.QSize(options.rect.width(), 25)
+    return QSize(options.rect.width(), 25)
 
   def edit_finished(self, arg=None):
     editor = self.sender()
     # The commitData signal must be emitted when we've finished editing
     # and need to write our changed back to the model.
     self.commitData.emit(editor)
-    self.closeEditor.emit(editor, QtGui.QAbstractItemDelegate.NoHint)
+    self.closeEditor.emit(editor, QAbstractItemDelegate.NoHint)
     if self.reload_settings:
       self.reload_settings = False
       self.settings_path_changed_signal.emit()
 
   def _itemFromIndex(self, index):
-    if isinstance(index.model(), QtGui.QSortFilterProxyModel):
+    if isinstance(index.model(), QSortFilterProxyModel):
       sindex = index.model().mapToSource(index)
       return index.model().sourceModel().itemFromIndex(sindex)
     else:
       return index.model().itemFromIndex(index)
 
 
-class PathEditor(QtGui.QWidget):
+class PathEditor(QWidget):
   '''
   This is a path editor used as ItemDeligate in settings view. This editor
   provides an additional button for directory selection dialog.
   '''
 
-  editing_finished_signal = QtCore.Signal()
+  editing_finished_signal = Signal()
 
   def __init__(self, path, parent=None):
-    QtGui.QWidget.__init__(self, parent)
+    QWidget.__init__(self, parent)
     self.path = path
-    self._layout = QtGui.QHBoxLayout(self)
+    self._layout = QHBoxLayout(self)
     self._layout.setContentsMargins(0, 0, 0, 0)
     self._layout.setSpacing(0)
-    self._button = QtGui.QPushButton('...')
-    self._button.setMaximumSize(QtCore.QSize(24, 20))
+    self._button = QPushButton('...')
+    self._button.setMaximumSize(QSize(24, 20))
     self._button.clicked.connect(self._on_path_select_clicked)
     self._layout.addWidget(self._button)
-    self._lineedit = QtGui.QLineEdit(path)
+    self._lineedit = QLineEdit(path)
     self._lineedit.returnPressed.connect(self._on_editing_finished)
     self._layout.addWidget(self._lineedit)
     self.setLayout(self._layout)
@@ -293,11 +302,11 @@ class PathEditor(QtGui.QWidget):
     self.setAutoFillBackground(True)
 
   def _on_path_select_clicked(self):
-    # Workaround for QtGui.QFileDialog.getExistingDirectory because it do not
+    # Workaround for QFileDialog.getExistingDirectory because it do not
     # select the configuration folder in the dialog
-    self.dialog = QtGui.QFileDialog(self, caption='Select a new settings folder')
-    self.dialog.setOption(QtGui.QFileDialog.HideNameFilterDetails, True)
-    self.dialog.setFileMode(QtGui.QFileDialog.Directory)
+    self.dialog = QFileDialog(self, caption='Select a new settings folder')
+    self.dialog.setOption(QFileDialog.HideNameFilterDetails, True)
+    self.dialog.setFileMode(QFileDialog.Directory)
     self.dialog.setDirectory(self.path)
     if self.dialog.exec_():
       fileNames = self.dialog.selectedFiles()

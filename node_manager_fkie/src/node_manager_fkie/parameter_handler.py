@@ -30,27 +30,27 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 import threading
 import xmlrpclib
 
 import rospy
 
 
-class ParameterHandler(QtCore.QObject):
+class ParameterHandler(QObject):
   '''
   A class to retrieve the parameter list and their values from a ROS parameter
   server. The results are published by sending a QT signal. To parameter a new
   thread will be created.
   '''
-  parameter_list_signal = QtCore.Signal(str, int, str, list)
+  parameter_list_signal = Signal(str, int, str, list)
   '''
   parameter_list_signal is a signal, which is emitted if a new list with
   parameter names is retrieved. The signal has the URI of the ROS parameter
   server and (code, statusMessage, parameterNameList) - the response of the
   server U{http://www.ros.org/wiki/ROS/Parameter%20Server%20API#getParamNames}.
   '''
-  parameter_values_signal = QtCore.Signal(str, int, str, dict)
+  parameter_values_signal = Signal(str, int, str, dict)
   '''
   parameter_values_signal is a signal, which is emitted if a new list with
   parameter names and their values is retrieved. The signal has the URI of the
@@ -59,13 +59,13 @@ class ParameterHandler(QtCore.QObject):
   For details see U{http://www.ros.org/wiki/ROS/Parameter%20Server%20API#getParam}.
   '''
 
-  delivery_result_signal = QtCore.Signal(str, int, str, dict)
+  delivery_result_signal = Signal(str, int, str, dict)
   '''
   delivery_result_signal a signal is emitted after the parameter value was
   set. For format see C{parameter_values_signal} signal. '''
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.setObjectName('ParameterHandler')
     self.__requestListThreads = []
     self.__requestValuesThreads = []
@@ -161,15 +161,15 @@ class ParameterHandler(QtCore.QObject):
         pass
 
 
-class RequestListThread(QtCore.QObject, threading.Thread):
+class RequestListThread(QObject, threading.Thread):
   '''
   A thread to to retrieve the parameter list from ROSparameter server
   and publish it by sending a QT signal.
   '''
-  parameter_list_signal = QtCore.Signal(str, int, str, list)
+  parameter_list_signal = Signal(str, int, str, list)
 
   def __init__(self, masteruri, ns, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._masteruri = masteruri
     self._ns = ns
@@ -197,15 +197,15 @@ class RequestListThread(QtCore.QObject, threading.Thread):
         self.parameter_list_signal.emit(self._masteruri, -1, err_msg, [])
 
 
-class RequestValuesThread(QtCore.QObject, threading.Thread):
+class RequestValuesThread(QObject, threading.Thread):
   '''
   A thread to to retrieve the value for given parameter from ROSparameter server
   and publish it by sending a QT signal.
   '''
-  parameter_values_signal = QtCore.Signal(str, int, str, dict)
+  parameter_values_signal = Signal(str, int, str, dict)
 
   def __init__(self, masteruri, params, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._masteruri = masteruri
     self._params = params
@@ -236,12 +236,12 @@ class RequestValuesThread(QtCore.QObject, threading.Thread):
         self.parameter_values_signal.emit(self._masteruri, -1, traceback.format_exc(1), result)
 
 
-class DeliverValuesThread(QtCore.QObject, threading.Thread):
+class DeliverValuesThread(QObject, threading.Thread):
   '''
   A thread to to deliver the value for given parameter to ROSparameter server
   and publish the result by sending a QT signal.
   '''
-  result_signal = QtCore.Signal(str, int, str, dict)
+  result_signal = Signal(str, int, str, dict)
 
   def __init__(self, masteruri, params, parent=None):
     '''
@@ -250,7 +250,7 @@ class DeliverValuesThread(QtCore.QObject, threading.Thread):
     @param params: The dictinary the parameter name and their value, see U{http://www.ros.org/wiki/ROS/Parameter%20Server%20API#setParam}
     @type params: C{dict(str: value)}
     '''
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._masteruri = masteruri
     self._params = params

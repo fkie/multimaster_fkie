@@ -30,22 +30,22 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
 import node_manager_fkie as nm
 
 
-class ServiceItem(QtGui.QStandardItem):
+class ServiceItem(QStandardItem):
   '''
   The service item stored in the service model. This class stores the service as
   L{master_discovery_fkie.ServiceInfo}. The name of the service is represented in HTML.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 37
-  NAME_ROLE = QtCore.Qt.UserRole + 1
-  TYPE_ROLE = QtCore.Qt.UserRole + 2
-  NODENAMES_ROLE = QtCore.Qt.UserRole + 3
+  ITEM_TYPE = QStandardItem.UserType + 37
+  NAME_ROLE = Qt.UserRole + 1
+  TYPE_ROLE = Qt.UserRole + 2
+  NODENAMES_ROLE = Qt.UserRole + 3
 
   def __init__(self, service, parent=None):
     '''
@@ -53,7 +53,7 @@ class ServiceItem(QtGui.QStandardItem):
     @param service: the service object to view
     @type service: L{master_discovery_fkie.ServiceInfo}
     '''
-    QtGui.QStandardItem.__init__(self, service.name)
+    QStandardItem.__init__(self, service.name)
     self.service = service
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
 
@@ -87,7 +87,7 @@ class ServiceItem(QtGui.QStandardItem):
     # removed tooltip for clarity !!!
 #    item.setToolTip(''.join(['<div><h4>', str(service.name), '</h4><dl><dt>', str(service.uri),'</dt></dl></div>']))
     items.append(item)
-    typeItem = QtGui.QStandardItem()
+    typeItem = QStandardItem()
     ServiceItem.updateTypeView(service, typeItem)
     items.append(typeItem)
     return items
@@ -133,7 +133,7 @@ class ServiceItem(QtGui.QStandardItem):
     elif role == self.NODENAMES_ROLE:
       return str(self.service.serviceProvider)
     else:
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
 #  def __eq__(self, item):
 #    '''
@@ -156,7 +156,7 @@ class ServiceItem(QtGui.QStandardItem):
 #    return False
 
 
-class ServiceModel(QtGui.QStandardItemModel):
+class ServiceModel(QStandardItemModel):
   '''
   The model to manage the list with services in ROS network.
   '''
@@ -168,7 +168,7 @@ class ServiceModel(QtGui.QStandardItemModel):
     '''
     Creates a new list model.
     '''
-    QtGui.QStandardItemModel.__init__(self)
+    QStandardItemModel.__init__(self)
     self.setColumnCount(len(ServiceModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in ServiceModel.header])
     self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
@@ -182,8 +182,8 @@ class ServiceModel(QtGui.QStandardItemModel):
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
-    return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+      return Qt.NoItemFlags
+    return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
   def updateModelData(self, services, added_srvs, updated_srvs, removed_srvs):
     '''

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 import random
 import socket
 import threading
@@ -40,24 +40,24 @@ import xmlrpclib
 import rospy
 
 
-class LaunchServerHandler(QtCore.QObject):
+class LaunchServerHandler(QObject):
   '''
   A class to retrieve the state of launch servers. To retrieve the state a new
   thread will be created.
   '''
-  launch_server_signal = QtCore.Signal(str, int, list)
+  launch_server_signal = Signal(str, int, list)
   '''
   @ivar: launch_server_signal is a signal (serveruri, pid, nodes), which is emitted, if a info from
   launch server was successful retrieved.
   '''
-  error_signal = QtCore.Signal(str, str)
+  error_signal = Signal(str, str)
   '''
   @ivar: error_signal is a signal (serveruri, error message), which is emitted,
   if an error while retrieving a launch server info was occurred.
   '''
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.__updateThreads = {}
     self.__requestedUpdates = {}
     self._lock = threading.RLock()
@@ -125,16 +125,16 @@ class LaunchServerHandler(QtCore.QObject):
     upthread.start()
 
 
-class LaunchServerUpdateThread(QtCore.QObject, threading.Thread):
+class LaunchServerUpdateThread(QObject, threading.Thread):
   '''
   A thread to retrieve the list of pid and nodes from launch server and publish
   it by sending a QT signal.
   '''
-  launch_server_signal = QtCore.Signal(str, int, list)
-  error_signal = QtCore.Signal(str, str)
+  launch_server_signal = Signal(str, int, list)
+  error_signal = Signal(str, str)
 
   def __init__(self, launch_serveruri, delayed_exec=0.0, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._launch_serveruri = launch_serveruri
     self._delayed_exec = delayed_exec

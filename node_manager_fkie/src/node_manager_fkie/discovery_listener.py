@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 import socket
 import threading
 import time
@@ -51,22 +51,22 @@ except ImportError, e:
   raise ImportError(str(e))
 
 
-class MasterListService(QtCore.QObject):
+class MasterListService(QObject):
   '''
   A class to retrieve the ROS master list from a ROS service. The service
   will be determine using L{master_discovery_fkie.interface_finder.get_listmaster_service()}
 
   '''
-  masterlist_signal = QtCore.Signal(str, str, list)
+  masterlist_signal = Signal(str, str, list)
   '''@ivar: a signal with a list of the masters retrieved from the master_discovery service 'list_masters'.
   ParameterB{:} C{masteruri}, C{service name}, C{[L{master_discovery_fkie.ROSMaster}, ...]}'''
-  masterlist_err_signal = QtCore.Signal(str, str)
+  masterlist_err_signal = Signal(str, str)
   '''@ivar: this signal is emitted if an error while calling #list_masters'
   service of master_discovery is failed.
   ParameterB{:} C{masteruri}, C{error}'''
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.__serviceThreads = {}
     self._lock = threading.RLock()
 
@@ -138,16 +138,16 @@ class MasterListService(QtCore.QObject):
         pass
 
 
-class MasterListThread(QtCore.QObject, threading.Thread):
+class MasterListThread(QObject, threading.Thread):
   '''
   A thread to to retrieve the list of discovered ROS master from master_discovery
   service and publish it by sending a QT signal.
   '''
-  master_list_signal = QtCore.Signal(str, str, list)
-  err_signal = QtCore.Signal(str, str)
+  master_list_signal = Signal(str, str, list)
+  err_signal = Signal(str, str)
 
   def __init__(self, masteruri, wait, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._masteruri = masteruri
     self._wait = wait
@@ -183,15 +183,15 @@ class MasterListThread(QtCore.QObject, threading.Thread):
         self.err_signal.emit(self._masteruri, "no service 'list_masters' found on %s" % self._masteruri)
 
 
-class MasterRefreshThread(QtCore.QObject, threading.Thread):
+class MasterRefreshThread(QObject, threading.Thread):
   '''
   A thread to call the refresh service of master discovery.
   '''
-  ok_signal = QtCore.Signal(str)
-  err_signal = QtCore.Signal(str, str)
+  ok_signal = Signal(str)
+  err_signal = Signal(str, str)
 
   def __init__(self, masteruri, wait, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._masteruri = masteruri
     self._wait = wait
@@ -219,12 +219,12 @@ class MasterRefreshThread(QtCore.QObject, threading.Thread):
           socket.setdefaulttimeout(None)
 
 
-class MasterStateTopic(QtCore.QObject):
+class MasterStateTopic(QObject):
   '''
   A class to receive the ROS master state updates from a ROS topic. The topic
   will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
   '''
-  state_signal = QtCore.Signal(MasterState)
+  state_signal = Signal(MasterState)
   '''@ivar: a signal to inform the receiver about new master state.
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
 
@@ -271,12 +271,12 @@ class MasterStateTopic(QtCore.QObject):
     self.state_signal.emit(msg)
 
 
-class MasterStatisticTopic(QtCore.QObject):
+class MasterStatisticTopic(QObject):
   '''
   A class to receive the connections statistics from a ROS topic. The topic
   will be determine using L{master_discovery_fkie.interface_finder.get_stats_topic()}
   '''
-  stats_signal = QtCore.Signal(LinkStatesStamped)
+  stats_signal = Signal(LinkStatesStamped)
   '''@ivar: a signal with a list of link states to discovered ROS masters.
   Paramter: L{master_discovery_fkie.msg.LinkStatesStamped}'''
 
@@ -320,17 +320,17 @@ class MasterStatisticTopic(QtCore.QObject):
     self.stats_signal.emit(msg)
 
 
-class OwnMasterMonitoring(QtCore.QObject):
+class OwnMasterMonitoring(QObject):
   '''
   A class to monitor the state of the master. Will be used, if no master
   discovering is available. On changes the 'state_signal' of type
   L{master_discovery_fkie.msg.MasterState} will be emitted.
   '''
-  state_signal = QtCore.Signal(MasterState)
+  state_signal = Signal(MasterState)
   '''@ivar: a signal to inform the receiver about new master state.
   Parameter: L{master_discovery_fkie.msg.MasterState}'''
 
-  err_signal = QtCore.Signal(str)
+  err_signal = Signal(str)
   '''@ivar: a signal to inform about an error.
   Parameter: L{str}'''
 

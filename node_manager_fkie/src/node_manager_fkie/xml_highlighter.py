@@ -31,98 +31,98 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QRegExp, Qt
+from python_qt_binding.QtGui import QBrush, QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
 
-class XmlHighlighter(QtGui.QSyntaxHighlighter):
+class XmlHighlighter(QSyntaxHighlighter):
   '''
   Enabled the syntax highlightning for the ROS launch files.
   '''
 
   LAUNCH_LAUNCH_CHILDS = ['group', 'node', 'test', 'env', 'remap', 'rosparam', 'param', 'machine', 'include', 'arg']
-  LAUNCH_LAUNCH_ATTR = {'deprecated='  : '"message"'}
+  LAUNCH_LAUNCH_ATTR = {'deprecated=': '"message"'}
   LAUNCH_GROUP_CHILDS = ['node', 'test', 'env', 'remap', 'rosparam', 'param', 'machine', 'include', 'arg']
-  LAUNCH_GROUP_ATTR = {'ns='           : '"foo"',
-                       'clear_params=' : '"true|false"'
+  LAUNCH_GROUP_ATTR = {'ns=': '"foo"',
+                       'clear_params=': '"true|false"'
                        }
   LAUNCH_MACHINE_CHILDS = ['env']
-  LAUNCH_MACHINE_ATTR = {'name='       : '"machine-name"',
-                         'address='    : '"blah.willowgarage.com"',
-                         'env-loader=' : '"/opt/ros/fuerte/env.sh"',
-                         'default='    : '"true|false|never"',
-                         'user='       : '"username"',
-                         'password='   : '"passwhat"',
-                         'timeout='    : '"10.0"'
-                       }
+  LAUNCH_MACHINE_ATTR = {'name=': '"machine-name"',
+                         'address=': '"blah.willowgarage.com"',
+                         'env-loader=': '"/opt/ros/fuerte/env.sh"',
+                         'default=': '"true|false|never"',
+                         'user=': '"username"',
+                         'password=': '"passwhat"',
+                         'timeout=': '"10.0"'
+                         }
   LAUNCH_NODE_CHILDS = ['env', 'remap', 'rosparam', 'param']
-  LAUNCH_NODE_ATTR = {'pkg='          : '"mypackage"',
-                      'type='         : '"nodetype"',
-                      'name='         : '"nodename"',
-                      'args='         : '"arg1"',
-                      'machine='      : '"machine-name"',
-                      'respawn='      : '"true"',
-                      'required='     : '"true"',
-                      'ns='           : '"foo"',
-                      'clear_params=' : '"true|false"',
-                      'output='       : '"log|screen"',
-                      'cwd='          : '"ROS_HOME|node"',
+  LAUNCH_NODE_ATTR = {'pkg=': '"mypackage"',
+                      'type=': '"nodetype"',
+                      'name=': '"nodename"',
+                      'args=': '"arg1"',
+                      'machine=': '"machine-name"',
+                      'respawn=': '"true"',
+                      'required=': '"true"',
+                      'ns=': '"foo"',
+                      'clear_params=': '"true|false"',
+                      'output=': '"log|screen"',
+                      'cwd=': '"ROS_HOME|node"',
                       'launch-prefix=': '"prefix arguments"'
                       }
   LAUNCH_INCLUDE_CHILDS = ['env', 'arg']
-  LAUNCH_INCLUDE_ATTR = {'file='         : '"$(find pkg-name)/path/filename.xml"',
-                         'ns='           : '"foo"',
-                         'clear_params=' : '"true|false"'
+  LAUNCH_INCLUDE_ATTR = {'file=': '"$(find pkg-name)/path/filename.xml"',
+                         'ns=': '"foo"',
+                         'clear_params=': '"true|false"'
                          }
 
-  LAUNCH_REMAP_ATTR = {'from=' : '"originalname"',
-                       'to='   : '"newname"'
+  LAUNCH_REMAP_ATTR = {'from=': '"originalname"',
+                       'to=': '"newname"'
                        }
-  LAUNCH_ENV_ATTR = {'name='  : '"name"',
-                     'value=' : '"value"'
+  LAUNCH_ENV_ATTR = {'name=': '"name"',
+                     'value=': '"value"'
                      }
-  LAUNCH_PARAM_ATTR = {'name='     : '"namespace/name"',
-                       'value='    : '"value"',
-                       'type='     : '"str|int|double|bool"',
-                       'textfile=' : '"$(find pkg-name)/path/file.txt"',
-                       'binfile='  : '"$(find pkg-name)/path/file"',
-                       'command='  : '"$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'"'
+  LAUNCH_PARAM_ATTR = {'name=': '"namespace/name"',
+                       'value=': '"value"',
+                       'type=': '"str|int|double|bool"',
+                       'textfile=': '"$(find pkg-name)/path/file.txt"',
+                       'binfile=': '"$(find pkg-name)/path/file"',
+                       'command=': '"$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'"'
                        }
 
-  LAUNCH_ROSPARAM_ATTR = {'command=' : '"load|dump|delete"',
-                          'file='    : '"$(find pkg-name)/path/foo.yaml"',
-                          'param='   : '"name"',
-                          'ns='      : '"foo"'
+  LAUNCH_ROSPARAM_ATTR = {'command=': '"load|dump|delete"',
+                          'file=': '"$(find pkg-name)/path/foo.yaml"',
+                          'param=': '"name"',
+                          'ns=': '"foo"'
                           }
-  LAUNCH_ARG_ATTR = {'name='     : '"name"',
-                     'value='    : '"bar"',
-                     'default='  : '"defbar"'
+  LAUNCH_ARG_ATTR = {'name=': '"name"',
+                     'value=': '"bar"',
+                     'default=': '"defbar"'
                      }
   LAUNCH_TEST_CHILDS = ['env', 'remap', 'rosparam', 'param']
-  LAUNCH_TEST_ATTR = {'pkg='          : '"mypackage"',
-                      'type='         : '"nodetype"',
-                      'name='         : '"nodename"',
-                      'test-name='    : '"test_name"',
-                      'args='         : '"arg1"',
-                      'ns='           : '"foo"',
-                      'clear_params=' : '"true|false"',
-                      'retry='        : '"0"',
-                      'cwd='          : '"ROS_HOME|node"',
+  LAUNCH_TEST_ATTR = {'pkg=': '"mypackage"',
+                      'type=': '"nodetype"',
+                      'name=': '"nodename"',
+                      'test-name=': '"test_name"',
+                      'args=': '"arg1"',
+                      'ns=': '"foo"',
+                      'clear_params=': '"true|false"',
+                      'retry=': '"0"',
+                      'cwd=': '"ROS_HOME|node"',
                       'launch-prefix=': '"prefix arguments"',
-                      'time-limit='   : '"60.0"'
+                      'time-limit=': '"60.0"'
                       }
 
-  LAUNCH_CHILDS = {'launch'   : LAUNCH_LAUNCH_CHILDS,
-                   'group'    : LAUNCH_GROUP_CHILDS,
-                   'machine'  : LAUNCH_MACHINE_CHILDS,
-                   'node'     : LAUNCH_NODE_CHILDS,
-                   'include'  : LAUNCH_INCLUDE_CHILDS,
-                   'remap'    : [],
-                   'env'      : [],
-                   'param'    : [],
-                   'rosparam' : [],
-                   'arg'      : [],
-                   'test'     : LAUNCH_TEST_CHILDS
+  LAUNCH_CHILDS = {'launch': LAUNCH_LAUNCH_CHILDS,
+                   'group': LAUNCH_GROUP_CHILDS,
+                   'machine': LAUNCH_MACHINE_CHILDS,
+                   'node': LAUNCH_NODE_CHILDS,
+                   'include': LAUNCH_INCLUDE_CHILDS,
+                   'remap': [],
+                   'env': [],
+                   'param': [],
+                   'rosparam': [],
+                   'arg': [],
+                   'test': LAUNCH_TEST_CHILDS
                    }
 
   LAUNCH_ATT_GLOBAL = {'if=': '""', 'unless=': '""'}
@@ -138,61 +138,61 @@ class XmlHighlighter(QtGui.QSyntaxHighlighter):
   LAUNCH_ARG_ATTR.update(LAUNCH_ATT_GLOBAL)
   LAUNCH_TEST_ATTR.update(LAUNCH_ATT_GLOBAL)
 
-  LAUNCH_ATTR = {'launch'   : LAUNCH_LAUNCH_ATTR,
-                   'group'    : LAUNCH_GROUP_ATTR,
-                   'machine'  : LAUNCH_MACHINE_ATTR,
-                   'node'     : LAUNCH_NODE_ATTR,
-                   'include'  : LAUNCH_INCLUDE_ATTR,
-                   'remap'    : LAUNCH_REMAP_ATTR,
-                   'env'      : LAUNCH_ENV_ATTR,
-                   'param'    : LAUNCH_PARAM_ATTR,
-                   'rosparam' : LAUNCH_ROSPARAM_ATTR,
-                   'arg'      : LAUNCH_ARG_ATTR,
-                   'test'     : LAUNCH_TEST_ATTR,
-                   }
+  LAUNCH_ATTR = {'launch': LAUNCH_LAUNCH_ATTR,
+                 'group': LAUNCH_GROUP_ATTR,
+                 'machine': LAUNCH_MACHINE_ATTR,
+                 'node': LAUNCH_NODE_ATTR,
+                 'include': LAUNCH_INCLUDE_ATTR,
+                 'remap': LAUNCH_REMAP_ATTR,
+                 'env': LAUNCH_ENV_ATTR,
+                 'param': LAUNCH_PARAM_ATTR,
+                 'rosparam': LAUNCH_ROSPARAM_ATTR,
+                 'arg': LAUNCH_ARG_ATTR,
+                 'test': LAUNCH_TEST_ATTR,
+                 }
 
   def __init__(self, parent=None):
-    QtGui.QSyntaxHighlighter.__init__(self, parent)
+    QSyntaxHighlighter.__init__(self, parent)
     self.rules = []
-    self.commentStart = QtCore.QRegExp("<!--")
-    self.commentEnd = QtCore.QRegExp("-->")
-    self.default_format = QtGui.QTextCharFormat()
-    self.default_format.setForeground(QtGui.QColor(24, 24, 24))
-    self.mark_background = QtGui.QBrush(QtGui.QColor(251, 247, 222))
-    self.commentFormat = QtGui.QTextCharFormat()
-    f = QtGui.QTextCharFormat()
-    r = QtCore.QRegExp()
+    self.commentStart = QRegExp("<!--")
+    self.commentEnd = QRegExp("-->")
+    self.default_format = QTextCharFormat()
+    self.default_format.setForeground(QColor(24, 24, 24))
+    self.mark_background = QBrush(QColor(251, 247, 222))
+    self.commentFormat = QTextCharFormat()
+    f = QTextCharFormat()
+    r = QRegExp()
     r.setMinimal(True)
-    f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground(QtCore.Qt.darkBlue)
+    f.setFontWeight(QFont.Normal)
+    f.setForeground(Qt.darkBlue)
     # create patterns for TAG
     tagList = ["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()]
     for tag in tagList:
       r.setPattern(tag)
-      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+      self.rules.append((QRegExp(r), QTextCharFormat(f)))
     # create patterns for ATTRIBUTES
-    f.setForeground(QtCore.Qt.darkGreen)
+    f.setForeground(Qt.darkGreen)
     attrList = set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()])
     for attr in attrList:
       r.setPattern(attr)
-      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+      self.rules.append((QRegExp(r), QTextCharFormat(f)))
     # create patterns for strings
-    f.setForeground(QtCore.Qt.magenta)
+    f.setForeground(Qt.magenta)
     r.setPattern("\".*\"")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
     # create patterns for substitutions
-    f.setForeground(QtGui.QColor(127, 64, 127))
+    f.setForeground(QColor(127, 64, 127))
     r.setPattern("\\$\\(.*\\)")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
     # create patterns for DOCTYPE
-    f.setForeground (QtCore.Qt.lightGray)
+    f.setForeground(Qt.lightGray)
     r.setPattern("<!DOCTYPE.*>")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
     r.setPattern("<\\?xml.*\\?>")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
     self.commentFormat.setFontItalic(True)
-    self.commentFormat.setForeground(QtCore.Qt.darkGray)
+    self.commentFormat.setForeground(Qt.darkGray)
 
     # part to select an XML block
     self._current_mark_range = (-1, -1)  # absolute (start, end) positions

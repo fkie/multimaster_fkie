@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 import os
 import threading
 
@@ -39,12 +39,12 @@ import rospy
 from .common import get_packages
 
 
-class PackagesThread(QtCore.QObject, threading.Thread):
+class PackagesThread(QObject, threading.Thread):
   '''
   A thread to list all available ROS packages and
   publish there be sending a QT signal.
   '''
-  packages = QtCore.Signal(dict)
+  packages = Signal(dict)
   '''
   @ivar: packages is a signal, which is emitted, if a list with ROS packages was
   created {package : path}.
@@ -53,7 +53,7 @@ class PackagesThread(QtCore.QObject, threading.Thread):
   def __init__(self):
     '''
     '''
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self.setDaemon(True)
 

@@ -30,7 +30,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtGui
+try:
+  from python_qt_binding.QtGui import QMessageBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit
+except:
+  from python_qt_binding.QtWidgets import QMessageBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit
 
 
 class DetailedError(Exception):
@@ -45,36 +48,34 @@ class DetailedError(Exception):
     return repr(self.text) + ":::" + self.detailed_text
 
 
-class WarningMessageBox(QtGui.QMessageBox):
+class WarningMessageBox(QMessageBox):
 
-  def __init__(self, icon, title, text, detailed_text="", buttons=QtGui.QMessageBox.Ok):
-    QtGui.QMessageBox.__init__(self, icon, title, text, buttons)
+  def __init__(self, icon, title, text, detailed_text="", buttons=QMessageBox.Ok):
+    QMessageBox.__init__(self, icon, title, text, buttons)
     if detailed_text:
       self.setDetailedText(detailed_text)
-#            self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-#            self.setSizeGripEnabled(True)
-      horizontalSpacer = QtGui.QSpacerItem(480, 0, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+      horizontalSpacer = QSpacerItem(480, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
       layout = self.layout()
       layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
 
-    if QtGui.QMessageBox.Abort & buttons:
-      self.setEscapeButton(QtGui.QMessageBox.Abort)
-    elif QtGui.QMessageBox.Ignore & buttons:
-      self.setEscapeButton(QtGui.QMessageBox.Ignore)
+    if QMessageBox.Abort & buttons:
+      self.setEscapeButton(QMessageBox.Abort)
+    elif QMessageBox.Ignore & buttons:
+      self.setEscapeButton(QMessageBox.Ignore)
     else:
       self.setEscapeButton(buttons)
 
-    self.textEdit = textEdit = self.findChild(QtGui.QTextEdit)
+    self.textEdit = textEdit = self.findChild(QTextEdit)
     if textEdit is not None:
       textEdit.setMinimumHeight(0)
       textEdit.setMaximumHeight(600)
       textEdit.setMinimumWidth(0)
       textEdit.setMaximumWidth(600)
-      textEdit.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+      textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    self.ignore_all_btn = QtGui.QPushButton('Don\'t display again')
-    self.addButton(self.ignore_all_btn, QtGui.QMessageBox.HelpRole)
+    self.ignore_all_btn = QPushButton('Don\'t display again')
+    self.addButton(self.ignore_all_btn, QMessageBox.HelpRole)
 
   def paintEvent(self, event):
-    QtGui.QMessageBox.paintEvent(self, event)
+    QMessageBox.paintEvent(self, event)
     self.ignore_all_btn.setVisible(self.textEdit.isVisible() if self.textEdit else False)

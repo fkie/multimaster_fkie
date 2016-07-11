@@ -30,16 +30,16 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
 
-class SettingsNameItem(QtGui.QStandardItem):
+class SettingsNameItem(QStandardItem):
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 80
+  ITEM_TYPE = QStandardItem.UserType + 80
 
   def __init__(self, name, tooltip=''):
-    QtGui.QStandardItem.__init__(self, name)
+    QStandardItem.__init__(self, name)
     self.name = name
     self.tooltip = tooltip
 
@@ -53,20 +53,20 @@ class SettingsNameItem(QtGui.QStandardItem):
     @type role: L{QtCore.Qt.DisplayRole}
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
-    if role == QtCore.Qt.DisplayRole:
+    if role == Qt.DisplayRole:
       # return the displayed item name
       return self.name
-    elif role == QtCore.Qt.ToolTipRole:
+    elif role == Qt.ToolTipRole:
       # return the tooltip of the item
       return self.tooltip
     else:
       # We don't care about anything else, so return None
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
 
-class SettingsValueItem(QtGui.QStandardItem):
+class SettingsValueItem(QStandardItem):
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 81
+  ITEM_TYPE = QStandardItem.UserType + 81
 
   EDIT_TYPE_AUTODETECT = 0
   EDIT_TYPE_FOLDER = 1
@@ -92,7 +92,7 @@ class SettingsValueItem(QtGui.QStandardItem):
     :param value_max: the minimum value (used by int or float)
     :param value_list: the list of values used for comboboxes
     '''
-    QtGui.QStandardItem.__init__(self, '%s' % value)
+    QStandardItem.__init__(self, '%s' % value)
     self._attrname = attrname
     self._value = value
     self._value_default = value_default
@@ -133,31 +133,31 @@ class SettingsValueItem(QtGui.QStandardItem):
     @type role: L{QtCore.Qt.DisplayRole}
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
-    if role == QtCore.Qt.DisplayRole:
+    if role == Qt.DisplayRole:
       # return the displayed item name
       return '%s' % self._value
-#     elif role == QtCore.Qt.DecorationRole:
+#     elif role == Qt.DecorationRole:
 #       pass
-    elif role == QtCore.Qt.EditRole:
+    elif role == Qt.EditRole:
       return self._value
     else:
       # We don't care about anything else, so return None
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
-  def setData(self, value, role=QtCore.Qt.EditRole):
-    if role == QtCore.Qt.EditRole:
+  def setData(self, value, role=Qt.EditRole):
+    if role == Qt.EditRole:
       self._value = value
       if hasattr(self._settings, self._attrname):
         setattr(self._settings, self._attrname, value)
-    return QtGui.QStandardItem.setData(self, value, role)
+    return QStandardItem.setData(self, value, role)
 
 
-class SettingsGroupItem(QtGui.QStandardItem):
+class SettingsGroupItem(QStandardItem):
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 82
+  ITEM_TYPE = QStandardItem.UserType + 82
 
   def __init__(self, name):
-    QtGui.QStandardItem.__init__(self, name)
+    QStandardItem.__init__(self, name)
     self.name = name
 
   def type(self):
@@ -172,14 +172,14 @@ class SettingsGroupItem(QtGui.QStandardItem):
     @type role: L{QtCore.Qt.DisplayRole}
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
-    if role == QtCore.Qt.DisplayRole:
+    if role == Qt.DisplayRole:
       # return the displayed item name
       return self.name
-#     elif role == QtCore.Qt.DecorationRole:
+#     elif role == Qt.DecorationRole:
 #       pass
     else:
       # We don't care about anything else, so return None
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
   @classmethod
   def getGroupItemList(self, name):
@@ -193,7 +193,7 @@ class SettingsGroupItem(QtGui.QStandardItem):
     items = []
     item = SettingsGroupItem(name)
     items.append(item)
-#     item = QtGui.QStandardItem('')
+#     item = QStandardItem('')
 #     items.append(item)
     return items
 
@@ -216,7 +216,7 @@ class SettingsGroupItem(QtGui.QStandardItem):
     return items
 
 
-class SettingsModel(QtGui.QStandardItemModel):
+class SettingsModel(QStandardItemModel):
   '''
   The model to manage the settings.
   '''
@@ -227,7 +227,7 @@ class SettingsModel(QtGui.QStandardItemModel):
     '''
     Creates a new list model.
     '''
-    QtGui.QStandardItemModel.__init__(self)
+    QStandardItemModel.__init__(self)
     self.setColumnCount(len(SettingsModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in SettingsModel.header])
     self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
@@ -245,17 +245,17 @@ class SettingsModel(QtGui.QStandardItemModel):
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
+      return Qt.NoItemFlags
     try:
       item = self.itemFromIndex(index)
-      result = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+      result = Qt.ItemIsSelectable | Qt.ItemIsEnabled
       if item.type() in [SettingsValueItem.ITEM_TYPE]:
-        result = result | QtCore.Qt.ItemIsEditable
+        result = result | Qt.ItemIsEditable
       return result
     except:
       import traceback
       print traceback.format_exc(1)
-      return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+      return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   # %%%%%%%%%%%%%              External usage                        %%%%%%%%

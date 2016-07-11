@@ -30,8 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QObject, Qt, Signal
+from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+try:
+  from python_qt_binding.QtGui import QPushButton
+except:
+  from python_qt_binding.QtWidgets import QPushButton
 from socket import getaddrinfo, AF_INET6
 from urlparse import urlparse
 import threading
@@ -39,12 +43,12 @@ import threading
 import node_manager_fkie as nm
 
 
-class MasterSyncButtonHelper(QtCore.QObject):
+class MasterSyncButtonHelper(QObject):
   '''
   This is helper class to which contains a button and can emit signals. The
   MasterSyncItem can not emit signals, but is used in QStandardModel.
   '''
-  clicked = QtCore.Signal(bool, str)
+  clicked = Signal(bool, str)
 
   NOT_SYNC = 0
   SWITCHED = 1
@@ -54,14 +58,14 @@ class MasterSyncButtonHelper(QtCore.QObject):
 #  ICON_PREFIX = 'crystal_clear'
 
   def __init__(self, master):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.name = master.name
     self._master = master
     self._syncronized = MasterSyncButtonHelper.NOT_SYNC
-    self.ICONS = {MasterSyncButtonHelper.SYNC: QtGui.QIcon(":/icons/%s_sync.png" % self.ICON_PREFIX),
-                  MasterSyncButtonHelper.NOT_SYNC: QtGui.QIcon(":/icons/%s_not_sync.png" % self.ICON_PREFIX),
-                  MasterSyncButtonHelper.SWITCHED: QtGui.QIcon(":/icons/%s_start_sync.png" % self.ICON_PREFIX)}
-    self.widget = QtGui.QPushButton()
+    self.ICONS = {MasterSyncButtonHelper.SYNC: QIcon(":/icons/%s_sync.png" % self.ICON_PREFIX),
+                  MasterSyncButtonHelper.NOT_SYNC: QIcon(":/icons/%s_not_sync.png" % self.ICON_PREFIX),
+                  MasterSyncButtonHelper.SWITCHED: QIcon(":/icons/%s_start_sync.png" % self.ICON_PREFIX)}
+    self.widget = QPushButton()
 #    self.widget.setFlat(True)
     self.widget.setIcon(self.ICONS[MasterSyncButtonHelper.NOT_SYNC])
     self.widget.setMaximumSize(48, 48)
@@ -100,14 +104,14 @@ class MasterSyncButtonHelper(QtCore.QObject):
     return False
 
 
-class MasterSyncItem(QtGui.QStandardItem):
+class MasterSyncItem(QStandardItem):
   '''
   This object is needed to insert into the QStandardModel.
   '''
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 35
+  ITEM_TYPE = QStandardItem.UserType + 35
 
   def __init__(self, master):
-    QtGui.QStandardItem.__init__(self)
+    QStandardItem.__init__(self)
     self.name = master.name
     self.button = MasterSyncButtonHelper(master)
     self.parent_item = None
@@ -131,29 +135,29 @@ class MasterSyncItem(QtGui.QStandardItem):
     return self.button > item
 
 
-class MasterItem(QtGui.QStandardItem):
+class MasterItem(QStandardItem):
   '''
   The master item stored in the master model. This class stores the master as
   master_discovery_fkie.ROSMaster.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 34
+  ITEM_TYPE = QStandardItem.UserType + 34
 
   def __init__(self, master, local=False, quality=None, parent=None):
     self.name = ''.join([master.name, ' (localhost)']) if local else master.name
-    QtGui.QStandardItem.__init__(self, self.name)
+    QStandardItem.__init__(self, self.name)
     self.parent_item = None
     self._master = master
     self.local = local
     self.__quality = quality
     self.descr = ''
-    self.ICONS = {'green': QtGui.QIcon(":/icons/stock_connect_green.png"),
-                  'yellow': QtGui.QIcon(":/icons/stock_connect_yellow.png"),
-                  'red': QtGui.QIcon(":/icons/stock_connect_red.png"),
-                  'grey': QtGui.QIcon(":/icons/stock_connect.png"),
-                  'disconnected': QtGui.QIcon(":/icons/stock_disconnect.png"),
-                  'warning': QtGui.QIcon(':/icons/crystal_clear_warning.png'),
-                  'clock_warn': QtGui.QIcon(':/icons/crystal_clear_xclock_fail.png')}
+    self.ICONS = {'green': QIcon(":/icons/stock_connect_green.png"),
+                  'yellow': QIcon(":/icons/stock_connect_yellow.png"),
+                  'red': QIcon(":/icons/stock_connect_red.png"),
+                  'grey': QIcon(":/icons/stock_connect.png"),
+                  'disconnected': QIcon(":/icons/stock_disconnect.png"),
+                  'warning': QIcon(':/icons/crystal_clear_warning.png'),
+                  'clock_warn': QIcon(':/icons/crystal_clear_xclock_fail.png')}
     self.master_ip = None
     self._master_errors = []
     self._timediff = 0
@@ -173,9 +177,9 @@ class MasterItem(QtGui.QStandardItem):
       ips = []
       for r in result:
         if r[0] == AF_INET6:
-          (family, socktype, proto, canonname, (ip, port, flow, scope)) = r
+          (_family, _socktype, _proto, _canonname, (ip, _port, _flow, _scope)) = r
         else:
-          (family, socktype, proto, canonname, (ip, port)) = r
+          (_family, _socktype, _proto, _canonname, (ip, _port)) = r
         if self.master_ip is None and ip:
           self.master_ip = ''
         if ip and ip not in ips:
@@ -325,12 +329,12 @@ class MasterItem(QtGui.QStandardItem):
     return False
 
 
-class MasterModel(QtGui.QStandardItemModel):
+class MasterModel(QStandardItemModel):
   '''
   The model to manage the list with masters in ROS network.
   '''
-  sync_start = QtCore.Signal(str)
-  sync_stop = QtCore.Signal(str)
+  sync_start = Signal(str)
+  sync_stop = Signal(str)
 
   header = [('Sync', 28), ('Name', -1)]
   '''@ivar: the list with columns C{[(name, width), ...]}'''
@@ -342,7 +346,7 @@ class MasterModel(QtGui.QStandardItemModel):
     '''
     Creates a new list model.
     '''
-    QtGui.QStandardItemModel.__init__(self)
+    QStandardItemModel.__init__(self)
     self.setColumnCount(len(MasterModel.header))
     self._masteruri = local_masteruri
     self.parent_view = None
@@ -357,11 +361,11 @@ class MasterModel(QtGui.QStandardItemModel):
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
+      return Qt.NoItemFlags
 #    item = self.itemFromIndex(index)
 #    if item and item.master.online:
-    return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-#    return QtCore.Qt.NoItemFlags
+    return Qt.ItemIsSelectable | Qt.ItemIsEnabled
+#    return Qt.NoItemFlags
 
   def updateMaster(self, master):
     '''

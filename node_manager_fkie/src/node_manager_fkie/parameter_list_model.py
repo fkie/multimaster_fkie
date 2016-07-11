@@ -30,21 +30,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QSize, Qt
+from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 from xmlrpclib import Binary
 
 
-class ParameterValueItem(QtGui.QStandardItem):
+class ParameterValueItem(QStandardItem):
   '''
   The parameter item is stored in the parameter model. This class stores the name
   and value of a parameter of ROS parameter server and shows the value.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 39
-  NAME_ROLE = QtCore.Qt.UserRole + 1
-  VALUE_ROLE = QtCore.Qt.UserRole + 2
-  TYPE_ROLE = QtCore.Qt.UserRole + 3
+  ITEM_TYPE = QStandardItem.UserType + 39
+  NAME_ROLE = Qt.UserRole + 1
+  VALUE_ROLE = Qt.UserRole + 2
+  TYPE_ROLE = Qt.UserRole + 3
 
   def __init__(self, name, value, parent=None):
     '''
@@ -54,13 +54,13 @@ class ParameterValueItem(QtGui.QStandardItem):
     @param value: the value of the parameter
     @type value: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, unicode(value) if not isinstance(value, Binary) else str(value))
+    QStandardItem.__init__(self, unicode(value) if not isinstance(value, Binary) else str(value))
     self._name = name
     '''@ivar: the name of parameter '''
     self._value = value
     '''@ivar: the value of the parameter '''
     if isinstance(value, (str, unicode)) and value.find('\n') > -1:
-      self.setSizeHint(QtCore.QSize(-1, 45))
+      self.setSizeHint(QSize(-1, 45))
 
   @property
   def name(self):
@@ -75,7 +75,7 @@ class ParameterValueItem(QtGui.QStandardItem):
     self._value = value
     self.setText(unicode(value) if not isinstance(value, Binary) else str(value))
     if isinstance(value, (str, unicode)) and value.find('\n') > -1:
-      self.setSizeHint(QtCore.QSize(-1, 45))
+      self.setSizeHint(QSize(-1, 45))
 
   def type(self):
     return ParameterValueItem.ITEM_TYPE
@@ -88,7 +88,7 @@ class ParameterValueItem(QtGui.QStandardItem):
     elif role == self.TYPE_ROLE:
       return str(type(self.value).replace('<type \'').replace('\'>'))
     else:
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
   def __eq__(self, item):
     '''
@@ -111,16 +111,16 @@ class ParameterValueItem(QtGui.QStandardItem):
     return False
 
 
-class ParameterNameItem(QtGui.QStandardItem):
+class ParameterNameItem(QStandardItem):
   '''
   The parameter item is stored in the parameter model. This class stores the name
   and value of a parameter of ROS parameter server and shows the name.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 38
-  NAME_ROLE = QtCore.Qt.UserRole + 1
-  VALUE_ROLE = QtCore.Qt.UserRole + 2
-  TYPE_ROLE = QtCore.Qt.UserRole + 3
+  ITEM_TYPE = QStandardItem.UserType + 38
+  NAME_ROLE = Qt.UserRole + 1
+  VALUE_ROLE = Qt.UserRole + 2
+  TYPE_ROLE = Qt.UserRole + 3
 
   def __init__(self, name, value, parent=None):
     '''
@@ -130,7 +130,7 @@ class ParameterNameItem(QtGui.QStandardItem):
     @param value: the value of the parameter
     @type value: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, name)
+    QStandardItem.__init__(self, name)
     self._name = name
     '''@ivar: the name of parameter '''
     self._value = value
@@ -160,7 +160,7 @@ class ParameterNameItem(QtGui.QStandardItem):
     elif role == self.TYPE_ROLE:
       return str(type(self.value).replace('<type \'').replace('\'>'))
     else:
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
   def __eq__(self, item):
     '''
@@ -183,16 +183,16 @@ class ParameterNameItem(QtGui.QStandardItem):
     return False
 
 
-class ParameterTypeItem(QtGui.QStandardItem):
+class ParameterTypeItem(QStandardItem):
   '''
   The parameter item is stored in the parameter model. This class stores the name
   and value of a parameter of ROS parameter server and shows the name.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 40
-  NAME_ROLE = QtCore.Qt.UserRole + 1
-  VALUE_ROLE = QtCore.Qt.UserRole + 2
-  TYPE_ROLE = QtCore.Qt.UserRole + 3
+  ITEM_TYPE = QStandardItem.UserType + 40
+  NAME_ROLE = Qt.UserRole + 1
+  VALUE_ROLE = Qt.UserRole + 2
+  TYPE_ROLE = Qt.UserRole + 3
 
   def __init__(self, name, value, parent=None):
     '''
@@ -202,7 +202,7 @@ class ParameterTypeItem(QtGui.QStandardItem):
     @param value: the value of the parameter
     @type value: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, str(type(value)).replace("<type '", '').replace("'>", ''))
+    QStandardItem.__init__(self, str(type(value)).replace("<type '", '').replace("'>", ''))
     self._name = name
     '''@ivar: the name of parameter '''
     self._value = value
@@ -232,7 +232,7 @@ class ParameterTypeItem(QtGui.QStandardItem):
     elif role == self.TYPE_ROLE:
       return str(type(self.value).replace('<type \'').replace('\'>'))
     else:
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
   def __eq__(self, item):
     '''
@@ -255,7 +255,7 @@ class ParameterTypeItem(QtGui.QStandardItem):
     return False
 
 
-class ParameterModel(QtGui.QStandardItemModel):
+class ParameterModel(QStandardItemModel):
   '''
   The model to manage the list with parameter in ROS network.
   '''
@@ -268,7 +268,7 @@ class ParameterModel(QtGui.QStandardItemModel):
     '''
     Creates a new list model.
     '''
-    QtGui.QStandardItemModel.__init__(self)
+    QStandardItemModel.__init__(self)
     self.setColumnCount(len(ParameterModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in ParameterModel.header])
 
@@ -281,10 +281,10 @@ class ParameterModel(QtGui.QStandardItemModel):
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
+      return Qt.NoItemFlags
     if index.column() == 2:
-      return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
-    return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+      return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+    return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
   def updateModelData(self, parameters):
     '''

@@ -31,9 +31,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import datetime
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
+from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
+try:
+  from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
+  from python_qt_binding.QtGui import QShortcut, QVBoxLayout
+except:
+  from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
+  from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout
 import getpass
 import os
 import socket
@@ -41,12 +47,11 @@ import time
 import uuid
 import xmlrpclib
 
+from multimaster_msgs_fkie.msg import MasterState
 import roslib
 import rospy
 
 from master_discovery_fkie.common import resolve_url
-from multimaster_msgs_fkie.msg import MasterState
-import gui_resources
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
@@ -70,6 +75,11 @@ from .update_handler import UpdateHandler
 from .xml_editor import XmlEditor
 
 
+try:
+  import gui_resources
+except:
+  print "no gui resources :-/"
+
 # from python_qt_binding import QtUiTools
 try:
   from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
@@ -80,14 +90,14 @@ except:
   DIAGNOSTICS_AVAILABLE = False
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QMainWindow):
   '''
   The class to create the main window of the application.
   '''
   DELAYED_NEXT_REQ_ON_ERR = 5.0
 
   if DIAGNOSTICS_AVAILABLE:
-    diagnostics_signal = QtCore.Signal(DiagnosticStatus)
+    diagnostics_signal = Signal(DiagnosticStatus)
   '''@ivar: the signal is emitted if a message on topic nm_notifier was
   reiceved (DiagnosticStatus)'''
 
@@ -95,14 +105,14 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Creates the window, connects the signals and init the class.
     '''
-    QtGui.QMainWindow.__init__(self)
+    QMainWindow.__init__(self)
     self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
     restricted_to_one_master = False
     self._finished = False
     self._history_selected_robot = ''
-    self.__icons = {'empty': (QtGui.QIcon(), ''),
-                    'default_pc': (QtGui.QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
-                    'log_warning': (QtGui.QIcon(':/icons/crystal_clear_warning.png'), ':/icons/crystal_clear_warning.png')
+    self.__icons = {'empty': (QIcon(), ''),
+                    'default_pc': (QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
+                    'log_warning': (QIcon(':/icons/crystal_clear_warning.png'), ':/icons/crystal_clear_warning.png')
                     }  # (masnter name : (QIcon, path))
     self.__current_icon = None
     self.__current_master_label_name = None
@@ -110,10 +120,10 @@ class MainWindow(QtGui.QMainWindow):
     self._changed_binaries = dict()
     self._changed_files_param = dict()
     self._syncs_to_start = []  # hostnames
-    # self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips, True)
+    # self.setAttribute(Qt.WA_AlwaysShowToolTips, True)
     # setup main window frame
     self.setObjectName('MainWindow')
-#    self = mainWindow = QtGui.QMainWindow()
+#    self = mainWindow = QMainWindow()
 #    self = mainWindow = loader.load(":/forms/MainWindow.ui")
     ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MainWindow.ui')
     loadUi(ui_file, self)
@@ -134,12 +144,12 @@ class MainWindow(QtGui.QMainWindow):
 
     # setup settings widget
     self.settings_dock = SettingsWidget(self)
-    self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.settings_dock)
+    self.addDockWidget(Qt.LeftDockWidgetArea, self.settings_dock)
     # setup logger widget
     self.log_dock = LogWidget(self)
     self.log_dock.added_signal.connect(self._on_log_added)
     self.log_dock.cleared_signal.connect(self._on_log_cleared)
-    self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.log_dock)
+    self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
     self.logButton.clicked.connect(self._on_log_button_clicked)
     # setup the launch files view
     self.launch_dock = LaunchFilesWidget(self)
@@ -147,21 +157,21 @@ class MainWindow(QtGui.QMainWindow):
     self.launch_dock.load_as_default_signal.connect(self.on_load_launch_as_default)
     self.launch_dock.edit_signal.connect(self.on_launch_edit)
     self.launch_dock.transfer_signal.connect(self.on_launch_transfer)
-    self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.launch_dock)
+    self.addDockWidget(Qt.LeftDockWidgetArea, self.launch_dock)
 
-    self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run.png")
+    self.mIcon = QIcon(":/icons/crystal_clear_prop_run.png")
     self.setWindowIcon(self.mIcon)
     self.setWindowTitle("Node Manager")
 #    self.setCentralWidget(mainWindow)
 
     # init the stack layout which contains the information about different ros master
-    self.stackedLayout = QtGui.QStackedLayout()
+    self.stackedLayout = QStackedLayout()
     self.stackedLayout.setObjectName('stackedLayout')
-    emptyWidget = QtGui.QWidget()
+    emptyWidget = QWidget()
     emptyWidget.setObjectName('emptyWidget')
     self.stackedLayout.addWidget(emptyWidget)
     self.tabWidget.currentChanged.connect(self.on_currentChanged_tab)
-    self.tabLayout = QtGui.QVBoxLayout(self.tabPlace)
+    self.tabLayout = QVBoxLayout(self.tabPlace)
     self.tabLayout.setObjectName("tabLayout")
     self.tabLayout.setContentsMargins(0, 0, 0, 0)
     self.tabLayout.addLayout(self.stackedLayout)
@@ -208,17 +218,17 @@ class MainWindow(QtGui.QMainWindow):
 
     self.descriptionTextEdit.setOpenLinks(False)
     self.descriptionTextEdit.anchorClicked.connect(self.on_description_anchorClicked)
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Shift+C", "copy selected description")), self.descriptionTextEdit)
+    self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+Shift+C", "copy selected description")), self.descriptionTextEdit)
     self._shortcut_copy.activated.connect(self.descriptionTextEdit.copy)
 
     self.tabifyDockWidget(self.launch_dock, self.descriptionDock)
     self.tabifyDockWidget(self.launch_dock, self.settings_dock)
     self.tabifyDockWidget(self.launch_dock, self.helpDock)
     self.launch_dock.raise_()
-    self.helpDock.setWindowIcon(QtGui.QIcon(':icons/crystal_clear_helpcenter.png'))
+    self.helpDock.setWindowIcon(QIcon(':icons/crystal_clear_helpcenter.png'))
 
     flags = self.windowFlags()
-    self.setWindowFlags(flags | QtCore.Qt.WindowContextHelpButtonHint)
+    self.setWindowFlags(flags | Qt.WindowContextHelpButtonHint)
 
     if self.default_load_launch:
       if os.path.isdir(self.default_load_launch):
@@ -260,7 +270,7 @@ class MainWindow(QtGui.QMainWindow):
       ScreenHandler.testScreen()
     except Exception as e:
       rospy.logerr("No SCREEN available! You can't launch nodes.")
-#      WarningMessageBox(QtGui.QMessageBox.Warning, "No SCREEN",
+#      WarningMessageBox(QMessageBox.Warning, "No SCREEN",
 #                        "No SCREEN available! You can't launch nodes.",
 #                        '%s'%e).exec_()
 
@@ -272,7 +282,7 @@ class MainWindow(QtGui.QMainWindow):
     except Exception as e:
       rospy.logwarn("Error while read settings: %s" % e)
     # setup the hide button, which hides the docks on left side
-    docks = self._dock_widget_in(QtCore.Qt.LeftDockWidgetArea, only_visible=True)
+    docks = self._dock_widget_in(Qt.LeftDockWidgetArea, only_visible=True)
     if not docks:
       self.hideDocksButton.toggle()
       self.on_hide_docks_toggled(True)
@@ -305,7 +315,7 @@ class MainWindow(QtGui.QMainWindow):
     self.stats_topic.stats_signal.connect(self.on_conn_stats_updated)
 
     # timer to update the showed update time of the ros state
-    self.master_timecheck_timer = QtCore.QTimer()
+    self.master_timecheck_timer = QTimer()
     self.master_timecheck_timer.timeout.connect(self.on_master_timecheck)
     self.master_timecheck_timer.start(1000)
     self._refresh_time = time.time()
@@ -316,7 +326,7 @@ class MainWindow(QtGui.QMainWindow):
     if DIAGNOSTICS_AVAILABLE:
       self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
 
-  def _dock_widget_in(self, area=QtCore.Qt.LeftDockWidgetArea, only_visible=False):
+  def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
     result = []
     docks = [self.launch_dock, self.descriptionDock, self.helpDock, self.networkDock]
     for dock in docks:
@@ -337,17 +347,17 @@ class MainWindow(QtGui.QMainWindow):
     self.logButton.setEnabled(False)
 
   def on_hide_docks_toggled(self, checked):
-    if self.dockWidgetArea(self.launch_dock) == QtCore.Qt.LeftDockWidgetArea:
+    if self.dockWidgetArea(self.launch_dock) == Qt.LeftDockWidgetArea:
       self.launch_dock.setVisible(not checked)
-    if self.dockWidgetArea(self.descriptionDock) == QtCore.Qt.LeftDockWidgetArea:
+    if self.dockWidgetArea(self.descriptionDock) == Qt.LeftDockWidgetArea:
       self.descriptionDock.setVisible(not checked)
-    if self.dockWidgetArea(self.helpDock) == QtCore.Qt.LeftDockWidgetArea:
+    if self.dockWidgetArea(self.helpDock) == Qt.LeftDockWidgetArea:
       self.helpDock.setVisible(not checked)
-    if self.dockWidgetArea(self.networkDock) == QtCore.Qt.LeftDockWidgetArea:
+    if self.dockWidgetArea(self.networkDock) == Qt.LeftDockWidgetArea:
       self.networkDock.setVisible(not checked)
-    if self.dockWidgetArea(self.settings_dock) == QtCore.Qt.LeftDockWidgetArea:
+    if self.dockWidgetArea(self.settings_dock) == Qt.LeftDockWidgetArea:
       self.settings_dock.setVisible(not checked)
-    self.hideDocksButton.setArrowType(QtCore.Qt.RightArrow if checked else QtCore.Qt.LeftArrow)
+    self.hideDocksButton.setArrowType(Qt.RightArrow if checked else Qt.LeftArrow)
 
   def on_currentChanged_tab(self, index):
     pass
@@ -367,8 +377,8 @@ class MainWindow(QtGui.QMainWindow):
       if maximized:
         self.showMaximized()
       else:
-        self.resize(settings.value("size", QtCore.QSize(1024, 720)))
-        self.move(settings.value("pos", QtCore.QPoint(0, 0)))
+        self.resize(settings.value("size", QSize(1024, 720)))
+        self.move(settings.value("pos", QPoint(0, 0)))
       try:
         self.restoreState(settings.value("window_state"))
       except:
@@ -409,12 +419,12 @@ class MainWindow(QtGui.QMainWindow):
                 m.killall_roscore()
           except Exception as e:
             rospy.logwarn("Error while stop nodes on %s: %s" % (uri, e))
-        QtCore.QTimer.singleShot(200, self._test_for_finish)
+        QTimer.singleShot(200, self._test_for_finish)
       else:
         self._close_on_exit = True
       event.ignore()
     elif self._are_master_in_process():
-      QtCore.QTimer.singleShot(200, self._test_for_finish)
+      QTimer.singleShot(200, self._test_for_finish)
       self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s ...closing...</span>' % self.masternameLabel.text())
       rospy.loginfo("Wait for running processes are finished...")
       event.ignore()
@@ -424,10 +434,10 @@ class MainWindow(QtGui.QMainWindow):
       except Exception as e:
         rospy.logwarn("Error while store settings: %s" % e)
       self.finish()
-      QtGui.QMainWindow.closeEvent(self, event)
+      QMainWindow.closeEvent(self, event)
 
   def _are_master_in_process(self):
-    for uri, m in self.masters.items():
+    for _uri, m in self.masters.items():
       if m.in_process():
         return True
     return False
@@ -435,7 +445,7 @@ class MainWindow(QtGui.QMainWindow):
   def _test_for_finish(self):
     # this method test on exit for running process queues with stopping jobs
     if self._are_master_in_process():
-      QtCore.QTimer.singleShot(200, self._test_for_finish)
+      QTimer.singleShot(200, self._test_for_finish)
       return
     if hasattr(self, '_stop_local_master') and self._stop_local_master is not None:
       self.finish()
@@ -549,7 +559,7 @@ class MainWindow(QtGui.QMainWindow):
                                                          self.masters[masteruri].current_user))
               self.launch_dock.progress_queue.start()
           except Exception as e:
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Load default configuration",
+            WarningMessageBox(QMessageBox.Warning, "Load default configuration",
                               'Load default configuration %s failed!' % self.default_load_launch,
                               '%s' % e).exec_()
     return self.masters[masteruri]
@@ -781,8 +791,8 @@ class MainWindow(QtGui.QMainWindow):
     '''
     icon_path = path if path else nm.settings().robot_image_file(name)
     if name not in self.__icons or self.__icons[name][1] != path:
-      if QtCore.QFile.exists(icon_path):
-        self.__icons[name] = (QtGui.QIcon(icon_path), icon_path)
+      if QFile.exists(icon_path):
+        self.__icons[name] = (QIcon(icon_path), icon_path)
       elif name in self.__icons:
         del self.__icons[name]
 
@@ -883,7 +893,7 @@ class MainWindow(QtGui.QMainWindow):
     text = ''.join([text, '<dt><b>License</b>: ', 'BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License', '</dt>'])
     text = ''.join([text, '</dl>'])
     text = ''.join([text, '<dt><b>Version</b>: ', nm.__version__, ' (', nm.__date__, ')', '</dt>'])
-    QtGui.QMessageBox.about(self, 'About Node Manager', text)
+    QMessageBox.about(self, 'About Node Manager', text)
 
   def on_master_log_clicked(self):
     '''
@@ -931,12 +941,12 @@ class MainWindow(QtGui.QMainWindow):
             import traceback
             print traceback.format_exc(1)
             rospy.logwarn("Error while show LOG for master_discovery %s: %s" % (str(hostname), err))
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Show log error",
+            WarningMessageBox(QMessageBox.Warning, "Show log error",
                               'Error while show log of master_discovery',
                               '%s' % err).exec_()
           self._progress_queue.start()
       except Exception as err:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Show log error",
+        WarningMessageBox(QMessageBox.Warning, "Show log error",
                           'Error while parse parameter',
                           '%s' % err).exec_()
 
@@ -954,7 +964,7 @@ class MainWindow(QtGui.QMainWindow):
             errormsg += "\n!!!needed to be at the very end of file, don't forget a new line at the end!!!"
             errormsg += "\n\nBe aware, it does not replace the time synchronization!"
             errormsg += "\nIt sets approximate time without undue delays on communication layer."
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Time set error",
+          WarningMessageBox(QMessageBox.Warning, "Time set error",
                             'Error while set time on %s' % uri,
                             '%s' % errormsg).exec_()
         else:
@@ -966,7 +976,7 @@ class MainWindow(QtGui.QMainWindow):
         if errormsg.find('setTime') > -1:
             errormsg += "\nUpdate remote multimaster_fkie!"
         rospy.logwarn("Error while set time on %s: %s" % (self.currentMaster.master_state.uri, errormsg))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Time sync error",
+        WarningMessageBox(QMessageBox.Warning, "Time sync error",
                           'Error while set time on %s' % self.currentMaster.master_state.uri,
                           '%s' % errormsg).exec_()
       finally:
@@ -1003,7 +1013,7 @@ class MainWindow(QtGui.QMainWindow):
           self._progress_queue.start()
         except (Exception, nm.StartException), e:
           rospy.logwarn("Error while run `%s` on %s: %s", params[2], params[0], str(e))
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Run error",
+          WarningMessageBox(QMessageBox.Warning, "Run error",
                             'Error while run node %s [%s]' % (params[2], params[1]),
                             str(e)).exec_()
 
@@ -1031,7 +1041,7 @@ class MainWindow(QtGui.QMainWindow):
         import traceback
         print traceback.format_exc(1)
         rospy.logwarn("Error while start %s: %s" % (name, e))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+        WarningMessageBox(QMessageBox.Warning, "Start error",
                           'Error while start %s' % name,
                           '%s' % e).exec_()
       self.currentMaster._progress_queue.start()
@@ -1062,7 +1072,7 @@ class MainWindow(QtGui.QMainWindow):
           self._progress_queue_sync.start()
         except:
           import traceback
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Start sync error",
+          WarningMessageBox(QMessageBox.Warning, "Start sync error",
                             "Error while start sync node",
                             str(traceback.format_exc(1))).exec_()
       else:
@@ -1075,8 +1085,8 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Enable or disable the synchronization of the master cores
     '''
-    key_mod = QtGui.QApplication.keyboardModifiers()
-    if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
+    key_mod = QApplication.keyboardModifiers()
+    if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
       self.on_sync_dialog_released(masteruri=masteruri, external_call=True)
 #       if not master.master_info is None:
 #         node = master.master_info.getNodeEndsWith('master_sync')
@@ -1092,8 +1102,8 @@ class MainWindow(QtGui.QMainWindow):
           node = master.getNode('/master_sync')
           if node and node[0].has_configs():
             def_cfg_info = '\nNote: default_cfg parameter will be changed!' if node[0].has_default_cfgs(node[0].cfgs) else ''
-            ret = QtGui.QMessageBox.question(self, 'Start synchronization', 'Start the synchronization using loaded configuration?\n\n `No` starts the master_sync with default parameter.%s' % def_cfg_info, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if ret == QtGui.QMessageBox.Yes:
+            ret = QMessageBox.question(self, 'Start synchronization', 'Start the synchronization using loaded configuration?\n\n `No` starts the master_sync with default parameter.%s' % def_cfg_info, QMessageBox.Yes, QMessageBox.No)
+            if ret == QMessageBox.Yes:
               master.start_nodes([node[0]])
               return
 
@@ -1254,7 +1264,7 @@ class MainWindow(QtGui.QMainWindow):
 
   def on_master_table_activated(self, selected):
     item = self.master_model.itemFromIndex(selected)
-    QtGui.QMessageBox.information(self, item.name, item.toolTip())
+    QMessageBox.information(self, item.name, item.toolTip())
 
   def on_master_selection_changed(self, selected):
     '''
@@ -1434,12 +1444,12 @@ class MainWindow(QtGui.QMainWindow):
             import traceback
             print traceback.format_exc(1)
             rospy.logwarn("Error while start master_discovery for %s: %s" % (str(hostname), e))
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+            WarningMessageBox(QMessageBox.Warning, "Start error",
                               'Error while start master_discovery',
                               str(e)).exec_()
           self._progress_queue.start()
       except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+        WarningMessageBox(QMessageBox.Warning, "Start error",
                           'Error while parse parameter',
                           str(e)).exec_()
 
@@ -1456,17 +1466,17 @@ class MainWindow(QtGui.QMainWindow):
       self._progress_queue.start()
     except (Exception, nm.StartException), e:
       rospy.logwarn("Error while start master_discovery for %s: %s", str(hostname), str(e))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+      WarningMessageBox(QMessageBox.Warning, "Start error",
                         'Error while start master_discovery',
                         str(e)).exec_()
 
   def poweroff_host(self, host):
     try:
       if nm.is_local(str(host)):
-        ret = QtGui.QMessageBox.warning(self, "ROS Node Manager",
+        ret = QMessageBox.warning(self, "ROS Node Manager",
                                         "Do you really want to shutdown localhost?",
-                                        QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-        if ret == QtGui.QMessageBox.Cancel:
+                                        QMessageBox.Ok | QMessageBox.Cancel)
+        if ret == QMessageBox.Cancel:
           return
       masteruris = nm.nameres().masterurisbyaddr(host)
       for masteruri in masteruris:
@@ -1481,7 +1491,7 @@ class MainWindow(QtGui.QMainWindow):
       self.launch_dock.raise_()
     except (Exception, nm.StartException), e:
       rospy.logwarn("Error while poweroff %s: %s", host, str(e))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Run error",
+      WarningMessageBox(QMessageBox.Warning, "Run error",
                         'Error while poweroff %s' % host,
                         '%s' % e).exec_()
 
@@ -1503,10 +1513,10 @@ class MainWindow(QtGui.QMainWindow):
       except Exception, e:
         import traceback
         print traceback.format_exc(1)
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", path, '%s' % e).exec_()
+        WarningMessageBox(QMessageBox.Warning, "Loading launch file", path, '%s' % e).exec_()
 #      self.setCursor(cursor)
     else:
-      QtGui.QMessageBox.information(self, "Load of launch file",
+      QMessageBox.information(self, "Load of launch file",
                                     "Select a master first!",)
 
   def on_load_launch_as_default(self, path, host=None):
@@ -1556,7 +1566,7 @@ class MainWindow(QtGui.QMainWindow):
                                                  master_proxy.current_user))
       self.launch_dock.progress_queue.start()
     else:
-      QtGui.QMessageBox.information(self, "Load of launch file",
+      QMessageBox.information(self, "Load of launch file",
                                     "Select a master first!",)
 
   def on_launch_edit(self, files, search_text='', trynr=1):
@@ -1636,7 +1646,7 @@ class MainWindow(QtGui.QMainWindow):
                                                           ('%s' % host, f, False, username))
           self.launch_dock.progress_queue.start()
         except Exception, e:
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Transfer error",
+          WarningMessageBox(QMessageBox.Warning, "Transfer error",
                             'Error while transfer files', '%s' % e).exec_()
 
   def _reload_globals_at_next_start(self, launch_file):
@@ -1797,7 +1807,7 @@ class MainWindow(QtGui.QMainWindow):
     '''
     Check for changed files, if the main gui is activated.
     '''
-    QtGui.QMainWindow.changeEvent(self, event)
+    QMainWindow.changeEvent(self, event)
     self._check_for_changed_files()
     self._check_for_changed_binaries()
     self._check_for_changed_files_param()
@@ -1836,45 +1846,45 @@ class MainWindow(QtGui.QMainWindow):
   def on_description_anchorClicked(self, url):
     self._accept_next_update = True
     if url.toString().startswith('open_sync_dialog://'):
-      self.on_sync_dialog_released(False, str(url.encodedPath()).replace('open_sync_dialog', 'http'), True)
+      self.on_sync_dialog_released(False, self._url_path(url).replace('open_sync_dialog', 'http'), True)
     elif url.toString().startswith('show_all_screens://'):
-      master = self.getMaster(str(url.encodedPath()).replace('show_all_screens', 'http'), False)
+      master = self.getMaster(self._url_path(url).replace('show_all_screens', 'http'), False)
       if master is not None:
         master.on_show_all_screens()
     elif url.toString().startswith('remove_all_launch_server://'):
-      master = self.getMaster(str(url.encodedPath()).replace('remove_all_launch_server', 'http'), False)
+      master = self.getMaster(self._url_path(url).replace('remove_all_launch_server', 'http'), False)
       if master is not None:
         master.on_remove_all_launch_server()
     elif url.toString().startswith('node://'):
       if self.currentMaster is not None:
-        self.currentMaster.on_node_selection_changed(None, None, True, url.encodedPath())
+        self.currentMaster.on_node_selection_changed(None, None, True, self._url_path(url))
     elif url.toString().startswith('topic://'):
       if self.currentMaster is not None:
-        self.currentMaster.on_topic_selection_changed(None, None, True, url.encodedPath())
+        self.currentMaster.on_topic_selection_changed(None, None, True, self._url_path(url))
     elif url.toString().startswith('topicecho://'):
       if self.currentMaster is not None:
-        self.currentMaster.show_topic_output(url.encodedPath(), False)
+        self.currentMaster.show_topic_output(self._url_path(url), False)
     elif url.toString().startswith('topichz://'):
       if self.currentMaster is not None:
-        self.currentMaster.show_topic_output(url.encodedPath(), True)
+        self.currentMaster.show_topic_output(self._url_path(url), True)
     elif url.toString().startswith('topichzssh://'):
       if self.currentMaster is not None:
-        self.currentMaster.show_topic_output(url.encodedPath(), True, use_ssh=True)
+        self.currentMaster.show_topic_output(self._url_path(url), True, use_ssh=True)
     elif url.toString().startswith('topicpub://'):
       if self.currentMaster is not None:
-        self.currentMaster.start_publisher(url.encodedPath())
+        self.currentMaster.start_publisher(self._url_path(url))
     elif url.toString().startswith('topicrepub://'):
       if self.currentMaster is not None:
-        self.currentMaster.start_publisher(url.encodedPath(), True)
+        self.currentMaster.start_publisher(self._url_path(url), True)
     elif url.toString().startswith('topicstop://'):
       if self.currentMaster is not None:
-        self.currentMaster.on_topic_pub_stop_clicked(url.encodedPath())
+        self.currentMaster.on_topic_pub_stop_clicked(self._url_path(url))
     elif url.toString().startswith('service://'):
       if self.currentMaster is not None:
-        self.currentMaster.on_service_selection_changed(None, None, True, url.encodedPath())
+        self.currentMaster.on_service_selection_changed(None, None, True, self._url_path(url))
     elif url.toString().startswith('servicecall://'):
       if self.currentMaster is not None:
-        self.currentMaster.service_call(url.encodedPath())
+        self.currentMaster.service_call(self._url_path(url))
     elif url.toString().startswith('unregister_node://'):
       if self.currentMaster is not None:
         self.currentMaster.on_unregister_nodes()
@@ -1900,29 +1910,43 @@ class MainWindow(QtGui.QMainWindow):
       if self.currentMaster is not None:
         self.currentMaster.on_log_path_copy()
     elif url.toString().startswith('launch://'):
-      self.on_launch_edit([str(url.encodedPath())], '')
+      self.on_launch_edit([self._url_path(url)], '')
     elif url.toString().startswith('reload_globals://'):
-      self._reload_globals_at_next_start(str(url.encodedPath()).replace('reload_globals://', ''))
+      self._reload_globals_at_next_start(self._url_path(url).replace('reload_globals://', ''))
     elif url.toString().startswith('poweroff://'):
-      self.poweroff_host(url.encodedHost())
+      self.poweroff_host(self._url_host(url))
     else:
-      QtGui.QDesktopServices.openUrl(url)
+      QDesktopServices.openUrl(url)
+
+  def _url_path(self, url):
+    '''Helper class for Qt5 compatibility'''
+    if hasattr(url, 'encodedPath'):
+      return str(url.encodedPath())
+    else:
+      return str(url.path())
+
+  def _url_host(self, url):
+    '''Helper class for Qt5 compatibility'''
+    if hasattr(url, 'encodedHost'):
+      return str(url.encodedHost())
+    else:
+      return str(url.host())
 
   def keyReleaseEvent(self, event):
     '''
     Defines some of shortcuts for navigation/management in launch
     list view or topics view.
     '''
-    key_mod = QtGui.QApplication.keyboardModifiers()
+    key_mod = QApplication.keyboardModifiers()
     if self.currentMaster is not None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
-      if event.key() == QtCore.Qt.Key_F4 and not key_mod:
+      if event.key() == Qt.Key_F4 and not key_mod:
         if self.currentMaster.masterTab.editConfigButton.isEnabled():
           self.currentMaster.on_edit_config_clicked()
         elif self.currentMaster.masterTab.editRosParamButton.isEnabled():
           self.currentMaster.on_edit_rosparam_clicked()
-      elif event.key() == QtCore.Qt.Key_F3 and not key_mod and self.currentMaster.masterTab.ioButton.isEnabled():
+      elif event.key() == Qt.Key_F3 and not key_mod and self.currentMaster.masterTab.ioButton.isEnabled():
         self.currentMaster.on_io_clicked()
-    QtGui.QMainWindow.keyReleaseEvent(self, event)
+    QMainWindow.keyReleaseEvent(self, event)
 
   def image_mouseDoubleClickEvent(self, event):
     '''
@@ -1932,18 +1956,18 @@ class MainWindow(QtGui.QMainWindow):
       try:
         if not os.path.isdir(nm.settings().ROBOTS_DIR):
           os.makedirs(nm.settings().ROBOTS_DIR)
-        (fileName, _) = QtGui.QFileDialog.getOpenFileName(self,
-                                                          "Set robot image",
-                                                          nm.settings().ROBOTS_DIR,
-                                                          "Image files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.xbm);;All files (*)")
+        (fileName, _) = QFileDialog.getOpenFileName(self,
+                                                    "Set robot image",
+                                                    nm.settings().ROBOTS_DIR,
+                                                    "Image files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.xbm);;All files (*)")
         if fileName and self.__current_master_label_name:
-          p = QtGui.QPixmap(fileName)
+          p = QPixmap(fileName)
           p.save(nm.settings().robot_image_file(self.__current_master_label_name))
         if self.__current_master_label_name in self.__icons:
           del self.__icons[self.__current_master_label_name]
         self._assigne_icon(self.__current_master_label_name)
       except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Error",
+        WarningMessageBox(QMessageBox.Warning, "Error",
                           'Set robot image for %s failed!' % str(self.__current_master_label_name),
                           '%s' % str(e)).exec_()
         rospy.logwarn("Error while set robot image for %s: %s", str(self.__current_master_label_name), str(e))

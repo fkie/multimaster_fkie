@@ -30,8 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QObject, QRegExp, Qt, Signal
+try:
+  from python_qt_binding.QtGui import QApplication, QMessageBox, QVBoxLayout, QSizePolicy
+  from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
+except:
+  from python_qt_binding.QtWidgets import QApplication, QMessageBox, QVBoxLayout, QSizePolicy
+  from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
+from python_qt_binding.QtGui import QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 import os
 import threading
 
@@ -43,24 +49,24 @@ from node_manager_fkie.xml_editor import Editor
 import node_manager_fkie as nm
 
 
-class SyncHighlighter(QtGui.QSyntaxHighlighter):
+class SyncHighlighter(QSyntaxHighlighter):
   '''
   Enabled the syntax highlightning for the sync interface.
   '''
 
   def __init__(self, parent=None):
-    QtGui.QSyntaxHighlighter.__init__(self, parent)
+    QSyntaxHighlighter.__init__(self, parent)
     self.rules = []
-    self.commentStart = QtCore.QRegExp("#")
-    self.commentEnd = QtCore.QRegExp("\n")
-    self.commentFormat = QtGui.QTextCharFormat()
+    self.commentStart = QRegExp("#")
+    self.commentEnd = QRegExp("\n")
+    self.commentFormat = QTextCharFormat()
     self.commentFormat.setFontItalic(True)
-    self.commentFormat.setForeground(QtCore.Qt.darkGray)
-    f = QtGui.QTextCharFormat()
-    r = QtCore.QRegExp()
+    self.commentFormat.setForeground(Qt.darkGray)
+    f = QTextCharFormat()
+    r = QRegExp()
     r.setMinimal(True)
-    f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground(QtCore.Qt.darkBlue)
+    f.setFontWeight(QFont.Normal)
+    f.setForeground(Qt.darkBlue)
     tagList = ["\\bignore_hosts\\b", "\\bsync_hosts\\b",
                "\\bignore_nodes\\b", "\\bsync_nodes\\b",
                "\\bignore_topics\\b", "\\bignore_publishers\\b",
@@ -69,21 +75,21 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
                "\\bsync_topics_on_demand\\b", "\\bsync_remote_nodes\\b"]
     for tag in tagList:
       r.setPattern(tag)
-      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+      self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtCore.Qt.darkGreen)
-    f.setFontWeight(QtGui.QFont.Bold)
+    f.setForeground(Qt.darkGreen)
+    f.setFontWeight(QFont.Bold)
     attrList = ["\\b\\*|\\*\\B|\\/\\*"]
     for attr in attrList:
       r.setPattern(attr)
-      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+      self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-#    f.setForeground(QtCore.Qt.red)
-#    f.setFontWeight(QtGui.QFont.Bold)
+#    f.setForeground(Qt.red)
+#    f.setFontWeight(QFont.Bold)
 #    attrList = ["\\s\\*"]
 #    for attr in attrList:
 #      r.setPattern(attr)
-#      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+#      self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
   def highlightBlock(self, text):
     for pattern, myformat in self.rules:
@@ -102,100 +108,100 @@ class SyncHighlighter(QtGui.QSyntaxHighlighter):
         self.setFormat(startIndex, commentLength, self.commentFormat)
 
 
-class SyncDialog(QtGui.QDialog):
+class SyncDialog(QDialog):
   '''
   A dialog to set the sync options.
   '''
 
   def __init__(self, parent=None):
-    QtGui.QDialog.__init__(self, parent)
+    QDialog.__init__(self, parent)
 #    self.host = host
-    self.setWindowIcon(QtGui.QIcon(":/icons/irondevil_sync.png"))
+    self.setWindowIcon(QIcon(":/icons/irondevil_sync.png"))
     self.setWindowTitle('Sync')
-    self.verticalLayout = QtGui.QVBoxLayout(self)
+    self.verticalLayout = QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.resize(350, 190)
 
-    self.toolButton_SyncAll = QtGui.QToolButton(self)
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    self.toolButton_SyncAll = QToolButton(self)
+    sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(2)
     sizePolicy.setHeightForWidth(self.toolButton_SyncAll.sizePolicy().hasHeightForWidth())
     self.toolButton_SyncAll.setSizePolicy(sizePolicy)
     self.toolButton_SyncAll.setObjectName("toolButton_SyncAll")
     self.verticalLayout.addWidget(self.toolButton_SyncAll)
-    self.toolButton_SyncAll.setText(QtGui.QApplication.translate("Form", "Sync All", None, QtGui.QApplication.UnicodeUTF8))
+    self.toolButton_SyncAll.setText(self._translate("Sync All"))
     self.toolButton_SyncAll.clicked.connect(self._on_sync_all_clicked)
 
-#     self.toolButton_SyncAllAnyMsg = QtGui.QToolButton(self)
-#     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+#     self.toolButton_SyncAllAnyMsg = QToolButton(self)
+#     sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 #     sizePolicy.setHorizontalStretch(0)
 #     sizePolicy.setVerticalStretch(1)
 #     sizePolicy.setHeightForWidth(self.toolButton_SyncAllAnyMsg.sizePolicy().hasHeightForWidth())
 #     self.toolButton_SyncAllAnyMsg.setSizePolicy(sizePolicy)
 #     self.toolButton_SyncAllAnyMsg.setObjectName("toolButton_SyncAllAnyMsg")
 #     self.verticalLayout.addWidget(self.toolButton_SyncAllAnyMsg)
-#     self.toolButton_SyncAllAnyMsg.setText(QtGui.QApplication.translate("Form", "Sync all (+AnyMsg)", None, QtGui.QApplication.UnicodeUTF8))
+#     self.toolButton_SyncAllAnyMsg.setText(self._translate("Sync all (+AnyMsg)"))
 #     self.toolButton_SyncAllAnyMsg.clicked.connect(self._on_sync_all_anymsg_clicked)
 
-    self.toolButton_SyncTopicOnDemand = QtGui.QToolButton(self)
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    self.toolButton_SyncTopicOnDemand = QToolButton(self)
+    sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(1)
     sizePolicy.setHeightForWidth(self.toolButton_SyncTopicOnDemand.sizePolicy().hasHeightForWidth())
     self.toolButton_SyncTopicOnDemand.setSizePolicy(sizePolicy)
     self.toolButton_SyncTopicOnDemand.setObjectName("toolButton_SyncTopicOnDemand")
     self.verticalLayout.addWidget(self.toolButton_SyncTopicOnDemand)
-    self.toolButton_SyncTopicOnDemand.setText(QtGui.QApplication.translate("Form", "Sync only topics on demand", None, QtGui.QApplication.UnicodeUTF8))
+    self.toolButton_SyncTopicOnDemand.setText(self._translate("Sync only topics on demand"))
     self.toolButton_SyncTopicOnDemand.clicked.connect(self._on_sync_topics_on_demand_clicked)
 
-    self.toolButton_SelectInterface = QtGui.QToolButton(self)
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    self.toolButton_SelectInterface = QToolButton(self)
+    sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(1)
     sizePolicy.setHeightForWidth(self.toolButton_SelectInterface.sizePolicy().hasHeightForWidth())
     self.toolButton_SelectInterface.setSizePolicy(sizePolicy)
     self.toolButton_SelectInterface.setObjectName("toolButton_SelectInterface")
     self.verticalLayout.addWidget(self.toolButton_SelectInterface)
-    self.toolButton_SelectInterface.setText(QtGui.QApplication.translate("Form", "Select an interface", None, QtGui.QApplication.UnicodeUTF8))
+    self.toolButton_SelectInterface.setText(self._translate("Select an interface"))
     self.toolButton_SelectInterface.clicked.connect(self._on_select_interface_clicked)
 
-    self.interface_field = QtGui.QComboBox(self)
-    self.interface_field.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
-    self.interface_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    self.interface_field = QComboBox(self)
+    self.interface_field.setInsertPolicy(QComboBox.InsertAlphabetically)
+    self.interface_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.interface_field.setEditable(True)
     self.interface_field.setVisible(False)
     self.interface_field.setObjectName("interface_field")
     self.verticalLayout.addWidget(self.interface_field)
     self.interface_field.currentIndexChanged[str].connect(self._on_interface_selected)
 
-    self.toolButton_EditInterface = QtGui.QToolButton(self)
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    self.toolButton_EditInterface = QToolButton(self)
+    sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(1)
     sizePolicy.setHeightForWidth(self.toolButton_EditInterface.sizePolicy().hasHeightForWidth())
     self.toolButton_EditInterface.setSizePolicy(sizePolicy)
     self.toolButton_EditInterface.setObjectName("toolButton_EditInterface")
     self.verticalLayout.addWidget(self.toolButton_EditInterface)
-    self.toolButton_EditInterface.setText(QtGui.QApplication.translate("Form", "Edit selected interface", None, QtGui.QApplication.UnicodeUTF8))
+    self.toolButton_EditInterface.setText(self._translate("Edit selected interface"))
     self.toolButton_EditInterface.clicked.connect(self._on_edit_interface_clicked)
     self.toolButton_EditInterface.setVisible(False)
 
-    self.toolButton_CreateInterface = QtGui.QToolButton(self)
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    self.toolButton_CreateInterface = QToolButton(self)
+    sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(1)
     sizePolicy.setHeightForWidth(self.toolButton_CreateInterface.sizePolicy().hasHeightForWidth())
     self.toolButton_CreateInterface.setSizePolicy(sizePolicy)
     self.toolButton_CreateInterface.setObjectName("toolButton_CreateInterface")
     self.verticalLayout.addWidget(self.toolButton_CreateInterface)
-    self.toolButton_CreateInterface.setText(QtGui.QApplication.translate("Form", "Create an interface", None, QtGui.QApplication.UnicodeUTF8))
+    self.toolButton_CreateInterface.setText(self._translate("Create an interface"))
     self.toolButton_CreateInterface.clicked.connect(self._on_create_interface_clicked)
     self.toolButton_CreateInterface.setVisible(False)
 
     self.textedit = Editor('', self)
     self.hl = SyncHighlighter(self.textedit.document())
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+    sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     self.textedit.setSizePolicy(sizePolicy)
     self.textedit.setObjectName("syncedit")
     self.verticalLayout.addWidget(self.textedit)
@@ -206,15 +212,20 @@ class SyncDialog(QtGui.QDialog):
     self._sync_args = []
     self._interface_filename = None
 
-    self.buttonBox = QtGui.QDialogButtonBox(self)
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel)
-    self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+    self.buttonBox = QDialogButtonBox(self)
+    self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel)
+    self.buttonBox.setOrientation(Qt.Horizontal)
     self.buttonBox.setObjectName("buttonBox")
     self.verticalLayout.addWidget(self.buttonBox)
-    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
-    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
-
+    self.buttonBox.accepted.connect(self.accept)
+    self.buttonBox.rejected.connect(self.reject)
     self._new_iface = True
+
+  def _translate(self, text):
+    if hasattr(QApplication, "UnicodeUTF8"):
+      return QApplication.translate("Form", text, None, QApplication.UnicodeUTF8)
+    else:
+      return QApplication.translate("Form", text, None)
 
   @property
   def sync_args(self):
@@ -225,7 +236,7 @@ class SyncDialog(QtGui.QDialog):
     return self._interface_filename
 
   def _on_sync_all_clicked(self):
-    self.setResult(QtGui.QDialog.Accepted)
+    self.setResult(QDialog.Accepted)
     self._sync_args = []
     self._sync_args.append(''.join(['_interface_url:=', "'.'"]))
     self._sync_args.append(''.join(['_sync_topics_on_demand:=', 'False']))
@@ -297,8 +308,8 @@ class SyncDialog(QtGui.QDialog):
     else:
       self.toolButton_EditInterface.setEnabled(self.interface_field.currentText() in self._interfaces_files)
     self.buttonBox.clear()
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
-    self.interface_field.setFocus(QtCore.Qt.TabFocusReason)
+    self.buttonBox.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+    self.interface_field.setFocus(Qt.TabFocusReason)
     self.resize(350, 80)
 
   def _fill_interfaces(self, interfaces_files):
@@ -326,7 +337,7 @@ class SyncDialog(QtGui.QDialog):
         if not self._new_iface and self.interface_field.currentText() in self._interfaces_files:
           fileName = self._interfaces_files[self.interface_field.currentText()]
         else:
-          fileName, _ = QtGui.QFileDialog.getSaveFileName(self, 'Save sync interface', '/home', "Sync Files (*.sync)")
+          fileName, _ = QFileDialog.getSaveFileName(self, 'Save sync interface', '/home', "Sync Files (*.sync)")
         if fileName:
           with open(fileName, 'w+') as f:
             self._interface_filename = fileName
@@ -335,10 +346,10 @@ class SyncDialog(QtGui.QDialog):
               self.interface_field.clear()
               self._interfaces_files = None
             self._on_select_interface_clicked()
-#        QtGui.QDialog.accept(self)
+#        QDialog.accept(self)
 #        self.resetView()
       except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Create sync interface",
+        WarningMessageBox(QMessageBox.Warning, "Create sync interface",
                           "Error while create interface",
                           str(e)).exec_()
     elif self.interface_field.isVisible():
@@ -347,17 +358,17 @@ class SyncDialog(QtGui.QDialog):
         self._interface_filename = self._interfaces_files[interface]
         self._sync_args = []
         self._sync_args.append(''.join(['_interface_url:=', interface]))
-        QtGui.QDialog.accept(self)
+        QDialog.accept(self)
         self.resetView()
     else:
-      QtGui.QDialog.accept(self)
+      QDialog.accept(self)
       self.resetView()
 
   def reject(self):
     if self.textedit.isVisible():
       self._on_select_interface_clicked()
     else:
-      QtGui.QDialog.reject(self)
+      QDialog.reject(self)
       self.resetView()
 
   def _on_create_interface_clicked(self):
@@ -408,7 +419,7 @@ class SyncDialog(QtGui.QDialog):
           iface = f.read()
           self.textedit.setText(iface)
       except Exception as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Edit sync interface",
+        WarningMessageBox(QMessageBox.Warning, "Edit sync interface",
                           "Error while open interface",
                           str(e)).exec_()
     self.resize(350, 300)
@@ -423,16 +434,16 @@ class SyncDialog(QtGui.QDialog):
     self.toolButton_EditInterface.setVisible(False)
     self.textedit.setVisible(False)
     self.buttonBox.clear()
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel)
+    self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel)
     self.resize(350, 160)
 
 
-class InterfacesThread(QtCore.QObject, threading.Thread):
+class InterfacesThread(QObject, threading.Thread):
   '''
   A thread to list all sync interface files and
   publish there be sending a QT signal.
   '''
-  interfaces = QtCore.Signal(dict)
+  interfaces = Signal(dict)
   '''
   @ivar: interfaces is a signal, which is emitted, if a list with sync files was created.
   '''
@@ -440,7 +451,7 @@ class InterfacesThread(QtCore.QObject, threading.Thread):
   def __init__(self):
     '''
     '''
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._interfaces_files = None
     self.setDaemon(True)

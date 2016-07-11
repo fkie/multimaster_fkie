@@ -57,8 +57,8 @@ PKG_NAME = 'node_manager_fkie'
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.5.4-20"  # git describe --tags --dirty --always
-__date__ = "2016-06-24"  # git log -1 --date=iso
+__version__ = "0.5.4-28"  # git describe --tags --dirty --always
+__date__ = "2016-07-06"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
@@ -339,7 +339,7 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
   StartHandler._prepareROSMaster(masteruri)
   # setup the loglevel
   try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "DEBUG"))
+    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "INFO"))
   except Exception as err:
     print "Error while set the log level: %s\n->INFO level will be used!" % err
     log_level = rospy.INFO
@@ -362,10 +362,13 @@ def main(name):
   :type name: str
   '''
   try:
-    from python_qt_binding import QtGui
+    from python_qt_binding.QtGui import QApplication
   except:
-    print >> sys.stderr, "please install 'python_qt_binding' package!!"
-    sys.exit(-1)
+    try:
+      from python_qt_binding.QtWidgets import QApplication
+    except:
+      print >> sys.stderr, "please install 'python_qt_binding' package!!"
+      sys.exit(-1)
 
   init_settings()
   parser = init_arg_parser()
@@ -380,7 +383,7 @@ def main(name):
   masteruri = settings().masteruri()
   # Initialize Qt
   global _QAPP
-  _QAPP = QtGui.QApplication(sys.argv)
+  _QAPP = QApplication(sys.argv)
 
   # decide to show main or echo dialog
   global _MAIN_FORM
@@ -400,7 +403,7 @@ def main(name):
     # change path for access to the images of descriptions
     os.chdir(settings().PACKAGE_DIR)
 #    _MAIN_FORM.resize(1024, 720)
-    screen_size = QtGui.QApplication.desktop().availableGeometry()
+    screen_size = QApplication.desktop().availableGeometry()
     if (_MAIN_FORM.size().width() >= screen_size.width() or
        _MAIN_FORM.size().height() >= screen_size.height() - 24):
       _MAIN_FORM.showMaximized()

@@ -30,8 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QMimeData, Qt
+try:
+  from python_qt_binding.QtGui import QApplication, QInputDialog, QLineEdit, QMessageBox
+except:
+  from python_qt_binding.QtWidgets import QApplication, QInputDialog, QLineEdit, QMessageBox
+from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 import os
 import shutil
 
@@ -42,12 +46,12 @@ from .detailed_msg_box import WarningMessageBox
 from .packages_thread import PackagesThread
 
 
-class LaunchItem(QtGui.QStandardItem):
+class LaunchItem(QStandardItem):
   '''
   The launch item stored in the launch model.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 40
+  ITEM_TYPE = QStandardItem.UserType + 40
 
   NOT_FOUND = -1
   NOTHING = 0
@@ -64,22 +68,22 @@ class LaunchItem(QtGui.QStandardItem):
     @param name: the topic name
     @type name: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, name)
+    QStandardItem.__init__(self, name)
     self.parent_item = parent
     self.name = name
     self.path = path
     self.package_name = package_name(os.path.dirname(self.path))[0]
     self.id = lid
     if self.id == LaunchItem.FOLDER:
-      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_folder.png"))
+      self.setIcon(QIcon(":/icons/crystal_clear_folder.png"))
     elif self.id == LaunchItem.PACKAGE:
-      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_package.png"))
+      self.setIcon(QIcon(":/icons/crystal_clear_package.png"))
     elif self.id == LaunchItem.LAUNCH_FILE:
-      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_launch_file.png"))
+      self.setIcon(QIcon(":/icons/crystal_clear_launch_file.png"))
     elif self.id == LaunchItem.RECENT_FILE:
-      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_launch_file_recent.png"))
+      self.setIcon(QIcon(":/icons/crystal_clear_launch_file_recent.png"))
     elif self.id == LaunchItem.STACK:
-      self.setIcon(QtGui.QIcon(":/icons/crystal_clear_stack.png"))
+      self.setIcon(QIcon(":/icons/crystal_clear_stack.png"))
 
 #  def __del__(self):
 #    print "delete LAUNCH", self.name
@@ -96,32 +100,32 @@ class LaunchItem(QtGui.QStandardItem):
     @type role: L{QtCore.Qt.DisplayRole}
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
-    if role == QtCore.Qt.DisplayRole:
+    if role == Qt.DisplayRole:
       # return the displayed item name
       if self.id == LaunchItem.RECENT_FILE:
         return "%s   [%s]" % (self.name, self.package_name)  # .decode(sys.getfilesystemencoding())
       else:
         return "%s" % self.name
-    elif role == QtCore.Qt.ToolTipRole:
+    elif role == Qt.ToolTipRole:
       # return the tooltip of the item
       result = "%s" % self.path
       if self.id == LaunchItem.RECENT_FILE:
         result = "%s\nPress 'Delete' to remove the entry from the history list" % self.path
       return result
-#     elif role == QtCore.Qt.DecorationRole:
+#     elif role == Qt.DecorationRole:
 #       # return the showed icon
 #       pathItem, path, pathId = self.items[index.row()]
 #       if self.id > LaunchListModel.NOTHING and self.model().icons.has_key(self.id):
 #         return self.model().icons[self.id]
 #       return None
-    elif role == QtCore.Qt.EditRole:
+    elif role == Qt.EditRole:
       return "%s" % self.name
     else:
       # We don't care about anything else, so return default value
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
-  def setData(self, value, role=QtCore.Qt.EditRole):
-    if role == QtCore.Qt.EditRole:
+  def setData(self, value, role=Qt.EditRole):
+    if role == Qt.EditRole:
       # rename the file or folder
       if self.name != value and self.id in [self.RECENT_FILE, self.LAUNCH_FILE, self.CFG_FILE, self.FOLDER]:
         new_path = os.path.join(os.path.dirname(self.path), value)
@@ -130,9 +134,9 @@ class LaunchItem(QtGui.QStandardItem):
           self.name = value
           self.path = new_path
         else:
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Path already exists",
+          WarningMessageBox(QMessageBox.Warning, "Path already exists",
                             "`%s` already exists!" % value, "Complete path: %s" % new_path).exec_()
-    return QtGui.QStandardItem.setData(self, value, role)
+    return QStandardItem.setData(self, value, role)
 
   @classmethod
   def getItemList(self, name, path, item_id, root):
@@ -166,7 +170,7 @@ class LaunchItem(QtGui.QStandardItem):
     return self.id == self.CFG_FILE
 
 
-class LaunchListModel(QtGui.QStandardItemModel):
+class LaunchListModel(QStandardItemModel):
   '''
   The model to manage the list with launch files.
   '''
@@ -177,9 +181,9 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     Creates a new list model.
     '''
-    QtGui.QStandardItemModel.__init__(self)
+    QStandardItemModel.__init__(self)
     self.setColumnCount(len(LaunchListModel.header))
-    self.setHorizontalHeaderLabels([label for label, width in LaunchListModel.header])
+    self.setHorizontalHeaderLabels([label for label, _width in LaunchListModel.header])
     self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
     self.items = []
     self.DIR_CACHE = {}
@@ -213,15 +217,15 @@ class LaunchListModel(QtGui.QStandardItemModel):
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
+      return Qt.NoItemFlags
     try:
       item = self.itemFromIndex(index)
-      result = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsDragEnabled
+      result = Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled
       if item.id in [LaunchItem.RECENT_FILE, LaunchItem.LAUNCH_FILE, LaunchItem.CFG_FILE, LaunchItem.FOLDER]:
-        result = result | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled
+        result = result | Qt.ItemIsEditable | Qt.ItemIsDragEnabled
       return result
     except:
-      return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+      return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   # %%%%%%%%%%%%%              Drag operation                        %%%%%%%%
@@ -231,7 +235,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     return ['text/plain']
 
   def mimeData(self, indexes):
-    mimeData = QtCore.QMimeData()
+    mimeData = QMimeData()
     text = ''
     for index in indexes:
       if index.isValid():
@@ -288,8 +292,8 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     if path_item == '..':
       goto_path = os.path.dirname(path)
-      key_mod = QtGui.QApplication.keyboardModifiers()
-      if key_mod & QtCore.Qt.ControlModifier:
+      key_mod = QApplication.keyboardModifiers()
+      if key_mod & Qt.ControlModifier:
         goto_path = None
       root_path, items = self._moveUp(goto_path)
     elif os.path.isfile(path):
@@ -297,9 +301,9 @@ class LaunchListModel(QtGui.QStandardItemModel):
     elif item_id == LaunchItem.RECENT_FILE or item_id == LaunchItem.LAUNCH_FILE:
       raise Exception("Invalid file path: %s", path)
     else:
-      key_mod = QtGui.QApplication.keyboardModifiers()
+      key_mod = QApplication.keyboardModifiers()
       onestep = False
-      if key_mod & QtCore.Qt.ControlModifier:
+      if key_mod & Qt.ControlModifier:
         onestep = True
       root_path, items = self._moveDown(path, onestep)
     self._setNewList((root_path, items))
@@ -355,14 +359,14 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     Copy the file or folder to new position...
     '''
-    if QtGui.QApplication.clipboard().mimeData().hasText() and self.currentPath:
-      text = QtGui.QApplication.clipboard().mimeData().text()
+    if QApplication.clipboard().mimeData().hasText() and self.currentPath:
+      text = QApplication.clipboard().mimeData().text()
       if text.startswith('file://'):
         path = text.replace('file://', '')
         basename = os.path.basename(text)
         ok = True
         if os.path.exists(os.path.join(self.currentPath, basename)):
-          basename, ok = QtGui.QInputDialog.getText(None, 'File exists', 'New name (or override):', QtGui.QLineEdit.Normal, basename)
+          basename, ok = QInputDialog.getText(None, 'File exists', 'New name (or override):', QLineEdit.Normal, basename)
         if ok and basename:
           if os.path.isdir(path):
             shutil.copytree(path, os.path.join(self.currentPath, basename))
@@ -374,7 +378,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
     '''
     Copy the selected path to the clipboard
     '''
-    mimeData = QtCore.QMimeData()
+    mimeData = QMimeData()
     text = ''
     for index in indexes:
       if index.isValid():
@@ -382,7 +386,7 @@ class LaunchListModel(QtGui.QStandardItemModel):
         prev = '%s\n' % text if text else ''
         text = '%sfile://%s' % (prev, item.path)
     mimeData.setData('text/plain', text)
-    QtGui.QApplication.clipboard().setMimeData(mimeData)
+    QApplication.clipboard().setMimeData(mimeData)
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   # %%%%%%%%%%%%%              Functionality                         %%%%%%%%

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 import threading
 import time
 
@@ -47,28 +47,28 @@ except ImportError, e:
   raise ImportError(str(e))
 
 
-class DefaultConfigHandler(QtCore.QObject):
+class DefaultConfigHandler(QObject):
   '''
   A class to retrieve the list of nodes from the default configuration service.
   The received node list will be published by sending a QT signal. To retrieve
   the configuration a new thread will be created.
   '''
-  node_list_signal = QtCore.Signal(str, str, list)
+  node_list_signal = Signal(str, str, list)
   '''
   node_list_signal is a signal, which is emitted, if a new list with nodes is
   retrieved. The signal has the URI of the service, the name of the service and
   a list with node names as parameter.
   '''
-  description_signal = QtCore.Signal(str, str, list)
+  description_signal = Signal(str, str, list)
   '''
   description_signal is a signal, which is emitted, if a new list with descriptions is
   retrieved. The signal has the URI of the service, the name of the service and
   a list with descriptions (L{default_cfg_fkie.Description}) parameter.
   '''
-  err_signal = QtCore.Signal(str, str, str)
+  err_signal = Signal(str, str, str)
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.__serviceThreads = {}
     self._lock = threading.RLock()
 
@@ -152,16 +152,16 @@ class DefaultConfigHandler(QtCore.QObject):
     self.err_signal.emit(service_uri, service, msg)
 
 
-class ServiceThread(QtCore.QObject, threading.Thread):
+class ServiceThread(QObject, threading.Thread):
   '''
   A thread to to retrieve the list of nodes from the default configuration
   service and publish it by sending a QT signal.
   '''
-  update_signal = QtCore.Signal(str, str, list)
-  err_signal = QtCore.Signal(str, str, str)
+  update_signal = Signal(str, str, list)
+  err_signal = Signal(str, str, str)
 
   def __init__(self, service_uri, service, delay_exec=0.0, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._service_uri = service_uri
     self._service = service
@@ -184,16 +184,16 @@ class ServiceThread(QtCore.QObject, threading.Thread):
         self.err_signal.emit(self._service_uri, self._service, lines[-1])
 
 
-class ServiceDescriptionThread(QtCore.QObject, threading.Thread):
+class ServiceDescriptionThread(QObject, threading.Thread):
   '''
   A thread to to retrieve the list with descriptions from the default configuration
   service and publish it by sending a QT signal.
   '''
-  update_signal = QtCore.Signal(str, str, list)
-  err_signal = QtCore.Signal(str, str, str)
+  update_signal = Signal(str, str, list)
+  err_signal = Signal(str, str, str)
 
   def __init__(self, service_uri, service, delay_exec=0.0, parent=None):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._service_uri = service_uri
     self._service = service

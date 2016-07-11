@@ -30,33 +30,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+from python_qt_binding.QtCore import Signal
+try:
+  from python_qt_binding.QtGui import QDockWidget
+except:
+  from python_qt_binding.QtWidgets import QDockWidget
 import os
 
 from .rosout_listener import RosoutListener
 
 
-class LogWidget(QtGui.QDockWidget):
+class LogWidget(QDockWidget):
   '''
   The collect the the warning log messages from rosout and print it in a text
   browser.
   '''
 
-  added_signal = QtCore.Signal(int, int, int, int)
+  added_signal = Signal(int, int, int, int)
   '''
   added_signal will be emitted on adding a new log entry. The parameter contains
   the current count of messages (INFO, WARN, ERROR, FATAL)
   '''
 
-  cleared_signal = QtCore.Signal()
+  cleared_signal = Signal()
 
   def __init__(self, parent=None):
     '''
     Creates the window, connects the signals and init the class.
     '''
-    QtGui.QDockWidget.__init__(self, parent)
+    QDockWidget.__init__(self, parent)
     self._log_info_count = 0
     self._log_warn_count = 0
     self._log_err_count = 0

@@ -30,21 +30,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject, Signal
 from rosgraph_msgs.msg import Log
 
 import rospy
 
 
-class RosoutListener(QtCore.QObject):
+class RosoutListener(QObject):
   '''
   A class to receive the ROS master state updates from a ROS topic. The topic
   will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
   '''
-  rosinfo_signal = QtCore.Signal(Log)
-  roswarn_signal = QtCore.Signal(Log)
-  roserr_signal = QtCore.Signal(Log)
-  rosfatal_signal = QtCore.Signal(Log)
+  rosinfo_signal = Signal(Log)
+  roswarn_signal = Signal(Log)
+  roserr_signal = Signal(Log)
+  rosfatal_signal = Signal(Log)
 
   def registerByROS(self):
     '''

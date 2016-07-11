@@ -34,29 +34,29 @@ import os
 import time
 
 try:
-  from python_qt_binding import QtCore
+  from python_qt_binding.QtCore import QObject, Signal, QFileSystemWatcher
 except:
   pass
 
 
-class FileWatcher(QtCore.QObject):
+class FileWatcher(QObject):
   '''
   A class to watch for file changes.
   '''
-  config_changed = QtCore.Signal(str, list)
+  config_changed = Signal(str, list)
   '''@ivar: a signal to inform the receiver about the changes on
   launch file or included file.
   ParameterB{:} (changed file, list of tuples(masteruri, launch file))'''
 
-  binary_changed = QtCore.Signal(str, list)
+  binary_changed = Signal(str, list)
   '''@ivar: a signal to inform the receiver about the changes on
   binary file or included file.
   ParameterB{:} (binary file, list of tuples(node name, masteruri, launchfile))
   '''
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
-    self.file_watcher = QtCore.QFileSystemWatcher()
+    QObject.__init__(self)
+    self.file_watcher = QFileSystemWatcher()
     self.file_watcher.fileChanged.connect(self.on_file_changed)
     self.changed = {}
     self.launches = {}

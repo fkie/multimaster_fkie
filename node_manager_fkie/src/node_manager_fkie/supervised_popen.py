@@ -30,22 +30,26 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore, QtGui
+from python_qt_binding.QtCore import QObject, Signal
+try:
+  from python_qt_binding.QtGui import QMessageBox
+except:
+  from python_qt_binding.QtWidgets import QMessageBox
 import subprocess
 import threading
 
 from .detailed_msg_box import WarningMessageBox
 
 
-class SupervisedPopen(QtCore.QObject, subprocess.Popen):
+class SupervisedPopen(QObject, subprocess.Popen):
   '''
   The class overrides the subprocess.Popen and waits in a thread for its finish.
   If an error is printed out, it will be shown in a message dialog.
   '''
-  error = QtCore.Signal(str, str, str)
+  error = Signal(str, str, str)
   '''@ivar: the signal is emitted if error output was detected (id, decription, message)'''
 
-  finished = QtCore.Signal(str)
+  finished = Signal(str)
   '''@ivar: the signal is emitted on exit (id)'''
 
   def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None,
@@ -63,10 +67,16 @@ class SupervisedPopen(QtCore.QObject, subprocess.Popen):
     :type description: str
     '''
     try:
-      subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout,
-                                stderr, preexec_fn, close_fds, shell, cwd, env,
-                                universal_newlines, startupinfo, creationflags)
-      QtCore.QObject.__init__(self)
+      try:
+        super(SupervisedPopen, self).__init__(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
+                                              stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds,
+                                              shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines,
+                                              startupinfo=startupinfo, creationflags=creationflags)
+      except:
+        subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout,
+                                  stderr, preexec_fn, close_fds, shell, cwd, env,
+                                  universal_newlines, startupinfo, creationflags)
+        QObject.__init__(self)
       self._args = args
       self._object_id = object_id
       self._description = description
@@ -94,5 +104,6 @@ class SupervisedPopen(QtCore.QObject, subprocess.Popen):
     self.finished.emit(self._object_id)
 
   def on_error(self, object_id, descr, msg):
-    WarningMessageBox(QtGui.QMessageBox.Warning, object_id, '%s\n\n'
+    print "ON ERROR"
+    WarningMessageBox(QMessageBox.Warning, object_id, '%s\n\n'
                       '%s' % (descr, msg), ' '.join(self._args)).exec_()

@@ -32,7 +32,15 @@
 
 
 from datetime import datetime
-from python_qt_binding import QtCore, QtGui
+from python_qt_binding.QtCore import Qt, QUrl, QTimer, Signal
+from python_qt_binding.QtGui import QIcon, QTextDocument
+try:
+  from python_qt_binding.QtGui import QApplication, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+  from python_qt_binding.QtGui import QCheckBox, QComboBox, QDialog, QLabel, QTextBrowser, QToolButton, QWidget
+except:
+  from python_qt_binding.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+  from python_qt_binding.QtWidgets import QCheckBox, QComboBox, QDialog, QLabel, QTextBrowser, QToolButton, QWidget
+
 import math
 import threading
 import time
@@ -45,7 +53,7 @@ import node_manager_fkie as nm
 
 
 # import roslib
-class EchoDialog(QtGui.QDialog):
+class EchoDialog(QDialog):
 
   MESSAGE_LINE_LIMIT = 128
   MESSAGE_HZ_LIMIT = 10
@@ -56,29 +64,29 @@ class EchoDialog(QtGui.QDialog):
   This dialog shows the output of a topic.
   '''
 
-  finished_signal = QtCore.Signal(str)
+  finished_signal = Signal(str)
   '''
   finished_signal has as parameter the name of the topic and is emitted, if this
   dialog was closed.
   '''
 
-  msg_signal = QtCore.Signal(object, bool)
+  msg_signal = Signal(object, bool)
   '''
   msg_signal is a signal, which is emitted, if a new message was received.
   '''
 
-  text_hz_signal = QtCore.Signal(str)
-  text_signal = QtCore.Signal(str)
+  text_hz_signal = Signal(str)
+  text_signal = Signal(str)
   '''
   text_signal is a signal, which is emitted, if a new text to display was received.
   '''
 
-  text_error_signal = QtCore.Signal(str)
+  text_error_signal = Signal(str)
   '''
   text_error_signal is a signal, which is emitted, if a new error text to display was received.
   '''
 
-  request_pw = QtCore.Signal(object)
+  request_pw = Signal(object)
 
   def __init__(self, topic, msg_type, show_only_rate=False, masteruri=None, use_ssh=False, parent=None):
     '''
@@ -89,18 +97,18 @@ class EchoDialog(QtGui.QDialog):
     @type msg_type: C{str}
     @raise Exception: if no topic class was found for the given type
     '''
-    QtGui.QDialog.__init__(self, parent=parent)
+    QDialog.__init__(self, parent=parent)
     self._masteruri = masteruri
     masteruri_str = '' if masteruri is None else '[%s]' % masteruri
     self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
-    self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-    self.setWindowFlags(QtCore.Qt.Window)
+    self.setAttribute(Qt.WA_DeleteOnClose, True)
+    self.setWindowFlags(Qt.Window)
     self.setWindowTitle('%s %s %s' % ('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
     self.resize(728, 512)
-    self.verticalLayout = QtGui.QVBoxLayout(self)
+    self.verticalLayout = QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
-    self.mIcon = QtGui.QIcon(":/icons/crystal_clear_prop_run_echo.png")
+    self.mIcon = QIcon(":/icons/crystal_clear_prop_run_echo.png")
     self.setWindowIcon(self.mIcon)
 
     self.topic = topic
@@ -122,58 +130,58 @@ class EchoDialog(QtGui.QDialog):
 
     self.field_filter_fn = None
 
-    options = QtGui.QWidget(self)
+    options = QWidget(self)
     if not show_only_rate:
-      hLayout = QtGui.QHBoxLayout(options)
+      hLayout = QHBoxLayout(options)
       hLayout.setContentsMargins(1, 1, 1, 1)
-      self.no_str_checkbox = no_str_checkbox = QtGui.QCheckBox('Hide strings')
+      self.no_str_checkbox = no_str_checkbox = QCheckBox('Hide strings')
       no_str_checkbox.toggled.connect(self.on_no_str_checkbox_toggled)
       hLayout.addWidget(no_str_checkbox)
-      self.no_arr_checkbox = no_arr_checkbox = QtGui.QCheckBox('Hide arrays')
+      self.no_arr_checkbox = no_arr_checkbox = QCheckBox('Hide arrays')
       no_arr_checkbox.toggled.connect(self.on_no_arr_checkbox_toggled)
       hLayout.addWidget(no_arr_checkbox)
-      self.combobox_reduce_ch = QtGui.QComboBox(self)
+      self.combobox_reduce_ch = QComboBox(self)
       self.combobox_reduce_ch.addItems([str(self.MESSAGE_LINE_LIMIT), '0', '80', '256', '1024'])
       self.combobox_reduce_ch.activated[str].connect(self.combobox_reduce_ch_activated)
       self.combobox_reduce_ch.setEditable(True)
       self.combobox_reduce_ch.setToolTip("Set maximum line width. 0 disables the limit.")
       hLayout.addWidget(self.combobox_reduce_ch)
-#      reduce_ch_label = QtGui.QLabel('ch', self)
+#      reduce_ch_label = QLabel('ch', self)
 #      hLayout.addWidget(reduce_ch_label)
       # add spacer
-      spacerItem = QtGui.QSpacerItem(515, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+      spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
       hLayout.addItem(spacerItem)
       # add combobox for displaying frequency of messages
-      self.combobox_displ_hz = QtGui.QComboBox(self)
+      self.combobox_displ_hz = QComboBox(self)
       self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0', '0.1', '1', '50', '100', '1000'])
       self.combobox_displ_hz.activated[str].connect(self.on_combobox_hz_activated)
       self.combobox_displ_hz.setEditable(True)
       hLayout.addWidget(self.combobox_displ_hz)
-      displ_hz_label = QtGui.QLabel('Hz', self)
+      displ_hz_label = QLabel('Hz', self)
       hLayout.addWidget(displ_hz_label)
       # add combobox for count of displayed messages
-      self.combobox_msgs_count = QtGui.QComboBox(self)
+      self.combobox_msgs_count = QComboBox(self)
       self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '0', '50', '100'])
       self.combobox_msgs_count.activated[str].connect(self.on_combobox_count_activated)
       self.combobox_msgs_count.setEditable(True)
       self.combobox_msgs_count.setToolTip("Set maximum displayed message count. 0 disables the limit.")
       hLayout.addWidget(self.combobox_msgs_count)
-      displ_count_label = QtGui.QLabel('#', self)
+      displ_count_label = QLabel('#', self)
       hLayout.addWidget(displ_count_label)
       # add topic control button for unsubscribe and subscribe
-      self.topic_control_button = QtGui.QToolButton(self)
+      self.topic_control_button = QToolButton(self)
       self.topic_control_button.setText('stop')
-      self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
+      self.topic_control_button.setIcon(QIcon(':/icons/deleket_deviantart_stop.png'))
       self.topic_control_button.clicked.connect(self.on_topic_control_btn_clicked)
       hLayout.addWidget(self.topic_control_button)
       # add clear button
-      clearButton = QtGui.QToolButton(self)
+      clearButton = QToolButton(self)
       clearButton.setText('clear')
       clearButton.clicked.connect(self.on_clear_btn_clicked)
       hLayout.addWidget(clearButton)
       self.verticalLayout.addWidget(options)
 
-    self.display = QtGui.QTextBrowser(self)
+    self.display = QTextBrowser(self)
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display)
     self.display.document().setMaximumBlockCount(500)
@@ -182,7 +190,7 @@ class EchoDialog(QtGui.QDialog):
     self.display.setOpenLinks(False)
     self.display.anchorClicked.connect(self._on_display_anchorClicked)
 
-    self.status_label = QtGui.QLabel('0 messages', self)
+    self.status_label = QLabel('0 messages', self)
     self.verticalLayout.addWidget(self.status_label)
 
     # subscribe to the topic
@@ -213,7 +221,7 @@ class EchoDialog(QtGui.QDialog):
     # decide, which connection to open
     if use_ssh:
       self.__msg_class = None
-      self._on_display_anchorClicked(QtCore.QUrl(self._masteruri))
+      self._on_display_anchorClicked(QUrl(self._masteruri))
     elif self.__msg_class is None:
       errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>' % (errmsg)
       self.display.setText('<a href="%s">open using SSH</a>' % (masteruri))
@@ -221,7 +229,7 @@ class EchoDialog(QtGui.QDialog):
     else:
       self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
 
-    self.print_hz_timer = QtCore.QTimer()
+    self.print_hz_timer = QTimer()
     self.print_hz_timer.timeout.connect(self._on_calc_hz)
     self.print_hz_timer.start(1000)
 
@@ -247,7 +255,7 @@ class EchoDialog(QtGui.QDialog):
       pass
     self.finished_signal.emit(self.topic)
     if self.parent() is None:
-      QtGui.QApplication.quit()
+      QApplication.quit()
 #    else:
 #      self.setParent(None)
 
@@ -310,9 +318,9 @@ class EchoDialog(QtGui.QDialog):
         if self.__msg_class:
           self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
         else:
-          self._on_display_anchorClicked(QtCore.QUrl(self._masteruri))
+          self._on_display_anchorClicked(QUrl(self._masteruri))
         self.topic_control_button.setText('stop')
-        self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_stop.png'))
+        self.topic_control_button.setIcon(QIcon(':/icons/deleket_deviantart_stop.png'))
       else:
         if self.sub is not None:
           self.sub.unregister()
@@ -322,7 +330,7 @@ class EchoDialog(QtGui.QDialog):
           self.ssh_error_file.close()
           self.ssh_output_file = None
         self.topic_control_button.setText('play')
-        self.topic_control_button.setIcon(QtGui.QIcon(':/icons/deleket_deviantart_play.png'))
+        self.topic_control_button.setIcon(QIcon(':/icons/deleket_deviantart_play.png'))
         self.no_str_checkbox.setEnabled(True)
         self.no_arr_checkbox.setEnabled(True)
     except Exception as e:
@@ -405,7 +413,7 @@ class EchoDialog(QtGui.QDialog):
     :type txt: str
     '''
     if self._blocks_in_msg is None:
-      td = QtGui.QTextDocument(txt)
+      td = QTextDocument(txt)
       self._blocks_in_msg = td.blockCount()
       self.display.document().setMaximumBlockCount(self._blocks_in_msg * self.max_displayed_msgs)
 

@@ -1,4 +1,7 @@
-from python_qt_binding.QtGui import QMessageBox  # , QWidget
+try:
+  from python_qt_binding.QtGui import QMessageBox
+except:
+  from python_qt_binding.QtWidgets import QMessageBox
 
 from qt_gui.plugin import Plugin
 

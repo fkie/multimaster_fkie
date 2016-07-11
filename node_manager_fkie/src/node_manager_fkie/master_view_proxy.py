@@ -30,9 +30,17 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
 from python_qt_binding import loadUi
+from python_qt_binding.QtCore import QRegExp, Qt, Signal
+from python_qt_binding.QtGui import QKeySequence
+try:
+  from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QMessageBox, QShortcut, QWidget
+  from python_qt_binding.QtGui import QApplication, QVBoxLayout
+except:
+  from python_qt_binding.QtWidgets import QAction, QFileDialog, QMenu, QMessageBox, QShortcut, QWidget
+  from python_qt_binding.QtWidgets import QApplication, QVBoxLayout
+
+
 from urlparse import urlparse
 import getpass
 import os
@@ -68,6 +76,12 @@ from node_manager_fkie.topic_list_model import TopicModel, TopicItem
 import node_manager_fkie as nm
 
 
+try:
+  from python_qt_binding.QtGui import QItemSelection, QItemSelectionModel, QItemSelectionRange, QSortFilterProxyModel
+except:
+  from python_qt_binding.QtCore import QItemSelection, QItemSelectionModel, QItemSelectionRange, QSortFilterProxyModel
+
+
 class LaunchArgsSelectionRequest(Exception):
   ''' Request needed to set the args of a launchfile from another thread.
   @param args: a dictionary with args and values
@@ -85,36 +99,36 @@ class LaunchArgsSelectionRequest(Exception):
     return "LaunchArgsSelectionRequest for " + str(self.args_dict) + "::" + repr(self.error)
 
 
-class MasterViewProxy(QtGui.QWidget):
+class MasterViewProxy(QWidget):
   '''
   This class stores the informations about a ROS master and shows it on request.
   '''
 
-  updateHostRequest = QtCore.Signal(str)
-  host_description_updated = QtCore.Signal(str, str, str)
+  updateHostRequest = Signal(str)
+  host_description_updated = Signal(str, str, str)
   '''@ivar: the signal is emitted on description changes and contains the
   ROS Master URI, host address and description a parameter.'''
 
-  capabilities_update_signal = QtCore.Signal(str, str, str, list)
+  capabilities_update_signal = Signal(str, str, str, list)
   '''@ivar: the signal is emitted if a description with capabilities is received
   and has the ROS master URI, host address, the name of the default_cfg node and a list with
   descriptions (L{default_cfg_fkie.Description}) as parameter.'''
-  remove_config_signal = QtCore.Signal(str)
+  remove_config_signal = Signal(str)
   '''@ivar: the signal is emitted if a default_cfg was removed'''
 
-  description_signal = QtCore.Signal(str, str, bool)
+  description_signal = Signal(str, str, bool)
   '''@ivar: the signal is emitted to show a description (title, description)'''
 
-  request_xml_editor = QtCore.Signal(list, str)
+  request_xml_editor = Signal(list, str)
   '''@ivar: the signal to open a xml editor dialog (list with files, search text)'''
 
-  stop_nodes_signal = QtCore.Signal(str, list)
+  stop_nodes_signal = Signal(str, list)
   '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
-  robot_icon_updated = QtCore.Signal(str, str)
+  robot_icon_updated = Signal(str, str)
   '''@ivar: the signal is emitted, if the robot icon was changed by a configuration (masteruri, path)'''
 
-  loaded_config = QtCore.Signal(str, object)
+  loaded_config = Signal(str, object)
   '''@ivar: the signal is emitted, after a launchfile is successful loaded (launchfile, LaunchConfig)'''
 
   DIAGNOSTIC_LEVELS = {0: 'OK',
@@ -130,7 +144,7 @@ class MasterViewProxy(QtGui.QWidget):
     @param masteruri: the URI of the ROS master
     @type masteruri: C{str}
     '''
-    QtGui.QWidget.__init__(self, parent)
+    QWidget.__init__(self, parent)
     self.setObjectName(' - '.join(['MasterViewProxy', masteruri]))
     self.masteruri = masteruri
     self.mastername = masteruri
@@ -177,10 +191,10 @@ class MasterViewProxy(QtGui.QWidget):
     self.launch_server_handler.launch_server_signal.connect(self.on_launch_server_retrieved)
     self.launch_server_handler.error_signal.connect(self.on_launch_server_err)
 
-    self.masterTab = QtGui.QWidget()
+    self.masterTab = QWidget()
     ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MasterTab.ui')
     loadUi(ui_file, self.masterTab)
-    tabLayout = QtGui.QVBoxLayout(self)
+    tabLayout = QVBoxLayout(self)
     tabLayout.setContentsMargins(0, 0, 0, 0)
     tabLayout.addWidget(self.masterTab)
     self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton)
@@ -293,42 +307,42 @@ class MasterViewProxy(QtGui.QWidget):
     self.parameterHandler_sim.parameter_values_signal.connect(self._on_sim_param_values)
 #    self.parameterHandler_sim.delivery_result_signal.connect(self._on_delivered_values)
 
-    self._shortcut_kill_node = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Backspace", "Kill selected node")), self)
+    self._shortcut_kill_node = QShortcut(QKeySequence(self.tr("Ctrl+Backspace", "Kill selected node")), self)
     self._shortcut_kill_node.activated.connect(self.on_kill_nodes)
-    self._shortcut_kill_node = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+Delete", "Removes the registration of selected nodes from ROS master")), self)
+    self._shortcut_kill_node = QShortcut(QKeySequence(self.tr("Ctrl+Delete", "Removes the registration of selected nodes from ROS master")), self)
     self._shortcut_kill_node.activated.connect(self.on_unregister_nodes)
 
     self.masterTab.ioButton.setEnabled(True)
     self.masterTab.tabWidget.currentChanged.connect(self.on_tab_current_changed)
-    self._shortcut_screen_show_all = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Shift+S", "Show all available screens")), self)
+    self._shortcut_screen_show_all = QShortcut(QKeySequence(self.tr("Shift+S", "Show all available screens")), self)
     self._shortcut_screen_show_all.activated.connect(self.on_show_all_screens)
-    self._shortcut_screen_kill = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Shift+Backspace", "Kill Screen")), self)
+    self._shortcut_screen_kill = QShortcut(QKeySequence(self.tr("Shift+Backspace", "Kill Screen")), self)
     self._shortcut_screen_kill.activated.connect(self.on_kill_screens)
 
     self.loaded_config.connect(self._apply_launch_config)
 
     # set the shortcuts
-    self._shortcut1 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+1", "Select first group")), self)
+    self._shortcut1 = QShortcut(QKeySequence(self.tr("Alt+1", "Select first group")), self)
     self._shortcut1.activated.connect(self.on_shortcut1_activated)
-    self._shortcut2 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+2", "Select second group")), self)
+    self._shortcut2 = QShortcut(QKeySequence(self.tr("Alt+2", "Select second group")), self)
     self._shortcut2.activated.connect(self.on_shortcut2_activated)
-    self._shortcut3 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+3", "Select third group")), self)
+    self._shortcut3 = QShortcut(QKeySequence(self.tr("Alt+3", "Select third group")), self)
     self._shortcut3.activated.connect(self.on_shortcut3_activated)
-    self._shortcut4 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+4", "Select fourth group")), self)
+    self._shortcut4 = QShortcut(QKeySequence(self.tr("Alt+4", "Select fourth group")), self)
     self._shortcut4.activated.connect(self.on_shortcut4_activated)
-    self._shortcut5 = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+5", "Select fifth group")), self)
+    self._shortcut5 = QShortcut(QKeySequence(self.tr("Alt+5", "Select fifth group")), self)
     self._shortcut5.activated.connect(self.on_shortcut5_activated)
 
-    self._shortcut_collapse_all = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+C", "Collapse all groups")), self)
+    self._shortcut_collapse_all = QShortcut(QKeySequence(self.tr("Alt+C", "Collapse all groups")), self)
     self._shortcut_collapse_all.activated.connect(self.on_shortcut_collapse_all)
-    self._shortcut_expand_all = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+E", "Expand all groups")), self)
+    self._shortcut_expand_all = QShortcut(QKeySequence(self.tr("Alt+E", "Expand all groups")), self)
     self._shortcut_expand_all.activated.connect(self.masterTab.nodeTreeView.expandAll)
-    self._shortcut_run = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+R", "run selected nodes")), self)
+    self._shortcut_run = QShortcut(QKeySequence(self.tr("Alt+R", "run selected nodes")), self)
     self._shortcut_run.activated.connect(self.on_start_clicked)
-    self._shortcut_stop = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
+    self._shortcut_stop = QShortcut(QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
     self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
-    self._shortcut_copy = QtGui.QShortcut(QtGui.QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
+    self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
     self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
 
 #    print "================ create", self.objectName()
@@ -645,7 +659,7 @@ class MasterViewProxy(QtGui.QWidget):
       err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
       rospy.logwarn("Loading launch file: %s", err_details)
       raise DetailedError("Loading launch file", err_text, err_details)
-#      WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
+#      WarningMessageBox(QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
     except:
       print traceback.format_exc(1)
 
@@ -750,7 +764,7 @@ class MasterViewProxy(QtGui.QWidget):
       err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
       err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
       rospy.logwarn("Loading launch file: %s", err_details)
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
+      WarningMessageBox(QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
     except:
       print traceback.format_exc(1)
     self.update_robot_icon(True)
@@ -974,9 +988,9 @@ class MasterViewProxy(QtGui.QWidget):
     @type msg: C{str}
     '''
     pass
-#    QtGui.QMessageBox.warning(self, 'Error while call %s'%service,
+#    QMessageBox.warning(self, 'Error while call %s'%service,
 #                              str(msg),
-#                              QtGui.QMessageBox.Ok)
+#                              QMessageBox.Ok)
 
   @property
   def launch_servers(self):
@@ -1189,7 +1203,7 @@ class MasterViewProxy(QtGui.QWidget):
         node = selectedNodes[0]
         selected_topics = self.topic_model.index_from_names(node.published, node.subscribed)
         for s in selected_topics:
-          self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
+          self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
     elif self.masterTab.tabWidget.tabText(index) == 'Services':
       # select the services of the selected node in the "Services" view
       selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
@@ -1198,7 +1212,7 @@ class MasterViewProxy(QtGui.QWidget):
         node = selectedNodes[0]
         selected_services = self.service_model.index_from_names(node.services)
         for s in selected_services:
-          self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QtGui.QItemSelectionModel.Select)
+          self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
 
   def on_node_selection_changed(self, selected, deselected, force_emit=False, node_name=''):
     '''
@@ -1589,7 +1603,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     cursor = self.cursor()
     self.masterTab.startButton.setEnabled(False)
-    self.setCursor(QtCore.Qt.WaitCursor)
+    self.setCursor(Qt.WaitCursor)
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       self.start_nodes(selectedNodes)
@@ -1602,7 +1616,7 @@ class MasterViewProxy(QtGui.QWidget):
     Starts the selected nodes with additional options.
     '''
     cursor = self.cursor()
-    self.setCursor(QtCore.Qt.WaitCursor)
+    self.setCursor(Qt.WaitCursor)
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       self.start_nodes(selectedNodes, force=True, use_adv_cfg=True)
@@ -1663,8 +1677,8 @@ class MasterViewProxy(QtGui.QWidget):
       if (node.pid is None or (node.pid is not None and force)) and not node.is_ghost:
         # test for duplicate nodes
         if node.uri is None and node.has_running:
-          ret = QtGui.QMessageBox.question(self, 'Question', ''.join(['Some nodes, e.g. ', node.name, ' are already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-          if ret == QtGui.QMessageBox.No:
+          ret = QMessageBox.question(self, 'Question', ''.join(['Some nodes, e.g. ', node.name, ' are already running on another host. If you start this node the other node will be terminated.\n Do you want proceed?']), QMessageBox.Yes, QMessageBox.No)
+          if ret == QMessageBox.No:
             return
         # determine the used configuration
         choices = self._getCfgChoises(node)
@@ -1680,7 +1694,7 @@ class MasterViewProxy(QtGui.QWidget):
               if isinstance(choices[choice], LaunchConfig):
                 has_launch_files = True
             elif ok:
-              WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+              WarningMessageBox(QMessageBox.Warning, "Start error",
                                 'Error while start %s:\nNo configuration selected!' % node.name).exec_()
             else:
               break
@@ -1714,7 +1728,7 @@ class MasterViewProxy(QtGui.QWidget):
           logging = nm.settings().logging
         except Exception, e:
           diag_canceled = True
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Get advanced start parameter",
+          WarningMessageBox(QMessageBox.Warning, "Get advanced start parameter",
                             'Error while parse parameter',
                             str(e)).exec_()
     if not diag_canceled:
@@ -1749,7 +1763,7 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     cursor = self.cursor()
     self.masterTab.startButton.setEnabled(False)
-    self.setCursor(QtCore.Qt.WaitCursor)
+    self.setCursor(Qt.WaitCursor)
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       self.stop_nodes(selectedNodes)
@@ -1774,14 +1788,14 @@ class MasterViewProxy(QtGui.QWidget):
       try:
         params = dia.getKeywords()
         host = params['Host']
-        self.setCursor(QtCore.Qt.WaitCursor)
+        self.setCursor(Qt.WaitCursor)
         try:
           selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
           self.start_nodes(selectedNodes, True, host)
         finally:
           self.setCursor(cursor)
       except Exception, e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Start error",
+        WarningMessageBox(QMessageBox.Warning, "Start error",
                           'Error while parse parameter',
                           str(e)).exec_()
     self.masterTab.startButton.setEnabled(True)
@@ -1823,12 +1837,12 @@ class MasterViewProxy(QtGui.QWidget):
     RPC interface, it will be unregistered from the ROS master using the masters
     RPC interface.
     '''
-    key_mod = QtGui.QApplication.keyboardModifiers()
-    if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
+    key_mod = QApplication.keyboardModifiers()
+    if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
       self.masterTab.stopButton.showMenu()
     else:
       cursor = self.cursor()
-      self.setCursor(QtCore.Qt.WaitCursor)
+      self.setCursor(Qt.WaitCursor)
       try:
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
         self.stop_nodes(selectedNodes)
@@ -2000,9 +2014,9 @@ class MasterViewProxy(QtGui.QWidget):
     self._progress_queue.start()
 
   def on_stop_context_toggled(self, state):
-    menu = QtGui.QMenu(self)
-    self.killAct = QtGui.QAction("&Kill Node", self, shortcut=QtGui.QKeySequence.New, statusTip="Kill selected node", triggered=self.kill_nodes)
-    self.unregAct = QtGui.QAction("&Unregister Nodes...", self, shortcut=QtGui.QKeySequence.Open, statusTip="Open an existing file", triggered=self.unreg_nodes)
+    menu = QMenu(self)
+    self.killAct = QAction("&Kill Node", self, shortcut=QKeySequence.New, statusTip="Kill selected node", triggered=self.kill_nodes)
+    self.unregAct = QAction("&Unregister Nodes...", self, shortcut=QKeySequence.Open, statusTip="Open an existing file", triggered=self.unreg_nodes)
     menu.addAction(self.killAct)
     menu.addAction(self.unregAct)
     menu.exec_(self.masterTab.stopContextButton.pos())
@@ -2032,19 +2046,19 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     Shows IO of the selected nodes.
     '''
-    key_mod = QtGui.QApplication.keyboardModifiers()
-    if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
+    key_mod = QApplication.keyboardModifiers()
+    if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
       self.masterTab.ioButton.showMenu()
     else:
       cursor = self.cursor()
-      self.setCursor(QtCore.Qt.WaitCursor)
+      self.setCursor(Qt.WaitCursor)
       try:
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
         if selectedNodes:
           ret = True
           if len(selectedNodes) > 5:
-            ret = QtGui.QMessageBox.question(self, "Show IO", "You are going to open the IO of " + str(len(selectedNodes)) + " nodes at once\nContinue?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
-            ret = (ret == QtGui.QMessageBox.Ok)
+            ret = QMessageBox.question(self, "Show IO", "You are going to open the IO of " + str(len(selectedNodes)) + " nodes at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
+            ret = (ret == QMessageBox.Ok)
           if ret:
             for node in selectedNodes:
               self._progress_queue.add2queue(str(uuid.uuid4()),
@@ -2062,7 +2076,7 @@ class MasterViewProxy(QtGui.QWidget):
     Kills selected screens, if some available.
     '''
     cursor = self.cursor()
-    self.setCursor(QtCore.Qt.WaitCursor)
+    self.setCursor(Qt.WaitCursor)
     try:
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       for node in selectedNodes:
@@ -2079,7 +2093,7 @@ class MasterViewProxy(QtGui.QWidget):
     Shows all available screens.
     '''
     cursor = self.cursor()
-    self.setCursor(QtCore.Qt.WaitCursor)
+    self.setCursor(Qt.WaitCursor)
     try:
       host = nm.nameres().getHostname(self.masteruri)
       sel_screen = []
@@ -2088,7 +2102,7 @@ class MasterViewProxy(QtGui.QWidget):
         sel_screen, _ = SelectDialog.getValue('Open screen', '', screens, False, False, self)  # _:=ok
       except Exception, e:
         rospy.logwarn("Error while get screen list: %s", str(e))
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error",
+        WarningMessageBox(QMessageBox.Warning, "Screen list error",
                           ''.join(['Error while get screen list from ', host]),
                           str(e)).exec_()
       for screen in sel_screen:
@@ -2097,7 +2111,7 @@ class MasterViewProxy(QtGui.QWidget):
             pass
         except Exception, e:
           rospy.logwarn("Error while show IO for %s: %s", str(screen), str(e))
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Show IO error",
+          WarningMessageBox(QMessageBox.Warning, "Show IO error",
                             ''.join(['Error while show IO ', screen, ' on ', host]),
                             str(e)).exec_()
     finally:
@@ -2109,14 +2123,14 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     try:
       only_screen = True
-      key_mod = QtGui.QApplication.keyboardModifiers()
-      if (key_mod & QtCore.Qt.ShiftModifier or key_mod & QtCore.Qt.ControlModifier):
+      key_mod = QApplication.keyboardModifiers()
+      if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
         only_screen = False
       selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
       ret = True
       if len(selectedNodes) > 5:
-        ret = QtGui.QMessageBox.question(self, "Show Log", "You are going to open the logs of " + str(len(selectedNodes)) + " nodes at once\nContinue?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
-        ret = (ret == QtGui.QMessageBox.Ok)
+        ret = QMessageBox.question(self, "Show Log", "You are going to open the logs of " + str(len(selectedNodes)) + " nodes at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
+        ret = (ret == QMessageBox.Ok)
       if ret:
         for node in selectedNodes:
           self._progress_queue.add2queue(str(uuid.uuid4()),
@@ -2127,7 +2141,7 @@ class MasterViewProxy(QtGui.QWidget):
     except Exception, e:
       print traceback.format_exc(1)
       rospy.logwarn("Error while show log: %s", str(e))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Show log error",
+      WarningMessageBox(QMessageBox.Warning, "Show log error",
                         'Error while show Log',
                         str(e)).exec_()
 
@@ -2139,9 +2153,9 @@ class MasterViewProxy(QtGui.QWidget):
     try:
       host = nm.nameres().getHostname(self.masteruri)
       path_on_host = nm.starter().get_log_path(host, nodenames, True)
-      QtGui.QApplication.clipboard().setText(''.join([getpass.getuser() if self.is_local else self.current_user, '@', host, ':', path_on_host]))
+      QApplication.clipboard().setText(''.join([getpass.getuser() if self.is_local else self.current_user, '@', host, ':', path_on_host]))
     except Exception as e:
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Get log path",
+      WarningMessageBox(QMessageBox.Warning, "Get log path",
                         'Error while get log path',
                         str(e)).exec_()
 #    self._progress_queue.add2queue(str(uuid.uuid4()),
@@ -2157,7 +2171,7 @@ class MasterViewProxy(QtGui.QWidget):
 #      sel_screen, ok = SelectDialog.getValue('Open log', '', screens, False, self)
 #    except Exception, e:
 #      rospy.logwarn("Error while get screen list: %s", str(e))
-#      WarningMessageBox(QtGui.QMessageBox.Warning, "Screen list error",
+#      WarningMessageBox(QMessageBox.Warning, "Screen list error",
 #                        ''.join(['Error while get screen list from ', host]),
 #                        str(e)).exec_()
 
@@ -2190,8 +2204,8 @@ class MasterViewProxy(QtGui.QWidget):
             if items is None:
               items = []
           if len(items) > 3:
-            ret = QtGui.QMessageBox.question(self, 'Start dynamic reconfigure', 'It will starts %s dynamic reconfigure nodes?\n\n Are you sure?' % str(len(items)), QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if ret != QtGui.QMessageBox.Yes:
+            ret = QMessageBox.question(self, 'Start dynamic reconfigure', 'It will starts %s dynamic reconfigure nodes?\n\n Are you sure?' % str(len(items)), QMessageBox.Yes, QMessageBox.No)
+            if ret != QMessageBox.Yes:
               return
           for node in items:
             env = dict(os.environ)
@@ -2200,7 +2214,7 @@ class MasterViewProxy(QtGui.QWidget):
             _ = SupervisedPopen(['rosrun', 'node_manager_fkie', 'dynamic_reconfigure', node, '__ns:=dynamic_reconfigure'], env=env, object_id=node, description='Start dynamic reconfiguration for %s failed' % node)
         except Exception, e:
           rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s" % (n.name, e))
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Start dynamic reconfiguration error",
+          WarningMessageBox(QMessageBox.Warning, "Start dynamic reconfiguration error",
                             'Start dynamic reconfiguration for %s failed!' % n.name,
                             str(e)).exec_()
 
@@ -2236,18 +2250,18 @@ class MasterViewProxy(QtGui.QWidget):
         rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), traceback.format_exc(1))
 
   def on_save_clicked(self):
-    (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
-                                                      "New launch file",
-                                                      self.__current_path,
-                                                      "Config files (*.launch);;All files (*)")  # _:=filter
+    (fileName, _) = QFileDialog.getSaveFileName(self,
+                                                "New launch file",
+                                                self.__current_path,
+                                                "Config files (*.launch);;All files (*)")  # _:=filter
     if fileName:
       self.__current_path = os.path.dirname(fileName)
       try:
         (pkg, _) = package_name(os.path.dirname(fileName))  # _:=pkg_path
         if pkg is None:
-          ret = WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error",
-                                  'The new file is not in a ROS package', buttons=QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel).exec_()
-          if ret == QtGui.QMessageBox.Cancel:
+          ret = WarningMessageBox(QMessageBox.Warning, "New File Error",
+                                  'The new file is not in a ROS package', buttons=QMessageBox.Ok | QMessageBox.Cancel).exec_()
+          if ret == QMessageBox.Cancel:
             return
         with open(fileName, 'w+') as f:
           f.write("<launch>\n")
@@ -2256,7 +2270,7 @@ class MasterViewProxy(QtGui.QWidget):
               f.write(re.sub('<\/?launch\ *\t*>', '', lf.read()))
           f.write("</launch>\n")
       except EnvironmentError as e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "New File Error",
+        WarningMessageBox(QMessageBox.Warning, "New File Error",
                           'Error while create a new file',
                           str(e)).exec_()
 
@@ -2302,10 +2316,10 @@ class MasterViewProxy(QtGui.QWidget):
   def poweroff(self):
     try:
       if nm.is_local(self.mastername):
-        ret = QtGui.QMessageBox.warning(self, "ROS Node Manager",
+        ret = QMessageBox.warning(self, "ROS Node Manager",
                                         "Do you really want to shutdown localhost?",
-                                        QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-        if ret == QtGui.QMessageBox.Cancel:
+                                        QMessageBox.Ok | QMessageBox.Cancel)
+        if ret == QMessageBox.Cancel:
           return
       self._on_stop_poweroff = True
       # on shutdown stop only the /master_dsicovery node to remove it from lists
@@ -2318,7 +2332,7 @@ class MasterViewProxy(QtGui.QWidget):
       self._progress_queue.start()
     except (Exception, nm.StartException), emsg:
       rospy.logwarn("Error while poweroff %s: %s", self.mastername, str(emsg))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Run error",
+      WarningMessageBox(QMessageBox.Warning, "Run error",
                         'Error while poweroff %s' % self.mastername,
                         '%s' % emsg).exec_()
 
@@ -2399,14 +2413,14 @@ class MasterViewProxy(QtGui.QWidget):
             except Exception, e:
               print traceback.format_exc(1)
               rospy.logwarn("Publish topic '%s' failed: %s", str(params['Name']), str(e))
-              WarningMessageBox(QtGui.QMessageBox.Warning, "Publish topic error",
+              WarningMessageBox(QMessageBox.Warning, "Publish topic error",
                                 ''.join(['Publish topic ', params['Name'], ' failed!']),
                                 str(e)).exec_()
           else:
-            WarningMessageBox(QtGui.QMessageBox.Warning, "Invalid name or type",
+            WarningMessageBox(QMessageBox.Warning, "Invalid name or type",
                               "Can't publish to topic '%s' with type '%s'!" % (params['Name'], params['Type'])).exec_()
         except (KeyError, ValueError), e:
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Warning",
+          WarningMessageBox(QMessageBox.Warning, "Warning",
                             'Error while add a parameter to the ROS parameter server',
                             str(e)).exec_()
 
@@ -2426,7 +2440,7 @@ class MasterViewProxy(QtGui.QWidget):
       topic_name = roslib.names.ns_join(roslib.names.SEP, topic_name)
       mclass = roslib.message.get_message_class(topic_type)
       if mclass is None:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error",
+        WarningMessageBox(QMessageBox.Warning, "Publish error",
                           'Error while publish to %s' % topic_name,
                           ''.join(['invalid message type: ', topic_type, '.\nIf this is a valid message type, perhaps you need to run "rosmake"'])).exec_()
         return
@@ -2475,7 +2489,7 @@ class MasterViewProxy(QtGui.QWidget):
           topic_params = self._rem_empty_lists(params[topic_type])
         pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
         self._progress_queue.add2queue(str(uuid.uuid4()),
-                                       'start publisher for ' % topic_name,
+                                       'start publisher for %s' % topic_name,
                                        nm.starter().runNodeWithoutConfig,
                                        (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', 'rostopic_pub%s%s%s' % (topic_name, opt_name_suf, str(rospy.Time.now())), [pub_cmd], self.masteruri, False, self.current_user))
         self._progress_queue.start()
@@ -2484,7 +2498,7 @@ class MasterViewProxy(QtGui.QWidget):
         return False
     except Exception, e:
       rospy.logwarn("Publish topic '%s' failed: %s", str(topic_name), str(e))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Publish topic error",
+      WarningMessageBox(QMessageBox.Warning, "Publish topic error",
                         ''.join(['Publish topic ', topic_name, ' failed!']),
                         str(e)).exec_()
       print traceback.format_exc(1)
@@ -2523,8 +2537,8 @@ class MasterViewProxy(QtGui.QWidget):
     selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
     ret = True
     if len(selectedTopics) > 5:
-      ret = QtGui.QMessageBox.question(self, "Show echo", "You are going to open the echo of " + str(len(selectedTopics)) + " topics at once\nContinue?", QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
-      ret = (ret == QtGui.QMessageBox.Ok)
+      ret = QMessageBox.question(self, "Show echo", "You are going to open the echo of " + str(len(selectedTopics)) + " topics at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
+      ret = (ret == QMessageBox.Ok)
     if ret:
       for topic in selectedTopics:
         self._add_topic_output2queue(topic, show_hz_only, use_ssh)
@@ -2554,7 +2568,7 @@ class MasterViewProxy(QtGui.QWidget):
         self.__echo_topics_dialogs[topic.name] = ps
     except Exception, e:
       rospy.logwarn("Echo topic '%s' failed: %s" % (topic.name, e))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Echo of topic error",
+      WarningMessageBox(QMessageBox.Warning, "Echo of topic error",
                         'Echo of topic %s failed!' % topic.name,
                         '%s' % e).exec_()
 
@@ -2581,19 +2595,19 @@ class MasterViewProxy(QtGui.QWidget):
     '''
     Filter the displayed topics
     '''
-    self.topic_proxyModel.setFilterRegExp(QtCore.QRegExp(text, QtCore.Qt.CaseInsensitive, QtCore.QRegExp.Wildcard))
+    self.topic_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
 
   def on_service_filter_changed(self, text):
     '''
     Filter the displayed services
     '''
-    self.service_proxyModel.setFilterRegExp(QtCore.QRegExp(text, QtCore.Qt.CaseInsensitive, QtCore.QRegExp.Wildcard))
+    self.service_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
 
   def on_parameter_filter_changed(self, text):
     '''
     Filter the displayed parameter
     '''
-    self.parameter_proxyModel.setFilterRegExp(QtCore.QRegExp(text, QtCore.Qt.CaseInsensitive, QtCore.QRegExp.Wildcard))
+    self.parameter_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
 
   def on_get_parameter_clicked(self):
     '''
@@ -2640,7 +2654,7 @@ class MasterViewProxy(QtGui.QWidget):
             if value is None:
               value = []
           except yaml.MarkedYAMLError, e:
-            QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QtGui.QMessageBox.Ok)
+            QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QMessageBox.Ok)
             return
         else:
           value = params['value']
@@ -2648,7 +2662,7 @@ class MasterViewProxy(QtGui.QWidget):
         self.parameterHandler.requestParameterList(self.masteruri)
         self.sender().close()
       except (KeyError, ValueError), e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Warning",
+        WarningMessageBox(QMessageBox.Warning, "Warning",
                           'Error while add a parameter to the ROS parameter server',
                           str(e)).exec_()
 
@@ -2670,7 +2684,7 @@ class MasterViewProxy(QtGui.QWidget):
           rospy.logwarn("Error on delete parameter '%s': %s", parameter, msg)
     except:
       rospy.logwarn("Error on delete parameter: %s", traceback.format_exc(1))
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Warning",
+      WarningMessageBox(QMessageBox.Warning, "Warning",
                         'Error while delete a parameter to the ROS parameter server',
                         traceback.format_exc(1)).exec_()
     else:
@@ -2685,10 +2699,10 @@ class MasterViewProxy(QtGui.QWidget):
     selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
     if selectedParameter:
       # (fileName, filter)
-      (fileName, _) = QtGui.QFileDialog.getSaveFileName(self,
-                                                        "Save parameter",
-                                                        self.__current_path,
-                                                        "YAML files (*.yaml);;All files (*)")
+      (fileName, _) = QFileDialog.getSaveFileName(self,
+                                                  "Save parameter",
+                                                  self.__current_path,
+                                                  "YAML files (*.yaml);;All files (*)")
       if fileName:
         self.__current_path = os.path.dirname(fileName)
         try:
@@ -2711,7 +2725,7 @@ class MasterViewProxy(QtGui.QWidget):
             f.write(yaml.dump(values, default_flow_style=False))
         except Exception as e:
           print traceback.format_exc(1)
-          WarningMessageBox(QtGui.QMessageBox.Warning, "Save parameter Error",
+          WarningMessageBox(QMessageBox.Warning, "Save parameter Error",
                             'Error while save parameter',
                             str(e)).exec_()
 
@@ -2755,7 +2769,7 @@ class MasterViewProxy(QtGui.QWidget):
               value = []
             value = self._replaceDoubleSlash(value)
           except yaml.MarkedYAMLError, e:
-            QtGui.QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QtGui.QMessageBox.Ok)
+            QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QMessageBox.Ok)
             item.setText(unicode(item.value))
             return
         else:
@@ -2763,7 +2777,7 @@ class MasterViewProxy(QtGui.QWidget):
         self.parameterHandler.deliverParameter(self.masteruri, {item.name: value})
         item.value = value
       except ValueError, e:
-        WarningMessageBox(QtGui.QMessageBox.Warning, "Warning",
+        WarningMessageBox(QMessageBox.Warning, "Warning",
                           'Error while add changes to the ROS parameter server',
                           str(e)).exec_()
         item.setText(item.value)
@@ -2826,7 +2840,7 @@ class MasterViewProxy(QtGui.QWidget):
     else:
       errmsg = msg if msg else 'Unknown error on set parameter'
     if errmsg:
-      WarningMessageBox(QtGui.QMessageBox.Warning, "Warning",
+      WarningMessageBox(QMessageBox.Warning, "Warning",
                         'Error while delivering parameter to the ROS parameter server',
                         errmsg).exec_()
 
@@ -2906,15 +2920,15 @@ class MasterViewProxy(QtGui.QWidget):
     last_row_index = len(self.node_tree_model.header) - 1
 #    lastChild = root.child(0, last_row_index)
     i = 0
-    selection = QtGui.QItemSelection()
+    selection = QItemSelection()
     while root.child(i, 0).isValid():
       index = root.child(i, 0)
       item = self.node_tree_model.itemFromIndex(index)
       if item is not None and not self._is_in_ignore_list(item.name):
-        selection.append(QtGui.QItemSelectionRange(index, root.child(i, last_row_index)))
+        selection.append(QItemSelectionRange(index, root.child(i, last_row_index)))
       i = i + 1
-#    selection = QtGui.QItemSelection(firstChild, lastChild)
-    self.masterTab.nodeTreeView.selectionModel().select(selection, QtGui.QItemSelectionModel.ClearAndSelect)
+#    selection = QItemSelection(firstChild, lastChild)
+    self.masterTab.nodeTreeView.selectionModel().select(selection, QItemSelectionModel.ClearAndSelect)
 
   def _is_in_ignore_list(self, name):
     for i in self._stop_ignores:
@@ -2971,14 +2985,14 @@ class MasterViewProxy(QtGui.QWidget):
           result = '%s %s' % (result, value)
         except Exception:
           pass
-    QtGui.QApplication.clipboard().setText(result.strip())
+    QApplication.clipboard().setText(result.strip())
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   # %%%%%%%%%%%%%   Filter handling                               %%%%%%%%%%%
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-class TopicsSortFilterProxyModel(QtGui.QSortFilterProxyModel):
+class TopicsSortFilterProxyModel(QSortFilterProxyModel):
   def filterAcceptsRow(self, sourceRow, sourceParent):
     '''
     Perform filtering on columns 0 and 3 (Name, Type)
@@ -2990,7 +3004,7 @@ class TopicsSortFilterProxyModel(QtGui.QSortFilterProxyModel):
             regex.indexIn(self.sourceModel().data(index3)) != -1)
 
 
-class ServicesSortFilterProxyModel(QtGui.QSortFilterProxyModel):
+class ServicesSortFilterProxyModel(QSortFilterProxyModel):
   def filterAcceptsRow(self, sourceRow, sourceParent):
     '''
     Perform filtering on columns 0 and 1 (Name, Type)
@@ -3002,7 +3016,7 @@ class ServicesSortFilterProxyModel(QtGui.QSortFilterProxyModel):
             regex.indexIn(self.sourceModel().data(index0, ServiceItem.TYPE_ROLE)) != -1)
 
 
-class ParameterSortFilterProxyModel(QtGui.QSortFilterProxyModel):
+class ParameterSortFilterProxyModel(QSortFilterProxyModel):
   def filterAcceptsRow(self, sourceRow, sourceParent):
     '''
     Perform filtering on columns 0 and 1 (Name, Value)

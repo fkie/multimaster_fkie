@@ -30,13 +30,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QPoint, QSize
+from python_qt_binding.QtGui import QAbstractTextDocumentLayout, QFontMetrics, QTextDocument
+try:
+  from python_qt_binding.QtGui import QApplication, QStyledItemDelegate, QStyle
+  from python_qt_binding.QtGui import QStyleOptionViewItemV4 as QStyleOptionViewItem
+except:
+  from python_qt_binding.QtWidgets import QApplication, QStyledItemDelegate, QStyle
+  from python_qt_binding.QtWidgets import QStyleOptionViewItem
 
 from rosgraph.names import is_legal_name
 
 
-class HTMLDelegate(QtGui.QStyledItemDelegate):
+class HTMLDelegate(QStyledItemDelegate):
   '''
   A class to display the HTML text in QTreeView.
   '''
@@ -46,27 +52,27 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
     Use the QTextDokument to represent the HTML text.
     @see: U{http://www.pyside.org/docs/pyside/PySide/QtGui/QAbstractItemDelegate.html#PySide.QtGui.QAbstractItemDelegate}
     '''
-    options = QtGui.QStyleOptionViewItemV4(option)
+    options = QStyleOptionViewItem(option)
     self.initStyleOption(options, index)
 
-    style = QtGui.QApplication.style() if options.widget is None else options.widget.style()
+    style = QApplication.style() if options.widget is None else options.widget.style()
 
-    doc = QtGui.QTextDocument()
+    doc = QTextDocument()
     doc.setHtml(self.toHTML(options.text))
     doc.setTextWidth(option.rect.width())
 
     options.text = ''
-    style.drawControl(QtGui.QStyle.CE_ItemViewItem, options, painter)
+    style.drawControl(QStyle.CE_ItemViewItem, options, painter)
 
-    ctx = QtGui.QAbstractTextDocumentLayout.PaintContext()
+    ctx = QAbstractTextDocumentLayout.PaintContext()
 
     # Highlighting text if item is selected
     # if (optionV4.state and QStyle::State_Selected):
     #  ctx.palette.setColor(QPalette::Text, optionV4.palette.color(QPalette::Active, QPalette::HighlightedText));
 
-    textRect = style.subElementRect(QtGui.QStyle.SE_ItemViewItemText, options, options.widget)
+    textRect = style.subElementRect(QStyle.SE_ItemViewItemText, options, options.widget)
     painter.save()
-    painter.translate(QtCore.QPoint(textRect.topLeft().x(), textRect.topLeft().y() - 3))
+    painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - 3))
     painter.setClipRect(textRect.translated(-textRect.topLeft()))
     doc.documentLayout().draw(painter, ctx)
 
@@ -77,14 +83,14 @@ class HTMLDelegate(QtGui.QStyledItemDelegate):
     Determines and returns the size of the text after the format.
     @see: U{http://www.pyside.org/docs/pyside/PySide/QtGui/QAbstractItemDelegate.html#PySide.QtGui.QAbstractItemDelegate}
     '''
-    options = QtGui.QStyleOptionViewItemV4(option)
+    options = QStyleOptionViewItem(option)
     self.initStyleOption(options, index)
 
-    doc = QtGui.QTextDocument()
+    doc = QTextDocument()
     doc.setHtml(options.text)
     doc.setTextWidth(options.rect.width())
-    metric = QtGui.QFontMetrics(doc.defaultFont())
-    return QtCore.QSize(doc.idealWidth(), metric.height() + 4)
+    metric = QFontMetrics(doc.defaultFont())
+    return QSize(doc.idealWidth(), metric.height() + 4)
 
   @classmethod
   def toHTML(cls, text):

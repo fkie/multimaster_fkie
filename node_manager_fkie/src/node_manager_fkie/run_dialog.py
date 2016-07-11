@@ -30,48 +30,53 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import Qt, QMetaObject
+try:
+  from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit, QWidget
+  from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
+except:
+  from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit, QWidget
+  from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
 import os
 
 from packages_thread import PackagesThread
 import node_manager_fkie as nm
 
 
-class PackageDialog(QtGui.QDialog):
+class PackageDialog(QDialog):
   def __init__(self, parent=None):
-    QtGui.QDialog.__init__(self, parent)
+    QDialog.__init__(self, parent)
     self.setWindowTitle('Select Binary')
-    self.verticalLayout = QtGui.QVBoxLayout(self)
+    self.verticalLayout = QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
 
-    self.content = QtGui.QWidget()
-    self.contentLayout = QtGui.QFormLayout(self.content)
+    self.content = QWidget()
+    self.contentLayout = QFormLayout(self.content)
     self.contentLayout.setVerticalSpacing(0)
     self.verticalLayout.addWidget(self.content)
 
     self.packages = None
 
-    package_label = QtGui.QLabel("Package:", self.content)
-    self.package_field = QtGui.QComboBox(self.content)
-    self.package_field.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
-    self.package_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    package_label = QLabel("Package:", self.content)
+    self.package_field = QComboBox(self.content)
+    self.package_field.setInsertPolicy(QComboBox.InsertAlphabetically)
+    self.package_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.package_field.setEditable(True)
     self.contentLayout.addRow(package_label, self.package_field)
-    binary_label = QtGui.QLabel("Binary:", self.content)
-    self.binary_field = QtGui.QComboBox(self.content)
-#    self.binary_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-    self.binary_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    binary_label = QLabel("Binary:", self.content)
+    self.binary_field = QComboBox(self.content)
+#    self.binary_field.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+    self.binary_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.binary_field.setEditable(True)
     self.contentLayout.addRow(binary_label, self.binary_field)
 
-    self.buttonBox = QtGui.QDialogButtonBox(self)
-    self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
-    self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+    self.buttonBox = QDialogButtonBox(self)
+    self.buttonBox.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+    self.buttonBox.setOrientation(Qt.Horizontal)
     self.buttonBox.setObjectName("buttonBox")
     self.verticalLayout.addWidget(self.buttonBox)
 
-    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
+    self.package_field.setFocus(Qt.TabFocusReason)
     self.package = ''
     self.binary = ''
 
@@ -82,12 +87,16 @@ class PackageDialog(QtGui.QDialog):
       self._fill_packages_thread.packages.connect(self._fill_packages)
       self._fill_packages_thread.start()
 
-    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.accept)
-    QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.reject)
-    QtCore.QMetaObject.connectSlotsByName(self)
+    self.buttonBox.accepted.connect(self.accept)
+    self.buttonBox.rejected.connect(self.reject)
+    QMetaObject.connectSlotsByName(self)
     self.package_field.activated[str].connect(self.on_package_selected)
-    self.package_field.textChanged.connect(self.on_package_selected)
-    self.binary_field.textChanged.connect(self.on_binary_selected)
+    if hasattr(self.package_field, "textChanged"):  # qt compatibility
+      self.package_field.textChanged.connect(self.on_package_selected)
+      self.binary_field.textChanged.connect(self.on_binary_selected)
+    else:
+      self.package_field.editTextChanged.connect(self.on_package_selected)
+      self.binary_field.editTextChanged.connect(self.on_binary_selected)
 
   def _fill_packages(self, packages):
     # fill the input fields
@@ -145,33 +154,33 @@ class RunDialog(PackageDialog):
     self.host = host
     self.setWindowTitle('Run')
 
-    ns_name_label = QtGui.QLabel("NS/Name:", self.content)
-    self.ns_field = QtGui.QComboBox(self.content)
-    self.ns_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    ns_name_label = QLabel("NS/Name:", self.content)
+    self.ns_field = QComboBox(self.content)
+    self.ns_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.ns_field.setEditable(True)
     ns_history = nm.history().cachedParamValues('run_dialog/NS')
     ns_history.insert(0, '/')
     self.ns_field.addItems(ns_history)
-    self.name_field = QtGui.QLineEdit(self.content)
+    self.name_field = QLineEdit(self.content)
     self.name_field.setEnabled(False)
-    horizontalLayout = QtGui.QHBoxLayout()
+    horizontalLayout = QHBoxLayout()
     horizontalLayout.addWidget(self.ns_field)
     horizontalLayout.addWidget(self.name_field)
     self.contentLayout.addRow(ns_name_label, horizontalLayout)
-    args_label = QtGui.QLabel("Args:", self.content)
-    self.args_field = QtGui.QComboBox(self.content)
-    self.args_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToMinimumContentsLength)
-    self.args_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    args_label = QLabel("Args:", self.content)
+    self.args_field = QComboBox(self.content)
+    self.args_field.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLength)
+    self.args_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.args_field.setEditable(True)
     self.contentLayout.addRow(args_label, self.args_field)
     args_history = nm.history().cachedParamValues('run_dialog/Args')
     args_history.insert(0, '')
     self.args_field.addItems(args_history)
 
-    host_label = QtGui.QLabel("Host:", self.content)
-    self.host_field = QtGui.QComboBox(self.content)
-#    self.host_field.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
-    self.host_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    host_label = QLabel("Host:", self.content)
+    self.host_field = QComboBox(self.content)
+#    self.host_field.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+    self.host_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.host_field.setEditable(True)
     host_label.setBuddy(self.host_field)
     self.contentLayout.addRow(host_label, self.host_field)
@@ -181,9 +190,9 @@ class RunDialog(PackageDialog):
     host_history.insert(0, self.host)
     self.host_field.addItems(host_history)
 
-    master_label = QtGui.QLabel("ROS Master URI:", self.content)
-    self.master_field = QtGui.QComboBox(self.content)
-    self.master_field.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed))
+    master_label = QLabel("ROS Master URI:", self.content)
+    self.master_field = QComboBox(self.content)
+    self.master_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
     self.master_field.setEditable(True)
     master_label.setBuddy(self.host_field)
     self.contentLayout.addRow(master_label, self.master_field)
@@ -195,7 +204,10 @@ class RunDialog(PackageDialog):
     self.master_field.addItems(master_history)
 
 #    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
-    self.package_field.textChanged.connect(self.on_package_selected)
+    if hasattr(self.package_field, "textChanged"):  # qt compatibility
+      self.package_field.textChanged.connect(self.on_package_selected)
+    else:
+      self.package_field.editTextChanged.connect(self.on_package_selected)
     self.binary_field.activated[str].connect(self.on_binary_selected)
 
   def run_params(self):
@@ -225,9 +237,9 @@ class RunDialog(PackageDialog):
       self.args_field.setEnabled(True)
       self.ns_field.setEnabled(True)
       self.name_field.setEnabled(True)
-      root, ext = os.path.splitext(os.path.basename(self.binary_field.currentText()))
+      root, _ext = os.path.splitext(os.path.basename(self.binary_field.currentText()))
       self.name_field.setText(root)
 
   def on_binary_selected(self, binary):
-    root, ext = os.path.splitext(os.path.basename(binary))
+    root, _ext = os.path.splitext(os.path.basename(binary))
     self.name_field.setText(root)

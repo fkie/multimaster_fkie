@@ -30,22 +30,26 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+try:
+  from python_qt_binding.QtGui import QMessageBox
+except:
+  from python_qt_binding.QtWidgets import QMessageBox
 
 from detailed_msg_box import WarningMessageBox
 from master_discovery_fkie.master_info import TopicInfo
 
 
-class TopicItem(QtGui.QStandardItem):
+class TopicItem(QStandardItem):
   '''
   The topic item stored in the topic model. This class stores the topic as
   L{master_discovery_fkie.TopicInfo}. The name of the topic represented in HTML.
   '''
 
-  ITEM_TYPE = QtGui.QStandardItem.UserType + 36
-  NAME_ROLE = QtCore.Qt.UserRole + 1
-  NODENAMES_ROLE = QtCore.Qt.UserRole + 2
+  ITEM_TYPE = QStandardItem.UserType + 36
+  NAME_ROLE = Qt.UserRole + 1
+  NODENAMES_ROLE = Qt.UserRole + 2
   COL_PUB = 1
   COL_SUB = 2
   COL_TYPE = 3
@@ -56,7 +60,7 @@ class TopicItem(QtGui.QStandardItem):
     @param name: the topic name
     @type name: C{str}
     '''
-    QtGui.QStandardItem.__init__(self, name)
+    QStandardItem.__init__(self, name)
     self.parent_item = parent
     '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
     self._publish_thread = None
@@ -79,7 +83,7 @@ class TopicItem(QtGui.QStandardItem):
     '''
     if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_PUB)
-      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QStandardItem):
         cfg_col.setText(str(len(self.topic.publisherNodes)))
         tooltip = ''.join(['<h4>', 'Publisher [', self.topic.name, ']:</h4><dl>'])
         for p in self.topic.publisherNodes:
@@ -94,7 +98,7 @@ class TopicItem(QtGui.QStandardItem):
     '''
     if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_SUB)
-      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QStandardItem):
         cfg_col.setText(str(len(self.topic.subscriberNodes)))
         tooltip = ''.join(['<h4>', 'Subscriber [', self.topic.name, ']:</h4><dl>'])
         for p in self.topic.subscriberNodes:
@@ -109,7 +113,7 @@ class TopicItem(QtGui.QStandardItem):
     '''
     if self.parent_item is not None:
       cfg_col = self.parent_item.child(self.row(), TopicItem.COL_TYPE)
-      if cfg_col is not None and isinstance(cfg_col, QtGui.QStandardItem):
+      if cfg_col is not None and isinstance(cfg_col, QStandardItem):
         cfg_col.setText(self.topic.type if self.topic.type and self.topic.type != 'None' else 'unknown type')
         # removed tooltip for clarity!!!
 #         if not self.topic.type is None and not cfg_col.toolTip():
@@ -140,20 +144,20 @@ class TopicItem(QtGui.QStandardItem):
 #          cfg_col.setToolTip(tooltip)
 
   def _on_wait_for_publishing(self):
-    self.updateIconView(QtGui.QIcon(':/icons/state_off.png'))
+    self.updateIconView(QIcon(':/icons/state_off.png'))
 
   def _on_partial_publishing(self):
-    self.updateIconView(QtGui.QIcon(':/icons/state_part.png'))
+    self.updateIconView(QIcon(':/icons/state_part.png'))
 
   def _on_publishing(self):
-    self.updateIconView(QtGui.QIcon(':/icons/state_run.png'))
+    self.updateIconView(QIcon(':/icons/state_run.png'))
 
   def _publish_finished(self):
     self._publish_thread = None
-    self.setIcon(QtGui.QIcon())
+    self.setIcon(QIcon())
 
   def show_error_msg(self, msg):
-    WarningMessageBox(QtGui.QMessageBox.Warning, "Publish error",
+    WarningMessageBox(QMessageBox.Warning, "Publish error",
                       'Error while publish to %s' % self.topic.name,
                       tr(msg)).exec_()
 
@@ -166,7 +170,7 @@ class TopicItem(QtGui.QStandardItem):
     elif role == self.NODENAMES_ROLE:
       return str(self.topic.publisherNodes) + str(self.topic.subscriberNodes)
     else:
-      return QtGui.QStandardItem.data(self, role)
+      return QStandardItem.data(self, role)
 
   @classmethod
   def getItemList(self, topic, root):
@@ -176,20 +180,20 @@ class TopicItem(QtGui.QStandardItem):
     @param name: the topic name
     @type name: C{str}
     @param root: The parent QStandardItem
-    @type root: L{PySide.QtGui.QStandardItem}
+    @type root: L{PySide.QStandardItem}
     @return: the list for the representation as a row
-    @rtype: C{[L{TopicItem} or L{PySide.QtGui.QStandardItem}, ...]}
+    @rtype: C{[L{TopicItem} or L{PySide.QStandardItem}, ...]}
     '''
     items = []
     item = TopicItem(topic.name, topic, parent=root)
     items.append(item)
-    pubItem = QtGui.QStandardItem()
+    pubItem = QStandardItem()
 #    TopicItem.updatePublisherView(topic, pubItem)
     items.append(pubItem)
-    subItem = QtGui.QStandardItem()
+    subItem = QStandardItem()
 #    TopicItem.updateSubscriberView(topic, subItem)
     items.append(subItem)
-    typeItem = QtGui.QStandardItem()
+    typeItem = QStandardItem()
 #    TopicItem.updateTypeView(topic, typeItem)
     items.append(typeItem)
     return items
@@ -216,7 +220,7 @@ class TopicItem(QtGui.QStandardItem):
 #    return False
 
 
-class TopicModel(QtGui.QStandardItemModel):
+class TopicModel(QStandardItemModel):
   '''
   The model to manage the list with topics in ROS network.
   '''
@@ -230,7 +234,7 @@ class TopicModel(QtGui.QStandardItemModel):
     '''
     Creates a new list model.
     '''
-    QtGui.QStandardItemModel.__init__(self)
+    QStandardItemModel.__init__(self)
     self.setColumnCount(len(TopicModel.header))
     self.setHorizontalHeaderLabels([label for label, _ in TopicModel.header])
     self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
@@ -244,8 +248,8 @@ class TopicModel(QtGui.QStandardItemModel):
     @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
     '''
     if not index.isValid():
-      return QtCore.Qt.NoItemFlags
-    return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+      return Qt.NoItemFlags
+    return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
   def updateModelData(self, topics, added_topics, updated_topics, removed_topics):
     '''

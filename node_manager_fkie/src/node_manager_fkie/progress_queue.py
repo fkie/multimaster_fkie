@@ -30,8 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QObject, Signal
+try:
+  from python_qt_binding.QtGui import QMessageBox
+except:
+  from python_qt_binding.QtWidgets import QMessageBox
 import threading
 
 import rospy
@@ -54,12 +57,12 @@ class InteractionNeededError(Exception):
     return "InteractionNeededError"
 
 
-class ProgressQueue(QtCore.QObject):
+class ProgressQueue(QObject):
   '''
   The queue provides a threaded execution of given tasks.
   '''
   def __init__(self, progress_frame, progress_bar, progress_cancel_button):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.__ignore_err_list = []
     self.__progress_queue = []
     self.__running = False
@@ -161,18 +164,18 @@ class ProgressQueue(QtCore.QObject):
     if detailed_msg in self.__ignore_err_list:
       self._progress_thread_finished(ident)
       return
-    btns = (QtGui.QMessageBox.Ignore)
+    btns = (QMessageBox.Ignore)
     if len(self.__progress_queue) > 1:
-      btns = (QtGui.QMessageBox.Ignore | QtGui.QMessageBox.Abort)
-    res = WarningMessageBox(QtGui.QMessageBox.Warning, title, msg, detailed_msg,
+      btns = (QMessageBox.Ignore | QMessageBox.Abort)
+    res = WarningMessageBox(QMessageBox.Warning, title, msg, detailed_msg,
                             buttons=btns).exec_()
-    if res == QtGui.QMessageBox.Abort:
+    if res == QMessageBox.Abort:
       self.__progress_queue = []
       self._progress_frame.setVisible(False)
       self.__running = False
     else:
       # HACK: the number is returned, if "Don't show again" is pressed,
-      # instead 'QtGui.QMessageBox.HelpRole' (4)
+      # instead 'QMessageBox.HelpRole' (4)
       if res == 1 or res == 0:
         self.__ignore_err_list.append(detailed_msg)
       self._progress_thread_finished(ident)
@@ -266,25 +269,25 @@ class ProgressQueue(QtCore.QObject):
         return
 
 
-class ProgressThread(QtCore.QObject, threading.Thread):
+class ProgressThread(QObject, threading.Thread):
   '''
   A thread to execute a method in a thread.
   '''
-  finished_signal = QtCore.Signal(str)
+  finished_signal = Signal(str)
   '''
   @ivar: finished_signal is a signal, which is emitted, if the thread is finished.
   '''
 
-  error_signal = QtCore.Signal(str, str, str, str)
+  error_signal = Signal(str, str, str, str)
   '''
   @ivar: error_signal is a signal (id, title, error message, detailed error message),
   which is emitted, if an error while run of the thread was occurred.
   '''
 
-  request_interact_signal = QtCore.Signal(str, str, InteractionNeededError)
+  request_interact_signal = Signal(str, str, InteractionNeededError)
 
   def __init__(self, ident, descr='', target=None, args=()):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     threading.Thread.__init__(self)
     self._id = ident
     self.descr = descr

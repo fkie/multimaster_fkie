@@ -32,7 +32,11 @@
 
 
 from datetime import datetime
-from python_qt_binding import QtCore, QtGui
+from python_qt_binding.QtCore import Qt, Signal
+try:
+  from python_qt_binding.QtGui import QDialog, QLabel, QTextBrowser, QVBoxLayout
+except:
+  from python_qt_binding.QtWidgets import QDialog, QLabel, QTextBrowser, QVBoxLayout
 import threading
 import time
 import traceback
@@ -44,14 +48,14 @@ from master_discovery_fkie.udp import DiscoverSocket
 import node_manager_fkie as nm
 
 
-class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
+class NetworkDiscoveryDialog(QDialog, threading.Thread):
 
   TIMEOUT = 0.1
 
-  display_clear_signal = QtCore.Signal()
-  display_append_signal = QtCore.Signal(str)
-  status_text_signal = QtCore.Signal(str)
-  network_join_request = QtCore.Signal(int)
+  display_clear_signal = Signal()
+  display_append_signal = Signal(str)
+  status_text_signal = Signal(str)
+  network_join_request = Signal(int)
 
   def __init__(self, default_mcast_group, default_port, networks_count, parent=None):
     '''
@@ -61,26 +65,26 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
     @param networks_count: the count of discovering ports
     @type networks_count: C{int}
     '''
-    QtGui.QDialog.__init__(self, parent=parent)
+    QDialog.__init__(self, parent=parent)
     threading.Thread.__init__(self)
     self.default_port = default_port
     self.setObjectName('NetworkDiscoveryDialog')
-    self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-    self.setWindowFlags(QtCore.Qt.Window)
+    self.setAttribute(Qt.WA_DeleteOnClose, True)
+    self.setWindowFlags(Qt.Window)
     self.setWindowTitle('Network Discovery')
     self.resize(728, 512)
-    self.verticalLayout = QtGui.QVBoxLayout(self)
+    self.verticalLayout = QVBoxLayout(self)
     self.verticalLayout.setObjectName("verticalLayout")
     self.verticalLayout.setContentsMargins(1, 1, 1, 1)
 
-    self.display = QtGui.QTextBrowser(self)
+    self.display = QTextBrowser(self)
     self.display.setReadOnly(True)
     self.verticalLayout.addWidget(self.display)
     self.display_clear_signal.connect(self.display.clear)
     self.display_append_signal.connect(self.display.append)
     self.display.anchorClicked.connect(self.on_anchorClicked)
 
-    self.status_label = QtGui.QLabel('0 messages', self)
+    self.status_label = QLabel('0 messages', self)
     self.verticalLayout.addWidget(self.status_label)
     self.status_text_signal.connect(self.status_label.setText)
 
@@ -110,7 +114,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
         hostname = nm.nameres().hostname(str(address[0]), resolve=True)
         self._hosts[address[0]] = hostname
       try:
-        (version, msg_tuple) = Discoverer.msg2masterState(msg, address)
+        (_version, _msg_tuple) = Discoverer.msg2masterState(msg, address)
         index = address[1] - self.default_port
         if index not in self._discovered:
           self._discovered[index] = dict()
@@ -133,7 +137,7 @@ class NetworkDiscoveryDialog(QtGui.QDialog, threading.Thread):
 
   def closeEvent(self, event):
     self.stop()
-    QtGui.QDialog.closeEvent(self, event)
+    QDialog.closeEvent(self, event)
 
   def stop(self):
     self._running = False

@@ -31,75 +31,75 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QRegExp, Qt
+from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
 
-class YamlHighlighter(QtGui.QSyntaxHighlighter):
+class YamlHighlighter(QSyntaxHighlighter):
   '''
   Enabled the syntax highlightning for the yaml files.
   '''
 
   def __init__(self, parent=None):
-    QtGui.QSyntaxHighlighter.__init__(self, parent)
+    QSyntaxHighlighter.__init__(self, parent)
     self.rules = []
-    self.commentStart = QtCore.QRegExp("#")
-    self.commentEnd = QtCore.QRegExp("\n|\r")
-    self.default_format = QtGui.QTextCharFormat()
-    self.default_format.setForeground(QtGui.QColor(24, 24, 24))
-    self.commentFormat = QtGui.QTextCharFormat()
+    self.commentStart = QRegExp("#")
+    self.commentEnd = QRegExp("\n|\r")
+    self.default_format = QTextCharFormat()
+    self.default_format.setForeground(QColor(24, 24, 24))
+    self.commentFormat = QTextCharFormat()
     self.commentFormat.setFontItalic(True)
-    self.commentFormat.setForeground(QtCore.Qt.darkGray)
+    self.commentFormat.setForeground(Qt.darkGray)
 
-    f = QtGui.QTextCharFormat()
-    r = QtCore.QRegExp()
+    f = QTextCharFormat()
+    r = QRegExp()
     r.setMinimal(True)
-    f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground(QtCore.Qt.blue)
+    f.setFontWeight(QFont.Normal)
+    f.setForeground(Qt.blue)
     tagList = ["\\btrue\\b", "\\bfalse\\b"]
     for tag in tagList:
       r.setPattern(tag)
-      self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+      self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtGui.QColor(127, 64, 127))
+    f.setForeground(QColor(127, 64, 127))
     r.setPattern("\\d+")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtCore.Qt.darkBlue)
+    f.setForeground(Qt.darkBlue)
     r.setPattern("^\s*[_.\w]*\s*:")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtCore.Qt.darkBlue)
+    f.setForeground(Qt.darkBlue)
     r.setPattern(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setFontWeight(QtGui.QFont.Bold)
-    f.setForeground(QtCore.Qt.darkRed)
+    f.setFontWeight(QFont.Bold)
+    f.setForeground(Qt.darkRed)
     r.setPattern("^\s*-")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtCore.Qt.darkRed)
+    f.setForeground(Qt.darkRed)
     r.setPattern("^---$")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtCore.Qt.darkGreen)
+    f.setForeground(Qt.darkGreen)
     r.setPattern("[\[\]\{\}\,]")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setFontWeight(QtGui.QFont.Normal)
-    f.setForeground(QtCore.Qt.magenta)
+    f.setFontWeight(QFont.Normal)
+    f.setForeground(Qt.magenta)
     r.setPattern("\".*\"|\'.*\'")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtGui.QColor(127, 64, 127))
+    f.setForeground(QColor(127, 64, 127))
     r.setPattern("\\$\\(.*\\)")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QtCore.Qt.lightGray)
+    f.setForeground(Qt.lightGray)
     r.setPattern("<!DOCTYPE.*>")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
     r.setPattern("<\\?xml.*\\?>")
-    self.rules.append((QtCore.QRegExp(r), QtGui.QTextCharFormat(f)))
+    self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
   def highlightBlock(self, text):
     self.setFormat(0, len(text), self.default_format)

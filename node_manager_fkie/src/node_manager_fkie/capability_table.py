@@ -30,8 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding import QtCore
-from python_qt_binding import QtGui
+# from python_qt_binding import QtCore
+from python_qt_binding.QtCore import Signal, Qt, QRect, QSize
+from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette, QPixmap
+try:
+  from python_qt_binding.QtGui import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
+  from python_qt_binding.QtGui import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+except:
+  from python_qt_binding.QtWidgets import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
+  from python_qt_binding.QtWidgets import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
 import os
 import sys
 
@@ -45,7 +52,7 @@ from .common import resolve_paths
 ################################################################################
 ##############                  CapabilityHeader                  ##############
 ################################################################################
-class CapabilityHeader(QtGui.QHeaderView):
+class CapabilityHeader(QHeaderView):
   '''
   This class is used for visualization of robots or capabilities in header of
   the capability table. It is also used to manage the displayed robots or
@@ -53,17 +60,17 @@ class CapabilityHeader(QtGui.QHeaderView):
   overridden to paint the images in background of the cell.
   '''
 
-  description_requested_signal = QtCore.Signal(str, str)
+  description_requested_signal = Signal(str, str)
   '''the signal is emitted by click on a header to show a description.'''
 
   def __init__(self, orientation, parent=None):
-    QtGui.QHeaderView.__init__(self, orientation, parent)
+    QHeaderView.__init__(self, orientation, parent)
     self._data = []
     ''' @ivar a list with dictionaries C{dict('cfgs' : [], 'name': str, 'displayed_name' : str, 'type' : str, 'description' : str, 'images' : [QtGui.QPixmap])}'''
-    if orientation == QtCore.Qt.Horizontal:
-      self.setDefaultAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
-    elif orientation == QtCore.Qt.Vertical:
-      self.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+    if orientation == Qt.Horizontal:
+      self.setDefaultAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+    elif orientation == Qt.Vertical:
+      self.setDefaultAlignment(Qt.AlignLeft | Qt.AlignBottom)
     self.controlWidget = []
 
   def index(self, name):
@@ -85,22 +92,22 @@ class CapabilityHeader(QtGui.QHeaderView):
     @see: L{QtGui.QHeaderView.paintSection()}
     '''
     painter.save()
-    QtGui.QHeaderView.paintSection(self, painter, rect, logicalIndex)
+    QHeaderView.paintSection(self, painter, rect, logicalIndex)
     painter.restore()
 
     if logicalIndex in range(len(self._data)) and self._data[logicalIndex]['images']:
       if len(self._data[logicalIndex]['images']) == 1:
         pix = self._data[logicalIndex]['images'][0]
-        pix = pix.scaled(rect.width(), rect.height() - 20, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        pix = pix.scaled(rect.width(), rect.height() - 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.style().drawItemPixmap(painter, rect, 5, pix)
       elif len(self._data[logicalIndex]['images']) > 1:
-        new_rect = QtCore.QRect(rect.left(), rect.top(), rect.width(), (rect.height() - 20) / 2.)
+        new_rect = QRect(rect.left(), rect.top(), rect.width(), (rect.height() - 20) / 2.)
         pix = self._data[logicalIndex]['images'][0]
-        pix = pix.scaled(new_rect.width(), new_rect.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        pix = pix.scaled(new_rect.width(), new_rect.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.style().drawItemPixmap(painter, new_rect, 5, pix)
-        new_rect = QtCore.QRect(rect.left(), rect.top() + new_rect.height(), rect.width(), new_rect.height())
+        new_rect = QRect(rect.left(), rect.top() + new_rect.height(), rect.width(), new_rect.height())
         pix = self._data[logicalIndex]['images'][1]
-        pix = pix.scaled(new_rect.width(), new_rect.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        pix = pix.scaled(new_rect.width(), new_rect.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.style().drawItemPixmap(painter, new_rect, 5, pix)
 
   def mousePressEvent(self, event):
@@ -108,11 +115,11 @@ class CapabilityHeader(QtGui.QHeaderView):
     Interpret the mouse events to send the description of a robot or capability
     if the user click on the header.
     '''
-    QtGui.QHeaderView.mousePressEvent(self, event)
+    QHeaderView.mousePressEvent(self, event)
     index = self.logicalIndexAt(event.pos())
     if index in range(len(self._data)):
       suffix = 'Capability'
-      if self.orientation() == QtCore.Qt.Horizontal:
+      if self.orientation() == Qt.Horizontal:
         suffix = 'Robot'
       title = ' - '.join([self._data[index]['name'], suffix])
       text = self._data[index]['description']
@@ -142,7 +149,7 @@ class CapabilityHeader(QtGui.QHeaderView):
         if img and img[0] != os.path.sep:
           img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
         if os.path.isfile(img):
-          obj['images'].append(QtGui.QPixmap(img))
+          obj['images'].append(QPixmap(img))
 
   def updateDescription(self, index, cfg, name, displayed_name, robot_type, description, images):
     '''
@@ -167,7 +174,7 @@ class CapabilityHeader(QtGui.QHeaderView):
           if img and img[0] != os.path.sep:
             img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
           if os.path.isfile(img):
-            obj['images'].append(QtGui.QPixmap(img))
+            obj['images'].append(QPixmap(img))
 
   def removeDescription(self, index):
     '''
@@ -245,57 +252,57 @@ class CapabilityHeader(QtGui.QHeaderView):
 ##############              CapabilityControlWidget               ##############
 ################################################################################
 
-class CapabilityControlWidget(QtGui.QFrame):
+class CapabilityControlWidget(QFrame):
   '''
   The control widget contains buttons for control a capability. Currently this
   are C{On} and C{Off} buttons. Additionally, the state of the capability is
   color coded.
   '''
 
-  start_nodes_signal = QtCore.Signal(str, str, list)
+  start_nodes_signal = Signal(str, str, list)
   '''@ivar: the signal is emitted to start on host(described by masteruri) the nodes described in the list, Parameter(masteruri, config, nodes).'''
 
-  stop_nodes_signal = QtCore.Signal(str, list)
+  stop_nodes_signal = Signal(str, list)
   '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
   def __init__(self, masteruri, cfg, ns, nodes, parent=None):
-    QtGui.QFrame.__init__(self, parent)
+    QFrame.__init__(self, parent)
     self._masteruri = masteruri
     self._nodes = {cfg: {ns: nodes}}
-    frame_layout = QtGui.QVBoxLayout(self)
+    frame_layout = QVBoxLayout(self)
     frame_layout.setContentsMargins(0, 0, 0, 0)
     # create frame for warning label
-    self.warning_frame = warning_frame = QtGui.QFrame(self)
-    warning_layout = QtGui.QHBoxLayout(warning_frame)
+    self.warning_frame = warning_frame = QFrame(self)
+    warning_layout = QHBoxLayout(warning_frame)
     warning_layout.setContentsMargins(0, 0, 0, 0)
-    warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
-    self.warning_label = QtGui.QLabel()
-    icon = QtGui.QIcon(':/icons/crystal_clear_warning.png')
-    self.warning_label.setPixmap(icon.pixmap(QtCore.QSize(40, 40)))
+    warning_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
+    self.warning_label = QLabel()
+    icon = QIcon(':/icons/crystal_clear_warning.png')
+    self.warning_label.setPixmap(icon.pixmap(QSize(40, 40)))
     self.warning_label.setToolTip('Multiple configuration for same node found!\nA first one will be selected for the start a node!')
     warning_layout.addWidget(self.warning_label)
-    warning_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
-    frame_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    warning_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
+    frame_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
     frame_layout.addWidget(warning_frame)
     # create frame for start/stop buttons
-    buttons_frame = QtGui.QFrame()
-    buttons_layout = QtGui.QHBoxLayout(buttons_frame)
+    buttons_frame = QFrame()
+    buttons_layout = QHBoxLayout(buttons_frame)
     buttons_layout.setContentsMargins(0, 0, 0, 0)
-    buttons_layout.addItem(QtGui.QSpacerItem(20, 20))
-    self.on_button = QtGui.QPushButton()
+    buttons_layout.addItem(QSpacerItem(20, 20))
+    self.on_button = QPushButton()
     self.on_button.setFlat(False)
     self.on_button.setText("On")
     self.on_button.clicked.connect(self.on_on_clicked)
     buttons_layout.addWidget(self.on_button)
 
-    self.off_button = QtGui.QPushButton()
+    self.off_button = QPushButton()
     self.off_button.setFlat(True)
     self.off_button.setText("Off")
     self.off_button.clicked.connect(self.on_off_clicked)
     buttons_layout.addWidget(self.off_button)
-    buttons_layout.addItem(QtGui.QSpacerItem(20, 20))
+    buttons_layout.addItem(QSpacerItem(20, 20))
     frame_layout.addWidget(buttons_frame)
-    frame_layout.addItem(QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+    frame_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
     self.warning_frame.setVisible(False)
 
   def hasConfigs(self):
@@ -330,23 +337,23 @@ class CapabilityControlWidget(QtGui.QFrame):
     @type error_nodes: C{[str]}
     '''
     self.setAutoFillBackground(True)
-    self.setBackgroundRole(QtGui.QPalette.Base)
-    palette = QtGui.QPalette()
+    self.setBackgroundRole(QPalette.Base)
+    palette = QPalette()
     if error_nodes:
-      brush = QtGui.QBrush(QtGui.QColor(255, 100, 0))
+      brush = QBrush(QColor(255, 100, 0))
     elif running_nodes and stopped_nodes:
-      brush = QtGui.QBrush(QtGui.QColor(140, 185, 255))  # 30, 50, 255
+      brush = QBrush(QColor(140, 185, 255))  # 30, 50, 255
     elif running_nodes:
       self.on_button.setFlat(True)
       self.off_button.setFlat(False)
-      brush = QtGui.QBrush(QtGui.QColor(59, 223, 18))  # 59, 223, 18
+      brush = QBrush(QColor(59, 223, 18))  # 59, 223, 18
     else:
-      brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+      brush = QBrush(QColor(255, 255, 255))
       self.on_button.setFlat(False)
       self.off_button.setFlat(True)
-    palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Base, brush)
-    brush.setStyle(QtCore.Qt.SolidPattern)
-    palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
+    palette.setBrush(QPalette.Active, QPalette.Base, brush)
+    brush.setStyle(Qt.SolidPattern)
+    palette.setBrush(QPalette.Inactive, QPalette.Base, brush)
     self.setPalette(palette)
 
   def removeCfg(self, cfg):
@@ -379,7 +386,7 @@ class CapabilityControlWidget(QtGui.QFrame):
 ##############                  CapabilityTable                   ##############
 ################################################################################
 
-class CapabilityTable(QtGui.QTableWidget):
+class CapabilityTable(QTableWidget):
   '''
   The table shows all detected capabilities of robots in tabular view. The
   columns represents the robot and rows the capabilities. The cell of available
@@ -387,21 +394,21 @@ class CapabilityTable(QtGui.QTableWidget):
   the capability.
   '''
 
-  start_nodes_signal = QtCore.Signal(str, str, list)
+  start_nodes_signal = Signal(str, str, list)
   '''@ivar: the signal is emitted to start on host(described by masteruri) the nodes described in the list, Parameter(masteruri, config, nodes).'''
 
-  stop_nodes_signal = QtCore.Signal(str, list)
+  stop_nodes_signal = Signal(str, list)
   '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
-  description_requested_signal = QtCore.Signal(str, str)
+  description_requested_signal = Signal(str, str)
   '''@ivar: the signal is emitted by click on a header to show a description.'''
 
   def __init__(self, parent=None):
-    QtGui.QTableWidget.__init__(self, parent)
-    self._robotHeader = CapabilityHeader(QtCore.Qt.Horizontal, self)
+    QTableWidget.__init__(self, parent)
+    self._robotHeader = CapabilityHeader(Qt.Horizontal, self)
     self._robotHeader.description_requested_signal.connect(self._show_description)
     self.setHorizontalHeader(self._robotHeader)
-    self._capabilityHeader = CapabilityHeader(QtCore.Qt.Vertical, self)
+    self._capabilityHeader = CapabilityHeader(Qt.Vertical, self)
     self._capabilityHeader.description_requested_signal.connect(self._show_description)
     self.setVerticalHeader(self._capabilityHeader)
 
@@ -425,8 +432,8 @@ class CapabilityTable(QtGui.QTableWidget):
 #      robot_index = self.columnCount()-1
 #      self._robotHeader.insertItem(robot_index)
       self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
-      item = QtGui.QTableWidgetItem()
-      item.setSizeHint(QtCore.QSize(96, 96))
+      item = QTableWidgetItem()
+      item.setSizeHint(QSize(96, 96))
       self.setHorizontalHeaderItem(robot_index, item)
       self.horizontalHeaderItem(robot_index).setText(robot_name)
     else:
@@ -442,8 +449,8 @@ class CapabilityTable(QtGui.QTableWidget):
         self.insertRow(cap_index)
         self.setRowHeight(cap_index, 96)
         self._capabilityHeader.setDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
-        item = QtGui.QTableWidgetItem()
-        item.setSizeHint(QtCore.QSize(96, 96))
+        item = QTableWidgetItem()
+        item.setSizeHint(QSize(96, 96))
         self.setVerticalHeaderItem(cap_index, item)
         self.verticalHeaderItem(cap_index).setText(c.name.decode(sys.getfilesystemencoding()))
         # add the capability control widget

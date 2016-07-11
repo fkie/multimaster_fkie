@@ -29,7 +29,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-from python_qt_binding import QtCore
+from python_qt_binding.QtCore import QObject
 import os
 
 import rospy
@@ -37,7 +37,7 @@ import rospy
 import node_manager_fkie as nm
 
 
-class History(QtCore.QObject):
+class History(QObject):
 
   PARAM_CACHE = dict()
   '''
@@ -45,7 +45,7 @@ class History(QtCore.QObject):
   '''
 
   def __init__(self):
-    QtCore.QObject.__init__(self)
+    QObject.__init__(self)
     self.PARAM_CACHE = self.loadCache(nm.settings().PARAM_HISTORY_FILE)
 
   def storeAll(self):
