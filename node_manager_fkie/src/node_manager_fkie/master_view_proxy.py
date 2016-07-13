@@ -488,7 +488,7 @@ class MasterViewProxy(QWidget):
       return self.master_info.node_names
     return []
 
-  def getRunningNodesIfLocal(self):
+  def getRunningNodesIfLocal(self, remove_system_nodes=False):
     '''
     Returns the list with all running nodes, which are running (has process) on this host.
     The nodes registered on this ROS master, but running on remote hosts are not
@@ -500,7 +500,8 @@ class MasterViewProxy(QWidget):
     if self.master_info is not None:
       for _, node in self.master_info.nodes.items():  # _:=name
         if node.isLocal:
-          result[node.name] = self.master_info.masteruri
+          if not remove_system_nodes or not self._is_in_ignore_list(node.name):
+            result[node.name] = self.master_info.masteruri
     return result
 
   def updateRunningNodesInModel(self, master_info):
