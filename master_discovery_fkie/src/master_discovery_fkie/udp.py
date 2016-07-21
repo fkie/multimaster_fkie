@@ -113,9 +113,11 @@ class DiscoverSocket(socket.socket):
             rospy.loginfo("Listen for multicast at ('%s', %d)", self.mgroup, port)
             # initialize multicast socket
             # Allow multiple copies of this program on one machine
-            self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             if hasattr(socket, "SO_REUSEPORT"):
-                self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+                try:
+                    self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+                except:
+                    rospy.logwarn("SO_REUSEPORT failed: Protocol not available, some functions are not available.")
             # Set Time-to-live (optional) and loop count
             ttl_bin = struct.pack('@i', ttl)
             if addrinfo[0] == socket.AF_INET:  # IPv4
@@ -398,9 +400,11 @@ class UcastSocket(socket.socket):
 
         # Allow multiple copies of this program on one machine
         # Required to receive unicast UDP
-        self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if hasattr(socket, "SO_REUSEPORT"):
-            self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            try:
+                self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except:
+                rospy.logwarn("SO_REUSEPORT failed: Protocol not available, some functions are not available.")
 
         # Bind to the port
         try:

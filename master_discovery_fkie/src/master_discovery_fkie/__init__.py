@@ -105,7 +105,8 @@ def main():
         discoverer.start()
         rospy.spin()
     except Exception as e:
-        rospy.logerr("Error while start master_discovery: %s", str(e))
+        import traceback
+        rospy.logerr("%s\nError while start master_discovery: %s" % (traceback.format_exc(), str(e)))
         os.kill(os.getpid(), signal.SIGKILL)
         import time
         time.sleep(10)
