@@ -46,88 +46,88 @@ PROCESS_NAME = "master_discovery"
 
 
 def get_default_rtcp_port(zeroconf=False):
-  try:
-    from master_discovery_fkie.common import masteruri_from_ros
-    masteruri = masteruri_from_ros()
-    rospy.loginfo("ROS Master URI: %s", masteruri)
-    from urlparse import urlparse
-    return urlparse(masteruri).port + (600 if zeroconf else 300)
-  except:
-    import traceback
-    print traceback.format_exc()
-    return 11911 if zeroconf else 11611
+    try:
+        from master_discovery_fkie.common import masteruri_from_ros
+        masteruri = masteruri_from_ros()
+        rospy.loginfo("ROS Master URI: %s", masteruri)
+        from urlparse import urlparse
+        return urlparse(masteruri).port + (600 if zeroconf else 300)
+    except:
+        import traceback
+        print traceback.format_exc()
+        return 11911 if zeroconf else 11611
 
 
 def set_terminal_name(name):
-  '''
-  Change the terminal name.
-  @param name: New name of the terminal
-  @type name:  str
-  '''
-  sys.stdout.write("\x1b]2;%s\x07" % name)
+    '''
+    Change the terminal name.
+    @param name: New name of the terminal
+    @type name:  str
+    '''
+    sys.stdout.write("\x1b]2;%s\x07" % name)
 
 
 def set_process_name(name):
-  '''
-  Change the process name.
-  @param name: New process name
-  @type name:  str
-  '''
-  try:
-    from ctypes import cdll, byref, create_string_buffer
-    libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(len(name) + 1)
-    buff.value = name
-    libc.prctl(15, byref(buff), 0, 0, 0)
-  except:
-    pass
+    '''
+    Change the process name.
+    @param name: New process name
+    @type name:  str
+    '''
+    try:
+        from ctypes import cdll, byref, create_string_buffer
+        libc = cdll.LoadLibrary('libc.so.6')
+        buff = create_string_buffer(len(name) + 1)
+        buff.value = name
+        libc.prctl(15, byref(buff), 0, 0, 0)
+    except:
+        pass
 
 
 def main():
-  '''
-  Creates and runs the ROS node using multicast messages for discovering
-  '''
-  import master_discovery_fkie.master_discovery as master_discovery
-  # setup the loglevel
-  try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
-  except Exception as e:
-    print "Error while set the log level: %s\n->INFO level will be used!" % e
-    log_level = rospy.INFO
-  rospy.init_node(PROCESS_NAME, log_level=log_level)
-  set_terminal_name(PROCESS_NAME)
-  set_process_name(PROCESS_NAME)
-  mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
-  mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
-  rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port())
-  try:
-    discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
-    discoverer.start()
-    rospy.spin()
-  except Exception as e:
-    rospy.logerr("Error while start master_discovery: %s", str(e))
-    os.kill(os.getpid(), signal.SIGKILL)
-    import time
-    time.sleep(10)
+    '''
+    Creates and runs the ROS node using multicast messages for discovering
+    '''
+    import master_discovery_fkie.master_discovery as master_discovery
+    # setup the loglevel
+    try:
+        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
+    except Exception as e:
+        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        log_level = rospy.INFO
+    rospy.init_node(PROCESS_NAME, log_level=log_level)
+    set_terminal_name(PROCESS_NAME)
+    set_process_name(PROCESS_NAME)
+    mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
+    mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
+    rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port())
+    try:
+        discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
+        discoverer.start()
+        rospy.spin()
+    except Exception as e:
+        rospy.logerr("Error while start master_discovery: %s", str(e))
+        os.kill(os.getpid(), signal.SIGKILL)
+        import time
+        time.sleep(10)
 
 
 def main_zeroconf():
-  '''
-  Creates and runs the ROS node using zeroconf/avahi for discovering
-  '''
-  import master_discovery_fkie.zeroconf as zeroconf
-  PROCESS_NAME = "zeroconf"
-  # setup the loglevel
-  try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
-  except Exception as e:
-    print "Error while set the log level: %s\n->INFO level will be used!" % e
-    log_level = rospy.INFO
-  rospy.init_node(PROCESS_NAME, log_level=log_level)
-  set_terminal_name(rospy.get_name())
-  set_process_name(rospy.get_name())
-  mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
-  rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port(True))
-  discoverer = zeroconf.Discoverer(rpc_port, mcast_port - MCAST_PORT)
-  discoverer.start()
-  rospy.spin()
+    '''
+    Creates and runs the ROS node using zeroconf/avahi for discovering
+    '''
+    import master_discovery_fkie.zeroconf as zeroconf
+    PROCESS_NAME = "zeroconf"
+    # setup the loglevel
+    try:
+        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
+    except Exception as e:
+        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        log_level = rospy.INFO
+    rospy.init_node(PROCESS_NAME, log_level=log_level)
+    set_terminal_name(rospy.get_name())
+    set_process_name(rospy.get_name())
+    mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
+    rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port(True))
+    discoverer = zeroconf.Discoverer(rpc_port, mcast_port - MCAST_PORT)
+    discoverer.start()
+    rospy.spin()

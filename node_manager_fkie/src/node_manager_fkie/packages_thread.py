@@ -40,39 +40,39 @@ from .common import get_packages
 
 
 class PackagesThread(QObject, threading.Thread):
-  '''
-  A thread to list all available ROS packages and
-  publish there be sending a QT signal.
-  '''
-  packages = Signal(dict)
-  '''
+    '''
+    A thread to list all available ROS packages and
+    publish there be sending a QT signal.
+    '''
+    packages = Signal(dict)
+    '''
   @ivar: packages is a signal, which is emitted, if a list with ROS packages was
   created {package : path}.
   '''
 
-  def __init__(self):
-    '''
-    '''
-    QObject.__init__(self)
-    threading.Thread.__init__(self)
-    self.setDaemon(True)
+    def __init__(self):
+        '''
+        '''
+        QObject.__init__(self)
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
 
-  def run(self):
-    '''
-    '''
-    try:
-      # fill the input fields
-      root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-      packages = {}
-      for p in root_paths:
-        ret = get_packages(p)
-        packages = dict(ret.items() + packages.items())
-      self.packages.emit(packages)
-    except:
-      import traceback
-      formatted_lines = traceback.format_exc(1).splitlines()
-      print "Error while list packages:\n\t%s" % traceback.format_exc()
-      try:
-        rospy.logwarn("Error while list packages:\n\t%s", formatted_lines[-1])
-      except:
-        pass
+    def run(self):
+        '''
+        '''
+        try:
+            # fill the input fields
+            root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+            packages = {}
+            for p in root_paths:
+                ret = get_packages(p)
+                packages = dict(ret.items() + packages.items())
+            self.packages.emit(packages)
+        except:
+            import traceback
+            formatted_lines = traceback.format_exc(1).splitlines()
+            print "Error while list packages:\n\t%s" % traceback.format_exc()
+            try:
+                rospy.logwarn("Error while list packages:\n\t%s", formatted_lines[-1])
+            except:
+                pass

@@ -37,44 +37,44 @@ import rospy
 
 
 class RosoutListener(QObject):
-  '''
-  A class to receive the ROS master state updates from a ROS topic. The topic
-  will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
-  '''
-  rosinfo_signal = Signal(Log)
-  roswarn_signal = Signal(Log)
-  roserr_signal = Signal(Log)
-  rosfatal_signal = Signal(Log)
+    '''
+    A class to receive the ROS master state updates from a ROS topic. The topic
+    will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
+    '''
+    rosinfo_signal = Signal(Log)
+    roswarn_signal = Signal(Log)
+    roserr_signal = Signal(Log)
+    rosfatal_signal = Signal(Log)
 
-  def registerByROS(self):
-    '''
-    This method creates a ROS subscriber to received the notifications of ROS
-    Logs. The retrieved messages will be emitted as *_signal.
-    '''
-    self.sub_rosout = None
-    rospy.loginfo("listen for logs on %s", '/rosout')
-    self.sub_rosout = rospy.Subscriber('/rosout', Log, self._on_log)
+    def registerByROS(self):
+        '''
+        This method creates a ROS subscriber to received the notifications of ROS
+        Logs. The retrieved messages will be emitted as *_signal.
+        '''
+        self.sub_rosout = None
+        rospy.loginfo("listen for logs on %s", '/rosout')
+        self.sub_rosout = rospy.Subscriber('/rosout', Log, self._on_log)
 
-  def stop(self):
-    '''
-    Unregister the subscribed topic
-    '''
-    if hasattr(self, 'sub_rosout'):
-      self.sub_rosout.unregister()
-      del self.sub_rosout
+    def stop(self):
+        '''
+        Unregister the subscribed topic
+        '''
+        if hasattr(self, 'sub_rosout'):
+            self.sub_rosout.unregister()
+            del self.sub_rosout
 
-  def _on_log(self, msg):
-    '''
-    The method to handle the received Log messages.
-    @param msg: the received message
-    @type msg: L{rosgraph_msgs.Log}
-    '''
-    if msg.name == rospy.get_name():
-      if msg.level == Log.INFO:
-        self.rosinfo_signal.emit(msg)
-      elif msg.level == Log.WARN:
-        self.roswarn_signal.emit(msg)
-      elif msg.level == Log.ERROR:
-        self.roserr_signal.emit(msg)
-      elif msg.level == Log.FATAL:
-        self.rosfatal_signal.emit(msg)
+    def _on_log(self, msg):
+        '''
+        The method to handle the received Log messages.
+        @param msg: the received message
+        @type msg: L{rosgraph_msgs.Log}
+        '''
+        if msg.name == rospy.get_name():
+            if msg.level == Log.INFO:
+                self.rosinfo_signal.emit(msg)
+            elif msg.level == Log.WARN:
+                self.roswarn_signal.emit(msg)
+            elif msg.level == Log.ERROR:
+                self.roserr_signal.emit(msg)
+            elif msg.level == Log.FATAL:
+                self.rosfatal_signal.emit(msg)

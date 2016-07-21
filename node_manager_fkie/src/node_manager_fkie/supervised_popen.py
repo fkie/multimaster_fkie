@@ -32,9 +32,9 @@
 
 from python_qt_binding.QtCore import QObject, Signal
 try:
-  from python_qt_binding.QtGui import QMessageBox
+    from python_qt_binding.QtGui import QMessageBox
 except:
-  from python_qt_binding.QtWidgets import QMessageBox
+    from python_qt_binding.QtWidgets import QMessageBox
 import subprocess
 import threading
 
@@ -42,68 +42,68 @@ from .detailed_msg_box import WarningMessageBox
 
 
 class SupervisedPopen(QObject, subprocess.Popen):
-  '''
-  The class overrides the subprocess.Popen and waits in a thread for its finish.
-  If an error is printed out, it will be shown in a message dialog.
-  '''
-  error = Signal(str, str, str)
-  '''@ivar: the signal is emitted if error output was detected (id, decription, message)'''
-
-  finished = Signal(str)
-  '''@ivar: the signal is emitted on exit (id)'''
-
-  def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None,
-               stderr=subprocess.PIPE, preexec_fn=None, close_fds=False,
-               shell=False, cwd=None, env=None, universal_newlines=False,
-               startupinfo=None, creationflags=0, object_id='', description=''):
     '''
-    For arguments see https://docs.python.org/2/library/subprocess.html
-    Additional arguments:
-    :param object_id: the identification string of this object and title of the
-                      error message dialog
-    :type object_id: str
-    :param description: the description string used as addiotional information
-                        in dialog if an error was occured
-    :type description: str
+    The class overrides the subprocess.Popen and waits in a thread for its finish.
+    If an error is printed out, it will be shown in a message dialog.
     '''
-    try:
-      try:
-        super(SupervisedPopen, self).__init__(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
-                                              stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds,
-                                              shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines,
-                                              startupinfo=startupinfo, creationflags=creationflags)
-      except:
-        subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout,
-                                  stderr, preexec_fn, close_fds, shell, cwd, env,
-                                  universal_newlines, startupinfo, creationflags)
-        QObject.__init__(self)
-      self._args = args
-      self._object_id = object_id
-      self._description = description
-      self.error.connect(self.on_error)
-      # wait for process to avoid 'defunct' processes
-      thread = threading.Thread(target=self._supervise)
-      thread.setDaemon(True)
-      thread.start()
-    except Exception as _:
-      raise
+    error = Signal(str, str, str)
+    '''@ivar: the signal is emitted if error output was detected (id, decription, message)'''
+
+    finished = Signal(str)
+    '''@ivar: the signal is emitted on exit (id)'''
+
+    def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None,
+                 stderr=subprocess.PIPE, preexec_fn=None, close_fds=False,
+                 shell=False, cwd=None, env=None, universal_newlines=False,
+                 startupinfo=None, creationflags=0, object_id='', description=''):
+        '''
+        For arguments see https://docs.python.org/2/library/subprocess.html
+        Additional arguments:
+        :param object_id: the identification string of this object and title of the
+                          error message dialog
+        :type object_id: str
+        :param description: the description string used as addiotional information
+                            in dialog if an error was occured
+        :type description: str
+        '''
+        try:
+            try:
+                super(SupervisedPopen, self).__init__(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
+                                                      stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds,
+                                                      shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines,
+                                                      startupinfo=startupinfo, creationflags=creationflags)
+            except:
+                subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout,
+                                          stderr, preexec_fn, close_fds, shell, cwd, env,
+                                          universal_newlines, startupinfo, creationflags)
+                QObject.__init__(self)
+            self._args = args
+            self._object_id = object_id
+            self._description = description
+            self.error.connect(self.on_error)
+            # wait for process to avoid 'defunct' processes
+            thread = threading.Thread(target=self._supervise)
+            thread.setDaemon(True)
+            thread.start()
+        except Exception as _:
+            raise
 
 #   def __del__(self):
 #     print "Deleted:", self._description
 
-  def _supervise(self):
-    '''
-    Wait for process to avoid 'defunct' processes
-    '''
-    self.wait()
-    result_err = ''
-    if self.stderr is not None:
-      result_err = self.stderr.read()
-    if result_err:
-      self.error.emit(self._object_id, self._description, result_err)
-    self.finished.emit(self._object_id)
+    def _supervise(self):
+        '''
+        Wait for process to avoid 'defunct' processes
+        '''
+        self.wait()
+        result_err = ''
+        if self.stderr is not None:
+            result_err = self.stderr.read()
+        if result_err:
+            self.error.emit(self._object_id, self._description, result_err)
+        self.finished.emit(self._object_id)
 
-  def on_error(self, object_id, descr, msg):
-    print "ON ERROR"
-    WarningMessageBox(QMessageBox.Warning, object_id, '%s\n\n'
-                      '%s' % (descr, msg), ' '.join(self._args)).exec_()
+    def on_error(self, object_id, descr, msg):
+        print "ON ERROR"
+        WarningMessageBox(QMessageBox.Warning, object_id, '%s\n\n'
+                          '%s' % (descr, msg), ' '.join(self._args)).exec_()

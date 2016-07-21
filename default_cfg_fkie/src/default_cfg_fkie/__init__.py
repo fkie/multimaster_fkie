@@ -47,51 +47,51 @@ PROCESS_NAME = "default_cfg"
 
 
 def set_terminal_name(name):
-  '''
-  Change the terminal name.
-  @param name: New name of the terminal
-  @type name:  C{str}
-  '''
-  sys.stdout.write("".join(["\x1b]2;", name, "\x07"]))
+    '''
+    Change the terminal name.
+    @param name: New name of the terminal
+    @type name:  C{str}
+    '''
+    sys.stdout.write("".join(["\x1b]2;", name, "\x07"]))
 
 
 def set_process_name(name):
-  '''
-  Change the process name.
-  @param name: New process name
-  @type name:  C{str}
-  '''
-  try:
-    from ctypes import cdll, byref, create_string_buffer
-    libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(len(name) + 1)
-    buff.value = name
-    libc.prctl(15, byref(buff), 0, 0, 0)
-  except:
-    pass
+    '''
+    Change the process name.
+    @param name: New process name
+    @type name:  C{str}
+    '''
+    try:
+        from ctypes import cdll, byref, create_string_buffer
+        libc = cdll.LoadLibrary('libc.so.6')
+        buff = create_string_buffer(len(name) + 1)
+        buff.value = name
+        libc.prctl(15, byref(buff), 0, 0, 0)
+    except:
+        pass
 
 
 def main():
-  '''
-  Creates and runs the ROS node
-  '''
-  # setup the loglevel
-  try:
-    log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
-  except Exception as e:
-    print "Error while set the log level: %s\n->INFO level will be used!" % e
-    log_level = rospy.INFO
-  rospy.init_node(PROCESS_NAME, log_level=log_level)
-  set_terminal_name(PROCESS_NAME)
-  set_process_name(PROCESS_NAME)
-  try:
-    default_cfg = DefaultCfg()
-    default_cfg.load()
-  except:
-    # on load error the process will be killed to notify user in node_manager
-    # about error
-    rospy.logwarn("%s", traceback.format_exc())
-    sys.stdout.write(traceback.format_exc())
-    sys.stdout.flush()
-    os.kill(os.getpid(), signal.SIGKILL)
-  rospy.spin()
+    '''
+    Creates and runs the ROS node
+    '''
+    # setup the loglevel
+    try:
+        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
+    except Exception as e:
+        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        log_level = rospy.INFO
+    rospy.init_node(PROCESS_NAME, log_level=log_level)
+    set_terminal_name(PROCESS_NAME)
+    set_process_name(PROCESS_NAME)
+    try:
+        default_cfg = DefaultCfg()
+        default_cfg.load()
+    except:
+        # on load error the process will be killed to notify user in node_manager
+        # about error
+        rospy.logwarn("%s", traceback.format_exc())
+        sys.stdout.write(traceback.format_exc())
+        sys.stdout.flush()
+        os.kill(os.getpid(), signal.SIGKILL)
+    rospy.spin()

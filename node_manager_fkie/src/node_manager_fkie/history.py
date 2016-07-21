@@ -39,107 +39,107 @@ import node_manager_fkie as nm
 
 class History(QObject):
 
-  PARAM_CACHE = dict()
-  '''
+    PARAM_CACHE = dict()
+    '''
   the cache is used to store and recover the value for last entered parameter in parameter dialog.
   '''
 
-  def __init__(self):
-    QObject.__init__(self)
-    self.PARAM_CACHE = self.loadCache(nm.settings().PARAM_HISTORY_FILE)
+    def __init__(self):
+        QObject.__init__(self)
+        self.PARAM_CACHE = self.loadCache(nm.settings().PARAM_HISTORY_FILE)
 
-  def storeAll(self):
-    self.storeCache(nm.settings().PARAM_HISTORY_FILE, self.PARAM_CACHE, nm.settings().param_history_length)
+    def storeAll(self):
+        self.storeCache(nm.settings().PARAM_HISTORY_FILE, self.PARAM_CACHE, nm.settings().param_history_length)
 
-  def cachedParamValues(self, key):
-    try:
-      return list(self.PARAM_CACHE[key])
-    except:
-      result = []
-      return result
-
-  def addParamCache(self, key, value):
-    self._add2Cache(self.PARAM_CACHE, key, value)
-
-  def removeParamCache(self, key, value):
-    self._removeFromCache(self.PARAM_CACHE, key, value)
-
-  def loadCache(self, history_file):
-    '''
-    Loads the content of the given file and return it as cache.
-    @param history_file: the name of the history file
-    @type history_file: C{str}
-    @return: the dictionary with arguments
-    @rtype: C{dict(str(name):[str(value), ...], ...)}
-    '''
-    result = {}
-    historyFile = os.path.join(nm.settings().cfg_path, history_file)
-    if os.path.isfile(historyFile):
-      with open(historyFile, 'r') as f:
-        line = f.readline()
-        while line:
-          if line:
-            line = line.strip()
-            if line:
-              key, sep, value = line.partition(':=')
-              if sep:
-                if key not in result.keys():
-                  result[key] = [value]
-                elif len(result[key]) <= nm.settings().param_history_length:
-                  result[key].append(value)
-          line = f.readline()
-    return result
-
-  def storeCache(self, history_file, cache, history_len):
-    '''
-    Stores the cache to a file.
-    @param history_file: the name of the history file
-    @type history_file: C{str}
-    @param cache: the dictionary with values
-    @type cache: C{dict}
-    @param history_len: the maximal count of value for a key
-    @type history_len: C{int}
-    '''
-    ignored = dict()
-    with open(os.path.join(nm.settings().cfg_path, history_file), 'w') as f:
-      for key in cache.keys():
-        count = 0
-        for value in cache[key]:
-          if count < history_len:
-            try:
-              f.write(''.join([key, ':=', value, '\n']))
-            except UnicodeEncodeError, e:
-              ignored[key] = (value, str(e))
-            except:
-              import traceback
-              rospy.logwarn("Storing history aborted: %s", traceback.format_exc(1))
-            count += 1
-          else:
-            break
-    if ignored:
-      rospy.logwarn("Error while storing follow keys: %s", str(ignored))
-
-  def _add2Cache(self, cache, key, value):
-    uvalue = unicode(value)
-    if key and uvalue:
-      if key not in cache:
-        cache[key] = [uvalue]
-      elif uvalue not in cache[key]:
-        cache[key].insert(0, uvalue)
-        if len(cache[key]) >= nm.settings().param_history_length:
-          cache[key].pop()
-      else:
-        cache[key].remove(uvalue)
-        cache[key].insert(0, uvalue)
-
-  def _removeFromCache(self, cache, key, value):
-    uvalue = unicode(value)
-    if key and uvalue:
-      if key in cache:
-        value_list = cache[key]
+    def cachedParamValues(self, key):
         try:
-          value_list.remove(uvalue)
+            return list(self.PARAM_CACHE[key])
         except:
-          pass
-        if len(value_list) == 0:
-          del cache[key]
+            result = []
+            return result
+
+    def addParamCache(self, key, value):
+        self._add2Cache(self.PARAM_CACHE, key, value)
+
+    def removeParamCache(self, key, value):
+        self._removeFromCache(self.PARAM_CACHE, key, value)
+
+    def loadCache(self, history_file):
+        '''
+        Loads the content of the given file and return it as cache.
+        @param history_file: the name of the history file
+        @type history_file: C{str}
+        @return: the dictionary with arguments
+        @rtype: C{dict(str(name):[str(value), ...], ...)}
+        '''
+        result = {}
+        historyFile = os.path.join(nm.settings().cfg_path, history_file)
+        if os.path.isfile(historyFile):
+            with open(historyFile, 'r') as f:
+                line = f.readline()
+                while line:
+                    if line:
+                        line = line.strip()
+                        if line:
+                            key, sep, value = line.partition(':=')
+                            if sep:
+                                if key not in result.keys():
+                                    result[key] = [value]
+                                elif len(result[key]) <= nm.settings().param_history_length:
+                                    result[key].append(value)
+                    line = f.readline()
+        return result
+
+    def storeCache(self, history_file, cache, history_len):
+        '''
+        Stores the cache to a file.
+        @param history_file: the name of the history file
+        @type history_file: C{str}
+        @param cache: the dictionary with values
+        @type cache: C{dict}
+        @param history_len: the maximal count of value for a key
+        @type history_len: C{int}
+        '''
+        ignored = dict()
+        with open(os.path.join(nm.settings().cfg_path, history_file), 'w') as f:
+            for key in cache.keys():
+                count = 0
+                for value in cache[key]:
+                    if count < history_len:
+                        try:
+                            f.write(''.join([key, ':=', value, '\n']))
+                        except UnicodeEncodeError, e:
+                            ignored[key] = (value, str(e))
+                        except:
+                            import traceback
+                            rospy.logwarn("Storing history aborted: %s", traceback.format_exc(1))
+                        count += 1
+                    else:
+                        break
+        if ignored:
+            rospy.logwarn("Error while storing follow keys: %s", str(ignored))
+
+    def _add2Cache(self, cache, key, value):
+        uvalue = unicode(value)
+        if key and uvalue:
+            if key not in cache:
+                cache[key] = [uvalue]
+            elif uvalue not in cache[key]:
+                cache[key].insert(0, uvalue)
+                if len(cache[key]) >= nm.settings().param_history_length:
+                    cache[key].pop()
+            else:
+                cache[key].remove(uvalue)
+                cache[key].insert(0, uvalue)
+
+    def _removeFromCache(self, cache, key, value):
+        uvalue = unicode(value)
+        if key and uvalue:
+            if key in cache:
+                value_list = cache[key]
+                try:
+                    value_list.remove(uvalue)
+                except:
+                    pass
+                if len(value_list) == 0:
+                    del cache[key]

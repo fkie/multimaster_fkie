@@ -40,177 +40,177 @@ import node_manager_fkie as nm
 
 
 try:
-  from multimaster_msgs_fkie.srv import ListDescription, ListNodes  # , LoadLaunch, Task
+    from multimaster_msgs_fkie.srv import ListDescription, ListNodes  # , LoadLaunch, Task
 except ImportError, e:
-  import sys
-  print >> sys.stderr, "Can't import services of default_cfg_fkie. Is default_cfg_fkie package compiled?"
-  raise ImportError(str(e))
+    import sys
+    print >> sys.stderr, "Can't import services of default_cfg_fkie. Is default_cfg_fkie package compiled?"
+    raise ImportError(str(e))
 
 
 class DefaultConfigHandler(QObject):
-  '''
-  A class to retrieve the list of nodes from the default configuration service.
-  The received node list will be published by sending a QT signal. To retrieve
-  the configuration a new thread will be created.
-  '''
-  node_list_signal = Signal(str, str, list)
-  '''
+    '''
+    A class to retrieve the list of nodes from the default configuration service.
+    The received node list will be published by sending a QT signal. To retrieve
+    the configuration a new thread will be created.
+    '''
+    node_list_signal = Signal(str, str, list)
+    '''
   node_list_signal is a signal, which is emitted, if a new list with nodes is
   retrieved. The signal has the URI of the service, the name of the service and
   a list with node names as parameter.
   '''
-  description_signal = Signal(str, str, list)
-  '''
+    description_signal = Signal(str, str, list)
+    '''
   description_signal is a signal, which is emitted, if a new list with descriptions is
   retrieved. The signal has the URI of the service, the name of the service and
   a list with descriptions (L{default_cfg_fkie.Description}) parameter.
   '''
-  err_signal = Signal(str, str, str)
+    err_signal = Signal(str, str, str)
 
-  def __init__(self):
-    QObject.__init__(self)
-    self.__serviceThreads = {}
-    self._lock = threading.RLock()
+    def __init__(self):
+        QObject.__init__(self)
+        self.__serviceThreads = {}
+        self._lock = threading.RLock()
 
-  def stop(self):
-    print "    Shutdown default config update threads..."
-    for _, service in self.__serviceThreads.iteritems():
-      service.join(3)
-    print "    Default config update threads are off!"
+    def stop(self):
+        print "    Shutdown default config update threads..."
+        for _, service in self.__serviceThreads.iteritems():
+            service.join(3)
+        print "    Default config update threads are off!"
 
-  def requestNodeList(self, service_uri, service, delay_exec=0.0):
-    '''
-    This method starts a thread to get the informations about the default
-    configured nodes. If all informations are retrieved, a C{node_list_signal} of
-    this class will be emitted. If for given service a thread is
-    already running, the request will be ignored.
-    This method is thread safe.
+    def requestNodeList(self, service_uri, service, delay_exec=0.0):
+        '''
+        This method starts a thread to get the informations about the default
+        configured nodes. If all informations are retrieved, a C{node_list_signal} of
+        this class will be emitted. If for given service a thread is
+        already running, the request will be ignored.
+        This method is thread safe.
 
-    @param service_uri: the URI of the service
-    @type service_uri: C{str}
-    @param service: the name of service to get the node list
-    @type service: C{str}
-    @param delay_exec: delayd the execution
-    @type delay_exec: C{float}
-    '''
-    with self._lock:
-      if (service_uri, service) not in self.__serviceThreads:
-        upthread = ServiceThread(service_uri, service, delay_exec)
-        upthread.update_signal.connect(self._on_node_list)
-        upthread.err_signal.connect(self._on_err)
-        self.__serviceThreads[(service_uri, service)] = upthread
-        upthread.start()
+        @param service_uri: the URI of the service
+        @type service_uri: C{str}
+        @param service: the name of service to get the node list
+        @type service: C{str}
+        @param delay_exec: delayd the execution
+        @type delay_exec: C{float}
+        '''
+        with self._lock:
+            if (service_uri, service) not in self.__serviceThreads:
+                upthread = ServiceThread(service_uri, service, delay_exec)
+                upthread.update_signal.connect(self._on_node_list)
+                upthread.err_signal.connect(self._on_err)
+                self.__serviceThreads[(service_uri, service)] = upthread
+                upthread.start()
 
-  def requestDescriptionList(self, service_uri, service, delay_exec=0.0):
-    '''
-    This method starts a thread to get the descriptions from the default
-    configuration node. If all informations are retrieved, a C{description_signal} of
-    this class will be emitted. If for given service a thread is
-    already running, the request will be ignored.
-    This method is thread safe.
+    def requestDescriptionList(self, service_uri, service, delay_exec=0.0):
+        '''
+        This method starts a thread to get the descriptions from the default
+        configuration node. If all informations are retrieved, a C{description_signal} of
+        this class will be emitted. If for given service a thread is
+        already running, the request will be ignored.
+        This method is thread safe.
 
-    @param service_uri: the URI of the service
-    @type service_uri: C{str}
-    @param service: the name of service to get the description
-    @type service: C{str}
-    @param delay_exec: delayd the execution
-    @type delay_exec: C{float}
-    '''
-    with self._lock:
-      if (service_uri, service) not in self.__serviceThreads:
-        upthread = ServiceDescriptionThread(service_uri, service, delay_exec)
-        upthread.update_signal.connect(self._on_descr_list)
-        upthread.err_signal.connect(self._on_err)
-        self.__serviceThreads[(service_uri, service)] = upthread
-        upthread.start()
+        @param service_uri: the URI of the service
+        @type service_uri: C{str}
+        @param service: the name of service to get the description
+        @type service: C{str}
+        @param delay_exec: delayd the execution
+        @type delay_exec: C{float}
+        '''
+        with self._lock:
+            if (service_uri, service) not in self.__serviceThreads:
+                upthread = ServiceDescriptionThread(service_uri, service, delay_exec)
+                upthread.update_signal.connect(self._on_descr_list)
+                upthread.err_signal.connect(self._on_err)
+                self.__serviceThreads[(service_uri, service)] = upthread
+                upthread.start()
 
-  def _on_node_list(self, service_uri, service, nodes):
-    with self._lock:
-      try:
-        thread = self.__serviceThreads.pop((service_uri, service))
-        del thread
-      except KeyError:
-        pass
-    self.node_list_signal.emit(service_uri, service, nodes)
+    def _on_node_list(self, service_uri, service, nodes):
+        with self._lock:
+            try:
+                thread = self.__serviceThreads.pop((service_uri, service))
+                del thread
+            except KeyError:
+                pass
+        self.node_list_signal.emit(service_uri, service, nodes)
 
-  def _on_descr_list(self, service_uri, service, items):
-    with self._lock:
-      try:
-        thread = self.__serviceThreads.pop((service_uri, service))
-        del thread
-      except KeyError:
-        pass
-    self.description_signal.emit(service_uri, service, items)
+    def _on_descr_list(self, service_uri, service, items):
+        with self._lock:
+            try:
+                thread = self.__serviceThreads.pop((service_uri, service))
+                del thread
+            except KeyError:
+                pass
+        self.description_signal.emit(service_uri, service, items)
 
-  def _on_err(self, service_uri, service, msg):
-    with self._lock:
-      try:
-        thread = self.__serviceThreads.pop((service_uri, service))
-        del thread
-      except KeyError:
-        pass
-    self.err_signal.emit(service_uri, service, msg)
+    def _on_err(self, service_uri, service, msg):
+        with self._lock:
+            try:
+                thread = self.__serviceThreads.pop((service_uri, service))
+                del thread
+            except KeyError:
+                pass
+        self.err_signal.emit(service_uri, service, msg)
 
 
 class ServiceThread(QObject, threading.Thread):
-  '''
-  A thread to to retrieve the list of nodes from the default configuration
-  service and publish it by sending a QT signal.
-  '''
-  update_signal = Signal(str, str, list)
-  err_signal = Signal(str, str, str)
-
-  def __init__(self, service_uri, service, delay_exec=0.0, parent=None):
-    QObject.__init__(self)
-    threading.Thread.__init__(self)
-    self._service_uri = service_uri
-    self._service = service
-    self._delay_exec = delay_exec
-    self.setDaemon(True)
-
-  def run(self):
     '''
+    A thread to to retrieve the list of nodes from the default configuration
+    service and publish it by sending a QT signal.
     '''
-    if self._service and self._service_uri:
-      try:
-        if self._delay_exec > 0:
-          time.sleep(self._delay_exec)
-        _, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
-        self.update_signal.emit(self._service_uri, self._service, resp.nodes)
-      except:
-        import traceback
-        lines = traceback.format_exc(1).splitlines()
-        rospy.logwarn("Error while retrieve the node list from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
-        self.err_signal.emit(self._service_uri, self._service, lines[-1])
+    update_signal = Signal(str, str, list)
+    err_signal = Signal(str, str, str)
+
+    def __init__(self, service_uri, service, delay_exec=0.0, parent=None):
+        QObject.__init__(self)
+        threading.Thread.__init__(self)
+        self._service_uri = service_uri
+        self._service = service
+        self._delay_exec = delay_exec
+        self.setDaemon(True)
+
+    def run(self):
+        '''
+        '''
+        if self._service and self._service_uri:
+            try:
+                if self._delay_exec > 0:
+                    time.sleep(self._delay_exec)
+                _, resp = nm.starter().callService(self._service_uri, self._service, ListNodes)
+                self.update_signal.emit(self._service_uri, self._service, resp.nodes)
+            except:
+                import traceback
+                lines = traceback.format_exc(1).splitlines()
+                rospy.logwarn("Error while retrieve the node list from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
+                self.err_signal.emit(self._service_uri, self._service, lines[-1])
 
 
 class ServiceDescriptionThread(QObject, threading.Thread):
-  '''
-  A thread to to retrieve the list with descriptions from the default configuration
-  service and publish it by sending a QT signal.
-  '''
-  update_signal = Signal(str, str, list)
-  err_signal = Signal(str, str, str)
-
-  def __init__(self, service_uri, service, delay_exec=0.0, parent=None):
-    QObject.__init__(self)
-    threading.Thread.__init__(self)
-    self._service_uri = service_uri
-    self._service = service
-    self._delay_exec = delay_exec
-    self.setDaemon(True)
-
-  def run(self):
     '''
+    A thread to to retrieve the list with descriptions from the default configuration
+    service and publish it by sending a QT signal.
     '''
-    if self._service:
-      try:
-        if self._delay_exec > 0:
-          time.sleep(self._delay_exec)
-        _, resp = nm.starter().callService(self._service_uri, self._service, ListDescription)
-        self.update_signal.emit(self._service_uri, self._service, [resp])
-      except:
-        import traceback
-        lines = traceback.format_exc(1).splitlines()
-        rospy.logwarn("Error while retrieve the description from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
-        self.err_signal.emit(self._service_uri, self._service, lines[-1])
+    update_signal = Signal(str, str, list)
+    err_signal = Signal(str, str, str)
+
+    def __init__(self, service_uri, service, delay_exec=0.0, parent=None):
+        QObject.__init__(self)
+        threading.Thread.__init__(self)
+        self._service_uri = service_uri
+        self._service = service
+        self._delay_exec = delay_exec
+        self.setDaemon(True)
+
+    def run(self):
+        '''
+        '''
+        if self._service:
+            try:
+                if self._delay_exec > 0:
+                    time.sleep(self._delay_exec)
+                _, resp = nm.starter().callService(self._service_uri, self._service, ListDescription)
+                self.update_signal.emit(self._service_uri, self._service, [resp])
+            except:
+                import traceback
+                lines = traceback.format_exc(1).splitlines()
+                rospy.logwarn("Error while retrieve the description from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
+                self.err_signal.emit(self._service_uri, self._service, lines[-1])

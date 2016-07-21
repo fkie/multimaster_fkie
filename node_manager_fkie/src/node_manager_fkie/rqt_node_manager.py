@@ -1,7 +1,7 @@
 try:
-  from python_qt_binding.QtGui import QMessageBox
+    from python_qt_binding.QtGui import QMessageBox
 except:
-  from python_qt_binding.QtWidgets import QMessageBox
+    from python_qt_binding.QtWidgets import QMessageBox
 
 from qt_gui.plugin import Plugin
 
@@ -34,13 +34,13 @@ class NodeManager(Plugin):
         node_manager_fkie.init_globals(masteruri)
         # Create QWidget
         try:
-          self._widget = MainWindow()
+            self._widget = MainWindow()
 #          self._widget.read_view_history()
         except Exception, e:
-          msgBox = QMessageBox()
-          msgBox.setText(str(e))
-          msgBox.exec_()
-          raise
+            msgBox = QMessageBox()
+            msgBox.setText(str(e))
+            msgBox.exec_()
+            raise
         # Get path to UI file which is a sibling of this file
         # in this example the .ui and .py file are in the same folder
 #        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MyPlugin.ui')
@@ -62,7 +62,7 @@ class NodeManager(Plugin):
         # TODO unregister all publishers here
         node_manager_fkie.finish()
         if self._widget:
-          self._widget.finish()
+            self._widget.finish()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:

@@ -36,85 +36,85 @@ from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextChar
 
 
 class YamlHighlighter(QSyntaxHighlighter):
-  '''
-  Enabled the syntax highlightning for the yaml files.
-  '''
+    '''
+    Enabled the syntax highlightning for the yaml files.
+    '''
 
-  def __init__(self, parent=None):
-    QSyntaxHighlighter.__init__(self, parent)
-    self.rules = []
-    self.commentStart = QRegExp("#")
-    self.commentEnd = QRegExp("\n|\r")
-    self.default_format = QTextCharFormat()
-    self.default_format.setForeground(QColor(24, 24, 24))
-    self.commentFormat = QTextCharFormat()
-    self.commentFormat.setFontItalic(True)
-    self.commentFormat.setForeground(Qt.darkGray)
+    def __init__(self, parent=None):
+        QSyntaxHighlighter.__init__(self, parent)
+        self.rules = []
+        self.commentStart = QRegExp("#")
+        self.commentEnd = QRegExp("\n|\r")
+        self.default_format = QTextCharFormat()
+        self.default_format.setForeground(QColor(24, 24, 24))
+        self.commentFormat = QTextCharFormat()
+        self.commentFormat.setFontItalic(True)
+        self.commentFormat.setForeground(Qt.darkGray)
 
-    f = QTextCharFormat()
-    r = QRegExp()
-    r.setMinimal(True)
-    f.setFontWeight(QFont.Normal)
-    f.setForeground(Qt.blue)
-    tagList = ["\\btrue\\b", "\\bfalse\\b"]
-    for tag in tagList:
-      r.setPattern(tag)
-      self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f = QTextCharFormat()
+        r = QRegExp()
+        r.setMinimal(True)
+        f.setFontWeight(QFont.Normal)
+        f.setForeground(Qt.blue)
+        tagList = ["\\btrue\\b", "\\bfalse\\b"]
+        for tag in tagList:
+            r.setPattern(tag)
+            self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QColor(127, 64, 127))
-    r.setPattern("\\d+")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(QColor(127, 64, 127))
+        r.setPattern("\\d+")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(Qt.darkBlue)
-    r.setPattern("^\s*[_.\w]*\s*:")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(Qt.darkBlue)
+        r.setPattern("^\s*[_.\w]*\s*:")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(Qt.darkBlue)
-    r.setPattern(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(Qt.darkBlue)
+        r.setPattern(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setFontWeight(QFont.Bold)
-    f.setForeground(Qt.darkRed)
-    r.setPattern("^\s*-")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setFontWeight(QFont.Bold)
+        f.setForeground(Qt.darkRed)
+        r.setPattern("^\s*-")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(Qt.darkRed)
-    r.setPattern("^---$")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(Qt.darkRed)
+        r.setPattern("^---$")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(Qt.darkGreen)
-    r.setPattern("[\[\]\{\}\,]")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(Qt.darkGreen)
+        r.setPattern("[\[\]\{\}\,]")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setFontWeight(QFont.Normal)
-    f.setForeground(Qt.magenta)
-    r.setPattern("\".*\"|\'.*\'")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setFontWeight(QFont.Normal)
+        f.setForeground(Qt.magenta)
+        r.setPattern("\".*\"|\'.*\'")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(QColor(127, 64, 127))
-    r.setPattern("\\$\\(.*\\)")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(QColor(127, 64, 127))
+        r.setPattern("\\$\\(.*\\)")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-    f.setForeground(Qt.lightGray)
-    r.setPattern("<!DOCTYPE.*>")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
-    r.setPattern("<\\?xml.*\\?>")
-    self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        f.setForeground(Qt.lightGray)
+        r.setPattern("<!DOCTYPE.*>")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        r.setPattern("<\\?xml.*\\?>")
+        self.rules.append((QRegExp(r), QTextCharFormat(f)))
 
-  def highlightBlock(self, text):
-    self.setFormat(0, len(text), self.default_format)
-    for pattern, form in self.rules:
-      index = pattern.indexIn(text)
-      while index >= 0:
-        length = pattern.matchedLength()
-        self.setFormat(index, length, form)
-        index = pattern.indexIn(text, index + length)
+    def highlightBlock(self, text):
+        self.setFormat(0, len(text), self.default_format)
+        for pattern, form in self.rules:
+            index = pattern.indexIn(text)
+            while index >= 0:
+                length = pattern.matchedLength()
+                self.setFormat(index, length, form)
+                index = pattern.indexIn(text, index + length)
 
-    # mark comment blocks
-    self.setCurrentBlockState(0)
-    startIndex = 0
-    if self.previousBlockState() != 1:
-      startIndex = self.commentStart.indexIn(text)
-      if startIndex >= 0:
-        commentLength = len(text) - startIndex
-        self.setFormat(startIndex, commentLength, self.commentFormat)
+        # mark comment blocks
+        self.setCurrentBlockState(0)
+        startIndex = 0
+        if self.previousBlockState() != 1:
+            startIndex = self.commentStart.indexIn(text)
+            if startIndex >= 0:
+                commentLength = len(text) - startIndex
+                self.setFormat(startIndex, commentLength, self.commentFormat)

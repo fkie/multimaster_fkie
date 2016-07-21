@@ -31,51 +31,51 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 try:
-  from python_qt_binding.QtGui import QMessageBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit
+    from python_qt_binding.QtGui import QMessageBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit
 except:
-  from python_qt_binding.QtWidgets import QMessageBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit
+    from python_qt_binding.QtWidgets import QMessageBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit
 
 
 class DetailedError(Exception):
-  ''' '''
+    ''' '''
 
-  def __init__(self, title, text, detailed_text=""):
-    self.title = title
-    self.value = text
-    self.detailed_text = detailed_text
+    def __init__(self, title, text, detailed_text=""):
+        self.title = title
+        self.value = text
+        self.detailed_text = detailed_text
 
-  def __str__(self):
-    return repr(self.text) + ":::" + self.detailed_text
+    def __str__(self):
+        return repr(self.text) + ":::" + self.detailed_text
 
 
 class WarningMessageBox(QMessageBox):
 
-  def __init__(self, icon, title, text, detailed_text="", buttons=QMessageBox.Ok):
-    QMessageBox.__init__(self, icon, title, text, buttons)
-    if detailed_text:
-      self.setDetailedText(detailed_text)
-      horizontalSpacer = QSpacerItem(480, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
-      layout = self.layout()
-      layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
+    def __init__(self, icon, title, text, detailed_text="", buttons=QMessageBox.Ok):
+        QMessageBox.__init__(self, icon, title, text, buttons)
+        if detailed_text:
+            self.setDetailedText(detailed_text)
+            horizontalSpacer = QSpacerItem(480, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
+            layout = self.layout()
+            layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
 
-    if QMessageBox.Abort & buttons:
-      self.setEscapeButton(QMessageBox.Abort)
-    elif QMessageBox.Ignore & buttons:
-      self.setEscapeButton(QMessageBox.Ignore)
-    else:
-      self.setEscapeButton(buttons)
+        if QMessageBox.Abort & buttons:
+            self.setEscapeButton(QMessageBox.Abort)
+        elif QMessageBox.Ignore & buttons:
+            self.setEscapeButton(QMessageBox.Ignore)
+        else:
+            self.setEscapeButton(buttons)
 
-    self.textEdit = textEdit = self.findChild(QTextEdit)
-    if textEdit is not None:
-      textEdit.setMinimumHeight(0)
-      textEdit.setMaximumHeight(600)
-      textEdit.setMinimumWidth(0)
-      textEdit.setMaximumWidth(600)
-      textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.textEdit = textEdit = self.findChild(QTextEdit)
+        if textEdit is not None:
+            textEdit.setMinimumHeight(0)
+            textEdit.setMaximumHeight(600)
+            textEdit.setMinimumWidth(0)
+            textEdit.setMaximumWidth(600)
+            textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    self.ignore_all_btn = QPushButton('Don\'t display again')
-    self.addButton(self.ignore_all_btn, QMessageBox.HelpRole)
+        self.ignore_all_btn = QPushButton('Don\'t display again')
+        self.addButton(self.ignore_all_btn, QMessageBox.HelpRole)
 
-  def paintEvent(self, event):
-    QMessageBox.paintEvent(self, event)
-    self.ignore_all_btn.setVisible(self.textEdit.isVisible() if self.textEdit else False)
+    def paintEvent(self, event):
+        QMessageBox.paintEvent(self, event)
+        self.ignore_all_btn.setVisible(self.textEdit.isVisible() if self.textEdit else False)
