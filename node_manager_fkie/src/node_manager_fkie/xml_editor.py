@@ -317,8 +317,7 @@ class Editor(QTextEdit):
                                 self.load_request_signal.emit(qf.fileName())
                         except Exception, e:
                             WarningMessageBox(QMessageBox.Warning, "File not found %s" % fileName, str(e)).exec_()
-        if not event.isAccepted():
-            QTextEdit.mouseReleaseEvent(self, event)
+        QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
         '''
