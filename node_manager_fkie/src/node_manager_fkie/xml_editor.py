@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QMetaObject, QObject, QPoint, QRegExp, QSize, Qt, Signal
+from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QMetaObject, QPoint, QRegExp, QSize, Qt, Signal
 from python_qt_binding.QtGui import QFont, QIcon, QTextCursor, QTextDocument
 try:
     from python_qt_binding.QtGui import QApplication, QAction, QCheckBox, QLineEdit, QMessageBox, QWidget
@@ -108,9 +108,10 @@ class Editor(QTextEdit):
 
     def _document_position_changed(self):
         if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:
-            self.hl.mark_tag_block(self.textCursor().position())
-#  def __del__(self):
-#    print "********** desctroy:", self.objectName()
+            #            import time
+            #            start_time = time.time()
+            self.hl.mark_block(self.textCursor().block(), self.textCursor().positionInBlock())
+            #            print("--- mark_tag_block %.6f seconds ---" % (time.time() - start_time))
 
     def save(self, force=False):
         '''

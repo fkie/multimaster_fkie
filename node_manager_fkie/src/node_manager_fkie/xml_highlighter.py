@@ -151,191 +151,202 @@ class XmlHighlighter(QSyntaxHighlighter):
                    'test': LAUNCH_TEST_ATTR,
                    }
 
+    STATE_COMMENT = 2
+    STATE_STRING = 4
+
     def __init__(self, parent=None):
         QSyntaxHighlighter.__init__(self, parent)
         self.rules = []
-        self.commentStart = QRegExp("<!--")
-        self.commentEnd = QRegExp("-->")
-        self.default_format = QTextCharFormat()
-        self.default_format.setForeground(QColor(24, 24, 24))
-        self.mark_background = QBrush(QColor(251, 247, 222))
-        self.commentFormat = QTextCharFormat()
-        f = QTextCharFormat()
-        r = QRegExp()
-        r.setMinimal(True)
-        f.setFontWeight(QFont.Normal)
-        f.setForeground(Qt.darkBlue)
+        self.comment_start = QRegExp("<!--")
+        self.comment_end = QRegExp("-->")
+        self.comment_format = self._create_format(Qt.darkGray, 'italic')
+#        self.mark_background = QBrush(QColor(251, 247, 222))
+        # create patterns for braces
+        self.rules.append((self._create_regexp("</?|/?>"), self._create_format(QColor(24, 24, 24))))
         # create patterns for TAG
-        tagList = ["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()]
-        for tag in tagList:
-            r.setPattern(tag)
-            self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        tag_list = '|'.join(["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()])
+        self.rules.append((self._create_regexp(tag_list), self._create_format(Qt.darkBlue)))
         # create patterns for ATTRIBUTES
-        f.setForeground(Qt.darkGreen)
-        attrList = set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()])
-        for attr in attrList:
-            r.setPattern(attr)
-            self.rules.append((QRegExp(r), QTextCharFormat(f)))
-        # create patterns for strings
-        f.setForeground(Qt.magenta)
-        r.setPattern("\".*\"")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        attr_list = '|'.join(set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
+        self.rules.append((self._create_regexp(attr_list), self._create_format(Qt.darkGreen)))
         # create patterns for substitutions
-        f.setForeground(QColor(127, 64, 127))
-        r.setPattern("\\$\\(.*\\)")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        self.rules.append((self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(127, 64, 127))))
         # create patterns for DOCTYPE
-        f.setForeground(Qt.lightGray)
-        r.setPattern("<!DOCTYPE.*>")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
-        r.setPattern("<\\?xml.*\\?>")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
-
-        self.commentFormat.setFontItalic(True)
-        self.commentFormat.setForeground(Qt.darkGray)
-
+        self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
+        self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
+        # create patterns for strings
+        self.string_pattern = QRegExp("\"")
+        self.string_format = self._create_format(Qt.magenta)
         # part to select an XML block
-        self._current_mark_range = (-1, -1)  # absolute (start, end) positions
+        self._tag_hl_range = []  # list with puples (start, length)
+        self._tag_hl_last = set()  # set with blocks of last highlighted tags
+
+    def _create_regexp(self, pattern=''):
+        _regexp = QRegExp()
+        _regexp.setMinimal(True)
+        _regexp.setPattern(pattern)
+        return _regexp
+
+    def _create_format(self, color, style=''):
+        _format = QTextCharFormat()
+        _format.setForeground(color)
+        if 'bold' in style:
+            _format.setFontWeight(QFont.Bold)
+        else:
+            _format.setFontWeight(QFont.Normal)
+        if 'italic' in style:
+            _format.setFontItalic(True)
+        return _format
 
     def highlightBlock(self, text):
-        self._format(0, len(text), self.default_format)
         for pattern, form in self.rules:
             index = pattern.indexIn(text)
             while index >= 0:
                 length = pattern.matchedLength()
-                self._format(index, index + length, form)
+                frmt = form
+                if self._in_lh_range(index):
+                    frmt = QTextCharFormat(form)
+                    if not self._end_tag_found:
+                        frmt.setForeground(Qt.red)
+                    frmt.setFontWeight(QFont.Bold)
+                self.setFormat(index, length, frmt)
                 index = pattern.indexIn(text, index + length)
-        # detection for comments
+        self._tag_hl_range = []
+        # format string and detection for multiline string
         self.setCurrentBlockState(0)
-        startIndex = 0
-        if self.previousBlockState() != 1:
-            startIndex = self.commentStart.indexIn(text)
-        while startIndex >= 0:
-            endIndex = self.commentEnd.indexIn(text, startIndex)
-            commentLength = 0
-            if endIndex == -1:
-                self.setCurrentBlockState(1)
-                commentLength = len(text) - startIndex
+        idx_start = self.string_pattern.indexIn(text)
+        if self.previousBlockState() != -1 and self.previousBlockState() & self.STATE_STRING:
+            strlen = idx_start + self.string_pattern.matchedLength()
+            if idx_start == -1:
+                strlen = len(text)
+                self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
+            self.setFormat(0, strlen, self.string_format)
+            idx_start = self.string_pattern.indexIn(text, strlen)
+        while idx_start >= 0:
+            idx_end = self.string_pattern.indexIn(text, idx_start + 1)
+            strlen = 0
+            if idx_end == -1:
+                self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
+                strlen = len(text) - idx_start
             else:
-                commentLength = endIndex - startIndex + self.commentEnd.matchedLength()
-            self._format(startIndex, startIndex + commentLength, self.commentFormat)
-            startIndex = self.commentStart.indexIn(text, startIndex + commentLength)
-
-    def _format(self, start, end, frmt):
-        start += self.currentBlock().position()
-        end += self.currentBlock().position()
-        mark = {}
-        do_mark = self._inrange(start, self._current_mark_range)
-        for val in range(start + 1, end):
-            res = self._inrange(val, self._current_mark_range)
-            if do_mark != res:
-                mark[val] = res
-                do_mark = res
-        do_end_mark = do_mark
-        last_pos = start
-        for pos, do_mark in mark.items():
-            if not do_mark:
-                frmt.setBackground(self.mark_background)
+                strlen = idx_end - idx_start + self.string_pattern.matchedLength()
+            self.setFormat(idx_start, strlen, self.string_format)
+            idx_start = self.string_pattern.indexIn(text, idx_start + strlen)
+        # detection for comments
+        idx_start = 0
+        if self.previousBlockState() == -1 or not self.previousBlockState() & self.STATE_COMMENT:
+            idx_start = self.comment_start.indexIn(text)
+        while idx_start >= 0:
+            idx_end = self.comment_end.indexIn(text, idx_start)
+            comment_length = 0
+            if idx_end == -1:
+                self.setCurrentBlockState(self.STATE_COMMENT)
+                comment_length = len(text) - idx_start
             else:
-                frmt.clearBackground()
-            self.setFormat(last_pos - self.currentBlock().position(), pos - last_pos, frmt)
-            last_pos = pos
-        if do_end_mark:
-            frmt.setBackground(self.mark_background)
-        else:
-            frmt.clearBackground()
-        self.setFormat(last_pos - self.currentBlock().position(), end - last_pos, frmt)
-        return frmt
+                comment_length = idx_end - idx_start + self.comment_end.matchedLength()
+            self.setFormat(idx_start, comment_length, self.comment_format)
+            idx_start = self.comment_start.indexIn(text, idx_start + comment_length)
 
-    def _inrange(self, value, (start, end)):
-        return value >= start and value <= end
+    def mark_block(self, block, position):
+        text = block.text()
+        self._highlight_poses = []
+        word, idx_word = self._get_current_word(text, position)
+        for hlblock in self._tag_hl_last:
+            self.rehighlightBlock(hlblock)
+        self._tag_hl_last.clear()
+        self._tag_hl_range = [(idx_word, len(word))]
+        next_block = block
+        open_braces = 0
+        closed_braces = 0
+        idx_search = idx_word
+        rindex = -1
+        loop = 0
+        tag_len = 0
+        if self._isclosetag(word):
+            # we are at the close tag: search for the open tag
+            opentag = '<%s' % self._get_tag(word)
+            tag_len = len(opentag)
+            while rindex == -1 and next_block.isValid():
+                rindex = text.rfind(opentag, 0, idx_search)
+                obr, cbr = self._get_braces_count(text[rindex if rindex != -1 else 0:idx_search])
+                open_braces += obr
+                closed_braces += cbr
+                loop += 1
+                if loop > 50000:
+                    rindex = -1
+                    break
+                if rindex == -1:
+                    next_block = next_block.previous()
+                    text = next_block.text()
+                    idx_search = len(text)
+                elif open_braces <= closed_braces:
+                    idx_search = rindex
+                    rindex = -1
+        elif self._isopentag(word):
+            # we are at the open tag: search for the close tag
+            closetag = QRegExp("</%s>|/>" % self._get_tag(word))
+            closetag.setMinimal(True)
+            while rindex == -1 and next_block.isValid():
+                rindex = closetag.indexIn(text, idx_search)
+                max_search_idx = rindex + closetag.matchedLength() if rindex != -1 else len(text)
+                obr, cbr = self._get_braces_count(text[idx_search:max_search_idx])
+                open_braces += obr
+                closed_braces += cbr
+                loop += 1
+                if loop > 50000:
+                    rindex = -1
+                    break
+                if rindex == -1:
+                    next_block = next_block.next()
+                    text = next_block.text()
+                    idx_search = 0
+                elif open_braces > closed_braces:
+                    idx_search = rindex + closetag.matchedLength()
+                    rindex = -1
+                tag_len = closetag.matchedLength()
+        self._end_tag_found = rindex != -1
+        if self._tag_hl_range and block != next_block:
+            self.rehighlightBlock(block)
+            self._tag_hl_last.add(block)
+        if rindex != -1:
+            self._tag_hl_range.append((rindex, tag_len))
+            self.rehighlightBlock(next_block)
+            self._tag_hl_last.add(next_block)
 
-    def mark_tag_block(self, position):
-        '''
-        Select an XML block, depending on the cursor position.
-        '''
-        text = self.document().toPlainText()
-        search_tag, open_pos, close_pos = self.get_tag_of_current_block(text, position)
-        force_clear = not search_tag and close_pos != -1
-        # now let mark the block
-        new_block = open_pos != -1 and close_pos != -1
-        if self._current_mark_range[1] != -1 and (new_block or force_clear):
-            # demark old block
-            first_block = self.document().findBlock(self._current_mark_range[0])
-            end_block = self.document().findBlock(self._current_mark_range[1])
-            self._current_mark_range = (-1, -1)
-            for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
-                block = self.document().findBlockByNumber(blocknr)
-                self.rehighlightBlock(block)
-        if new_block and search_tag != 'launch':
-            # mark the block
-            self._current_mark_range = (open_pos, close_pos)
-            first_block = self.document().findBlock(open_pos)
-            end_block = self.document().findBlock(close_pos)
-            for blocknr in range(first_block.blockNumber(), end_block.blockNumber() + 1):
-                block = self.document().findBlockByNumber(blocknr)
-                self.rehighlightBlock(block)
+    def _get_braces_count(self, text):
+        closed_short = text.count('/>')
+        closed_long = text.count('</')
+        cmnt_long = text.count('<!')
+        openbr = text.count('<') - closed_long - cmnt_long
+        return openbr, closed_short + closed_long
 
-    def get_tag_of_current_block(self, text, position):
-        pos = position
-        if len(text) <= pos:
-            return '', -1, -1
-        open_pos = -1
-        close_pos = -1
-        search_tag = ''
-        # find the start position of the start/end tag
-        closed_tags = 0
-        has_close_brace = False
-        try:
-            while text[pos] not in ['<'] or closed_tags > 0:
-                if text[pos - 2:pos] in ['/>', '->']:
-                    closed_tags += 1
-                    pos -= 2
-                elif text[pos - 2:pos] in ['</'] and has_close_brace:
-                    # handle the case the cursor is in the name of closed tag
-                    has_close_brace = False
-                    closed_tags += 1
-                    pos -= 2
-                elif text[pos] == '<':
-                    closed_tags -= 1
-                elif text[pos] == '>':
-                    has_close_brace = True
-                pos -= 1
-            if text[pos] == '<':
-                open_pos = pos
-            elif text[pos] == '>':
-                close_pos = pos
+    def _isopentag(self, word):
+        return word.startswith('<') and '/' not in word
+
+    def _isclosetag(self, word):
+        return '/>' == word or word.startswith('</')
+
+    def _get_tag(self, word):
+        return word.strip('</>')
+
+    def _get_current_word(self, text, position):
+        word = ''
+        idx_start = position
+        for i in reversed(range(0, position)):
+            if text[i] in [' ', '\n', '=', '"']:
+                break
             else:
-                pos = position
-        except:
-            pass
-        if open_pos > -1:
-            # the start position was found, determine the tag and end of the group
-            try:
-                while text[pos] not in [' ', '!', '>']:
-                    pos += 1
-                if text[pos] == '!':
-                    # skip comment start
-                    pass
-                elif text[pos] == '>' and text[open_pos + 1] == '/':
-                    # it is an end tag: determine the tag name and searches for start
-                    search_tag = text[open_pos + 2:pos]
-                    open_tag_pos = text.rfind('<%s' % search_tag, 0, open_pos)
-                    if open_tag_pos > -1:
-                        close_pos = pos + 1
-                        open_pos = open_tag_pos
-                elif text[pos] == ' ' or text[pos] == '>':
-                    # it is a start tag: determine the name and search for end
-                    search_tag = text[open_pos + 1:pos]
-                    while (text[pos + 1:pos + 3] not in ['/>']) and ('>' not in text[pos:pos + 2]):
-                        pos += 1
-                    if text[pos] == '>' or text[pos + 1] == '>':
-                        close_tag_pos = text.find('</%s>' % search_tag, pos)
-                        if close_tag_pos > -1:
-                            close_pos = close_tag_pos + len(search_tag) + 3
-                    else:
-                        # it is closed by />
-                        close_pos = pos + 2
-            except:
-                pass
-        return search_tag, open_pos, close_pos
+                word = "%s%s" % (text[i], word)
+                idx_start = i
+        for i in range(position, len(text)):
+            if text[i] in [' ', '\n', '=', '"']:
+                break
+            else:
+                word += text[i]
+        return word, idx_start
+
+    def _in_lh_range(self, value):
+        for (start, length) in self._tag_hl_range:
+            if value >= start and value <= start + length:
+                return True
+        return False
