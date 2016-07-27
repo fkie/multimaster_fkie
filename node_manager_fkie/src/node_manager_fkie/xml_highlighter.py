@@ -249,7 +249,6 @@ class XmlHighlighter(QSyntaxHighlighter):
 
     def mark_block(self, block, position):
         text = block.text()
-        self._highlight_poses = []
         word, idx_word = self._get_current_word(text, position)
         for hlblock in self._tag_hl_last:
             self.rehighlightBlock(hlblock)
@@ -350,3 +349,30 @@ class XmlHighlighter(QSyntaxHighlighter):
             if value >= start and value <= start + length:
                 return True
         return False
+
+    def get_tag_of_current_block(self, block, position):
+        text = block.text()
+        next_block = block
+        idx_search = position
+        rindex = -1
+        loop = 0
+        # we are at the close tag: search for the open tag
+        opentag = '<'
+        while rindex == -1 and next_block.isValid():
+            rindex = text.rfind(opentag, 0, idx_search)
+            loop += 1
+            if loop > 100:
+                rindex = -1
+                break
+            if rindex == -1:
+                next_block = next_block.previous()
+                text = next_block.text()
+                idx_search = len(text)
+        tag = ''
+        if rindex != -1:
+            for i in range(rindex + 1, len(text)):
+                if text[i] in [' ', '\n', '=', '"', '>']:
+                    break
+                else:
+                    tag += text[i]
+        return tag

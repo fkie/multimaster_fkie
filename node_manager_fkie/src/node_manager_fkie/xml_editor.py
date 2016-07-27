@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QMetaObject, QPoint, QRegExp, QSize, Qt, Signal
-from python_qt_binding.QtGui import QFont, QIcon, QTextCursor, QTextDocument
+from python_qt_binding.QtGui import QFont, QIcon, QKeySequence, QTextCursor, QTextDocument
 try:
     from python_qt_binding.QtGui import QApplication, QAction, QCheckBox, QLineEdit, QMessageBox, QWidget
     from python_qt_binding.QtGui import QDialog, QDialogButtonBox, QInputDialog, QLabel, QListWidget, QMenu, QPushButton, QTabWidget, QTextEdit
@@ -563,7 +563,7 @@ class Editor(QTextEdit):
 
     def _create_context_menu_for_tag(self):
         if isinstance(self.hl, XmlHighlighter):
-            tag, _start, _end = self.hl.get_tag_of_current_block(self.toPlainText(), self.textCursor().position())
+            tag = self.hl.get_tag_of_current_block(self.textCursor().block(), self.textCursor().positionInBlock())
             if tag:
                 try:
                     menu = QMenu("ROS <%s>" % tag, self)
@@ -1108,27 +1108,33 @@ class XmlEditor(QDialog):
         tag_menu = QMenu("ROS Tags", parent)
         # group tag
         add_group_tag_action = QAction("<group>", self, statusTip="", triggered=self._on_add_group_tag)
+        add_group_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+g"))
         tag_menu.addAction(add_group_tag_action)
         # node tag
         add_node_tag_action = QAction("<node>", self, statusTip="", triggered=self._on_add_node_tag)
+        add_node_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+n"))
         tag_menu.addAction(add_node_tag_action)
         # node tag with all attributes
         add_node_tag_all_action = QAction("<node all>", self, statusTip="", triggered=self._on_add_node_tag_all)
         tag_menu.addAction(add_node_tag_all_action)
         # include tag with all attributes
         add_include_tag_all_action = QAction("<include>", self, statusTip="", triggered=self._on_add_include_tag_all)
+        add_include_tag_all_action.setShortcuts(QKeySequence("Ctrl+Shift+i"))
         tag_menu.addAction(add_include_tag_all_action)
         # remap
         add_remap_tag_action = QAction("<remap>", self, statusTip="", triggered=self._on_add_remap_tag)
+        add_remap_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+r"))
         tag_menu.addAction(add_remap_tag_action)
         # env tag
         add_env_tag_action = QAction("<env>", self, statusTip="", triggered=self._on_add_env_tag)
         tag_menu.addAction(add_env_tag_action)
         # param tag
         add_param_tag_action = QAction("<param>", self, statusTip="", triggered=self._on_add_param_tag)
+        add_param_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+p"))
         tag_menu.addAction(add_param_tag_action)
         # param capability group tag
         add_param_cap_group_tag_action = QAction("<param capability group>", self, statusTip="", triggered=self._on_add_param_cap_group_tag)
+        add_param_cap_group_tag_action.setShortcuts(QKeySequence("Ctrl+Alt+p"))
         tag_menu.addAction(add_param_cap_group_tag_action)
         # param tag with all attributes
         add_param_tag_all_action = QAction("<param all>", self, statusTip="", triggered=self._on_add_param_tag_all)
@@ -1138,13 +1144,16 @@ class XmlEditor(QDialog):
         tag_menu.addAction(add_rosparam_tag_all_action)
         # arg tag with default definition
         add_arg_tag_default_action = QAction("<arg default>", self, statusTip="", triggered=self._on_add_arg_tag_default)
+        add_arg_tag_default_action.setShortcuts(QKeySequence("Ctrl+Shift+a"))
         tag_menu.addAction(add_arg_tag_default_action)
         # arg tag with value definition
         add_arg_tag_value_action = QAction("<arg value>", self, statusTip="", triggered=self._on_add_arg_tag_value)
+        add_arg_tag_value_action.setShortcuts(QKeySequence("Ctrl+Alt+a"))
         tag_menu.addAction(add_arg_tag_value_action)
 
         # test tag
         add_test_tag_action = QAction("<test>", self, statusTip="", triggered=self._on_add_test_tag)
+        add_test_tag_action.setShortcuts(QKeySequence("Ctrl+Alt+t"))
         tag_menu.addAction(add_test_tag_action)
         # test tag with all attributes
         add_test_tag_all_action = QAction("<test all>", self, statusTip="", triggered=self._on_add_test_tag_all)
