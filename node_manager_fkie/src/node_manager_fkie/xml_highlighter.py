@@ -32,7 +32,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QRegExp, Qt
-from python_qt_binding.QtGui import QBrush, QColor, QFont, QSyntaxHighlighter, QTextCharFormat
+from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
 
 class XmlHighlighter(QSyntaxHighlighter):
@@ -204,7 +204,7 @@ class XmlHighlighter(QSyntaxHighlighter):
             while index >= 0:
                 length = pattern.matchedLength()
                 frmt = form
-                if self._in_lh_range(index):
+                if self._in_hl_range(index, self._tag_hl_range):
                     frmt = QTextCharFormat(form)
                     if not self._end_tag_found:
                         frmt.setForeground(Qt.red)
@@ -212,8 +212,25 @@ class XmlHighlighter(QSyntaxHighlighter):
                 self.setFormat(index, length, frmt)
                 index = pattern.indexIn(text, index + length)
         self._tag_hl_range = []
-        # format string and detection for multiline string
         self.setCurrentBlockState(0)
+        # detection for comments
+        self._comments_idx = []
+        idx_start_cmt = 0
+        comment_length = 0
+        if self.previousBlockState() == -1 or not self.previousBlockState() & self.STATE_COMMENT:
+            idx_start_cmt = self.comment_start.indexIn(text)
+        while idx_start_cmt >= 0:
+            idx_end = self.comment_end.indexIn(text, idx_start_cmt)
+            comment_length = 0
+            if idx_end == -1:
+                self.setCurrentBlockState(self.STATE_COMMENT)
+                comment_length = len(text) - idx_start_cmt
+            else:
+                comment_length = idx_end - idx_start_cmt + self.comment_end.matchedLength()
+            self._comments_idx.append((idx_start_cmt, comment_length))
+            self.setFormat(idx_start_cmt, comment_length, self.comment_format)
+            idx_start_cmt = self.comment_start.indexIn(text, idx_start_cmt + comment_length)
+        # format string and detection for multiline string
         idx_start = self.string_pattern.indexIn(text)
         if self.previousBlockState() != -1 and self.previousBlockState() & self.STATE_STRING:
             strlen = idx_start + self.string_pattern.matchedLength()
@@ -222,30 +239,27 @@ class XmlHighlighter(QSyntaxHighlighter):
                 self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
             self.setFormat(0, strlen, self.string_format)
             idx_start = self.string_pattern.indexIn(text, strlen)
+        idx_search = idx_start + 1
         while idx_start >= 0:
-            idx_end = self.string_pattern.indexIn(text, idx_start + 1)
-            strlen = 0
-            if idx_end == -1:
-                self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
-                strlen = len(text) - idx_start
+            # skip the strings which are in the comments
+            if not self._in_hl_range(idx_search, self._comments_idx):
+                idx_end = self.string_pattern.indexIn(text, idx_search)
+                strlen = 0
+                if not self._in_hl_range(idx_end, self._comments_idx):
+                    if idx_end == -1:
+                        self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
+                        strlen = len(text) - idx_start
+                    else:
+                        strlen = idx_end - idx_start + self.string_pattern.matchedLength()
+                    idx_search = idx_start + strlen
+                    self.setFormat(idx_start, strlen, self.string_format)
+                    idx_start = self.string_pattern.indexIn(text, idx_search)
+                    idx_search = idx_start + 1
+                else:
+                    idx_search = idx_end + 1
             else:
-                strlen = idx_end - idx_start + self.string_pattern.matchedLength()
-            self.setFormat(idx_start, strlen, self.string_format)
-            idx_start = self.string_pattern.indexIn(text, idx_start + strlen)
-        # detection for comments
-        idx_start = 0
-        if self.previousBlockState() == -1 or not self.previousBlockState() & self.STATE_COMMENT:
-            idx_start = self.comment_start.indexIn(text)
-        while idx_start >= 0:
-            idx_end = self.comment_end.indexIn(text, idx_start)
-            comment_length = 0
-            if idx_end == -1:
-                self.setCurrentBlockState(self.STATE_COMMENT)
-                comment_length = len(text) - idx_start
-            else:
-                comment_length = idx_end - idx_start + self.comment_end.matchedLength()
-            self.setFormat(idx_start, comment_length, self.comment_format)
-            idx_start = self.comment_start.indexIn(text, idx_start + comment_length)
+                idx_start = self.string_pattern.indexIn(text, idx_search)
+                idx_search = idx_start + 1
 
     def mark_block(self, block, position):
         text = block.text()
@@ -303,6 +317,8 @@ class XmlHighlighter(QSyntaxHighlighter):
                     idx_search = rindex + closetag.matchedLength()
                     rindex = -1
                 tag_len = closetag.matchedLength()
+        else:
+            self._tag_hl_range = []
         self._end_tag_found = rindex != -1
         if self._tag_hl_range and block != next_block:
             self.rehighlightBlock(block)
@@ -344,8 +360,8 @@ class XmlHighlighter(QSyntaxHighlighter):
                 word += text[i]
         return word, idx_start
 
-    def _in_lh_range(self, value):
-        for (start, length) in self._tag_hl_range:
+    def _in_hl_range(self, value, ranges):
+        for (start, length) in ranges:
             if value >= start and value <= start + length:
                 return True
         return False
