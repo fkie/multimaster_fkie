@@ -262,7 +262,7 @@ class Editor(QTextEdit):
             result.append(self.filename)
         inc_files = self.includedFiles()
         for f in inc_files:
-            editor = LineNumberEditor(f, None)
+            editor = Editor(f, None)
             result[len(result):] = editor.fileWithText(search_text)
         return result
 
@@ -840,7 +840,7 @@ class XmlEditor(QDialog):
         try:
             if filename not in self.files:
                 tab_name = self.__getTabName(filename)
-                editor = LineNumberEditor(filename, self.tabWidget)
+                editor = Editor(filename, self.tabWidget)
                 tab_index = self.tabWidget.addTab(editor, tab_name)
                 self.files.append(filename)
                 editor.setCurrentPath(os.path.basename(filename))
