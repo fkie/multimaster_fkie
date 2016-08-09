@@ -30,7 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# from python_qt_binding import QtCore
 from python_qt_binding.QtCore import Signal, Qt, QRect, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette, QPixmap
 try:

@@ -215,10 +215,13 @@ class StartHandler(object):
                     if runcfg.auto_pw_request:
                         # Open selection for executables, only if the method is called from the main GUI thread
                         try:
-                            from python_qt_binding import QtGui
-                            item, result = QtGui.QInputDialog.getItem(None, ' '.join(['Multiple executables', n.type, 'in', n.package]),
-                                                                      'Select an executable',
-                                                                      cmd, 0, False)
+                            try:
+                                from python_qt_binding.QtGui import QInputDialog
+                            except:
+                                from python_qt_binding.QtWidgets import QInputDialog
+                            item, result = QInputDialog.getItem(None, 'Multiple executables %s in %s' % (n.type, n.package),
+                                                                'Select an executable',
+                                                                cmd, 0, False)
                             if result:
                                 # open the selected screen
                                 cmd_type = item

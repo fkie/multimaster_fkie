@@ -443,8 +443,8 @@ class Settings(object):
         return '%s -T "%s" -%s %s' % (self._terminal_emulator, title, self._terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
-        from python_qt_binding import QtCore
+        from python_qt_binding.QtCore import QSettings
         path = settings_file
         if not settings_file.startswith(os.path.sep):
             path = os.path.join(self.cfg_path, settings_file)
-        return QtCore.QSettings(path, QtCore.QSettings.IniFormat)
+        return QSettings(path, QSettings.IniFormat)
