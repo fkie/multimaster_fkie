@@ -30,14 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QMetaObject, QPoint, QRect, QRectF, QRegExp, QSize, Qt, Signal
-from python_qt_binding.QtGui import QColor, QFont, QIcon, QKeySequence, QPainter, QTextCursor, QTextDocument
+from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QMetaObject, QPoint, QRegExp, QSize, Qt, Signal
+from python_qt_binding.QtGui import QFont, QIcon, QKeySequence, QTextCursor, QTextDocument
 try:
-    from python_qt_binding.QtGui import QApplication, QAction, QCheckBox, QLineEdit, QMessageBox, QWidget
+    from python_qt_binding.QtGui import QApplication, QAction, QCheckBox, QLineEdit, QMessageBox, QWidget, QFrame
     from python_qt_binding.QtGui import QDialog, QDialogButtonBox, QInputDialog, QLabel, QListWidget, QMenu, QPushButton, QTabWidget, QTextEdit
     from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
 except:
-    from python_qt_binding.QtWidgets import QApplication, QAction, QCheckBox, QLineEdit, QMessageBox, QWidget
+    from python_qt_binding.QtWidgets import QApplication, QAction, QCheckBox, QLineEdit, QMessageBox, QWidget, QFrame
     from python_qt_binding.QtWidgets import QDialog, QDialogButtonBox, QInputDialog, QLabel, QListWidget, QMenu, QPushButton, QTabWidget, QTextEdit
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
 import os
@@ -48,6 +48,7 @@ import rospy
 from master_discovery_fkie.common import resolve_url
 from node_manager_fkie.common import package_name
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.line_number_widget import LineNumberWidget
 from node_manager_fkie.run_dialog import PackageDialog
 from node_manager_fkie.xml_highlighter import XmlHighlighter
 from node_manager_fkie.yaml_highlighter import YamlHighlighter
@@ -74,6 +75,8 @@ class Editor(QTextEdit):
         self.setObjectName(' - '.join(['Editor', filename]))
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_custom_context_menu)
+#        self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+        self.setAcceptRichText(False)
         font = QFont()
         font.setFamily("Fixed".decode("utf-8"))
         font.setPointSize(12)
@@ -686,6 +689,18 @@ class EditorTabWidget(QTabWidget):
         if not event.isAccepted():
             QTabWidget.mouseReleaseEvent(event)
 
+    def currentWidget(self):
+        '''
+        This is an overloaded function to use with LineNumberWidget
+        '''
+        return QTabWidget.currentWidget(self).get_text_edit()
+
+    def widget(self, index):
+        '''
+        This is an overloaded function to use with LineNumberWidget
+        '''
+        return QTabWidget.widget(self, index).get_text_edit()
+
 
 class XmlEditor(QDialog):
     '''
@@ -841,7 +856,8 @@ class XmlEditor(QDialog):
             if filename not in self.files:
                 tab_name = self.__getTabName(filename)
                 editor = Editor(filename, self.tabWidget)
-                tab_index = self.tabWidget.addTab(editor, tab_name)
+                linenumber_editor = LineNumberWidget(editor)
+                tab_index = self.tabWidget.addTab(linenumber_editor, tab_name)
                 self.files.append(filename)
                 editor.setCurrentPath(os.path.basename(filename))
                 editor.load_request_signal.connect(self.on_load_request)
@@ -1242,127 +1258,3 @@ class XmlEditor(QDialog):
                               '      cwd="ROS_HOME|node" retry="0"\n'
                               '      launch-prefix="prefix arguments">\n'
                               '</test>' % (dia.binary, dia.package, dia.binary, dia.binary))
-
-
-class LineNumberArea(QWidget):
-
-    def __init__(self, editor):
-        QWidget.__init__(self, editor)
-        self.editor = editor
-
-    def paintEvent(self, event):
-        self.editor.linenumber_area_paint_event(event)
-
-    def sizeHint(self):
-        return QSize(self.editor.linenumber_area_width(), 0)
-
-
-class LineNumberEditor(Editor):
-
-    def __init__(self, filename, parent=None):
-        Editor.__init__(self, filename, parent)
-        self.line_number_area = LineNumberArea(self)
-        self.document().blockCountChanged[int].connect(self.update_linenumber_area_width)
-        self.verticalScrollBar().valueChanged[int].connect(self.update_linenumber_area)
-        self.textChanged.connect(self.update_linenumber_area)
-        self.cursorPositionChanged.connect(self.update_linenumber_area)
-        self.update_linenumber_area_width(0)
-
-    def get_first_visible_block_id(self):
-        '''
-        Detect the first block for which bounding rect - once translated
-        in absolute coordinated - is contained by the editor's text area
-        Costly way of doing but since "blockBoundingGeometry(...)" doesn't
-        exists for "QTextEdit"...
-        '''
-        curs = QTextCursor(self.document())
-        curs.movePosition(QTextCursor.Start)
-        for i in range(self.document().blockCount()):
-            block = curs.block()
-            r1 = self.viewport().geometry()
-            brect = self.document().documentLayout().blockBoundingRect(block)
-            sliderpos = self.verticalScrollBar().sliderPosition()
-            vpgeo = self.viewport().geometry()
-            r2 = brect.translated(vpgeo.x(), vpgeo.y() - (sliderpos)).toRect()
-            if r1.contains(r2, True):
-                return i
-            curs.movePosition(QTextCursor.NextBlock)
-        return 0
-
-    def linenumber_area_paint_event(self, event):
-        self.verticalScrollBar().setSliderPosition(self.verticalScrollBar().sliderPosition())
-        painter = QPainter(self.line_number_area)
-        painter.fillRect(event.rect(), Qt.lightGray)
-        blockNumber = self.get_first_visible_block_id()
-        block = self.document().findBlockByNumber(blockNumber)
-        prev_block = self.document().findBlockByNumber(blockNumber - 1) if blockNumber > 0 else block
-        translate_y = -self.verticalScrollBar().sliderPosition() if blockNumber > 0 else 0
-        top = self.viewport().geometry().top()
-        # Adjust text position according to the previous "non entirely visible" block
-        # if applicable. Also takes in consideration the document's margin offset.
-        additional_margin = 0
-        if (blockNumber == 0):
-            # Simply adjust to document's margin
-            additional_margin = int(self.document().documentMargin() - 1 - self.verticalScrollBar().sliderPosition())
-        else:
-            # Getting the height of the visible part of the previous "non entirely visible" block
-            vpgeo = self.viewport().geometry()
-            additional_margin = int(self.document().documentLayout().blockBoundingRect(prev_block).translated(0, translate_y).intersected(QRectF(vpgeo.left(), top, vpgeo.height(), vpgeo.width())).height())
-        # Shift the starting point
-        top += additional_margin
-        bottom = top + int(self.document().documentLayout().blockBoundingRect(block).height())
-        col_1 = Qt.black  # Current line
-        # Draw the numbers (displaying the current line number in green)
-        while block.isValid() and top <= event.rect().bottom():
-            if block.isVisible() and bottom >= event.rect().top():
-                number = str(blockNumber + 1)
-                painter.setPen(Qt.darkGray)
-                painter.setPen(col_1 if self.textCursor().blockNumber() == blockNumber else Qt.darkGray)
-                painter.drawText(-5, top,
-                                 self.line_number_area.width(), self.fontMetrics().height(),
-                                 Qt.AlignRight, number)
-            block = block.next()
-            top = bottom
-            bottom = top + int(self.document().documentLayout().blockBoundingRect(block).height())
-            blockNumber += 1
-
-    def linenumber_area_width(self):
-        digits = 1
-        maxval = max(1, self.document().blockCount())
-        while maxval >= 10:
-            maxval /= 10
-            digits += 1
-        space = 13 + self.fontMetrics().width('9') * (digits)
-        return space
-
-    def resizeEvent(self, event):
-        Editor.resizeEvent(self, event)
-        cr = self.contentsRect()
-        self.line_number_area.setGeometry(QRect(cr.left(), cr.top(), self.linenumber_area_width(), cr.height()))
-
-    def update_linenumber_area_width(self, new_block_count):
-        self.setViewportMargins(self.linenumber_area_width(), 0, 0, 0)
-
-    def update_linenumber_area(self, value=None):
-        '''
-        When the signal is emitted, the sliderPosition has been adjusted according to the action,
-        but the value has not yet been propagated (meaning the valueChanged() signal was not yet emitted),
-        and the visual display has not been updated. In slots connected to this signal you can thus safely
-        adjust any action by calling setSliderPosition() yourself, based on both the action and the
-        slider's value.
-        '''
-        # Make sure the sliderPosition triggers one last time the valueChanged() signal with the actual value !!!!
-        self.verticalScrollBar().setSliderPosition(self.verticalScrollBar().sliderPosition())
-        # Since "QTextEdit" does not have an "updateRequest(...)" signal, we chose
-        # to grab the imformations from "sliderPosition()" and "contentsRect()".
-        # See the necessary connections used (Class constructor implementation part).
-        rect = self.contentsRect()
-        self.line_number_area.update(0, rect.y(), self.line_number_area.width(), rect.height())
-        self.update_linenumber_area_width(0)
-        dy = self.verticalScrollBar().sliderPosition()
-        if dy > -1:
-            self.line_number_area.scroll(0, dy)
-        # Addjust slider to alway see the number of the currently being edited line...
-        first_block_id = self.get_first_visible_block_id()
-        if (first_block_id == 0 or self.textCursor().block().blockNumber() == first_block_id - 1):
-            self.verticalScrollBar().setSliderPosition(dy - self.document().documentMargin())
