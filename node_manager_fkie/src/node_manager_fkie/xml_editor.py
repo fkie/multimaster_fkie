@@ -403,23 +403,45 @@ class Editor(QTextEdit):
                     if cursor.block().length() < 4:
                         cursor.movePosition(QTextCursor.NextBlock)
                         continue
+                    # skipt the existing spaces at the start of the line
+                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                    while cursor.selectedText() in [' ', '\t']:
+                        cursor.setPosition(cursor.position() + 1, QTextCursor.MoveAnchor)
+                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                    cursor.movePosition(QTextCursor.PreviousCharacter, 1)
                     cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 4)
                     # only comments breakers at the start of the line are removed
                     if cursor.selectedText() == '<!--':
                         cursor.insertText('')
+                        # remove spaces between comment and text
+                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                        while cursor.selectedText() in [' ', '\t']:
+                            cursor.insertText('')
+                            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                         cursor.movePosition(QTextCursor.EndOfLine)
                         cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 3)
                         if cursor.selectedText() == '-->':
                             cursor.insertText('')
+                        # remove spaces between comment and text
+                        cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 1)
+                        while cursor.selectedText() in [' ', '\t']:
+                            cursor.insertText('')
+                            cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 1)
                     else:
                         cursor.movePosition(QTextCursor.StartOfLine)
                         cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
                         # only comment out, if no comments are found
                         if cursor.selectedText().find('<!--') < 0 and cursor.selectedText().find('-->') < 0:
                             cursor.movePosition(QTextCursor.StartOfLine)
-                            cursor.insertText('<!--')
+                            # skipt the current existing spaces
+                            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                            while cursor.selectedText() in [' ', '\t']:
+                                cursor.setPosition(cursor.position() + 1, QTextCursor.MoveAnchor)
+                                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                            cursor.movePosition(QTextCursor.PreviousCharacter, 1)
+                            cursor.insertText('<!-- ')
                             cursor.movePosition(QTextCursor.EndOfLine)
-                            cursor.insertText('-->')
+                            cursor.insertText(' -->')
                 else:  # other comments
                     if cursor.block().length() < 2:
                         cursor.movePosition(QTextCursor.NextBlock)
