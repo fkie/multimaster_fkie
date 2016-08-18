@@ -103,7 +103,7 @@ class TextSearchFrame(QFrame):
         # self.search_field.returnPressed.connect(self.on_search)
         find_hbox_layout.addWidget(self.search_field)
         self.search_result_label = QLabel(find_frame)
-        self.search_result_label.setText('')
+        self.search_result_label.setText(' ')
         find_hbox_layout.addWidget(self.search_result_label)
         self.find_button_back = QPushButton("<")
         self.find_button_back.setFixedWidth(44)
@@ -129,7 +129,7 @@ class TextSearchFrame(QFrame):
         self.replace_field.returnPressed.connect(self.on_replace)
         rplc_hbox_layout.addWidget(self.replace_field)
         self.replace_result_label = QLabel(rplc_frame)
-        self.replace_result_label.setText('')
+        self.replace_result_label.setText(' ')
         rplc_hbox_layout.addWidget(self.replace_result_label)
         self.replace_button = replace_button = QPushButton("> &Replace >")
         replace_button.setFixedWidth(90)
@@ -317,7 +317,7 @@ class TextSearchFrame(QFrame):
         '''
         Updates the status label for search results. The info is created from search result lists.
         '''
-        msg = ''
+        msg = ' '
         if self.search_results:
             count_files = len(self.search_results_fileset)
             msg = '%d/%d' % (self._search_result_index + 1, len(self.search_results))
@@ -325,10 +325,10 @@ class TextSearchFrame(QFrame):
                 msg = '%s(%d)' % (msg, count_files)
         if self._search_thread is not None and self._search_thread.is_alive():
             msg = 'searching..%s' % msg
-        elif not msg and self.current_search_text:
+        elif not msg.strip() and self.current_search_text:
             msg = '0 found'
         if clear_label:
-            msg = ''
+            msg = ' '
         self.search_result_label.setText(msg)
         self.find_button_back.setEnabled(len(self.search_results))
 

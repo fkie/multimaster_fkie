@@ -155,7 +155,7 @@ class Editor(QDialog):
         self.searchButton.setObjectName("searchButton")
 #        self.searchButton.clicked.connect(self.on_shortcut_find)
         self.searchButton.toggled.connect(self.on_toggled_find)
-        self.searchButton.setText(self._translate("Search"))
+        self.searchButton.setText(self._translate("&Find"))
         self.searchButton.setToolTip('Open a search dialog (Ctrl+F)')
         self.searchButton.setFlat(True)
         self.searchButton.setCheckable(True)
@@ -165,7 +165,7 @@ class Editor(QDialog):
         self.replaceButton.setObjectName("replaceButton")
 #        self.replaceButton.clicked.connect(self.on_shortcut_replace)
         self.replaceButton.toggled.connect(self.on_toggled_replace)
-        self.replaceButton.setText(self._translate("Replace"))
+        self.replaceButton.setText(self._translate("&Replace"))
         self.replaceButton.setToolTip('Open a search&replace dialog (Ctrl+R)')
         self.replaceButton.setFlat(True)
         self.replaceButton.setCheckable(True)
@@ -174,9 +174,10 @@ class Editor(QDialog):
         self.gotoButton = QPushButton(self)
         self.gotoButton.setObjectName("gotoButton")
         self.gotoButton.clicked.connect(self.on_shortcut_goto)
-        self.gotoButton.setText(self._translate("Goto line"))
-        self.gotoButton.setShortcut("Ctrl+L")
-        self.gotoButton.setToolTip('Open a goto dialog (Ctrl+L)')
+        self.gotoButton.setText(self._translate("&Goto line"))
+        self.gotoButton.setShortcut("Ctrl+G")
+        self.gotoButton.setToolTip('Open a goto dialog (Ctrl+G)')
+        self.gotoButton.setFlat(True)
         self.horizontalLayout.addWidget(self.gotoButton)
         # add a tag button
         self.tagButton = self._create_tag_button(self)
@@ -194,9 +195,10 @@ class Editor(QDialog):
         self.saveButton = QPushButton(self)
         self.saveButton.setObjectName("saveButton")
         self.saveButton.clicked.connect(self.on_saveButton_clicked)
-        self.saveButton.setText(self._translate("Save"))
+        self.saveButton.setText(self._translate("&Save"))
         self.saveButton.setShortcut("Ctrl+S")
         self.saveButton.setToolTip('Save the changes to the file (Ctrl+S)')
+        self.saveButton.setFlat(True)
         self.horizontalLayout.addWidget(self.saveButton)
         return self.buttons
 
@@ -513,10 +515,11 @@ class Editor(QDialog):
     def _create_tag_button(self, parent=None):
         btn = QPushButton(parent)
         btn.setObjectName("tagButton")
-        btn.setText(self._translate("Add tag"))
+        btn.setText(self._translate("Add &tag"))
         btn.setShortcut("Ctrl+T")
         btn.setToolTip('Adds a ROS launch tag to launch file (Ctrl+T)')
         btn.setMenu(self._create_tag_menu(btn))
+        btn.setFlat(True)
         return btn
 
     def _create_tag_menu(self, parent=None):
