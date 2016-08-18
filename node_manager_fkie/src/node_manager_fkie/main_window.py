@@ -34,12 +34,6 @@ from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
 from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
-try:
-    from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
-    from python_qt_binding.QtGui import QShortcut, QVBoxLayout
-except:
-    from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
-    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout
 import getpass
 import os
 import socket
@@ -58,6 +52,7 @@ from .capability_table import CapabilityTable
 from .common import masteruri_from_ros, package_name
 from .detailed_msg_box import WarningMessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
+from .editor import Editor
 from .launch_config import LaunchConfig  # , LaunchConfigException
 from .launch_files_widget import LaunchFilesWidget
 from .log_widget import LogWidget
@@ -72,7 +67,12 @@ from .select_dialog import SelectDialog
 from .settings_widget import SettingsWidget
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
-from .xml_editor import XmlEditor
+try:
+    from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
+    from python_qt_binding.QtGui import QShortcut, QVBoxLayout
+except:
+    from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
+    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout
 
 
 try:
@@ -246,8 +246,8 @@ class MainWindow(QMainWindow):
 
         self._sync_dialog = SyncDialog()
 
-        self.editor_dialogs = dict()  # [file] = XmlEditor
-        '''@ivar: stores the open XmlEditor '''
+        self.editor_dialogs = dict()  # [file] = Editor
+        '''@ivar: stores the open Editor '''
 
         self.simTimeLabel.setVisible(False)
         self.launchServerLabel.setVisible(False)
@@ -1600,7 +1600,7 @@ class MainWindow(QMainWindow):
                     del self.editor_dialogs[path]
                     self.on_launch_edit(files, search_text, 2)
             else:
-                editor = XmlEditor(files, search_text, self)
+                editor = Editor(files, search_text, self)
                 self.editor_dialogs[path] = editor
                 editor.finished_signal.connect(self._editor_dialog_closed)
                 editor.show()

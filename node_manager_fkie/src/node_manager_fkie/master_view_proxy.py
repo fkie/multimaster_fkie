@@ -748,13 +748,13 @@ class MasterViewProxy(QWidget):
 #        n.__slots__ = []
 #      print "NODES:", pickle.dumps(launchConfig.Roscfg.nodes)
 #
-#      print "ROSLAUNCH_FILES:", launchConfig.Roscfg.roslaunch_files
-#        # list of resolved node names. This is so that we can check for naming collisions
-#      print "RESOLVED_NAMES:", launchConfig.Roscfg.resolved_node_names
+            # print "ROSLAUNCH_FILES:", launchConfig.Roscfg.roslaunch_files
+#           # list of resolved node names. This is so that we can check for naming collisions
+            # print "RESOLVED_NAMES:", launchConfig.Roscfg.resolved_node_names
 #
 #      print "TESTS:", launchConfig.Roscfg.tests
 #      print "MACHINES:", launchConfig.Roscfg.machines
-#        print "PARAMS:", launchConfig.Roscfg.params
+        #        print "PARAMS:", launchConfig.Roscfg.params
 #        print "CLEAR_PARAMS:", launchConfig.Roscfg.clear_params
 #      print "EXECS:", launchConfig.Roscfg.executables
 #
