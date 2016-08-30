@@ -2,6 +2,13 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.5 (2016-08-30)
+------------------
+* multimaster_fkie: changed indent in source code to 4
+* default_cfg_fkie: removed pep8 warnings
+* multimaster_fkie: removed unused imports
+* Contributors: Alexander Tiderko
+
 0.5.4 (2016-04-21)
 ------------------
 

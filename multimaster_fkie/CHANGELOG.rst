@@ -2,6 +2,57 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.5 (2016-08-30)
+------------------
+* master_sync_fkie: added resync after the host was offline
+* master_sync_fkie: fixed pep8 warnings
+* master_discovery_fkie: fixed issue`#16 <https://github.com/fkie/multimaster_fkie/issues/16>`_
+* multimaster_fkie: changed indent in source code to 4
+* master_discovery_fkie: added network separation to zeroconf discovering
+* master_discovery_fkie: changed the ROS service initialization
+  The ROS service will be created after discovering process is started.
+  This is especially for visualisation in node_manager.
+* multimaster_fkie: removed unused imports
+* master_discovery_fkie: fixed pep8 warnings
+* master_discovery_fkie: replaced time.sleep by threading.Timer to handle connection problems while get remote master info
+* master_discover_fkie: added warning on send errors
+* master_discovery_fkie: removed '-' from master name generation for ROS master with not default port
+* master_discovery_fkie: reduced/changed log output
+* node_manager_fkie: version in info dialog updated
+* node_manager_fkie: changed all buttons of the editor to flat
+* node_manager_fkie: changes on xml_editor
+  * XmlEditor is renamed to Editor and moved into a subdirectory.
+  * xml_edit.py splited to exclude all subclasses
+  * Search (replace) dialog is redesigned
+* node_manager_fkie: added linenumber to the xmleditor
+* node_manager_fkie: fix issue `#40 <https://github.com/fkie/multimaster_fkie/issues/40>`_ and some other Qt5 changes
+* node_manager_fkie: changed the comment/uncomment in xml editor
+* node_manager_fkie: fixed some highlightning problems in xmleditor
+* node_manager_fkie: added shortcuts for "Add tag"-Submenu's
+* node_manager_fkie: changed xml block highlighting
+* node_manager_fkie: fixed seletion in xmleditor
+* multimaster_fkie: changed indent in source code to 4
+* node_manager_fkie: added a question dialog before set time on remote host
+  Time changes leads to problems on tf tree and may have other unexpected
+  side effects
+* node_manager_fkie: compatibility to Qt5
+* node_manager_fkie: fixed the showed network id
+* node_manager_fkie: fixed host identification in node view
+* node_manager_fkie: changed hostname detection for decision to set ROS_HOSTNAME
+* node_manager_fkie: removed pep8 warnings
+* node_manager_fkie: fix local discovery node detection
+* node_manager_fkie: changed master_discovery node detection
+* node_manager_fkie: fixed pep8 warnings
+* node_manager_fkie: removed pylint warnings
+* node_manager_fkie: new feature: close tabs in Launch-Editor with middle mouse button
+* node_manager_fkie: fixed style warning in xml_editor and capability_table
+* node_manager_fkie: fixed clear of configuration nodes
+* node_manager_fkie: changed identification of master (now it is only the masteruri without address)
+* node_manager_fkie: fix in capability table
+* node_manager_fkie: removed '-' from master name generation for ROS master with not default port
+* node_manager_fkie: remove the ssh connection if the master goes offline. This avoids timeouts after reconnection
+* Contributors: Alexander Tiderko
+
 0.5.4 (2016-04-21)
 ------------------
 * multimaster_fkie: added '/do_not_sync' parameter

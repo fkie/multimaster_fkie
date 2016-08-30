@@ -2,6 +2,12 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.5 (2016-08-30)
+------------------
+* master_sync_fkie: added resync after the host was offline
+* master_sync_fkie: fixed pep8 warnings
+* Contributors: Alexander Tiderko
+
 0.5.4 (2016-04-21)
 ------------------
 * multimaster_fkie: added '/do_not_sync' parameter

@@ -2,6 +2,22 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.5 (2016-08-30)
+------------------
+* master_discovery_fkie: fixed issue`#16 <https://github.com/fkie/multimaster_fkie/issues/16>`_
+* multimaster_fkie: changed indent in source code to 4
+* master_discovery_fkie: added network separation to zeroconf discovering
+* master_discovery_fkie: changed the ROS service initialization
+  The ROS service will be created after discovering process is started.
+  This is especially for visualisation in node_manager.
+* multimaster_fkie: removed unused imports
+* master_discovery_fkie: fixed pep8 warnings
+* master_discovery_fkie: replaced time.sleep by threading.Timer to handle connection problems while get remote master info
+* master_discover_fkie: added warning on send errors
+* master_discovery_fkie: removed '-' from master name generation for ROS master with not default port
+* master_discovery_fkie: reduced/changed log output
+* Contributors: Alexander Tiderko
+
 0.5.4 (2016-04-21)
 ------------------
 * multimaster_fkie: added '/do_not_sync' parameter
