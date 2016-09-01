@@ -2,6 +2,9 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.6 (2016-09-01)
+------------------
+
 0.5.5 (2016-08-30)
 ------------------
 * master_sync_fkie: added resync after the host was offline

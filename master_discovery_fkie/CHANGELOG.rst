@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.6 (2016-09-01)
+------------------
+
 0.5.5 (2016-08-30)
 ------------------
 * master_discovery_fkie: fixed issue`#16 <https://github.com/fkie/multimaster_fkie/issues/16>`_

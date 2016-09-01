@@ -2,6 +2,11 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.6 (2016-09-01)
+------------------
+* node_manager_fkie: fixed error "No module named xml_editor"
+* Contributors: Alexander Tiderko
+
 0.5.5 (2016-08-30)
 ------------------
 * node_manager_fkie: version in info dialog updated

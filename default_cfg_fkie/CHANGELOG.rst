@@ -2,6 +2,9 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.6 (2016-09-01)
+------------------
+
 0.5.5 (2016-08-30)
 ------------------
 * multimaster_fkie: changed indent in source code to 4
