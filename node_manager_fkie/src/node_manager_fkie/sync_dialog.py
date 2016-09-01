@@ -31,12 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, QRegExp, Qt, Signal
-try:
-    from python_qt_binding.QtGui import QApplication, QMessageBox, QVBoxLayout, QSizePolicy
-    from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
-except:
-    from python_qt_binding.QtWidgets import QApplication, QMessageBox, QVBoxLayout, QSizePolicy
-    from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 from python_qt_binding.QtGui import QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 import os
 import threading
@@ -45,8 +39,15 @@ import rospy
 
 from node_manager_fkie.common import is_package
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
-from node_manager_fkie.xml_editor import Editor
 import node_manager_fkie as nm
+
+from .editor import TextEdit
+try:
+    from python_qt_binding.QtGui import QApplication, QMessageBox, QVBoxLayout, QSizePolicy
+    from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
+except:
+    from python_qt_binding.QtWidgets import QApplication, QMessageBox, QVBoxLayout, QSizePolicy
+    from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 
 
 class SyncHighlighter(QSyntaxHighlighter):
@@ -199,7 +200,7 @@ class SyncDialog(QDialog):
         self.toolButton_CreateInterface.clicked.connect(self._on_create_interface_clicked)
         self.toolButton_CreateInterface.setVisible(False)
 
-        self.textedit = Editor('', self)
+        self.textedit = TextEdit('', self)
         self.hl = SyncHighlighter(self.textedit.document())
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.textedit.setSizePolicy(sizePolicy)
