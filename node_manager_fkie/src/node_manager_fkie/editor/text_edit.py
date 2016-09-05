@@ -46,7 +46,7 @@ from .yaml_highlighter import YamlHighlighter
 try:
     from python_qt_binding.QtGui import QApplication, QMenu, QMessageBox, QTextEdit
 except:
-    from python_qt_binding.QtGui import QApplication, QMenu, QMessageBox, QTextEdit
+    from python_qt_binding.QtWidgets import QApplication, QMenu, QMessageBox, QTextEdit
 
 
 class TextEdit(QTextEdit):
