@@ -42,8 +42,8 @@ try:
     from python_qt_binding.QtGui import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 except:
-    from python_qt_binding.QtGui import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton
-    from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
+    from python_qt_binding.QtWidgets import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton
+    from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
 
 class TextSearchFrame(QFrame):

@@ -1,8 +1,9 @@
 from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QIcon
 try:
-    from python_qt_binding.QtGui import QIcon, QLineEdit, QToolButton, QStyle
+    from python_qt_binding.QtGui import QLineEdit, QToolButton, QStyle
 except:
-    from python_qt_binding.QtWidgets import QIcon, QLineEdit, QToolButton, QStyle
+    from python_qt_binding.QtWidgets import QLineEdit, QToolButton, QStyle
 
 
 class EnchancedLineEdit(QLineEdit):
