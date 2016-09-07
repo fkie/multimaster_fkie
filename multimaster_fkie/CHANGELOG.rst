@@ -2,6 +2,12 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.7 (2016-09-07)
+------------------
+* fix imports for Qt5
+* fix issue `#43 <https://github.com/fkie/multimaster_fkie/issues/43>`_ - "cannot import name QApplication"
+* Contributors: Alexander Tiderko, Sr4l
+
 0.5.6 (2016-09-01)
 ------------------
 * node_manager_fkie: fixed error "No module named xml_editor"
