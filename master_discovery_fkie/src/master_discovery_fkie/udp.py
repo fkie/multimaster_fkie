@@ -182,7 +182,7 @@ class DiscoverSocket(socket.socket):
     def set_message_callback(self, callback):
         '''
         This callback methos is called if the message is recieved.
-        Callback API. (message, tuple of sender address)
+        Callback API. (message, tuple of sender address, bool for multicast or not)
         '''
         self._msg_callback = callback
 
@@ -341,7 +341,7 @@ class DiscoverSocket(socket.socket):
                 (msg, address) = self.recvfrom(1024)
                 with self._lock:
                     if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
-                        self._msg_callback(msg, address)
+                        self._msg_callback(msg, address, True)
             except socket.timeout:
                 pass
             except socket.error:
@@ -358,7 +358,7 @@ class DiscoverSocket(socket.socket):
                     (msg, address) = self.unicast_socket.recvfrom(1024)
                     with self._lock:
                         if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
-                            self._msg_callback(msg, address)
+                            self._msg_callback(msg, address, False)
                 except socket.timeout:
                     pass
                 except socket.error:
