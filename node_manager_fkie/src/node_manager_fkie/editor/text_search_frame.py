@@ -32,6 +32,7 @@
 
 from python_qt_binding.QtCore import Signal, Qt
 import os
+import rospy
 
 from node_manager_fkie.common import package_name
 
@@ -169,14 +170,16 @@ class TextSearchFrame(QFrame):
                     path_text[self._tabwidget.widget(i).filename] = self._tabwidget.widget(i).document().toPlainText()
                 self._search_thread = TextSearchThread(self.current_search_text, self._tabwidget.currentWidget().filename, path_text=path_text)
                 self._search_thread.search_result_signal.connect(self.on_search_result)
+                self._search_thread.warning_signal.connect(self.on_warning_result)
                 self._search_thread.start()
         elif self.search_results:
             self._check_position()
-            if self._search_result_index + 1 >= len(self.search_results):
-                self._search_result_index = -1
-            self._search_result_index += 1
-            self.search_result_signal.emit(*self.search_results[self._search_result_index])
-            self.replace_button.setEnabled(True)
+            if self.search_results:
+                if self._search_result_index + 1 >= len(self.search_results):
+                    self._search_result_index = -1
+                self._search_result_index += 1
+                self.search_result_signal.emit(*self.search_results[self._search_result_index])
+                self.replace_button.setEnabled(True)
         self._update_label()
 
     def on_search_back(self):
@@ -248,8 +251,12 @@ class TextSearchFrame(QFrame):
                         list_item.setToolTip(item)
                         self.found_files.addItem(list_item)
                         self.found_files.setVisible(True)
-                self.setMinimumHeight(min(60, 25 * len(self.search_results_fileset)))
+                min_height = 50 if self.rplc_frame.isVisible() else 25
+                self.setMinimumHeight(min(60, max(min_height, 25 * len(self.search_results_fileset))))
         self._update_label()
+
+    def on_warning_result(self, text):
+        rospy.logwarn(text)
 
     def on_replace_click(self):
         self.on_replace()

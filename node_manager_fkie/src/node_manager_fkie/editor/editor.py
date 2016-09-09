@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QFileInfo, QPoint, QSize, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QKeySequence, QTextCursor
+from python_qt_binding.QtGui import QIcon, QKeySequence, QTextCursor, QTextDocument
 import os
 
 import rospy
@@ -43,6 +43,7 @@ import node_manager_fkie as nm
 from .line_number_widget import LineNumberWidget
 from .text_edit import TextEdit
 from .text_search_frame import TextSearchFrame
+from .text_search_thread import TextSearchThread
 
 try:
     from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QMessageBox, QWidget
@@ -111,6 +112,7 @@ class Editor(QDialog):
             window_title = self.__getTabName(filenames[0])
         self.setWindowTitle(window_title)
         self.init_filenames = list(filenames)
+        self._search_thread = None
         # list with all open files
         self.files = []
         # create tabs for files
@@ -294,10 +296,14 @@ class Editor(QDialog):
             rospy.logwarn("Error while open %s: %s", filename, traceback.format_exc(1))
         self.tabWidget.setUpdatesEnabled(True)
         if search_text:
-            if self.find(search_text, False, exclude_xml_comments=True):
-                if not self.find_dialog.search_pos.isNull():
-                    self.tabWidget.currentWidget().moveCursor(QTextCursor.StartOfLine)
-                    self.tabWidget.currentWidget().moveCursor(QTextCursor.NextWord)
+            try:
+                self._search_thread.stop()
+                self._search_thread = None
+            except:
+                pass
+            self._search_thread = TextSearchThread(search_text, filename, path_text=editor.document().toPlainText())
+            self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
+            self._search_thread.start()
 
     def on_text_changed(self):
         if hasattr(self, "find_dialog") and self.tabWidget.currentWidget().hasFocus():
@@ -491,6 +497,23 @@ class Editor(QDialog):
             cursor.setPosition(index, QTextCursor.MoveAnchor)
             cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, len(search_text))
             self.tabWidget.currentWidget().setTextCursor(cursor)
+
+    def on_search_result_on_open(self, search_text, found, path, index):
+        '''
+        Like on_search_result, but skips the text in comments.
+        '''
+        if found:
+            if self.tabWidget.currentWidget().filename != path:
+                focus_widget = QApplication.focusWidget()
+                self.on_load_request(path)
+                focus_widget.setFocus()
+            comment_start = self.tabWidget.currentWidget().document().find('<!--', index, QTextDocument.FindBackward)
+            if not comment_start.isNull():
+                comment_end = self.tabWidget.currentWidget().document().find('-->', comment_start)
+                if not comment_end.isNull() and comment_end.position() > index + len(search_text):
+                    # commented -> retrun
+                    return
+        self.on_search_result(search_text, found, path, index)
 
     def on_replace(self, search_text, path, index, replaced_text):
         '''

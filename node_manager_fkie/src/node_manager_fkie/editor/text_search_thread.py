@@ -131,15 +131,18 @@ class TextSearchThread(QObject, threading.Thread):
             pos = reg.indexIn(data)
             while pos != -1 and self._isrunning:
                 try:
-                    path = interpret_path(reg.cap(0).strip('"'))
-                    f = QFile(path)
-                    ext = os.path.splitext(path)
+                    pp = interpret_path(reg.cap(0).strip('"'))
+                    f = QFile(pp)
+                    ext = os.path.splitext(pp)
                     if f.exists() and ext[1] in nm.settings().SEARCH_IN_EXT:
-                        result.append(path)
-                except:
-                    import traceback
-                    print traceback.format_exc(1)
-                    self.warning_signal(traceback.format_exc(1))
+                        result.append(pp)
+                except Exception as exp:
+                    parsed_text = pp
+                    try:
+                        parsed_text = reg.cap(0).strip('"')
+                    except:
+                        pass
+                    self.warning_signal.emit("Error while parse '%s': %s" % (parsed_text, exp))
                 pos += reg.matchedLength()
                 pos = reg.indexIn(data, pos)
         return result
