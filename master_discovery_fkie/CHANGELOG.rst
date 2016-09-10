@@ -2,6 +2,12 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.8 (2016-09-10)
+------------------
+* fix for `#46 <https://github.com/fkie/multimaster_fkie/issues/46>`_: bouncing offline/online
+  reduced discovery heartbeats, especially if one of the masters is not reachable anymore.
+* Contributors: Alexander Tiderko
+
 0.5.7 (2016-09-07)
 ------------------
 

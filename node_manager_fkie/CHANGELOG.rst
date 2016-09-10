@@ -2,6 +2,11 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.8 (2016-09-10)
+------------------
+* node_manager_fkie: fixed the error occurs while open configuration for a selected node
+* Contributors: Alexander Tiderko
+
 0.5.7 (2016-09-07)
 ------------------
 * fix imports for Qt5

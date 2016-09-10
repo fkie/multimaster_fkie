@@ -2,6 +2,13 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.8 (2016-09-10)
+------------------
+* master_discovery_fkie: fix for `#46 <https://github.com/fkie/multimaster_fkie/issues/46>`_: bouncing offline/online
+  reduced discovery heartbeats, especially if one of the masters is not reachable anymore.
+* node_manager_fkie: fixed the error occurs while open configuration for a selected node
+* Contributors: Alexander Tiderko
+
 0.5.7 (2016-09-07)
 ------------------
 * fix imports for Qt5
