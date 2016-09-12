@@ -126,7 +126,7 @@ class TextSearchThread(QObject, threading.Thread):
         result = []
         with open(path, 'r') as f:
             data = f.read()
-            reg = QRegExp("\".*\"")
+            reg = QRegExp("=[\s\t]*\".*\"")
             reg.setMinimal(True)
             pos = reg.indexIn(data)
             while pos != -1 and self._isrunning:
