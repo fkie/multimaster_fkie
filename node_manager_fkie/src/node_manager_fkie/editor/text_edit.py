@@ -358,7 +358,7 @@ class TextEdit(QTextEdit):
                     # skipt the existing spaces at the start of the line
                     cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                     while cursor.selectedText() in [' ', '\t']:
-                        cursor.setPosition(cursor.position() + 1, QTextCursor.MoveAnchor)
+                        cursor.setPosition(cursor.position(), QTextCursor.MoveAnchor)
                         cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                     cursor.movePosition(QTextCursor.PreviousCharacter, 1)
                     cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 4)
@@ -388,7 +388,7 @@ class TextEdit(QTextEdit):
                             # skipt the current existing spaces
                             cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                             while cursor.selectedText() in [' ', '\t']:
-                                cursor.setPosition(cursor.position() + 1, QTextCursor.MoveAnchor)
+                                cursor.setPosition(cursor.position(), QTextCursor.MoveAnchor)
                                 cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                             cursor.movePosition(QTextCursor.PreviousCharacter, 1)
                             cursor.insertText('<!-- ')
