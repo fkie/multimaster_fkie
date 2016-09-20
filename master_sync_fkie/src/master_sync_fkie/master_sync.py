@@ -160,7 +160,7 @@ class Main(object):
                             (not is_empty_pattern(self._re_sync_hosts) and self._re_sync_hosts.match(mastername) is not None)):
                         # do not sync to the master, if it is in ignore list
                         if self.__resync_on_reconnect and mastername in self.masters:
-                            self.masters[mastername].set_online(online)
+                            self.masters[mastername].set_online(online, self.__resync_on_reconnect_timeout)
                         if online:
                             if mastername in self.masters:
                                     # updates only, if local changes are occured
@@ -286,6 +286,9 @@ class Main(object):
                 self.__sync_topics_on_demand = rospy.get_param('~sync_topics_on_demand')
             rospy.loginfo("sync_topics_on_demand: %s", self.__sync_topics_on_demand)
             self.__resync_on_reconnect = rospy.get_param('~resync_on_reconnect', True)
+            rospy.loginfo("resync_on_reconnect: %s", self.__resync_on_reconnect)
+            self.__resync_on_reconnect_timeout = rospy.get_param('~resync_on_reconnect_timeout', 0)
+            rospy.loginfo("resync_on_reconnect_timeout: %s", self.__resync_on_reconnect_timeout)
         except:
             import traceback
             # kill the ros node, to notify the user about the error

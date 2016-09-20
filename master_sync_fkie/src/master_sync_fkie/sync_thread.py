@@ -34,6 +34,7 @@
 import random
 import socket
 import threading
+import time
 import traceback
 import xmlrpclib
 
@@ -79,6 +80,7 @@ class SyncThread(object):
         self.timestamp_local = 0.
         self.timestamp_remote = 0.
         self._online = True
+        self._offline_ts = 0
 
         self.masteruri_local = masteruri_from_ros()
         rospy.logdebug("SyncThread[%s]: create this sync thread", self.name)
@@ -141,24 +143,29 @@ class SyncThread(object):
                 self.__sync_info = SyncMasterInfo(self.uri, list(result_set), result_publisher, result_subscriber, result_services)
             return self.__sync_info
 
-    def set_online(self, value):
+    def set_online(self, value, resync_on_reconnect_timeout=0.):
         if value:
             if not self._online:
                 with self.__lock_intern:
                     self._online = True
-                    rospy.loginfo("SyncThread[%s]: perform resync after the host was offline (unregister and register again to avoid connection losses to python topic. These does not suppot reconnection!)", self.name)
-                    if self._update_timer is not None:
-                        self._update_timer.cancel()
-                    self._unreg_on_finish()
-                    self.__unregistered = False
-                    self.__publisher = []
-                    self.__subscriber = []
-                    self.__services = []
-                    self.timestamp = 0.
-                    self.timestamp_local = 0.
-                    self.timestamp_remote = 0.
+                    offline_duration = time.time() - self._offline_ts
+                    if offline_duration >= resync_on_reconnect_timeout:
+                        rospy.loginfo("SyncThread[%s]: perform resync after the host was offline (unregister and register again to avoid connection losses to python topic. These does not suppot reconnection!)", self.name)
+                        if self._update_timer is not None:
+                            self._update_timer.cancel()
+                        self._unreg_on_finish()
+                        self.__unregistered = False
+                        self.__publisher = []
+                        self.__subscriber = []
+                        self.__services = []
+                        self.timestamp = 0.
+                        self.timestamp_local = 0.
+                        self.timestamp_remote = 0.
+                    else:
+                        rospy.loginfo("SyncThread[%s]: skip resync after the host was offline because of resync_on_reconnect_timeout=%.2f and the host was only %.2f sec offline", self.name, resync_on_reconnect_timeout, offline_duration)
         else:
             self._online = False
+            self._offline_ts = time.time()
 
     def update(self, name, uri, discoverer_name, monitoruri, timestamp):
         '''
