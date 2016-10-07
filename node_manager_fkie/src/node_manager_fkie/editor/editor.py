@@ -301,7 +301,7 @@ class Editor(QDialog):
                 self._search_thread = None
             except:
                 pass
-            self._search_thread = TextSearchThread(search_text, filename, path_text=editor.document().toPlainText())
+            self._search_thread = TextSearchThread(search_text, filename, path_text=self.tabWidget.widget(0).document().toPlainText())
             self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
             self._search_thread.start()
 
