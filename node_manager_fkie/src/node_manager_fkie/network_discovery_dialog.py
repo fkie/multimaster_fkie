@@ -104,7 +104,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.setDaemon(True)
         self.start()
 
-    def on_heartbeat_received(self, msg, address):
+    def on_heartbeat_received(self, msg, address, is_multicast):
         force_update = False
         with self.mutex:
             try:
