@@ -92,7 +92,8 @@ class XmlHighlighter(QSyntaxHighlighter):
     LAUNCH_ROSPARAM_ATTR = {'command=': '"load|dump|delete"',
                             'file=': '"$(find pkg-name)/path/foo.yaml"',
                             'param=': '"name"',
-                            'ns=': '"foo"'
+                            'ns=': '"foo"',
+                            'subst_value=': '"true|false"'
                             }
     LAUNCH_ARG_ATTR = {'name=': '"name"',
                        'value=': '"bar"',
