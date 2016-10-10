@@ -380,7 +380,7 @@ class TextEdit(QTextEdit):
                             cursor.insertText('')
                             cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 1)
                     else:
-                        cursor.movePosition(QTextCursor.StartOfLine)
+                        cursor.setPosition(cursor.anchor())
                         cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
                         # only comment out, if no comments are found
                         if cursor.selectedText().find('<!--') < 0 and cursor.selectedText().find('-->') < 0:
