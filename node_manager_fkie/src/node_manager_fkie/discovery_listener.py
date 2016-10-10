@@ -68,11 +68,14 @@ class MasterListService(QObject):
     def __init__(self):
         QObject.__init__(self)
         self.__serviceThreads = {}
+        self.__refreshThreads = {}
         self._lock = threading.RLock()
 
     def stop(self):
         print "  Shutdown discovery listener..."
         for _, thread in self.__serviceThreads.iteritems():
+            thread.join(3)
+        for _, thread in self.__refreshThreads.iteritems():
             thread.join(3)
         print "  Discovery listener is off!"
 
@@ -104,11 +107,11 @@ class MasterListService(QObject):
         @type wait: C{boolean}
         '''
         with self._lock:
-            if masteruri not in self.__serviceThreads:
+            if masteruri not in self.__refreshThreads:
                 upthread = MasterRefreshThread(masteruri, wait)
                 upthread.ok_signal.connect(self._on_ok)
                 upthread.err_signal.connect(self._on_err)
-                self.__serviceThreads[masteruri] = upthread
+                self.__refreshThreads[masteruri] = upthread
                 upthread.start()
 
     def _on_master_list(self, masteruri, service_name, items):
@@ -120,11 +123,15 @@ class MasterListService(QObject):
                 pass
         self.masterlist_signal.emit(masteruri, service_name, items)
 
-    def _on_err(self, masteruri, msg):
+    def _on_err(self, masteruri, msg, on_refresh):
         with self._lock:
             try:
-                thread = self.__serviceThreads.pop(masteruri)
-                del thread
+                if on_refresh:
+                    thread = self.__refreshThreads.pop(masteruri)
+                    del thread
+                else:
+                    thread = self.__serviceThreads.pop(masteruri)
+                    del thread
             except KeyError:
                 pass
         self.masterlist_err_signal.emit(masteruri, msg)
@@ -132,7 +139,7 @@ class MasterListService(QObject):
     def _on_ok(self, masteruri):
         with self._lock:
             try:
-                thread = self.__serviceThreads.pop(masteruri)
+                thread = self.__refreshThreads.pop(masteruri)
                 del thread
             except KeyError:
                 pass
@@ -144,7 +151,7 @@ class MasterListThread(QObject, threading.Thread):
     service and publish it by sending a QT signal.
     '''
     master_list_signal = Signal(str, str, list)
-    err_signal = Signal(str, str)
+    err_signal = Signal(str, str, bool)
 
     def __init__(self, masteruri, wait, parent=None):
         QObject.__init__(self)
@@ -170,17 +177,17 @@ class MasterListThread(QObject, threading.Thread):
                     resp = discoverMasters()
                 except rospy.ServiceException, e:
                     rospy.logwarn("Service call 'list_masters' failed: %s", str(e))
-                    self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (service_name, err_msg))
+                    self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (service_name, err_msg), False)
                 else:
                     if resp.masters:
                         self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
                         found = True
                     else:
-                        self.err_signal.emit(self._masteruri, "local 'master_discovery' reports empty master list, it seems he has a problem")
+                        self.err_signal.emit(self._masteruri, "local 'master_discovery' reports empty master list, it seems he has a problem", False)
                 finally:
                     socket.setdefaulttimeout(None)
             if not found:
-                self.err_signal.emit(self._masteruri, "no service 'list_masters' found on %s" % self._masteruri)
+                self.err_signal.emit(self._masteruri, "no service 'list_masters' found on %s" % self._masteruri, False)
 
 
 class MasterRefreshThread(QObject, threading.Thread):
@@ -188,7 +195,7 @@ class MasterRefreshThread(QObject, threading.Thread):
     A thread to call the refresh service of master discovery.
     '''
     ok_signal = Signal(str)
-    err_signal = Signal(str, str)
+    err_signal = Signal(str, str, bool)
 
     def __init__(self, masteruri, wait, parent=None):
         QObject.__init__(self)
@@ -214,7 +221,7 @@ class MasterRefreshThread(QObject, threading.Thread):
                     self.ok_signal.emit(self._masteruri)
                 except rospy.ServiceException, e:
                     rospy.logwarn("ERROR Service call 'refresh' failed: %s", str(e))
-                    self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % err_msg)
+                    self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % err_msg, True)
                 finally:
                     socket.setdefaulttimeout(None)
 
