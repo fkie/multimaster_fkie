@@ -175,6 +175,10 @@ class XmlHighlighter(QSyntaxHighlighter):
         # create patterns for DOCTYPE
         self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
         self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
+        # create patterns for yaml parameter inside
+        self.rules.append((self._create_regexp("^\s*[_.\w]*\s*:"), self._create_format(Qt.black, 'bold')))
+        # create patterns for yaml oneline strings inside
+        self.rules.append((self._create_regexp("'.*'"), self._create_format(QColor(204, 0, 153))))
         # create patterns for strings
         self.string_pattern = QRegExp("\"")
         self.string_format = self._create_format(Qt.magenta)
