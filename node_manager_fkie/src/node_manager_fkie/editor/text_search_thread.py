@@ -53,7 +53,7 @@ class TextSearchThread(QObject, threading.Thread):
     '''
     warning_signal = Signal(str)
 
-    def __init__(self, search_text, path, is_regex=False, path_text={}):
+    def __init__(self, search_text, path, is_regex=False, path_text={}, recursive=False):
         '''
         :param search_text: text to search for
         :type search_text: str
@@ -67,6 +67,7 @@ class TextSearchThread(QObject, threading.Thread):
         self._search_text = search_text
         self._path = path
         self._path_text = path_text
+        self._recursive = recursive
         self._isrunning = True
         self.setDaemon(True)
 
@@ -77,7 +78,7 @@ class TextSearchThread(QObject, threading.Thread):
         '''
         '''
         try:
-            self.search_recursive(self._search_text, self._path)
+            self.search(self._search_text, self._path, self._recursive)
         except:
             import traceback
 #      print traceback.print_exc()
@@ -88,7 +89,7 @@ class TextSearchThread(QObject, threading.Thread):
             if self._isrunning:
                 self.search_result_signal.emit(self._search_text, False, '', -1)
 
-    def search_recursive(self, search_text, path):
+    def search(self, search_text, path, recursive=False):
         '''
         Searches for given text in this document and all included files.
         @param search_text: text to find
@@ -109,7 +110,8 @@ class TextSearchThread(QObject, threading.Thread):
             for incf in inc_files:
                 if not self._isrunning:
                     break
-                self.search_recursive(search_text, incf)
+                if recursive:
+                    self.search(search_text, incf)
 
     def _get_text(self, path):
         if path in self._path_text:
