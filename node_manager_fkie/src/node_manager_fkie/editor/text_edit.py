@@ -352,9 +352,6 @@ class TextEdit(QTextEdit):
                 ext = os.path.splitext(self.filename)
                 # XML comment
                 if ext[1] in self.CONTEXT_FILE_EXT:
-                    if cursor.block().length() < 4:
-                        cursor.movePosition(QTextCursor.NextBlock)
-                        continue
                     # skipt the existing spaces at the start of the line
                     cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                     while cursor.selectedText() in [' ', '\t']:
