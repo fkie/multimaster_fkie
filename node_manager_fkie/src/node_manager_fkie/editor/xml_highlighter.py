@@ -171,7 +171,7 @@ class XmlHighlighter(QSyntaxHighlighter):
         attr_list = '|'.join(set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
         self.rules.append((self._create_regexp(attr_list), self._create_format(Qt.darkGreen)))
         # create patterns for substitutions
-        self.rules.append((self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(127, 64, 127))))
+        self.rule_arg = (self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(127, 64, 127)))
         # create patterns for DOCTYPE
         self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
         self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
@@ -265,6 +265,13 @@ class XmlHighlighter(QSyntaxHighlighter):
             else:
                 idx_start = self.string_pattern.indexIn(text, idx_search)
                 idx_search = idx_start + 1
+        # mark arguments
+        index = self.rule_arg[0].indexIn(text)
+        while index >= 0:
+            if not self._in_hl_range(index, self._comments_idx):
+                length = self.rule_arg[0].matchedLength()
+                self.setFormat(index, length, self.rule_arg[1])
+            index = self.rule_arg[0].indexIn(text, index + length)
 
     def mark_block(self, block, position):
         text = block.text()
