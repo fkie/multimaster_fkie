@@ -1,3 +1,7 @@
+# A filter list with patterns. If this pattern merges to a node, 
+# topic or service it will not be synchronized.
+do_not_sync:
+
 # The ignore_* lists will be processed first.
 ignore_hosts:
 sync_hosts:
@@ -22,3 +26,10 @@ sync_topics_on_demand: False
 # The nodes which are running not at the same host as the ROS master are not
 # synchronized by default. Use sync_remote_nodes to sync these nodes also.
 sync_remote_nodes: False
+
+# Performs resync after the host was offline: unregister and register again 
+# to avoid connection losses to python topic. These does not suppot reconnection!
+resync_on_reconnect: True
+# A configurable period that controls how long the offline-online period [sec] 
+# is before the resync kicks in.
+resync_on_reconnect_timeout: 0
