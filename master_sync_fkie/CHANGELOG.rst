@@ -2,6 +2,12 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2016-10-12)
+------------------
+* master_sync_fkie: updated launch file
+* master_sync_fkie: added a 'resync_on_reconnect_timeout' parameter that controls how long the offline-online period is before the resync. see enhancement `#48 <https://github.com/fkie/multimaster_fkie/issues/48>`_
+* Contributors: Alexander Tiderko
+
 0.5.8 (2016-09-10)
 ------------------
 

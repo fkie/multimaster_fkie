@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2016-10-12)
+------------------
+
 0.5.8 (2016-09-10)
 ------------------
 * fix for `#46 <https://github.com/fkie/multimaster_fkie/issues/46>`_: bouncing offline/online

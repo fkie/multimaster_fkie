@@ -2,6 +2,23 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2016-10-12)
+------------------
+* node_manager_fkie: changed find-replace doalog to dockable widget
+* node_manager_fkie: changed highlight colors
+* node_manager_fkie: added more info for search error
+* node_manager_fkie: fixed: comment lines with less then 4 characters
+* node_manager_fkie: fixed: `#49 <https://github.com/fkie/multimaster_fkie/issues/49>`_
+* node_manager_fkie: added highlightning for yaml stuff inside of a launch file
+* node_manager_fkie: fixed: comment of lines with less then 4 characters in xml editor
+* node_manager_fkie: fixed: activation of network window after join from network discovery
+* node_manager_fkie: fixed: does not open a second configuration editor for a selected node.
+* node_manager_fkie: added: 'subst_value' to xml highlighter
+* node_manager_fkie: fixed: network discovery
+* node_manager_fkie: comment/uncomment fixed
+* node_manager_fkie: fixed: detection of included files
+* Contributors: Alexander Tiderko
+
 0.5.8 (2016-09-10)
 ------------------
 * node_manager_fkie: fixed the error occurs while open configuration for a selected node
