@@ -51,55 +51,38 @@ class YamlHighlighter(QSyntaxHighlighter):
         self.commentFormat.setFontItalic(True)
         self.commentFormat.setForeground(Qt.darkGray)
 
-        f = QTextCharFormat()
-        r = QRegExp()
-        r.setMinimal(True)
-        f.setFontWeight(QFont.Normal)
-        f.setForeground(Qt.blue)
         tagList = ["\\btrue\\b", "\\bfalse\\b"]
+        # create patterns for tags
         for tag in tagList:
-            r.setPattern(tag)
-            self.rules.append((QRegExp(r), QTextCharFormat(f)))
+            self.rules.append((self._create_regexp(tag), self._create_format(Qt.blue)))
 
-        f.setForeground(QColor(127, 64, 127))
-        r.setPattern("\\d+")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create pattern for digits
+        self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
 
-        f.setForeground(Qt.darkBlue)
-        r.setPattern("^\s*[_.\w]*\s*:")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create pattern for params
+        self.rules.append((self._create_regexp("^\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
 
-        f.setForeground(Qt.darkBlue)
-        r.setPattern(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create pattern for params
+        self.rules.append((self._create_regexp(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$"), self._create_format(Qt.darkBlue)))
 
-        f.setFontWeight(QFont.Bold)
-        f.setForeground(Qt.darkRed)
-        r.setPattern("^\s*-")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create pattern for list signes
+        self.rules.append((self._create_regexp("^\s*-"), self._create_format(Qt.darkRed, 'bold')))
 
-        f.setForeground(Qt.darkRed)
-        r.setPattern("^---$")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create pattern for ???
+        self.rules.append((self._create_regexp("^---$"), self._create_format(Qt.darkRed)))
 
-        f.setForeground(Qt.darkGreen)
-        r.setPattern("[\[\]\{\}\,]")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create pattern for braces
+        self.rules.append((self._create_regexp("[\[\]\{\}\,]"), self._create_format(Qt.darkGreen)))
 
-        f.setFontWeight(QFont.Normal)
-        f.setForeground(Qt.magenta)
-        r.setPattern("\".*\"|\'.*\'")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create patterns for strings
+        self.rules.append((self._create_regexp("\".*\"|\'.*\'"), self._create_format(Qt.blue)))
 
-        f.setForeground(QColor(127, 64, 127))
-        r.setPattern("\\$\\(.*\\)")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create patterns for substitutions
+        self.rules.append((self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(127, 64, 127))))
 
-        f.setForeground(Qt.lightGray)
-        r.setPattern("<!DOCTYPE.*>")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
-        r.setPattern("<\\?xml.*\\?>")
-        self.rules.append((QRegExp(r), QTextCharFormat(f)))
+        # create patterns for DOCTYPE
+        self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
+        self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
 
     def highlightBlock(self, text):
         self.setFormat(0, len(text), self.default_format)
@@ -118,3 +101,20 @@ class YamlHighlighter(QSyntaxHighlighter):
             if startIndex >= 0:
                 commentLength = len(text) - startIndex
                 self.setFormat(startIndex, commentLength, self.commentFormat)
+
+    def _create_regexp(self, pattern=''):
+        _regexp = QRegExp()
+        _regexp.setMinimal(True)
+        _regexp.setPattern(pattern)
+        return _regexp
+
+    def _create_format(self, color, style=''):
+        _format = QTextCharFormat()
+        _format.setForeground(color)
+        if 'bold' in style:
+            _format.setFontWeight(QFont.Bold)
+        else:
+            _format.setFontWeight(QFont.Normal)
+        if 'italic' in style:
+            _format.setFontItalic(True)
+        return _format

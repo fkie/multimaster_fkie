@@ -166,22 +166,26 @@ class XmlHighlighter(QSyntaxHighlighter):
         self.rules.append((self._create_regexp("</?|/?>"), self._create_format(QColor(24, 24, 24))))
         # create patterns for TAG
         tag_list = '|'.join(["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()])
-        self.rules.append((self._create_regexp(tag_list), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp(tag_list), self._create_format(Qt.darkRed)))
         # create patterns for ATTRIBUTES
         attr_list = '|'.join(set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
-        self.rules.append((self._create_regexp(attr_list), self._create_format(Qt.darkGreen)))
+        self.rules.append((self._create_regexp(attr_list), self._create_format(QColor(0, 100, 0))))  # darkGreen
         # create patterns for substitutions
-        self.rule_arg = (self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(127, 64, 127)))
+        self.rule_arg = (self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(77, 0, 38)))
         # create patterns for DOCTYPE
         self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
         self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
         # create patterns for yaml parameter inside
-        self.rules.append((self._create_regexp("^\s*[_.\w]*\s*:"), self._create_format(Qt.black, 'bold')))
+        self.rules.append((self._create_regexp("^\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
         # create patterns for yaml oneline strings inside
-        self.rules.append((self._create_regexp("'.*'"), self._create_format(QColor(204, 0, 153))))
+        self.rules.append((self._create_regexp("'.*'"), self._create_format(Qt.blue)))
+        # create pattern for list signes
+        self.rules.append((self._create_regexp("^\s*-"), self._create_format(Qt.darkRed, 'bold')))
+        # create pattern for digits
+        self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
         # create patterns for strings
         self.string_pattern = QRegExp("\"")
-        self.string_format = self._create_format(Qt.magenta)
+        self.string_format = self._create_format(Qt.blue)
         # part to select an XML block
         self._tag_hl_range = []  # list with puples (start, length)
         self._tag_hl_last = set()  # set with blocks of last highlighted tags
