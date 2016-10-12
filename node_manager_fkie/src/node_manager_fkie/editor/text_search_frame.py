@@ -62,11 +62,6 @@ class TextSearchFrame(QDockWidget):
         (search text, file, position in text, replaced by text)
     '''
 
-    HEIGHT_REPLACE = 50
-    HEIGHT_FIND = 25
-    HEIGHT_FIND_RECURSIVE_2 = 65
-    HEIGHT_FIND_RECURSIVE_3 = 80
-
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "Find", parent)
         self.setObjectName('SearchFrame')
@@ -274,7 +269,7 @@ class TextSearchFrame(QDockWidget):
                         list_item.setToolTip(item)
                         self.found_files_list.addItem(list_item)
                         self.found_files_frame.setVisible(True)
-                self.setMinimumHeight(self.get_current_height())
+                        self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         self._update_label()
 
     def on_warning_result(self, text):
@@ -375,7 +370,6 @@ class TextSearchFrame(QDockWidget):
         self.rplc_frame.setVisible(value)
         self.raise_()
         self.activateWindow()
-        self.setMinimumHeight(self.get_current_height())
         if value:
             self.replace_field.setFocus()
             self.replace_field.selectAll()
@@ -397,7 +391,7 @@ class TextSearchFrame(QDockWidget):
         self.search_results = []
         self.search_results_fileset = set()
         self.found_files_list.clear()
-        self.setMinimumHeight(self.get_current_height())
+        self.found_files_list.setVisible(False)
         self._update_label(True)
         self._search_result_index = -1
         self.find_button_back.setEnabled(False)
@@ -425,16 +419,7 @@ class TextSearchFrame(QDockWidget):
                         self.found_files_list.takeItem(wi_idx)
                         break
             self.search_results_fileset = new_path_set
-            self.setMinimumHeight(self.get_current_height())
+            self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         except:
             import traceback
             print traceback.format_exc()
-
-    def get_current_height(self):
-        min_height = self.HEIGHT_REPLACE if self.rplc_frame.isVisible() else self.HEIGHT_FIND
-        if len(self.search_results_fileset) > 2:
-            min_height = max(min_height, self.HEIGHT_FIND_RECURSIVE_3)
-        elif len(self.search_results_fileset) > 1:
-            min_height = max(min_height, self.HEIGHT_FIND_RECURSIVE_2)
-        self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
-        return min_height
