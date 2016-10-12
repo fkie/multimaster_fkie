@@ -171,6 +171,12 @@ class TextSearchFrame(QDockWidget):
         ff_frame.setFlat(True)
         return self.found_files_frame
 
+    def keyPressEvent(self, event):
+        '''
+        Enable the shortcats for search and replace
+        '''
+        self.parent().keyPressEvent(event)
+
     def on_search(self):
         '''
         Initiate the new search or request a next search result.
@@ -367,9 +373,12 @@ class TextSearchFrame(QDockWidget):
 
     def set_replace_visible(self, value):
         self.rplc_frame.setVisible(value)
+        self.raise_()
+        self.activateWindow()
         self.setMinimumHeight(self.get_current_height())
         if value:
             self.replace_field.setFocus()
+            self.replace_field.selectAll()
             self.setWindowTitle("Find / Replace")
         else:
             self.setWindowTitle("Find")
@@ -398,8 +407,8 @@ class TextSearchFrame(QDockWidget):
     def enable(self):
         self.setVisible(True)
 #        self.show()
-#        self.raise_()
-#        self.activateWindow()
+        self.raise_()
+        self.activateWindow()
         self.search_field.setFocus()
         self.search_field.selectAll()
 

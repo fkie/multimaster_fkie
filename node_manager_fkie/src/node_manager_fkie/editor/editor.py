@@ -229,11 +229,6 @@ class Editor(QMainWindow):
                     self.on_toggled_replace(True)
             else:
                 self.replaceButton.setChecked(not self.replaceButton.isChecked())
-#         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Tab:
-#             new_idx = self.tabWidget.currentIndex() + 1
-#             if new_idx >= self.tabWidget.count():
-#                 new_idx = 0
-#             self.tabWidget.setCurrentIndex(new_idx)
         else:
             event.accept()
             QMainWindow.keyPressEvent(self, event)
