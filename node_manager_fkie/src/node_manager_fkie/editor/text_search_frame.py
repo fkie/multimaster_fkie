@@ -164,6 +164,7 @@ class TextSearchFrame(QDockWidget):
         ff_frame.setCheckable(True)
         ff_frame.setChecked(False)
         ff_frame.setFlat(True)
+        self.found_files_list.setVisible(False)
         return self.found_files_frame
 
     def keyPressEvent(self, event):
