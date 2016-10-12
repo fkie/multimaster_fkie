@@ -46,11 +46,11 @@ from .text_search_frame import TextSearchFrame
 from .text_search_thread import TextSearchThread
 
 try:
-    from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QMessageBox, QWidget
+    from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QMessageBox, QWidget, QMainWindow
     from python_qt_binding.QtGui import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 except:
-    from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QMessageBox, QWidget
+    from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QMessageBox, QWidget, QMainWindow
     from python_qt_binding.QtWidgets import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
@@ -82,7 +82,7 @@ class EditorTabWidget(QTabWidget):
         return QTabWidget.widget(self, index).get_text_edit()
 
 
-class Editor(QDialog):
+class Editor(QMainWindow):
     '''
     Creates a dialog to edit a launch file.
     '''
@@ -99,7 +99,7 @@ class Editor(QDialog):
         @param search_text: if not empty, searches in new document for first occurrence of the given text
         @type search_text: C{str} (Default: C{Empty String})
         '''
-        QDialog.__init__(self, parent)
+        QMainWindow.__init__(self, parent)
         self.setObjectName(' - '.join(['Editor', str(filenames)]))
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowFlags(Qt.Window)
@@ -116,13 +116,11 @@ class Editor(QDialog):
         # list with all open files
         self.files = []
         # create tabs for files
-        self.verticalLayout = QVBoxLayout(self)
+        self.main_widget = QWidget(self)
+        self.verticalLayout = QVBoxLayout(self.main_widget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setSpacing(1)
         self.verticalLayout.setObjectName("verticalLayout")
-
-        self.splitter = splitter = QSplitter(self)
-        splitter.setOrientation(Qt.Vertical)
 
         self.tabWidget = EditorTabWidget(self)
         self.tabWidget.setTabPosition(QTabWidget.North)
@@ -132,16 +130,21 @@ class Editor(QDialog):
         self.tabWidget.setObjectName("tabWidget")
         self.tabWidget.tabCloseRequested.connect(self.on_close_tab)
 
-        # self.verticalLayout.addWidget(self.tabWidget)
-        splitter.addWidget(self.tabWidget)
-        self.verticalLayout.addWidget(splitter)
+        self.verticalLayout.addWidget(self.tabWidget)
         self.buttons = self._create_buttons()
         self.verticalLayout.addWidget(self.buttons)
+        self.setCentralWidget(self.main_widget)
+
+        self.find_dialog = TextSearchFrame(self.tabWidget, self)
+        self.find_dialog.search_result_signal.connect(self.on_search_result)
+        self.find_dialog.replace_signal.connect(self.on_replace)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.find_dialog)
         # open the files
         for f in filenames:
             if f:
                 self.on_load_request(os.path.normpath(f), search_text)
         self.readSettings()
+        self.find_dialog.setVisible(False)
 
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
@@ -208,7 +211,9 @@ class Editor(QDialog):
         '''
         Enable the shortcats for search and replace
         '''
-        if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_F:
+        if event.key() == Qt.Key_Escape:
+            self.reject()
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_F:
             if self.tabWidget.currentWidget().hasFocus():
                 if not self.searchButton.isChecked():
                     self.searchButton.setChecked(True)
@@ -231,7 +236,7 @@ class Editor(QDialog):
 #             self.tabWidget.setCurrentIndex(new_idx)
         else:
             event.accept()
-            QDialog.keyPressEvent(self, event)
+            QMainWindow.keyPressEvent(self, event)
 
     def _translate(self, text):
         if hasattr(QApplication, "UnicodeUTF8"):
@@ -249,6 +254,11 @@ class Editor(QDialog):
             else:
                 self.resize(settings.value("size", QSize(800, 640)))
                 self.move(settings.value("pos", QPoint(0, 0)))
+            try:
+                self.restoreState(settings.value("window_state"))
+            except:
+                import traceback
+                print traceback.format_exc()
             settings.endGroup()
 
     def storeSetting(self):
@@ -258,6 +268,7 @@ class Editor(QDialog):
             settings.setValue("size", self.size())
             settings.setValue("pos", self.pos())
             settings.setValue("maximized", self.isMaximized())
+            settings.setValue("window_state", self.saveState())
             settings.endGroup()
 
     def on_load_request(self, filename, search_text=''):
@@ -306,7 +317,7 @@ class Editor(QDialog):
             self._search_thread.start()
 
     def on_text_changed(self):
-        if hasattr(self, "find_dialog") and self.tabWidget.currentWidget().hasFocus():
+        if self.tabWidget.currentWidget().hasFocus():
             self.find_dialog.file_changed(self.tabWidget.currentWidget().filename)
 
     def on_close_tab(self, tab_index):
@@ -341,7 +352,7 @@ class Editor(QDialog):
             rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
 
     def reject(self):
-        if hasattr(self, "find_dialog") and self.find_dialog.isVisible():
+        if self.find_dialog.isVisible():
             self.searchButton.setChecked(not self.searchButton.isChecked())
         else:
             self.close()
@@ -391,7 +402,7 @@ class Editor(QDialog):
         Shows the number of the line and column in a label.
         '''
         cursor = self.tabWidget.currentWidget().textCursor()
-        self.pos_label.setText('%s:%s' % (cursor.blockNumber() + 1, cursor.columnNumber()))
+        self.pos_label.setText(':%s:%s' % (cursor.blockNumber() + 1, cursor.columnNumber()))
 
     def __getTabName(self, lfile):
         base = os.path.basename(lfile).replace('.launch', '')
@@ -423,17 +434,6 @@ class Editor(QDialog):
         '''
         Shows the search frame
         '''
-        if not hasattr(self, "find_dialog"):
-            # create the find dialog
-            self.find_dialog = TextSearchFrame(self.tabWidget, self)
-            self.find_dialog.search_result_signal.connect(self.on_search_result)
-            self.find_dialog.replace_signal.connect(self.on_replace)
-            self.find_dialog.setMinimumHeight(25)
-            self.find_dialog.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Ignored)
-            self.splitter.addWidget(self.find_dialog)
-            self.splitter.setStretchFactor(0, 1)
-            self.splitter.setStretchFactor(1, 0)
-            self.splitter.setSizes([500, 25])
         if value:
             self.find_dialog.enable()
         else:

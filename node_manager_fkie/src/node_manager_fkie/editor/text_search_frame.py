@@ -41,14 +41,14 @@ from .line_edit import EnchancedLineEdit
 from .text_search_thread import TextSearchThread
 
 try:
-    from python_qt_binding.QtGui import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton, QGroupBox
+    from python_qt_binding.QtGui import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton, QGroupBox, QDockWidget
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 except:
-    from python_qt_binding.QtWidgets import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton, QGroupBox
+    from python_qt_binding.QtWidgets import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton, QGroupBox, QDockWidget
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
 
-class TextSearchFrame(QFrame):
+class TextSearchFrame(QDockWidget):
     '''
     A frame to find text in the Editor.
     '''
@@ -68,11 +68,13 @@ class TextSearchFrame(QFrame):
     HEIGHT_FIND_RECURSIVE_3 = 80
 
     def __init__(self, tabwidget, parent=None):
-        QFrame.__init__(self, parent)
+        QDockWidget.__init__(self, "Find", parent)
         self.setObjectName('SearchFrame')
-        self.vbox_layout = QVBoxLayout(self)
-        self.vbox_layout.setContentsMargins(0, 0, 0, 0)
-        self.vbox_layout.setSpacing(1)
+        self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._dockwidget = QFrame(self)
+        self.vbox_layout = QVBoxLayout(self._dockwidget)
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(1)
         # frame with two rows for find and replace
         find_replace_frame = QFrame(self)
         find_replace_vbox_layout = QVBoxLayout(find_replace_frame)
@@ -85,11 +87,10 @@ class TextSearchFrame(QFrame):
         rplc_frame = self._create_replace_frame()
         find_replace_vbox_layout.addWidget(rplc_frame)
         # frame for find&replace and search results
-        self.splitter = QSplitter(self)
-        self.splitter.addWidget(find_replace_frame)
-        self.splitter.addWidget(self._create_found_frame())
-        self.vbox_layout.addWidget(self.splitter)
-        self.splitter.setSizes([100, 100])
+        self.vbox_layout.addWidget(find_replace_frame)
+        self.vbox_layout.addWidget(self._create_found_frame())
+        self.vbox_layout.addStretch(2024)
+        self.setWidget(self._dockwidget)
         # intern search parameters
         self._tabwidget = tabwidget
         self.current_search_text = ''
@@ -107,7 +108,7 @@ class TextSearchFrame(QFrame):
         self.search_field = EnchancedLineEdit(find_frame)
         self.search_field.setPlaceholderText('search text')
         self.search_field.textChanged.connect(self.on_search_text_changed)
-        # self.search_field.returnPressed.connect(self.on_search)
+        self.search_field.returnPressed.connect(self.on_search)
         find_hbox_layout.addWidget(self.search_field)
         self.search_result_label = QLabel(find_frame)
         self.search_result_label.setText(' ')
@@ -122,7 +123,6 @@ class TextSearchFrame(QFrame):
         self.find_button.setFixedWidth(44)
         self.find_button.clicked.connect(self.on_search)
         find_hbox_layout.addWidget(self.find_button)
-
         return find_frame
 
     def _create_replace_frame(self):
@@ -147,10 +147,12 @@ class TextSearchFrame(QFrame):
 
     def _create_found_frame(self):
         self.found_files_frame = ff_frame = QGroupBox("recursive search")
+        ff_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.found_files_vbox_layout = QVBoxLayout(ff_frame)
         self.found_files_vbox_layout.setSpacing(0)
         self.found_files_vbox_layout.setContentsMargins(0, 0, 0, 0)
         self.found_files_list = QListWidget(ff_frame)
+        self.found_files_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.found_files_list.setFrameStyle(QFrame.StyledPanel)
         self.found_files_list.itemActivated.connect(self.on_itemActivated)
         self.found_files_list.setStyleSheet(
@@ -368,7 +370,9 @@ class TextSearchFrame(QFrame):
         self.setMinimumHeight(self.get_current_height())
         if value:
             self.replace_field.setFocus()
+            self.setWindowTitle("Find / Replace")
         else:
+            self.setWindowTitle("Find")
             self.search_field.setFocus()
 
     def is_replace_visible(self):
@@ -423,4 +427,5 @@ class TextSearchFrame(QFrame):
             min_height = max(min_height, self.HEIGHT_FIND_RECURSIVE_3)
         elif len(self.search_results_fileset) > 1:
             min_height = max(min_height, self.HEIGHT_FIND_RECURSIVE_2)
+        self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         return min_height
