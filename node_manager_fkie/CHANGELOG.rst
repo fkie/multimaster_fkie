@@ -2,6 +2,9 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.1 (2016-10-18)
+------------------
+
 0.6.0 (2016-10-12)
 ------------------
 * node_manager_fkie: changed find-replace doalog to dockable widget

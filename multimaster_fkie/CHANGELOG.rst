@@ -2,6 +2,11 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.1 (2016-10-18)
+------------------
+* fix for issue #50: do not sent and reply requests while own state is not available
+* Contributors: Alexander Tiderko, deng02
+
 0.6.0 (2016-10-12)
 ------------------
 * master_sync_fkie: updated launch file

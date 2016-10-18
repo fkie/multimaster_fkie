@@ -2,6 +2,11 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.1 (2016-10-18)
+------------------
+* fix for issue #50: do not sent and reply requests while own state is not available
+* Contributors: Alexander Tiderko
+
 0.6.0 (2016-10-12)
 ------------------
 

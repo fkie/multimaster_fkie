@@ -2,6 +2,9 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.1 (2016-10-18)
+------------------
+
 0.6.0 (2016-10-12)
 ------------------
 * master_sync_fkie: updated launch file
