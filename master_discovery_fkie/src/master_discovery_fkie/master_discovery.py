@@ -673,7 +673,9 @@ class Discoverer(object):
             except:
                 pass
             # publish the current state
-            if not (self.master_monitor.getMasteruri() is None or rospy.is_shutdown() or self.do_finish):
+            invalid_uri = (self.master_monitor.getMasteruri() is None)
+            invalid_state = (self.master_monitor.getCurrentState() is None)
+            if not (invalid_uri or invalid_state or rospy.is_shutdown() or self.do_finish):
                 self._send_current_state2group()
                 try:
                     # send update requests to group
@@ -860,13 +862,14 @@ class Discoverer(object):
                             # is it a request to update the state
                             # send the current master state to the sender address
                             # TODO: add a filter, if multicast messages are disabled?
-                            if is_multicast:
-                                rospy.logdebug("Received a multicast request for a state update from %s" % address[0])
-                                self._ts_received_mcast_request = time.time()
-                                self._send_current_state2group()
-                            else:
-                                rospy.logdebug("Received a request for a state update from %s" % (address[0]))
-                                self._send_current_state2addr(address[0])
+                            if self.master_monitor.getCurrentState() is not None:
+                                if is_multicast:
+                                    rospy.logdebug("Received a multicast request for a state update from %s" % address[0])
+                                    self._ts_received_mcast_request = time.time()
+                                    self._send_current_state2group()
+                                else:
+                                    rospy.logdebug("Received a request for a state update from %s" % (address[0]))
+                                    self._send_current_state2addr(address[0])
                             add_to_list = master_key not in self.masters
                         elif secs == -1 or secs_l == -1:
                             # remove master if sec and nsec are -1
