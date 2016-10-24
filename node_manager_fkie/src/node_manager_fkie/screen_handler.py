@@ -312,7 +312,7 @@ class ScreenHandler(object):
             return False
         try:
             # get the available screens
-            screens = cls.getActiveScreens(host, cls.createSessionName(node), user=user)  # user=user, pwd=pwd
+            screens = cls._getActiveScreens(host, cls.createSessionName(node), auto_ok_request, user=user, pwd=pw)  # user=user, pwd=pwd
             if screens:
                 do_kill = True
                 if auto_ok_request:
