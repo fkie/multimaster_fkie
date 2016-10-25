@@ -505,7 +505,7 @@ class GroupItem(QStandardItem):
                 result += ' <span style="color:gray;">[%d]</span>' % len(items)
             result += '<ul><span></span><br>'
             for i in items:
-                result += '<a href="node://%s%s">%s</a><br>' % (self.name, i, i)
+                result += '<a href="node://%s">%s</a><br>' % (i, i)
             result += '</ul>'
         return result
 
