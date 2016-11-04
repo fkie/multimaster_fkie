@@ -14,7 +14,6 @@
 #import catkin_sphinx
 import sys, os
 from xml.etree.ElementTree import ElementTree
-import roslib; roslib.load_manifest('master_discovery_fkie')
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
