@@ -33,10 +33,9 @@
 from python_qt_binding.QtCore import QFile, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 import re
-import traceback
-
 import roslib
 import rospy
+import traceback
 
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_fkie.name_resolution import NameResolution
