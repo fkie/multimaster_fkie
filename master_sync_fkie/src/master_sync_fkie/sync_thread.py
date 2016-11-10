@@ -192,6 +192,7 @@ class SyncThread(object):
                 self.discoverer_name = discoverer_name
                 self.monitoruri = monitoruri
                 self._request_update()
+
 #    rospy.logdebug("SyncThread[%s]: update exit", self.name)
 
     def set_own_masterstate(self, own_state, sync_on_demand=False):
@@ -256,6 +257,7 @@ class SyncThread(object):
                     self._use_filtered_method = False
             remote_state = None
             # get the state informations
+            rospy.loginfo("SyncThread[%s] Requesting remote state from '%s'", self.name, self.monitoruri)
             if self._use_filtered_method:
                 remote_state = remote_monitor.masterInfoFiltered(self._filter.to_list())
             else:
@@ -269,6 +271,7 @@ class SyncThread(object):
             socket.setdefaulttimeout(None)
 
     def _apply_remote_state(self, remote_state):
+        rospy.loginfo("SyncThread[%s] Applying remote state...", self.name)
         try:
             stamp = float(remote_state[0])
             stamp_local = float(remote_state[1])
@@ -301,10 +304,14 @@ class SyncThread(object):
             # unregister not updated publishers
             for (topic, node, nodeuri) in set(self.__publisher) - set(publisher):
                 own_master_multi.unregisterPublisher(node, topic, nodeuri)
+                rospy.logdebug("SyncThread[%s]: UNPUB %s[%s] %s", 
+                              self.name, node, nodeuri, topic)
                 handler.append(('upub', topic, node, nodeuri))
             # register new publishers
             for (topic, topictype, node, nodeuri) in publisher_to_register:
                 own_master_multi.registerPublisher(node, topic, topictype, nodeuri)
+                rospy.logdebug("SyncThread[%s]: PUB %s[%s] %s[%s]", 
+                              self.name, node, nodeuri, topic, topictype)
                 handler.append(('pub', topic, topictype, node, nodeuri))
 
             # sync the subscribers
@@ -328,10 +335,14 @@ class SyncThread(object):
             # unregister not updated topics
             for (topic, node, nodeuri) in set(self.__subscriber) - set(subscriber):
                 own_master_multi.unregisterSubscriber(node, topic, nodeuri)
+                rospy.logdebug("SyncThread[%s]: UNSUB %s[%s] %s", 
+                              self.name, node, nodeuri, topic)
                 handler.append(('usub', topic, node, nodeuri))
             # register new subscriber
             for (topic, topictype, node, nodeuri) in subscriber_to_register:
                 own_master_multi.registerSubscriber(node, topic, topictype, nodeuri)
+                rospy.logdebug("SyncThread[%s]: SUB %s[%s] %s[%s]", 
+                              self.name, node, nodeuri, topic, topictype)
                 handler.append(('sub', topic, topictype, node, nodeuri))
 
             # sync the services
@@ -349,10 +360,14 @@ class SyncThread(object):
             # unregister not updated services
             for (service, serviceuri, node, nodeuri) in set(self.__services) - set(services):
                 own_master_multi.unregisterService(node, service, serviceuri)
+                rospy.logdebug("SyncThread[%s]: UNSRV %s[%s] %s[%s]", 
+                              self.name, node, nodeuri, service, serviceuri)
                 handler.append(('usrv', service, serviceuri, node, nodeuri))
             # register new services
             for (service, serviceuri, node, nodeuri) in services_to_register:
                 own_master_multi.registerService(node, service, serviceuri, nodeuri)
+                rospy.logdebug("SyncThread[%s]: SRV %s[%s] %s[%s]",
+                              self.name, node, nodeuri, service, serviceuri)
                 handler.append(('srv', service, serviceuri, node, nodeuri))
 
             # execute the multicall and update the current publicher, subscriber and services
@@ -404,10 +419,9 @@ class SyncThread(object):
                 # ourselves, then unadvertise, triggering a publisherUpdate() along the
                 # way.
                 # We create publisher locally as a hack, to get callback set up properly for already registered local publishers
-                if hack_pub:
-                    rospy.loginfo("SyncThread[%s] Horrible hack: create and delete publisher to trigger an update for subscribed topics: %s", self.name, hack_pub)
                 for m in hack_pub:
                     try:
+                        rospy.loginfo("SyncThread[%s] Create and delete publisher to trigger publisherUpdate for %s", self.name, m)
                         topicPub = rospy.Publisher(m, rospy.msg.AnyMsg, queue_size=1)
                         topicPub.unregister()
                         del topicPub
@@ -425,6 +439,7 @@ class SyncThread(object):
             rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
         finally:
             socket.setdefaulttimeout(None)
+        rospy.loginfo("SyncThread[%s] remote state applied.", self.name)
 
     def _unreg_on_finish(self):
         with self.__lock_info:
