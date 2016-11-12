@@ -107,10 +107,8 @@ class Main(object):
         @see: L{master_discovery_fkie.interface_finder.get_listmaster_service()}
         '''
         if not rospy.is_shutdown():
-            rospy.loginfo("Update ROS master list...")
             service_names = interface_finder.get_listmaster_service(masteruri_from_master(), False)
             for service_name in service_names:
-                rospy.loginfo("service 'list_masters' found on %s", service_name)
                 try:
                     with self.__lock:
                         try:
@@ -118,6 +116,8 @@ class Main(object):
                             discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
                             resp = discoverMasters()
                             masters = []
+                            master_names = [m.name for m in resp.masters]
+                            rospy.loginfo("ROS masters obtained from '%s': %s", service_name, master_names)
                             for m in resp.masters:
                                 if not self._re_ignore_hosts.match(m.name) or self._re_sync_hosts.match(m.name):  # do not sync to the master, if it is in ignore list
                                     masters.append(m.name)
@@ -194,7 +194,7 @@ class Main(object):
                 self.__timestamp_local = own_state.timestamp_local
         except:
             import traceback
-            print traceback.print_exc()
+            rospy.logwarn("ERROR while getting own state from '%s': %s", monitoruri, traceback.format_exc())
             socket.setdefaulttimeout(None)
             time.sleep(3)
             if self.own_state_getter is not None and not rospy.is_shutdown():
