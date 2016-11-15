@@ -2,6 +2,11 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.2 (2016-11-12)
+------------------
+* Drop roslib.load_manifest, unneeded with catkin
+* Contributors: Alexander Tiderko, Mike Purvis
+
 0.6.1 (2016-10-18)
 ------------------
 

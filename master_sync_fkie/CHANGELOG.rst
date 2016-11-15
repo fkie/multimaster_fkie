@@ -2,6 +2,14 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.2 (2016-11-12)
+------------------
+* Increased logging in master sync.
+  Added more logging around synchronization to help with
+  tracking changes in the local ROS master due to multimaster.
+* Drop roslib.load_manifest, unneeded with catkin
+* Contributors: Alexander Tiderko, Denise Eng, Mike Purvis
+
 0.6.1 (2016-10-18)
 ------------------
 

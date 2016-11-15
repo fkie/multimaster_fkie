@@ -2,6 +2,20 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.2 (2016-11-12)
+------------------
+* master_sync_fkie: Increased logging.
+  Added more logging around synchronization to help with
+  tracking changes in the local ROS master due to multimaster.
+* node_manager_fkie: fixed node view for multiple cores on the same host
+* node_manager_fkie: fixed capabilities view
+* node_manager_fkie: fixed view of group description by groups with one node
+* Drop roslib.load_manifest, unneeded with catkin
+* node_manager_fkie: moved controls in group description to the top
+* node_manager_fkie: fixed the link to node in group description
+* node_manager_fkie: fixed crash while kill screen on remote host
+* Contributors: Alexander Tiderko, Denise Eng, Mike Purvis
+
 0.6.1 (2016-10-18)
 ------------------
 * fix for issue #50: do not sent and reply requests while own state is not available
