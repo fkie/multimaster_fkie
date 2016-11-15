@@ -519,7 +519,7 @@ class MasterViewProxy(QWidget):
         @return: The list the nodes with given name.
         @rtype: []
         '''
-        return self.node_tree_model.getNode("%s" % node_name, self.masteruri)
+        return self.node_tree_model.getNode("%s" % node_name, None)
 
     def updateButtons(self):
         '''
@@ -1221,6 +1221,9 @@ class MasterViewProxy(QWidget):
         if selected is not None:
             # it is a workaround to avoid double updates a after click on an item
             self.__last_selection = time.time()
+        selectedHosts = []
+        selections = []
+        selectedGroups = []
         if node_name and self.master_info is not None:
             # get node by name
             selectedNodes = self.getNode(node_name)
@@ -1228,8 +1231,6 @@ class MasterViewProxy(QWidget):
                 if node_name:
                     self.description_signal.emit(node_name, "<b>%s</b> not found" % node_name, True if selected or deselected or force_emit else False)
                 return
-            selectedHosts = []
-            selections = []
         else:
             # get node by selected items
             if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
