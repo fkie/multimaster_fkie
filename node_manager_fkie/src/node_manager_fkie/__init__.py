@@ -33,12 +33,11 @@
 
 import argparse
 import os
+import roslib.network
+import rospy
 import socket
 import sys
 import threading
-
-import roslib.network
-import rospy
 
 from node_manager_fkie.common import get_ros_home, masteruri_from_ros
 from node_manager_fkie.file_watcher import FileWatcher
@@ -52,13 +51,14 @@ from node_manager_fkie.ssh_handler import SSHhandler, AuthenticationRequest
 from node_manager_fkie.start_handler import StartException, AdvRunCfg
 from node_manager_fkie.start_handler import StartHandler, BinarySelectionRequest
 
+
 PKG_NAME = 'node_manager_fkie'
 
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.6.1"  # git describe --tags --dirty --always
-__date__ = "2016-10-18"  # git log -1 --date=iso
+__version__ = "0.6.2"  # git describe --tags --dirty --always
+__date__ = "2016-11-12"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
