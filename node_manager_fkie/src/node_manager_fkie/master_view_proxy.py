@@ -199,8 +199,10 @@ class MasterViewProxy(QWidget):
 
         # setup the node view
         self.node_tree_model = NodeTreeModel(nm.nameres().address(self.masteruri), self.masteruri)
+        self.node_proxy_model = NodesSortFilterProxyModel(self)
+        self.node_proxy_model.setSourceModel(self.node_tree_model)
+        self.masterTab.nodeTreeView.setModel(self.node_proxy_model)
         self.node_tree_model.hostInserted.connect(self.on_host_inserted)
-        self.masterTab.nodeTreeView.setModel(self.node_tree_model)
         for i, (_, width) in enumerate(NodeTreeModel.header):  # _:=name
             self.masterTab.nodeTreeView.setColumnWidth(i, width)
         self.nodeNameDelegate = HTMLDelegate()
@@ -286,6 +288,7 @@ class MasterViewProxy(QWidget):
         self.masterTab.pubStopTopicButton.clicked.connect(self.on_topic_pub_stop_clicked)
 
         self.masterTab.callServiceButton.clicked.connect(self.on_service_call_clicked)
+        self.masterTab.nodeFilterInput.textChanged.connect(self.on_node_filter_changed)
         self.masterTab.topicFilterInput.textChanged.connect(self.on_topic_filter_changed)
         self.masterTab.serviceFilterInput.textChanged.connect(self.on_service_filter_changed)
         self.masterTab.parameterFilterInput.textChanged.connect(self.on_parameter_filter_changed)
@@ -519,7 +522,7 @@ class MasterViewProxy(QWidget):
         @return: The list the nodes with given name.
         @rtype: []
         '''
-        return self.node_tree_model.getNode("%s" % node_name, None)
+        return self.node_tree_model.getNode("%s" % node_name, self.masteruri)
 
     def updateButtons(self):
         '''
@@ -788,7 +791,8 @@ class MasterViewProxy(QWidget):
                         for c in range(self.masterTab.nodeTreeView.model().rowCount(index_host)):
                             index_cap = self.masterTab.nodeTreeView.model().index(c, 0, index_host)
                             if index_cap.isValid() and self.masterTab.nodeTreeView.isExpanded(index_cap):
-                                item = self.node_tree_model.itemFromIndex(index_cap)
+                                model_index = self.node_proxy_model.mapToSource(index_cap)
+                                item = self.node_tree_model.itemFromIndex(model_index)
                                 if isinstance(item, (GroupItem, HostItem)):
                                     result.append(item.name)
         except:
@@ -808,7 +812,8 @@ class MasterViewProxy(QWidget):
                         for c in range(self.masterTab.nodeTreeView.model().rowCount(index_host)):
                             index_cap = self.masterTab.nodeTreeView.model().index(c, 0, index_host)
                             if index_cap.isValid():
-                                item = self.node_tree_model.itemFromIndex(index_cap)
+                                model_index = self.node_proxy_model.mapToSource(index_cap)
+                                item = self.node_tree_model.itemFromIndex(model_index)
                                 if isinstance(item, (GroupItem, HostItem)):
                                     if groups is None or item.name in groups:
                                         self.masterTab.nodeTreeView.setExpanded(index_cap, True)
@@ -1118,9 +1123,10 @@ class MasterViewProxy(QWidget):
     def on_host_inserted(self, item):
         if item == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
             index = self.node_tree_model.indexFromItem(item)
-            if index.isValid():
-                self.masterTab.nodeTreeView.expand(index)
-#    self.masterTab.nodeTreeView.expandAll()
+            model_index = self.node_proxy_model.mapFromSource(index)
+            if model_index.isValid():
+                self.masterTab.nodeTreeView.expand(model_index)
+#        self.masterTab.nodeTreeView.expandAll()
 
     def on_node_collapsed(self, index):
         if not index.parent().isValid():
@@ -1221,9 +1227,6 @@ class MasterViewProxy(QWidget):
         if selected is not None:
             # it is a workaround to avoid double updates a after click on an item
             self.__last_selection = time.time()
-        selectedHosts = []
-        selections = []
-        selectedGroups = []
         if node_name and self.master_info is not None:
             # get node by name
             selectedNodes = self.getNode(node_name)
@@ -1231,6 +1234,8 @@ class MasterViewProxy(QWidget):
                 if node_name:
                     self.description_signal.emit(node_name, "<b>%s</b> not found" % node_name, True if selected or deselected or force_emit else False)
                 return
+            selectedHosts = []
+            selections = []
         else:
             # get node by selected items
             if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
@@ -1528,7 +1533,8 @@ class MasterViewProxy(QWidget):
         result = []
         for index in indexes:
             if index.column() == 0:
-                item = self.node_tree_model.itemFromIndex(index)
+                model_index = self.node_proxy_model.mapToSource(index)
+                item = self.node_tree_model.itemFromIndex(model_index)
                 if item is not None:
                     if isinstance(item, HostItem):
                         result.append(item)
@@ -1538,7 +1544,8 @@ class MasterViewProxy(QWidget):
         result = []
         for index in indexes:
             if index.column() == 0 and index.parent().isValid():
-                item = self.node_tree_model.itemFromIndex(index)
+                model_index = self.node_proxy_model.mapToSource(index)
+                item = self.node_tree_model.itemFromIndex(model_index)
                 if item is not None:
                     if isinstance(item, GroupItem):
                         result.append(item)
@@ -1548,7 +1555,8 @@ class MasterViewProxy(QWidget):
         result = []
         for index in indexes:
             if index.column() == 0:
-                item = self.node_tree_model.itemFromIndex(index)
+                model_index = self.node_proxy_model.mapToSource(index)
+                item = self.node_tree_model.itemFromIndex(model_index)
                 res = self._nodesFromItems(item, recursive)
                 for r in res:
                     if r not in result:
@@ -2593,6 +2601,12 @@ class MasterViewProxy(QWidget):
             param = ServiceDialog(service, self)
             param.show()
 
+    def on_node_filter_changed(self, text):
+        '''
+        Filter the displayed nodes
+        '''
+        self.node_proxy_model.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
+
     def on_topic_filter_changed(self, text):
         '''
         Filter the displayed topics
@@ -2925,7 +2939,8 @@ class MasterViewProxy(QWidget):
         selection = QItemSelection()
         while root.child(i, 0).isValid():
             index = root.child(i, 0)
-            item = self.node_tree_model.itemFromIndex(index)
+            model_index = self.node_proxy_model.mapToSource(index)
+            item = self.node_tree_model.itemFromIndex(model_index)
             if item is not None and not self._is_in_ignore_list(item.name):
                 selection.append(QItemSelectionRange(index, root.child(i, last_row_index)))
             i = i + 1
@@ -2992,6 +3007,54 @@ class MasterViewProxy(QWidget):
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Filter handling                               %%%%%%%%%%%
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+class NodesSortFilterProxyModel(QSortFilterProxyModel):
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        '''
+        Perform filtering on column 0 (Name)
+        '''
+        if not self.filterRegExp().pattern():
+            return True
+        if (self.filterAcceptsRowItself(sourceRow, sourceParent)):
+            return True
+#         # accept if any of the parents is accepted on it's own merits
+#         parent = sourceParent
+#         while (parent.isValid()):
+#             if (self.filterAcceptsRowItself(parent.row(), parent.parent())):
+#                 return True
+#             parent = parent.parent()
+        # accept if any of the children is accepted on it's own merits
+        if (self.hasAcceptedChildren(sourceRow, sourceParent)):
+            return True
+        return False
+
+    def hasAcceptedChildren(self, sourceRow, sourceParent):
+        index = self.sourceModel().index(sourceRow, 0, sourceParent)
+        if not index.isValid():
+            return False
+        # check if there are children
+        childCount = index.model().rowCount(index)
+        if childCount == 0:
+            return False
+        for i in range(childCount):
+            if (self.filterAcceptsRowItself(i, index)):
+                return True
+            # recursive call -> NOTICE that this is depth-first searching, you're probably better off with breadth first search...
+            if (self.hasAcceptedChildren(i, index)):
+                return True
+        return False
+
+    def filterAcceptsRowItself(self, sourceRow, sourceParent):
+        index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
+        item = self.sourceModel().data(index0)
+        if item is not None:
+            # skip groups
+            if '{' not in item:
+                regex = self.filterRegExp()
+                return (regex.indexIn(self.sourceModel().data(index0)) != -1)
+        return False
 
 
 class TopicsSortFilterProxyModel(QSortFilterProxyModel):

@@ -36,3 +36,13 @@ class EnchancedLineEdit(QLineEdit):
 
     def update_close_button(self, text):
         self.clearBtn.setVisible(True if text else False)
+
+    def keyPressEvent(self, event):
+        '''
+        Enable the ESC handling
+        '''
+        if event.key() == Qt.Key_Escape:
+            self.setText('')
+        else:
+            event.accept()
+            QLineEdit.keyPressEvent(self, event)
