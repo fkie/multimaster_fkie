@@ -67,12 +67,13 @@ from .select_dialog import SelectDialog
 from .settings_widget import SettingsWidget
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
+from python_qt_binding.QtGui import QPalette, QColor
 try:
     from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
-    from python_qt_binding.QtGui import QShortcut, QVBoxLayout
+    from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog
 except:
     from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
-    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout
+    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog
 
 
 try:
@@ -142,6 +143,10 @@ class MainWindow(QMainWindow):
         menu_rqt = MenuRqt(self.rqtButton)
         menu_rqt.start_rqt_plugin_signal.connect(self.on_rqt_plugin_start)
 
+	pal = self.expert_tab.palette()
+        self._default_color = pal.color(QPalette.Window)
+        self._set_custom_colors()
+	
         # setup settings widget
         self.settings_dock = SettingsWidget(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.settings_dock)
@@ -275,6 +280,7 @@ class MainWindow(QMainWindow):
 #                        '%s'%e).exec_()
 
         self.imageLabel.mouseDoubleClickEvent = self.image_mouseDoubleClickEvent
+        self.masternameLabel.mouseDoubleClickEvent = self.mastername_mouseDoubleClickEvent
 
         try:
             self.readSettings()
@@ -1191,6 +1197,10 @@ class MainWindow(QMainWindow):
         if self.__current_master_label_name != name:
             self.__current_master_label_name = name
             self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>' % name)
+            color = QColor.fromRgb(nm.settings().host_color(self.__current_master_label_name, self._default_color.rgb()))
+            pal = self.expert_tab.palette()
+            pal.setColor(QPalette.Window, color)
+            self.expert_tab.setPalette(pal)
         ts = 'updated: %s' % str(timestamp) if timestamp is not None else ''
         if not nm.settings().autoupdate:
             ts = '%s<span style=" color:orange;"> AU off</span>' % ts
@@ -1978,6 +1988,36 @@ class MainWindow(QMainWindow):
                                   'Set robot image for %s failed!' % str(self.__current_master_label_name),
                                   '%s' % str(e)).exec_()
                 rospy.logwarn("Error while set robot image for %s: %s", str(self.__current_master_label_name), str(e))
+
+    def _set_custom_colors(self):
+        QColorDialog.setStandardColor(0, self._default_color.rgb())
+        QColorDialog.setStandardColor(1, QColor(87, 93, 94).rgb())
+        QColorDialog.setStandardColor(2, QColor(60, 116, 96).rgb())
+
+    def _new_color(self, color):
+        pal = self.expert_tab.palette()
+        pal.setColor(QPalette.Window, color)
+        self.expert_tab.setPalette(pal)
+
+    def mastername_mouseDoubleClickEvent(self, event):
+        '''
+        Set the robot color
+        '''
+        if self.currentMaster:
+            try:
+                pal = self.expert_tab.palette()
+                prev_color = pal.color(QPalette.Window)
+                cdiag = QColorDialog(prev_color)
+                cdiag.currentColorChanged.connect(self._new_color)
+                if cdiag.exec_():
+                    nm.settings().set_host_color(self.__current_master_label_name, cdiag.selectedColor().rgb())
+                else:
+                    self._new_color(prev_color)
+            except Exception as e:
+                WarningMessageBox(QMessageBox.Warning, "Error",
+                                  'Set robot color for %s failed!' % str(self.__current_master_label_name),
+                                  '%s' % str(e)).exec_()
+                rospy.logwarn("Error while set robot color for %s: %s", str(self.__current_master_label_name), str(e))
 
     def _on_robot_icon_changed(self, masteruri, path):
         '''

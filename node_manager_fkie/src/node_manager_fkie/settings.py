@@ -177,6 +177,11 @@ class Settings(object):
         self._confirm_exit_when_closing = self.str2bool(settings.value('confirm_exit_when_closing', self.CONFIRM_EXIT_WHEN_CLOSING))
         self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
+        settings.beginGroup('host_colors')
+        self._host_colors = dict()
+        for k in settings.childKeys():
+            self._host_colors[k] = settings.value(k, None)
+        settings.endGroup()
 
     def masteruri(self):
         return self._masteruri
@@ -400,6 +405,20 @@ class Settings(object):
             self._transpose_pub_sub_descr = val
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('transpose_pub_sub_descr', self._transpose_pub_sub_descr)
+
+    def host_color(self, host, default_color):
+        if host in self._host_colors:
+            result = self._host_colors[host]
+            if isinstance(result, (unicode, str)):
+                return long(result)
+            return result
+        return default_color
+
+    def set_host_color(self, host, color):
+        if host and color:
+            self._host_colors[host] = color
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('host_colors/%s' % host, color)
 
     def str2bool(self, v):
         if isinstance(v, bool):
