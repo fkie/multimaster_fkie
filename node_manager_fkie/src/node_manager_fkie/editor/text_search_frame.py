@@ -30,9 +30,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from PyQt4.Qt import QCheckBox
 from python_qt_binding.QtCore import Signal, Qt
 import os
-
 import rospy
 
 from node_manager_fkie.common import package_name
@@ -40,11 +40,12 @@ from node_manager_fkie.common import package_name
 from .line_edit import EnchancedLineEdit
 from .text_search_thread import TextSearchThread
 
+
 try:
-    from python_qt_binding.QtGui import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton, QGroupBox, QDockWidget
+    from python_qt_binding.QtGui import QFrame, QLabel, QTreeWidget, QTreeWidgetItem, QPushButton, QGroupBox, QDockWidget
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 except:
-    from python_qt_binding.QtWidgets import QFrame, QLabel, QListWidget, QListWidgetItem, QPushButton, QGroupBox, QDockWidget
+    from python_qt_binding.QtWidgets import QFrame, QLabel, QTreeWidget, QTreeWidgetItem, QPushButton, QGroupBox, QDockWidget
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
 
@@ -75,7 +76,7 @@ class TextSearchFrame(QDockWidget):
         find_replace_vbox_layout = QVBoxLayout(find_replace_frame)
         find_replace_vbox_layout.setContentsMargins(0, 0, 0, 0)
         find_replace_vbox_layout.setSpacing(1)
-        find_replace_vbox_layout.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding))
+#        find_replace_vbox_layout.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding))
         # create frame with find row
         find_frame = self._create_find_frame()
         find_replace_vbox_layout.addWidget(find_frame)
@@ -84,7 +85,7 @@ class TextSearchFrame(QDockWidget):
         # frame for find&replace and search results
         self.vbox_layout.addWidget(find_replace_frame)
         self.vbox_layout.addWidget(self._create_found_frame())
-        self.vbox_layout.addStretch(2024)
+#        self.vbox_layout.addStretch(2024)
         self.setWidget(self._dockwidget)
         # intern search parameters
         self._tabwidget = tabwidget
@@ -141,31 +142,29 @@ class TextSearchFrame(QDockWidget):
         return rplc_frame
 
     def _create_found_frame(self):
-        self.found_files_frame = ff_frame = QGroupBox("recursive search")
-        ff_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        ff_frame = QFrame(self)
         self.found_files_vbox_layout = QVBoxLayout(ff_frame)
-        self.found_files_vbox_layout.setSpacing(0)
         self.found_files_vbox_layout.setContentsMargins(0, 0, 0, 0)
-        self.found_files_list = QListWidget(ff_frame)
-        self.found_files_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.recursive_search_box = QCheckBox("recursive search")
+        self.found_files_vbox_layout.addWidget(self.recursive_search_box)
+        self.found_files_list = QTreeWidget(ff_frame)
+        self.found_files_list.setColumnCount(1)
         self.found_files_list.setFrameStyle(QFrame.StyledPanel)
+        self.found_files_list.setHeaderHidden(True)
         self.found_files_list.itemActivated.connect(self.on_itemActivated)
         self.found_files_list.setStyleSheet(
-            "QListWidget {"
+            "QTreeWidget {"
             "background-color:transparent;"
             "}"
-            "QListWidget::item {"
+            "QTreeWidget::item {"
             "background-color:transparent;"
             "}"
-            "QListWidget::item:selected {"
+            "QTreeWidget::item:selected {"
             "background-color: darkgray;"
             "}")
         self.found_files_vbox_layout.addWidget(self.found_files_list)
-        ff_frame.setCheckable(True)
-        ff_frame.setChecked(False)
-        ff_frame.setFlat(True)
-        self.found_files_list.setVisible(False)
-        return self.found_files_frame
+        self.recursive_search_box.setChecked(False)
+        return ff_frame
 
     def keyPressEvent(self, event):
         '''
@@ -177,7 +176,7 @@ class TextSearchFrame(QDockWidget):
         '''
         Initiate the new search or request a next search result.
         '''
-        if self.current_search_text != self.search_field.text() or self._search_recursive != self.found_files_frame.isChecked():
+        if self.current_search_text != self.search_field.text() or self._search_recursive != self.recursive_search_box.isChecked():
             # clear current search results
             self._reset()
             self.current_search_text = self.search_field.text()
@@ -186,7 +185,7 @@ class TextSearchFrame(QDockWidget):
                 self._wait_for_result = True
                 for i in range(self._tabwidget.count()):
                     path_text[self._tabwidget.widget(i).filename] = self._tabwidget.widget(i).document().toPlainText()
-                self._search_recursive = self.found_files_frame.isChecked()
+                self._search_recursive = self.recursive_search_box.isChecked()
                 self._search_thread = TextSearchThread(self.current_search_text, self._tabwidget.currentWidget().filename, path_text=path_text, recursive=self._search_recursive)
                 self._search_thread.search_result_signal.connect(self.on_search_result)
                 self._search_thread.warning_signal.connect(self.on_warning_result)
@@ -197,7 +196,8 @@ class TextSearchFrame(QDockWidget):
                 if self._search_result_index + 1 >= len(self.search_results):
                     self._search_result_index = -1
                 self._search_result_index += 1
-                self.search_result_signal.emit(*self.search_results[self._search_result_index])
+                (id, search_text, found, path, index, linenr, line) = self.search_results[self._search_result_index]
+                self.search_result_signal.emit(search_text, found, path, index)
                 self.replace_button.setEnabled(True)
         self._update_label()
 
@@ -211,23 +211,24 @@ class TextSearchFrame(QDockWidget):
             if self._search_result_index < 0:
                 self._search_result_index = len(self.search_results) - 1
             self._update_label()
-            self.search_result_signal.emit(*self.search_results[self._search_result_index])
+            (id, search_text, found, path, index, linenr, line) = self.search_results[self._search_result_index]
+            self.search_result_signal.emit(search_text, found, path, index)
             self.replace_button.setEnabled(True)
 
     def _check_position(self, forward=True):
         try:
             # if the position of the textCursor was changed by the user, move the search index
             cur_pos = self._tabwidget.currentWidget().textCursor().position()
-            st, _f, pa, idx = self.search_results[self._search_result_index]
+            id, st, _f, pa, idx, lnr, ltxt = self.search_results[self._search_result_index]
             sear_pos = idx + len(st)
             if cur_pos != sear_pos:
                 first_idx = self._get_current_index_for_current_file()
                 if first_idx != -1:
-                    st, _f, pa, idx = self.search_results[first_idx]
+                    id, st, _f, pa, idx, lnr, ltxt = self.search_results[first_idx]
                     sear_pos = idx + len(st)
                     while cur_pos > sear_pos and self._tabwidget.currentWidget().filename == pa:
                         first_idx += 1
-                        st, _f, pa, idx = self.search_results[first_idx]
+                        id, st, _f, pa, idx, lnr, ltxt = self.search_results[first_idx]
                         sear_pos = idx + len(st)
                     self._search_result_index = first_idx
                     if forward:
@@ -239,38 +240,45 @@ class TextSearchFrame(QDockWidget):
 
     def _get_current_index_for_current_file(self):
         for index in range(len(self.search_results)):
-            _st, _f, pa, _idx = self.search_results[index]
+            id, _st, _f, pa, _idx = self.search_results[index]
             if self._tabwidget.currentWidget().filename == pa:
                 return index
         return -1
 
-    def on_search_result(self, search_text, found, path, index):
+    def on_search_result(self, search_text, found, path, index, linenr, line):
         '''
         Slot to handle the signals for search result. This signals are forwarded used
         search_result_signal.
         '''
         if found and search_text == self.current_search_text:
+            id = "%d:%s" % (index, path)
             self.search_results_fileset.add(path)
             item = (search_text, found, path, index)
             if item not in self.search_results:
-                self.search_results.append((search_text, found, path, index))
+                self.search_results.append((id, search_text, found, path, index, linenr, line))
             if self._wait_for_result:
                 self._search_result_index += 1
                 if index >= self._tabwidget.currentWidget().textCursor().position() or self._tabwidget.currentWidget().filename != path:
                     self._wait_for_result = False
-                    self.search_result_signal.emit(*self.search_results[self._search_result_index])
+                    self.search_result_signal.emit(search_text, found, path, index)
                     self.replace_button.setEnabled(True)
-        if self.search_results:
-            if len(self.search_results_fileset) > 1:
-                for item in self.search_results_fileset:
-                    pkg, path = package_name(os.path.dirname(item))
-                    itemstr = '%s [%s]' % (os.path.basename(item), pkg)
-                    if not self.found_files_list.findItems(itemstr, Qt.MatchExactly):
-                        list_item = QListWidgetItem(itemstr)
-                        list_item.setToolTip(item)
-                        self.found_files_list.addItem(list_item)
-                        self.found_files_frame.setVisible(True)
-                        self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
+            pkg, rpath = package_name(os.path.dirname(path))
+            itemstr = '%s [%s]' % (os.path.basename(path), pkg)
+            if not self.found_files_list.findItems(itemstr, Qt.MatchExactly):
+                list_item = QTreeWidgetItem(self.found_files_list)
+                list_item.setText(0, itemstr)
+                list_item.setToolTip(0, path)
+                self.found_files_list.insertTopLevelItem(0, list_item)
+                self.found_files_list.expandAll()
+            for i in range(self.found_files_list.topLevelItemCount()):
+                top_item = self.found_files_list.topLevelItem(i)
+                if top_item.text(0) == itemstr:
+                    sub_item_str = "%d: %s" % (linenr, line)
+                    list_item2 = QTreeWidgetItem()
+                    list_item2.setText(0, sub_item_str)
+                    list_item2.setWhatsThis(0, id)
+                    top_item.addChild(list_item2)
+                #self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         self._update_label()
 
     def on_warning_result(self, text):
@@ -286,18 +294,19 @@ class TextSearchFrame(QDockWidget):
         '''
         if self.search_results:
             try:
-                search_text, _found, path, index = self.search_results[self._search_result_index]
+                id, search_text, _found, path, index, linenr, line_text = self.search_results[self._search_result_index]
                 cursor = self._tabwidget.currentWidget().textCursor()
                 if cursor.selectedText() == search_text:
                     rptxt = self.replace_field.text()
                     for rindex in range(self._search_result_index + 1, len(self.search_results)):
-                        st, _f, pa, idx = self.search_results[rindex]
+                        iid, st, _f, pa, idx, lnr, ltxt = self.search_results[rindex]
                         if path == pa:
                             self.search_results.pop(rindex)
-                            self.search_results.insert(rindex, (st, _f, pa, idx + len(rptxt) - len(st)))
+                            self.search_results.insert(rindex, (iid, st, _f, pa, idx + len(rptxt) - len(st), lnr, ltxt))
                         else:
                             break
                     self._remove_search_result(self._search_result_index)
+                    self._search_result_index -= 1
                     self.replace_signal.emit(search_text, path, index, rptxt)
                 else:
                     self.replace_button.setEnabled(False)
@@ -310,27 +319,20 @@ class TextSearchFrame(QDockWidget):
         '''
         Go to the results for the selected file entry in the list.
         '''
-        item_path = item.toolTip()
-        new_search_index = -1
-        tmp_index = -1
-        search_index = -1
-        tmp_search_text = ''
-        for search_text, found, path, index in self.search_results:
-            new_search_index += 1
-            if item_path == path:
-                if tmp_index == -1:
-                    tmp_index = new_search_index
-                    tmp_search_text = search_text
-                    search_index = index
-                if new_search_index > self._search_result_index:
-                    self.search_result_signal.emit(search_text, found, path, index)
+        splits = item.whatsThis(0).split(':')
+        if len(splits) == 2:
+            item_index = int(splits[0])
+            item_path = splits[1]
+            new_search_index = -1
+            tmp_index = -1
+            search_index = -1
+            tmp_search_text = ''
+            for id, search_text, found, path, index, linenr, line_text in self.search_results:
+                new_search_index += 1
+                if item_path == path and item_index == index:
                     self._search_result_index = new_search_index
+                    self.search_result_signal.emit(search_text, found, path, index)
                     self._update_label()
-                    return
-        if tmp_index != -1:
-            self.search_result_signal.emit(tmp_search_text, True, item_path, search_index)
-            self._search_result_index = tmp_index
-            self._update_label()
 
     def on_search_text_changed(self, _text):
         '''
@@ -357,6 +359,7 @@ class TextSearchFrame(QDockWidget):
             msg = ' '
         self.search_result_label.setText(msg)
         self.find_button_back.setEnabled(len(self.search_results))
+        self._select_current_item_in_box(self._search_result_index)
 
     def file_changed(self, path):
         '''
@@ -392,7 +395,7 @@ class TextSearchFrame(QDockWidget):
         self.search_results = []
         self.search_results_fileset = set()
         self.found_files_list.clear()
-        self.found_files_list.setVisible(False)
+#        self.found_files_list.setVisible(False)
         self._update_label(True)
         self._search_result_index = -1
         self.find_button_back.setEnabled(False)
@@ -407,20 +410,41 @@ class TextSearchFrame(QDockWidget):
         self.search_field.setFocus()
         self.search_field.selectAll()
 
+    def _select_current_item_in_box(self, index):
+        try:
+            (id, search_text, found, path, index, linenr, line) = self.search_results[index]
+            for topidx in range(self.found_files_list.topLevelItemCount()):
+                topitem = self.found_files_list.topLevelItem(topidx)
+                for childdx in range(topitem.childCount()):
+                    child = topitem.child(childdx)
+                    if child.whatsThis(0) == id:
+                        child.setSelected(True)
+                    elif child.isSelected():
+                        child.setSelected(False)
+        except:
+            pass
+
     def _remove_search_result(self, index):
         try:
-            self.search_results.pop(index)
-            # create new set with files contain the search text
-            new_path_set = set(path for _st, _fd, path, _idx in self.search_results)
-            # remove the file from the list widget
-            for pp in self.search_results_fileset - new_path_set:
-                for wi_idx in range(self.found_files_list.count()):
-                    # we have to compare each tooltip of the item
-                    if pp == self.found_files_list.item(wi_idx).toolTip():
-                        self.found_files_list.takeItem(wi_idx)
+            (id, search_text, found, path, index, linenr, line) = self.search_results.pop(index)
+            pkg, rpath = package_name(os.path.dirname(path))
+            itemstr = '%s [%s]' % (os.path.basename(path), pkg)
+            found_items = self.found_files_list.findItems(itemstr, Qt.MatchExactly)
+            for item in found_items:
+                for chi in range(item.childCount()):
+                    child = item.child(chi)
+                    if child.whatsThis(0) == id:
+                        item.removeChild(child)
                         break
+            # delete top level item if it is now empty
+            for topidx in range(self.found_files_list.topLevelItemCount()):
+                if self.found_files_list.topLevelItem(topidx).childCount() == 0:
+                    self.found_files_list.takeTopLevelItem(topidx)
+                    break
+            # create new set with files contain the search text
+            new_path_set = set(path for _id, _st, _fd, path, _idx, lnr, lntxt in self.search_results)
             self.search_results_fileset = new_path_set
-            self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
+#            self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         except:
             import traceback
             print traceback.format_exc()
