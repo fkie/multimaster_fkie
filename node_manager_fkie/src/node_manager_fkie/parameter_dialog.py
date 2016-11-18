@@ -32,6 +32,19 @@
 
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette
+from xmlrpclib import Binary
+import os
+import roslib.msgs
+import roslib.names
+import rospy
+import sys
+import threading
+
+from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.editor.line_edit import EnchancedLineEdit
+from node_manager_fkie.parameter_handler import ParameterHandler
+
+import node_manager_fkie as nm
 try:
     from python_qt_binding.QtGui import QApplication, QComboBox, QCheckBox, QLineEdit, QMessageBox, QScrollArea, QWidget
     from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
@@ -40,18 +53,6 @@ except:
     from python_qt_binding.QtWidgets import QApplication, QComboBox, QCheckBox, QLineEdit, QMessageBox, QScrollArea, QWidget
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtWidgets import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
-from xmlrpclib import Binary
-import os
-import sys
-import threading
-
-import roslib.msgs
-import roslib.names
-import rospy
-
-from node_manager_fkie.detailed_msg_box import WarningMessageBox
-from node_manager_fkie.parameter_handler import ParameterHandler
-import node_manager_fkie as nm
 
 
 def str2bool(val):
@@ -698,7 +699,7 @@ class ParameterDialog(QDialog):
         filterLayout = QHBoxLayout(self.filter_frame)
         filterLayout.setContentsMargins(1, 1, 1, 1)
         label = QLabel("Filter:", self.filter_frame)
-        self.filter_field = QLineEdit(self.filter_frame)
+        self.filter_field = EnchancedLineEdit(self.filter_frame)
         filterLayout.addWidget(label)
         filterLayout.addWidget(self.filter_field)
         self.filter_field.textChanged.connect(self._on_filter_changed)

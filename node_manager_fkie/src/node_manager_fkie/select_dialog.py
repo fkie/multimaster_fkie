@@ -40,6 +40,8 @@ except:
 from python_qt_binding.QtGui import QPixmap
 import re
 
+from node_manager_fkie.editor.line_edit import EnchancedLineEdit
+
 
 class SelectDialog(QDialog):
     '''
@@ -66,7 +68,7 @@ class SelectDialog(QDialog):
         filterLayout = QHBoxLayout(self.filter_frame)
         filterLayout.setContentsMargins(1, 1, 1, 1)
         label = QLabel("Filter:", self.filter_frame)
-        self.filter_field = QLineEdit(self.filter_frame)
+        self.filter_field = EnchancedLineEdit(self.filter_frame)
         filterLayout.addWidget(label)
         filterLayout.addWidget(self.filter_field)
         self.filter_field.textChanged.connect(self._on_filter_changed)

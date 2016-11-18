@@ -41,7 +41,7 @@ class EnchancedLineEdit(QLineEdit):
         '''
         Enable the ESC handling
         '''
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Escape and self.text():
             self.setText('')
         else:
             event.accept()
