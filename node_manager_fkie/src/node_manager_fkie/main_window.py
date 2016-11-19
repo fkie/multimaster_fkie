@@ -1198,9 +1198,7 @@ class MainWindow(QMainWindow):
             self.__current_master_label_name = name
             self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>' % name)
             color = QColor.fromRgb(nm.settings().host_color(self.__current_master_label_name, self._default_color.rgb()))
-            pal = self.expert_tab.palette()
-            pal.setColor(QPalette.Window, color)
-            self.expert_tab.setPalette(pal)
+            self._new_color(color)
         ts = 'updated: %s' % str(timestamp) if timestamp is not None else ''
         if not nm.settings().autoupdate:
             ts = '%s<span style=" color:orange;"> AU off</span>' % ts
@@ -1995,9 +1993,8 @@ class MainWindow(QMainWindow):
         QColorDialog.setStandardColor(2, QColor(60, 116, 96).rgb())
 
     def _new_color(self, color):
-        pal = self.expert_tab.palette()
-        pal.setColor(QPalette.Window, color)
-        self.expert_tab.setPalette(pal)
+        bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+        self.expert_tab.setStyleSheet("%s" % (bg_style))
 
     def mastername_mouseDoubleClickEvent(self, event):
         '''
