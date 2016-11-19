@@ -1994,6 +1994,7 @@ class MainWindow(QMainWindow):
 
     def _new_color(self, color):
         bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+        name_color = QColor(255, 255, 235)
         self.expert_tab.setStyleSheet("%s" % (bg_style))
 
     def mastername_mouseDoubleClickEvent(self, event):
@@ -2002,8 +2003,7 @@ class MainWindow(QMainWindow):
         '''
         if self.currentMaster:
             try:
-                pal = self.expert_tab.palette()
-                prev_color = pal.color(QPalette.Window)
+                prev_color = QColor.fromRgb(nm.settings().host_color(self.__current_master_label_name, self._default_color.rgb()))
                 cdiag = QColorDialog(prev_color)
                 cdiag.currentColorChanged.connect(self._new_color)
                 if cdiag.exec_():
