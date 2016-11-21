@@ -176,6 +176,15 @@ class SettingsWidget(QDockWidget):
                                                'tooltip': "<p>Highlights the current selected XML block, while "
                                                "editing ROS launch file.</p>"
                                                },),
+                    'Colorize hosts:': ({'value': nm.settings().colorize_hosts,
+                                         'settings': nm.settings(),
+                                         'attrname': 'colorize_hosts',
+                                         'value_default': nm.settings().COLORIZE_HOSTS,
+                                         'tooltip': "<p>Determine automatic a default color for each host if True. "
+                                         "Manually setted color will be prefered. You can select the color by "
+                                         "double-click on hostname in description panel. To remove a setted color "
+                                         "delete it manually from $HOME/.ros/node_manager/settings.ini</p>"
+                                         },),
                     'Transpose pub/sub description:': ({'value': nm.settings().transpose_pub_sub_descr,
                                                         'settings': nm.settings(),
                                                         'attrname': 'transpose_pub_sub_descr',

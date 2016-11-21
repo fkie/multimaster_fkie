@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from python_qt_binding.QtGui import QColor
 import os
 import roslib
 
@@ -119,8 +120,11 @@ class Settings(object):
     START_SYNC_WITH_DISCOVERY = False
     CONFIRM_EXIT_WHEN_CLOSING = True
     HIGHLIGHT_XML_BLOCKS = True
+    COLORIZE_HOSTS = True
 
     TRANSPOSE_PUB_SUB_DESCR = True
+
+    DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
     def __init__(self):
         self.reload()
@@ -176,12 +180,14 @@ class Settings(object):
         self._start_sync_with_discovery = self.str2bool(settings.value('start_sync_with_discovery', self.START_SYNC_WITH_DISCOVERY))
         self._confirm_exit_when_closing = self.str2bool(settings.value('confirm_exit_when_closing', self.CONFIRM_EXIT_WHEN_CLOSING))
         self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
+        self._colorize_hosts = self.str2bool(settings.value('colorize_hosts', self.COLORIZE_HOSTS))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         settings.beginGroup('host_colors')
         self._host_colors = dict()
         for k in settings.childKeys():
             self._host_colors[k] = settings.value(k, None)
         settings.endGroup()
+        self.init_hosts_color_list()
 
     def masteruri(self):
         return self._masteruri
@@ -395,6 +401,18 @@ class Settings(object):
             settings.setValue('highlight_xml_blocks', self._highlight_xml_blocks)
 
     @property
+    def colorize_hosts(self):
+        return self._colorize_hosts
+
+    @colorize_hosts.setter
+    def colorize_hosts(self, value):
+        val = self.str2bool(value)
+        if self._colorize_hosts != val:
+            self._colorize_hosts = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('colorize_hosts', self._colorize_hosts)
+
+    @property
     def transpose_pub_sub_descr(self):
         return self._transpose_pub_sub_descr
 
@@ -407,11 +425,17 @@ class Settings(object):
             settings.setValue('transpose_pub_sub_descr', self._transpose_pub_sub_descr)
 
     def host_color(self, host, default_color):
-        if host in self._host_colors:
-            result = self._host_colors[host]
-            if isinstance(result, (unicode, str)):
-                return long(result)
-            return result
+        if self.colorize_hosts:
+            # get the color from settings file
+            if host in self._host_colors:
+                result = self._host_colors[host]
+                if isinstance(result, (unicode, str)):
+                    return long(result)
+                return result
+            else:
+                # determine a color
+                index = abs(hash(host)) % len(self.DEAFULT_HOST_COLORS)
+                return self.DEAFULT_HOST_COLORS[index]
         return default_color
 
     def set_host_color(self, host, color):
@@ -467,3 +491,10 @@ class Settings(object):
         if not settings_file.startswith(os.path.sep):
             path = os.path.join(self.cfg_path, settings_file)
         return QSettings(path, QSettings.IniFormat)
+
+    def init_hosts_color_list(self):
+        self.DEAFULT_HOST_COLORS = [
+            QColor(255, 255, 235).rgb(),
+            QColor(87, 93, 94).rgb(),
+            QColor(60, 116, 96).rgb(),
+        ]
