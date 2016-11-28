@@ -528,6 +528,13 @@ class Discoverer(object):
         self.CHANGE_NOTIFICATION_COUNT = rospy.get_param('~change_notification_count', Discoverer.CHANGE_NOTIFICATION_COUNT)
         self._current_change_notification_count = 0
         self._send_mcast = rospy.get_param('~send_mcast', True)
+
+        # if set will detect any master_discovery sending out multicast
+        # and will send out requests and state using unicast; this is
+        # useful for creating a hub toplogy, where the hub has send_mcast
+        # set and all clients have send_mcast and favor_unicast set
+        self._favor_unicast = rospy.get_param('~favor_unicast', False)
+        
         # for cases with more then one master_discovery on the same host and
         # heartbeat rate is less then 0.1. In this case we have to send a multicast
         # request reply, because we are bind to the same port. Unicast replies are
@@ -540,6 +547,8 @@ class Discoverer(object):
         if not self._send_mcast:
             self.HEARTBEAT_HZ = 1. / self.ACTIVE_REQUEST_AFTER
             rospy.logwarn("Multicast is disabled. Use ~active_request_after(%.2f) ot set ~heartbeat_hz to new value: %.4f" % (self.ACTIVE_REQUEST_AFTER, self.HEARTBEAT_HZ))
+        rospy.loginfo("Favor unicast: %s" % (self._favor_unicast))
+
         rospy.loginfo("Check the ROS Master[Hz]: " + str(self.ROSMASTER_HZ))
         if self.HEARTBEAT_HZ <= 0.:
             rospy.logwarn("Heart beat [Hz]: %s is increased to 0.02" % self.HEARTBEAT_HZ)
@@ -700,7 +709,12 @@ class Discoverer(object):
             rospy.logdebug('Send current state to group %s:%s' % (self.mcast_group, self.mcast_port))
             msg = self._create_current_state_msg()
             if msg is not None:
-                self.socket.send2group(msg)
+                if self._favor_unicast and not self._has_multiple_addresses():
+                    self.socket.send2addr(self._create_request_update_msg(), self.socket.unicast_socket.interface)
+                    for address in self._addresses:
+                        self.socket.send2addr(msg, address)
+                else:
+                    self.socket.send2group(msg)
         except Exception as e:
             rospy.logwarn('Send current state to mcast group %s:%s failed: %s\n' % (self.mcast_group, self.mcast_port, e))
             self._init_socket()
@@ -723,7 +737,12 @@ class Discoverer(object):
             if current_time - self._ts_received_mcast_request > 1. / self.current_check_hz:
                 rospy.logdebug('Send request to mcast group %s:%s' % (self.mcast_group, self.mcast_port))
                 # do not send a multicast request if one was received in last time
-                self.socket.send2group(self._create_request_update_msg())
+                if self._favor_unicast and not self._has_multiple_addresses():
+                    self.socket.send2addr(self._create_request_update_msg(), self.socket.unicast_socket.interface)
+                    for address in self._addresses:
+                        self.socket.send2addr(self._create_request_update_msg(), address)
+                else:
+                    self.socket.send2group(self._create_request_update_msg())
             else:
                 rospy.logdebug('Skipped send request to mcast group %s:%s. Last send was %.2fsec ago,  allowed %.2f' % (self.mcast_group, self.mcast_port, current_time - self._ts_received_mcast_request, 1. / self.current_check_hz))
         except Exception as e:
@@ -913,6 +932,12 @@ class Discoverer(object):
 
     def _is_multi_address(self, address):
         return address in self._addresses and self._addresses[address] > 1
+
+    def _has_multiple_addresses(self):
+        for (address, count) in self._addresses.iteritems():
+            if count > 1:
+                return True
+        return False
 
     def _add_address(self, address):
         if address in self._addresses:

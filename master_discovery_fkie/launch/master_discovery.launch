@@ -34,5 +34,7 @@
     <param name="change_notification_count" value="3" />
     <!-- disables the send of multicast messages.  -->
     <param name="send_mcast" value="True" />
+    <!-- use unicast to send if discovered masters are on separate hosts -->
+    <param name="favor_unicast" value="False" />
   </node>
 </launch>
