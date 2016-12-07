@@ -588,6 +588,9 @@ class Discoverer(object):
         self._timer_ros_changes = threading.Timer(0.1, self.checkROSMaster_loop)
         # init socket for discovering. Exit on errors!
         self._init_socket(True)
+        if not self.socket.canUnicast() and self._favor_unicast:
+            rospy.logwarn("Unicast is not enabled.  Disabling favor_unicast!")
+            self._favor_unicast = False
         # create a timer monitor the offline ROS master and calculate the link qualities
         self._timer_stats = threading.Timer(1, self.timed_stats_calculation)
         # create timer and paramter for heartbeat notifications
@@ -710,7 +713,7 @@ class Discoverer(object):
             msg = self._create_current_state_msg()
             if msg is not None:
                 if self._favor_unicast and not self._has_multiple_addresses():
-                    self.socket.send2addr(self._create_request_update_msg(), self.socket.unicast_socket.interface)
+                    self.socket.send2unicastaddr(self._create_request_update_msg())
                     for address in self._addresses:
                         self.socket.send2addr(msg, address)
                 else:
@@ -738,7 +741,7 @@ class Discoverer(object):
                 rospy.logdebug('Send request to mcast group %s:%s' % (self.mcast_group, self.mcast_port))
                 # do not send a multicast request if one was received in last time
                 if self._favor_unicast and not self._has_multiple_addresses():
-                    self.socket.send2addr(self._create_request_update_msg(), self.socket.unicast_socket.interface)
+                    self.socket.send2unicastaddr(self._create_request_update_msg())
                     for address in self._addresses:
                         self.socket.send2addr(self._create_request_update_msg(), address)
                 else:
