@@ -34,5 +34,7 @@
     <param name="change_notification_count" value="3" />
     <!-- disables the send of multicast messages.  -->
     <param name="send_mcast" value="True" />
+    <!-- disables the listening to multicast messages. If listen_mcast and send_mcast are False, only unicast socket will be created.  -->
+    <param name="listen_mcast" value="True" />
   </node>
 </launch>

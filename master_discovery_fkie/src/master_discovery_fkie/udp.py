@@ -35,19 +35,18 @@ import errno
 import fcntl
 import os
 import platform
+import roslib.network
+import rospy
 import socket
 import struct
 import threading
-
-import roslib.network
-import rospy
 
 
 class DiscoverSocket(socket.socket):
     '''
     The DiscoverSocket class enables the send and receive UDP messages to a
     multicast group and unicast address. The unicast socket is only created if
-    'unicast_only' parameter is set to True or a specific interface is defined.
+    'send_mcast' and 'listen_mcast' parameter are set to False or a specific interface is defined.
 
     :param port: the port to bind the socket
 
@@ -66,7 +65,7 @@ class DiscoverSocket(socket.socket):
     :type ttl: int (Default: 20)
     '''
 
-    def __init__(self, port, mgroup, ttl=20, unicast_only=False):
+    def __init__(self, port, mgroup, ttl=20, send_mcast=True, listen_mcast=True):
         '''
         Creates a socket, bind it to a given port and join to a given multicast
         group. IPv4 and IPv6 are supported.
@@ -76,14 +75,20 @@ class DiscoverSocket(socket.socket):
         @type mgroup: str
         @param ttl: time to leave
         @type ttl: int (Default: 20)
-        @param unicast_only: send only unicast messages
-        @type unicast_only: bool (Default: False)
+        @param send_mcast: send multicast messages
+        @type send_mcast: bool (Default: True)
+        @param listen_mcast: listen to the multicast group
+        @type listen_mcast: bool (Default: True)
         '''
         self.port = port
         self._lock = threading.RLock()
-        self.unicast_only = unicast_only
+        self.send_mcast = send_mcast
+        self.listen_mcast = listen_mcast
+        self.unicast_only = not (send_mcast or listen_mcast)
         self._closed = False
         self._msg_callback = None
+        self._locals = [ip for ifname, ip in DiscoverSocket.localifs()]
+        self._locals.append('localhost')
         self.sock_5_error_printed = []
         # get the group and interface. Especially for definition like 226.0.0.0@192.168.101.10
         # it also reads ~interface and ROS_IP
@@ -93,7 +98,7 @@ class DiscoverSocket(socket.socket):
         # of group is the same as for interface
         addrinfo = UcastSocket.getaddrinfo(self.mgroup)
         self.interface_ip = ''
-        if unicast_only:
+        if self.unicast_only:
             # inform about no braodcasting
             rospy.logwarn("Multicast disabled!")
         if self.interface:
@@ -101,7 +106,7 @@ class DiscoverSocket(socket.socket):
             if addrinfo is not None:
                 self.interface_ip = addrinfo[4][0]
                 self.unicast_socket = UcastSocket(self.interface_ip, port)
-        elif unicast_only:
+        elif self.unicast_only:
             self.unicast_socket = UcastSocket('', port)
 
         rospy.logdebug("mgroup: %s", self.mgroup)
@@ -109,8 +114,8 @@ class DiscoverSocket(socket.socket):
         rospy.logdebug("inet: %s", addrinfo)
 
         socket.socket.__init__(self, addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        if not unicast_only:
-            rospy.loginfo("Listen for multicast at ('%s', %d)", self.mgroup, port)
+        if not self.unicast_only:
+            rospy.loginfo("Create multicast socket at ('%s', %d)", self.mgroup, port)
             # initialize multicast socket
             # Allow multiple copies of this program on one machine
             if hasattr(socket, "SO_REUSEPORT"):
@@ -168,7 +173,7 @@ class DiscoverSocket(socket.socket):
                 raise
 
         self.addrinfo = addrinfo
-        if not unicast_only:
+        if not self.unicast_only:
             # create a thread to handle the received multicast messages
             self._recv_thread = threading.Thread(target=self.recv_loop_multicast)
             self._recv_thread.setDaemon(True)
@@ -220,7 +225,7 @@ class DiscoverSocket(socket.socket):
                 self.setsockopt(socket.IPPROTO_IPV6,
                                 socket.IPV6_LEAVE_GROUP,
                                 self.group_bing)
-            rospy.loginfo("Stop receiving multicast at ('%s', %s)", self.mgroup, self.port)
+            rospy.loginfo("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
             socket.socket.close(self)
         # close the unicast socket
         if self.unicast_socket is not None:
@@ -236,9 +241,14 @@ class DiscoverSocket(socket.socket):
         :type msg: str
         '''
         try:
+            # simulate the reception of a message from local host
+            if not self.listen_mcast:
+                with self._lock:
+                    if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
+                        self._msg_callback(msg, ('localhost', self.port), False)
             if self.unicast_only and self.unicast_socket:
                 self.unicast_socket.send2addr(msg, self.unicast_socket.interface)
-            else:
+            elif self.send_mcast:
                 # Send to the multicast group address as supplied
                 # Default '226.0.0.0'
                 self.sendto(msg, (self.mgroup, self.getsockname()[1]))
@@ -261,6 +271,11 @@ class DiscoverSocket(socket.socket):
         :type addr: str
         '''
         try:
+            # simulate the reception of a message from local host
+            if addr in self._locals:
+                with self._lock:
+                    if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
+                        self._msg_callback(msg, (addr, self.port), False)
             if self.unicast_socket is None:
                 self.sendto(msg, (addr, self.getsockname()[1]))
             else:
@@ -340,7 +355,7 @@ class DiscoverSocket(socket.socket):
             try:
                 (msg, address) = self.recvfrom(1024)
                 with self._lock:
-                    if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed:
+                    if self._msg_callback is not None and not rospy.is_shutdown() and not self._closed and self.listen_mcast:
                         self._msg_callback(msg, address, True)
             except socket.timeout:
                 pass

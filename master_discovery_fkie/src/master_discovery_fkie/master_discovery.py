@@ -32,16 +32,15 @@
 
 from urlparse import urlparse
 import errno
+import roslib.network
+import rospy
 import socket
+import std_srvs.srv
 import struct
 import sys
 import threading
 import time
 import xmlrpclib
-
-import roslib.network
-import rospy
-import std_srvs.srv
 
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket
@@ -528,6 +527,10 @@ class Discoverer(object):
         self.CHANGE_NOTIFICATION_COUNT = rospy.get_param('~change_notification_count', Discoverer.CHANGE_NOTIFICATION_COUNT)
         self._current_change_notification_count = 0
         self._send_mcast = rospy.get_param('~send_mcast', True)
+        self._listen_mcast = rospy.get_param('~listen_mcast', True)
+        if not self._listen_mcast or not self._send_mcast:
+            self.robots.append('localhost')
+        self.robots = list(set(self.robots))
         # for cases with more then one master_discovery on the same host and
         # heartbeat rate is less then 0.1. In this case we have to send a multicast
         # request reply, because we are bind to the same port. Unicast replies are
@@ -536,10 +539,10 @@ class Discoverer(object):
 
         # some parameter checks and info outputs
         if not self._send_mcast and not self.robots:
-            rospy.logwarn("This master_discovery is invisible because it send no heart beat messages! Set ~send_mcast to true or add hosts to ~robot_hosts.")
+            rospy.logwarn("This master_discovery is invisible because it sends no heart beat messages! Set ~send_mcast to true or add hosts to ~robot_hosts.")
         if not self._send_mcast:
             self.HEARTBEAT_HZ = 1. / self.ACTIVE_REQUEST_AFTER
-            rospy.logwarn("Multicast is disabled. Use ~active_request_after(%.2f) ot set ~heartbeat_hz to new value: %.4f" % (self.ACTIVE_REQUEST_AFTER, self.HEARTBEAT_HZ))
+            rospy.logwarn("Send multicast is disabled. Use ~active_request_after(%.2f) and set ~heartbeat_hz to new value: %.4f. This value is used by remote hosts to calculate link quality." % (self.ACTIVE_REQUEST_AFTER, self.HEARTBEAT_HZ))
         rospy.loginfo("Check the ROS Master[Hz]: " + str(self.ROSMASTER_HZ))
         if self.HEARTBEAT_HZ <= 0.:
             rospy.logwarn("Heart beat [Hz]: %s is increased to 0.02" % self.HEARTBEAT_HZ)
@@ -608,10 +611,10 @@ class Discoverer(object):
         # create discovery socket
         # if multicast messages are disabled only unicast socket is created
         # unicast socket is also created if ~interface is defined
-        self.socket = DiscoverSocket(self.mcast_port, self.mcast_group, unicast_only=(not self._send_mcast))
-        if self._send_mcast:
+        self.socket = DiscoverSocket(self.mcast_port, self.mcast_group, send_mcast=self._send_mcast, listen_mcast=self._listen_mcast)
+        if self._send_mcast or self._listen_mcast:
             if not self.socket.hasEnabledMulticastIface() and doexit_on_error:
-                sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast or disable multicast.\nExit")
+                sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast or disable multicast by settings 'send_mcast' and 'listen_mcast' to False.\nExit")
         # set callback for received UDP messages
         self.socket.set_message_callback(self.recv_udp_msg)
 
@@ -681,7 +684,8 @@ class Discoverer(object):
                     # send update requests to group
                     if self._init_notifications < self.INIT_NOTIFICATION_COUNT:
                         self._init_notifications += 1
-                        rospy.logdebug("Send request to the group while init %d/%d" % (self._init_notifications, self.INIT_NOTIFICATION_COUNT))
+                        if self._send_mcast:
+                            rospy.logdebug("Send request to the group while init %d/%d" % (self._init_notifications, self.INIT_NOTIFICATION_COUNT))
                         self._send_request2group()
                     # send update requests to predefined robot hosts
                     for remote_master in self.robots:
@@ -697,10 +701,11 @@ class Discoverer(object):
 
     def _send_current_state2group(self):
         try:
-            rospy.logdebug('Send current state to group %s:%s' % (self.mcast_group, self.mcast_port))
-            msg = self._create_current_state_msg()
-            if msg is not None:
-                self.socket.send2group(msg)
+            if self._send_mcast:
+                rospy.logdebug('Send current state to group %s:%s' % (self.mcast_group, self.mcast_port))
+                msg = self._create_current_state_msg()
+                if msg is not None:
+                    self.socket.send2group(msg)
         except Exception as e:
             rospy.logwarn('Send current state to mcast group %s:%s failed: %s\n' % (self.mcast_group, self.mcast_port, e))
             self._init_socket()
@@ -717,15 +722,16 @@ class Discoverer(object):
 
     def _send_request2group(self, masters=[]):
         try:
-            current_time = time.time()
-            for master in masters:
-                master.add_request(current_time)
-            if current_time - self._ts_received_mcast_request > 1. / self.current_check_hz:
-                rospy.logdebug('Send request to mcast group %s:%s' % (self.mcast_group, self.mcast_port))
-                # do not send a multicast request if one was received in last time
-                self.socket.send2group(self._create_request_update_msg())
-            else:
-                rospy.logdebug('Skipped send request to mcast group %s:%s. Last send was %.2fsec ago,  allowed %.2f' % (self.mcast_group, self.mcast_port, current_time - self._ts_received_mcast_request, 1. / self.current_check_hz))
+            if self._send_mcast:
+                current_time = time.time()
+                for master in masters:
+                    master.add_request(current_time)
+                if current_time - self._ts_received_mcast_request > 1. / self.current_check_hz:
+                    rospy.logdebug('Send request to mcast group %s:%s' % (self.mcast_group, self.mcast_port))
+                    # do not send a multicast request if one was received in last time
+                    self.socket.send2group(self._create_request_update_msg())
+                else:
+                    rospy.logdebug('Skipped send request to mcast group %s:%s. Last send was %.2fsec ago,  allowed %.2f' % (self.mcast_group, self.mcast_port, current_time - self._ts_received_mcast_request, 1. / self.current_check_hz))
         except Exception as e:
             rospy.logwarn("Send request to mcast group %s:%s' failed: %s" % (self.mcast_group, self.mcast_port, e))
 
@@ -857,6 +863,9 @@ class Discoverer(object):
                         if firstc != 'R':
                             # ignore the message. it does not start with 'R'
                             return
+                        # map local addresses to locahost
+                        if address[0] in roslib.network.get_local_addresses():
+                            address = ('localhost', address[1])
                         master_key = (address, monitor_port)
                         if version >= 3 and secs == 0 and nsecs == 0:
                             # is it a request to update the state
@@ -866,7 +875,10 @@ class Discoverer(object):
                                 if is_multicast:
                                     rospy.logdebug("Received a multicast request for a state update from %s" % address[0])
                                     self._ts_received_mcast_request = time.time()
-                                    self._send_current_state2group()
+                                    if self._send_mcast:
+                                        self._send_current_state2group()
+                                    else:
+                                        self._send_current_state2addr(address[0])
                                 else:
                                     rospy.logdebug("Received a request for a state update from %s" % (address[0]))
                                     self._send_current_state2addr(address[0])
@@ -907,7 +919,6 @@ class Discoverer(object):
                                                                         timestamp=float(secs) + float(nsecs) / 1000000000.0,
                                                                         timestamp_local=float(secs_l) + float(nsecs_l) / 1000000000.0,
                                                                         callback_master_state=self.publish_masterstate)
-
                 except Exception, e:
                     rospy.logwarn("Error while decode message: %s", str(e))
 
