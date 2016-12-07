@@ -237,7 +237,7 @@ class DiscoverSocket(socket.socket):
         '''
         try:
             if self.unicast_only and self.unicast_socket:
-                self.unicast_socket.send2addr(msg, self.unicast_socket.interface)
+                self.send2unicastaddr(msg)
             else:
                 # Send to the multicast group address as supplied
                 # Default '226.0.0.0'
@@ -246,6 +246,18 @@ class DiscoverSocket(socket.socket):
             msg = str(errobj)
             if errobj.errno not in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET]:
                 raise
+    
+    def send2unicastaddr(self, msg):
+        '''
+        Sends the given message to the unicast interface.
+
+        :param msg: message to send
+
+        :type msg: str
+        '''
+        if self.unicast_socket:
+            self.unicast_socket.send2addr(msg, self.unicast_socket.interface)
+
 
     def send2addr(self, msg, addr):
         '''
@@ -296,6 +308,12 @@ class DiscoverSocket(socket.socket):
             if ((flags & IFF_MULTICAST) != 0) & ((flags & IFF_UP) != 0):
                 return True
         return False
+
+    def canUnicast(self):
+        '''
+        Returns True if the unicast_socket is available.
+        '''
+        return self.unicast_socket is not None
 
     @staticmethod
     def localifs():
