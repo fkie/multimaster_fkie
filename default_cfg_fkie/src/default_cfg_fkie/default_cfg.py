@@ -391,10 +391,9 @@ class DefaultCfg(object):
         if not self.parameter_loaded:
             self.loadParams()
         n = None
-        nodename = os.path.basename(node)
-        namespace = os.path.dirname(node).strip('/')
         for item in self.roscfg.nodes:
-            if (item.name == nodename) and ((item.namespace.strip('/') == namespace) or not namespace):
+            itemname = rospy.names.ns_join(item.namespace, item.name)
+            if itemname == node:
                 n = item
                 break
         if n is None:
