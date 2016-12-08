@@ -30,8 +30,16 @@ By default the settings and histtory files are stored in <em>$(HOME)/.ros/node_m
 
 <h4>Settings parameter:</h4>
 <p>
-<strong>Autostart</strong> <br/>
+<strong>Autoupdate</strong> <br/>
 By default node manager updates the current state on changes. You can deactivate this behavior to reduce the network load. If autoupdate is deactivated you must refresh the state manually. (Default: True)
+</p>
+<p>
+<strong>Colorize hosts</strong> <br/>
+Determine automatic a default color for each host if True. Manually setted color will be prefered. You can select the color by double-click on hostname in description panel. To remove a setted color delete it manually from $HOME/.ros/node_manager/settings.ini. (Default: True)
+</p>
+<p>
+<strong>Confirm exit when closing</strong> <br/>
+Shows on closing of node_manager a dialog to stop all ROS nodes if this option is set to true. (Default: True)
 </p>
 <p>
 <strong>Default user</strong> <br/>
@@ -40,6 +48,10 @@ The username for access remote hosts. (Default: robot)
 <p>
 <strong>Launch history length</strong> <br/>
 The count of displayed files in the root of <a href="launch_dock.html">Launch Dock</a>. (Default: 6)
+</p>
+<p>
+<strong>Max time difference</strong> <br/>
+Shows a warning if the time difference to remote host is greater than this value. (Default: 0.5)
 </p>
 <p>
 <strong>Param history length</strong> <br/>
@@ -56,6 +68,10 @@ The path to store this settings and history files. The default path will not be 
 <p>
 <strong>Show file extensions</strong> <br/>
 While browsing in <a href="launch_dock.html">Launch Dock</a> all folders which not contain a file with here defined extension is skipped. If you can't find your folder you can add your file extension to this parameter. (Default: .yaml, .conf, .cfg, .iface, .sync, .test)
+</p>
+<p>
+<strong>Start sync with discovery</strong> <br/>
+Sets 'start sync' in 'Start' master discovery dialog to True, if this option is set to true. (Default: True)
 </p>
 <p>
 <strong>Store windows layout</strong> <br/>
