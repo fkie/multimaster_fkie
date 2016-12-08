@@ -30,22 +30,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import shlex
-import subprocess
-import sys
-import threading
-
 from multimaster_msgs_fkie.msg import Capability
 from multimaster_msgs_fkie.srv import ListDescription, ListNodes, Task, ListDescriptionResponse, ListNodesResponse  # , LoadLaunch
 from rosgraph.rosenv import ROS_NAMESPACE
 from roslaunch import ROSLaunchConfig, XmlLoader
+import os
 import rosgraph.masterapi
 import rosgraph.names
 import roslib.names
 import roslib.network
 import rospy
+import shlex
 import std_srvs.srv
+import subprocess
+import sys
+import threading
 
 from screen_handler import ScreenHandler  # , ScreenHandlerException
 
@@ -462,6 +461,9 @@ class DefaultCfg(object):
         # add node environment parameter
         for k, v in n.env_args:
             new_env[k] = v
+        # the ROS_NAMESPACE environment is used in cpp plugins in rqt
+        if n.namespace:
+            new_env['ROS_NAMESPACE'] = n.namespace
         # set delayed autostart parameter
         self._run_node(popen_cmd, cwd, new_env, rospy.names.ns_join(n.namespace, n.name), autostart)
         if len(cmd) > 1:
