@@ -82,7 +82,7 @@ class TextSearchThread(QObject, threading.Thread):
             import traceback
             # print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Error while search for '%s' in '%s': %s", (self._search_text, self._path, formatted_lines[-1]))
+            rospy.logwarn("Error while search for '%s' in '%s': %s" % (self._search_text, self._path, formatted_lines[-1]))
             self.warning_signal.emit(formatted_lines[-1])
         finally:
             if self._isrunning:

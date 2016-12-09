@@ -398,7 +398,7 @@ class Editor(QMainWindow):
         Shows the number of the line and column in a label.
         '''
         cursor = self.tabWidget.currentWidget().textCursor()
-        self.pos_label.setText(':%s:%s' % (cursor.blockNumber() + 1, cursor.columnNumber()))
+        self.pos_label.setText(':%s:%s #%s' % (cursor.blockNumber() + 1, cursor.columnNumber(), cursor.position()))
 
     def __getTabName(self, lfile):
         base = os.path.basename(lfile).replace('.launch', '')
