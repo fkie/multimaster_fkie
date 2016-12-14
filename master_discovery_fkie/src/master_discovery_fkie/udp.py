@@ -160,28 +160,29 @@ class DiscoverSocket(socket.socket):
                 self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
 
             try:
-                if addrinfo[0] == socket.AF_INET:  # IPv4
-                    # Create group_bin for de-register later
-                    # Set socket options for multicast specific interface or general
-                    if not self.interface_ip:
-                        self.group_bin = socket.inet_pton(socket.AF_INET, self.mgroup) + struct.pack('=I', socket.INADDR_ANY)
-                        self.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
-                                        self.group_bin)
-                    else:
-                        self.group_bin = socket.inet_aton(self.mgroup) + socket.inet_aton(self.interface_ip)
-                        self.setsockopt(socket.IPPROTO_IP,
-                                        socket.IP_MULTICAST_IF,
-                                        socket.inet_aton(self.interface_ip))
-                        self.setsockopt(socket.IPPROTO_IP,
-                                        socket.IP_ADD_MEMBERSHIP,
-                                        self.group_bin)
-                else:  # IPv6
-                    # Create group_bin for de-register later
-                    # Set socket options for multicast
-                    self.group_bin = socket.inet_pton(addrinfo[0], self.mgroup) + struct.pack('@I', socket.INADDR_ANY)
-                    self.setsockopt(socket.IPPROTO_IPV6,
-                                    socket.IPV6_JOIN_GROUP,
-                                    self.group_bing)
+                if self.listen_mcast:
+                    if addrinfo[0] == socket.AF_INET:  # IPv4
+                        # Create group_bin for de-register later
+                        # Set socket options for multicast specific interface or general
+                        if not self.interface_ip:
+                            self.group_bin = socket.inet_pton(socket.AF_INET, self.mgroup) + struct.pack('=I', socket.INADDR_ANY)
+                            self.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                                            self.group_bin)
+                        else:
+                            self.group_bin = socket.inet_aton(self.mgroup) + socket.inet_aton(self.interface_ip)
+                            self.setsockopt(socket.IPPROTO_IP,
+                                            socket.IP_MULTICAST_IF,
+                                            socket.inet_aton(self.interface_ip))
+                            self.setsockopt(socket.IPPROTO_IP,
+                                            socket.IP_ADD_MEMBERSHIP,
+                                            self.group_bin)
+                    else:  # IPv6
+                        # Create group_bin for de-register later
+                        # Set socket options for multicast
+                        self.group_bin = socket.inet_pton(addrinfo[0], self.mgroup) + struct.pack('@I', socket.INADDR_ANY)
+                        self.setsockopt(socket.IPPROTO_IPV6,
+                                        socket.IPV6_JOIN_GROUP,
+                                        self.group_bing)
             except socket.error as errobj:
                 msg = str(errobj)
                 if errobj.errno in [errno.ENODEV]:
