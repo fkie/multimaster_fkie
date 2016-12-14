@@ -34,15 +34,14 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SocketServer import ThreadingMixIn
 from datetime import datetime
 import cStringIO
+import roslib.network
+import rospy
 import socket
 import subprocess
 import threading
 import time
 import traceback
 import xmlrpclib
-
-import roslib.network
-import rospy
 
 import interface_finder
 
@@ -168,7 +167,7 @@ class MasterMonitor(object):
                 self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
                 self.rpcServer.register_function(self.setTime, 'setTime')
                 self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
-                self._rpcThread.setDaemon(True)
+#                self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
                 self.ready = True
             except socket.error as e:

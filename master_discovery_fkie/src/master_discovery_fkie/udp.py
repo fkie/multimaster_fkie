@@ -203,15 +203,12 @@ class DiscoverSocket(socket.socket):
         if not self.unicast_only:
             # create a thread to handle the received multicast messages
             self._recv_thread = threading.Thread(target=self.recv_loop_multicast)
-            self._recv_thread.setDaemon(True)
             self._recv_thread.start()
         if self.unicast_socket is not None:
             # create a thread to handle the received unicast messages
             self._recv_thread = threading.Thread(target=self.recv_loop_unicast)
-            self._recv_thread.setDaemon(True)
             self._recv_thread.start()
         self._send_tread = threading.Thread(target=self._send_loop_from_queue)
-        self._send_tread.setDaemon(True)
         self._send_tread.start()
 
     def set_message_callback(self, callback):
@@ -256,6 +253,7 @@ class DiscoverSocket(socket.socket):
                                 socket.IPV6_LEAVE_GROUP,
                                 self.group_bing)
             rospy.loginfo("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
+            self.sendto('', ('localhost', self.port))
             socket.socket.close(self)
         # close the unicast socket
         if self.unicast_socket is not None:
@@ -420,7 +418,8 @@ class DiscoverSocket(socket.socket):
         while not rospy.is_shutdown() and not self._closed:
             try:
                 (msg, address) = self.recvfrom(1024)
-                self.receive_queue.put(QueueReceiveItem(msg, address, QueueReceiveItem.MULTICAST), timeout=1)
+                if not self._closed:
+                    self.receive_queue.put(QueueReceiveItem(msg, address, QueueReceiveItem.MULTICAST), timeout=1)
             except socket.timeout:
                 pass
             except Queue.Full as full_error:
@@ -437,7 +436,8 @@ class DiscoverSocket(socket.socket):
             while not rospy.is_shutdown() and not self._closed:
                 try:
                     (msg, address) = self.unicast_socket.recvfrom(1024)
-                    self.receive_queue.put(QueueReceiveItem(msg, address, QueueReceiveItem.UNICAST), timeout=1)
+                    if not self._closed:
+                        self.receive_queue.put(QueueReceiveItem(msg, address, QueueReceiveItem.UNICAST), timeout=1)
                 except socket.timeout:
                     pass
                 except Queue.Full as full_error:
@@ -459,6 +459,7 @@ class UcastSocket(socket.socket):
         @type port: int
         '''
         self.interface = interface
+        self.port = port
         addrinfo = None
         # If interface isn't specified, try to find an non localhost interface to
         # get some info for binding. Otherwise use localhost
@@ -521,6 +522,7 @@ class UcastSocket(socket.socket):
 
     def close(self):
         """ Cleanup and close the socket"""
+        self.sendto('', (self.interface, self.port))
         socket.socket.close(self)
 
     @staticmethod

@@ -138,7 +138,6 @@ class DiscoveredMaster(object):
         self.masteruriaddr = None
         # create a thread to retrieve additional information about the remote ROS master
         self._get_into_timer = threading.Timer(0.1, self.__retrieve_masterinfo)
-        self._get_into_timer.setDaemon(True)
         self._get_into_timer.start()
 
     def finish(self):
@@ -316,7 +315,6 @@ class DiscoveredMaster(object):
 
     def __start_get_info_timer(self, timetosleep):
         self._get_into_timer = threading.Timer(timetosleep, self.__retrieve_masterinfo)
-        self._get_into_timer.setDaemon(True)
         self._get_into_timer.start()
 
     def __retrieve_masterinfo(self):
@@ -365,9 +363,7 @@ class DiscoveredMaster(object):
                             msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(self.masteruri)
                             rospy.logwarn(msg)
                             self._add_error(self.ERR_RESOLVE_NAME, msg)
-                            self._get_into_timer = threading.Timer(3., self.__retrieve_masterinfo)
-                            self._get_into_timer.setDaemon(True)
-                            self._get_into_timer.start()
+                            self.__start_get_info_timer(3.)
                         except:
                             import traceback
                             msg = "resolve error [%s]: %s" % (self.monitoruri, traceback.format_exc())
@@ -598,11 +594,9 @@ class Discoverer(object):
             self._init_notifications = self.INIT_NOTIFICATION_COUNT
             self._current_change_notification_count = self.CHANGE_NOTIFICATION_COUNT
         self._timer_heartbeat = threading.Timer(1.0, self.send_heartbeat)
-        self._timer_heartbeat.setDaemon(True)
         # set the callback to finish all running threads
         rospy.on_shutdown(self.finish)
         self._recv_tread = threading.Thread(target=self._recv_loop_from_queue)
-        self._recv_tread.setDaemon(True)
 
     def start(self):
         self._recv_tread.start()
@@ -695,7 +689,6 @@ class Discoverer(object):
                     sleeptime = 1.0 / self.HEARTBEAT_HZ if self.HEARTBEAT_HZ > 0. else 1.0
                     rospy.logdebug("Set timer to send heartbeat in %.2f sec" % sleeptime)
                     self._timer_heartbeat = threading.Timer(sleeptime, self.send_heartbeat)
-                    self._timer_heartbeat.setDaemon(True)
                     self._timer_heartbeat.start()
 
     def _publish_current_state(self, address=None, msg=None):
@@ -807,7 +800,6 @@ class Discoverer(object):
             self._remove_offline_hosts()
             # setup timer for next ROS master state check
             self._timer_ros_changes = threading.Timer(1.0 / self.current_check_hz, self.checkROSMaster_loop)
-            self._timer_ros_changes.setDaemon(True)
             self._timer_ros_changes.start()
 
     def _remove_offline_hosts(self):
@@ -998,7 +990,6 @@ class Discoverer(object):
         try:
             if not rospy.is_shutdown():
                 self._timer_stats = threading.Timer(1, self.timed_stats_calculation)
-                self._timer_stats.setDaemon(True)
                 self._timer_stats.start()
         except:
             pass
