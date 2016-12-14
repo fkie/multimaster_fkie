@@ -247,12 +247,13 @@ class DiscoverSocket(socket.socket):
         self._closed = True
         # Use the stored group_bin to de-register
         if not self.unicast_only:
-            if self.addrinfo[0] == socket.AF_INET:  # IPv4
-                self.setsockopt(socket.IPPROTO_IP, socket.IP_DROP_MEMBERSHIP, self.group_bin)
-            else:  # IPv6
-                self.setsockopt(socket.IPPROTO_IPV6,
-                                socket.IPV6_LEAVE_GROUP,
-                                self.group_bing)
+            if self.listen_mcast:
+                if self.addrinfo[0] == socket.AF_INET:  # IPv4
+                    self.setsockopt(socket.IPPROTO_IP, socket.IP_DROP_MEMBERSHIP, self.group_bin)
+                else:  # IPv6
+                    self.setsockopt(socket.IPPROTO_IPV6,
+                                    socket.IPV6_LEAVE_GROUP,
+                                    self.group_bing)
             rospy.loginfo("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
             self.sendto('', ('localhost', self.port))
             socket.socket.close(self)
