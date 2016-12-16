@@ -519,6 +519,7 @@ class Discoverer(object):
         # this parameter stores the state of the remote nodes. If the state is changed
         # the cache for contacts of remote nodes will be cleared.
         self._changed = False
+        self._last_datetime = time.time()
         self.ROSMASTER_HZ = rospy.get_param('~rosmaster_hz', Discoverer.ROSMASTER_HZ)
         self.HEARTBEAT_HZ = rospy.get_param('~heartbeat_hz', Discoverer.HEARTBEAT_HZ)
         self.MEASUREMENT_INTERVALS = rospy.get_param('~measurement_intervals', Discoverer.MEASUREMENT_INTERVALS)
@@ -623,6 +624,20 @@ class Discoverer(object):
         # set callback for received UDP messages
 #        self.socket.set_message_callback(self.recv_udp_msg)
 
+    def _stop_timers(self):
+        try:
+            self._timer_ros_changes.cancel()
+        except:
+            pass
+        try:
+            self._timer_heartbeat.cancel()
+        except:
+            pass
+        try:
+            self._timer_stats.cancel()
+        except:
+            pass
+
     def finish(self, *arg):
         '''
         Callback called on exit of the ros node and publish the empty list of
@@ -652,18 +667,7 @@ class Discoverer(object):
             time.sleep(0.2)
             # tell other loops to finish
             self.do_finish = True
-        try:
-            self._timer_ros_changes.cancel()
-        except:
-            pass
-        try:
-            self._timer_heartbeat.cancel()
-        except:
-            pass
-        try:
-            self._timer_stats.cancel()
-        except:
-            pass
+        self._stop_timers()
         self.socket.close()
         self._killme_timer = threading.Timer(2., self._killme)
         self._killme_timer.setDaemon(True)
@@ -862,6 +866,7 @@ class Discoverer(object):
         '''
         if not rospy.is_shutdown() and not self.do_finish:
             with self.__lock:
+                self._check_timejump()
                 try:
                     (version, msg_tuple) = self.msg2masterState(msg, address)
                     if (version in [2, 3]):
@@ -932,6 +937,14 @@ class Discoverer(object):
                                 self._publish_current_state(address[0])
                 except Exception, e:
                     rospy.logwarn("Error while decode message: %s", str(e))
+
+    def _check_timejump(self):
+        if self._last_datetime > time.time():
+            self._stop_timers()
+            self.checkROSMaster_loop()
+            self.send_heartbeat(True)
+            self.timed_stats_calculation()
+        self._last_datetime = time.time()
 
     def _is_multi_address(self, address):
         return address in self._addresses and self._addresses[address] > 1

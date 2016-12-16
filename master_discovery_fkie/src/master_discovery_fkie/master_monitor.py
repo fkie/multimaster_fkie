@@ -752,6 +752,13 @@ class MasterMonitor(object):
             with self._state_access_lock:
                 if s != self.__master_state:
                     do_update = True
+                if self.__master_state is not None and s.timestamp < self.__master_state.timestamp:
+                    do_update = True
+                    result = True
+                    timejump_msg = "Timejump into past detected! Restart all ROS nodes, includes master_discovery, please!"
+                    rospy.logwarn(timejump_msg)
+                    if timejump_msg not in self._master_errors:
+                        self._master_errors.append(timejump_msg)
             if do_update:
                 self.updateSyncInfo()
                 with self._state_access_lock:
