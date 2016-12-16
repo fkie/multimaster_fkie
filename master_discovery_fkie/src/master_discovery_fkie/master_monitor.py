@@ -167,7 +167,7 @@ class MasterMonitor(object):
                 self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
                 self.rpcServer.register_function(self.setTime, 'setTime')
                 self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
-#                self._rpcThread.setDaemon(True)
+                self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
                 self.ready = True
             except socket.error as e:
@@ -215,6 +215,11 @@ class MasterMonitor(object):
         Shutdown the RPC Server.
         '''
         if hasattr(self, 'rpcServer'):
+            if self._timer_update_launch_uris is not None:
+                try:
+                    self._timer_update_launch_uris.cancel()
+                except:
+                    pass
             if self._master is not None:
                 rospy.loginfo("Unsubscribe from parameter `/roslaunch/uris`")
                 try:
@@ -223,8 +228,6 @@ class MasterMonitor(object):
                     rospy.logwarn("Error while unsubscribe from `/roslaunch/uris`: %s" % e)
             rospy.loginfo("shutdown own RPC server")
             self.rpcServer.shutdown()
-            if self._timer_update_launch_uris is not None:
-                self._timer_update_launch_uris.cancel()
             del self.rpcServer.socket
             del self.rpcServer
 

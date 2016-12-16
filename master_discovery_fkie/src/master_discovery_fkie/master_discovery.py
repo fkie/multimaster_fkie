@@ -665,6 +665,14 @@ class Discoverer(object):
         except:
             pass
         self.socket.close()
+        self._killme_timer = threading.Timer(2., self._killme)
+        self._killme_timer.setDaemon(True)
+        self._killme_timer.start()
+
+    def _killme(self):
+        import os
+        import signal
+        os.kill(os.getpid(), signal.SIGKILL)
 
     def send_heartbeat(self, timer=True):
         '''
