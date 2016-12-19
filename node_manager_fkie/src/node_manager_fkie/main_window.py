@@ -31,21 +31,22 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import datetime
+from multimaster_msgs_fkie.msg import MasterState
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
 from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
+from python_qt_binding.QtGui import QPalette, QColor
 import getpass
 import os
+import roslib
+import rospy
 import socket
 import time
 import uuid
 import xmlrpclib
 
-from multimaster_msgs_fkie.msg import MasterState
-import roslib
-import rospy
-
 from master_discovery_fkie.common import resolve_url
+
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
@@ -67,13 +68,14 @@ from .select_dialog import SelectDialog
 from .settings_widget import SettingsWidget
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
-from python_qt_binding.QtGui import QPalette, QColor
+
+
 try:
     from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
-    from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog
+    from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
 except:
     from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStackedLayout, QWidget
-    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog
+    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
 
 
 try:
@@ -143,10 +145,10 @@ class MainWindow(QMainWindow):
         menu_rqt = MenuRqt(self.rqtButton)
         menu_rqt.start_rqt_plugin_signal.connect(self.on_rqt_plugin_start)
 
-	pal = self.expert_tab.palette()
+        pal = self.expert_tab.palette()
         self._default_color = pal.color(QPalette.Window)
         self._set_custom_colors()
-	
+
         # setup settings widget
         self.settings_dock = SettingsWidget(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.settings_dock)
@@ -958,42 +960,54 @@ class MainWindow(QMainWindow):
 
     def on_set_time_clicked(self):
         if self.currentMaster is not None:  # and not self.currentMaster.is_local:
-            ret = QMessageBox.question(self, 'Set Time', 'Change time on remote host: %s?' % nm.nameres().getHostname(self.currentMaster.master_state.uri), QMessageBox.Yes, QMessageBox.No)
-            if ret == QMessageBox.Yes:
+            time_dialog = QDialog()
+            ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'TimeInput.ui')
+            loadUi(ui_file, time_dialog)
+            host = nm.nameres().getHostname(self.currentMaster.master_state.uri)
+            time_dialog.setWindowTitle('Set time on %s' % host)
+            time_dialog.hostsComboBox.addItems(nm.history().cachedParamValues('/ntp'))
+            if self.currentMaster.is_local:
+                time_dialog.dateFrame.setVisible(False)
+            if time_dialog.exec_():
                 running_nodes = self.currentMaster.getRunningNodesIfLocal(remove_system_nodes=True)
                 if running_nodes:
                     ret = QMessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?', QMessageBox.Yes, QMessageBox.No)
                     if ret == QMessageBox.Yes:
                         self.currentMaster.stop_nodes_by_name(running_nodes)
-                try:
-                    rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
-                    socket.setdefaulttimeout(10)
-                    p = xmlrpclib.ServerProxy(self.currentMaster.master_state.monitoruri)
-                    uri, success, newtime, errormsg = p.setTime(time.time())
-                    if not success:
-                        if errormsg.find('password') > -1:
-                            errormsg += "\nPlease modify /etc/sudoers and add user privilege, e.g:"
-                            errormsg += "\n%s  ALL=NOPASSWD: /bin/date" % self.currentMaster.current_user
-                            errormsg += "\n!!!needed to be at the very end of file, don't forget a new line at the end!!!"
-                            errormsg += "\n\nBe aware, it does not replace the time synchronization!"
-                            errormsg += "\nIt sets approximate time without undue delays on communication layer."
-                        WarningMessageBox(QMessageBox.Warning, "Time set error",
-                                          'Error while set time on %s' % uri,
+                if time_dialog.dateRadioButton.isChecked():
+                    try:
+                        rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
+                        socket.setdefaulttimeout(10)
+                        p = xmlrpclib.ServerProxy(self.currentMaster.master_state.monitoruri)
+                        uri, success, newtime, errormsg = p.setTime(time.time())
+                        if not success:
+                            if errormsg.find('password') > -1:
+                                errormsg += "\nPlease modify /etc/sudoers with sudoedit and add user privilege, e.g:"
+                                errormsg += "\n%s  ALL=NOPASSWD: /bin/date" % self.currentMaster.current_user
+                                errormsg += "\n!!!needed to be at the very end of file, don't forget a new line at the end!!!"
+                                errormsg += "\n\nBe aware, it does not replace the time synchronization!"
+                                errormsg += "\nIt sets approximate time without undue delays on communication layer."
+                            WarningMessageBox(QMessageBox.Warning, "Time set error",
+                                              'Error while set time on %s' % uri, '%s' % errormsg).exec_()
+                        else:
+                            timediff = time.time() - newtime
+                            rospy.loginfo("  New time difference to %s is approx.: %.3fs" % (self.currentMaster.master_state.uri, timediff))
+                            self.on_master_timediff_retrieved(self.currentMaster.master_state.uri, timediff)
+                    except Exception as e:
+                        errormsg = '%s' % e
+                        if errormsg.find('setTime') > -1:
+                            errormsg += "\nUpdate remote multimaster_fkie!"
+                        rospy.logwarn("Error while set time on %s: %s" % (self.currentMaster.master_state.uri, errormsg))
+                        WarningMessageBox(QMessageBox.Warning, "Time sync error",
+                                          'Error while set time on %s' % self.currentMaster.master_state.uri,
                                           '%s' % errormsg).exec_()
-                    else:
-                        timediff = time.time() - newtime
-                        rospy.loginfo("  New time difference to %s is approx.: %.3fs" % (self.currentMaster.master_state.uri, timediff))
-                        self.on_master_timediff_retrieved(self.currentMaster.master_state.uri, timediff)
-                except Exception as e:
-                    errormsg = '%s' % e
-                    if errormsg.find('setTime') > -1:
-                        errormsg += "\nUpdate remote multimaster_fkie!"
-                    rospy.logwarn("Error while set time on %s: %s" % (self.currentMaster.master_state.uri, errormsg))
-                    WarningMessageBox(QMessageBox.Warning, "Time sync error",
-                                      'Error while set time on %s' % self.currentMaster.master_state.uri,
-                                      '%s' % errormsg).exec_()
-                finally:
-                    socket.setdefaulttimeout(None)
+                    finally:
+                        socket.setdefaulttimeout(None)
+                elif time_dialog.ntpdateRadioButton.isChecked():
+                    ntp_host = time_dialog.hostsComboBox.currentText()
+                    nm.history().addParamCache('/ntp', ntp_host)
+                    cmd = "%s %s" % (time_dialog.ntpdateRadioButton.text(), ntp_host)
+                    nm.starter().ntpdate(host, cmd)
 
     def on_refresh_master_clicked(self):
         if self.currentMaster is not None:

@@ -33,6 +33,7 @@
 from python_qt_binding.QtGui import QColor
 import os
 import roslib
+import rospy
 
 from node_manager_fkie.common import get_ros_home, masteruri_from_ros
 
@@ -462,7 +463,7 @@ class Settings(object):
         except:
             return []
 
-    def terminal_cmd(self, cmd, title):
+    def terminal_cmd(self, cmd, title, noclose=False):
         '''
         Creates a command string to run with a terminal prefix
         @param cmd: the list with a command and args
@@ -472,6 +473,7 @@ class Settings(object):
         @return: command with a terminal prefix
         @rtype:  str
         '''
+        noclose_str = '-hold'
         if self._terminal_emulator is None:
             self._terminal_emulator = ""
             for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm']:
@@ -479,11 +481,22 @@ class Settings(object):
                     # workaround to support the command parameter in different terminal
                     if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
                         self._terminal_command_arg = 'x'
+                    else:
+                        self._terminal_command_arg = 'e'
+                    if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'gnome-terminal.wrapper']:
+                        noclose_str = '--profile hold'
+                        if noclose:
+                            rospy.loginfo("If your terminal close after the execution, you can change this behavior in "
+                                          "profiles. You can also create a profile with name 'hold'. This profile will "
+                                          "be then load by node_manager.")
+                    elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal']:
+                        noclose_str = ''
                     self._terminal_emulator = t
                     break
         if self._terminal_emulator == "":
             return ""
-        return '%s -T "%s" -%s %s' % (self._terminal_emulator, title, self._terminal_command_arg, ' '.join(cmd))
+        noclose_str = noclose_str if noclose else ""
+        return '%s -T "%s" %s -%s %s' % (self._terminal_emulator, title, noclose_str, self._terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
         from python_qt_binding.QtCore import QSettings

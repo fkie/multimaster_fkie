@@ -31,6 +31,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import roslib
+import rospy
 import shlex
 import signal
 import socket
@@ -38,12 +40,10 @@ import time
 import types
 import xmlrpclib
 
-import roslib
-import rospy
-
 from node_manager_fkie.common import get_ros_home, masteruri_from_ros, package_name
 from node_manager_fkie.name_resolution import NameResolution
 from node_manager_fkie.supervised_popen import SupervisedPopen
+
 import node_manager_fkie as nm
 
 
@@ -953,3 +953,27 @@ class StartHandler(object):
                     raise StartException("Can't get path from remote host. Is there the new version of node_manager installed?")
             except nm.AuthenticationRequest as e:
                 raise nm.InteractionNeededError(e, cls.transfer_files, (host, path, auto_pw_request))
+
+    @classmethod
+    def ntpdate(cls, host, cmd, user=None, pw=None):
+        '''
+        Opens the log file associated with the given node in a new terminal.
+        @param nodename: the name of the node (with name space)
+        @type nodename: C{str}
+        @param host: the host name or ip where the log file are
+        @type host: C{str}
+        @return: C{True}, if a log file was found
+        @rtype: C{bool}
+        @raise Exception: on errors while resolving host
+        @see: L{node_manager_fkie.is_local()}
+        '''
+        mesg = "synchronize time on '%s' using '%s'" % (str(host), cmd)
+        rospy.loginfo(mesg)
+        title_opt = "ntpdate on %s" % str(host)  # '%s on %s' % (cmd, host)
+        if nm.is_local(host):
+            cmd = nm.settings().terminal_cmd([cmd], title_opt, noclose=True)
+            rospy.loginfo("EXEC: %s" % cmd)
+            ps = SupervisedPopen(shlex.split(cmd), object_id=cmd, description=mesg)
+        else:
+            ps = nm.ssh().ssh_x11_exec(host, [cmd, ';echo "";echo "this terminal will be closed in 10 sec...";sleep 10'], title_opt, user)
+        return False
