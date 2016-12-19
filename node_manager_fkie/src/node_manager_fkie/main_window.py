@@ -1034,19 +1034,48 @@ class MainWindow(QMainWindow):
         if self.currentMaster is not None:
             try:
                 args = []
-                tool = 'rqt_gui'
-                prefix = 'rqt'
+                package = 'rqt_gui'
+                binary = 'rqt_gui'
+                prefix = 'rqt_'
+                suffix = ''
                 if name == 'RViz':
-                    prefix = 'rviz'
-                    tool = 'rviz'
+                    prefix = 'rviz_'
+                    package = 'rviz'
+                    binary = 'rviz'
                 if plugin:
                     args = ['-s', plugin]
-                node_name = '%s_%s_%s' % (prefix, name.lower().replace(' ', '_'),
-                                          self.currentMaster.master_state.name.replace('-', '_'))
+                if name == 'rosbag record':
+                    package = 'rosbag'
+                    binary = 'record'
+                    prefix = ''
+                    topic_names = []
+                    current_tab = self.currentMaster.masterTab.tabWidget.tabText(self.currentMaster.masterTab.tabWidget.currentIndex())
+                    if (current_tab == 'Nodes'):
+                        nodes = self.currentMaster.nodesFromIndexes(self.currentMaster.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+                        if nodes:
+                            for n in nodes:
+                                topic_names.extend(n.published)
+                    else:
+                        topics = self.currentMaster.topicsFromIndexes(self.currentMaster.masterTab.topicsView.selectionModel().selectedIndexes())
+                        if topics:
+                            topic_names.extend([t.name for t in topics])
+                    count_topics = 'ALL'
+                    if topic_names:
+                        args = [' '.join(topic_names)]
+                        count_topics = '%d selected' % len(topic_names)
+                    else:
+                        args = ['-a']
+                    ret = QMessageBox.question(self, 'Start rosbag', 'Start rosbag record with %s topics to %s/record_TIMESTAMP?' % (count_topics, nm.settings().LOG_PATH), QMessageBox.Yes, QMessageBox.No)
+                    if ret == QMessageBox.No:
+                        return
+                    args.append("-o %s/record" % nm.settings().LOG_PATH)
+                    suffix = "_%d" % int(time.time())
+                node_name = '%s%s_%s%s' % (prefix, name.lower().replace(' ', '_'),
+                                           self.currentMaster.master_state.name.replace('-', '_'), suffix)
                 self.currentMaster._progress_queue.add2queue(str(uuid.uuid4()),
                                                              'start %s' % name,
                                                              nm.starter().runNodeWithoutConfig,
-                                                             ('localhost', tool, tool,
+                                                             ('localhost', package, binary,
                                                               node_name, args,
                                                               '%s' % self.currentMaster.master_state.uri,
                                                               False))

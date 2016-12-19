@@ -82,6 +82,11 @@ class MenuRqt(QMenu):
                                                 'that is connected to the selected master</p>"',
                                                 triggered=self.on_show_ros_graph_clicked)
             self.addAction(self.action_rqt_ros_graph)
+            self.action_rosbag_record = QAction(QIcon.fromTheme('media-record'),
+                                                "rosbag record", self,
+                                                statusTip='"<p>Starts the rosbag record with selected topics</p>"',
+                                                triggered=self.on_start_rosbag_clicked)
+            self.addAction(self.action_rosbag_record)
             self.action_rqt_rviz = QAction(QIcon.fromTheme('image-x-generic'),
                                            "R&Viz", self,
                                            statusTip='"<p>Starts RViz</p>"',
@@ -111,6 +116,9 @@ class MenuRqt(QMenu):
 
     def on_show_ros_graph_clicked(self):
         self.start_rqt_plugin_signal.emit('Ros Graph', 'rqt_graph.ros_graph.RosGraph')
+
+    def on_start_rosbag_clicked(self):
+        self.start_rqt_plugin_signal.emit('rosbag record', '')
 
     def on_show_rviz_clicked(self):
         self.start_rqt_plugin_signal.emit('RViz', 'rqt_rviz/RViz')
