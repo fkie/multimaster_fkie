@@ -343,6 +343,8 @@ class MasterViewProxy(QWidget):
         self._shortcut_stop = QShortcut(QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
         self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
+        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
+        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
         self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
         self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
 
@@ -2971,6 +2973,38 @@ class MasterViewProxy(QWidget):
     def on_shortcut_collapse_all(self):
         self.masterTab.nodeTreeView.selectionModel().clearSelection()
         self.masterTab.nodeTreeView.collapseAll()
+
+    def on_copy_c_pressed(self):
+        result = ''
+        if self.masterTab.nodeTreeView.hasFocus():
+            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            for node in selectedNodes:
+                try:
+                    result = '%s %s' % (result, node.name)
+                except Exception:
+                    pass
+        elif self.masterTab.topicsView.hasFocus():
+            selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+            for topic in selectedTopics:
+                try:
+                    result = '%s %s' % (result, topic.name)
+                except Exception:
+                    pass
+        elif self.masterTab.servicesView.hasFocus():
+            selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+            for service in selectedServices:
+                try:
+                    result = '%s %s' % (result, service.name)
+                except Exception:
+                    pass
+        elif self.masterTab.parameterView.hasFocus():
+            selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+            for (name, _value) in selectedParameter:
+                try:
+                    result = '%s %s' % (result, name)
+                except Exception:
+                    pass
+        QApplication.clipboard().setText(result.strip())
 
     def on_copy_x_pressed(self):
         result = ''
