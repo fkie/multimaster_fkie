@@ -32,7 +32,7 @@
 
 from datetime import datetime
 from multimaster_msgs_fkie.msg import MasterState
-from python_qt_binding import loadUi
+from python_qt_binding import loadUi, QT_BINDING_VERSION
 from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
 from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
 from python_qt_binding.QtGui import QPalette, QColor
@@ -2031,9 +2031,13 @@ class MainWindow(QMainWindow):
                 rospy.logwarn("Error while set robot image for %s: %s", str(self.__current_master_label_name), str(e))
 
     def _set_custom_colors(self):
-        QColorDialog.setStandardColor(0, self._default_color.rgb())
-        QColorDialog.setStandardColor(1, QColor(87, 93, 94).rgb())
-        QColorDialog.setStandardColor(2, QColor(60, 116, 96).rgb())
+        colors = [self._default_color, QColor(87, 93, 94), QColor(60, 116, 96)]
+        # QT4 compatibility hack (expected type by QT4 is QRgb, Qt5 is QColor)
+        if QT_BINDING_VERSION.startswith("4"): 
+            colors = [c.rgb() for c in colors]
+        QColorDialog.setStandardColor(0, colors[0])
+        QColorDialog.setStandardColor(1, colors[1])
+        QColorDialog.setStandardColor(2, colors[2])
 
     def _new_color(self, color):
         bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
