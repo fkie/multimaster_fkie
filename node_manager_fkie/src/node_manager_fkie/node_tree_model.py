@@ -52,7 +52,7 @@ class GroupItem(QStandardItem):
     '''
     ITEM_TYPE = Qt.UserRole + 25
 
-    def __init__(self, name, parent=None):
+    def __init__(self, name, parent=None, has_remote_launched_nodes=False):
         '''
         Initialize the GroupItem object with given values.
         @param name: the name of the group
@@ -68,6 +68,8 @@ class GroupItem(QStandardItem):
         self.descr_type = self.descr_name = self.descr = ''
         self.descr_images = []
         self._capcabilities = dict()
+        self._has_remote_launched_nodes = has_remote_launched_nodes
+        self._remote_launched_nodes_updated = False
         '''
      @ivar: dict(config : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
     '''
@@ -387,6 +389,14 @@ class GroupItem(QStandardItem):
                 if item.rowCount() == 0:
                     self.removeRow(i)
 
+    def reset_remote_launched_nodes(self):
+        self._remote_launched_nodes_updated = False
+
+    def remote_launched_nodes_updated(self):
+        if self._has_remote_launched_nodes:
+            return self._remote_launched_nodes_updated
+        return True
+
     def updateRunningNodeState(self, nodes):
         '''
         Updates the running state of the nodes given in a dictionary.
@@ -403,6 +413,8 @@ class GroupItem(QStandardItem):
             else:
                 # create the new node
                 self.addNode(node)
+            if self._has_remote_launched_nodes:
+                self._remote_launched_nodes_updated = True
         self.clearUp(nodes.keys())
 
     def getRunningNodes(self):
@@ -642,12 +654,13 @@ class HostItem(GroupItem):
         @param local: is this host the localhost where the node_manager is running.
         @type local: C{bool}
         '''
+        self._has_remote_launched_nodes = False
         name = self.create_host_description(masteruri, address)
         self._masteruri = masteruri
         self._host = address
         self._mastername = address
         self._local = local
-        GroupItem.__init__(self, name, parent)
+        GroupItem.__init__(self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
         image_file = nm.settings().robot_image_file(name)
         if QFile.exists(image_file):
             self.setIcon(QIcon(image_file))
@@ -691,8 +704,7 @@ class HostItem(GroupItem):
             result = self.hostname
         return result
 
-    @classmethod
-    def create_host_description(cls, masteruri, address):
+    def create_host_description(self, masteruri, address):
         '''
         Returns the name generated from masteruri and address
         @param masteruri: URI of the ROS master assigned to the host
@@ -709,6 +721,7 @@ class HostItem(GroupItem):
         result = '%s@%s' % (name, hostname)
         if nm.nameres().getHostname(masteruri) != hostname:
             result += '[%s]' % masteruri
+            self._has_remote_launched_nodes = True
         return result
 
     def updateTooltip(self):
@@ -775,9 +788,9 @@ class HostItem(GroupItem):
             rospy.logwarn("compare HostItem with unicode depricated")
             return False
         elif isinstance(item, tuple):
-            return self.masteruri == item[0]
+            return self.masteruri == item[0] and self.host == item[1]
         elif isinstance(item, HostItem):
-            return self.masteruri == item.masteruri
+            return self.masteruri == item.masteruri and self.host == item.host
         return False
 
     def __gt__(self, item):
@@ -1286,7 +1299,8 @@ class NodeTreeModel(QStandardItemModel):
         if masteruri is None:
             return None
         host = (masteruri, address)
-        local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) + nm.nameres().addresses(masteruri) and
+        #[address] + nm.nameres().resolve_cached(address)
+        local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
                  self._local_masteruri == masteruri)
         # find the host item by address
         root = self.invisibleRootItem()
@@ -1314,6 +1328,9 @@ class NodeTreeModel(QStandardItemModel):
         # separate into different hosts
         hosts = dict()
         addresses = []
+        for i in reversed(range(self.invisibleRootItem().rowCount())):
+            host = self.invisibleRootItem().child(i)
+            host.reset_remote_launched_nodes()
         for (name, node) in nodes.items():
             addr = nm.nameres().getHostname(node.uri if node.uri is not None else node.masteruri)
             addresses.append(node.masteruri)
@@ -1524,7 +1541,7 @@ class NodeTreeModel(QStandardItemModel):
         # remove empty hosts
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host.rowCount() == 0:
+            if host.rowCount() == 0 or not host.remote_launched_nodes_updated():
                 self.invisibleRootItem().removeRow(i)
 
     def isDuplicateNode(self, node_name):
