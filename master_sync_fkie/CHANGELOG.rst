@@ -2,6 +2,9 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2017-01-09)
+------------------
+
 0.6.2 (2016-11-12)
 ------------------
 * Increased logging in master sync.

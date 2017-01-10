@@ -2,6 +2,32 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2017-01-09)
+------------------
+* node_manager_fkie: fixed visualisation of not local nodes
+    repaired gui_resources.py for Qt5 compatibility
+    restore Qt5 compatibility
+* node_manager_fkie: added update/set time dialog to update time with ntpdate or date
+* node_manager_fkie: added rosbag record to rqt menu
+* node_manager_fkie: copy now all selected nodes, topics, services or parameter names to clipboard by pressing Ctrl+C
+* node_manager_fkie: added cursor position number to editor
+* node_manager_fkie: added indent before hostname in description panel
+* node_manager_fkie: added a colorize_host settings parameter
+    the color of the host will be now determine automatically
+    you can also set own color for each host by double-click on the
+    hostname in description panel.
+* node_manager_fkie: fixed error after cancel color selection
+* node_manager_fkie: use gradient to set color
+* node_manager_fkie: now you can define colors for each robot
+* node_manager_fkie: removed a broken import
+* node_manager_fkie: fixed: no longer clear the search result on click into editor
+* node_manager_fkie: find dialog in xml-editor shows now all results in as list
+* node_manager_fkie: added clear button to filder lines in dialogs
+* node_manager_fkie: add filter to nodes view
+  added also a clear button (also ESC) to all filter lines
+* node_manager_fkie: fixed some extended visualization for synced nodes
+* Contributors: Alexander Tiderko, Sr4l
+
 0.6.2 (2016-11-12)
 ------------------
 * node_manager_fkie: fixed node view for multiple cores on the same host

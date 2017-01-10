@@ -2,6 +2,43 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2017-01-09)
+------------------
+* master_discovery_fkie: added detection for timejumps into the past
+* master_discovery_fkie: fixed the shutdown process
+    sometimes blocks the SimpleXMLRPCServer the shutdown process. Added a
+    timer to kill the own process at the end.
+* master_discovery_fkie: `#55 <https://github.com/fkie/multimaster_fkie/issues/55>`_ change the message handling routines
+  Introduced a send and receive Queue. It was need to implement new
+  features like hub/client structure.
+  Added more debug output.
+* master_discovery_fkie: splitted send_mcast into send_mcast and listen_mcast to get a hub functionality
+* node_manager_fkie: fixed visualisation of not local nodes
+    repaired gui_resources.py for Qt5 compatibility
+    restore Qt5 compatibility
+* node_manager_fkie: added update/set time dialog to update time with ntpdate or date
+* node_manager_fkie: added rosbag record to rqt menu
+* node_manager_fkie: copy now all selected nodes, topics, services or parameter names to clipboard by pressing Ctrl+C
+* node_manager_fkie: added cursor position number to editor
+* node_manager_fkie: added indent before hostname in description panel
+* node_manager_fkie: added a colorize_host settings parameter
+    the color of the host will be now determine automatically
+    you can also set own color for each host by double-click on the
+    hostname in description panel.
+* node_manager_fkie: fixed error after cancel color selection
+* node_manager_fkie: use gradient to set color
+* node_manager_fkie: now you can define colors for each robot
+* node_manager_fkie: removed a broken import
+* node_manager_fkie: fixed: no longer clear the search result on click into editor
+* node_manager_fkie: find dialog in xml-editor shows now all results in as list
+* node_manager_fkie: added clear button to filder lines in dialogs
+* node_manager_fkie: add filter to nodes view
+  added also a clear button (also ESC) to all filter lines
+* node_manager_fkie: fixed some extended visualization for synced nodes
+* default_cfg_fkie: fixed start nodes with same name and different namespaces
+* default_cfg_fkie: fix the namespace for rqt-cpp-plugins
+* Contributors: Alexander Tiderko, Sr4l, deng02
+
 0.6.2 (2016-11-12)
 ------------------
 * master_sync_fkie: Increased logging.

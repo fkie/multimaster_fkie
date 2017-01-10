@@ -2,6 +2,19 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2017-01-09)
+------------------
+* master_discovery_fkie: added detection for timejumps into the past
+* master_discovery_fkie: fixed the shutdown process
+    sometimes blocks the SimpleXMLRPCServer the shutdown process. Added a
+    timer to kill the own process at the end.
+* master_discovery_fkie: `#55 <https://github.com/fkie/multimaster_fkie/issues/55>`_ change the message handling routines
+  Introduced a send and receive Queue. It was need to implement new
+  features like hub/client structure.
+  Added more debug output.
+* master_discovery_fkie: splitted send_mcast into send_mcast and listen_mcast to get a hub functionality
+* Contributors: Alexander Tiderko, deng02
+
 0.6.2 (2016-11-12)
 ------------------
 * Drop roslib.load_manifest, unneeded with catkin
