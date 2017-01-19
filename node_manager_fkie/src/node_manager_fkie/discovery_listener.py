@@ -47,7 +47,7 @@ try:
     from multimaster_msgs_fkie.srv import DiscoverMasters  # , GetSyncInfo
 except ImportError, e:
     import sys
-    print >> sys.stderr, "Can't import massages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
+    print >> sys.stderr, "Can't import messages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
     raise ImportError(str(e))
 
 
