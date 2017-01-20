@@ -6,7 +6,7 @@
 
 <!-- 
 The master_discovery package creates a node, which use periodically 
-send multicast massages to discover the running ROS master.
+send multicast messages to discover the running ROS master.
 -->
 
 

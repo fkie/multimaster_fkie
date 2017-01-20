@@ -987,7 +987,7 @@ class Discoverer(object):
                 raise Exception("old heartbeat version %s detected (current: %s), please update master_discovery on %s" % (version, Discoverer.VERSION, address))
             else:
                 raise Exception("heartbeat version %s expected, received: %s" % (Discoverer.VERSION, version))
-        raise Exception("massage is to small")
+        raise Exception("message is too small")
 
     def timed_stats_calculation(self):
         '''
