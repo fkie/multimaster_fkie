@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
         self._changed_binaries = dict()
         self._changed_files_param = dict()
         self._syncs_to_start = []  # hostnames
+        self._accept_next_update = False
         # self.setAttribute(Qt.WA_AlwaysShowToolTips, True)
         # setup main window frame
         self.setObjectName('MainWindow')
@@ -1975,6 +1976,7 @@ class MainWindow(QMainWindow):
             self.poweroff_host(self._url_host(url))
         else:
             QDesktopServices.openUrl(url)
+            self._accept_next_update = False
 
     def _url_path(self, url):
         '''Helper class for Qt5 compatibility'''

@@ -1229,6 +1229,7 @@ class MasterViewProxy(QWidget):
         if selected is not None:
             # it is a workaround to avoid double updates a after click on an item
             self.__last_selection = time.time()
+        selectedGroups = []
         if node_name and self.master_info is not None:
             # get node by name
             selectedNodes = self.getNode(node_name)
