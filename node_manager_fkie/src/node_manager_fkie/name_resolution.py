@@ -35,6 +35,7 @@ from urlparse import urlparse
 import socket
 
 import rospy
+from master_discovery_fkie.common import get_hostname, subdomain
 
 RESOLVE_CACHE = {}  # hostname : address
 
@@ -317,9 +318,9 @@ class NameResolution(object):
         try:
             url = urlparse(masteruri)
             if url.port == 11311:
-                result = '%s' % url.hostname
+                result = '%s' % subdomain(url.hostname)
             else:
-                result = '%s_%d' % (url.hostname, url.port)
+                result = '%s_%d' % (subdomain(url.hostname), url.port)
         except:
             pass
         return result
@@ -336,21 +337,6 @@ class NameResolution(object):
         return [hostname]
 
     @classmethod
-    def getHostname(cls, url):
-        '''
-        Returns the host name used in a url
-
-        @return: host or None if url is invalid
-        @rtype:  C{str}
-        '''
-        if url is None:
-            return None
-        o = urlparse(url)
-        if o.hostname is None:
-            return url
-        return o.hostname.split('.')[-1]
-
-    @classmethod
     def get_ros_hostname(cls, url):
         '''
         Returns the host name used in a url, if it is a name. If it is an IP an
@@ -359,14 +345,14 @@ class NameResolution(object):
         @return: host or '' if url is an IP or invalid
         @rtype:  C{str}
         '''
-        hostname = cls.getHostname(url)
+        hostname = get_hostname(url)
         if hostname is not None:
             if hostname != 'localhost':
                 if '.' not in hostname and ':' not in hostname:
                     local_hostname = 'localhost'
                     try:
                         # ROS resolves the 'localhost' to local hostname
-                        local_hostname = socket.gethostname().split('.')[-1]
+                        local_hostname = subdomain(socket.gethostname())
                     except:
                         pass
                     if hostname != local_hostname:

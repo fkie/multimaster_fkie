@@ -34,32 +34,7 @@ import time
 import xmlrpclib
 
 import rospy
-
-
-def hostFromUri(uri):
-    '''
-    Extracts the hostname from given uri.
-
-    :param uri: the uri to parse
-
-    :type uri:  str
-
-    :return: the hostname or `None`, if the uri is `None` or `invalid`
-
-    :rtype: str
-
-    :see: http://docs.python.org/library/urlparse.html
-
-    '''
-    if uri is None:
-        return None
-    from urlparse import urlparse
-    try:
-        o = urlparse(uri)
-        return o.hostname
-    except:
-        return None
-
+from .common import get_hostname
 
 def get_changes_topic(masteruri, wait=True):
     '''
@@ -143,7 +118,7 @@ def _get_topic(masteruri, ttype, wait=True):
                             for n in l:
                                 code, msg, val = master.lookupNode(rospy.get_name(), n)
                                 # only local publisher will be tacked
-                                if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
+                                if code == 1 and get_hostname(val) == get_hostname(masteruri):
                                     result.append(topic)
             if not result and wait:
                 rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type '%s." % ttype)
@@ -231,7 +206,7 @@ def _get_service(masteruri, name, wait=True):
                 if srv.endswith(name):
                     # only local service will be tacked
                     code, msg, val = master.lookupService(rospy.get_name(), srv)
-                    if code == 1 and hostFromUri(val) == hostFromUri(masteruri):
+                    if code == 1 and get_hostname(val) == get_hostname(masteruri):
                         result.append(srv)
             if not result and wait:
                 rospy.logwarn("Master_discovery node appear not to running. Wait for service '%s'." % name)

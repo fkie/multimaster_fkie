@@ -37,6 +37,7 @@ import roslib
 import rospy
 import traceback
 
+from master_discovery_fkie.common import get_hostname
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
@@ -719,7 +720,7 @@ class HostItem(GroupItem):
         if hostname is None:
             hostname = str(address)
         result = '%s@%s' % (name, hostname)
-        if nm.nameres().getHostname(masteruri) != hostname:
+        if get_hostname(masteruri) != hostname:
             result += '[%s]' % masteruri
             self._has_remote_launched_nodes = True
         return result
@@ -1009,7 +1010,7 @@ class NodeItem(QStandardItem):
         master_discovered = nm.nameres().has_master(self.node_info.masteruri)
 #    local = False
 #    if not self.node_info.uri is None and not self.node_info.masteruri is None:
-#      local = (nm.nameres().getHostname(self.node_info.uri) == nm.nameres().getHostname(self.node_info.masteruri))
+#      local = (get_hostname(self.node_info.uri) == get_hostname(self.node_info.masteruri))
         if self.node_info.pid is not None:
             self._state = NodeItem.STATE_RUN
             if self.diagnostic_array and self.diagnostic_array[-1].level > 0:
@@ -1332,7 +1333,7 @@ class NodeTreeModel(QStandardItemModel):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
         for (name, node) in nodes.items():
-            addr = nm.nameres().getHostname(node.uri if node.uri is not None else node.masteruri)
+            addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
             addresses.append(node.masteruri)
             host = (node.masteruri, addr)
             if host not in hosts:

@@ -39,6 +39,7 @@ import socket
 import sys
 import threading
 
+from master_discovery_fkie.common import get_hostname
 from node_manager_fkie.common import get_ros_home, masteruri_from_ros
 from node_manager_fkie.file_watcher import FileWatcher
 from node_manager_fkie.history import History
@@ -296,7 +297,7 @@ def init_globals(masteruri):
 
     # test where the roscore is running (local or remote)
     __is_local('localhost')  # fill cache
-    return __is_local(_NAME_RESOLUTION.getHostname(masteruri))  # fill cache
+    return __is_local(get_hostname(masteruri))  # fill cache
 
 
 def init_arg_parser():

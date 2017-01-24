@@ -33,6 +33,7 @@
 import roslib
 import rospy
 
+from .common import get_hostname
 from .filter_interface import FilterInterface
 
 
@@ -271,10 +272,9 @@ class NodeInfo(object):
         '''
         result = False
         try:
-            from urlparse import urlparse
-            om = urlparse(masteruri)
-            on = urlparse(uri)
-            result = (om.hostname == on.hostname) and (masteruri == org_masteruri)
+            om = get_hostname(masteruri)
+            on = get_hostname(uri)
+            result = (om == on) and (masteruri == org_masteruri)
         except:
             pass
         return result
@@ -637,9 +637,7 @@ class MasterInfo(object):
         self.__masteruri = masteruri
         self.__mastername = mastername
         if mastername is None:
-            from urlparse import urlparse
-            o = urlparse(self.__masteruri)
-            self.__mastername = o.hostname
+            self.__mastername = get_hostname(self.__masteruri)
         self.__nodelist = {}
         self.__topiclist = {}
         self.__servicelist = {}

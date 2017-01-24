@@ -45,7 +45,7 @@ import time
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import resolve_url
+from master_discovery_fkie.common import get_hostname, resolve_url
 
 import node_manager_fkie as nm
 
@@ -497,7 +497,7 @@ class MainWindow(QMainWindow):
             masteruri = masteruri_from_ros()
             master = xmlrpclib.ServerProxy(masteruri)
             _, _, self.materuri = master.getUri(rospy.get_name())  # _:=code, message
-            nm.is_local(nm.nameres().getHostname(self.materuri))
+            nm.is_local(get_hostname(self.materuri))
         return self.materuri
 
     def removeMaster(self, masteruri):
@@ -575,7 +575,7 @@ class MainWindow(QMainWindow):
 
     def on_host_update_request(self, host):
         for key, value in self.masters.items():
-            if nm.nameres().getHostname(key) == host and value.master_state is not None:
+            if get_hostname(key) == host and value.master_state is not None:
                 self._update_handler.requestMasterInfo(value.master_state.uri, value.master_state.monitoruri)
 
     def on_host_description_updated(self, masteruri, host, descr):
@@ -629,7 +629,7 @@ class MainWindow(QMainWindow):
             # remove discovered ROS master and set the local master to selected
             for uri in self.masters.keys():
                 master = self.masters[uri]
-                if nm.is_local(nm.nameres().getHostname(uri)) or uri == self.getMasteruri():
+                if nm.is_local(get_hostname(uri)) or uri == self.getMasteruri():
                     if not self._history_selected_robot or master.mastername == self._history_selected_robot:
                         self.setCurrentMaster(master)
                 else:
@@ -705,14 +705,14 @@ class MainWindow(QMainWindow):
         for uri in self.masters.keys():
             if uri not in new_uris:
                 master = self.masters[uri]
-                if not (nm.is_local(nm.nameres().getHostname(uri)) or uri == self.getMasteruri()):
+                if not (nm.is_local(get_hostname(uri)) or uri == self.getMasteruri()):
                     if master.master_state is not None:
                         self.master_model.removeMaster(master.master_state.name)
                     self.removeMaster(uri)
         # add or update master
         for m in master_list:
             if m.uri is not None:
-                host = nm.nameres().getHostname(m.uri)
+                host = get_hostname(m.uri)
                 nm.nameres().add_master_entry(m.uri, m.name, host)
                 m.name = nm.nameres().mastername(m.uri)
                 master = self.getMaster(m.uri)
@@ -734,7 +734,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_on_finish"):
             rospy.logdebug("ignore changes on %s, because currently on closing...", msg.master.uri)
             return
-        host = nm.nameres().getHostname(msg.master.uri)
+        host = get_hostname(msg.master.uri)
         if msg.state == MasterState.STATE_CHANGED:
             nm.nameres().add_master_entry(msg.master.uri, msg.master.name, host)
             msg.master.name = nm.nameres().mastername(msg.master.uri)
@@ -746,7 +746,7 @@ class MainWindow(QMainWindow):
             else:
                 rospy.loginfo("Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             if not msg.master.online:
-                host = nm.nameres().getHostname(msg.master.uri)
+                host = get_hostname(msg.master.uri)
                 rospy.loginfo("remove SSH connection for '%s' because the master is now offline" % host)
                 nm.ssh().remove(host)
         if msg.state == MasterState.STATE_NEW:
@@ -836,7 +836,7 @@ class MainWindow(QMainWindow):
                         if self._history_selected_robot == minfo.mastername and self._history_selected_robot == master.mastername and self.currentMaster != master:
                             if self.currentMaster is not None and not self.currentMaster.is_local:
                                 self.setCurrentMaster(master)
-                        elif nm.is_local(nm.nameres().getHostname(master.master_info.masteruri)) or self.restricted_to_one_master:
+                        elif nm.is_local(get_hostname(master.master_info.masteruri)) or self.restricted_to_one_master:
                             if new_info:
                                 has_discovery_service = self.hasDiscoveryService(minfo)
                                 if (not self.own_master_monitor.isPaused() or not self.masterTableView.isEnabled()) and has_discovery_service:
@@ -964,7 +964,7 @@ class MainWindow(QMainWindow):
             time_dialog = QDialog()
             ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'TimeInput.ui')
             loadUi(ui_file, time_dialog)
-            host = nm.nameres().getHostname(self.currentMaster.master_state.uri)
+            host = get_hostname(self.currentMaster.master_state.uri)
             time_dialog.setWindowTitle('Set time on %s' % host)
             time_dialog.hostsComboBox.addItems(nm.history().cachedParamValues('/ntp'))
             if self.currentMaster.is_local:
@@ -1028,7 +1028,7 @@ class MainWindow(QMainWindow):
         '''
         from run_dialog import RunDialog
         if self.currentMaster is not None:
-            dia = RunDialog(nm.nameres().getHostname(self.currentMaster.masteruri), self.currentMaster.masteruri)
+            dia = RunDialog(get_hostname(self.currentMaster.masteruri), self.currentMaster.masteruri)
             if dia.exec_():
                 params = dia.run_params()
                 if params:
@@ -1115,7 +1115,7 @@ class MainWindow(QMainWindow):
             self._sync_dialog.resize(350, 190)
             if self._sync_dialog.exec_():
                 try:
-                    host = nm.nameres().getHostname(master.masteruri)
+                    host = get_hostname(master.masteruri)
                     if self._sync_dialog.interface_filename is not None:
                         # copy the interface file to remote machine
                         self._progress_queue_sync.add2queue(str(uuid.uuid4()),
@@ -1173,7 +1173,7 @@ class MainWindow(QMainWindow):
                                      '_ignore_services:=[]', '_sync_services:=[]',
                                      '_sync_remote_nodes:=False']
                 try:
-                    host = nm.nameres().getHostname(master.masteruri)
+                    host = get_hostname(master.masteruri)
                     self._progress_queue_sync.add2queue(str(uuid.uuid4()),
                                                         'start sync on ' + str(host),
                                                         nm.starter().runNodeWithoutConfig,
@@ -1674,7 +1674,7 @@ class MainWindow(QMainWindow):
             host = 'localhost'
             username = nm.settings().default_user
             if self.currentMaster is not None:
-                host = nm.nameres().getHostname(self.currentMaster.masteruri)
+                host = get_hostname(self.currentMaster.masteruri)
                 username = self.currentMaster.current_user
             params = {'Host': ('string', host),
                       'recursive': ('bool', 'False'),
@@ -1853,7 +1853,7 @@ class MainWindow(QMainWindow):
             for (muri, lfile) in new_affected:
                 self.__in_question.remove((muri, lfile))
             for c in cfgs:
-                host = '%s' % nm.nameres().getHostname(choices[c][0].masteruri)
+                host = '%s' % get_hostname(choices[c][0].masteruri)
                 username = choices[c][0].current_user
                 self.launch_dock.progress_queue.add2queue(str(uuid.uuid4()),
                                                           'transfer files to %s' % host,

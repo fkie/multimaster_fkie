@@ -103,8 +103,6 @@ class UpdateHandler(QObject):
                     self.__requestedUpdates[masteruri] = (monitoruri, delayed_exec)
                 else:
                     self.__create_update_thread(monitoruri, masteruri, delayed_exec)
-    #        from urlparse import urlparse
-    #        om = urlparse(masteruri)
             except:
                 pass
 

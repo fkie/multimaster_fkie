@@ -34,7 +34,6 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
 from python_qt_binding.QtGui import QKeySequence
 from rosgraph.names import is_legal_name
-from urlparse import urlparse
 import getpass
 import os
 import re
@@ -47,6 +46,7 @@ import traceback
 import uuid
 import xmlrpclib
 
+from master_discovery_fkie.common import get_hostname
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_fkie.common import masteruri_from_ros, get_packages, package_name, resolve_paths
 from node_manager_fkie.default_cfg_handler import DefaultConfigHandler
@@ -147,8 +147,7 @@ class MasterViewProxy(QWidget):
         self.masteruri = masteruri
         self.mastername = masteruri
         try:
-            o = urlparse(self.masteruri)
-            self.mastername = o.hostname
+            self.mastername = get_hostname(self.masteruri)
         except:
             pass
         self.__current_path = os.path.expanduser('~')
@@ -384,7 +383,7 @@ class MasterViewProxy(QWidget):
 
     @property
     def is_local(self):
-        return nm.is_local(nm.nameres().getHostname(self.masteruri))
+        return nm.is_local(get_hostname(self.masteruri))
 
     @property
     def master_state(self):
@@ -427,10 +426,10 @@ class MasterViewProxy(QWidget):
                 if (master_info.masteruri == self.masteruri):
                     self.update_system_parameter()
                 # request the info of new remote nodes
-                hosts2update = set([nm.nameres().getHostname(self.__master_info.getNode(nodename).uri) for nodename in update_result[0]])
-                hosts2update.update([nm.nameres().getHostname(self.__master_info.getService(nodename).uri) for nodename in update_result[6]])
+                hosts2update = set([get_hostname(self.__master_info.getNode(nodename).uri) for nodename in update_result[0]])
+                hosts2update.update([get_hostname(self.__master_info.getService(nodename).uri) for nodename in update_result[6]])
                 for host in hosts2update:
-                    if host != nm.nameres().getHostname(self.masteruri):
+                    if host != get_hostname(self.masteruri):
                         self.updateHostRequest.emit(host)
             except:
                 pass
@@ -939,7 +938,7 @@ class MasterViewProxy(QWidget):
         node_cfgs = dict()
         for n in nodes:
             node_cfgs[n] = key
-        host = nm.nameres().getHostname(service_uri)
+        host = get_hostname(service_uri)
         host_addr = nm.nameres().address(host)
         if host_addr is None:
             host_addr = host
@@ -967,7 +966,7 @@ class MasterViewProxy(QWidget):
                 if service is not None:
                     masteruri = service.masteruri
             key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri, masteruri)
-            host = nm.nameres().getHostname(service_uri)
+            host = get_hostname(service_uri)
             host_addr = nm.nameres().address(host)
             # add capabilities
             caps = dict()
@@ -976,7 +975,7 @@ class MasterViewProxy(QWidget):
                     caps[c.namespace] = dict()
                 caps[c.namespace][c.name.decode(sys.getfilesystemencoding())] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding())), 'nodes': list(c.nodes)}
             if host_addr is None:
-                host_addr = nm.nameres().getHostname(key[1])
+                host_addr = get_hostname(key[1])
             self.node_tree_model.addCapabilities(masteruri, host_addr, key, caps)
             # set host description
             tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, items[0].robot_name.decode(sys.getfilesystemencoding()), resolve_paths(items[0].robot_descr.decode(sys.getfilesystemencoding())))
@@ -1055,7 +1054,7 @@ class MasterViewProxy(QWidget):
                     self._progress_queue.add2queue(str(uuid.uuid4()),
                                                    ''.join(['kill roslaunch ', lsuri, '(', str(pid), ')']),
                                                    nm.starter().kill,
-                                                   (nm.nameres().getHostname(lsuri), pid, False, self.current_user))
+                                                   (get_hostname(lsuri), pid, False, self.current_user))
                     self.launch_server_handler.updateLaunchServerInfo(lsuri, delayed_exec=3.0)
             except Exception as e:
                 rospy.logwarn("Error while kill roslaunch %s: %s", str(lsuri), str(e))
@@ -1123,7 +1122,7 @@ class MasterViewProxy(QWidget):
             self.on_service_selection_changed(None, None, True)
 
     def on_host_inserted(self, item):
-        if item == (self.masteruri, nm.nameres().getHostname(self.masteruri)):
+        if item == (self.masteruri, get_hostname(self.masteruri)):
             index = self.node_tree_model.indexFromItem(item)
             model_index = self.node_proxy_model.mapFromSource(index)
             if model_index.isValid():
@@ -1503,7 +1502,7 @@ class MasterViewProxy(QWidget):
                 text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
             text += '</dl>'
             try:
-                service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
+                service_class = service.get_service_class(nm.is_local(get_hostname(service.uri)))
                 text += '<h4>%s</h4>' % self._href_from_svrtype(service_class._type)
                 text += '<b><u>Request:</u></b>'
                 text += '<dl><dt>%s</dt></dl>' % service_class._request_class.__slots__
@@ -1946,7 +1945,7 @@ class MasterViewProxy(QWidget):
         return True
 
     def killall_roscore(self):
-        host = nm.nameres().getHostname(self.masteruri)
+        host = get_hostname(self.masteruri)
         if host:
             try:
                 if not nm.is_local(self.mastername):
@@ -2044,7 +2043,7 @@ class MasterViewProxy(QWidget):
         @type node: L{master_discovery_fkie.NodeInfo}
         '''
         if node.uri is not None:
-            return nm.nameres().getHostname(node.uri)
+            return get_hostname(node.uri)
         # try to get it from the configuration
         for c in node.cfgs:
             if not isinstance(c, tuple):
@@ -2053,7 +2052,7 @@ class MasterViewProxy(QWidget):
                 if item is not None and item.machine_name and not item.machine_name == 'localhost':
                     return launch_config.Roscfg.machines[item.machine_name].address
         # return the host of the assigned ROS master
-        return nm.nameres().getHostname(node.masteruri)
+        return get_hostname(node.masteruri)
 
     def on_io_clicked(self):
         '''
@@ -2108,7 +2107,7 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            host = nm.nameres().getHostname(self.masteruri)
+            host = get_hostname(self.masteruri)
             sel_screen = []
             try:
                 screens = nm.screen().getActiveScreens(host, auto_pw_request=True, user=self.current_user)
@@ -2164,7 +2163,7 @@ class MasterViewProxy(QWidget):
         for n in selectedNodes:
             nodenames.append(n.name)
         try:
-            host = nm.nameres().getHostname(self.masteruri)
+            host = get_hostname(self.masteruri)
             path_on_host = nm.starter().get_log_path(host, nodenames, True)
             QApplication.clipboard().setText(''.join([getpass.getuser() if self.is_local else self.current_user, '@', host, ':', path_on_host]))
         except Exception as e:
@@ -2174,7 +2173,7 @@ class MasterViewProxy(QWidget):
 #    self._progress_queue.add2queue(str(uuid.uuid4()),
 #                                   'Get log path',
 #                                   nm.starter().get_log_path,
-#                                   (nm.nameres().getHostname(self.masteruri), nodenames))
+#                                   (get_hostname(self.masteruri), nodenames))
 #    self._progress_queue.start()
 
 #  def on_log_show_selected(self):
@@ -2573,7 +2572,7 @@ class MasterViewProxy(QWidget):
             import shlex
             env = dict(os.environ)
             env["ROS_MASTER_URI"] = str(self.masteruri)
-            nodename = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(nm.nameres().getHostname(self.masteruri)), topic.name)
+            nodename = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(get_hostname(self.masteruri)), topic.name)
             cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s' % (topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename)
             rospy.loginfo("Echo topic: %s" % cmd)
             ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, object_id=topic.name, description='Echo topic: %s' % topic.name)

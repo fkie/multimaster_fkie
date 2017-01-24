@@ -33,6 +33,7 @@
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
+from master_discovery_fkie.common import get_hostname
 import node_manager_fkie as nm
 
 
@@ -103,7 +104,7 @@ class ServiceItem(QStandardItem):
         '''
         try:
             if service.isLocal and service.type:
-                service_class = service.get_service_class(nm.is_local(nm.nameres().getHostname(service.uri)))
+                service_class = service.get_service_class(nm.is_local(get_hostname(service.uri)))
                 item.setText(service_class._type)
             elif service.type:
                 item.setText(service.type)

@@ -45,7 +45,7 @@ import xmlrpclib
 
 import interface_finder
 
-from .common import masteruri_from_ros
+from .common import masteruri_from_ros, get_hostname
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 
@@ -610,7 +610,7 @@ class MasterMonitor(object):
             # to determine the origin ROS MASTER URI of the nodes
             for name, service in master_state.services.items():
                 if service.name.endswith('get_sync_info'):
-                    if interface_finder.hostFromUri(self.getMasteruri()) == interface_finder.hostFromUri(service.uri):
+                    if get_hostname(self.getMasteruri()) == get_hostname(service.uri):
                         socket.setdefaulttimeout(3)
                         get_sync_info = rospy.ServiceProxy(service.name, GetSyncInfo)
                         try:
@@ -667,7 +667,7 @@ class MasterMonitor(object):
         '''
         if self.__mastername is None:
             try:
-                self.__mastername = interface_finder.hostFromUri(self.getMasteruri())
+                self.__mastername = get_hostname(self.getMasteruri())
                 try:
                     from urlparse import urlparse
                     master_port = urlparse(self.__masteruri).port

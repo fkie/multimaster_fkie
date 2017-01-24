@@ -30,7 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from urlparse import urlparse
 import Queue
 import errno
 import roslib.network
@@ -43,6 +42,7 @@ import threading
 import time
 import xmlrpclib
 
+from .common import get_hostname, subdomain
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
 
@@ -355,8 +355,7 @@ class DiscoveredMaster(object):
                         self.online = True
                         # resolve the masteruri. Print an error if not reachable
                         try:
-                            uri = urlparse(self.masteruri)
-                            self.masteruriaddr = socket.gethostbyname(uri.hostname)
+                            self.masteruriaddr = socket.gethostbyname(get_hostname(self.masteruri))
                             self._del_error(self.ERR_RESOLVE_NAME)
                         except socket.gaierror:
                             msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(self.masteruri)
@@ -1061,10 +1060,10 @@ class Discoverer(object):
                     # test for resolved addr
                     if v.mastername is not None and not v.errors and v.masteruri != self.master_monitor.getMasteruri():
                         try:
-                            o = urlparse(v.masteruri)
-                            mo = urlparse(v.monitoruri)
-                            if v.masteruriaddr != mo.hostname:
-                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_dicovery!" % (o.hostname, v.masteruriaddr, mo.hostname)
+                            o = get_hostname(v.masteruri)
+                            mo = get_hostname(v.monitoruri)
+                            if v.masteruriaddr != mo:
+                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_dicovery!" % (o, v.masteruriaddr, mo)
                                 if v.masteruriaddr is None or not v.masteruriaddr.startswith('127.'):
                                     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
                                     # check 127/8 and local addresses

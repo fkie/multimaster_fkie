@@ -40,7 +40,7 @@ import time
 import roslaunch
 import roslib
 
-from master_discovery_fkie.common import resolve_url
+from master_discovery_fkie.common import get_hostname, resolve_url
 import node_manager_fkie as nm
 
 from .common import package_name, resolve_paths
@@ -83,7 +83,7 @@ class LaunchConfig(QObject):
         self.__reqTested = False
         self.__argv_values = dict()
         self.global_param_done = []  # masteruri's where the global parameters are registered
-        self.hostname = nm.nameres().getHostname(self.__masteruri)
+        self.hostname = get_hostname(self.__masteruri)
         self.__launch_id = '%.9f' % time.time()
         nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
 #    nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
@@ -259,7 +259,7 @@ class LaunchConfig(QObject):
             loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
             nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
-            if not nm.is_local(nm.nameres().getHostname(self.__masteruri)):
+            if not nm.is_local(get_hostname(self.__masteruri)):
                 files = self.getIncludedFiles(self.Filename,
                                               regexp_list=[QRegExp("\\bdefault\\b"),
                                                            QRegExp("\\bvalue=.*pkg:\/\/\\b"),

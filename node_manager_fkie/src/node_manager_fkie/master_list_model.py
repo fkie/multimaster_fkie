@@ -37,9 +37,9 @@ try:
 except:
     from python_qt_binding.QtWidgets import QPushButton
 from socket import getaddrinfo, AF_INET6
-from urlparse import urlparse
 import threading
 
+from master_discovery_fkie.common import get_hostname
 import node_manager_fkie as nm
 
 
@@ -172,8 +172,7 @@ class MasterItem(QStandardItem):
     def __get_ip(self):
         try:
             # get the IP of the master uri
-            o = urlparse(self.master.uri)
-            result = getaddrinfo(o.hostname, None)
+            result = getaddrinfo(get_hostname(self.master.uri), None)
             ips = []
             for r in result:
                 if r[0] == AF_INET6:
@@ -390,7 +389,7 @@ class MasterModel(QStandardItemModel):
         # update or add a the item
         root = self.invisibleRootItem()
         doAddItem = True
-        is_local = nm.is_local(nm.nameres().getHostname(master.uri))
+        is_local = nm.is_local(get_hostname(master.uri))
         for index in range(root.rowCount()):
             masterItem = root.child(index, self.COL_NAME)
             if (masterItem == master.name):
