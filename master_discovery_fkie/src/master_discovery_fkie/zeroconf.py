@@ -166,7 +166,7 @@ class Zeroconf(threading.Thread):
     the gSignals.
     '''
 
-    def __init__(self, name, service_type='_ros-master._tcp', host=socket.gethostname(), port=11311, domain='local', txt_array=[]):
+    def __init__(self, name, service_type='_ros-master._tcp', host=socket.gethostname().split('.')[-1], port=11311, domain='local', txt_array=[]):
         '''
         Initialization method of the Zeroconf class.
 
@@ -765,7 +765,7 @@ class Discoverer(Zeroconf):
         masterhost, masterport = MasterInfo.MasteruriToAddr(materuri)
         if (masterhost in ['localhost', '127.0.0.1']):
             sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!", masterhost)
-        rpcuri = ''.join(['http://', socket.gethostname(), ':', str(monitor_port), '/'])
+        rpcuri = ''.join(['http://', socket.gethostname().split('.')[-1], ':', str(monitor_port), '/'])
         txtArray = ["timestamp=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
         Zeroconf.__init__(self, name, '_ros-master._tcp', masterhost, masterport, domain, txtArray)

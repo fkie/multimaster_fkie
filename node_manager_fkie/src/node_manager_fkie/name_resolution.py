@@ -348,7 +348,7 @@ class NameResolution(object):
         o = urlparse(url)
         if o.hostname is None:
             return url
-        return o.hostname
+        return o.hostname.split('.')[-1]
 
     @classmethod
     def get_ros_hostname(cls, url):
@@ -366,7 +366,7 @@ class NameResolution(object):
                     local_hostname = 'localhost'
                     try:
                         # ROS resolves the 'localhost' to local hostname
-                        local_hostname = socket.gethostname()
+                        local_hostname = socket.gethostname().split('.')[-1]
                     except:
                         pass
                     if hostname != local_hostname:

@@ -95,7 +95,7 @@ def getHostname(url):
         return None
     from urlparse import urlparse
     o = urlparse(url)
-    return o.hostname
+    return o.hostname.split('.')[-1]
 
 
 def get_ros_hostname(url):
@@ -113,7 +113,7 @@ def get_ros_hostname(url):
                 # ROS resolves the 'localhost' to local hostname
                 local_hostname = 'localhost'
                 try:
-                    local_hostname = socket.gethostname()
+                    local_hostname = socket.gethostname().split('.')[-1]
                 except:
                     pass
                 if hostname != local_hostname:
