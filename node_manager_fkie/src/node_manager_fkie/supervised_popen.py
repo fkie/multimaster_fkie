@@ -73,9 +73,13 @@ class SupervisedPopen(QObject, subprocess.Popen):
                                                       shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines,
                                                       startupinfo=startupinfo, creationflags=creationflags)
             except:
-                subprocess.Popen.__init__(self, args, bufsize, executable, stdin, stdout,
-                                          stderr, preexec_fn, close_fds, shell, cwd, env,
-                                          universal_newlines, startupinfo, creationflags)
+                try:
+                    subprocess.Popen.__init__(self, args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
+                                              stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env,
+                                              universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
+                except:
+                    import traceback
+                    print traceback.format_exc()
                 QObject.__init__(self)
             self._args = args
             self._object_id = object_id
