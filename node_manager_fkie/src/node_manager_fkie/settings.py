@@ -494,7 +494,7 @@ class Settings(object):
                     self._terminal_emulator = t
                     break
         if self._terminal_emulator == "":
-            return ""
+            raise Exception("No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
         noclose_str = noclose_str if noclose else ""
         return '%s -T "%s" %s -%s %s' % (self._terminal_emulator, title, noclose_str, self._terminal_command_arg, ' '.join(cmd))
 
