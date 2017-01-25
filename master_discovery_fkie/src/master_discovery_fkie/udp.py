@@ -371,19 +371,22 @@ class DiscoverSocket(socket.socket):
 
         :rtype: bool
         '''
-        SIOCGIFFLAGS = 0x8913
-        IFF_MULTICAST = 0x1000  # Supports multicast.
-        IFF_UP = 0x1  # Interface is up.
-        for (ifname, _) in DiscoverSocket.localifs():
-            args = (ifname + '\0' * 32)[:32]
-            try:
-                result = fcntl.ioctl(self.fileno(), SIOCGIFFLAGS, args)
-            except IOError:
-                return False
-            flags, = struct.unpack('H', result[16:18])
-            if ((flags & IFF_MULTICAST) != 0) & ((flags & IFF_UP) != 0):
-                return True
-        return False
+        if platform.system() in ['Linux', 'FreeBSD']:
+            SIOCGIFFLAGS = 0x8913
+            IFF_MULTICAST = 0x1000  # Supports multicast.
+            IFF_UP = 0x1  # Interface is up.
+            for (ifname, _) in DiscoverSocket.localifs():
+                args = (ifname + '\0' * 32)[:32]
+                try:
+                    result = fcntl.ioctl(self.fileno(), SIOCGIFFLAGS, args)
+                except IOError:
+                    return False
+                flags, = struct.unpack('H', result[16:18])
+                if ((flags & IFF_MULTICAST) != 0) & ((flags & IFF_UP) != 0):
+                    return True
+            return False
+        else:
+            return True
 
     @staticmethod
     def localifs():
