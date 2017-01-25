@@ -40,6 +40,7 @@ import rospy
 
 
 EMPTY_PATTERN = re.compile('\b', re.I)
+IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 MASTERURI = None
 
 
@@ -90,6 +91,8 @@ def subdomain(hostname):
     '''
     if hostname is None:
         return None
+    if IP4_PATTERN.match(hostname):
+        return hostname
     return hostname.split('.')[0]
 
 
