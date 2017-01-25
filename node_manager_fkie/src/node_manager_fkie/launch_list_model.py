@@ -193,8 +193,6 @@ class LaunchListModel(QStandardItemModel):
         self._setNewList(self._moveUp(None))
         self.__packages = {}
         self._fill_packages_thread = PackagesThread()
-        self._fill_packages_thread.packages.connect(self._fill_packages)
-        self._fill_packages_thread.start()
 
     def _getRootItems(self):
         result = list(self.load_history)

@@ -334,6 +334,7 @@ class MainWindow(QMainWindow):
         self._subscribe()
         if DIAGNOSTICS_AVAILABLE:
             self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+        self.launch_dock.launchlist_model.reloadPackages()
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
