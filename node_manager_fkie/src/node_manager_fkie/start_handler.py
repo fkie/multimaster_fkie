@@ -616,9 +616,7 @@ class StartHandler(object):
                     if count >= 11:
                         raise StartException('Cannot connect to the ROS-Master: ' + str(masteruri))
                 except Exception as e:
-                    import sys
-                    print >> sys.stderr, e
-                    raise
+                    raise Exception("Error while call '%s': %s" % (cmd_args, e))
             else:
                 raise Exception("ROS master '%s' is not reachable" % masteruri)
         finally:
