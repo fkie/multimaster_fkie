@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import paramiko
 import shlex
 import sys
 import threading
@@ -39,13 +40,6 @@ import rospy
 
 from supervised_popen import SupervisedPopen
 import node_manager_fkie as nm
-
-
-try:
-    import paramiko
-except Exception, e:
-    print >> sys.stderr, e
-    sys.exit(1)
 
 
 class AuthenticationRequest(Exception):
