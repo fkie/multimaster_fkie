@@ -99,7 +99,7 @@ class LineNumberWidget(QFrame):
 
         hbox = QHBoxLayout(self)
         hbox.setSpacing(0)
-        hbox.setMargin(0)
+        # hbox.setMargin(0) # removed: it is not supported by Qt5
         hbox.addWidget(self.number_bar)
         hbox.addWidget(self.edit)
 
