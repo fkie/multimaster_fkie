@@ -476,7 +476,7 @@ class Settings(object):
         noclose_str = '-hold'
         if self._terminal_emulator is None:
             self._terminal_emulator = ""
-            for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm']:
+            for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']:
                 if os.path.isfile(t) and os.access(t, os.X_OK):
                     # workaround to support the command parameter in different terminal
                     if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
