@@ -1905,14 +1905,14 @@ class MainWindow(QMainWindow):
 
     def on_description_anchorClicked(self, url):
         self._accept_next_update = True
-        if url.toString().startswith('open_sync_dialog://'):
-            self.on_sync_dialog_released(False, self._url_path(url).replace('open_sync_dialog', 'http'), True)
-        elif url.toString().startswith('show_all_screens://'):
-            master = self.getMaster(self._url_path(url).replace('show_all_screens', 'http'), False)
+        if url.toString().startswith('open-sync-dialog://'):
+            self.on_sync_dialog_released(False, self._url_path(url).replace('open-sync-dialog', 'http'), True)
+        elif url.toString().startswith('show-all-screens://'):
+            master = self.getMaster(self._url_path(url).replace('show-all-screens', 'http'), False)
             if master is not None:
                 master.on_show_all_screens()
-        elif url.toString().startswith('remove_all_launch_server://'):
-            master = self.getMaster(self._url_path(url).replace('remove_all_launch_server', 'http'), False)
+        elif url.toString().startswith('remove-all-launch-server://'):
+            master = self.getMaster(self._url_path(url).replace('remove-all-launch-server', 'http'), False)
             if master is not None:
                 master.on_remove_all_launch_server()
         elif url.toString().startswith('node://'):
@@ -1945,34 +1945,34 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('servicecall://'):
             if self.currentMaster is not None:
                 self.currentMaster.service_call(self._url_path(url))
-        elif url.toString().startswith('unregister_node://'):
+        elif url.toString().startswith('unregister-node://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_unregister_nodes()
-        elif url.toString().startswith('start_node://'):
+        elif url.toString().startswith('start-node://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_start_clicked()
-        elif url.toString().startswith('restart_node://'):
+        elif url.toString().startswith('restart-node://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_force_start_nodes()
-        elif url.toString().startswith('start_node_at_host://'):
+        elif url.toString().startswith('start-node-at-host://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_start_nodes_at_host()
-        elif url.toString().startswith('start_node_adv://'):
+        elif url.toString().startswith('start-node-adv://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_start_alt_clicked()
-        elif url.toString().startswith('kill_node://'):
+        elif url.toString().startswith('kill-node://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_kill_nodes()
-        elif url.toString().startswith('kill_screen://'):
+        elif url.toString().startswith('kill-screen://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_kill_screens()
-        elif url.toString().startswith('copy_log_path://'):
+        elif url.toString().startswith('copy-log-path://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_log_path_copy()
         elif url.toString().startswith('launch://'):
             self.on_launch_edit([self._url_path(url)], '')
-        elif url.toString().startswith('reload_globals://'):
-            self._reload_globals_at_next_start(self._url_path(url).replace('reload_globals://', ''))
+        elif url.toString().startswith('reload-globals://'):
+            self._reload_globals_at_next_start(self._url_path(url).replace('reload-globals://', ''))
         elif url.toString().startswith('poweroff://'):
             self.poweroff_host(self._url_host(url))
         else:

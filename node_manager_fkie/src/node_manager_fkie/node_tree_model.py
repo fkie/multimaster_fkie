@@ -755,14 +755,14 @@ class HostItem(GroupItem):
         tooltip += '<h3>%s</h3>' % self.mastername
         tooltip += '<font size="+1"><i>%s</i></font><br>' % self.masteruri
         tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' %s' % self.addresses if self.addresses else '')
-        tooltip += '<a href="open_sync_dialog://%s">open sync dialog</a>' % (str(self.masteruri).replace('http://', ''))
+        tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (str(self.masteruri).replace('http://', ''))
         tooltip += '<p>'
-        tooltip += '<a href="show_all_screens://%s">show all screens</a>' % (str(self.masteruri).replace('http://', ''))
+        tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (str(self.masteruri).replace('http://', ''))
         tooltip += '<p>'
 #    if not nm.is_local(self.address):
         tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
         tooltip += '<p>'
-        tooltip += '<a href="remove_all_launch_server://%s">kill all launch server</a>' % str(self.masteruri).replace('http://', '')
+        tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % str(self.masteruri).replace('http://', '')
         tooltip += '<p>'
         # get sensors
         capabilities = []

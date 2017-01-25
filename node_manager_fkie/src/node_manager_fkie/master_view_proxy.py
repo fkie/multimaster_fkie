@@ -1195,7 +1195,7 @@ class MasterViewProxy(QWidget):
                 elif list_type == 'LAUNCH':
                     item = '<a href="launch://%s">%s</a>' % (i, item_name)
                     if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
-                        item += '%s<br><a href="reload_globals://%s"><font color="#339900">reload global parameter @next start</font></a>' % (item, i)
+                        item += '%s<br><a href="reload-globals://%s"><font color="#339900">reload global parameter @next start</font></a>' % (item, i)
                 result += '\n%s<br>' % (item)
             result += '</ul>'
         return result
@@ -1260,15 +1260,15 @@ class MasterViewProxy(QWidget):
             if restartable_nodes or killable_nodes or unregisterble_nodes:
                 text += '<b>Selected nodes:</b><br>'
             if restartable_nodes:
-                text += '<a href="restart_node://all_selected_nodes" title="Restart %s selected nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
+                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
             if killable_nodes:
-                text += '&nbsp;<a href="kill_node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
-                text += '&nbsp;<a href="kill_screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
+                text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
+                text += '&nbsp;<a href="kill-screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
             if restartable_nodes_with_launchfiles:
-                text += '&nbsp;<a href="start_node_at_host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
-                text += '&nbsp;<a href="start_node_adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
+                text += '&nbsp;<a href="start-node-at-host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
+                text += '&nbsp;<a href="start-node-adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
             if unregisterble_nodes:
-                text += '<br><a href="unregister_node://all_selected_nodes">unregister [%d]</a>' % len(unregisterble_nodes)
+                text += '<br><a href="unregister-node://all_selected_nodes">unregister [%d]</a>' % len(unregisterble_nodes)
         # add host description, if only the one host is selected
         if len(selectedHosts) == 1:  # and len(selections) / 2 == 1:
             host = selectedHosts[0]
@@ -1308,14 +1308,14 @@ class MasterViewProxy(QWidget):
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
             if launches or default_cfgs:
-                text += '<a href="restart_node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
-            text += '&nbsp; <a href="kill_node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
-            text += '&nbsp; <a href="kill_screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>' % node.name
+                text += '<a href="restart-node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
+            text += '&nbsp; <a href="kill-node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
+            text += '&nbsp; <a href="kill-screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>' % node.name
             if launches:
-                text += '&nbsp; <a href="start_node_at_host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>' % node.name
+                text += '&nbsp; <a href="start-node-at-host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>' % node.name
 #        if node.node_info.pid is None or node.node_info.uri is None:
-                text += '&nbsp; <a href="start_node_adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>' % node.name
-            text += '&nbsp; <a href="copy_log_path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>' % node.name
+                text += '&nbsp; <a href="start-node-adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>' % node.name
+            text += '&nbsp; <a href="copy-log-path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>' % node.name
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % node.node_info.uri
             text += '<dt><b>PID</b>: %s</dt>' % node.node_info.pid
@@ -1337,7 +1337,7 @@ class MasterViewProxy(QWidget):
                     text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'
                 else:
                     text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
-                    text += '<a href="unregister_node://%s">unregister</a></dt>' % node.name
+                    text += '<a href="unregister-node://%s">unregister</a></dt>' % node.name
             if node.diagnostic_array and node.diagnostic_array[-1].level > 0:
                 diag_status = node.diagnostic_array[-1]
                 level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
@@ -1362,7 +1362,7 @@ class MasterViewProxy(QWidget):
             # set loaunch file paths
             text += self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')
             text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
-#      text += '<dt><a href="copy_log_path://%s">copy log path to clipboard</a></dt>'%node.name
+#      text += '<dt><a href="copy-log-path://%s">copy log path to clipboard</a></dt>'%node.name
         return text
 
     def on_topic_selection_changed(self, selected, deselected, force_emit=False, topic_name=''):
