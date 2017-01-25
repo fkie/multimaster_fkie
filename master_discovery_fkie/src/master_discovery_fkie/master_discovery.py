@@ -134,6 +134,8 @@ class DiscoveredMaster(object):
         self.callback_master_state = callback_master_state
         self.ts_last_request = 0
         self._errors = dict()  # ERR_*, msg
+        self.monitor_hostname = get_hostname(monitoruri)
+        self.master_hostname = None
         self.masteruriaddr = None
         # create a thread to retrieve additional information about the remote ROS master
         self._get_into_timer = threading.Timer(0.1, self.__retrieve_masterinfo)
@@ -355,7 +357,8 @@ class DiscoveredMaster(object):
                         self.online = True
                         # resolve the masteruri. Print an error if not reachable
                         try:
-                            self.masteruriaddr = socket.gethostbyname(get_hostname(self.masteruri))
+                            self.master_hostname = get_hostname(self.masteruri)
+                            self.masteruriaddr = socket.gethostbyname(self.master_hostname)
                             self._del_error(self.ERR_RESOLVE_NAME)
                         except socket.gaierror:
                             msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(self.masteruri)
@@ -1060,10 +1063,8 @@ class Discoverer(object):
                     # test for resolved addr
                     if v.mastername is not None and not v.errors and v.masteruri != self.master_monitor.getMasteruri():
                         try:
-                            o = get_hostname(v.masteruri)
-                            mo = get_hostname(v.monitoruri)
-                            if v.masteruriaddr != mo:
-                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_dicovery!" % (o, v.masteruriaddr, mo)
+                            if v.masteruriaddr != v.monitor_hostname:
+                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_discovery!" % (v.master_hostname, v.masteruriaddr, v.monitor_hostname)
                                 if v.masteruriaddr is None or not v.masteruriaddr.startswith('127.'):
                                     local_addresses = ['localhost'] + roslib.network.get_local_addresses()
                                     # check 127/8 and local addresses
