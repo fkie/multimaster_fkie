@@ -2,6 +2,9 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.1 (2017-01-26)
+------------------
+
 0.7.0 (2017-01-09)
 ------------------
 * default_cfg_fkie: fixed start nodes with same name and different namespaces

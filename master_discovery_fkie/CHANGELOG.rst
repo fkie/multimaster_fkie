@@ -2,6 +2,16 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.1 (2017-01-26)
+------------------
+* master_discovery_fkie: fixed some problems on macOS
+	- perform test for multicast interfaces only on Linux and FreeBSD
+	- changed detection for local interface to support discovering on iOS
+* master_discovery_fkie: removed domain suffix from hostname
+* master_discovery_fkie: removed a not needed import
+* master_discovery_fkie: digrammar fix in exception message
+* Contributors: Alexander Tiderko, Jason Mercer
+
 0.7.0 (2017-01-09)
 ------------------
 * master_discovery_fkie: added detection for timejumps into the past

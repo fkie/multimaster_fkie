@@ -2,6 +2,27 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.1 (2017-01-26)
+------------------
+* master_discovery_fkie: fixed some problems on macOS
+	- perform test for multicast interfaces only on Linux and FreeBSD
+	- changed detection for local interface to support discovering on iOS
+* master_discovery_fkie: removed domain suffix from hostname
+* master_discovery_fkie: removed a not needed import
+* master_discovery_fkie: digrammar fix in exception message
+* node_manager_fkie: increased precision for float values in combobox (used by settings)
+* node_manager_fkie: fixed editor for kinetic; removed setMargin since it not suported by Qt5
+* node_manager_fkie: fixed URLs for some buttons in description panel to use it with Qt5
+* node_manager_fkie: added more details on start if no 'screen' is available
+* node_manager_fkie: changed supervised_popen initialization to avoid multi subclassing
+* node_manager_fkie: added a raise Exception if no terminal is availabe
+* node_manager_fkie: raise an error now if 'paramiko' is not available
+* node_manager_fkie: fixed startup if a node manager instance already running
+* node_manager_fkie: added xterm path for macOS
+* node_manager_fkie: removed domain suffix from hostname to avoid name problems
+* node_manager_fkie: fixed UnboundLocalError for 'selectedGroups' and 'self._accept_next_update'
+* Contributors: Alexander Tiderko, Jason Mercer, Dirk Schulz
+
 0.7.0 (2017-01-09)
 ------------------
 * master_discovery_fkie: added detection for timejumps into the past
