@@ -74,7 +74,7 @@ class SettingsValueItem(QStandardItem):
 
     def __init__(self, value, (settings, attrname)=(None, None),
                  edit_type=0,
-                 value_default=None, value_min=None, value_max=None, value_list=[]):
+                 value_default=None, value_min=None, value_max=None, value_list=[], value_step=None):
         '''
         :param value: the current value
         :type value: any std types
@@ -101,6 +101,7 @@ class SettingsValueItem(QStandardItem):
         self._settings = settings
         self._edit_type = edit_type
         self._value_list = value_list
+        self._value_step = value_step
 
     def type(self):
         return SettingsValueItem.ITEM_TYPE
@@ -119,6 +120,9 @@ class SettingsValueItem(QStandardItem):
 
     def value_max(self):
         return self._value_max
+
+    def value_step(self):
+        return self._value_step
 
     def edit_type(self):
         return self._edit_type
@@ -200,7 +204,7 @@ class SettingsGroupItem(QStandardItem):
     @classmethod
     def getSettingsItemList(self, name, value, (settings, attrname)=(None, None),
                             tooltip='', edit_type=SettingsValueItem.EDIT_TYPE_AUTODETECT,
-                            value_default=None, value_min=None, value_max=None, value_list=[]):
+                            value_default=None, value_min=None, value_max=None, value_list=[], value_step=None):
         '''
         Creates the list of the items . This list is used for the
         visualization of settings group data as a table row.
@@ -211,7 +215,7 @@ class SettingsGroupItem(QStandardItem):
         item = SettingsNameItem(name, tooltip)
         items.append(item)
         item = SettingsValueItem(value, (settings, attrname), edit_type,
-                                 value_default, value_min, value_max, value_list)
+                                 value_default, value_min, value_max, value_list, value_step)
         items.append(item)
         return items
 
@@ -296,7 +300,8 @@ class SettingsModel(QStandardItemModel):
                     self._get_settings_param(value, 'value_default'),
                     self._get_settings_param(value, 'value_min'),
                     self._get_settings_param(value, 'value_max'),
-                    self._get_settings_param(value, 'value_list')
+                    self._get_settings_param(value, 'value_list'),
+                    self._get_settings_param(value, 'value_step')
                     )
             new_item_row = SettingsGroupItem.getSettingsItemList(*args)
             root.appendRow(new_item_row)

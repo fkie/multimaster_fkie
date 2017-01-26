@@ -34,11 +34,11 @@ from python_qt_binding.QtCore import QSize, Qt, Signal
 try:
     from python_qt_binding.QtGui import QSortFilterProxyModel
     from python_qt_binding.QtGui import QAbstractItemDelegate, QStyledItemDelegate, QHBoxLayout
-    from python_qt_binding.QtGui import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QPushButton, QWidget
+    from python_qt_binding.QtGui import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, QWidget
     from python_qt_binding.QtGui import QStyleOptionViewItemV4 as QStyleOptionViewItem
 except:
     from python_qt_binding.QtWidgets import QAbstractItemDelegate, QStyledItemDelegate, QHBoxLayout
-    from python_qt_binding.QtWidgets import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QPushButton, QWidget
+    from python_qt_binding.QtWidgets import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, QWidget
     from python_qt_binding.QtWidgets import QStyleOptionViewItem
     from python_qt_binding.QtCore import QSortFilterProxyModel
 import os
@@ -143,6 +143,7 @@ class SettingsWidget(QDockWidget):
                                               'settings': nm.settings(),
                                               'attrname': 'max_timediff',
                                               'value_default': nm.settings().MAX_TIMEDIFF,
+                                              'value_step': 0.1,
                                               'tooltip': '<p>Shows a warning if the time difference to '
                                               'remote host is greater than this value</p>'
                                               },),
@@ -226,6 +227,19 @@ class ItemDelegate(QStyledItemDelegate):
                     box.setMinimum(item.value_min())
                 if not item.value_max() is None:
                     box.setMaximum(item.value_max())
+                if not item.value_step() is None:
+                    box.setSingleStep(item.value_step())
+                return box
+            elif isinstance(item.value(), float):
+                box = QDoubleSpinBox(parent)
+                box.setValue(item.value())
+                if not item.value_min() is None:
+                    box.setMinimum(item.value_min())
+                if not item.value_max() is None:
+                    box.setMaximum(item.value_max())
+                if not item.value_step() is None:
+                    box.setSingleStep(item.value_step())
+                box.setDecimals(3)
                 return box
         elif item.edit_type() == SettingsValueItem.EDIT_TYPE_FOLDER:
             editor = PathEditor(item.value(), parent)

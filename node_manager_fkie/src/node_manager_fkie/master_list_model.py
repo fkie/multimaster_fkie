@@ -258,7 +258,7 @@ class MasterItem(QStandardItem):
             if self._master_errors or self.master_ip is None or timediff:
                 item.setIcon(self.ICONS['warning'])
                 if timediff:
-                    tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %3.f seconds!</font>' % self._timediff, '</h4>'])
+                    tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %.3f seconds!</font>' % self._timediff, '</h4>'])
                     item.setIcon(self.ICONS['clock_warn'])
                 if self.master_ip is None:
                     tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Host not reachable by name!!! The ROS topics may not by connected!!!</font>', '</h4>'])
