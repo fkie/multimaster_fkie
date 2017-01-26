@@ -186,7 +186,7 @@ def is_local(hostname, wait=False):
         # fix to handle the local names with domains
         if hostname == get_hostname(socket.gethostname()):
             with _LOCK:
-                HOSTS_CACHE[hostname] = result
+                HOSTS_CACHE[hostname] = hostname
                 return True
     except:
         pass
