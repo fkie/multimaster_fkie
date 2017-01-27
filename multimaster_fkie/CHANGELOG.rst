@@ -2,6 +2,12 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.2 (2017-01-27)
+------------------
+* node_manager_fkie: added a parameter to hide domain suffix in description panel and node tree view
+* mutlimaster_fkie: reverted the cut of domains in hostnames
+* Contributors: Alexander Tiderko
+
 0.7.1 (2017-01-26)
 ------------------
 * master_discovery_fkie: fixed some problems on macOS

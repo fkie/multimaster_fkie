@@ -2,6 +2,11 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.2 (2017-01-27)
+------------------
+* master_discovery_fkie: reverted the cut of domains in hostnames
+* Contributors: Alexander Tiderko
+
 0.7.1 (2017-01-26)
 ------------------
 * master_discovery_fkie: fixed some problems on macOS
