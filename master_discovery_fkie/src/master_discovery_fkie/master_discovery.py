@@ -40,9 +40,10 @@ import struct
 import sys
 import threading
 import time
+import traceback
 import xmlrpclib
 
-from .common import get_hostname, subdomain
+from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
 
@@ -342,7 +343,6 @@ class DiscoveredMaster(object):
                         timetosleep = 30
                     self.__start_get_info_timer(timetosleep)
                 except:
-                    import traceback
                     msg = "connection error [%s]: %s" % (self.monitoruri, traceback.format_exc())
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
@@ -366,7 +366,6 @@ class DiscoveredMaster(object):
                             self._add_error(self.ERR_RESOLVE_NAME, msg)
                             self.__start_get_info_timer(3.)
                         except:
-                            import traceback
                             msg = "resolve error [%s]: %s" % (self.monitoruri, traceback.format_exc())
                             rospy.logwarn(msg)
                             self._add_error(self.ERR_SOCKET, msg)
@@ -749,7 +748,6 @@ class Discoverer(object):
                 rospy.logdebug('Send request as unicast to all robot hosts %s' % self.robots)
                 self.socket.send_queued(msg, self.robots)
         except Exception as e:
-            import traceback
             print traceback.format_exc()
             rospy.logwarn("Send with addresses '%s' failed: %s" % (addresses, e))
 
@@ -1033,7 +1031,6 @@ class Discoverer(object):
                     rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
                     rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
             except:
-                import traceback
                 traceback.print_exc()
 
     def publish_stats(self, stats):
@@ -1048,7 +1045,6 @@ class Discoverer(object):
             try:
                 self.pubstats.publish(stats)
             except:
-                import traceback
                 traceback.print_exc()
 
     def update_master_errors(self):
@@ -1076,7 +1072,7 @@ class Discoverer(object):
                             result.append("%s" % e)
                             rospy.logwarn("Error while resolve address for %s: %s" % (v.masteruri, e))
                 try:
-                    for addr, msg in SEND_ERRORS.items():
+                    for _addr, msg in SEND_ERRORS.items():
                         result.append('%s' % msg)
                 except:
                     pass
@@ -1102,7 +1098,6 @@ class Discoverer(object):
                                                  v.discoverername,
                                                  v.monitoruri))
             except:
-                import traceback
                 traceback.print_exc()
         return DiscoverMastersResponse(masters)
 
@@ -1120,6 +1115,5 @@ class Discoverer(object):
                 self._request_state()
 #        self._send_current_state()
             except:
-                import traceback
                 traceback.print_exc()
         return []

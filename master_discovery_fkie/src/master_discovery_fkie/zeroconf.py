@@ -46,7 +46,6 @@ import time
 
 import rospy
 
-from .common import subdomain
 from master_monitor import MasterMonitor
 from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster  # , SyncMasterInfo, SyncTopicInfo
 from multimaster_msgs_fkie.srv import DiscoverMasters, DiscoverMastersResponse  # , GetSyncInfo
@@ -112,7 +111,7 @@ class MasterInfo(object):
         '''
         from urlparse import urlparse
         o = urlparse(masteruri)
-        return (subdomain(o.hostname), o.port)
+        return (o.hostname, o.port)
 
     def getAddrFromMasterUri(self):
         return MasterInfo.MasteruriToAddr(self.getTXTValue('master_uri', ''))
@@ -167,7 +166,7 @@ class Zeroconf(threading.Thread):
     the gSignals.
     '''
 
-    def __init__(self, name, service_type='_ros-master._tcp', host=subdomain(socket.gethostname()), port=11311, domain='local', txt_array=[]):
+    def __init__(self, name, service_type='_ros-master._tcp', host=socket.gethostname(), port=11311, domain='local', txt_array=[]):
         '''
         Initialization method of the Zeroconf class.
 
@@ -688,10 +687,10 @@ class MasterList(object):
         try:
             self.__lock.acquire()
             while self.__pollings:
-                name, p = self.__pollings.popitem()
+                _name, p = self.__pollings.popitem()
                 p.stop()
             while self.__masters:
-                name, master = self.__masters.popitem()
+                _name, master = self.__masters.popitem()
                 self.pubchanges.publish(MasterState(MasterState.STATE_REMOVED,
                                                     ROSMaster(str(master.name),
                                                               master.getMasterUri(),
@@ -713,7 +712,7 @@ class MasterList(object):
         masters = list()
         self.__lock.acquire(True)
         try:
-            for key, master in self.__masters.iteritems():
+            for _key, master in self.__masters.iteritems():
                 masters.append(ROSMaster(str(master.name),
                                          master.getMasterUri(),
                                          master.getRosTimestamp(),
@@ -766,7 +765,7 @@ class Discoverer(Zeroconf):
         masterhost, masterport = MasterInfo.MasteruriToAddr(materuri)
         if (masterhost in ['localhost', '127.0.0.1']):
             sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!", masterhost)
-        rpcuri = ''.join(['http://', subdomain(socket.gethostname()), ':', str(monitor_port), '/'])
+        rpcuri = ''.join(['http://', socket.gethostname(), ':', str(monitor_port), '/'])
         txtArray = ["timestamp=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
         Zeroconf.__init__(self, name, '_ros-master._tcp', masterhost, masterport, domain, txtArray)

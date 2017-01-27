@@ -183,14 +183,6 @@ def is_local(hostname, wait=False):
                 return False
             return HOSTS_CACHE[hostname]
     try:
-        # fix to handle the local names with domains
-        if hostname == get_hostname(socket.gethostname()):
-            with _LOCK:
-                HOSTS_CACHE[hostname] = hostname
-                return True
-    except:
-        pass
-    try:
         socket.inet_aton(hostname)
         local_addresses = ['localhost'] + roslib.network.get_local_addresses()
         # check 127/8 and local addresses

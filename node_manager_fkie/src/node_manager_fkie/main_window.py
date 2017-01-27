@@ -1087,12 +1087,12 @@ class MainWindow(QMainWindow):
                     args.append("-o %s/record" % nm.settings().LOG_PATH)
                     suffix = "_%d" % int(time.time())
                 node_name = '%s%s_%s%s' % (prefix, name.lower().replace(' ', '_'),
-                                           self.currentMaster.master_state.name.replace('-', '_'), suffix)
+                                           self.currentMaster.master_state.name, suffix)
                 self.currentMaster._progress_queue.add2queue(str(uuid.uuid4()),
                                                              'start %s' % name,
                                                              nm.starter().runNodeWithoutConfig,
                                                              ('localhost', package, binary,
-                                                              node_name, args,
+                                                              nm.nameres().normalize_name(node_name), args,
                                                               '%s' % self.currentMaster.master_state.uri,
                                                               False))
             except (Exception, nm.StartException), e:
@@ -2036,7 +2036,7 @@ class MainWindow(QMainWindow):
     def _set_custom_colors(self):
         colors = [self._default_color, QColor(87, 93, 94), QColor(60, 116, 96)]
         # QT4 compatibility hack (expected type by QT4 is QRgb, Qt5 is QColor)
-        if QT_BINDING_VERSION.startswith("4"): 
+        if QT_BINDING_VERSION.startswith("4"):
             colors = [c.rgb() for c in colors]
         QColorDialog.setStandardColor(0, colors[0])
         QColorDialog.setStandardColor(1, colors[1])
@@ -2044,7 +2044,6 @@ class MainWindow(QMainWindow):
 
     def _new_color(self, color):
         bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
-        name_color = QColor(255, 255, 235)
         self.expert_tab.setStyleSheet("%s" % (bg_style))
 
     def mastername_mouseDoubleClickEvent(self, event):

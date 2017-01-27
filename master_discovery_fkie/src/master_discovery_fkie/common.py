@@ -44,7 +44,7 @@ IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 MASTERURI = None
 
 
-def get_hostname(url):
+def get_hostname(url, replace_dots_by=None):
     '''
     Extracts the hostname from given url.
 
@@ -61,9 +61,12 @@ def get_hostname(url):
     if url is None:
         return None
     o = urlparse(url)
+    hostname = o.hostname
     if o.hostname is None:
-        return url
-    return subdomain(o.hostname)
+        hostname = url
+    elif replace_dots_by is not None:
+        hostname = o.hostname.replace('.', replace_dots_by)
+    return hostname
 
 def get_port(url):
     '''

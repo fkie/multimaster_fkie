@@ -318,11 +318,16 @@ class NameResolution(object):
         try:
             url = urlparse(masteruri)
             if url.port == 11311:
-                result = '%s' % subdomain(url.hostname)
+                result = '%s' % url.hostname
             else:
-                result = '%s_%d' % (subdomain(url.hostname), url.port)
+                result = '%s_%d' % (url.hostname, url.port)
         except:
             pass
+        return cls.normalize_name(result)
+
+    @classmethod
+    def normalize_name(cls, name):
+        result = name.replace('-', '_').replace('.', '_')
         return result
 
     @classmethod
@@ -352,7 +357,7 @@ class NameResolution(object):
                     local_hostname = 'localhost'
                     try:
                         # ROS resolves the 'localhost' to local hostname
-                        local_hostname = subdomain(socket.gethostname())
+                        local_hostname = socket.gethostname()
                     except:
                         pass
                     if hostname != local_hostname:

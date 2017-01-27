@@ -40,7 +40,7 @@ import xmlrpclib
 from roslib.network import get_local_addresses
 import rospy
 
-from master_discovery_fkie.common import get_hostname, get_port, subdomain
+from master_discovery_fkie.common import get_hostname, get_port
 
 
 class StartException(Exception):
@@ -101,7 +101,7 @@ def get_ros_hostname(url):
                 # ROS resolves the 'localhost' to local hostname
                 local_hostname = 'localhost'
                 try:
-                    local_hostname = subdomain(socket.gethostname())
+                    local_hostname = socket.gethostname()
                 except:
                     pass
                 if hostname != local_hostname:
