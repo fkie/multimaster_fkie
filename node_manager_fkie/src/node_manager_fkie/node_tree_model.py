@@ -37,7 +37,7 @@ import roslib
 import rospy
 import traceback
 
-from master_discovery_fkie.common import get_hostname
+from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
@@ -719,6 +719,8 @@ class HostItem(GroupItem):
         hostname = nm.nameres().hostname(address)
         if hostname is None:
             hostname = str(address)
+        if not nm.settings().show_domain_suffix:
+            name = subdomain(name)
         result = '%s@%s' % (name, hostname)
         if get_hostname(masteruri) != hostname:
             result += '[%s]' % masteruri

@@ -45,7 +45,7 @@ import time
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import get_hostname, resolve_url
+from master_discovery_fkie.common import get_hostname, resolve_url, subdomain
 
 import node_manager_fkie as nm
 
@@ -1200,7 +1200,7 @@ class MainWindow(QMainWindow):
             return
         # update the info panel of the robot. If the node manager is not selected the updates are rarer.
         current_time = time.time()
-        if self.isActiveWindow() or current_time - self._last_time_view_update > 5:
+        if self.isActiveWindow() or current_time - self._last_time_view_update > 15:
             self._last_time_view_update = current_time
             if self.currentMaster is not None and self.currentMaster.master_state is not None:
                 master = self.getMaster(self.currentMaster.master_state.uri)
@@ -1241,7 +1241,8 @@ class MainWindow(QMainWindow):
             pass
         if self.__current_master_label_name != name:
             self.__current_master_label_name = name
-            self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>' % name)
+            show_name = name if nm.settings().show_domain_suffix else subdomain(name)
+            self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>' % show_name)
             color = QColor.fromRgb(nm.settings().host_color(self.__current_master_label_name, self._default_color.rgb()))
             self._new_color(color)
         ts = 'updated: %s' % str(timestamp) if timestamp is not None else ''

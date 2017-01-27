@@ -123,6 +123,8 @@ class Settings(object):
     HIGHLIGHT_XML_BLOCKS = True
     COLORIZE_HOSTS = True
 
+    SHOW_DOMAIN_SUFFIX = False
+
     TRANSPOSE_PUB_SUB_DESCR = True
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
@@ -182,6 +184,7 @@ class Settings(object):
         self._confirm_exit_when_closing = self.str2bool(settings.value('confirm_exit_when_closing', self.CONFIRM_EXIT_WHEN_CLOSING))
         self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
         self._colorize_hosts = self.str2bool(settings.value('colorize_hosts', self.COLORIZE_HOSTS))
+        self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         settings.beginGroup('host_colors')
         self._host_colors = dict()
@@ -412,6 +415,18 @@ class Settings(object):
             self._colorize_hosts = val
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('colorize_hosts', self._colorize_hosts)
+
+    @property
+    def show_domain_suffix(self):
+        return self._show_domain_suffix
+
+    @show_domain_suffix.setter
+    def show_domain_suffix(self, value):
+        val = self.str2bool(value)
+        if self._show_domain_suffix != val:
+            self._show_domain_suffix = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('show_domain_suffix', self._show_domain_suffix)
 
     @property
     def transpose_pub_sub_descr(self):

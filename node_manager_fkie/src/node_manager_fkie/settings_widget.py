@@ -186,6 +186,13 @@ class SettingsWidget(QDockWidget):
                                          "double-click on hostname in description panel. To remove a setted color "
                                          "delete it manually from $HOME/.ros/node_manager/settings.ini</p>"
                                          },),
+                    'Show domain suffix:': ({'value': nm.settings().show_domain_suffix,
+                                             'settings': nm.settings(),
+                                             'attrname': 'show_domain_suffix',
+                                             'value_default': nm.settings().SHOW_DOMAIN_SUFFIX,
+                                             'tooltip': "<p>Shows the domain suffix of the host in the host description"
+                                             " panel and node tree view.</p>"
+                                             },),
                     'Transpose pub/sub description:': ({'value': nm.settings().transpose_pub_sub_descr,
                                                         'settings': nm.settings(),
                                                         'attrname': 'transpose_pub_sub_descr',
