@@ -35,7 +35,7 @@ from urlparse import urlparse
 import socket
 
 import rospy
-from master_discovery_fkie.common import get_hostname, subdomain
+from master_discovery_fkie.common import get_hostname
 
 RESOLVE_CACHE = {}  # hostname : address
 

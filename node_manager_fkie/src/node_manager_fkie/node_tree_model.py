@@ -1300,7 +1300,7 @@ class NodeTreeModel(QStandardItemModel):
         if masteruri is None:
             return None
         host = (masteruri, address)
-        #[address] + nm.nameres().resolve_cached(address)
+        # [address] + nm.nameres().resolve_cached(address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
                  self._local_masteruri == masteruri)
         # find the host item by address
