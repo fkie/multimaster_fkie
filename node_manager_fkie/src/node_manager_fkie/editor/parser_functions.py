@@ -11,9 +11,8 @@ def interpret_path(path):
     C{$(find 'package')} will be resolved.
     @param path: the sting which contains the included path
     @type path: C{str}
-    @return: if no leading C{os.sep} is detected, the path setted by
-    L{setCurrentPath()} will be prepend. C{$(find 'package')} will be resolved.
-    Otherwise the parameter itself will be returned
+    @return: C{$(find 'package')} will be resolved. The prefixes `file:///`, `package://` or `pkg://` are also resolved.
+    Otherwise the parameter itself normalized by `os.path.normpath` will be returned.
     @rtype: C{str}
     '''
     path = path.strip()

@@ -193,7 +193,7 @@ class SSHhandler(object):
     def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=False):
         '''
         @return: the paramiko ssh client
-        @rtype: L{paramiko.SSHClient}
+        @rtype: U{paramiko.SSHClient<http://docs.paramiko.org/en/1.10/api/client.html>}
         @raise BadHostKeyException: - if the server's host key could not be verified
         @raise AuthenticationException: - if authentication failed
         @raise SSHException: - if there was any other error connecting or establishing an SSH session

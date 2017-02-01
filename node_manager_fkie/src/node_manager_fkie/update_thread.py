@@ -50,7 +50,7 @@ class UpdateThread(QObject, threading.Thread):
     update_signal = Signal(MasterInfo)
     '''
   @ivar: update_signal is a signal, which is emitted, if a new
-  L{aster_discovery_fkie.MasterInfo} is retrieved.
+  U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>} is retrieved.
   '''
 
     master_errors_signal = Signal(str, list)

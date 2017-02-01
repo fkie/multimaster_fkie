@@ -85,13 +85,13 @@ class LaunchConfig(QObject):
         self.global_param_done = []  # masteruri's where the global parameters are registered
         self.hostname = get_hostname(self.__masteruri)
         self.__launch_id = '%.9f' % time.time()
-        nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
-#    nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
+        nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
+#    nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
 
     def __del__(self):
         # Delete to avoid segfault if the LaunchConfig class is destroyed recently
         # after creation and xmlrpclib.ServerProxy process a method call.
-        nm.file_watcher().rem_launch(self.__masteruri, self.__launchFile, self.__launch_id)
+        nm.filewatcher().rem_launch(self.__masteruri, self.__launchFile, self.__launch_id)
 
     @property
     def masteruri(self):
@@ -104,12 +104,11 @@ class LaunchConfig(QObject):
     @property
     def Roscfg(self):
         '''
-        Returns a loaded launch configuration
-        @rtype: L{roslaunch.ROSLaunchConfig} or C{None}
-        @raise LaunchConfigException: on load error
+        Holds a loaded launch configuration. It raises a LaunchConfigException on load error.
+        @rtype: U{roslaunch.ROSLaunchConfig<http://docs.ros.org/kinetic/api/roslaunch/html/>} or C{None}
         @see L{load()}
         '''
-        if not (self.__roscfg is None):
+        if self.__roscfg is not None:
             return self.__roscfg
         else:
             result, _ = self.load(self.argv)  # _:=argv
@@ -125,7 +124,7 @@ class LaunchConfig(QObject):
         '''
         if os.path.isfile(self.__launchFile):
             return self.__launchFile
-        elif not (self.__package is None):
+        elif self.__package is not None:
             try:
                 return roslib.packages.find_resource(self.PackageName, self.LaunchName).pop()
             except Exception:
@@ -156,7 +155,7 @@ class LaunchConfig(QObject):
         @param text:
         @type text: C{str}
         @param regexp_list:
-        @type regexp_list: C{[L{QtCore.QRegExp},..]}
+        @type regexp_list: C{[U{QRegExp<https://srinikom.github.io/pyside-docs/PySide/QtCore/QRegExp.html>},..]}
         @return: the index of the including key or -1
         @rtype: C{int}
         '''
@@ -178,9 +177,9 @@ class LaunchConfig(QObject):
         @type path: C{str}
         @param pwd: current working path
         @type pwd: C{str}
-        @return: if no leading L{os.sep} is detected, the path set by L{setCurrentPath()}
-        will be prepend. C{$(find 'package')} will be resolved. Otherwise the parameter
-        itself will be returned
+        @return: C{$(find 'package')} will be resolved. The prefixes `file:///`,
+        `package://` or `pkg://` are also resolved. Otherwise the parameter
+        itself will be returned.
         @rtype: C{str}
         '''
         path = path.strip()
@@ -248,8 +247,8 @@ class LaunchConfig(QObject):
         @param argv: the list with argv parameter needed to load the launch file.
                      The name and value are separated by C{:=}
         @type argv: C{[str]}
-        @return True, if the launch file was loaded
-        @rtype boolean
+        @return: True, if the launch file was loaded
+        @rtype: boolean
         @raise LaunchConfigException: on load errors
         '''
         try:
@@ -258,7 +257,7 @@ class LaunchConfig(QObject):
             self.argv = self.resolveArgs(argv)
             loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
-            nm.file_watcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
+            nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
             if not nm.is_local(get_hostname(self.__masteruri)):
                 files = self.getIncludedFiles(self.Filename,
                                               regexp_list=[QRegExp("\\bdefault\\b"),
@@ -457,7 +456,7 @@ class LaunchConfig(QObject):
         @param name: the name of the node.
         @type name: C{str}
         @return: the configuration node stored in this configuration
-        @rtype: L{roslaunch.Node} or C{None}
+        @rtype: U{roslaunch.Node<http://docs.ros.org/kinetic/api/roslaunch/html/>} or C{None}
         '''
         nodename = os.path.basename(name)
         namespace = os.path.dirname(name).strip(roslib.names.SEP)

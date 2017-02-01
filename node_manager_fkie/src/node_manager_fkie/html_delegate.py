@@ -95,10 +95,10 @@ class HTMLDelegate(QStyledItemDelegate):
     @classmethod
     def toHTML(cls, text):
         '''
-        Creates a HTML representation of the topic name.
-        @param topic_name: the topic name
-        @type topic_name: C{str}
-        @return: the HTML representation of the topic name
+        Creates a HTML representation of the given text. It could be a node, topic service or group name.
+        @param text: a name with ROS representation
+        @type text: C{str}
+        @return: the HTML representation of the given name
         @rtype: C{str}
         '''
         if text.rfind('@') > 0:  # handle host names

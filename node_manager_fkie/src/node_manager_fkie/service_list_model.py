@@ -40,7 +40,8 @@ import node_manager_fkie as nm
 class ServiceItem(QStandardItem):
     '''
     The service item stored in the service model. This class stores the service as
-    L{master_discovery_fkie.ServiceInfo}. The name of the service is represented in HTML.
+    U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}.
+    The name of the service is represented in HTML.
     '''
 
     ITEM_TYPE = QStandardItem.UserType + 37
@@ -52,17 +53,17 @@ class ServiceItem(QStandardItem):
         '''
         Initialize the service item.
         @param service: the service object to view
-        @type service: L{master_discovery_fkie.ServiceInfo}
+        @type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
         '''
         QStandardItem.__init__(self, service.name)
         self.service = service
-        '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
+        '''@ivar: service info as U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}.'''
 
     def updateServiceView(self, parent):
         '''
         Updates the view of the service on changes.
         @param parent: the item containing this item
-        @type parent: L{PySide.QtGui.QStandardItem}
+        @type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
         '''
         if parent is not None:
             # update type view
@@ -79,9 +80,9 @@ class ServiceItem(QStandardItem):
         Creates the list of the items from service. This list is used for the
         visualization of service data as a table row.
         @param service: the service data
-        @type service: L{master_discovery_fkie.ServiceInfo}
+        @type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
         @return: the list for the representation as a row
-        @rtype: C{[L{ServiceItem} or L{PySide.QtGui.QStandardItem}, ...]}
+        @rtype: C{[L{ServiceItem} or U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
         item = ServiceItem(service)
@@ -98,7 +99,7 @@ class ServiceItem(QStandardItem):
         '''
         Updates the representation of the column contains the type of the service.
         @param service: the service data
-        @type service: L{master_discovery_fkie.ServiceInfo}
+        @type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
         @param item: corresponding item in the model
         @type item: L{ServiceItem}
         '''
@@ -177,9 +178,9 @@ class ServiceModel(QStandardItemModel):
     def flags(self, index):
         '''
         @param index: parent of the list
-        @type index: L{PySide.QtCore.QModelIndex}
+        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         @return: Flag or the requestet item
-        @rtype: L{PySide.QtCore.Qt.ItemFlag}
+        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():
@@ -191,7 +192,7 @@ class ServiceModel(QStandardItemModel):
         Updates the service list model. New services will be inserted in sorting
         order. Not available services removed from the model.
         @param services: The dictionary with services
-        @type services: C{dict(service name : L{master_discovery_fkie.ServiceInfo})}
+        @type services: C{dict(service name : U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>})}
         @param added_srvs: the list of new services in the :service: list
         @type added_srvs: list or set
         @param updated_srvs: the list of updated services in the :service: list
@@ -249,7 +250,7 @@ class ServiceModel(QStandardItemModel):
         :param services: the list of service names
         :type services: [str, ...]
         :return: the list of QModelIndex
-        :rtype: [QtCore.QModelIndex, ...]
+        :rtype: [U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}, ...]
         '''
         result = []
         root = self.invisibleRootItem()

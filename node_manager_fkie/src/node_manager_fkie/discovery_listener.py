@@ -54,12 +54,12 @@ except ImportError, e:
 class MasterListService(QObject):
     '''
     A class to retrieve the ROS master list from a ROS service. The service
-    will be determine using L{master_discovery_fkie.interface_finder.get_listmaster_service()}
+    will be determine using U{master_discovery_fkie.interface_finder.get_listmaster_service()<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#interface-finder-module>}
 
     '''
     masterlist_signal = Signal(str, str, list)
     '''@ivar: a signal with a list of the masters retrieved from the master_discovery service 'list_masters'.
-  ParameterB{:} C{masteruri}, C{service name}, C{[L{master_discovery_fkie.ROSMaster}, ...]}'''
+  ParameterB{:} C{masteruri}, C{service name}, C{[U{master_discovery_fkie.msg.ROSMaster<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/ROSMaster.html>}, ...]}'''
     masterlist_err_signal = Signal(str, str)
     '''@ivar: this signal is emitted if an error while calling #list_masters'
   service of master_discovery is failed.
@@ -229,11 +229,11 @@ class MasterRefreshThread(QObject, threading.Thread):
 class MasterStateTopic(QObject):
     '''
     A class to receive the ROS master state updates from a ROS topic. The topic
-    will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
+    will be determine using U{master_discovery_fkie.interface_finder.get_changes_topic()<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#interface-finder-module>}.
     '''
     state_signal = Signal(MasterState)
-    '''@ivar: a signal to inform the receiver about new master state.
-  Parameter: L{master_discovery_fkie.msg.MasterState}'''
+    '''@ivar: a signal to inform the receiver about new master state. 
+    Parameter: U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}'''
 
     def registerByROS(self, masteruri, wait=False):
         '''
@@ -273,7 +273,7 @@ class MasterStateTopic(QObject):
         The method to handle the received MasterState messages. The received message
         will be emitted as state_signal.
         @param msg: the received message
-        @type msg: L{master_discovery_fkie.MasterState}
+        @type msg: U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}
         '''
         self.state_signal.emit(msg)
 
@@ -281,11 +281,11 @@ class MasterStateTopic(QObject):
 class MasterStatisticTopic(QObject):
     '''
     A class to receive the connections statistics from a ROS topic. The topic
-    will be determine using L{master_discovery_fkie.interface_finder.get_stats_topic()}
+    will be determine using U{master_discovery_fkie.interface_finder.get_stats_topic()<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#interface-finder-module>}
     '''
     stats_signal = Signal(LinkStatesStamped)
     '''@ivar: a signal with a list of link states to discovered ROS masters.
-  Paramter: L{master_discovery_fkie.msg.LinkStatesStamped}'''
+  Paramter: U{master_discovery_fkie.msg.LinkStatesStamped<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/LinkStatesStamped.html>}'''
 
     def registerByROS(self, masteruri, wait=False):
         '''
@@ -322,7 +322,7 @@ class MasterStatisticTopic(QObject):
         The method to handle the received LinkStatesStamped messages. The received
         message will be emitted as stats_signal.
         @param msg: the received message
-        @type msg: L{master_discovery_fkie.LinkStatesStamped}
+        @type msg: U{master_discovery_fkie.msg.LinkStatesStamped<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/LinkStatesStamped.html>}
         '''
         self.stats_signal.emit(msg)
 
@@ -331,11 +331,11 @@ class OwnMasterMonitoring(QObject):
     '''
     A class to monitor the state of the master. Will be used, if no master
     discovering is available. On changes the 'state_signal' of type
-    L{master_discovery_fkie.msg.MasterState} will be emitted.
+    U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>} will be emitted.
     '''
     state_signal = Signal(MasterState)
     '''@ivar: a signal to inform the receiver about new master state.
-  Parameter: L{master_discovery_fkie.msg.MasterState}'''
+    Parameter: U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}'''
 
     err_signal = Signal(str)
     '''@ivar: a signal to inform about an error.

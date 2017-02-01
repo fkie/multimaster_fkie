@@ -137,7 +137,7 @@ def history():
     return _HISTORY
 
 
-def file_watcher():
+def filewatcher():
     '''
     @return: The file watcher object with all loaded configuration files.
     @rtype: L{FileWatcher}

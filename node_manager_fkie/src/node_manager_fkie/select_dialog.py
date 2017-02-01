@@ -256,7 +256,7 @@ class MainBox(QWidget):
         '''
         Hide the parameter input field, which label dosn't contains the C{arg}.
         @param arg: the filter text
-        @type art: C{str}
+        @type arg: C{str}
         '''
         for i in range(self.layout().count()):
             item = self.layout().itemAt(i).widget()

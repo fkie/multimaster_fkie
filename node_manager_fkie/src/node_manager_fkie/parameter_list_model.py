@@ -275,9 +275,9 @@ class ParameterModel(QStandardItemModel):
     def flags(self, index):
         '''
         @param index: parent of the list
-        @type index: L{PySide.QtCore.QModelIndex}
+        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         @return: Flag or the requestet item
-        @rtype: L{PySide.QtCore.Qt.ItemFlag}
+        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():

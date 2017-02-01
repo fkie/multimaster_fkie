@@ -211,8 +211,8 @@ class MainWindow(QMainWindow):
         self.currentMaster = None  # MasterViewProxy
         self._close_on_exit = True
 
-        nm.file_watcher().config_changed.connect(self.on_configfile_changed)
-        nm.file_watcher().binary_changed.connect(self.on_binaryfile_changed)
+        nm.filewatcher().config_changed.connect(self.on_configfile_changed)
+        nm.filewatcher().binary_changed.connect(self.on_binaryfile_changed)
         nm.file_watcher_param().config_changed.connect(self.on_configparamfile_changed)
         self.__in_question = set()
 
@@ -675,7 +675,7 @@ class MainWindow(QMainWindow):
         Test whether the new retrieved MasterInfo contains the master_discovery node.
         This is identified by a name of the contained 'list_masters' service.
         @param minfo: the ROS master Info
-        @type minfo: L{master_discovery_fkie.MasterInfo}
+        @type minfo: U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
         '''
         # use no discovery services, if roscore is running on a remote host
         if self.restricted_to_one_master:
@@ -694,7 +694,7 @@ class MainWindow(QMainWindow):
         Handle the retrieved list with ROS master.
           1. update the ROS Network view
         @param master_list: a list with ROS masters
-        @type master_list: C{[L{master_discovery_fkie.msg.MasterState}]}
+        @type master_list: C{[U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}]}
         '''
         result_1 = self.state_topic.registerByROS(self.getMasteruri(), False)
         result_2 = self.stats_topic.registerByROS(self.getMasteruri(), False)
@@ -729,7 +729,7 @@ class MainWindow(QMainWindow):
           1. update the ROS Network view
           2. enable local master monitoring, if all masters are removed (the local master too)
         @param msg: the ROS message with new master state
-        @type msg: L{master_discovery_fkie.msg.MasterState}
+        @type msg: U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}
         '''
         # do not update while closing
         if hasattr(self, "_on_finish"):
@@ -813,10 +813,10 @@ class MainWindow(QMainWindow):
         '''
         Integrate the received master info.
         @param minfo: the ROS master Info
-        @type minfo: L{master_discovery_fkie.MasterInfo}
+        @type minfo: U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
         '''
         if hasattr(self, "_on_finish"):
-            rospy.logdebug("ignore changes on %s, because currently on closing...", minfo.master.uri)
+            rospy.logdebug("ignore changes on %s, because currently on closing...", minfo.masteruri)
             return
         rospy.logdebug("MASTERINFO from %s (%s) received", minfo.mastername, minfo.masteruri)
         self._con_tries[minfo.masteruri] = 0
@@ -887,7 +887,7 @@ class MainWindow(QMainWindow):
         Handle the retrieved connection statistics.
           1. update the ROS Network view
         @param stats: a list with connection statistics
-        @type stats: C{[L{master_discovery_fkie.msg.LinkState}]}
+        @type stats: C{[U{master_discovery_fkie.msg.LinkState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/LinkState.html>}]}
         '''
         for stat in stats.links:
             self.master_model.updateMasterStat(stat.destination, stat.quality)
@@ -1798,7 +1798,7 @@ class MainWindow(QMainWindow):
                     if master_nodes and master_nodes[0].is_running():
                         choices[nname] = (master, lfile)
                     else:
-                        nm.file_watcher().rem_binary(nname)
+                        nm.filewatcher().rem_binary(nname)
             if choices:
                 nodes, _ = SelectDialog.getValue('Restart nodes?',
                                                  '<b>%s</b> was changed.<br>Select affected nodes to restart:' % ', '.join([os.path.basename(f) for f in self._changed_binaries.keys()]), choices.keys(),

@@ -482,7 +482,7 @@ class MainBox(QWidget):
         '''
         Hide the parameter input field, which label dosn't contains the C{arg}.
         @param arg: the filter text
-        @type art: C{str}
+        @type arg: C{str}
         '''
         result = False
         for child in self.param_widget.children():
@@ -880,7 +880,7 @@ class ParameterDialog(QDialog):
         '''
         Resolves the dictionary values to ROS parameter names.
         @param keywords: the result of the getKeywords
-        @result: dictionary of (ROS parameter name : value)
+        @return: dictionary of (ROS parameter name : value)
         '''
         result = dict()
         for param, value in keywords.items():
@@ -1094,7 +1094,7 @@ class MasterParameterDialog(ParameterDialog):
         @param msg: The message of the result.
         @type msg: C{str}
         @param params: The list the parameter names.
-        @type param: C{[str]}
+        @type params: C{[str]}
         '''
         if code == 1:
             params.sort()
@@ -1111,7 +1111,7 @@ class MasterParameterDialog(ParameterDialog):
         @param msg: The message of the result.
         @type msg: C{str}
         @param params: The dictionary the parameter names and request result.
-        @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
+        @type params: C{dict(paramName : (code, statusMessage, parameterValue))}
         '''
         if code == 1:
             dia_params = dict()
@@ -1171,7 +1171,7 @@ class MasterParameterDialog(ParameterDialog):
         @param msg: The message of the result.
         @type msg: C{str}
         @param params: The dictionary the parameter names and request result.
-        @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
+        @type params: C{dict(paramName : (code, statusMessage, parameterValue))}
         '''
         self.is_delivered = True
         errmsg = ''
@@ -1203,7 +1203,7 @@ class ServiceDialog(ParameterDialog):
     def __init__(self, service, parent=None):
         '''
         @param service: Service to call.
-        @type service: L{ServiceInfo}
+        @type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
         '''
         self.service = service
         slots = service.get_service_class(True)._request_class.__slots__

@@ -300,13 +300,16 @@ class FilterInterface(object):
         '''
         :returns: the tuple of the all filter patterns.
           ::
+
             (sync_remote_nodes,
             ignore_nodes, sync_nodes,
             ignore_topics, sync_topics,
             ignore_services, sync_services,
-            ignore_type)
+            ignore_type,
+            ignore_publishers, ignore_subscribers,
+            do_not_sync)
 
-        :rtype: `(bool, str, str, str, str, str, str, str)`
+        :rtype: `(bool, str, str, str, str, str, str, str, str, str, str)`
         '''
         if not self.is_valid:
             return (False, '', '', '', '', '', '', '', '', '', '')
@@ -333,10 +336,11 @@ class FilterInterface(object):
             ignore_topics, sync_topics,
             ignore_services, sync_services,
             ignore_type,
-            ignore_publishers, ignore_subscribers)`
+            ignore_publishers, ignore_subscribers,
+            do_not_sync)`
 
         with types
-        `(bool, str, str, str, str, str, str, str)`
+        `(bool, str, str, str, str, str, str, str, str)`
 
         and creates the `FilterInterface` object.
 

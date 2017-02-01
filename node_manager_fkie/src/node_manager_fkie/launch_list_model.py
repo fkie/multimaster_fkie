@@ -94,10 +94,8 @@ class LaunchItem(QStandardItem):
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
-        @param index: parent of the list
-        @type index: L{QtCore.QModelIndex}
         @param role: the art of the data
-        @type role: L{QtCore.Qt.DisplayRole}
+        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if role == Qt.DisplayRole:
@@ -146,9 +144,9 @@ class LaunchItem(QStandardItem):
         @param name: the topic name
         @type name: C{str}
         @param root: The parent QStandardItem
-        @type root: L{PySide.QtGui.QStandardItem}
+        @type root: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
         @return: the list for the representation as a row
-        @rtype: C{[L{LaunchItem} or L{PySide.QtGui.QStandardItem}, ...]}
+        @rtype: C{[L{LaunchItem} or U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
         item = LaunchItem(name, path, item_id, parent=root)
@@ -209,9 +207,9 @@ class LaunchListModel(QStandardItemModel):
     def flags(self, index):
         '''
         @param index: parent of the list
-        @type index: L{PySide.QtCore.QModelIndex}
+        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         @return: Flag or the requested item
-        @rtype: L{PySide.QtCore.Qt.ItemFlag}
+        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():
@@ -285,7 +283,7 @@ class LaunchListModel(QStandardItemModel):
         @param path: the real path of the item
         @type path: C{str}
         @return: path of the launch file or None
-        @rtype: C{str
+        @rtype: C{str}
         @raise Exception if no path to given item was found
         '''
         if path_item == '..':

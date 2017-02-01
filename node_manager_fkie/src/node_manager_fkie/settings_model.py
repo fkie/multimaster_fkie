@@ -50,7 +50,7 @@ class SettingsNameItem(QStandardItem):
         '''
         The view asks us for all sorts of information about our data...
         @param role: the art of the data
-        @type role: L{QtCore.Qt.DisplayRole}
+        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if role == Qt.DisplayRole:
@@ -79,13 +79,13 @@ class SettingsValueItem(QStandardItem):
         :param value: the current value
         :type value: any std types
         :param settings: the object, which contains `attrname` as property and
-                         provide the parameter changes
+        provide the parameter changes
         :type settings: object (Settings)
         :param attrname: the parameter name, which is available as property in
-                           `settings` object.
+        `settings` object.
         :type attrname: str
         :param edit_type: the editor type will be detected automatically by default.
-                          For different editors you can set manually the `EDIT_TYPE_*`
+        For different editors you can set manually the `EDIT_TYPE_*`
         :type edit_type: int (`EDIT_TYPE_*`)
         :param value_default: the default value, is needed for reset functionality
         :param value_min: the maximum value (used by int or float)
@@ -134,7 +134,7 @@ class SettingsValueItem(QStandardItem):
         '''
         The view asks us for all sorts of information about our data...
         @param role: the art of the data
-        @type role: L{QtCore.Qt.DisplayRole}
+        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if role == Qt.DisplayRole:
@@ -170,10 +170,8 @@ class SettingsGroupItem(QStandardItem):
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
-        @param index: parent of the list
-        @type index: L{QtCore.QModelIndex}
         @param role: the art of the data
-        @type role: L{QtCore.Qt.DisplayRole}
+        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if role == Qt.DisplayRole:
@@ -192,7 +190,7 @@ class SettingsGroupItem(QStandardItem):
         visualization of settings group data as a table row.
         @param name: the group name
         @type name: C{str}
-        @rtype: C{[L{SettingsGroupItem} and L{PySide.QtGui.QStandardItem}]}
+        @rtype: C{[L{SettingsGroupItem} and U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
         '''
         items = []
         item = SettingsGroupItem(name)
@@ -209,7 +207,7 @@ class SettingsGroupItem(QStandardItem):
         Creates the list of the items . This list is used for the
         visualization of settings group data as a table row.
         For paramters see `SettingsValueItem()`
-        @rtype: C{[L{SettingsGroupItem} and L{PySide.QtGui.QStandardItem}]}
+        @rtype: C{[L{SettingsGroupItem} and U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
         '''
         items = []
         item = SettingsNameItem(name, tooltip)
@@ -243,9 +241,9 @@ class SettingsModel(QStandardItemModel):
     def flags(self, index):
         '''
         @param index: parent of the list
-        @type index: L{PySide.QtCore.QModelIndex}
+        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         @return: Flag or the requested item
-        @rtype: L{PySide.QtCore.Qt.ItemFlag}
+        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():
@@ -269,7 +267,7 @@ class SettingsModel(QStandardItemModel):
         '''
         Updates the model data.
         @param settings: a dictionary with settings name and values.
-        @type settings: C{dict(str:L{(.. parameter of SettingsGroupItem.getSettingsItemList())}, ...)}
+        @type settings: C{dict(str: parameter of L{SettingsGroupItem.getSettingsItemList()}, ...)}
         '''
         # remove all current items
         root = self.invisibleRootItem()

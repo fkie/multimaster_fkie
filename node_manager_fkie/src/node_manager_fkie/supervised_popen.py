@@ -60,10 +60,10 @@ class SupervisedPopen(QObject):
         For arguments see https://docs.python.org/2/library/subprocess.html
         Additional arguments:
         :param object_id: the identification string of this object and title of the
-                          error message dialog
+        error message dialog
         :type object_id: str
         :param description: the description string used as addiotional information
-                            in dialog if an error was occured
+        in dialog if an error was occured
         :type description: str
         '''
         try:

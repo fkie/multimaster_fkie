@@ -222,7 +222,7 @@ class MasterItem(QStandardItem):
         data.
         @param parent: Item which contains this master item. This is needed to update
         other columns of this master.
-        @type parent: L{PySide.QtGui.QStandardItem}
+        @type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
         '''
         if parent is not None:
             # update the name decoration
@@ -354,9 +354,9 @@ class MasterModel(QStandardItemModel):
     def flags(self, index):
         '''
         @param index: parent of the list
-        @type index: L{PySide.QtCore.QModelIndex}
+        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         @return: Flag or the requestet item
-        @rtype: L{PySide.QtCore.Qt.ItemFlag}
+        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():
@@ -372,7 +372,7 @@ class MasterModel(QStandardItemModel):
         will be added.
 
         @param master: the ROS master to update
-        @type master: L{master_discovery_fkie.msg.ROSMaster}
+        @type master: U{master_discovery_fkie.msg.ROSMaster<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/ROSMaster.html>}
         '''
         # remove master, if his name was changed but not the ROS master URI
         root = self.invisibleRootItem()
@@ -409,12 +409,12 @@ class MasterModel(QStandardItemModel):
         '''
         Creates the list of the items from master. This list is used for the
         visualization of master data as a table row.
-        @param master the master data
-        @type master master_discovery_fkie.ROSMaster
+        @param master: the master data
+        @type master: master_discovery_fkie.ROSMaster
         @param local: whether the master is local or not
         @type local: bool
         @return: the list for the representation as a row
-        @rtype: C{[L{MasterItem} or L{PySide.QtGui.QStandardItem}, ...]}
+        @rtype: C{[L{MasterItem} or U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
         sync_item = MasterSyncItem(master)

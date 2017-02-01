@@ -56,8 +56,9 @@ class Main(object):
     def __init__(self):
         '''
         Creates a new instance. Find the topic of the master_discovery node using
-        L{master_discovery_fkie.interface_finder.get_changes_topic()}. Also the
-        parameter C{~ignore_hosts} will be analyzed to exclude hosts from sync.
+        U{master_discovery_fkie.interface_finder.get_changes_topic()
+        <http://docs.ros.org/api/master_discovery_fkie/html/modules.html#interface-finder-module>}.
+        Also the parameter C{~ignore_hosts} will be analyzed to exclude hosts from sync.
         '''
         self.masters = {}
         # the connection to the local service master
@@ -69,7 +70,7 @@ class Main(object):
         # subscribe to changes notifier topics
         topic_names = interface_finder.get_changes_topic(masteruri_from_master())
         self.sub_changes = dict()
-        '''@ivar: {dict} with topics C{(name: L{rospy.Subscriber})} publishes the changes of the discovered ROS masters.'''
+        '''@ivar: `dict` with topics {name: U{rospy.Subscriber<http://docs.ros.org/api/rospy/html/rospy.topics.Subscriber-class.html>}} publishes the changes of the discovered ROS masters.'''
         for topic_name in topic_names:
             rospy.loginfo("listen for updates on %s", topic_name)
             self.sub_changes[topic_name] = rospy.Subscriber(topic_name, MasterState, self._rosmsg_callback_master_state)
@@ -89,7 +90,8 @@ class Main(object):
         new threads to synchronize with remote ROS master will be created, updated or
         removed.
         @param data: the received message
-        @type data: L{master_discovery_fkie.MasterState}
+        @type data: U{master_discovery_fkie.MasterState
+        <http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}
         '''
         with self.__lock:
             if not rospy.is_shutdown():
@@ -104,7 +106,8 @@ class Main(object):
         This method use the service 'list_masters' of the master_discoverer to get
         the list of discovered ROS master. Based on this list the L{SyncThread} for
         synchronization will be created.
-        @see: L{master_discovery_fkie.interface_finder.get_listmaster_service()}
+        @see: U{master_discovery_fkie.interface_finder.get_listmaster_service()
+            <http://docs.ros.org/api/master_discovery_fkie/html/modules.html#interface-finder-module>}
         '''
         if not rospy.is_shutdown():
             service_names = interface_finder.get_listmaster_service(masteruri_from_master(), False)
@@ -136,16 +139,16 @@ class Main(object):
 
     def update_master(self, mastername, masteruri, timestamp, timestamp_local, discoverer_name, monitoruri, online):
         '''
-        Updates the timestamp of the given ROS master, or creates a new SyncThread to
+        Updates the timestamp of the given ROS master, or creates a new L{SyncThread} to
         synchronize the local master with given ROS master.
         @param mastername: the name of the remote ROS master to update or synchronize.
         @type mastername: C{str}
         @param masteruri: the URI of the remote ROS master.
         @type masteruri: C{str}
         @param timestamp: the timestamp of the remote ROS master.
-        @type timestamp: L{float64}
+        @type timestamp: C{float64}
         @param timestamp_local: the timestamp of the remote ROS master. (only local changes)
-        @type timestamp_local: L{float64}
+        @type timestamp_local: C{float64}
         @param discoverer_name: the name of the remote master_discoverer node
         @type discoverer_name: C{str}
         @param monitoruri: the URI of the RPC interface of the remote master_discoverer node.
@@ -179,8 +182,10 @@ class Main(object):
             rospy.logwarn("ERROR while update master[%s]: %s", str(mastername), traceback.format_exc())
 
     def get_own_state(self, monitoruri):
-        # get the master info from local discovery master and set it to all sync threads
-        # This function is running in a thread!!!
+        '''
+        Gets the master info from local master discovery and set it to all sync threads.
+        This function is running in a thread!!!
+        '''
         try:
             socket.setdefaulttimeout(3)
             own_monitor = xmlrpclib.ServerProxy(monitoruri)

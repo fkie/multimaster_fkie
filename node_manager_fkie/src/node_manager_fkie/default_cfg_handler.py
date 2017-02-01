@@ -63,7 +63,7 @@ class DefaultConfigHandler(QObject):
     '''
   description_signal is a signal, which is emitted, if a new list with descriptions is
   retrieved. The signal has the URI of the service, the name of the service and
-  a list with descriptions (L{default_cfg_fkie.Description}) parameter.
+  a list with descriptions (U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response) parameter.
   '''
     err_signal = Signal(str, str, str)
 

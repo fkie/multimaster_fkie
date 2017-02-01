@@ -60,7 +60,7 @@ class GroupItem(QStandardItem):
         @type name: C{str}
         @param parent: the parent item. In most cases this is the HostItem. The
         variable is used to determine the different columns of the NodeItem.
-        @type parent: L{PySide.QtGui.QStandardItem}
+        @type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
         '''
         QStandardItem.__init__(self, name if name.rfind('@') > 0 else '{' + name + '}')
         self.parent_item = parent
@@ -206,8 +206,6 @@ class GroupItem(QStandardItem):
         Returns the names of groups, which contains the given node.
         @param node_name: The name of the node
         @type node_name: C{str}
-        @param config: The name of configuration, which describes the node.
-        @type config: C{str}
         @return: The name of the configuration containing this new capabilities.
         @rtype: C{dict(config : [str])}
         '''
@@ -235,7 +233,7 @@ class GroupItem(QStandardItem):
         @param recursive: Searches in (sub) groups
         @type recursive: C{bool}
         @return: The list with node items.
-        @rtype: C{[L{PySide.QtGui.QStandardItem}]}
+        @rtype: C{[U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
         '''
         result = []
         for i in range(self.rowCount()):
@@ -253,7 +251,7 @@ class GroupItem(QStandardItem):
         @param recursive: returns the nodes of the subgroups
         @type recursive: bool
         @return: The list with node items.
-        @rtype: C{[L{PySide.QtGui.QStandardItem}]}
+        @rtype: C{[U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
         '''
         result = []
         for i in range(self.rowCount()):
@@ -402,7 +400,7 @@ class GroupItem(QStandardItem):
         '''
         Updates the running state of the nodes given in a dictionary.
         @param nodes: A dictionary with node names and their running state described by L{NodeInfo}.
-        @type nodes: C{dict(str: L{master_discovery_fkie.NodeInfo})}
+        @type nodes: C{dict(str: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>})}
         '''
         for (name, node) in nodes.items():
             # get the node items
@@ -422,7 +420,7 @@ class GroupItem(QStandardItem):
         '''
         Returns the names of all running nodes. A running node is defined by his
         PID.
-        @see: L{master_dicovery_fkie.NodeInfo}
+        @see: U{master_dicovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
         @return: A list with node names
         @rtype: C{[str]}
         '''
@@ -817,8 +815,8 @@ class HostItem(GroupItem):
 class NodeItem(QStandardItem):
     '''
     The NodeItem stores the information about the node using the ExtendedNodeInfo
-    class and represents it in a L{PySide.QtGui.QTreeModel} using the
-    L{PySide.QtGui.QStandardItemModel}
+    class and represents it in a U{QTreeView<https://srinikom.github.io/pyside-docs/PySide/QtGui/QTreeView.html>} using the
+    U{QStandardItemModel<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItemModel.html>}
     '''
 
     ITEM_TYPE = QStandardItem.UserType + 35
@@ -836,7 +834,7 @@ class NodeItem(QStandardItem):
         '''
         Initialize the NodeItem instance.
         @param node_info: the node information
-        @type node_info: L{master_discovery_fkie.NodeInfo}
+        @type node_info: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
         '''
         QStandardItem.__init__(self, node_info.name)
         self.parent_item = None
@@ -886,7 +884,7 @@ class NodeItem(QStandardItem):
     def node_info(self):
         '''
         Returns the NodeInfo instance of this node.
-        @rtype: L{master_discovery_fkie.NodeInfo}
+        @rtype: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
         '''
         return self._node_info
 
@@ -1161,7 +1159,7 @@ class NodeItem(QStandardItem):
         @param masteruri: the URI or the ROS master assigned to this node.
         @type masteruri: C{str}
         @return: the list for the representation as a row
-        @rtype: C{[L{NodeItem}, L{PySide.QtGui.QStandardItem}(Cofigurations), L{PySide.QtGui.QStandardItem}(Node URI)]}
+        @rtype: C{[L{NodeItem}, U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}(Cofigurations), U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}(Node URI)]}
         '''
         items = []
         item = NodeItem(NodeInfo(name, masteruri))
@@ -1242,7 +1240,7 @@ class NodeTreeModel(QStandardItemModel):
 
     hostInserted = Signal(HostItem)
     '''@ivar: the Qt signal, which is emitted, if a new host was inserted.
-  Parameter: L{QtCore.QModelIndex} of the inserted host item'''
+  Parameter: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>} of the inserted host item'''
 
     def __init__(self, host_address, masteruri, parent=None):
         '''
@@ -1375,7 +1373,7 @@ class NodeTreeModel(QStandardItemModel):
         @param msg: The message of the result.
         @type msg: C{str}
         @param params: The dictionary the parameter names and request result.
-        @type param: C{dict(paramName : (code, statusMessage, parameterValue))}
+        @type params: C{dict(paramName : (code, statusMessage, parameterValue))}
         '''
         host = nm.nameres().address(masteruri)
         hostItem = self.get_hostitem(masteruri, host)
@@ -1564,7 +1562,7 @@ class NodeTreeModel(QStandardItemModel):
         @param node_name: The name of the node
         @type node_name: C{str}
         @return: The list with node items.
-        @rtype: C{[L{PySide.QtGui.QStandardItem}]}
+        @rtype: C{[U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
         '''
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)

@@ -100,17 +100,8 @@ class StartHandler(object):
     def runNode(cls, runcfg):
         '''
         Start the node with given name from the given configuration.
-        @param node: the name of the node (with name space)
-        @type node: str
-        @param launch_config: the configuration containing the node
-        @type launch_config: LaunchConfig
-        @param force2host: start the node on given host.
-        @type force2host: str
-        @param masteruri: force the masteruri.
-        @type masteruri: str
-        @param auto_pw_request: opens question dialog directly, use True only if
-                                the method is called from the main GUI thread
-        @type auto_pw_request: bool
+        @param runcfg: the configuration containing the start parameter
+        @type runcfg: AdvRunCfg
         @raise StartException: if the screen is not available on host.
         @raise Exception: on errors while resolving host
         @see: L{node_manager_fkie.is_local()}
@@ -268,7 +259,7 @@ class StartHandler(object):
             SupervisedPopen(shlex.split(str(' '.join(cmd_args))), cwd=cwd,
                             env=new_env, object_id="Run node", description="Run node "
                             "[%s]%s" % (str(n.package), str(n.type)))
-            nm.file_watcher().add_binary(cmd_type, runcfg.node, runcfg.masteruri, runcfg.roslaunch_config.Filename)
+            nm.filewatcher().add_binary(cmd_type, runcfg.node, runcfg.masteruri, runcfg.roslaunch_config.Filename)
         else:
             # 'print "RUN REMOTE", node, time.time()
             # start remote
@@ -637,12 +628,12 @@ class StartHandler(object):
         @type service: C{str}
         @param service_type: service class
         @type service_type: ServiceDefinition: service class
-        @param args: arguments
+        @param service_args: arguments
         @return: the tuple of request and response.
         @rtype: C{(request object, response object)}
         @raise StartException: on error
 
-        @see: L{rospy.SerivceProxy}
+        @see: U{rospy.SerivceProxy<http://docs.ros.org/kinetic/api/rospy/html/rospy.impl.tcpros_service.ServiceProxy-class.html>}
 
         '''
         service = str(service)
@@ -706,7 +697,7 @@ class StartHandler(object):
         Return the parameter of the configuration file, which are not associated with
         any nodes in the configuration.
         @param roscfg: the launch configuration
-        @type roscfg: L{roslaunch.ROSLaunchConfig}
+        @type roscfg: U{roslaunch.ROSLaunchConfig<http://docs.ros.org/kinetic/api/roslaunch/html/>}
         @return: the list with names of the global parameter
         @rtype: C{dict(param:value, ...)}
         '''
@@ -855,8 +846,6 @@ class StartHandler(object):
         Kills all roscore processes on given host.
         @param host: the name or address of the host, where the process must be killed.
         @type host: C{str}
-        @param pid: the process id
-        @type pid: C{int}
         @raise StartException: on error
         @raise Exception: on errors while resolving host
         @see: L{node_manager_fkie.is_local()}
@@ -956,10 +945,10 @@ class StartHandler(object):
     def ntpdate(cls, host, cmd, user=None, pw=None):
         '''
         Opens the log file associated with the given node in a new terminal.
-        @param nodename: the name of the node (with name space)
-        @type nodename: C{str}
         @param host: the host name or ip where the log file are
         @type host: C{str}
+        @param cmd: command to set the time 
+        @type cmd: C{str}
         @return: C{True}, if a log file was found
         @rtype: C{bool}
         @raise Exception: on errors while resolving host

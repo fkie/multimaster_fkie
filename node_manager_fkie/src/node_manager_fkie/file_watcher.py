@@ -45,14 +45,14 @@ class FileWatcher(QObject):
     '''
     config_changed = Signal(str, list)
     '''@ivar: a signal to inform the receiver about the changes on
-  launch file or included file.
-  ParameterB{:} (changed file, list of tuples(masteruri, launch file))'''
+    launch file or included file.
+    ParameterB{:} (changed file, list of tuples(masteruri, launch file))'''
 
     binary_changed = Signal(str, list)
     '''@ivar: a signal to inform the receiver about the changes on
-  binary file or included file.
-  ParameterB{:} (binary file, list of tuples(node name, masteruri, launchfile))
-  '''
+    binary file or included file.
+    ParameterB{:} (binary file, list of tuples(node name, masteruri, launchfile))
+    '''
 
     def __init__(self):
         QObject.__init__(self)
@@ -69,9 +69,10 @@ class FileWatcher(QObject):
 
     def on_file_changed(self, filepath):
         '''
-        callback method, which is called by L{QtCore.QFileSystemWatcher} if the
-        launch file or included files are changed. In this case
-        L{FileWatcher.file_changed} signal will be emitted.
+        callback method, which is called by U{QtCore.QFileSystemWatcher<https://srinikom.github.io/pyside-docs/PySide/QtCore/QFileSystemWatcher.html>}
+        if one of a launch file, included files or binary are changed.
+        Depend on type of the file a L{FileWatcher.config_changed} or
+        L{FileWatcher.binary_changed} signal will be emitted.
         '''
         # to avoid to handle from QFileSystemWatcher fired the signal two times
         if (filepath not in self.changed or (filepath in self.changed and self.changed[filepath] + 0.05 < time.time())):

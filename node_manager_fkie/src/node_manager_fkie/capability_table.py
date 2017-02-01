@@ -54,7 +54,7 @@ class CapabilityHeader(QHeaderView):
     '''
     This class is used for visualization of robots or capabilities in header of
     the capability table. It is also used to manage the displayed robots or
-    capabilities. Furthermore L{QtGui.QHeaderView.paintSection()} method is
+    capabilities. Furthermore U{QtGui.QHeaderView.paintSection()<https://srinikom.github.io/pyside-docs/PySide/QtGui/QHeaderView.html#PySide.QtGui.PySide.QtGui.QHeaderView.paintSection>} method is
     overridden to paint the images in background of the cell.
     '''
 
@@ -64,7 +64,7 @@ class CapabilityHeader(QHeaderView):
     def __init__(self, orientation, parent=None):
         QHeaderView.__init__(self, orientation, parent)
         self._data = []
-        ''' @ivar a list with dictionaries C{dict('cfgs' : [], 'name': str, 'displayed_name' : str, 'type' : str, 'description' : str, 'images' : [QtGui.QPixmap])}'''
+        '''@ivar: a list with dictionaries C{dict('cfgs': [], 'name': str, 'displayed_name': str, 'type': str, 'description': str, 'images': [QtGui.QPixmap])}'''
         if orientation == Qt.Horizontal:
             self.setDefaultAlignment(Qt.AlignHCenter | Qt.AlignBottom)
         elif orientation == Qt.Vertical:
@@ -87,7 +87,7 @@ class CapabilityHeader(QHeaderView):
     def paintSection(self, painter, rect, logicalIndex):
         '''
         The method paint the robot or capability images in the backgroud of the cell.
-        @see: L{QtGui.QHeaderView.paintSection()}
+        @see: U{QtGui.QHeaderView.paintSection()<https://srinikom.github.io/pyside-docs/PySide/QtGui/QHeaderView.html#PySide.QtGui.PySide.QtGui.QHeaderView.paintSection>}
         '''
         painter.save()
         QHeaderView.paintSection(self, painter, rect, logicalIndex)
@@ -418,7 +418,7 @@ class CapabilityTable(QTableWidget):
         @param cfg_name: The name of the node provided the capabilities description.
         @type cfg_name: C{str}
         @param description: The capabilities description object.
-        @type description: L{default_cfg_fkie.Description}
+        @type description: U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response
         '''
         # if it is a new masteruri add a new column
         robot_index = self._robotHeader.index(masteruri)
@@ -518,7 +518,7 @@ class CapabilityTable(QTableWidget):
         @param masteruri: The ROS master, which sends the master_info
         @type masteruri: C{str}
         @param master_info: The state of the ROS master
-        @type master_info: L{master_discovery_fkie.MasterInfo}
+        @type master_info: U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
         '''
         if master_info is None or masteruri is None:
             return

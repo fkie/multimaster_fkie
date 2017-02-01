@@ -44,7 +44,8 @@ from master_discovery_fkie.master_info import TopicInfo
 class TopicItem(QStandardItem):
     '''
     The topic item stored in the topic model. This class stores the topic as
-    L{master_discovery_fkie.TopicInfo}. The name of the topic represented in HTML.
+    U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}.
+    The name of the topic represented in HTML.
     '''
 
     ITEM_TYPE = QStandardItem.UserType + 36
@@ -59,12 +60,14 @@ class TopicItem(QStandardItem):
         Initialize the topic item.
         @param name: the topic name
         @type name: C{str}
+        @param topic: the topic info
+        @type topic: U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}
         '''
         QStandardItem.__init__(self, name)
         self.parent_item = parent
-        '''@ivar: service info as L{master_discovery_fkie.ServiceInfo}.'''
         self._publish_thread = None
         self.topic = TopicInfo(name) if topic is None else topic
+        '''@ivar: topic as U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}.'''
 
 #  def __del__(self):
 #    print "delete TOPIC", self.__topic.name
@@ -177,12 +180,12 @@ class TopicItem(QStandardItem):
         '''
         Creates the list of the items from topic. This list is used for the
         visualization of topic data as a table row.
-        @param name: the topic name
-        @type name: C{str}
+        @param topic: the topic name
+        @type topic: C{str}
         @param root: The parent QStandardItem
-        @type root: L{PySide.QStandardItem}
+        @type root: U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
         @return: the list for the representation as a row
-        @rtype: C{[L{TopicItem} or L{PySide.QStandardItem}, ...]}
+        @rtype: C{[L{TopicItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
         item = TopicItem(topic.name, topic, parent=root)
@@ -242,9 +245,9 @@ class TopicModel(QStandardItemModel):
     def flags(self, index):
         '''
         @param index: parent of the list
-        @type index: L{PySide.QtCore.QModelIndex}
+        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         @return: Flag or the requested item
-        @rtype: L{PySide.QtCore.Qt.ItemFlag}
+        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
         @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():
@@ -256,7 +259,7 @@ class TopicModel(QStandardItemModel):
         Updates the topics model. New topic will be inserted in sorting order. Not
         available topics removed from the model.
         @param topics: The dictionary with topics
-        @type topics: C{dict(topic name : L{master_discovery_fkie.TopicInfo}, ...)}
+        @type topics: C{dict(topic name : U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}, ...)}
         @param added_topics: the list of new topics in the :topics: list
         @type added_topics: list or set
         @param updated_topics: the list of updated topics in the :topics: list

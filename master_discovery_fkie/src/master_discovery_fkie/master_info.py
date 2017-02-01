@@ -477,7 +477,7 @@ class ServiceInfo(object):
     @property
     def isLocal(self):
         '''
-        :return: ``True``, if this service and the master are on the same machine.
+        :return: `True`, if this service and the master are on the same machine.
                  This will be determine on setting the uri-parameter.
 
         :rtype: bool
@@ -696,13 +696,13 @@ class MasterInfo(object):
             result.topics = topic
             result.getTopic(topic).type = ttype
         # set the node informations
-        for nodename, uri, masteruri, pid, local in nodes:
+        for nodename, uri, masteruri, pid, _local in nodes:
             result.nodes = nodename
             result.getNode(nodename).uri = uri
             result.getNode(nodename).masteruri = masteruri
             result.getNode(nodename).pid = pid
         # set the service informations
-        for servicename, uri, masteruri, stype, local in serviceProvider:
+        for servicename, uri, masteruri, stype, _local in serviceProvider:
             result.services = servicename
             result.getService(servicename).uri = uri
             result.getService(servicename).masteruri = masteruri

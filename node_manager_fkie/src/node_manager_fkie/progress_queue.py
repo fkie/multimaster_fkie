@@ -98,7 +98,7 @@ class ProgressQueue(QObject):
         :param descr: the description of the task
         :type descr: str
         :param target: is the callable object to be invoked in a new thread.
-                       Defaults to None, meaning nothing is called.
+        Defaults to None, meaning nothing is called.
         :param args: is the argument tuple for the target invocation. Defaults to ()
         '''
         pthread = ProgressThread(ident, descr, target, args)

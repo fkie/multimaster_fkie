@@ -39,7 +39,7 @@ import rospy
 class RosoutListener(QObject):
     '''
     A class to receive the ROS master state updates from a ROS topic. The topic
-    will be determine using L{master_discovery_fkie.interface_finder.get_changes_topic()}.
+    will be determine using U{master_discovery_fkie.interface_finder.get_changes_topic()<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#interface-finder-module>}.
     '''
     rosinfo_signal = Signal(Log)
     roswarn_signal = Signal(Log)
@@ -67,7 +67,7 @@ class RosoutListener(QObject):
         '''
         The method to handle the received Log messages.
         @param msg: the received message
-        @type msg: L{rosgraph_msgs.Log}
+        @type msg: U{rosgraph_msgs.Log<http://docs.ros.org/kinetic/api/rosgraph_msgs/html/msg/Log.html>}
         '''
         if msg.name == rospy.get_name():
             if msg.level == Log.INFO:

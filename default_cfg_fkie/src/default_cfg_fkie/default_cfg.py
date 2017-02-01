@@ -63,7 +63,7 @@ class DefaultCfg(object):
 
     def __init__(self):
         self.nodes = []
-        '''@var: the list with names of nodes with name spaces '''
+        '''@ivar: the list with names of nodes with name spaces.'''
         self.sensors = {}
         '''@ivar: Sensor description: C{dict(node name : [(sensor type, sensor name, sensor description), ...])}'''
         self.robot_descr = ('', '', '')
@@ -205,9 +205,10 @@ class DefaultCfg(object):
 
     def _decode(self, val):
         '''
-        Replaces the '\\n' by '\n' and decode the string entry from system default
+        Replaces the '\\n' by LF (Line Feed) and decode the string entry from system default
         coding to unicode.
         @param val: the string coding as system default
+        @type val: str
         @return: the decoded string
         @rtype: C{unicode} or original on error
         '''
@@ -575,7 +576,7 @@ class DefaultCfg(object):
 
     def get_ros_home(self):
         '''
-        Returns the ROS HOME depending on ROS distribution API.
+        Returns the ROS HOME path depending on ROS distribution API.
         @return: ROS HOME path
         @rtype: C{str}
         '''
