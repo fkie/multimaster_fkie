@@ -1982,11 +1982,10 @@ class MainWindow(QMainWindow):
 
     def _url_path(self, url):
         '''Helper class for Qt5 compatibility'''
-        return url.toString()
-        # if hasattr(url, 'encodedPath'):
-        #     return str(url.encodedPath())
-        # else:
-        #     return str(url.path())
+        if hasattr(url, 'encodedPath'):
+            return str(url.encodedPath())
+        else:
+            return str(url.path())
 
     def _url_host(self, url):
         '''Helper class for Qt5 compatibility'''
