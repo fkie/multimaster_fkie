@@ -653,9 +653,7 @@ p, li { white-space: pre-wrap; }
          </widget>
         </item>
         <item>
-         <widget class="QWidget" name="tabPlace" native="true">
-          <zorder>masterInfoFrame</zorder>
-         </widget>
+         <widget class="QWidget" name="tabPlace" native="true"/>
         </item>
        </layout>
       </widget>
@@ -1034,6 +1032,15 @@ p, li { white-space: pre-wrap; }
        <property name="palette">
         <palette>
          <active>
+          <colorrole role="Text">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>0</red>
+             <green>0</green>
+             <blue>0</blue>
+            </color>
+           </brush>
+          </colorrole>
           <colorrole role="Base">
            <brush brushstyle="SolidPattern">
             <color alpha="255">
@@ -1045,6 +1052,15 @@ p, li { white-space: pre-wrap; }
           </colorrole>
          </active>
          <inactive>
+          <colorrole role="Text">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>0</red>
+             <green>0</green>
+             <blue>0</blue>
+            </color>
+           </brush>
+          </colorrole>
           <colorrole role="Base">
            <brush brushstyle="SolidPattern">
             <color alpha="255">
@@ -1056,6 +1072,15 @@ p, li { white-space: pre-wrap; }
           </colorrole>
          </inactive>
          <disabled>
+          <colorrole role="Text">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>169</red>
+             <green>167</green>
+             <blue>167</blue>
+            </color>
+           </brush>
+          </colorrole>
           <colorrole role="Base">
            <brush brushstyle="SolidPattern">
             <color alpha="255">
