@@ -366,7 +366,7 @@ class EchoDialog(QDialog):
                 txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>' % self._scrapped_msgs_sl
                 self.display.append(txt)
                 self._scrapped_msgs_sl = 0
-            txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
+            txt = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
             # set the count of the displayed messages on receiving the first message
             self._update_max_msg_count(txt)
             self.display.append(txt)
@@ -459,7 +459,7 @@ class EchoDialog(QDialog):
                     self._count_messages(current_time)
                     # limit the displayed text width
                     m = self._trim_width(m)
-                    txt = '<pre style="background-color:#FFFCCC; font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
+                    txt = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
                     # set the count of the displayed messages on receiving the first message
                     self._update_max_msg_count(txt)
                     self.display.append(txt)
