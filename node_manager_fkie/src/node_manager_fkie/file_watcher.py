@@ -133,8 +133,10 @@ class FileWatcher(QObject):
         for _, (binary_file, _, _) in self.binaries.items():
             binaries.add(binary_file)
         result.update(binaries)
-        files = self.file_watcher.files()
-        if files:
-            self.file_watcher.removePaths(files)
-        if list(result):
-            self.file_watcher.addPaths(list(result))
+        files = set(self.file_watcher.files())
+        to_remove = list(files - result)
+        if to_remove:
+            self.file_watcher.removePaths(to_remove)
+        to_add = list(result - files)
+        if to_add:
+            self.file_watcher.addPaths(to_add)
