@@ -123,9 +123,9 @@ class DefaultCfg(object):
             self.masteruri = self._masteruri_from_ros()
             self.roscfg = ROSLaunchConfig()
             loader = XmlLoader()
-            argv = [a for a in sys.argv if not a.startswith('__ns:=')]
+            argv = [a for a in sys.argv if not a.startswith('__ns:=') and not a.startswith('__name:=')]
             # remove namespace from sys.argv to avoid load the launchfile info local namespace
-            sys.argv = [a for a in sys.argv if not a.startswith('__ns:=')]
+            sys.argv = [a for a in sys.argv if not a.startswith('__ns:=') and not a.startswith('__name:=')]
             # set the global environment to empty namespace
             os.environ[ROS_NAMESPACE] = rospy.names.SEP
             loader.load(launch_path, self.roscfg, verbose=False, argv=argv)
