@@ -72,7 +72,8 @@ class XmlHighlighter(QSyntaxHighlighter):
     LAUNCH_INCLUDE_CHILDS = ['env', 'arg']
     LAUNCH_INCLUDE_ATTR = {'file=': '"$(find pkg-name)/path/filename.xml"',
                            'ns=': '"foo"',
-                           'clear_params=': '"true|false"'
+                           'clear_params=': '"true|false"',
+                           'pass_all_args=': '"true|false"'
                            }
 
     LAUNCH_REMAP_ATTR = {'from=': '"originalname"',
