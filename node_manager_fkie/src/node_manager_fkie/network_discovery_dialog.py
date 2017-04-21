@@ -87,6 +87,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.status_label = QLabel('0 messages', self)
         self.verticalLayout.addWidget(self.status_label)
         self.status_text_signal.connect(self.status_label.setText)
+        self._msg_counts = dict()
 
         self._networks_count = networks_count
         self._running = True
@@ -118,6 +119,9 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                 if index not in self._discovered:
                     self._discovered[index] = dict()
                 self._discovered[index][address] = (hostname, time.time())
+                if hostname not in self._msg_counts:
+                    self._msg_counts[hostname] = 0
+                self._msg_counts[hostname] += 1
                 self._received_msgs += 1
                 force_update = True
             except:
@@ -130,12 +134,14 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         while (not rospy.is_shutdown()) and self._running:
             with self.mutex:
                 for msock in self.sockets:
-                    try:
-                        recv_item = msock.receive_queue.get(False)
-                        self._received_msgs += 1
-                        self.on_heartbeat_received(recv_item.msg, recv_item.sender_addr, (recv_item.via == QueueReceiveItem.MULTICAST))
-                    except Queue.Empty:
-                        pass
+                    received = True
+                    while received:
+                        try:
+                            recv_item = msock.receive_queue.get(False)
+                            self._received_msgs += 1
+                            self.on_heartbeat_received(recv_item.msg, recv_item.sender_addr, (recv_item.via == QueueReceiveItem.MULTICAST))
+                        except Queue.Empty:
+                            received = False
                 status_text = 'received messages: %d' % (self._received_msgs)
                 self.status_text_signal.emit(status_text)
 #      self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
@@ -160,7 +166,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         for index, addr_dict in self._discovered.items():
             text = ''.join([text, 'Network <b>', str(index), '</b>: <a href="', str(index), '">join</a><dl>'])
             for addr, (hostname, ts) in addr_dict.items():
-                text = ''.join([text, '<dt>', self._getTsStr(ts), '   <b><u>', str(hostname), '</u></b> ', str(addr), '</dt>\n'])
+                text = ''.join([text, '<dt>', self._getTsStr(ts), '   <b><u>', str(hostname), '</u></b> ', str(addr), ', received messages: ', str(self._msg_counts[hostname]), '</dt>\n'])
             text = ''.join([text, '</dl><br>'])
         text = ''.join([text, '</div>'])
         self.display_append_signal.emit(text)
