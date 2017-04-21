@@ -360,6 +360,9 @@ class OwnMasterMonitoring(QObject):
         self._masterMonitorThread.start()
         self._last_error = (time.time(), None)
 
+    def is_running(self):
+        return not self._do_pause
+
     def stop(self):
         '''
         Stop the local master monitoring

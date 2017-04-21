@@ -618,47 +618,48 @@ class MainWindow(QMainWindow):
         @param on: the enable / disable the local monitoring
         @type on: C{boolean}
         '''
-        self.masterTableView.setEnabled(not on)
-        self.refreshAllButton.setEnabled(not on)
-        self.own_master_monitor.pause(not on)
-        if on:
-            self.masterTableView.setToolTip("use 'Start' button to enable the master discovering")
-            self.networkDock.setWindowTitle("ROS Network [disabled]")
-        else:
-            self.masterTableView.setToolTip('')
-        if on:
-            # remove discovered ROS master and set the local master to selected
-            for uri in self.masters.keys():
-                master = self.masters[uri]
-                if nm.is_local(get_hostname(uri)) or uri == self.getMasteruri():
-                    if not self._history_selected_robot or master.mastername == self._history_selected_robot:
-                        self.setCurrentMaster(master)
-                else:
-                    if master.master_state is not None:
-                        self.master_model.removeMaster(master.master_state.name)
-                    self.removeMaster(uri)
-#      self.masterTableView.doItemsLayout()
-        else:
-            try:
-                # determine the ROS network ID
-                mcast_group = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
-                self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
-            except:
-                # try to get the multicast port of master discovery from log
-                port = 0
-                network_id = -1
-                import re
-                with open(ScreenHandler.getROSLogFile(node=discoverer.rstrip('/')), 'r') as mdfile:
-                    for line in mdfile:
-                        if line.find("Listen for multicast at") > -1:
-                            port = map(int, re.findall(r'\d+', line))[-1]
-                        elif line.find("Network ID") > -1:
-                            network_id = map(int, re.findall(r'\d+', line))[-1]
-                            port = 11511 + network_id
-                if port > 0:
-                    self.networkDock.setWindowTitle("ROS Network [id: %d]" % (port - 11511))
-                else:
-                    self.networkDock.setWindowTitle("ROS Network")
+        if self.own_master_monitor.is_running() != on:
+            self.masterTableView.setEnabled(not on)
+            self.refreshAllButton.setEnabled(not on)
+            self.own_master_monitor.pause(not on)
+            if on:
+                self.masterTableView.setToolTip("use 'Start' button to enable the master discovering")
+                self.networkDock.setWindowTitle("ROS Network [disabled]")
+            else:
+                self.masterTableView.setToolTip('')
+            if on:
+                # remove discovered ROS master and set the local master to selected
+                for uri in self.masters.keys():
+                    master = self.masters[uri]
+                    if nm.is_local(get_hostname(uri)) or uri == self.getMasteruri():
+                        if not self._history_selected_robot or master.mastername == self._history_selected_robot:
+                            self.setCurrentMaster(master)
+                    else:
+                        if master.master_state is not None:
+                            self.master_model.removeMaster(master.master_state.name)
+                        self.removeMaster(uri)
+            else:
+                try:
+                    # determine the ROS network ID
+                    mcast_group = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
+                    self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
+                    self._subscribe()
+                except:
+                    # try to get the multicast port of master discovery from log
+                    port = 0
+                    network_id = -1
+                    import re
+                    with open(ScreenHandler.getROSLogFile(node=discoverer.rstrip('/')), 'r') as mdfile:
+                        for line in mdfile:
+                            if line.find("Listen for multicast at") > -1:
+                                port = map(int, re.findall(r'\d+', line))[-1]
+                            elif line.find("Network ID") > -1:
+                                network_id = map(int, re.findall(r'\d+', line))[-1]
+                                port = 11511 + network_id
+                    if port > 0:
+                        self.networkDock.setWindowTitle("ROS Network [id: %d]" % (port - 11511))
+                    else:
+                        self.networkDock.setWindowTitle("ROS Network")
 
     def on_master_list_err_retrieved(self, masteruri, error):
         '''

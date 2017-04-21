@@ -1376,6 +1376,9 @@ class NodeTreeModel(QStandardItemModel):
         @type params: C{dict(paramName : (code, statusMessage, parameterValue))}
         '''
         host = nm.nameres().address(masteruri)
+        if host is None:
+            # try with hostname of the masteruri
+            host = get_hostname(masteruri)
         hostItem = self.get_hostitem(masteruri, host)
         changed = False
         if hostItem is not None and code == 1:
