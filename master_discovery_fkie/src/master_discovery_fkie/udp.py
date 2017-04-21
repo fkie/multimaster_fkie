@@ -119,7 +119,6 @@ class DiscoverSocket(socket.socket):
         self.listen_mcast = listen_mcast
         self.unicast_only = not (send_mcast or listen_mcast)
         self._closed = False
-        self._msg_callback = None
         self._locals = [ip for ifname, ip in DiscoverSocket.localifs()]
         self._locals.append('localhost')
         self.sock_5_error_printed = []
@@ -218,13 +217,6 @@ class DiscoverSocket(socket.socket):
             self._recv_thread.start()
         self._send_tread = threading.Thread(target=self._send_loop_from_queue)
         self._send_tread.start()
-
-    def set_message_callback(self, callback):
-        '''
-        This callback methos is called if the message is recieved.
-        Callback API. (message, tuple of sender address, bool for multicast or not)
-        '''
-        self._msg_callback = callback
 
     @staticmethod
     def normalize_mgroup(mgroup, getinterface=False):

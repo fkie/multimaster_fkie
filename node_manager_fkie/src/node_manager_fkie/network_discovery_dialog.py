@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
+import Queue
 from datetime import datetime
 from python_qt_binding.QtCore import Qt, Signal
 try:
@@ -44,7 +44,7 @@ import traceback
 import rospy
 
 from master_discovery_fkie.master_discovery import Discoverer
-from master_discovery_fkie.udp import DiscoverSocket
+from master_discovery_fkie.udp import DiscoverSocket, QueueReceiveItem
 import node_manager_fkie as nm
 
 
@@ -100,7 +100,6 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                 msock = DiscoverSocket(default_port + p, default_mcast_group)
                 self.sockets.append(msock)
                 msock.settimeout(self.TIMEOUT)
-                msock.set_message_callback(self.on_heartbeat_received)
         self.setDaemon(True)
         self.start()
 
@@ -130,6 +129,13 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
         while (not rospy.is_shutdown()) and self._running:
             with self.mutex:
+                for msock in self.sockets:
+                    try:
+                        recv_item = msock.receive_queue.get(False)
+                        self._received_msgs += 1
+                        self.on_heartbeat_received(recv_item.msg, recv_item.sender_addr, (recv_item.via == QueueReceiveItem.MULTICAST))
+                    except Queue.Empty:
+                        pass
                 status_text = 'received messages: %d' % (self._received_msgs)
                 self.status_text_signal.emit(status_text)
 #      self.parent().masterlist_service.refresh(self.parent().getMasteruri(), False)
