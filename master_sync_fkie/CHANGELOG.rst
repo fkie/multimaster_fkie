@@ -2,6 +2,11 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.3 (2017-04-24)
+------------------
+* fixed warnings in API documentation
+* Contributors: Alexander Tiderko
+
 0.7.2 (2017-01-27)
 ------------------
 

@@ -2,6 +2,20 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.3 (2017-04-24)
+------------------
+* node_manager_fkie: fix crash on start master_discovery
+* node_manager_fkie: fixed network discovery dialog
+* node_manager_fkie: added "pass_all_args" for highlighter
+* node_manager_fkie: fixed crash while stop or start a lot of nodes
+* node_manager_fkie: changed font color in echo dialog
+* node_manager_fkie: changed default color in description widget
+* node_manager_fkie: added a workaround for "CTR mode needs counter parameter, not IV"
+* node_manager_fkie: reverted url changes
+* fixed warnings in API documentation
+* node_manager_fkie: fixed url handling in host control
+* Contributors: Alexander Tiderko
+
 0.7.2 (2017-01-27)
 ------------------
 * node_manager_fkie: added a parameter to hide domain suffix in description panel and node tree view
