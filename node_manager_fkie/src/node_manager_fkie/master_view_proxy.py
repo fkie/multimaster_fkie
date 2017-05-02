@@ -1201,7 +1201,8 @@ class MasterViewProxy(QWidget):
         return result
 
     def on_tab_current_changed(self, index):
-        if self.masterTab.tabWidget.tabText(index) == 'Topics':
+        tab_name = self.masterTab.tabWidget.tabText(index).replace('&', '')
+        if tab_name == 'Topics':
             # select the topics of the selected node in the "Topic" view
             selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
@@ -1210,7 +1211,7 @@ class MasterViewProxy(QWidget):
                 selected_topics = self.topic_model.index_from_names(node.published, node.subscribed)
                 for s in selected_topics:
                     self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
-        elif self.masterTab.tabWidget.tabText(index) == 'Services':
+        elif tab_name == 'Services':
             # select the services of the selected node in the "Services" view
             selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
@@ -1219,6 +1220,9 @@ class MasterViewProxy(QWidget):
                 selected_services = self.service_model.index_from_names(node.services)
                 for s in selected_services:
                     self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
+
+    def _is_current_tab_name(self, tab_name):
+        return (self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()).replace('&', '') == tab_name)
 
     def on_node_selection_changed(self, selected, deselected, force_emit=False, node_name=''):
         '''
@@ -1240,7 +1244,7 @@ class MasterViewProxy(QWidget):
             selections = []
         else:
             # get node by selected items
-            if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
+            if not self._is_current_tab_name('Nodes'):
                 return
             selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
             selectedHosts = self.hostsFromIndexes(selections)
@@ -1287,8 +1291,7 @@ class MasterViewProxy(QWidget):
             node = selectedNodes[0]
             text = self.get_node_description(node_name, node)
             name = node.name
-        current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
-        if (current_tab == 'Nodes' and self.__last_info_text != text) or force_emit:
+        if (self._is_current_tab_name('Nodes') and self.__last_info_text != text) or force_emit:
             self.__last_info_text = text
             self.description_signal.emit(name, text, True if selected or deselected or force_emit else False)
         self.updateButtons()
@@ -1379,7 +1382,7 @@ class MasterViewProxy(QWidget):
             if len(selectedTopics) == 0:
                 return
         else:
-            if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Topics':
+            if not self._is_current_tab_name('Topics'):
                 return
             selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
             topics_selected = (len(selectedTopics) > 0)
@@ -1391,8 +1394,7 @@ class MasterViewProxy(QWidget):
             topic = selectedTopics[0]
             text = self.get_topic_description(topic_name, topic)
             info_text = '<div>%s</div>' % text
-            current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
-            if (current_tab == 'Topics' and self.__last_info_text != info_text) or force_emit:
+            if (self._is_current_tab_name('Topics') and self.__last_info_text != info_text) or force_emit:
                 self.__last_info_text = info_text
                 self.description_signal.emit(topic.name, info_text, True if selected or deselected or force_emit else False)
 
@@ -1487,7 +1489,7 @@ class MasterViewProxy(QWidget):
             # get service by selected items
             selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
             self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
-            if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Services':
+            if not self._is_current_tab_name('Services'):
                 return
         if len(selectedServices) == 1:
             service = selectedServices[0]
@@ -1515,8 +1517,8 @@ class MasterViewProxy(QWidget):
                 else:
                     text += '<font color=red>Try to refresh <b>all</b> hosts. Is provider node running?</font>'
             info_text = '<div>%s</div>' % text
-            current_tab = self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex())
-            if (current_tab == 'Services' and self.__last_info_text != info_text) or force_emit:
+            self._is_current_tab_name('Services')
+            if (self._is_current_tab_name('Services') and self.__last_info_text != info_text) or force_emit:
                 self.__last_info_text = info_text
                 self.description_signal.emit(service.name, info_text, True if selected or deselected or force_emit else False)
 
@@ -2911,7 +2913,7 @@ class MasterViewProxy(QWidget):
             node.append_diagnostic_status(diagnostic_status)
         if nodes:
             # get node by selected items
-            if self.masterTab.tabWidget.tabText(self.masterTab.tabWidget.currentIndex()) != 'Nodes':
+            if self._is_current_tab_name('Nodes'):
                 return
             selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
