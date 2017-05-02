@@ -249,23 +249,10 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
     if has_interface:  # read the parameter from the sync interface data
         if param in data and data[param]:
             for item in data[param]:
-                if isinstance(item, dict):
-                    # this are mastername specific remapings
-                    if mastername and mastername in item:
-                        if isinstance(item[mastername], list):
-                            def_list[len(def_list):] = item[mastername]
-                        else:
-                            def_list.append(item[mastername])
-                elif isinstance(item, list):
-                    def_list[len(def_list):] = item
-                else:
-                    def_list.append(item)
+                _parse_value(item, mastername, def_list)
     else:  # reads the patterns from the ROS parameter server
         rp = rospy.get_param('~%s' % param, [])
-        if isinstance(rp, list):
-            def_list[len(def_list):] = rp
-        else:
-            def_list.append(rp)
+        _parse_value(rp, mastername, def_list)
         # reads the mastername specific parameters
         if mastername:
             rph = rospy.get_param('~%s' % roslib.names.ns_join(mastername, param), [])
@@ -275,6 +262,29 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
                 def_list.append(rph)
     def_list = list(set(def_list))
     return gen_pattern(def_list, param)
+
+
+def _parse_value(value, mastername, def_list):
+    if isinstance(value, dict):
+        # this are mastername specific remapings
+        if mastername and mastername in value:
+            if isinstance(value[mastername], list):
+                def_list[len(def_list):] = value[mastername]
+            else:
+                def_list.append(value[mastername])
+    elif isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                # this are mastername specific remapings
+                if mastername and mastername in item:
+                    if isinstance(item[mastername], list):
+                        def_list[len(def_list):] = item[mastername]
+                    else:
+                        def_list.append(item[mastername])
+            else:
+                def_list.append(item)
+    else:
+        def_list.append(value)
 
 
 def gen_pattern(filter_list, name, print_info=True):
