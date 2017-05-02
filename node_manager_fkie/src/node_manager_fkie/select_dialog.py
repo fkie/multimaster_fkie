@@ -272,7 +272,7 @@ class MainBox(QWidget):
             item = self.layout().itemAt(i).widget()
             if isinstance(item, QCheckBox):
                 if item.isChecked():
-                    result.append(item.text())
+                    result.append(item.text().replace('&', ''))
         return result
 
     def setState(self, state):
