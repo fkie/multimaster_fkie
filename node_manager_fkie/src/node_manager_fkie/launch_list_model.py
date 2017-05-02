@@ -238,7 +238,7 @@ class LaunchListModel(QStandardItemModel):
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
                 text = '%sfile://%s' % (prev, item.path)
-        mimeData.setData('text/plain', text)
+        mimeData.setData('text/plain', str(text))
         return mimeData
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -381,7 +381,7 @@ class LaunchListModel(QStandardItemModel):
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
                 text = '%sfile://%s' % (prev, item.path)
-        mimeData.setData('text/plain', text)
+        mimeData.setData('text/plain', str(text))
         QApplication.clipboard().setMimeData(mimeData)
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
