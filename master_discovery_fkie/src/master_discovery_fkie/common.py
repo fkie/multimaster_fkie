@@ -261,7 +261,7 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
             else:
                 def_list.append(rph)
     def_list = list(set(def_list))
-    return gen_pattern(def_list, param)
+    return gen_pattern(def_list, param, print_info=True, mastername=mastername)
 
 
 def _parse_value(value, mastername, def_list):
@@ -287,9 +287,12 @@ def _parse_value(value, mastername, def_list):
         def_list.append(value)
 
 
-def gen_pattern(filter_list, name, print_info=True):
+def gen_pattern(filter_list, name, print_info=True, mastername=None):
     if print_info:
-        rospy.loginfo("%s: %s", name, str(filter_list))
+        if mastername is not None and mastername:
+            rospy.loginfo("[%s] %s: %s", mastername, name, str(filter_list))
+        else:
+            rospy.loginfo("%s: %s", name, str(filter_list))
     def_list = [''.join(['\A', n.strip().replace('*', '.*'), '\Z']) for n in filter_list]
     if def_list:
         return re.compile('|'.join(def_list), re.I)
