@@ -58,8 +58,8 @@ PKG_NAME = 'node_manager_fkie'
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.7.2"  # git describe --tags --dirty --always
-__date__ = "2017-01-27"  # git log -1 --date=iso
+__version__ = "0.7.4"  # git describe --tags --dirty --always
+__date__ = "2017-05-03"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
