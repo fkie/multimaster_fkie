@@ -2,6 +2,9 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.4 (2017-05-03)
+------------------
+
 0.7.3 (2017-04-24)
 ------------------
 * default_cfg_fkie: fixed problem with "pass_all_args" attribute

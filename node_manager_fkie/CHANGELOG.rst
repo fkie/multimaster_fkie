@@ -2,6 +2,21 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.4 (2017-05-03)
+------------------
+* node_manager_fkie: updated highlightning in sync dialog
+* node_manager_fkie: add tooltip to a filter in echo dialog
+* node_manager_fkie: fixed problems with ampersand.
+  The ampersand is automatically set in QPushButton or QCheckbx by
+  KDEPlatformTheme plugin in Qt5
+  [https://bugs.kde.org/show_bug.cgi?id=337491]
+  A workaroud is to add
+  [Development]
+  AutoCheckAccelerators=false
+  to ~/.config/kdeglobals
+  This fix removes the ampersand manually.
+* Contributors: Alexander Tiderko
+
 0.7.3 (2017-04-24)
 ------------------
 * node_manager_fkie: fix crash on start master_discovery

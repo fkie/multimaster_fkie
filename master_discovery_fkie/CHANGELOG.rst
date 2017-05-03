@@ -2,6 +2,12 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.4 (2017-05-03)
+------------------
+* master_discovery_fkie: improved filter logging
+* fixed read parameter with host filter
+* Contributors: Alexander Tiderko
+
 0.7.3 (2017-04-24)
 ------------------
 * fixed warnings in API documentation
