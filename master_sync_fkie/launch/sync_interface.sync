@@ -1,3 +1,12 @@
+# For ignore/sync nodes, topics or services
+# use follow declaration:
+#{param name}:
+#   - {ros name}
+# or for selected hosts:
+#   - {host name}:
+#     - {ros name}
+# you can use follow wildcard: '*'
+
 # A filter list with patterns. If this pattern merges to a node, 
 # topic or service it will not be synchronized.
 do_not_sync:
