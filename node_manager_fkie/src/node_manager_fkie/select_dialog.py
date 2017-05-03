@@ -40,6 +40,7 @@ except:
 from python_qt_binding.QtGui import QPixmap
 import re
 
+from node_manager_fkie.common import remove_ampersand
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 
 
@@ -272,7 +273,7 @@ class MainBox(QWidget):
             item = self.layout().itemAt(i).widget()
             if isinstance(item, QCheckBox):
                 if item.isChecked():
-                    result.append(item.text().replace('&', ''))
+                    result.append(remove_ampersand(item.text()))
         return result
 
     def setState(self, state):

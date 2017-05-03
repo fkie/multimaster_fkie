@@ -50,7 +50,7 @@ from master_discovery_fkie.common import get_hostname, resolve_url, subdomain
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
-from .common import masteruri_from_ros, package_name
+from .common import masteruri_from_ros, package_name, remove_ampersand
 from .detailed_msg_box import WarningMessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .editor import Editor
@@ -1009,7 +1009,7 @@ class MainWindow(QMainWindow):
                 elif time_dialog.ntpdateRadioButton.isChecked():
                     ntp_host = time_dialog.hostsComboBox.currentText()
                     nm.history().addParamCache('/ntp', ntp_host)
-                    cmd = "%s %s" % (time_dialog.ntpdateRadioButton.text(), ntp_host)
+                    cmd = "%s %s" % (remove_ampersand(time_dialog.ntpdateRadioButton.text()), ntp_host)
                     nm.starter().ntpdate(host, cmd)
 
     def on_refresh_master_clicked(self):

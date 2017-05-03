@@ -43,6 +43,7 @@ import threading
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 from node_manager_fkie.parameter_handler import ParameterHandler
+from node_manager_fkie.common import remove_ampersand
 
 import node_manager_fkie as nm
 try:
@@ -165,7 +166,7 @@ class ParameterDescription(object):
         if isinstance(field, QCheckBox):
             result = repr(field.isChecked())
         elif isinstance(field, QLineEdit):
-            result = field.text()
+            result = remove_ampersand(field.text())
         elif isinstance(field, QComboBox):
             result = field.currentText()
         self.updateValue(result)
@@ -865,7 +866,7 @@ class ParameterDialog(QDialog):
             w = self.sidebar_frame.layout().itemAt(j).widget()
             if isinstance(w, QCheckBox):
                 if w.checkState() == Qt.Checked:
-                    sidebar_list.append((w.text(), True))
+                    sidebar_list.append((remove_ampersand(w.text()), True))
         result_value = self.content.value()
         # add the sidebar results
         if sidebar_name in result_value:

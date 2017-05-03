@@ -12,6 +12,20 @@ except ImportError:
 PACKAGE_CACHE = {}
 
 
+def remove_ampersand(text):
+    '''
+    Removes ampersand (&) from given text. The ampersand is automatically set
+    in QPushButton or QCheckbx by KDEPlatformTheme plugin in Qt5.
+    https://bugs.kde.org/show_bug.cgi?id=337491
+    A workaroud is to add
+    [Development]
+    AutoCheckAccelerators=false
+    to ~/.config/kdeglobals
+    Or remove it manually.
+    '''
+    return text.replace('&', '')
+
+
 def get_ros_home():
     '''
     Returns the ROS HOME depending on ROS distribution API.
