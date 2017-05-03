@@ -156,6 +156,7 @@ class EchoDialog(QDialog):
             self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0', '0.1', '1', '50', '100', '1000'])
             self.combobox_displ_hz.activated[str].connect(self.on_combobox_hz_activated)
             self.combobox_displ_hz.setEditable(True)
+            self.combobox_displ_hz.setToolTip("Set maximum displayed message rate in Hz. 0 disables the limit.")
             hLayout.addWidget(self.combobox_displ_hz)
             displ_hz_label = QLabel('Hz', self)
             hLayout.addWidget(displ_hz_label)
