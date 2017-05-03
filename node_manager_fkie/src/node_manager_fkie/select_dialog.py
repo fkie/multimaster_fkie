@@ -40,7 +40,6 @@ except:
 from python_qt_binding.QtGui import QPixmap
 import re
 
-from node_manager_fkie.common import remove_ampersand
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 
 
@@ -245,10 +244,10 @@ class MainBox(QWidget):
 
     def _on_checkbox_toggled(self):
         if not self.__on_intern_change:
-            l = self.getSelected()
-            if len(l) == 0:
+            sel_count = self.getSelected()
+            if len(sel_count) == 0:
                 self.toggled.emit(Qt.Unchecked)
-            elif len(l) == self.layout().count():
+            elif len(sel_count) == self.layout().count():
                 self.toggled.emit(Qt.Checked)
             else:
                 self.toggled.emit(Qt.PartiallyChecked)
@@ -273,7 +272,7 @@ class MainBox(QWidget):
             item = self.layout().itemAt(i).widget()
             if isinstance(item, QCheckBox):
                 if item.isChecked():
-                    result.append(remove_ampersand(item.text()))
+                    result.append(item.objectName())
         return result
 
     def setState(self, state):
