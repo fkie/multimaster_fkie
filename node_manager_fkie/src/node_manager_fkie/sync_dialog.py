@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
+from python_qt_binding.QtGui import QFont, QIcon, QTextCharFormat
 import os
 import threading
 
@@ -39,6 +39,7 @@ import rospy
 
 from node_manager_fkie.common import is_package
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.editor.yaml_highlighter import YamlHighlighter
 import node_manager_fkie as nm
 
 from .editor import TextEdit
@@ -50,63 +51,25 @@ except:
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 
 
-class SyncHighlighter(QSyntaxHighlighter):
+class SyncHighlighter(YamlHighlighter):
     '''
     Enabled the syntax highlightning for the sync interface.
     '''
 
     def __init__(self, parent=None):
-        QSyntaxHighlighter.__init__(self, parent)
-        self.rules = []
-        self.commentStart = QRegExp("#")
-        self.commentEnd = QRegExp("\n")
-        self.commentFormat = QTextCharFormat()
-        self.commentFormat.setFontItalic(True)
-        self.commentFormat.setForeground(Qt.darkGray)
-        f = QTextCharFormat()
-        r = QRegExp()
-        r.setMinimal(True)
-        f.setFontWeight(QFont.Normal)
-        f.setForeground(Qt.darkBlue)
+        YamlHighlighter.__init__(self, parent)
         tagList = ["\\bignore_hosts\\b", "\\bsync_hosts\\b",
                    "\\bignore_nodes\\b", "\\bsync_nodes\\b",
                    "\\bignore_topics\\b", "\\bignore_publishers\\b",
                    "\\bignore_topics\\b", "\\bsync_topics\\b",
                    "\\bignore_subscribers\\b", "\\bsync_services\\b",
-                   "\\bsync_topics_on_demand\\b", "\\bsync_remote_nodes\\b"]
+                   "\\bsync_topics_on_demand\\b", "\\bsync_remote_nodes\\b",
+                   "\\bignore_services\\b", "\\bdo_not_sync\\b",
+                   "\\bresync_on_reconnect\\b", "\\bresync_on_reconnect_timeout\\b",
+                   ]
         for tag in tagList:
-            r.setPattern(tag)
-            self.rules.append((QRegExp(r), QTextCharFormat(f)))
-
-        f.setForeground(Qt.darkGreen)
-        f.setFontWeight(QFont.Bold)
-        attrList = ["\\b\\*|\\*\\B|\\/\\*"]
-        for attr in attrList:
-            r.setPattern(attr)
-            self.rules.append((QRegExp(r), QTextCharFormat(f)))
-
-#    f.setForeground(Qt.red)
-#    f.setFontWeight(QFont.Bold)
-#    attrList = ["\\s\\*"]
-#    for attr in attrList:
-#      r.setPattern(attr)
-#      self.rules.append((QRegExp(r), QTextCharFormat(f)))
-
-    def highlightBlock(self, text):
-        for pattern, myformat in self.rules:
-            index = pattern.indexIn(text)
-            while index >= 0:
-                length = pattern.matchedLength()
-                self.setFormat(index, length, myformat)
-                index = pattern.indexIn(text, index + length)
-
-        self.setCurrentBlockState(0)
-        startIndex = 0
-        if self.previousBlockState() != 1:
-            startIndex = self.commentStart.indexIn(text)
-            if startIndex >= 0:
-                commentLength = len(text) - startIndex
-                self.setFormat(startIndex, commentLength, self.commentFormat)
+            self.rules.append((self._create_regexp(tag), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp("\\b\\*|\\*\\B|\\/\\*"), self._create_format(Qt.darkGreen, 'bold')))
 
 
 class SyncDialog(QDialog):
