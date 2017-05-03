@@ -122,7 +122,7 @@ class Main(object):
                             master_names = [m.name for m in resp.masters]
                             rospy.loginfo("ROS masters obtained from '%s': %s", service_name, master_names)
                             for m in resp.masters:
-                                if not self._re_ignore_hosts.match(m.name) or self._re_sync_hosts.match(m.name):  # do not sync to the master, if it is in ignore list
+                                if self._can_sync(m.name):  # do not sync to the master, if it is in ignore list or not in filled sync list
                                     masters.append(m.name)
                                 self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri, m.online)
                             for key in set(self.masters.keys()) - set(masters):
@@ -159,8 +159,7 @@ class Main(object):
         try:
             with self.__lock:
                 if (masteruri != self.materuri):
-                    if (is_empty_pattern(self._re_ignore_hosts) or not self._re_ignore_hosts.match(mastername) or
-                            (not is_empty_pattern(self._re_sync_hosts) and self._re_sync_hosts.match(mastername) is not None)):
+                    if self._can_sync(mastername):
                         # do not sync to the master, if it is in ignore list
                         if self.__resync_on_reconnect and mastername in self.masters:
                             self.masters[mastername].set_online(online, self.__resync_on_reconnect_timeout)
@@ -301,3 +300,17 @@ class Main(object):
             import os
             import signal
             os.kill(os.getpid(), signal.SIGKILL)
+
+    def _can_sync(self, mastername):
+        result = False
+        if is_empty_pattern(self._re_ignore_hosts):
+            if is_empty_pattern(self._re_sync_hosts):
+                result = True
+            elif self._re_sync_hosts.match(mastername) is not None:
+                result = True
+        elif self._re_ignore_hosts.match(mastername) is None:
+            result = True
+        elif not is_empty_pattern(self._re_sync_hosts):
+            if self._re_sync_hosts.match(mastername) is not None:
+                result = True
+        return result

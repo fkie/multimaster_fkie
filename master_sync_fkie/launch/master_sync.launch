@@ -5,7 +5,7 @@
     <!-- A configurable period that controls how long the offline-online period [sec] is before the resync kicks in.
      (Since version 0.5.9)-->
     <param name="resync_on_reconnect_timeout" value="0" />
-    <!-- Since version 0.7.3:
+    <!-- Since version 0.7.4:
       For all sync_* and ignore_* parameter you can use follow structure to define filter for specific hosts:
       <rosparam param="sync_topics">
           - hostname:
