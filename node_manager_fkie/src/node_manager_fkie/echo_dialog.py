@@ -422,6 +422,12 @@ class EchoDialog(QDialog):
         if rospy.is_shutdown():
             self.close()
             return
+        if not self.show_only_rate and time.time() - self._last_received_ts > 1:
+            # create a notification about scrapped messages
+            if self._scrapped_msgs_sl > 0:
+                txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>' % self._scrapped_msgs_sl
+                self._scrapped_msgs_sl = 0
+                self.display.append(txt)
         if self.message_count == self.last_printed_count:
             return
         with self.lock:
