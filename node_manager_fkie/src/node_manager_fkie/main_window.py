@@ -483,6 +483,8 @@ class MainWindow(QMainWindow):
             self._finished = True
             print "Mainwindow finish..."
             self._stop_updating()
+            for _, editor in self.editor_dialogs.items():
+                editor.close()
             for _, master in self.masters.iteritems():
                 master.stop()
             print "Mainwindow finished!"
@@ -1655,7 +1657,7 @@ class MainWindow(QMainWindow):
                     del self.editor_dialogs[path]
                     self.on_launch_edit(files, search_text, 2)
             else:
-                editor = Editor(files, search_text, self)
+                editor = Editor(files, search_text)
                 self.editor_dialogs[path] = editor
                 editor.finished_signal.connect(self._editor_dialog_closed)
                 editor.show()
