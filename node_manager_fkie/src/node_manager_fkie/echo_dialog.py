@@ -129,6 +129,7 @@ class EchoDialog(QDialog):
         self.line_limit = self.MESSAGE_LINE_LIMIT
 
         self.field_filter_fn = None
+        self._latched = False
 
         options = QWidget(self)
         if not show_only_rate:
@@ -233,6 +234,7 @@ class EchoDialog(QDialog):
         self.print_hz_timer = QTimer()
         self.print_hz_timer.timeout.connect(self._on_calc_hz)
         self.print_hz_timer.start(1000)
+        self._start_time = time.time()
 
 #    print "======== create", self.objectName()
 #
@@ -318,6 +320,7 @@ class EchoDialog(QDialog):
             if self.sub is None and self.ssh_output_file is None:
                 if self.__msg_class:
                     self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
+                    self._start_time = time.time()
                 else:
                     self._on_display_anchorClicked(QUrl(self._masteruri))
                 self.topic_control_button.setText('stop')
@@ -346,11 +349,12 @@ class EchoDialog(QDialog):
         @param msg: the text to add to the dialog
         @type msg: message object
         '''
+        self._latched = latched
         current_time = time.time()
         self._count_messages(current_time)
         # skip messages, if they are received often then MESSAGE_HZ_LIMIT
         if self._last_received_ts != 0 and self.receiving_hz != 0:
-            if not latched and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
+            if (latched and current_time - self._start_time > 3.0) and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
                 self._scrapped_msgs += 1
                 self._scrapped_msgs_sl += 1
                 return
@@ -451,7 +455,10 @@ class EchoDialog(QDialog):
                 self.display.append(self._rate_message)
 
     def _print_status(self):
-        self.status_label.setText('%s messages   %s' % (self.message_count, self._rate_message))
+        text = '%s messages   %s' % (self.message_count, self._rate_message)
+        if self._latched:
+            text = "[latched] %s" % text
+        self.status_label.setText(text)
 
     def _append_text(self, text):
         '''
