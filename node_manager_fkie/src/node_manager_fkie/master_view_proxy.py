@@ -342,10 +342,10 @@ class MasterViewProxy(QWidget):
         self._shortcut_stop = QShortcut(QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
         self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
-        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
-        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
-        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
-        self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
+#        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
+#        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
+#        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
+#        self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
 
 #    print "================ create", self.objectName()
 #
