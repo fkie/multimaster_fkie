@@ -1910,13 +1910,13 @@ class MainWindow(QMainWindow):
     def on_description_anchorClicked(self, url):
         self._accept_next_update = True
         if url.toString().startswith('open-sync-dialog://'):
-            self.on_sync_dialog_released(False, self._url_path(url).replace('open-sync-dialog', 'http'), True)
+            self.on_sync_dialog_released(False, url.toString().replace('open-sync-dialog', 'http'), True)
         elif url.toString().startswith('show-all-screens://'):
-            master = self.getMaster(self._url_path(url).replace('show-all-screens', 'http'), False)
+            master = self.getMaster(url.toString().replace('show-all-screens', 'http'), False)
             if master is not None:
                 master.on_show_all_screens()
         elif url.toString().startswith('remove-all-launch-server://'):
-            master = self.getMaster(self._url_path(url).replace('remove-all-launch-server', 'http'), False)
+            master = self.getMaster(url.toString().replace('remove-all-launch-server', 'http'), False)
             if master is not None:
                 master.on_remove_all_launch_server()
         elif url.toString().startswith('node://'):
