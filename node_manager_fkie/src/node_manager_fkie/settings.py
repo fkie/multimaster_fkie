@@ -83,7 +83,13 @@ class Settings(object):
     # set the cwd to the package of the node_manager_fkie to support the images
     # in HTML descriptions of the robots and capabilities
     PKG_NAME = 'node_manager_fkie'
-    PACKAGE_DIR = roslib.packages.get_pkg_dir(PKG_NAME)
+    try:
+        PACKAGE_DIR = roslib.packages.get_pkg_dir(PKG_NAME)
+    except Exception:
+        PACKAGE_DIR = "%s/../.." % os.path.realpath(os.path.dirname(__file__))
+        if "dist-packages" in __file__:
+            PACKAGE_DIR = "%s/../../share/node_manager_fkie" % PACKAGE_DIR
+        print("PACKAGE_DIR: %s" % PACKAGE_DIR)
     ROBOTS_DIR = os.path.join(PACKAGE_DIR, 'images')
     CFG_PATH = os.path.join('.node_manager', os.sep)
     '''@ivar: configuration path to store the history.'''
@@ -111,8 +117,8 @@ class Settings(object):
     TIMEOUT_CONTROL = 5
     TIMEOUT_UPDATES = 20
 
-    SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.sync', '.test', '.xml']
-    LAUNCH_VIEW_EXT = ['.yaml', '.conf', '.cfg', '.iface', '.sync', '.test']
+    SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml']
+    LAUNCH_VIEW_EXT = ['.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test']
 
     STORE_GEOMETRY = True
     AUTOUPDATE = True

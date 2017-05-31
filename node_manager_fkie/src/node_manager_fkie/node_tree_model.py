@@ -699,7 +699,7 @@ class HostItem(GroupItem):
     @property
     def mastername(self):
         result = nm.nameres().mastername(self._masteruri, self._host)
-        if not result:
+        if result is None or not result:
             result = self.hostname
         return result
 
@@ -849,6 +849,8 @@ class NodeItem(QStandardItem):
 #                  'default_cfg' : QIcon(':/icons/default_cfg.png')
 #                  }
         self._cfgs = []
+        self.launched_cfg = None  # is used to store the last configuration to launch the node
+        self.next_start_cfg = None  # is used to set the configuration for next start of the node
         self._std_config = None  # it's config with empty name. for default proposals
         self._is_ghost = False
         self._has_running = False

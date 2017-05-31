@@ -394,9 +394,10 @@ class StartHandler(object):
             # multi-call objects are not reusable
             socket.setdefaulttimeout(6 + len(params))
             param_server_multi = xmlrpclib.MultiCall(param_server)
+            address = nm.nameres().address(masteruri)
             for p in params.itervalues():
                 # suppressing this as it causes too much spam
-                value, is_abs_path, found, package = cls._resolve_abs_paths(p.value, nm.nameres().address(masteruri), user, pw, auto_pw_request)
+                value, is_abs_path, found, package = cls._resolve_abs_paths(p.value, address, user, pw, auto_pw_request)
                 if is_abs_path:
                     abs_paths.append((p.key, p.value, value))
                     if not found and package:

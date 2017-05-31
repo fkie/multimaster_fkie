@@ -341,7 +341,7 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "INFO"))
     except Exception as err:
-        print "Error while set the log level: %s\n->INFO level will be used!" % err
+        print("Error while set the log level: %s\n->INFO level will be used!" % err)
         log_level = rospy.INFO
     rospy.init_node(prog_name, anonymous=False, log_level=log_level)
     set_terminal_name(prog_name)

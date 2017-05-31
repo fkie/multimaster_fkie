@@ -220,16 +220,18 @@ class NameResolution(object):
 
     def _validate_mastername(self, mastername, masteruri):
         '''
-        Not thead safe
+        Not thread safe
         '''
         mm = self.masteruri(mastername)
         if mm and mm != masteruri:
             nr = 2
             new_name = '%s_%d' % (mastername, nr)
+            mm = self.masteruri(new_name)
             while mm and mm != masteruri:
-                new_name = '%s_%d' % (mastername, nr)
                 nr = nr + 1
-            rospy.logwarn("master name '%s' is already assigned to '%s', rename to '%s'"(mastername, mm, new_name))
+                new_name = '%s_%d' % (mastername, nr)
+                mm = self.masteruri(new_name)
+            rospy.logwarn("master name '%s' is already assigned to '%s', rename to '%s'" % (mastername, mm, new_name))
             return new_name
         return mastername
 
@@ -249,7 +251,7 @@ class NameResolution(object):
                             return m.get_mastername()
                     else:
                         return m.get_mastername()
-            return None
+            return get_hostname(masteruri)
 
     def masternames(self, masteruri):
         with self.mutex:
@@ -285,7 +287,7 @@ class NameResolution(object):
             for m in self._masters:
                 if m.masteruri == masteruri or m.has_mastername(masteruri):
                     return m.get_address()
-            return None
+            return get_hostname(masteruri)
 
     def addresses(self, masteruri):
         with self.mutex:

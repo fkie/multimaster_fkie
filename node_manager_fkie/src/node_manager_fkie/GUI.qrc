@@ -25,6 +25,9 @@
     <file>icons/crystal_clear_miscellaneous.png</file>
     <file>icons/crystal_clear_not_sync.png</file>
     <file>icons/crystal_clear_package.png</file>
+    <file>icons/crystal_clear_profile_new.png</file>
+    <file>icons/crystal_clear_profile_recent.png</file>
+    <file>icons/crystal_clear_profile.png</file>
     <file>icons/crystal_clear_prop_run.png</file>
     <file>icons/crystal_clear_prop_run_echo.png</file>
     <file>icons/crystal_clear_reload.png</file>

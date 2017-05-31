@@ -110,6 +110,7 @@ class MainWindow(QMainWindow):
         '''
         QMainWindow.__init__(self)
         self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
+        self.default_profile_load = os.path.isfile(self.default_load_launch) and self.default_load_launch.endswith('.nmprofile')
         restricted_to_one_master = False
         self._finished = False
         self._history_selected_robot = ''
@@ -162,6 +163,7 @@ class MainWindow(QMainWindow):
         # setup the launch files view
         self.launch_dock = LaunchFilesWidget(self)
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
+        self.launch_dock.load_profile_signal.connect(self.on_load_profile_file)
         self.launch_dock.load_as_default_signal.connect(self.on_load_launch_as_default)
         self.launch_dock.edit_signal.connect(self.on_launch_edit)
         self.launch_dock.transfer_signal.connect(self.on_launch_transfer)
@@ -503,6 +505,10 @@ class MainWindow(QMainWindow):
             nm.is_local(get_hostname(self.materuri))
         return self.materuri
 
+    def setMasterOnline(self, masteruri, online=True):
+        if masteruri in self.masters:
+            self.masters[masteruri].online = online
+
     def removeMaster(self, masteruri):
         '''
         Removed master with given master URI from the list.
@@ -521,6 +527,7 @@ class MainWindow(QMainWindow):
             self.masters[masteruri].request_xml_editor.disconnect()
             self.masters[masteruri].stop_nodes_signal.disconnect()
             self.masters[masteruri].robot_icon_updated.disconnect()
+            self.masters[masteruri].save_profile_signal.disconnect()
             if DIAGNOSTICS_AVAILABLE:
                 self.diagnostics_signal.disconnect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.removeWidget(self.masters[masteruri])
@@ -548,6 +555,7 @@ class MainWindow(QMainWindow):
             self.masters[masteruri].request_xml_editor.connect(self.on_launch_edit)
             self.masters[masteruri].stop_nodes_signal.connect(self.on_stop_nodes)
             self.masters[masteruri].robot_icon_updated.connect(self._on_robot_icon_changed)
+            self.masters[masteruri].save_profile_signal.connect(self.on_save_profile)
             if DIAGNOSTICS_AVAILABLE:
                 self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.addWidget(self.masters[masteruri])
@@ -555,21 +563,22 @@ class MainWindow(QMainWindow):
                 if self.default_load_launch:
                     try:
                         if os.path.isfile(self.default_load_launch):
-                            args = list()
-                            args.append('_package:=%s' % (package_name(os.path.dirname(self.default_load_launch))[0]))
-                            args.append('_launch_file:="%s"' % os.path.basename(self.default_load_launch))
-                            host = '%s' % nm.nameres().address(masteruri)
-                            node_name = roslib.names.SEP.join(['%s' % (nm.nameres().masteruri2name(masteruri)),
-                                                               os.path.basename(self.default_load_launch).replace('.launch', ''),
-                                                               'default_cfg'])
-                            self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-                                                                      'start default config @%s' % host,
-                                                                      nm.starter().runNodeWithoutConfig,
-                                                                      ('%s' % (nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
-                                                                       'default_cfg', node_name,
-                                                                       args, masteruri, False,
-                                                                       self.masters[masteruri].current_user))
-                            self.launch_dock.progress_queue.start()
+                            if self.default_load_launch.endswith('.launch'):
+                                args = list()
+                                args.append('_package:=%s' % (package_name(os.path.dirname(self.default_load_launch))[0]))
+                                args.append('_launch_file:="%s"' % os.path.basename(self.default_load_launch))
+                                host = '%s' % nm.nameres().address(masteruri)
+                                node_name = roslib.names.SEP.join(['%s' % (nm.nameres().masteruri2name(masteruri)),
+                                                                   os.path.basename(self.default_load_launch).replace('.launch', ''),
+                                                                   'default_cfg'])
+                                self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
+                                                                          'start default config @%s' % host,
+                                                                          nm.starter().runNodeWithoutConfig,
+                                                                          ('%s' % (nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
+                                                                           'default_cfg', node_name,
+                                                                           args, masteruri, False,
+                                                                           self.masters[masteruri].current_user))
+                                self.launch_dock.progress_queue.start()
                     except Exception as e:
                         WarningMessageBox(QMessageBox.Warning, "Load default configuration",
                                           'Load default configuration %s failed!' % self.default_load_launch,
@@ -639,7 +648,7 @@ class MainWindow(QMainWindow):
                     else:
                         if master.master_state is not None:
                             self.master_model.removeMaster(master.master_state.name)
-                        self.removeMaster(uri)
+                        #self.removeMaster(uri)
             else:
                 try:
                     # determine the ROS network ID
@@ -712,7 +721,8 @@ class MainWindow(QMainWindow):
                 if not (nm.is_local(get_hostname(uri)) or uri == self.getMasteruri()):
                     if master.master_state is not None:
                         self.master_model.removeMaster(master.master_state.name)
-                    self.removeMaster(uri)
+                    self.setMasterOnline(uri, False)
+                    # self.removeMaster(uri)
         # add or update master
         for m in master_list:
             if m.uri is not None:
@@ -721,6 +731,7 @@ class MainWindow(QMainWindow):
                 m.name = nm.nameres().mastername(m.uri)
                 master = self.getMaster(m.uri)
                 master.master_state = m
+                master.online = True
                 master.force_next_update()
                 self._assigne_icon(m.name)
                 self.master_model.updateMaster(m)
@@ -773,7 +784,8 @@ class MainWindow(QMainWindow):
             else:
                 nm.nameres().remove_master_entry(msg.master.uri)
                 self.master_model.removeMaster(msg.master.name)
-                self.removeMaster(msg.master.uri)
+                self.setMasterOnline(msg.master.uri, False)
+#                self.removeMaster(msg.master.uri)
         # start master_sync, if it was selected in the start dialog to start with master_dsicovery
         if self._syncs_to_start:
             if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
@@ -851,6 +863,9 @@ class MainWindow(QMainWindow):
                         # update the list view, whether master is synchronized or not
                         if master.master_info.masteruri == minfo.masteruri:
                             self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
+                            if self.default_profile_load:
+                                self.default_profile_load = False
+                                QTimer.singleShot(2000, self._load_default_profile_slot)
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception, e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, str(e))
@@ -865,6 +880,10 @@ class MainWindow(QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_m = cputimes_m[0] + cputimes_m[1] - cputime_init_m
 #    print "ALL:", cputime_m
+
+    def _load_default_profile_slot(self):
+        if not hasattr(self, "_on_finish"):
+            self.on_load_profile_file(self.default_load_launch)
 
     def on_master_errors_retrieved(self, masteruri, error_list):
         self.master_model.updateMasterErrors(nm.nameres().mastername(masteruri), error_list)
@@ -1563,17 +1582,103 @@ class MainWindow(QMainWindow):
 # Handling of the launch view signals
 # ======================================================================================================================
 
-    def on_load_launch_file(self, path):
+    def get_param(self, param, masteruri):
+        if masteruri:
+            try:
+                master = rospy.msproxy.MasterProxy(masteruri)
+                return master[param]  # MasterProxy does all the magic for us
+            except KeyError:
+                return {}
+
+    def delete_param(self, param, masteruri):
+        if masteruri:
+            try:
+                master = rospy.msproxy.MasterProxy(masteruri)
+                del master[param]  # MasterProxy does all the magic for us
+            except Exception:
+                pass
+
+    def on_save_profile(self, path, masteruri=''):
+        '''
+        Saves the current environment to a node manager profile.
+        :param path: the pach the file to save
+        :type path: str
+        :param masteruri: If not empty, save the profile only for given master
+        :type masteruri: str
+        '''
+        try:
+            import yaml
+            content = {}
+            for muri, master in self.masters.items():
+                if not masteruri or masteruri == muri:
+                    running_nodes = master.getRunningNodesIfLocal()
+                    configs = {}
+                    md_param = {}
+                    ms_param = {}
+                    zc_param = {}
+                    for node_name in running_nodes.keys():
+                        node_items = master.getNode(node_name)
+                        for node in node_items:
+                            if node.is_running() and node.launched_cfg is not None:  # node.has_launch_cfgs(node.cfgs):
+                                cfg = node.launched_cfg
+                                if isinstance(node.launched_cfg, (str, unicode)):
+                                    # it is default config
+                                    pass
+                                else:
+                                    # it is a loaded launch file, get the filename
+                                    cfg = node.launched_cfg.Filename
+                                if cfg not in configs:
+                                    configs[cfg] = {'nodes': []}
+                                configs[cfg]['nodes'].append(node_name)
+#                                nodes.append(node_name)
+                            elif node_name.endswith('master_discovery'):
+                                md_param = self.get_param('master_discovery', muri)
+                            elif node_name.endswith('master_sync'):
+                                ms_param = self.get_param('master_sync', muri)
+                            elif node_name.endswith('zeroconf'):
+                                zc_param = self.get_param('zeroconf', muri)
+                    # store arguments for launchfiles
+                    for a, b in master.launchfiles.items():
+                        if a not in configs:
+                            configs[a] = {}
+                        configs[a]['argv'] = b.argv
+                    # fill the configuration content for yaml as dictionary
+                    content[muri] = {'mastername': nm.nameres().mastername(master.masteruri, nm.nameres().address(master.masteruri)),
+                                     'address': nm.nameres().address(master.masteruri),
+                                     'configs': configs}
+                    if md_param:
+                        content[muri]['master_discovery'] = md_param
+                    if ms_param:
+                        content[muri]['master_sync'] = ms_param
+                    if zc_param:
+                        content[muri]['zeroconf'] = zc_param
+            text = yaml.dump(content, default_flow_style=False)
+            with open(path, 'w+') as f:
+                f.write(text)
+        except Exception as e:
+            import traceback
+            print traceback.format_exc(3)
+            WarningMessageBox(QMessageBox.Warning, "Save profile Error",
+                              'Error while save profile', str(e)).exec_()
+
+    def on_load_launch_file(self, path, argv=[], masteruri=None):
         '''
         Load the launch file. A ROS master must be selected first.
         :param path: the path of the launch file.
         :type path: str
         '''
-        rospy.loginfo("LOAD launch: %s" % path)
-        master_proxy = self.stackedLayout.currentWidget()
+        if argv:
+            rospy.loginfo("LOAD launch: %s with args: %s" % (path, argv))
+        else:
+            rospy.loginfo("LOAD launch: %s" % path)
+        master_proxy = None
+        if masteruri is not None:
+            master_proxy = self.getMaster(masteruri, False)
+        if master_proxy is None:
+            master_proxy = self.stackedLayout.currentWidget()
         if isinstance(master_proxy, MasterViewProxy):
             try:
-                master_proxy.launchfiles = path
+                master_proxy.launchfiles = (path, argv)
             except Exception, e:
                 import traceback
                 print traceback.format_exc(1)
@@ -1582,6 +1687,103 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.information(self, "Load of launch file",
                                           "Select a master first!",)
+
+    def on_load_profile_file(self, path):
+        '''
+        Load the profile file.
+        :param path: the path of the profile file.
+        :type path: str
+        '''
+        rospy.loginfo("Load profile %s" % path)
+        if path:
+            try:
+                import yaml
+                with open(path, 'r') as f:
+                    # print yaml.load(f.read())
+                    content = yaml.load(f.read())
+                    if not isinstance(content, dict):
+                        raise Exception("Mailformed profile: %s" % os.path.basename(path))
+                    for muri, master_dict in content.items():
+                        master = self.getMaster(muri)
+                        running_nodes = master.getRunningNodesIfLocal()
+                        usr = None
+                        if 'user' in master_dict:
+                            usr = master_dict['user']
+                        nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
+                        hostname = master_dict['address']
+                        if 'master_discovery' in master_dict:
+                            self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'master_discovery', usr, cfg=master_dict['master_discovery'])
+                        if 'master_sync' in master_dict:
+                            self._start_node_from_profile(master, hostname, 'master_sync_fkie', 'master_sync', usr, cfg=master_dict['master_sync'])
+                        if 'zeroconf' in master_dict:
+                            self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'zeroconf', usr, cfg=master_dict['zeroconf'])
+                        try:
+                            do_start = []
+                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '/default_cfg', '/zeroconf'}
+                            configs = master_dict['configs']
+                            for cfg_name, cmdict in configs.items():
+                                reload_launch = True
+                                if 'argv' in cmdict:
+                                    # do we need to load to load/reload launch file
+                                    if cfg_name in master.launchfiles:
+                                        reload_launch = set(master.launchfiles[cfg_name].argv) != set(cmdict['argv'])
+                                    if reload_launch:
+                                        self.launch_dock.load_file(cfg_name, cmdict['argv'], master.masteruri)
+                                if 'nodes' in cmdict:
+                                    force_start = True
+                                    if not reload_launch:
+                                        force_start = False
+                                        do_not_stop.update(set(cmdict['nodes']))
+                                    else:
+                                        do_start.append((reload_launch, cfg_name, cmdict['nodes'], force_start))
+                            # close unused configurations
+                            for lfile in set(master.launchfiles.keys()) - set(configs.keys()):
+                                master._close_cfg(lfile)
+                            master.stop_nodes_by_name(running_nodes.keys(), True, do_not_stop)
+                            for reload_launch, cfg_name, nodes, force_start in do_start:
+                                if reload_launch:
+                                    master.start_nodes_after_load_cfg(cfg_name, list(nodes), force_start)
+                                else:
+                                    master.start_nodes_by_name(list(nodes), master.launchfiles[cfg_name], force_start)
+                        except Exception as ml:
+                            import traceback
+                            print traceback.format_exc(1)
+                            rospy.logwarn("Can not load launch file for %s: %s" % (muri, ml))
+            except Exception as e:
+                import traceback
+                print traceback.format_exc(1)
+                WarningMessageBox(QMessageBox.Warning, "Load profile error",
+                                  'Error while load profile',
+                                  str(e)).exec_()
+
+    def _start_node_from_profile(self, master, hostname, pkg, binary, usr, cfg={}):
+        try:
+            # start master discovery
+            args = []
+            restart = False
+            # test for start or not
+            node = master.getNode("/%s" % binary)
+            if node:
+                param = self.get_param(binary, master.masteruri)
+                if set(param.keys()) == set(cfg.keys()):
+                    for k, v in param.items():
+                        if v != cfg[k]:
+                            restart = True
+                            master.stop_node(node[0], True)
+                            break
+            else:
+                restart = True
+            if restart:
+                self.delete_param(binary, master.masteruri)
+                for pname, pval in cfg.items():
+                    args.append('_%s:=%s' % (pname, pval))
+                self._progress_queue.add2queue(str(uuid.uuid4()),
+                                               'start %s on %s' % (binary, hostname),
+                                               nm.starter().runNodeWithoutConfig,
+                                               (str(hostname), pkg, str(binary), str(binary), args, master.masteruri, False, usr))
+                self._progress_queue.start()
+        except Exception as me:
+            rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, me))
 
     def on_load_launch_as_default(self, path, host=None):
         '''
