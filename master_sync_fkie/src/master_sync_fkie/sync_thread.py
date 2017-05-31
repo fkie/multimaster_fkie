@@ -104,7 +104,7 @@ class SyncThread(object):
         # setup the filter
         self._filter = FilterInterface()
         self._filter.load(self.name,
-                          ['/rosout', rospy.get_name().replace('/', '/*') + '*', self.discoverer_name.replace('/', '/*') + '*', '/*node_manager', '/*zeroconf'], [],
+                          ['/rosout', rospy.get_name(), self.discoverer_name, '/node_manager', '/zeroconf'], [],
                           ['/rosout', '/rosout_agg'], ['/'] if sync_on_demand else [],
                           ['/*get_loggers', '/*set_logger_level'], [],
                           # do not sync the bond message of the nodelets!!
