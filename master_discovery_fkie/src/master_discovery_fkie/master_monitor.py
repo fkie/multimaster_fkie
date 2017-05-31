@@ -285,7 +285,7 @@ class MasterMonitor(object):
                     pid = _succeed(node.getPid(self.ros_node_name))
                 except (Exception, socket.error) as e:
                     with self._lock:
-                        self._limited_log(nodename, "can't get PID: %s" % str(e))
+                        self._limited_log(nodename, "can't get PID: %s" % str(e), level=rospy.DEBUG)
                     master = xmlrpclib.ServerProxy(self.getMasteruri())
                     code, message, new_uri = master.lookupNode(self.ros_node_name, nodename)
                     with self._lock:
@@ -350,7 +350,7 @@ class MasterMonitor(object):
         #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
                 except:
                     with self._lock:
-                        self._limited_log(service, "can't get service type: %s" % traceback.format_exc(), rospy.WARN)
+                        self._limited_log(service, "can't get service type: %s" % traceback.format_exc(), level=rospy.DEBUG)
                     with self._lock:
                         try:
                             del self.__cached_services[service]
