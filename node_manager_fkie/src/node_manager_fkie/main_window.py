@@ -1744,7 +1744,7 @@ class MainWindow(QMainWindow):
                                 if reload_launch:
                                     master.start_nodes_after_load_cfg(cfg_name, list(nodes), force_start)
                                 else:
-                                    master.start_nodes_by_name(list(nodes), master.launchfiles[cfg_name], force_start)
+                                    master.start_nodes_by_name(list(nodes), cfg_name, force_start)
                         except Exception as ml:
                             import traceback
                             print traceback.format_exc(1)

@@ -781,7 +781,7 @@ class MasterViewProxy(QWidget):
 #
 #      print "M:", launchConfig.Roscfg.m
             if launchfile in self._start_nodes_after_load_cfg:
-                self.start_nodes_by_name(self._start_nodes_after_load_cfg[launchfile], launchConfig, True)
+                self.start_nodes_by_name(self._start_nodes_after_load_cfg[launchfile], launchfile, True)
                 del self._start_nodes_after_load_cfg[launchfile]
         except Exception as e:
             err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
@@ -1716,8 +1716,11 @@ class MasterViewProxy(QWidget):
                         return
                 # determine the used configuration
                 if node.next_start_cfg is not None:
-                    cfg_nodes[node.name] = node.next_start_cfg
-                    node.launched_cfg = node.next_start_cfg
+                    lcfg = node.next_start_cfg
+                    if node.next_start_cfg in self.launchfiles:
+                        lcfg = self.launchfiles[node.next_start_cfg]
+                    cfg_nodes[node.name] = lcfg
+                    node.launched_cfg = lcfg
                     node.next_start_cfg = None
                 else:
                     choices = self._getCfgChoises(node)
