@@ -54,28 +54,35 @@ class WarningMessageBox(QMessageBox):
         QMessageBox.__init__(self, icon, title, text, buttons)
         if detailed_text:
             self.setDetailedText(detailed_text)
-            horizontalSpacer = QSpacerItem(480, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
-            layout = self.layout()
-            layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
-
+            self.textEdit = textEdit = self.findChild(QTextEdit)
+            if textEdit is not None:
+                textEdit.setMinimumHeight(0)
+                textEdit.setMaximumHeight(16777215)
+                textEdit.setMinimumWidth(0)
+                textEdit.setMaximumWidth(16777215)
+                textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            # horizontalSpacer = QSpacerItem(480, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
+            # layout = self.layout()
+            # layout.addItem(horizontalSpacer, layout.rowCount(), 0, 1, layout.columnCount())
         if QMessageBox.Abort & buttons:
             self.setEscapeButton(QMessageBox.Abort)
         elif QMessageBox.Ignore & buttons:
             self.setEscapeButton(QMessageBox.Ignore)
         else:
             self.setEscapeButton(buttons)
-
-        self.textEdit = textEdit = self.findChild(QTextEdit)
-        if textEdit is not None:
-            textEdit.setMinimumHeight(0)
-            textEdit.setMaximumHeight(600)
-            textEdit.setMinimumWidth(0)
-            textEdit.setMaximumWidth(600)
-            textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
         self.ignore_all_btn = QPushButton('Don\'t display again')
         self.addButton(self.ignore_all_btn, QMessageBox.HelpRole)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def paintEvent(self, event):
         QMessageBox.paintEvent(self, event)
-        self.ignore_all_btn.setVisible(self.textEdit.isVisible() if self.textEdit else False)
+        if self.textEdit is not None and self.textEdit.isVisible():
+            if not self.ignore_all_btn.isVisible():
+                self.ignore_all_btn.setVisible(True)
+                self.setSizeGripEnabled(True)
+            self.setMaximumHeight(16777215)
+            self.setMaximumWidth(16777215)
+        elif self.textEdit is not None and not self.textEdit.isVisible():
+            if self.ignore_all_btn.isVisible():
+                self.ignore_all_btn.setVisible(False)
+            self.setSizeGripEnabled(False)
