@@ -841,6 +841,8 @@ class MainWindow(QMainWindow):
         if minfo.masteruri in self.masters:
             for _, master in self.masters.items():  # _:=uri
                 try:
+                    if not master.online and master.masteruri != minfo.masteruri:
+                        continue
                     # check for running discovery service
                     new_info = master.master_info is None or master.master_info.timestamp < minfo.timestamp
 #          cputimes = os.times()
