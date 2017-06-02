@@ -386,6 +386,9 @@ class MasterViewProxy(QWidget):
 
     @property
     def online(self):
+        '''
+        The online meens that master is discovered and master_info was received.
+        '''
         return self.__online
 
     @online.setter
