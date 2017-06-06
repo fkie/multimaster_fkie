@@ -1624,7 +1624,7 @@ class MainWindow(QMainWindow):
                     mastername = ''
                     if nm.is_local(addr):
                         smuri = smuri.replace(get_hostname(smuri), '%LOCAL%')
-                        addr = 'localhost'
+                        addr = '%LOCAL%'
                     else:
                         mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
                     for node_name in running_nodes.keys():
@@ -1641,7 +1641,6 @@ class MainWindow(QMainWindow):
                                 if cfg not in configs:
                                     configs[cfg] = {'nodes': []}
                                 configs[cfg]['nodes'].append(node_name)
-#                                nodes.append(node_name)
                             elif node_name.endswith('master_discovery'):
                                 md_param = self.get_param('master_discovery', muri)
                             elif node_name.endswith('master_sync'):
@@ -1715,7 +1714,8 @@ class MainWindow(QMainWindow):
                     if not isinstance(content, dict):
                         raise Exception("Mailformed profile: %s" % os.path.basename(path))
                     for muri, master_dict in content.items():
-                        rmuri = muri.replace('%LOCAL%', get_hostname(self.getMasteruri()))
+                        local_hostname = get_hostname(self.getMasteruri())
+                        rmuri = muri.replace('%LOCAL%', local_hostname)
                         master = self.getMaster(rmuri)
                         running_nodes = master.getRunningNodesIfLocal()
                         usr = None
@@ -1723,7 +1723,7 @@ class MainWindow(QMainWindow):
                             usr = master_dict['user']
                         if master_dict['mastername'] and master_dict['mastername']:
                             nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
-                        hostname = master_dict['address']
+                        hostname = master_dict['address'].replace('%LOCAL%', local_hostname)
                         if 'master_discovery' in master_dict:
                             self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'master_discovery', usr, cfg=master_dict['master_discovery'])
                         if 'master_sync' in master_dict:
@@ -1747,6 +1747,7 @@ class MainWindow(QMainWindow):
                                     if not reload_launch:
                                         force_start = False
                                         do_not_stop.update(set(cmdict['nodes']))
+                                        do_start.append((reload_launch, cfg_name, cmdict['nodes'], force_start))
                                     else:
                                         do_start.append((reload_launch, cfg_name, cmdict['nodes'], force_start))
                             # close unused configurations
