@@ -52,6 +52,7 @@ class WarningMessageBox(QMessageBox):
 
     def __init__(self, icon, title, text, detailed_text="", buttons=QMessageBox.Ok):
         QMessageBox.__init__(self, icon, title, text, buttons)
+        self.textEdit = None
         if detailed_text:
             self.setDetailedText(detailed_text)
             self.textEdit = textEdit = self.findChild(QTextEdit)
@@ -68,21 +69,25 @@ class WarningMessageBox(QMessageBox):
             self.setEscapeButton(QMessageBox.Abort)
         elif QMessageBox.Ignore & buttons:
             self.setEscapeButton(QMessageBox.Ignore)
+        elif QMessageBox.Cancel & buttons:
+            self.setEscapeButton(QMessageBox.Cancel)
         else:
             self.setEscapeButton(buttons)
         self.ignore_all_btn = QPushButton('Don\'t display again')
         self.addButton(self.ignore_all_btn, QMessageBox.HelpRole)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.ignore_all_btn.setVisible(False)
 
     def paintEvent(self, event):
         QMessageBox.paintEvent(self, event)
-        if self.textEdit is not None and self.textEdit.isVisible():
-            if not self.ignore_all_btn.isVisible():
-                self.ignore_all_btn.setVisible(True)
-                self.setSizeGripEnabled(True)
-            self.setMaximumHeight(16777215)
-            self.setMaximumWidth(16777215)
-        elif self.textEdit is not None and not self.textEdit.isVisible():
-            if self.ignore_all_btn.isVisible():
-                self.ignore_all_btn.setVisible(False)
-            self.setSizeGripEnabled(False)
+        if self.textEdit is not None:
+            if self.textEdit.isVisible():
+                if not self.ignore_all_btn.isVisible():
+                    self.ignore_all_btn.setVisible(True)
+                    self.setSizeGripEnabled(True)
+                self.setMaximumHeight(16777215)
+                self.setMaximumWidth(16777215)
+            elif not self.textEdit.isVisible():
+                if self.ignore_all_btn.isVisible():
+                    self.ignore_all_btn.setVisible(False)
+                self.setSizeGripEnabled(False)
