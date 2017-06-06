@@ -954,7 +954,8 @@ class MasterViewProxy(QWidget):
             service = self.__master_info.getService(config_name)
             if service is not None:
                 masteruri = service.masteruri
-        key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri, masteruri)
+        cfg_name = roslib.names.namespace(config_name).rstrip(roslib.names.SEP)
+        key = (cfg_name, service_uri, masteruri)
 #    if self.__configs.has_key(key):
 #      self.node_tree_model.removeConfigNodes(key)
         # add the new config
@@ -967,6 +968,10 @@ class MasterViewProxy(QWidget):
             host_addr = host
         self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
         self.__configs[key] = nodes
+        # start nodes in the queue
+        if cfg_name in self._start_nodes_after_load_cfg:
+            self.start_nodes_by_name(self._start_nodes_after_load_cfg[cfg_name], roslib.names.ns_join(cfg_name, 'run'), True)
+            del self._start_nodes_after_load_cfg[cfg_name]
         self.updateButtons()
 
     def on_default_cfg_descr_retrieved(self, service_uri, config_name, items):
@@ -1800,13 +1805,19 @@ class MasterViewProxy(QWidget):
                 node_items = self.getNode(n)
                 if node_items:
                     node_item = node_items[0]
-                    node_item.addConfig(cfg)
-                    node_item.next_start_cfg = cfg
+#                    node_item.addConfig(cfg)
+                    if isinstance(cfg, tuple):
+                        node_item.next_start_cfg = cfg[0]
+                    else:
+                        node_item.next_start_cfg = cfg
                 elif cfg:
                     node_info = NodeInfo(n, self.masteruri)
                     node_item = NodeItem(node_info)
-                    node_item.addConfig(cfg)
-                    node_item.next_start_cfg = cfg
+#                    node_item.addConfig(cfg)
+                    if isinstance(cfg, tuple):
+                        node_item.next_start_cfg = cfg[0]
+                    else:
+                        node_item.next_start_cfg = cfg
                 if node_item is not None:
                     result.append(node_item)
         self.start_nodes(result, force)

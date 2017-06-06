@@ -93,6 +93,17 @@ def resolve_paths(text):
     return result
 
 
+def to_url(path):
+    '''
+    Searches the package name for given path and create an URL starting with pkg://
+    '''
+    result = path
+    pkg, pth = package_name(os.path.dirname(path))
+    if pkg is not None:
+        result = "pkg://%s%s" % (pkg, path.replace(pth, ''))
+    return result
+
+
 def package_name(path):
     '''
     Returns for given directory a tuple of package name and package path or None values.

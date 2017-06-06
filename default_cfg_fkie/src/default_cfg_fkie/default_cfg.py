@@ -142,7 +142,7 @@ class DefaultCfg(object):
             sys.argv = list(argv)
             # set the global environment to empty namespace
             os.environ[ROS_NAMESPACE] = rospy.names.SEP
-            rospy.set_param('~argv', argv)
+            rospy.set_param('~argv_used', list(set(argv)))
             loader.load(launch_path, self.roscfg, verbose=False, argv=argv)
             # create the list with node names
             for item in self.roscfg.nodes:

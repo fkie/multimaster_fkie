@@ -50,7 +50,7 @@ from master_discovery_fkie.common import get_hostname, resolve_url, subdomain
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
-from .common import masteruri_from_ros, package_name
+from .common import masteruri_from_ros, package_name, to_url
 from .detailed_msg_box import WarningMessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .editor import Editor
@@ -1629,7 +1629,6 @@ class MainWindow(QMainWindow):
                         addr = '$LOCAL$'
                     else:
                         mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
-                    informed_default_cfg = False
                     for node_name in running_nodes.keys():
                         node_items = master.getNode(node_name)
                         for node in node_items:
@@ -1640,7 +1639,7 @@ class MainWindow(QMainWindow):
                                     cfg = node.launched_cfg.replace("/%s" % hostname, '/$LOCAL$').rstrip('/run')
                                 else:
                                     # it is a loaded launch file, get the filename
-                                    cfg = node.launched_cfg.Filename
+                                    cfg = to_url(node.launched_cfg.Filename)
                                 if cfg not in configs:
                                     configs[cfg] = {'nodes': []}
                                 configs[cfg]['nodes'].append(node_name)
@@ -1657,20 +1656,16 @@ class MainWindow(QMainWindow):
                                     configs[nn] = {'nodes': []}
                                 configs[nn]['params'] = self.get_param(node_name, muri)
                                 configs[nn]['default'] = True
-                                # inform user about no support for default configuration
-                                if not informed_default_cfg:
-                                    informed_default_cfg = True
-                                    WarningMessageBox(QMessageBox.Information, "Save profile",
-                                                      'Currently no support to load default_cfg!').exec_()
                     # store arguments for launchfiles
                     for a, b in master.launchfiles.items():
-                        if a not in configs:
-                            if a.endswith('default_cfg/run'):
+                        resolved_a = to_url(a)
+                        if resolved_a not in configs:
+                            if resolved_a.endswith('default_cfg/run'):
                                 pass
                             else:
-                                configs[a] = {}
-                                configs[a]['default'] = False
-                        configs[a]['argv'] = b.argv
+                                configs[resolved_a] = {}
+                                configs[resolved_a]['default'] = False
+                        configs[resolved_a]['argv'] = b.argv
                     # fill the configuration content for yaml as dictionary
                     content[smuri] = {'mastername': mastername,
                                       'address': addr,
@@ -1751,37 +1746,59 @@ class MainWindow(QMainWindow):
                             self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'zeroconf', usr, cfg=master_dict['zeroconf'])
                         try:
                             do_start = []
-                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '/default_cfg', '/zeroconf'}
+                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '*default_cfg', '/zeroconf'}
                             configs = master_dict['configs']
+                            conf_set = set()
                             for cfg_name, cmdict in configs.items():
+                                cfg_name = cfg_name.replace('$LOCAL$', local_hostname)
+                                if cfg_name.startswith("pkg://"):
+                                    cfg_name = os.path.abspath(resolve_url(cfg_name))
+                                conf_set.add(cfg_name)
                                 reload_launch = True
+                                argv = []
+                                is_default = False
                                 if 'default' in cmdict:
                                     if cmdict['default']:
-                                        # on_load_launch_as_default_bypkg(self, pkg, launch_file, master_proxy, args=[], host=None):
-                                        continue
-                                if 'argv' in cmdict:
+                                        # it is a default configuration, test for load or not
+                                        is_default = True
+                                        if 'argv_used' in cmdict['params']:
+                                            argv = cmdict['params']['argv_used']
+                                        if cfg_name in master.default_cfgs:
+                                            reload_launch = False
+                                            if argv:
+                                                params = self.get_param(cfg_name, rmuri)
+                                                if 'argv_used' in params:
+                                                    reload_launch = set(params['argv_used']) != set(argv)
+                                        if reload_launch:
+                                            self.on_load_launch_as_default_bypkg(cmdict['params']['package'], cmdict['params']['launch_file'], master, argv, local_hostname)
+                                        else:
+                                            do_not_stop.add(cfg_name)
+                                elif 'argv' in cmdict:
+                                    if 'argv' in cmdict:
+                                        argv = cmdict['argv']
                                     # do we need to load to load/reload launch file
                                     if cfg_name in master.launchfiles:
-                                        reload_launch = set(master.launchfiles[cfg_name].argv) != set(cmdict['argv'])
-                                    if reload_launch:
-                                        self.launch_dock.load_file(cfg_name, cmdict['argv'], master.masteruri)
+                                        reload_launch = set(master.launchfiles[cfg_name].argv) != set(argv)
+                                if reload_launch:
+                                    self.launch_dock.load_file(cfg_name, argv, master.masteruri)
                                 if 'nodes' in cmdict:
                                     force_start = True
+                                    cfg = cfg_name if not is_default else roslib.names.ns_join(cfg_name, 'run')
                                     if not reload_launch:
                                         force_start = False
                                         do_not_stop.update(set(cmdict['nodes']))
-                                        do_start.append((reload_launch, cfg_name, cmdict['nodes'], force_start))
+                                        do_start.append((reload_launch, cfg, cmdict['nodes'], force_start))
                                     else:
-                                        do_start.append((reload_launch, cfg_name, cmdict['nodes'], force_start))
+                                        do_start.append((reload_launch, cfg, cmdict['nodes'], force_start))
                             # close unused configurations
-                            for lfile in set(master.launchfiles.keys()) - set(configs.keys()):
+                            for lfile in set(master.launchfiles.keys()) - conf_set:
                                 master._close_cfg(lfile)
                             master.stop_nodes_by_name(running_nodes.keys(), True, do_not_stop)
-                            for reload_launch, cfg_name, nodes, force_start in do_start:
+                            for reload_launch, cfg, nodes, force_start in do_start:
                                 if reload_launch:
-                                    master.start_nodes_after_load_cfg(cfg_name, list(nodes), force_start)
+                                    master.start_nodes_after_load_cfg(cfg.rstrip('/run'), list(nodes), force_start)
                                 else:
-                                    master.start_nodes_by_name(list(nodes), cfg_name, force_start)
+                                    master.start_nodes_by_name(list(nodes), cfg, force_start)
                         except Exception as ml:
                             import traceback
                             print traceback.format_exc(1)
@@ -1823,6 +1840,9 @@ class MainWindow(QMainWindow):
             rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, me))
 
     def on_load_launch_as_default_bypkg(self, pkg, launch_file, master_proxy, args=[], host=None):
+        argv = list(args)
+        argv.append('_package:=%s' % pkg)
+        argv.append('_launch_file:="%s"' % launch_file)
         hostname = host if host else nm.nameres().address(master_proxy.masteruri)
         name_file_prefix = launch_file.replace('.launch', '').replace(' ', '_')
         node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
@@ -1832,7 +1852,7 @@ class MainWindow(QMainWindow):
                                                   'start default config %s' % hostname,
                                                   nm.starter().runNodeWithoutConfig,
                                                   ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
-                                                   node_name, args, master_proxy.masteruri, False,
+                                                   node_name, argv, master_proxy.masteruri, False,
                                                    master_proxy.current_user))
         self.launch_dock.progress_queue.start()
 
@@ -2136,7 +2156,7 @@ class MainWindow(QMainWindow):
     def on_start_nodes(self, masteruri, cfg, nodes):
         if masteruri is not None:
             master = self.getMaster(masteruri)
-            master.start_nodes_by_name(nodes, (cfg, ''))
+            master.start_nodes_by_name(nodes, roslib.names.ns_join(cfg, 'run'))
 
     def on_stop_nodes(self, masteruri, nodes):
         if masteruri is not None:
