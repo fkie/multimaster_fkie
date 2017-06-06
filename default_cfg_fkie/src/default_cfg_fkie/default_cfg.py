@@ -103,6 +103,20 @@ class DefaultCfg(object):
         self._pending_starts = set()
         self._pending_starts_last_printed = set()
 
+    def _filter_args(self, argv):
+        afilter = ['__ns:=', '__name:=', '_package:=', '_launch_file:=']
+        result = []
+        for a in argv:
+            in_filter = False
+            for f in afilter:
+                if a.startswith(f):
+                    in_filter = True
+                    break
+            if ':=' not in a or in_filter:
+                continue
+            result.append(a)
+        return result
+
     def load(self, delay_service_creation=0.):
         '''
         Load the launch file configuration
@@ -123,11 +137,12 @@ class DefaultCfg(object):
             self.masteruri = self._masteruri_from_ros()
             self.roscfg = ROSLaunchConfig()
             loader = XmlLoader()
-            argv = [a for a in sys.argv if not a.startswith('__ns:=') and not a.startswith('__name:=')]
+            argv = self._filter_args(sys.argv)
             # remove namespace from sys.argv to avoid load the launchfile info local namespace
-            sys.argv = [a for a in sys.argv if not a.startswith('__ns:=') and not a.startswith('__name:=')]
+            sys.argv = list(argv)
             # set the global environment to empty namespace
             os.environ[ROS_NAMESPACE] = rospy.names.SEP
+            rospy.set_param('~argv', argv)
             loader.load(launch_path, self.roscfg, verbose=False, argv=argv)
             # create the list with node names
             for item in self.roscfg.nodes:
