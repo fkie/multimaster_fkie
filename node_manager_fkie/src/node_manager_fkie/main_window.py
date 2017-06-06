@@ -1619,6 +1619,14 @@ class MainWindow(QMainWindow):
                     md_param = {}
                     ms_param = {}
                     zc_param = {}
+                    smuri = muri
+                    addr = nm.nameres().address(smuri)
+                    mastername = ''
+                    if nm.is_local(addr):
+                        smuri = smuri.replace(get_hostname(smuri), '%LOCAL%')
+                        addr = 'localhost'
+                    else:
+                        mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
                     for node_name in running_nodes.keys():
                         node_items = master.getNode(node_name)
                         for node in node_items:
@@ -1646,15 +1654,15 @@ class MainWindow(QMainWindow):
                             configs[a] = {}
                         configs[a]['argv'] = b.argv
                     # fill the configuration content for yaml as dictionary
-                    content[muri] = {'mastername': nm.nameres().mastername(master.masteruri, nm.nameres().address(master.masteruri)),
-                                     'address': nm.nameres().address(master.masteruri),
-                                     'configs': configs}
+                    content[smuri] = {'mastername': mastername,
+                                      'address': addr,
+                                      'configs': configs}
                     if md_param:
-                        content[muri]['master_discovery'] = md_param
+                        content[smuri]['master_discovery'] = md_param
                     if ms_param:
-                        content[muri]['master_sync'] = ms_param
+                        content[smuri]['master_sync'] = ms_param
                     if zc_param:
-                        content[muri]['zeroconf'] = zc_param
+                        content[smuri]['zeroconf'] = zc_param
             text = yaml.dump(content, default_flow_style=False)
             with open(path, 'w+') as f:
                 f.write(text)
@@ -1707,12 +1715,14 @@ class MainWindow(QMainWindow):
                     if not isinstance(content, dict):
                         raise Exception("Mailformed profile: %s" % os.path.basename(path))
                     for muri, master_dict in content.items():
-                        master = self.getMaster(muri)
+                        rmuri = muri.replace('%LOCAL%', get_hostname(self.getMasteruri()))
+                        master = self.getMaster(rmuri)
                         running_nodes = master.getRunningNodesIfLocal()
                         usr = None
                         if 'user' in master_dict:
                             usr = master_dict['user']
-                        nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
+                        if master_dict['mastername'] and master_dict['mastername']:
+                            nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
                         hostname = master_dict['address']
                         if 'master_discovery' in master_dict:
                             self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'master_discovery', usr, cfg=master_dict['master_discovery'])
