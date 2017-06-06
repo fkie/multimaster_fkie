@@ -1610,6 +1610,7 @@ class MainWindow(QMainWindow):
         :type masteruri: str
         '''
         try:
+            rospy.loginfo("Save profile %s" % path)
             import yaml
             content = {}
             for muri, master in self.masters.items():
@@ -1621,12 +1622,14 @@ class MainWindow(QMainWindow):
                     zc_param = {}
                     smuri = muri
                     addr = nm.nameres().address(smuri)
+                    hostname = get_hostname(smuri)
                     mastername = ''
                     if nm.is_local(addr):
-                        smuri = smuri.replace(get_hostname(smuri), '%LOCAL%')
-                        addr = '%LOCAL%'
+                        smuri = smuri.replace(hostname, '$LOCAL$')
+                        addr = '$LOCAL$'
                     else:
                         mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
+                    informed_default_cfg = False
                     for node_name in running_nodes.keys():
                         node_items = master.getNode(node_name)
                         for node in node_items:
@@ -1634,7 +1637,7 @@ class MainWindow(QMainWindow):
                                 cfg = node.launched_cfg
                                 if isinstance(node.launched_cfg, (str, unicode)):
                                     # it is default config
-                                    pass
+                                    cfg = node.launched_cfg.replace("/%s" % hostname, '/$LOCAL$').rstrip('/run')
                                 else:
                                     # it is a loaded launch file, get the filename
                                     cfg = node.launched_cfg.Filename
@@ -1647,10 +1650,26 @@ class MainWindow(QMainWindow):
                                 ms_param = self.get_param('master_sync', muri)
                             elif node_name.endswith('zeroconf'):
                                 zc_param = self.get_param('zeroconf', muri)
+                            elif node_name.endswith('default_cfg'):
+                                # store parameter for default configuration
+                                nn = node_name.replace("/%s" % hostname, '/$LOCAL$')
+                                if nn not in configs:
+                                    configs[nn] = {'nodes': []}
+                                configs[nn]['params'] = self.get_param(node_name, muri)
+                                configs[nn]['default'] = True
+                                # inform user about no support for default configuration
+                                if not informed_default_cfg:
+                                    informed_default_cfg = True
+                                    WarningMessageBox(QMessageBox.Information, "Save profile",
+                                                      'Currently no support to load default_cfg!').exec_()
                     # store arguments for launchfiles
                     for a, b in master.launchfiles.items():
                         if a not in configs:
-                            configs[a] = {}
+                            if a.endswith('default_cfg/run'):
+                                pass
+                            else:
+                                configs[a] = {}
+                                configs[a]['default'] = False
                         configs[a]['argv'] = b.argv
                     # fill the configuration content for yaml as dictionary
                     content[smuri] = {'mastername': mastername,
@@ -1715,7 +1734,7 @@ class MainWindow(QMainWindow):
                         raise Exception("Mailformed profile: %s" % os.path.basename(path))
                     for muri, master_dict in content.items():
                         local_hostname = get_hostname(self.getMasteruri())
-                        rmuri = muri.replace('%LOCAL%', local_hostname)
+                        rmuri = muri.replace('$LOCAL$', local_hostname)
                         master = self.getMaster(rmuri)
                         running_nodes = master.getRunningNodesIfLocal()
                         usr = None
@@ -1723,7 +1742,7 @@ class MainWindow(QMainWindow):
                             usr = master_dict['user']
                         if master_dict['mastername'] and master_dict['mastername']:
                             nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
-                        hostname = master_dict['address'].replace('%LOCAL%', local_hostname)
+                        hostname = master_dict['address'].replace('$LOCAL$', local_hostname)
                         if 'master_discovery' in master_dict:
                             self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'master_discovery', usr, cfg=master_dict['master_discovery'])
                         if 'master_sync' in master_dict:
@@ -1736,6 +1755,10 @@ class MainWindow(QMainWindow):
                             configs = master_dict['configs']
                             for cfg_name, cmdict in configs.items():
                                 reload_launch = True
+                                if 'default' in cmdict:
+                                    if cmdict['default']:
+                                        # on_load_launch_as_default_bypkg(self, pkg, launch_file, master_proxy, args=[], host=None):
+                                        continue
                                 if 'argv' in cmdict:
                                     # do we need to load to load/reload launch file
                                     if cfg_name in master.launchfiles:
@@ -1798,6 +1821,20 @@ class MainWindow(QMainWindow):
                 self._progress_queue.start()
         except Exception as me:
             rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, me))
+
+    def on_load_launch_as_default_bypkg(self, pkg, launch_file, master_proxy, args=[], host=None):
+        hostname = host if host else nm.nameres().address(master_proxy.masteruri)
+        name_file_prefix = launch_file.replace('.launch', '').replace(' ', '_')
+        node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
+                                           name_file_prefix,
+                                           'default_cfg'])
+        self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
+                                                  'start default config %s' % hostname,
+                                                  nm.starter().runNodeWithoutConfig,
+                                                  ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
+                                                   node_name, args, master_proxy.masteruri, False,
+                                                   master_proxy.current_user))
+        self.launch_dock.progress_queue.start()
 
     def on_load_launch_as_default(self, path, host=None):
         '''
