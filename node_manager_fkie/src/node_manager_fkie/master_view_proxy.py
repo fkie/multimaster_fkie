@@ -1797,16 +1797,16 @@ class MasterViewProxy(QWidget):
         result = []
         if self.master_info is not None:
             for n in nodes:
-                node_item = None
-                if cfg:
+                node_items = self.getNode(n)
+                if node_items:
+                    node_item = node_items[0]
+                    node_item.addConfig(cfg)
+                    node_item.next_start_cfg = cfg
+                elif cfg:
                     node_info = NodeInfo(n, self.masteruri)
                     node_item = NodeItem(node_info)
                     node_item.addConfig(cfg)
                     node_item.next_start_cfg = cfg
-                else:
-                    node_items = self.getNode(n)
-                    if node_items:
-                        node_item = node_items[0]
                 if node_item is not None:
                     result.append(node_item)
         self.start_nodes(result, force)
