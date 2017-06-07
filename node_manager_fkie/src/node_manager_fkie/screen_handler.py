@@ -362,7 +362,13 @@ class ScreenHandler(object):
         @return: the command prefix
         @rtype: C{str}
         '''
-        f = open(cls.getScreenCfgFile(node=node), 'w')
+        filename = cls.getScreenCfgFile(node=node)
+        f = None
+        try:
+            f = open(cls.getScreenCfgFile(node=node), 'w')
+        except Exception:
+            os.makedirs(os.path.dirname(filename))
+            f = open(cls.getScreenCfgFile(node=node), 'w')
         f.write(''.join(["logfile ", cls.getScreenLogFile(node=node), "\n"]))
         f.write("logfile flush 0\n")
         f.write("defscrollback 10000\n")

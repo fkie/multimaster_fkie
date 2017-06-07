@@ -759,7 +759,8 @@ class HostItem(GroupItem):
         tooltip += '<p>'
         tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (str(self.masteruri).replace('http://', ''))
         tooltip += '<p>'
-#    if not nm.is_local(self.address):
+        tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.hostname, self.hostname)
+        tooltip += '<p>'
         tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
         tooltip += '<p>'
         tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % str(self.masteruri).replace('http://', '')

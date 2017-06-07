@@ -1581,6 +1581,25 @@ class MainWindow(QMainWindow):
                               'Error while poweroff %s' % host,
                               '%s' % e).exec_()
 
+    def rosclean(self, host):
+        try:
+            ret = QMessageBox.warning(self, "ROS Node Manager",
+                                            "Do you really want delete all logs on `%s`?" % host,
+                                            QMessageBox.Ok | QMessageBox.Cancel)
+            if ret == QMessageBox.Cancel:
+                return
+            self._progress_queue.add2queue(str(uuid.uuid4()),
+                                           'rosclean `%s`' % host,
+                                           nm.starter().rosclean,
+                                           ('%s' % host,))
+            self._progress_queue.start()
+            self.launch_dock.raise_()
+        except (Exception, nm.StartException), e:
+            rospy.logwarn("Error while rosclean %s: %s", host, str(e))
+            WarningMessageBox(QMessageBox.Warning, "Run error",
+                              'Error while rosclean %s' % host,
+                              '%s' % e).exec_()
+
 # ======================================================================================================================
 # Handling of the launch view signals
 # ======================================================================================================================
@@ -2252,6 +2271,8 @@ class MainWindow(QMainWindow):
             self._reload_globals_at_next_start(self._url_path(url).replace('reload-globals://', ''))
         elif url.toString().startswith('poweroff://'):
             self.poweroff_host(self._url_host(url))
+        elif url.toString().startswith('rosclean://'):
+            self.rosclean(self._url_host(url))
         else:
             QDesktopServices.openUrl(url)
             self._accept_next_update = False
