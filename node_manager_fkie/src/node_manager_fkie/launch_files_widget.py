@@ -330,7 +330,7 @@ class LaunchFilesWidget(QDockWidget):
                     result.append(item)
         return result
 
-    def keyReleaseEvent(self, event):
+    def keyPressEvent(self, event):
         '''
         Defines some of shortcuts for navigation/management in launch
         list view or topics view.
