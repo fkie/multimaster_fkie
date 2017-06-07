@@ -138,7 +138,8 @@ class LaunchFilesWidget(QDockWidget):
                         key_mod = QApplication.keyboardModifiers()
                         if key_mod & Qt.ControlModifier:
                             self.launchlist_model.setPath(os.path.dirname(item.path))
-                        self.load_profile_signal.emit(item.path)
+                        else:
+                            self.load_profile_signal.emit(item.path)
                     elif item.isConfigFile():
                         self.edit_signal.emit([lfile])
             except Exception as e:
