@@ -135,6 +135,9 @@ class LaunchItem(QStandardItem):
                 new_path = os.path.join(os.path.dirname(self.path), value)
                 if not os.path.exists(new_path):
                     os.rename(self.path, new_path)
+                    if self.name != value and self.id in [self.RECENT_FILE, self.RECENT_PROFILE]:
+                        # update in history
+                        nm.settings().launch_history_add(new_path, replace=self.path)
                     self.name = value
                     self.path = new_path
                 else:
@@ -199,14 +202,13 @@ class LaunchListModel(QStandardItemModel):
         self.items = []
         self.DIR_CACHE = {}
         self.currentPath = None
-        self.load_history = self._getLoadHistory()
         self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
         self._setNewList(self._moveUp(None))
         self.__packages = {}
         self._fill_packages_thread = PackagesThread()
 
     def _getRootItems(self):
-        result = list(self.load_history)
+        result = list(nm.settings().launch_history)
         result.extend(self.root_paths)
         return result
 
@@ -327,28 +329,6 @@ class LaunchListModel(QStandardItemModel):
         '''
 #    if self._is_in_ros_packages(path):
         self._setNewList(self._moveDown(path))
-
-    def add2LoadHistory(self, launch_file):
-        try:
-            self.load_history.remove(launch_file)
-        except:
-            pass
-        self.load_history.append(launch_file)
-        try:
-            while len(self.load_history) > nm.settings().launch_history_length:
-                self.load_history.pop(0)
-        except:
-            pass
-        self._storeLoadHistory(self.load_history)
-#    self.reloadCurrentPath() # todo: keep the item selected in list view after the reload the path
-
-    def removeFromLoadHistory(self, launch_file):
-        try:
-            self.load_history.remove(launch_file)
-        except:
-            pass
-        self._storeLoadHistory(self.load_history)
-#    self.reloadCurrentPath() # todo: keep the item selected in list view after the reload the path
 
     def show_packages(self, show):
         if show:
@@ -478,13 +458,13 @@ class LaunchListModel(QStandardItemModel):
         @rtype: C{constants of LaunchItem}
         '''
         if path in self.DIR_CACHE:
-            if path in self.load_history:
+            if path in nm.settings().launch_history:
                 if path.endswith('.nmprofile'):
                     return LaunchItem.RECENT_PROFILE
                 return LaunchItem.RECENT_FILE
             return self.DIR_CACHE[path]
         if os.path.basename(path)[0] != '.':
-            if path in self.load_history:
+            if path in nm.settings().launch_history:
                 if path.endswith('.nmprofile'):
                     self.DIR_CACHE[path] = LaunchItem.RECENT_PROFILE
                     return LaunchItem.RECENT_PROFILE
@@ -586,35 +566,3 @@ class LaunchListModel(QStandardItemModel):
         else:
             self.currentPath = None
         return path, result_list
-
-    def _getLoadHistory(self):
-        '''
-        Read the history of the recently loaded files from the file stored in ROS_HOME path.
-        @return: the list with file names
-        @rtype: C{[str]}
-        '''
-        result = list()
-        historyFile = nm.settings().qsettings(nm.settings().LAUNCH_HISTORY_FILE)
-        size = historyFile.beginReadArray("launch_history")
-        for i in range(size):
-            historyFile.setArrayIndex(i)
-            if i >= nm.settings().launch_history_length:
-                break
-            launch_file = historyFile.value("file")
-            if os.path.isfile(launch_file):
-                result.append(launch_file)
-        historyFile.endArray()
-        return result
-
-    def _storeLoadHistory(self, files):
-        '''
-        Saves the list of recently loaded files to history. The existing history will be replaced!
-        @param files: the list with filenames
-        @type files: C{[str]}
-        '''
-        historyFile = nm.settings().qsettings(nm.settings().LAUNCH_HISTORY_FILE)
-        historyFile.beginWriteArray("launch_history")
-        for i, launch_file in enumerate(files):
-            historyFile.setArrayIndex(i)
-            historyFile.setValue("file", launch_file)
-        historyFile.endArray()

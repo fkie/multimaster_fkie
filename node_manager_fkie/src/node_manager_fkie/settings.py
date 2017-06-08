@@ -198,6 +198,7 @@ class Settings(object):
             self._host_colors[k] = settings.value(k, None)
         settings.endGroup()
         self.init_hosts_color_list()
+        self._launch_history = None  # list with file names
 
     def masteruri(self):
         return self._masteruri
@@ -465,6 +466,78 @@ class Settings(object):
             self._host_colors[host] = color
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('host_colors/%s' % host, color)
+
+    @property
+    def launch_history(self):
+        '''
+        Read the history of the recently loaded files from the file stored in ROS_HOME path.
+        @return: the list with file names
+        @rtype: C{[str]}
+        '''
+        if self._launch_history is not None:
+            return self._launch_history
+        # load history from file, only first time
+        result = list()
+        history_file = self.qsettings(self.LAUNCH_HISTORY_FILE)
+        size = history_file.beginReadArray("launch_history")
+        for i in range(size):
+            history_file.setArrayIndex(i)
+            if i >= self.launch_history_length:
+                break
+            launch_file = history_file.value("file")
+            if os.path.isfile(launch_file):
+                result.append(launch_file)
+        history_file.endArray()
+        self._launch_history = result
+        return self._launch_history
+
+    def launch_history_add(self, path, replace=None):
+        '''
+        Adds a path to the list of recently loaded files.
+        :param path: the path with the file name
+        :type path: str
+        :param replace: the path to replace, e.g. rename
+        :type replace: str
+        '''
+        to_remove = replace
+        if replace is None:
+            to_remove = path
+        if self._launch_history is None:
+            self.launch_history
+        try:
+            self._launch_history.remove(to_remove)
+        except Exception:
+            pass
+        self._launch_history.append(path)
+        while len(self._launch_history) > self.launch_history_length:
+            self._launch_history.pop(0)
+        self._launch_history_save(self._launch_history)
+
+    def launch_history_remove(self, path):
+        '''
+        Removes a path from the list of recently loaded files.
+        :param path: the path with the file name
+        :type path: str
+        '''
+        try:
+            self._launch_history.remove(path)
+            self._launch_history_save(self._launch_history)
+        except Exception:
+            pass
+
+    def _launch_history_save(self, paths):
+        '''
+        Saves the list of recently loaded files to history. The existing history will be replaced!
+        :param paths: the list with filenames
+        :type paths: C{[str]}
+        '''
+        history_file = self.qsettings(self.LAUNCH_HISTORY_FILE)
+        history_file.beginWriteArray("launch_history")
+        for i, launch_file in enumerate(paths):
+            history_file.setArrayIndex(i)
+            history_file.setValue("file", launch_file)
+        history_file.endArray()
+        self._launch_history = list(paths)
 
     def str2bool(self, v):
         if isinstance(v, bool):

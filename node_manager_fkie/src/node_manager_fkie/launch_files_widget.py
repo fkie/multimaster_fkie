@@ -44,6 +44,7 @@ import os
 
 import rospy
 
+import node_manager_fkie as nm
 from .common import package_name  # , masteruri_from_ros
 from .detailed_msg_box import WarningMessageBox
 from .launch_list_model import LaunchListModel, LaunchItem
@@ -125,7 +126,7 @@ class LaunchFilesWidget(QDockWidget):
                 self.searchPackageLine.setText('')
                 if lfile is not None:
                     if item.isLaunchFile():
-                        self.launchlist_model.add2LoadHistory(item.path)
+                        nm.settings().launch_history_add(item.path)
                         key_mod = QApplication.keyboardModifiers()
                         if key_mod & Qt.ShiftModifier:
                             self.load_as_default_signal.emit(item.path, None)
@@ -134,7 +135,7 @@ class LaunchFilesWidget(QDockWidget):
                         else:
                             self.load_signal.emit(item.path, [], None)
                     elif item.isProfileFile():
-                        self.launchlist_model.add2LoadHistory(item.path)
+                        nm.settings().launch_history_add(item.path)
                         key_mod = QApplication.keyboardModifiers()
                         if key_mod & Qt.ControlModifier:
                             self.launchlist_model.setPath(os.path.dirname(item.path))
@@ -246,7 +247,7 @@ class LaunchFilesWidget(QDockWidget):
                                                     "Config files (*.launch);;All files (*)")
         if fileName:
             self.__current_path = os.path.dirname(fileName)
-            self.launchlist_model.add2LoadHistory(fileName)
+            nm.settings().launch_history_add(fileName)
             self.load_signal.emit(fileName, [], None)
 
     def on_transfer_file_clicked(self):
@@ -271,7 +272,7 @@ class LaunchFilesWidget(QDockWidget):
         for item in selected:
             path = self.launchlist_model.expandItem(item.name, item.path, item.id)
             if path is not None:
-                self.launchlist_model.add2LoadHistory(path)
+                nm.settings().launch_history_add(item.path)
                 self.load_signal.emit(path, [], None)
 
     def on_load_as_default_at_host(self):
@@ -295,7 +296,7 @@ class LaunchFilesWidget(QDockWidget):
                         params = dia.getKeywords()
                         host = params['Host']
                         rospy.loginfo("LOAD the launch file on host %s as default: %s" % (host, path))
-                        self.launchlist_model.add2LoadHistory(path)
+                        nm.settings().launch_history_add(path)
                         self.load_as_default_signal.emit(path, host)
                     except Exception, e:
                         WarningMessageBox(QMessageBox.Warning, "Load default config error",
@@ -317,7 +318,7 @@ class LaunchFilesWidget(QDockWidget):
                 path = self.launchlist_model.expandItem(item.name, item.path, item.id)
                 if path is not None:
                     rospy.loginfo("LOAD the launch file as default: %s", path)
-                    self.launchlist_model.add2LoadHistory(path)
+                    nm.settings().launch_history_add(path)
                     self.load_as_default_signal.emit(path, None)
 
     def _launchItemsFromIndexes(self, indexes, recursive=True):
@@ -342,7 +343,7 @@ class LaunchFilesWidget(QDockWidget):
                 selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
                 for item in selected:
                     if item.path in self.launchlist_model.load_history:
-                        self.launchlist_model.removeFromLoadHistory(item.path)
+                        nm.settings().launch_history_remove(item.path)
                         self.launchlist_model.reloadCurrentPath()
             elif not key_mod and event.key() == Qt.Key_F4 and self.editXmlButton.isEnabled():
                 # open selected launch file in xml editor by F4
