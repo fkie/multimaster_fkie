@@ -129,8 +129,8 @@ class MasterViewProxy(QWidget):
     loaded_config = Signal(str, object)
     '''@ivar: the signal is emitted, after a launchfile is successful loaded (launchfile, LaunchConfig)'''
 
-    save_profile_signal = Signal(str, str)
-    '''@ivar: the signal is emitted, to save profile. (file, masteruri) If masteruri is empty, save all masters else only for this master.'''
+    save_profile_signal = Signal(str)
+    '''@ivar: the signal is emitted, to save profile. (masteruri) If masteruri is empty, save all masters else only for this master.'''
 
     DIAGNOSTIC_LEVELS = {0: 'OK',
                          1: 'WARN',
@@ -2330,24 +2330,7 @@ class MasterViewProxy(QWidget):
 
     def on_save_clicked(self):
         # save the profile
-        (fileName, _) = QFileDialog.getSaveFileName(self,
-                                                    "New profile file",
-                                                    nm.settings().current_dialog_path,
-                                                    "node manager profile files (*.nmprofile);;All files (*)")  # _:=filter
-        if fileName:
-            nm.settings().current_dialog_path = os.path.dirname(fileName)
-            try:
-                (pkg, _) = package_name(os.path.dirname(fileName))  # _:=pkg_path
-                if pkg is None:
-                    ret = WarningMessageBox(QMessageBox.Warning, "New File Error",
-                                            'The new file is not in a ROS package', buttons=QMessageBox.Ok | QMessageBox.Cancel).exec_()
-                    if ret == QMessageBox.Cancel:
-                        return
-                self.save_profile_signal.emit(fileName, '')
-            except EnvironmentError as e:
-                WarningMessageBox(QMessageBox.Warning, "New File Error",
-                                  'Error while create a new file',
-                                  str(e)).exec_()
+        self.save_profile_signal.emit('')
 
     def on_close_clicked(self):
         '''

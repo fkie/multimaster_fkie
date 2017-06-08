@@ -62,6 +62,7 @@ from .master_view_proxy import MasterViewProxy
 from .menu_rqt import MenuRqt
 from .network_discovery_dialog import NetworkDiscoveryDialog
 from .parameter_dialog import ParameterDialog
+from .profile_widget import ProfileWidget
 from .progress_queue import ProgressQueue  # , ProgressThread
 from .screen_handler import ScreenHandler
 from .select_dialog import SelectDialog
@@ -152,6 +153,8 @@ class MainWindow(QMainWindow):
         self._set_custom_colors()
 
         # setup settings widget
+        self.profiler = ProfileWidget(self, self)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.profiler)
         self.settings_dock = SettingsWidget(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.settings_dock)
         # setup logger widget
@@ -163,7 +166,7 @@ class MainWindow(QMainWindow):
         # setup the launch files view
         self.launch_dock = LaunchFilesWidget(self)
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
-        self.launch_dock.load_profile_signal.connect(self.on_load_profile_file)
+        self.launch_dock.load_profile_signal.connect(self.profiler.on_load_profile_file)
         self.launch_dock.load_as_default_signal.connect(self.on_load_launch_as_default)
         self.launch_dock.edit_signal.connect(self.on_launch_edit)
         self.launch_dock.transfer_signal.connect(self.on_launch_transfer)
@@ -556,7 +559,7 @@ class MainWindow(QMainWindow):
             self.masters[masteruri].request_xml_editor.connect(self.on_launch_edit)
             self.masters[masteruri].stop_nodes_signal.connect(self.on_stop_nodes)
             self.masters[masteruri].robot_icon_updated.connect(self._on_robot_icon_changed)
-            self.masters[masteruri].save_profile_signal.connect(self.on_save_profile)
+            self.masters[masteruri].save_profile_signal.connect(self.profiler.on_save_profile)
             if DIAGNOSTICS_AVAILABLE:
                 self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.addWidget(self.masters[masteruri])
@@ -880,13 +883,14 @@ class MainWindow(QMainWindow):
                 self.syncButton.setChecked(not self.currentMaster.master_info.getNodeEndsWith('master_sync') is None)
         else:
             self.masterlist_service.retrieveMasterList(minfo.masteruri, False)
+        self.profiler.update_progress()
 #    cputimes_m = os.times()
 #    cputime_m = cputimes_m[0] + cputimes_m[1] - cputime_init_m
 #    print "ALL:", cputime_m
 
     def _load_default_profile_slot(self):
         if not hasattr(self, "_on_finish"):
-            self.on_load_profile_file(self.default_load_launch)
+            self.profiler.on_load_profile_file(self.default_load_launch)
 
     def on_master_errors_retrieved(self, masteruri, error_list):
         self.master_model.updateMasterErrors(nm.nameres().mastername(masteruri), error_list)
@@ -1604,106 +1608,6 @@ class MainWindow(QMainWindow):
 # Handling of the launch view signals
 # ======================================================================================================================
 
-    def get_param(self, param, masteruri):
-        if masteruri:
-            try:
-                master = rospy.msproxy.MasterProxy(masteruri)
-                return master[param]  # MasterProxy does all the magic for us
-            except KeyError:
-                return {}
-
-    def delete_param(self, param, masteruri):
-        if masteruri:
-            try:
-                master = rospy.msproxy.MasterProxy(masteruri)
-                del master[param]  # MasterProxy does all the magic for us
-            except Exception:
-                pass
-
-    def on_save_profile(self, path, masteruri=''):
-        '''
-        Saves the current environment to a node manager profile.
-        :param path: the pach the file to save
-        :type path: str
-        :param masteruri: If not empty, save the profile only for given master
-        :type masteruri: str
-        '''
-        try:
-            rospy.loginfo("Save profile %s" % path)
-            import yaml
-            content = {}
-            for muri, master in self.masters.items():
-                if not masteruri or masteruri == muri:
-                    running_nodes = master.getRunningNodesIfLocal()
-                    configs = {}
-                    md_param = {}
-                    ms_param = {}
-                    zc_param = {}
-                    smuri = muri
-                    addr = nm.nameres().address(smuri)
-                    hostname = get_hostname(smuri)
-                    mastername = ''
-                    if nm.is_local(addr):
-                        smuri = smuri.replace(hostname, '$LOCAL$')
-                        addr = '$LOCAL$'
-                    else:
-                        mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
-                    for node_name in running_nodes.keys():
-                        node_items = master.getNode(node_name)
-                        for node in node_items:
-                            if node.is_running() and node.launched_cfg is not None:  # node.has_launch_cfgs(node.cfgs):
-                                cfg = node.launched_cfg
-                                if isinstance(node.launched_cfg, (str, unicode)):
-                                    # it is default config
-                                    cfg = node.launched_cfg.replace("/%s" % hostname, '/$LOCAL$').rstrip('/run')
-                                else:
-                                    # it is a loaded launch file, get the filename
-                                    cfg = to_url(node.launched_cfg.Filename)
-                                if cfg not in configs:
-                                    configs[cfg] = {'nodes': []}
-                                configs[cfg]['nodes'].append(node_name)
-                            elif node_name.endswith('master_discovery'):
-                                md_param = self.get_param('master_discovery', muri)
-                            elif node_name.endswith('master_sync'):
-                                ms_param = self.get_param('master_sync', muri)
-                            elif node_name.endswith('zeroconf'):
-                                zc_param = self.get_param('zeroconf', muri)
-                            elif node_name.endswith('default_cfg'):
-                                # store parameter for default configuration
-                                nn = node_name.replace("/%s" % hostname, '/$LOCAL$')
-                                if nn not in configs:
-                                    configs[nn] = {'nodes': []}
-                                configs[nn]['params'] = self.get_param(node_name, muri)
-                                configs[nn]['default'] = True
-                    # store arguments for launchfiles
-                    for a, b in master.launchfiles.items():
-                        resolved_a = to_url(a)
-                        if resolved_a not in configs:
-                            if resolved_a.endswith('default_cfg/run'):
-                                pass
-                            else:
-                                configs[resolved_a] = {}
-                                configs[resolved_a]['default'] = False
-                        configs[resolved_a]['argv'] = b.argv
-                    # fill the configuration content for yaml as dictionary
-                    content[smuri] = {'mastername': mastername,
-                                      'address': addr,
-                                      'configs': configs}
-                    if md_param:
-                        content[smuri]['master_discovery'] = md_param
-                    if ms_param:
-                        content[smuri]['master_sync'] = ms_param
-                    if zc_param:
-                        content[smuri]['zeroconf'] = zc_param
-            text = yaml.dump(content, default_flow_style=False)
-            with open(path, 'w+') as f:
-                f.write(text)
-        except Exception as e:
-            import traceback
-            print traceback.format_exc(3)
-            WarningMessageBox(QMessageBox.Warning, "Save profile Error",
-                              'Error while save profile', str(e)).exec_()
-
     def on_load_launch_file(self, path, argv=[], masteruri=None):
         '''
         Load the launch file. A ROS master must be selected first.
@@ -1730,133 +1634,6 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.information(self, "Load of launch file",
                                           "Select a master first!",)
-
-    def on_load_profile_file(self, path):
-        '''
-        Load the profile file.
-        :param path: the path of the profile file.
-        :type path: str
-        '''
-        rospy.loginfo("Load profile %s" % path)
-        if path:
-            try:
-                import yaml
-                with open(path, 'r') as f:
-                    # print yaml.load(f.read())
-                    content = yaml.load(f.read())
-                    if not isinstance(content, dict):
-                        raise Exception("Mailformed profile: %s" % os.path.basename(path))
-                    for muri, master_dict in content.items():
-                        local_hostname = get_hostname(self.getMasteruri())
-                        rmuri = muri.replace('$LOCAL$', local_hostname)
-                        master = self.getMaster(rmuri)
-                        running_nodes = master.getRunningNodesIfLocal()
-                        usr = None
-                        if 'user' in master_dict:
-                            usr = master_dict['user']
-                        if master_dict['mastername'] and master_dict['mastername']:
-                            nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
-                        hostname = master_dict['address'].replace('$LOCAL$', local_hostname)
-                        if 'master_discovery' in master_dict:
-                            self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'master_discovery', usr, cfg=master_dict['master_discovery'])
-                        if 'master_sync' in master_dict:
-                            self._start_node_from_profile(master, hostname, 'master_sync_fkie', 'master_sync', usr, cfg=master_dict['master_sync'])
-                        if 'zeroconf' in master_dict:
-                            self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'zeroconf', usr, cfg=master_dict['zeroconf'])
-                        try:
-                            do_start = []
-                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '*default_cfg', '/zeroconf'}
-                            configs = master_dict['configs']
-                            conf_set = set()
-                            for cfg_name, cmdict in configs.items():
-                                cfg_name = cfg_name.replace('$LOCAL$', local_hostname)
-                                if cfg_name.startswith("pkg://"):
-                                    cfg_name = os.path.abspath(resolve_url(cfg_name))
-                                conf_set.add(cfg_name)
-                                reload_launch = True
-                                argv = []
-                                is_default = False
-                                if 'default' in cmdict:
-                                    if cmdict['default']:
-                                        # it is a default configuration, test for load or not
-                                        is_default = True
-                                        if 'argv_used' in cmdict['params']:
-                                            argv = cmdict['params']['argv_used']
-                                        if cfg_name in master.default_cfgs:
-                                            reload_launch = False
-                                            if argv:
-                                                params = self.get_param(cfg_name, rmuri)
-                                                if 'argv_used' in params:
-                                                    reload_launch = set(params['argv_used']) != set(argv)
-                                        if reload_launch:
-                                            self.on_load_launch_as_default_bypkg(cmdict['params']['package'], cmdict['params']['launch_file'], master, argv, local_hostname)
-                                        else:
-                                            do_not_stop.add(cfg_name)
-                                elif 'argv' in cmdict:
-                                    if 'argv' in cmdict:
-                                        argv = cmdict['argv']
-                                    # do we need to load to load/reload launch file
-                                    if cfg_name in master.launchfiles:
-                                        reload_launch = set(master.launchfiles[cfg_name].argv) != set(argv)
-                                if reload_launch:
-                                    self.launch_dock.load_file(cfg_name, argv, master.masteruri)
-                                if 'nodes' in cmdict:
-                                    force_start = True
-                                    cfg = cfg_name if not is_default else roslib.names.ns_join(cfg_name, 'run')
-                                    if not reload_launch:
-                                        force_start = False
-                                        do_not_stop.update(set(cmdict['nodes']))
-                                        do_start.append((reload_launch, cfg, cmdict['nodes'], force_start))
-                                    else:
-                                        do_start.append((reload_launch, cfg, cmdict['nodes'], force_start))
-                            # close unused configurations
-                            for lfile in set(master.launchfiles.keys()) - conf_set:
-                                master._close_cfg(lfile)
-                            master.stop_nodes_by_name(running_nodes.keys(), True, do_not_stop)
-                            for reload_launch, cfg, nodes, force_start in do_start:
-                                if reload_launch:
-                                    master.start_nodes_after_load_cfg(cfg.rstrip('/run'), list(nodes), force_start)
-                                else:
-                                    master.start_nodes_by_name(list(nodes), cfg, force_start)
-                        except Exception as ml:
-                            import traceback
-                            print traceback.format_exc(1)
-                            rospy.logwarn("Can not load launch file for %s: %s" % (muri, ml))
-            except Exception as e:
-                import traceback
-                print traceback.format_exc(1)
-                WarningMessageBox(QMessageBox.Warning, "Load profile error",
-                                  'Error while load profile',
-                                  str(e)).exec_()
-
-    def _start_node_from_profile(self, master, hostname, pkg, binary, usr, cfg={}):
-        try:
-            # start master discovery
-            args = []
-            restart = False
-            # test for start or not
-            node = master.getNode("/%s" % binary)
-            if node:
-                param = self.get_param(binary, master.masteruri)
-                if set(param.keys()) == set(cfg.keys()):
-                    for k, v in param.items():
-                        if v != cfg[k]:
-                            restart = True
-                            master.stop_node(node[0], True)
-                            break
-            else:
-                restart = True
-            if restart:
-                self.delete_param(binary, master.masteruri)
-                for pname, pval in cfg.items():
-                    args.append('_%s:=%s' % (pname, pval))
-                self._progress_queue.add2queue(str(uuid.uuid4()),
-                                               'start %s on %s' % (binary, hostname),
-                                               nm.starter().runNodeWithoutConfig,
-                                               (str(hostname), pkg, str(binary), str(binary), args, master.masteruri, False, usr))
-                self._progress_queue.start()
-        except Exception as me:
-            rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, me))
 
     def on_load_launch_as_default_bypkg(self, pkg, launch_file, master_proxy, args=[], host=None):
         argv = list(args)

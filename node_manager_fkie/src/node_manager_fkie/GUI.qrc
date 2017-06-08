@@ -102,6 +102,7 @@
     <file>MainWindow.ui</file>
     <file>MasterTab.ui</file>
     <file>PasswordInput.ui</file>
+    <file>ProfileWidget.ui</file>
     <file>SettingsDockWidget.ui</file>
   </qresource>
 </RCC>

@@ -1,4 +1,5 @@
 import os
+import rospy
 
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
@@ -49,6 +50,24 @@ def masteruri_from_ros():
             return rosgraph.rosenv.get_master_uri()
     except:
         return os.environ['ROS_MASTER_URI']
+
+
+def get_rosparam(param, masteruri):
+    if masteruri:
+        try:
+            master = rospy.msproxy.MasterProxy(masteruri)
+            return master[param]  # MasterProxy does all the magic for us
+        except KeyError:
+            return {}
+
+
+def delete_rosparam(param, masteruri):
+    if masteruri:
+        try:
+            master = rospy.msproxy.MasterProxy(masteruri)
+            del master[param]  # MasterProxy does all the magic for us
+        except Exception:
+            pass
 
 
 def get_packages(path):
