@@ -182,7 +182,7 @@ class ProfileWidget(QDockWidget):
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
-        self.setWindowTitle("%s profile loading..." % os.path.basename(path).rstrip('.nmprofile'))
+        self.setWindowTitle("%s profile started" % os.path.basename(path).rstrip('.nmprofile'))
         hasstart = False
         if path:
             try:
@@ -307,6 +307,10 @@ class ProfileWidget(QDockWidget):
     def closeEvent(self, event):
         rospy.loginfo("Cancel profile loading...")
         QDockWidget.closeEvent(self, event)
+        ret = WarningMessageBox(QMessageBox.Warning, "Cancel Start?",
+                                'This stops all starting queues!', buttons=QMessageBox.Ok | QMessageBox.Cancel).exec_()
+        if ret == QMessageBox.Cancel:
+            return None
         self._main_window._progress_queue.stop()
         self._main_window.launch_dock.progress_queue.stop()
         for muri, _ in self._current_profile.items():
