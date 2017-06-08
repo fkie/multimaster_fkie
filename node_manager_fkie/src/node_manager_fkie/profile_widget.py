@@ -182,7 +182,7 @@ class ProfileWidget(QDockWidget):
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
-        self.setWindowTitle("Profile - %s" % os.path.basename(path).rstrip('.nmprofile'))
+        self.setWindowTitle("%s profile loading..." % os.path.basename(path).rstrip('.nmprofile'))
         hasstart = False
         if path:
             try:
@@ -303,6 +303,18 @@ class ProfileWidget(QDockWidget):
                     self.setVisible(False)
                 else:
                     self.progressBar.setValue(progress)
+
+    def closeEvent(self, event):
+        rospy.loginfo("Cancel profile loading...")
+        QDockWidget.closeEvent(self, event)
+        self._main_window._progress_queue.stop()
+        self._main_window.launch_dock.progress_queue.stop()
+        for muri, _ in self._current_profile.items():
+            master = self._main_window.getMaster(muri, False)
+            if master is not None:
+                master.start_nodes_after_load_cfg_clear()
+                master._progress_queue.stop()
+        rospy.loginfo("Profile loading canceled!")
 
     def _start_node_from_profile(self, master, hostname, pkg, binary, usr, cfg={}):
         try:

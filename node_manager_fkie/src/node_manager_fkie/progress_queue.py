@@ -63,11 +63,12 @@ class ProgressQueue(QObject):
     The queue provides a threaded execution of given tasks.
     '''
 
-    def __init__(self, progress_frame, progress_bar, progress_cancel_button):
+    def __init__(self, progress_frame, progress_bar, progress_cancel_button, name=''):
         QObject.__init__(self)
         self.__ignore_err_list = []
         self.__progress_queue = []
         self.__running = False
+        self._name = name
         self._progress_frame = progress_frame
         self._progress_bar = progress_bar
         self._progress_cancel_button = progress_cancel_button
@@ -82,13 +83,15 @@ class ProgressQueue(QObject):
         try:
             val = self._progress_bar.value()
             if val < len(self.__progress_queue):
-                print "  Shutdown progress queue..."
+                print "  Stop progress queue '%s'..." % self._name
                 thread = self.__progress_queue[val]
                 self.__progress_queue = []
-                thread.join(3)
-                print "  Progress queue is off!"
-        except:
-            pass
+                if thread.is_alive():
+                    thread.join(3)
+                print "  Progress queue '%s' stopped!" % self._name
+        except Exception:
+            import traceback
+            print traceback.format_exc()
 
     def add2queue(self, ident, descr, target=None, args=()):
         '''

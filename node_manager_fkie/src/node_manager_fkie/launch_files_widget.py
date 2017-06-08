@@ -106,7 +106,7 @@ class LaunchFilesWidget(QDockWidget):
         start_menu.addAction(self.loadDeafaultAtHostAct)
         self.loadXmlAsDefaultButton.setMenu(start_menu)
         # initialize the progress queue
-        self.progress_queue = ProgressQueue(self.progressFrame_cfg, self.progressBar_cfg, self.progressCancelButton_cfg)
+        self.progress_queue = ProgressQueue(self.progressFrame_cfg, self.progressBar_cfg, self.progressCancelButton_cfg, 'Launch File')
 
     def stop(self):
         '''

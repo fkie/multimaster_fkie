@@ -190,8 +190,8 @@ class MainWindow(QMainWindow):
         self.tabLayout.addLayout(self.stackedLayout)
 
         # initialize the progress queue
-        self._progress_queue = ProgressQueue(self.progressFrame, self.progressBar, self.progressCancelButton)
-        self._progress_queue_sync = ProgressQueue(self.progressFrame_sync, self.progressBar_sync, self.progressCancelButton_sync)
+        self._progress_queue = ProgressQueue(self.progressFrame, self.progressBar, self.progressCancelButton, 'Network')
+        self._progress_queue_sync = ProgressQueue(self.progressFrame_sync, self.progressBar_sync, self.progressCancelButton_sync, 'Sync')
 
         # initialize the view for the discovered ROS master
         self.master_model = MasterModel(self.getMasteruri())

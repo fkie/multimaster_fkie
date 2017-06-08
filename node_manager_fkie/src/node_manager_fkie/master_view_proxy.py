@@ -179,7 +179,7 @@ class MasterViewProxy(QWidget):
         self.__last_selection = 0
         self._on_stop_kill_roscore = False
         self._on_stop_poweroff = False
-        self._start_nodes_after_load_cfg = {}
+        self._start_nodes_after_load_cfg = dict()
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self.default_cfg_handler = DefaultConfigHandler()
@@ -198,7 +198,7 @@ class MasterViewProxy(QWidget):
         tabLayout = QVBoxLayout(self)
         tabLayout.setContentsMargins(0, 0, 0, 0)
         tabLayout.addWidget(self.masterTab)
-        self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton)
+        self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton, 'Master - %s' % self.mastername)
 
         # setup the node view
         self.node_tree_model = NodeTreeModel(nm.nameres().address(self.masteruri), self.masteruri)
@@ -1834,6 +1834,12 @@ class MasterViewProxy(QWidget):
             self._start_nodes_after_load_cfg[cfg_name] = set(nodes)
         else:
             self._start_nodes_after_load_cfg[cfg_name].update(set(nodes))
+
+    def start_nodes_after_load_cfg_clear(self):
+        '''
+        Clears the list with nodes which should be startet after a launch file is loaded.
+        '''
+        self._start_nodes_after_load_cfg = dict()
 
     def on_force_start_nodes(self):
         '''
