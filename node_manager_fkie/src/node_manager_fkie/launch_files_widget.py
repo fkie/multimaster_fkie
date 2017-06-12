@@ -342,9 +342,8 @@ class LaunchFilesWidget(QDockWidget):
             if event == QKeySequence.Delete:
                 selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
                 for item in selected:
-                    if item.path in self.launchlist_model.load_history:
-                        nm.settings().launch_history_remove(item.path)
-                        self.launchlist_model.reloadCurrentPath()
+                    nm.settings().launch_history_remove(item.path)
+                    self.launchlist_model.reloadCurrentPath()
             elif not key_mod and event.key() == Qt.Key_F4 and self.editXmlButton.isEnabled():
                 # open selected launch file in xml editor by F4
                 self.on_edit_xml_clicked()
