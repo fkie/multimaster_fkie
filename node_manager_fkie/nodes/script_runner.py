@@ -6,6 +6,7 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 
 import rospy
 
@@ -109,17 +110,28 @@ class RunThread(threading.Thread):
             self._cmd.insert(0, resolved)
         self.setDaemon(True)
         self.spopen = None
+        self.stop = False
 
     def run(self):
         '''
         '''
         try:
             self.spopen = SupervisedPopen(self._cmd)
+            while not self.stop and self.spopen.popen.returncode is None:
+                if self.spopen.popen.stderr is not None:
+                    reserr = self.spopen.popen.stderr.read()
+                    if reserr:
+                        rospy.logwarn("script returns follow exception: %s" % reserr.strip())
+                    time.sleep(0.1)
+            if self.spopen.popen.returncode is not None and self.spopen.popen.returncode != 0:
+                rospy.logerr("Script ends with error, code: %d" % self.spopen.popen.returncode)
+                os.kill(os.getpid(), signal.SIGKILL)
         except OSError as err:
-            rospy.logerr("Error on run %s: %s" % (self._script, err))
+            rospy.logerr("Error while run '%s': %s" % (self._script, err))
             os.kill(os.getpid(), signal.SIGKILL)
 
     def stop(self):
+        self.stop = True
         if self.spopen is not None:
             if self.spopen.popen.pid is not None and self.spopen.popen.returncode is None:
                 rospy.loginfo("stop process %d" % self.spopen.popen.pid)
@@ -131,7 +143,12 @@ if __name__ == '__main__':
     rospy.init_node(name, log_level=rospy.INFO)
     set_terminal_name(name)
     set_process_name(name)
-    param_script = rospy.get_param('~script')
+    param_script = ''
+    try:
+        param_script = rospy.get_param('~script')
+    except KeyError:
+        rospy.logerr("No script specified! Use ~script parameter to specify the script!")
+        os.kill(os.getpid(), signal.SIGKILL)
     param_stop_script = rospy.get_param('~stop_script', '')
     rospy.loginfo("~script: %s" % param_script)
     rospy.loginfo("~stop_script: %s" % param_stop_script)
@@ -140,6 +157,7 @@ if __name__ == '__main__':
     rospy.spin()
     # stop the script
     if param_stop_script:
+        runthread.stop = True
         rospy.loginfo("stop using %s" % param_stop_script)
         stopthread = RunThread(param_stop_script)
         stopthread.start()
