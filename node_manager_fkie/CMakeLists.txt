@@ -9,6 +9,7 @@ install(
     PROGRAMS 
         nodes/node_manager
         nodes/dynamic_reconfigure
+        nodes/script_runner.py
         scripts/remote_nm.py
         scripts/respawn
         scripts/reduced_nm.py
@@ -36,6 +37,7 @@ install(
         ./src/node_manager_fkie/LaunchFilesDockWidget.ui
         ./src/node_manager_fkie/LogDockWidget.ui
         ./src/node_manager_fkie/PasswordInput.ui
+        ./src/node_manager_fkie/ProfileWidget.ui
         ./src/node_manager_fkie/MainWindow.ui
         ./src/node_manager_fkie/SettingsDockWidget.ui
         ./src/node_manager_fkie/GUI.qrc
