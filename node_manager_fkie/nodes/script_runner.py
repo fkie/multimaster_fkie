@@ -168,9 +168,11 @@ if __name__ == '__main__':
                 if reserr:
                     rospy.logwarn("stop script has follow exception: %s" % reserr)
     else:
-        runthread.stop()
+        runthread.stop = True
         runthread.join(3)
     if runthread.is_alive():
         rospy.logwarn("Script does not stop, try to kill %d..." % runthread.spopen.popen.pid)
         if runthread.spopen is not None:
             runthread.spopen.popen.send_signal(signal.SIGKILL)
+        if runthread.spopen is not None:
+            runthread.spopen.popen.send_signal(signal.SIGTERM)
