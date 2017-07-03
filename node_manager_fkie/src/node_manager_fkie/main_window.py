@@ -1568,14 +1568,14 @@ class MainWindow(QMainWindow):
                                                 QMessageBox.Ok | QMessageBox.Cancel)
                 if ret == QMessageBox.Cancel:
                     return
-            masteruris = nm.nameres().masterurisbyaddr(host)
-            for masteruri in masteruris:
-                master = self.getMaster(masteruri)
-                master.stop_nodes_by_name(['/master_discovery'])
             self._progress_queue.add2queue(str(uuid.uuid4()),
                                            'poweroff `%s`' % host,
                                            nm.starter().poweroff,
                                            ('%s' % host,))
+            masteruris = nm.nameres().masterurisbyaddr(host)
+            for masteruri in masteruris:
+                master = self.getMaster(masteruri)
+                master.stop_nodes_by_name(['/master_discovery'])
             self._progress_queue.start()
             self.on_description_update('Description', '')
             self.launch_dock.raise_()

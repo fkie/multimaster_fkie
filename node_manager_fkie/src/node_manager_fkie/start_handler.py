@@ -898,7 +898,7 @@ class StartHandler(object):
             rospy.loginfo("poweroff %s", host)
             # kill on a remote machine
             cmd = ['sudo poweroff']
-            _ = nm.ssh().ssh_exec(host, cmd, 'Shutdown %s' % host, user)
+            _ = nm.ssh().ssh_x11_exec(host, cmd, 'Shutdown %s' % host, user)
 
     def rosclean(self, host, auto_pw_request=False, user=None, pw=None):
         '''
