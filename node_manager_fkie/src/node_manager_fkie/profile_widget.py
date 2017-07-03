@@ -70,6 +70,8 @@ class ProfileWidget(QDockWidget):
                                                 nm.settings().current_dialog_path,
                                                 "node manager profile files (*.nmprofile);;All files (*)")  # _:=filter
         if path:
+            if not path.endswith('.nmprofile'):
+                path = "%s.nmprofile" % path
             nm.settings().current_dialog_path = os.path.dirname(path)
             try:
                 (pkg, _) = package_name(os.path.dirname(path))  # _:=pkg_path
