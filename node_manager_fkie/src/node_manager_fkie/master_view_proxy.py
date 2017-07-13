@@ -2624,8 +2624,10 @@ class MasterViewProxy(QWidget):
             import shlex
             env = dict(os.environ)
             env["ROS_MASTER_URI"] = str(self.masteruri)
-            nodename = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(get_hostname(self.masteruri)), topic.name)
-            cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s' % (topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename)
+            namespace = rospy.names.namespace(topic.name)
+            nodename = os.path.basename(topic.name)
+            namespace = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(get_hostname(self.masteruri)), namespace)
+            cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s __ns:=%s' % (topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename, namespace)
             rospy.loginfo("Echo topic: %s" % cmd)
             ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, object_id=topic.name, description='Echo topic: %s' % topic.name)
             ps.finished.connect(self._topic_dialog_closed)
