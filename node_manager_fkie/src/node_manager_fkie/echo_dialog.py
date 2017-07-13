@@ -500,18 +500,22 @@ class EchoDialog(QDialog):
             message_window = ''
             message_std_dev = ''
             message_scrapped = ''
+            sum_times = sum(self.times)
             if (self.SHOW_BYTES or self.show_only_rate) and self.bytes:
-                avg = sum(self.bytes) / len(self.bytes)
+                sum_bytes = sum(self.bytes)
+                avg = sum_bytes / len(self.bytes)
                 last = self.bytes[-1]
                 if avg != last:
                     message_bytes = "size[ last: %s, avg: %s ]" % (self._normilize_size_print(last), self._normilize_size_print(avg))
                 else:
                     message_bytes = "size: %s" % (self._normilize_size_print(last))
+                byte_rate = float(sum_bytes) / float(sum_times)
+                message_bytes += " bw: %s" % (self._normilize_size_print(byte_rate))
             # the code from ROS rostopic
             n = len(self.times)
             if n < 2:
                 return
-            mean = sum(self.times) / n
+            mean = sum_times / n
             rate = 1. / mean if mean > 0. else 0
             message_rate = "average rate: %.3f" % rate
             # min and max
@@ -540,9 +544,9 @@ class EchoDialog(QDialog):
 
     def _normilize_size_print(self, size):
         if size > 999999:
-            return "%.2fMB" % (size / 1000000.0)
+            return "%.2fMB" % (size / 1048576.0)
         if size > 999:
-            return "%.2fKB" % (size / 1000.0)
+            return "%.2fKB" % (size / 1024.0)
         return "%dB" % size
 
     def _print_status(self):
