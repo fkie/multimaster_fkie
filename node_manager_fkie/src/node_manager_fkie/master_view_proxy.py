@@ -1181,7 +1181,8 @@ class MasterViewProxy(QWidget):
                 # reduce the displayed name
                 item_name = i
                 if name:
-                    item_name = item_name.replace('%s%s' % (name, roslib.names.SEP), '~', 1)
+                    if item_name.startswith(name):
+                        item_name = item_name.replace('%s%s' % (name, roslib.names.SEP), '~', 1)
                     ns = roslib.names.namespace(name)
                     if item_name.startswith(ns) and ns != roslib.names.SEP:
                         item_name = item_name.replace(ns, '', 1)
