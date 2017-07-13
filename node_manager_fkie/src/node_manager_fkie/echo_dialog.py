@@ -354,10 +354,11 @@ class EchoDialog(QDialog):
         self._count_messages(current_time)
         # skip messages, if they are received often then MESSAGE_HZ_LIMIT
         if self._last_received_ts != 0 and self.receiving_hz != 0:
-            if (latched and current_time - self._start_time > 3.0) and current_time - self._last_received_ts < 1.0 / self.receiving_hz:
-                self._scrapped_msgs += 1
-                self._scrapped_msgs_sl += 1
-                return
+            if current_time - self._last_received_ts < 1.0 / self.receiving_hz:
+                if (not latched or (latched and current_time - self._start_time > 3.0)):
+                    self._scrapped_msgs += 1
+                    self._scrapped_msgs_sl += 1
+                    return
         self._last_received_ts = current_time
         if not self.show_only_rate:
             # convert message to string and reduce line width to current limit
