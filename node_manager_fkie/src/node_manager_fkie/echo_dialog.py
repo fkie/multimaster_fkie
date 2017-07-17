@@ -136,6 +136,7 @@ class EchoDialog(QDialog):
 
         self.field_filter_fn = None
         self._latched = False
+        self._msgs = []
 
         options = QWidget(self)
         if not show_only_rate:
@@ -312,6 +313,9 @@ class EchoDialog(QDialog):
                 self.line_limit = float(ch_txt)
             except ValueError:
                 self.combobox_reduce_ch.setEditText(str(self.line_limit))
+        self.display.clear()
+        for msg, current_time in self._msgs:
+            self._append_message(msg, self._latched, current_time, False)
 
     def on_combobox_chars_activated(self, chars_txt):
         try:
@@ -321,6 +325,9 @@ class EchoDialog(QDialog):
                 self.chars_limit = float(chars_txt)
             except ValueError:
                 self.combobox_displ_chars.setEditText(str(self.chars_limit))
+        self.display.clear()
+        for msg, current_time in self._msgs:
+            self._append_message(msg, self._latched, current_time, False)
 
     def on_combobox_hz_activated(self, hz_txt):
         try:
@@ -374,14 +381,19 @@ class EchoDialog(QDialog):
     def _msg_handle(self, data):
         self.msg_signal.emit(data, (data._connection_header['latching'] != '0'))
 
-    def _append_message(self, msg, latched):
+    def _append_message(self, msg, latched, current_time=None, store=True):
         '''
         Adds a label to the dialog's layout and shows the given text.
         @param msg: the text to add to the dialog
         @type msg: message object
         '''
+        if current_time is None:
+            current_time = time.time()
         self._latched = latched
-        current_time = time.time()
+        if store:
+            self._msgs.append((msg, current_time))
+            if len(self._msgs) > 25:
+                self._msgs.pop()
         msg_len = -1
         if (self.SHOW_BYTES or self.show_only_rate):
             buff = None
@@ -397,7 +409,8 @@ class EchoDialog(QDialog):
                 buff = BytesIO()
                 msg.serialize(buff)
                 msg_len = buff.getbuffer().nbytes
-        self._count_messages(current_time, msg_len)
+        if store:
+            self._count_messages(current_time, msg_len)
         # skip messages, if they are received often then MESSAGE_HZ_LIMIT
         if self._last_received_ts != 0 and self.receiving_hz != 0:
             if current_time - self._last_received_ts < 1.0 / self.receiving_hz:
@@ -501,6 +514,8 @@ class EchoDialog(QDialog):
             message_std_dev = ''
             message_scrapped = ''
             sum_times = sum(self.times)
+            if sum_times == 0:
+                sum_times = 1
             if (self.SHOW_BYTES or self.show_only_rate) and self.bytes:
                 sum_bytes = sum(self.bytes)
                 avg = sum_bytes / len(self.bytes)
