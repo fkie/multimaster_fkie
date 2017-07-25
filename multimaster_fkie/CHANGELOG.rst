@@ -2,6 +2,56 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.5 (2017-07-17)
+------------------
+* node_manager_fkie: improved echo dialog
+  * added combobox for maximal size of a message
+  * added status for message size (also avarage)
+  * added bandwith calculation
+  * added info in status bar for latched topic
+  * removed status for "std dev" and "window size"
+  * store last messages in echo dialog to show them after some filter was chagned
+* node_manager_fkie: new feature - start profiles
+  you can save and restore the current state for all hosts.
+* node_manager_fkie: added a node 'script_runner.py' to launch scripts in a ROS node
+  The node exceutes the script on startup and stay alive. On stop you can
+  specify a stop script.
+* node_manager_fkie: fixed displayed topics in description panel (for different namespaces)
+* node_manager_fkie: fixed the warning about illegal ROS name on open echo dialog
+* node_manager_fkie: fixed rate filter in echo dialog
+* node_manager_fkie: fixed poweroff host
+* node_manager_fkie: fixed the end process
+* node_manager_fkie: fix crash while remove history file
+* node_manager_fkie: added more error handling for script_runner
+* node_manager_fkie: added question on stop profile load
+* node_manager_fkie: stops profile loading on close profile status
+* node_manager_fkie: moved profile code to new file and added progress bar for profile
+* node_manager_fkie: fixed rename of file in the launch history
+* node_manager_fkie: added a possibility to delete all logs (select host->rosclean purge in description)
+* node_manager_fkie: changed key event handling in launch dock to avoid double events
+* node_manager_fkie: fix Ctrl+double click on profile history
+* node_manager_fkie: added support for default_cfg in profiles
+* node_manager_fkie: store the default configuration nodes for profiles
+  currently no support to load the profiles with default configuration!
+  User will be informed on save a profile with default configuraion.
+* node_manager_fkie: fixed detailed dialog for messages without detailed text
+* node_manager_fkie: fixed start nodes by load new profile with same launch files
+* node_manager_fkie: fixed save profile after load profile
+* node_manager_fkie: added description for online state of a master proxy
+* node_manager_fkie: skip update of offline hosts
+* node_manager_fkie: fixed the list of closing hosts
+* node_manager_fkie: added possibility to resize the details message dialog
+* node_manager_fkie: removed handling for Ctrl+C and Ctrl+X, so this shortcut now works in description dock
+* node_manager_fkie: fixed call of host url options
+* node_manager_fkie: fixed problem with editor in foreground
+* node_manager_fkie: changed filter handling for latched topics
+* node_manager_fkie: fixed warning about echo of last scrapped message
+* node_manager_fkie: use objectName() instead of text()
+* master_sync_fkie: changed default filter for sync nodes, see issue `#63 <https://github.com/fkie/multimaster_fkie/issues/63>`_
+* master_discovery_fkie: reduced warning outputs in cases a node or service is not reachable
+* default_cfg_fkie: store the arguments of default_cfg to parameter server
+* multiamster_fkie: fixed installation configuration
+
 0.7.4 (2017-05-03)
 ------------------
 * node_manager_fkie: updated highlightning in sync dialog

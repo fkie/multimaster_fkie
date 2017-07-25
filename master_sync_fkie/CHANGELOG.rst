@@ -2,6 +2,11 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.5 (2017-07-17)
+------------------
+* master_sync_fkie: changed default filter for sync nodes, see issue `#63 <https://github.com/fkie/multimaster_fkie/issues/63>`_
+* Contributors: Alexander Tiderko
+
 0.7.4 (2017-05-03)
 ------------------
 * master_sync_fkie: fixed sync_hosts parameter

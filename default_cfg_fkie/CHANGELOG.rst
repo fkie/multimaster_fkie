@@ -2,6 +2,11 @@
 Changelog for package default_cfg_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.5 (2017-07-17)
+------------------
+* default_cfg_fkie: store the arguments of default_cfg to parameter server
+* Contributors: Alexander Tiderko
+
 0.7.4 (2017-05-03)
 ------------------
 

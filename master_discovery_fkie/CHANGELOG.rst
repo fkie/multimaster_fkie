@@ -2,6 +2,11 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.5 (2017-07-17)
+------------------
+* master_discovery_fkie: reduced warning outputs in cases a node or service is not reachable
+* Contributors: Alexander Tiderko
+
 0.7.4 (2017-05-03)
 ------------------
 * master_discovery_fkie: improved filter logging
