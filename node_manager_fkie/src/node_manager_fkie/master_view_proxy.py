@@ -804,7 +804,7 @@ class MasterViewProxy(QWidget):
     def reload_global_parameter_at_next_start(self, launchfile):
         try:
             self.__configs[launchfile].global_param_done.remove(self.masteruri)
-            self.on_node_selection_changed(None, None, True)
+            # self.on_node_selection_changed(None, None, True)
         except:
             pass
 
@@ -1300,8 +1300,9 @@ class MasterViewProxy(QWidget):
                 text += '<b>Selected nodes:</b><br>'
             if restartable_nodes:
                 text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
+                text += '<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
             if killable_nodes:
-                text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
+                # text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
                 text += '&nbsp;<a href="kill-screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
             if restartable_nodes_with_launchfiles:
                 text += '&nbsp;<a href="start-node-at-host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
@@ -1347,7 +1348,8 @@ class MasterViewProxy(QWidget):
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
             if launches or default_cfgs:
                 text += '<a href="restart-node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
-            text += '&nbsp; <a href="kill-node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
+                text += '<a href="restart-node-g://%s" title="Reload global parameter and restart node"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
+            # text += '&nbsp; <a href="kill-node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
             text += '&nbsp; <a href="kill-screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>' % node.name
             if launches:
                 text += '&nbsp; <a href="start-node-at-host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>' % node.name
@@ -1848,7 +1850,7 @@ class MasterViewProxy(QWidget):
         '''
         self._start_nodes_after_load_cfg = dict()
 
-    def on_force_start_nodes(self):
+    def on_force_start_nodes(self, reset_global_param=False):
         '''
         Starts the selected nodes (also if it already running). If for a node more then one configuration is
         available, the selection dialog will be show.
@@ -1859,6 +1861,12 @@ class MasterViewProxy(QWidget):
         try:
             selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
             self.stop_nodes(selectedNodes)
+            if reset_global_param:
+                # reset config to load global parameter
+                for node in selectedNodes:
+                    for cfg in node.cfgs:
+                        if cfg in self.launchfiles:
+                            self.reload_global_parameter_at_next_start(cfg)
             self.start_nodes(selectedNodes, True)
         finally:
             self.setCursor(cursor)

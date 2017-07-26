@@ -66,6 +66,7 @@
     <file>icons/sekkyumu_play_alt_24.png</file>
     <file>icons/sekkyumu_restart.png</file>
     <file>icons/sekkyumu_restart_24.png</file>
+    <file>icons/sekkyumu_restart_g_24.png</file>
     <file>icons/sekkyumu_start_athost_24.png</file>
     <file>icons/sekkyumu_stop.png</file>
     <file>icons/sekkyumu_topic_echo.png</file>
@@ -95,5 +96,6 @@
     <file>icons/stock_connect_yellow.png</file>
     <file>icons/stock_connect_red.png</file>
     <file>icons/stock_disconnect.png</file>
+    <file>icons/up.png</file>
   </qresource>
 </RCC>

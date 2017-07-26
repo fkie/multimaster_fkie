@@ -2027,6 +2027,9 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('restart-node://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_force_start_nodes()
+        elif url.toString().startswith('restart-node-g://'):
+            if self.currentMaster is not None:
+                self.currentMaster.on_force_start_nodes(True)
         elif url.toString().startswith('start-node-at-host://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_start_nodes_at_host()
