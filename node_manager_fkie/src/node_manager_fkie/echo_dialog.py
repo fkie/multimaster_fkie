@@ -30,15 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 from datetime import datetime
+from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QUrl, QTimer, Signal
 from python_qt_binding.QtGui import QIcon, QTextDocument
 try:
-    from python_qt_binding.QtGui import QApplication, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
-    from python_qt_binding.QtGui import QCheckBox, QComboBox, QDialog, QLabel, QTextBrowser, QToolButton, QWidget
+    from python_qt_binding.QtGui import QApplication, QDialog
 except:
-    from python_qt_binding.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
-    from python_qt_binding.QtWidgets import QCheckBox, QComboBox, QDialog, QLabel, QTextBrowser, QToolButton, QWidget
+    from python_qt_binding.QtWidgets import QApplication, QDialog
 
 import math
 import threading
@@ -55,7 +55,7 @@ import node_manager_fkie as nm
 class EchoDialog(QDialog):
 
     MESSAGE_CHARS_LIMIT = 1000
-    MESSAGE_LINE_LIMIT = 128
+    MESSAGE_LINE_LIMIT = 80
     MESSAGE_HZ_LIMIT = 10
     MAX_DISPLAY_MSGS = 25
     STATISTIC_QUEUE_LEN = 1000
@@ -104,16 +104,13 @@ class EchoDialog(QDialog):
         QDialog.__init__(self, parent=parent)
         self._masteruri = masteruri
         masteruri_str = '' if masteruri is None else '[%s]' % masteruri
+        echo_dialog_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'EchoDialog.ui')
+        loadUi(echo_dialog_file, self)
         self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowFlags(Qt.Window)
         self.setWindowTitle('%s %s %s' % ('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
-        self.resize(728, 512)
-        self.verticalLayout = QVBoxLayout(self)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.verticalLayout.setContentsMargins(1, 1, 1, 1)
-        self.mIcon = QIcon(":/icons/crystal_clear_prop_run_echo.png")
-        self.setWindowIcon(self.mIcon)
+        self.resize(900, 512)
 
         self.topic = topic
         self.show_only_rate = show_only_rate
@@ -126,6 +123,7 @@ class EchoDialog(QDialog):
 
         self.message_count = 0
         self._state_message = ''
+        self._state_size_message = ''
         self._scrapped_msgs = 0
         self._scrapped_msgs_sl = 0
 
@@ -133,89 +131,35 @@ class EchoDialog(QDialog):
         self.chars_limit = self.MESSAGE_CHARS_LIMIT
         self.receiving_hz = self.MESSAGE_HZ_LIMIT
         self.line_limit = self.MESSAGE_LINE_LIMIT
+        self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
 
         self.field_filter_fn = None
         self._latched = False
         self._msgs = []
 
-        options = QWidget(self)
-        if not show_only_rate:
-            hLayout = QHBoxLayout(options)
-            hLayout.setContentsMargins(1, 1, 1, 1)
-            filter_string_label = QLabel('Strings:', self)
-            hLayout.addWidget(filter_string_label)
-            self.no_str_checkbox = no_str_checkbox = QCheckBox('hide')
-            no_str_checkbox.toggled.connect(self.on_no_str_checkbox_toggled)
-            hLayout.addWidget(no_str_checkbox)
-            self.combobox_reduce_ch = QComboBox(self)
-            self.combobox_reduce_ch.addItems([str(self.MESSAGE_LINE_LIMIT), '0', '80', '256', '1024'])
-            self.combobox_reduce_ch.activated[str].connect(self.combobox_reduce_ch_activated)
-            self.combobox_reduce_ch.setEditable(True)
-            self.combobox_reduce_ch.setToolTip("Set maximum line width. 0 disables the limit.")
-            hLayout.addWidget(self.combobox_reduce_ch)
-            filter_array_label = QLabel('   Arrays:', self)
-            hLayout.addWidget(filter_array_label)
-            self.no_arr_checkbox = no_arr_checkbox = QCheckBox('hide')
-            no_arr_checkbox.toggled.connect(self.on_no_arr_checkbox_toggled)
-            hLayout.addWidget(no_arr_checkbox)
-#      reduce_ch_label = QLabel('ch', self)
-#      hLayout.addWidget(reduce_ch_label)
-            # add spacer
-            spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-            hLayout.addItem(spacerItem)
-            filter_msg_label = QLabel('Msg:', self)
-            hLayout.addWidget(filter_msg_label)
-            # add combobox for displaying frequency of messages
-            self.combobox_chars_hz = QComboBox(self)
-            self.combobox_chars_hz.addItems([str(self.MESSAGE_CHARS_LIMIT), '0', '500', '1000', '5000'])
-            self.combobox_chars_hz.activated[str].connect(self.on_combobox_chars_activated)
-            self.combobox_chars_hz.setEditable(True)
-            self.combobox_chars_hz.setToolTip("Set maximum displayed chars of a message. 0 disables the limit.")
-            hLayout.addWidget(self.combobox_chars_hz)
-            displ_chars_label = QLabel('chars', self)
-            hLayout.addWidget(displ_chars_label)
-            # add combobox for displaying frequency of messages
-            self.combobox_displ_hz = QComboBox(self)
-            self.combobox_displ_hz.addItems([str(self.MESSAGE_HZ_LIMIT), '0', '0.1', '1', '50', '100', '1000'])
-            self.combobox_displ_hz.activated[str].connect(self.on_combobox_hz_activated)
-            self.combobox_displ_hz.setEditable(True)
-            self.combobox_displ_hz.setToolTip("Set maximum displayed message rate in Hz. 0 disables the limit.")
-            hLayout.addWidget(self.combobox_displ_hz)
-            displ_hz_label = QLabel('Hz', self)
-            hLayout.addWidget(displ_hz_label)
-            # add combobox for count of displayed messages
-            self.combobox_msgs_count = QComboBox(self)
-            self.combobox_msgs_count.addItems([str(self.MAX_DISPLAY_MSGS), '0', '50', '100'])
-            self.combobox_msgs_count.activated[str].connect(self.on_combobox_count_activated)
-            self.combobox_msgs_count.setEditable(True)
-            self.combobox_msgs_count.setToolTip("Set maximum displayed message count. 0 disables the limit.")
-            hLayout.addWidget(self.combobox_msgs_count)
-            displ_count_label = QLabel('#', self)
-            hLayout.addWidget(displ_count_label)
-            # add topic control button for unsubscribe and subscribe
-            self.topic_control_button = QToolButton(self)
-            self.topic_control_button.setText('stop')
-            self.topic_control_button.setIcon(QIcon(':/icons/deleket_deviantart_stop.png'))
-            self.topic_control_button.clicked.connect(self.on_topic_control_btn_clicked)
-            hLayout.addWidget(self.topic_control_button)
-            # add clear button
-            clearButton = QToolButton(self)
-            clearButton.setText('clear')
-            clearButton.clicked.connect(self.on_clear_btn_clicked)
-            hLayout.addWidget(clearButton)
-            self.verticalLayout.addWidget(options)
-
-        self.display = QTextBrowser(self)
+        self.filterFrame.setVisible(False)
+        self.topicControlButton.clicked.connect(self.on_topic_control_btn_clicked)
+        self.clearButton.clicked.connect(self.on_clear_btn_clicked)
+        if show_only_rate:
+            self.filterButton.setVisible(False)
+        else:
+            self.filterButton.clicked.connect(self.on_filter_clicked)
+            self.showStringsCheckBox.toggled.connect(self.on_no_str_checkbox_toggled)
+            self.maxLenStringComboBox.activated[str].connect(self.combobox_reduce_ch_activated)
+            self.showArraysCheckBox.toggled.connect(self.on_no_arr_checkbox_toggled)
+            self.maxLenComboBox.activated[str].connect(self.on_combobox_chars_activated)
+            self.maxHzComboBox.activated[str].connect(self.on_combobox_hz_activated)
+            self.displayCountComboBox.activated[str].connect(self.on_combobox_count_activated)
+            self.combobox_reduce_ch_activated(self.MESSAGE_LINE_LIMIT)
+            self.on_combobox_chars_activated(self.MESSAGE_CHARS_LIMIT)
+            self.on_combobox_hz_activated(self.MESSAGE_HZ_LIMIT)
+            self.on_combobox_count_activated(self.MAX_DISPLAY_MSGS)
+            self.filterButton.setFocus()
         self.display.setReadOnly(True)
-        self.verticalLayout.addWidget(self.display)
         self.display.document().setMaximumBlockCount(500)
-        self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
         self._blocks_in_msg = None
         self.display.setOpenLinks(False)
         self.display.anchorClicked.connect(self._on_display_anchorClicked)
-
-        self.status_label = QLabel('0 messages', self)
-        self.verticalLayout.addWidget(self.status_label)
 
         # subscribe to the topic
         errmsg = ''
@@ -223,11 +167,9 @@ class EchoDialog(QDialog):
             self.__msg_class = message.get_message_class(msg_type)
             if not self.__msg_class:
                 errmsg = "Cannot load message class for [%s]. Did you build messages?" % msg_type
-#        raise Exception("Cannot load message class for [%s]. Did you build messages?"%msg_type)
         except Exception as e:
             self.__msg_class = None
             errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s" % (msg_type, e)
-#      raise Exception("Cannot load message class for [%s]. Did you build messagest?\nError: %s"%(msg_type, e))
         # variables for Subscriber
         self.msg_signal.connect(self._append_message)
         self.sub = None
@@ -276,13 +218,11 @@ class EchoDialog(QDialog):
             # send Ctrl+C to remote process
             self.ssh_input_file.write('%s\n' % chr(3))
             self.ssh_input_file.close()
-        except:
+        except Exception:
             pass
         self.finished_signal.emit(self.topic)
         if self.parent() is None:
             QApplication.quit()
-#    else:
-#      self.setParent(None)
 
     def create_field_filter(self, echo_nostr, echo_noarr):
         def field_filter(val):
@@ -295,15 +235,18 @@ class EchoDialog(QDialog):
                     elif echo_nostr and 'string' in t:
                         continue
                     yield f
-            except:
+            except Exception:
                 pass
         return field_filter
 
+    def on_filter_clicked(self, checked):
+        self.filterFrame.setVisible(checked)
+
     def on_no_str_checkbox_toggled(self, state):
-        self.field_filter_fn = self.create_field_filter(state, self.no_arr_checkbox.isChecked())
+        self.field_filter_fn = self.create_field_filter(not state, not self.showArraysCheckBox.isChecked())
 
     def on_no_arr_checkbox_toggled(self, state):
-        self.field_filter_fn = self.create_field_filter(self.no_str_checkbox.isChecked(), state)
+        self.field_filter_fn = self.create_field_filter(not self.showStringsCheckBox.isChecked(), not state)
 
     def combobox_reduce_ch_activated(self, ch_txt):
         try:
@@ -312,7 +255,7 @@ class EchoDialog(QDialog):
             try:
                 self.line_limit = float(ch_txt)
             except ValueError:
-                self.combobox_reduce_ch.setEditText(str(self.line_limit))
+                self.maxLenStringComboBox.setEditText(str(self.line_limit))
         self.display.clear()
         for msg, current_time in self._msgs:
             self._append_message(msg, self._latched, current_time, False)
@@ -324,7 +267,7 @@ class EchoDialog(QDialog):
             try:
                 self.chars_limit = float(chars_txt)
             except ValueError:
-                self.combobox_displ_chars.setEditText(str(self.chars_limit))
+                self.maxLenComboBox.setEditText(str(self.chars_limit))
         self.display.clear()
         for msg, current_time in self._msgs:
             self._append_message(msg, self._latched, current_time, False)
@@ -336,14 +279,14 @@ class EchoDialog(QDialog):
             try:
                 self.receiving_hz = float(hz_txt)
             except ValueError:
-                self.combobox_displ_hz.setEditText(str(self.receiving_hz))
+                self.maxHzComboBox.setEditText(str(self.receiving_hz))
 
     def on_combobox_count_activated(self, count_txt):
         try:
             self.max_displayed_msgs = int(count_txt)
             self._blocks_in_msg = None
         except ValueError:
-            self.combobox_msgs_count.setEditText(str(self.max_displayed_msgs))
+            self.displayCountComboBox.setEditText(str(self.max_displayed_msgs))
 
     def on_clear_btn_clicked(self):
         self.display.clear()
@@ -361,8 +304,7 @@ class EchoDialog(QDialog):
                     self._start_time = time.time()
                 else:
                     self._on_display_anchorClicked(QUrl(self._masteruri))
-                self.topic_control_button.setText('stop')
-                self.topic_control_button.setIcon(QIcon(':/icons/deleket_deviantart_stop.png'))
+                self.topicControlButton.setIcon(QIcon(':/icons/deleket_deviantart_stop.png'))
             else:
                 if self.sub is not None:
                     self.sub.unregister()
@@ -371,10 +313,7 @@ class EchoDialog(QDialog):
                     self.ssh_output_file.close()
                     self.ssh_error_file.close()
                     self.ssh_output_file = None
-                self.topic_control_button.setText('play')
-                self.topic_control_button.setIcon(QIcon(':/icons/deleket_deviantart_play.png'))
-                self.no_str_checkbox.setEnabled(True)
-                self.no_arr_checkbox.setEnabled(True)
+                self.topicControlButton.setIcon(QIcon(':/icons/deleket_deviantart_play.png'))
         except Exception as e:
             rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, e))
 
@@ -548,14 +487,15 @@ class EchoDialog(QDialog):
             if self._scrapped_msgs > 0:
                 message_scrapped += "scrapped msgs: %s" % self._scrapped_msgs
             self._state_message = ''
-            for msg in [message_rate, message_jitter, message_bytes, message_std_dev, message_window, message_scrapped]:
+            self._state_size_message = message_bytes
+            for msg in [message_rate, message_jitter, message_std_dev, message_window, message_scrapped]:
                 if msg:
                     if self._state_message:
                         self._state_message += '    '
                     self._state_message += msg
             self._print_status()
             if self.show_only_rate:
-                self.display.append(self._state_message)
+                self.display.append("%s    %s" % (self._state_message, message_bytes))
 
     def _normilize_size_print(self, size):
         if size > 999999:
@@ -568,7 +508,8 @@ class EchoDialog(QDialog):
         text = '%s messages    %s' % (self.message_count, self._state_message)
         if self._latched:
             text = "[latched] %s" % text
-        self.status_label.setText(text)
+        self.statusLabel.setText(text)
+        self.statusSizeLabel.setText(self._state_size_message)
 
     def _append_text(self, text):
         '''
@@ -621,11 +562,10 @@ class EchoDialog(QDialog):
             ok = False
             if self.show_only_rate:
                 self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s' % (self.topic)], user, pw, auto_pw_request=True, get_pty=True)
-                self.status_label.setText('connected to %s over SSH' % url.host())
+                self.statusLabel.setText('connected to %s over SSH' % url.host())
             else:
-                self.combobox_displ_hz.setEnabled(False)
-                nostr = '--nostr' if self.no_str_checkbox.isChecked() else ''
-                noarr = '--noarr' if self.no_arr_checkbox.isChecked() else ''
+                nostr = '--nostr' if not self.showStringsCheckBox.isChecked() else ''
+                noarr = '--noarr' if not self.showArraysCheckBox.isChecked() else ''
                 self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s' % (nostr, noarr, self.topic)], user, pw, auto_pw_request=True, get_pty=True)
             if ok:
                 self.display.clear()
@@ -641,8 +581,6 @@ class EchoDialog(QDialog):
                 self.ssh_error_file.close()
         except Exception as e:
             self._append_error_text('%s\n' % e)
-#      import traceback
-#      print traceback.format_exc()
 
     def _read_output_hz(self, output_file):
         try:
@@ -650,10 +588,8 @@ class EchoDialog(QDialog):
                 text = output_file.read(1)
                 if text:
                     self.text_hz_signal.emit(text)
-        except:
+        except Exception:
             pass
-#      import traceback
-#      print traceback.format_exc()
 
     def _read_output(self, output_file):
         while not output_file.closed:
@@ -667,7 +603,5 @@ class EchoDialog(QDialog):
                 text = error_file.read(1)
                 if text:
                     self.text_error_signal.emit(text)
-        except:
+        except Exception:
             pass
-#      import traceback
-#      print traceback.format_exc()
