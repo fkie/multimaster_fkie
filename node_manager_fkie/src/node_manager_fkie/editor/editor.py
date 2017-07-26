@@ -38,6 +38,7 @@ import rospy
 
 from node_manager_fkie.common import package_name
 from node_manager_fkie.run_dialog import PackageDialog
+from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
 
 from .line_number_widget import LineNumberWidget
@@ -196,6 +197,15 @@ class Editor(QMainWindow):
         # add spacer
         spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
+        # add open upper launchfile button
+        self.upperButton = QPushButton(self)
+        self.upperButton.setObjectName("upperButton")
+        self.upperButton.clicked.connect(self.on_upperButton_clicked)
+        self.upperButton.setText(self._translate("&Upper"))
+        self.upperButton.setShortcut("Ctrl+U")
+        self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
+        self.upperButton.setFlat(True)
+        self.horizontalLayout.addWidget(self.upperButton)
         # add save button
         self.saveButton = QPushButton(self)
         self.saveButton.setObjectName("saveButton")
@@ -251,7 +261,7 @@ class Editor(QMainWindow):
                 self.move(settings.value("pos", QPoint(0, 0)))
             try:
                 self.restoreState(settings.value("window_state"))
-            except:
+            except Exception:
                 import traceback
                 print traceback.format_exc()
             settings.endGroup()
@@ -298,7 +308,7 @@ class Editor(QMainWindow):
                     if self.tabWidget.widget(i).filename == filename:
                         self.tabWidget.setCurrentIndex(i)
                         break
-        except:
+        except Exception:
             import traceback
             rospy.logwarn("Error while open %s: %s", filename, traceback.format_exc(1))
         self.tabWidget.setUpdatesEnabled(True)
@@ -306,7 +316,7 @@ class Editor(QMainWindow):
             try:
                 self._search_thread.stop()
                 self._search_thread = None
-            except:
+            except Exception:
                 pass
             self._search_thread = TextSearchThread(search_text, filename, path_text=self.tabWidget.widget(0).document().toPlainText(), recursive=True)
             self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
@@ -343,7 +353,7 @@ class Editor(QMainWindow):
                 # close editor, if no tabs are open
                 if not self.tabWidget.count():
                     self.close()
-        except:
+        except Exception:
             import traceback
             rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
 
@@ -409,6 +419,32 @@ class Editor(QMainWindow):
     # HANDLER for buttons
     ##############################################################################
 
+    def on_upperButton_clicked(self):
+        '''
+        Opens the file which include the current open file
+        '''
+        if self.tabWidget.currentIndex() != 0:
+            files = LaunchConfig.getIncludedFiles(self.tabWidget.widget(0).filename)
+            if self.tabWidget.currentWidget().filename in files:
+                self.on_load_request(self.tabWidget.widget(0).filename, os.path.basename(self.tabWidget.currentWidget().filename))
+#                self.tabWidget.setCurrentIndex(0)
+            else:
+                ret = self._find_inc_file(self.tabWidget.currentWidget().filename, files)
+                if ret:
+                    self.on_load_request(ret, os.path.basename(self.tabWidget.currentWidget().filename))
+
+    def _find_inc_file(self, filename, files):
+        for f in files:
+            inc_files = LaunchConfig.getIncludedFiles(f)
+            if filename in inc_files:
+                self.on_load_request(f, os.path.basename(filename))
+                return f
+            else:
+                retf = self._find_inc_file(filename, inc_files)
+                if retf:
+                    return retf
+        return ''
+
     def on_saveButton_clicked(self):
         '''
         Saves the current document. This method is called if the C{save button}
@@ -454,7 +490,7 @@ class Editor(QMainWindow):
         try:
             value, ok = QInputDialog.getInt(self, "Goto", self.tr("Line number:"),
                                                   QLineEdit.Normal, minValue=1, step=1)
-        except:
+        except Exception:
             value, ok = QInputDialog.getInt(self, "Goto", self.tr("Line number:"),
                                                   QLineEdit.Normal, min=1, step=1)
         if ok:
