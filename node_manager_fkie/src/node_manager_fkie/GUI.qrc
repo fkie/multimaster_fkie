@@ -96,13 +96,4 @@
     <file>icons/stock_connect_red.png</file>
     <file>icons/stock_disconnect.png</file>
   </qresource>
-  <qresource prefix="forms">
-    <file>LaunchFilesDockWidget.ui</file>
-    <file>LogDockWidget.ui</file>
-    <file>MainWindow.ui</file>
-    <file>MasterTab.ui</file>
-    <file>PasswordInput.ui</file>
-    <file>ProfileWidget.ui</file>
-    <file>SettingsDockWidget.ui</file>
-  </qresource>
 </RCC>

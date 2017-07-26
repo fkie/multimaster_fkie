@@ -198,6 +198,7 @@ class MasterViewProxy(QWidget):
         tabLayout = QVBoxLayout(self)
         tabLayout.setContentsMargins(0, 0, 0, 0)
         tabLayout.addWidget(self.masterTab)
+        self._progress_queue_prio = ProgressQueue(self.masterTab.progressPrioFrame, self.masterTab.progressPrioBar, self.masterTab.progressCancelPrioButton, 'Prio Master - %s' % self.mastername)
         self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton, 'Master - %s' % self.mastername)
 
         # setup the node view
@@ -361,6 +362,7 @@ class MasterViewProxy(QWidget):
         print "  Shutdown master", self.masteruri, "..."
         self.default_cfg_handler.stop()
         self.launch_server_handler.stop()
+        self._progress_queue_prio.stop()
         self._progress_queue.stop()
         if self._on_stop_kill_roscore:
             self.killall_roscore()
@@ -472,12 +474,16 @@ class MasterViewProxy(QWidget):
         if self.online and self.master_info is not None:
             self._progress_queue.start()
 
+    def _start_process_queue_prio(self):
+        if self.online and self.master_info is not None:
+            self._progress_queue_prio.start()
+
     @property
     def use_sim_time(self):
         return self.__use_sim_time
 
     def in_process(self):
-        return self._progress_queue.count() > 0
+        return self._progress_queue.count() > 0 or self._progress_queue_prio.count() > 0
 
     def force_next_update(self):
         self.__force_update = True
@@ -627,11 +633,11 @@ class MasterViewProxy(QWidget):
         argv = []
         if isinstance(launchfile, tuple):
             lfile, argv = launchfile
-        self._progress_queue.add2queue(str(uuid.uuid4()),
-                                       'Loading %s' % os.path.basename(lfile),
-                                       self._load_launchfile,
-                                       (lfile, argv))
-        self._start_process_queue()
+        self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+                                            'Loading %s' % os.path.basename(lfile),
+                                            self._load_launchfile,
+                                            (lfile, argv))
+        self._start_process_queue_prio()
 
     def _load_launchfile(self, launchfile, argv_forced=[], pqid=None):
         '''
@@ -673,7 +679,7 @@ class MasterViewProxy(QWidget):
                 if machine.name:
                     nm.nameres().add_info(machine.name, machine.address)
             # do not load if the loadings process was canceled
-            if self._progress_queue.has_id(pqid):
+            if self._progress_queue_prio.has_id(pqid):
                 self.loaded_config.emit(launchfile, launchConfig)
         except InteractionNeededError:
             raise
@@ -2147,11 +2153,11 @@ class MasterViewProxy(QWidget):
                         ret = (ret == QMessageBox.Ok)
                     if ret:
                         for node in selectedNodes:
-                            self._progress_queue.add2queue(str(uuid.uuid4()),
-                                                           ''.join(['show IO of ', node.name]),
-                                                           nm.screen().openScreen,
-                                                           (node.name, self.getHostFromNode(node), False, self.current_user))
-                        self._start_process_queue()
+                            self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+                                                                ''.join(['show IO of ', node.name]),
+                                                                nm.screen().openScreen,
+                                                                (node.name, self.getHostFromNode(node), False, self.current_user))
+                        self._start_process_queue_prio()
                 else:
                     self.on_show_all_screens()
             finally:
@@ -2219,11 +2225,11 @@ class MasterViewProxy(QWidget):
                 ret = (ret == QMessageBox.Ok)
             if ret:
                 for node in selectedNodes:
-                    self._progress_queue.add2queue(str(uuid.uuid4()),
-                                                   ''.join(['show log of ', node.name]),
-                                                   nm.starter().openLog,
-                                                   (node.name, self.getHostFromNode(node), self.current_user, only_screen))
-                self._start_process_queue()
+                    self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+                                                        ''.join(['show log of ', node.name]),
+                                                        nm.starter().openLog,
+                                                        (node.name, self.getHostFromNode(node), self.current_user, only_screen))
+                self._start_process_queue_prio()
         except Exception, e:
             print traceback.format_exc(1)
             rospy.logwarn("Error while show log: %s", str(e))
@@ -2267,11 +2273,11 @@ class MasterViewProxy(QWidget):
         '''
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
         for node in selectedNodes:
-            self._progress_queue.add2queue(str(uuid.uuid4()),
+            self._progress_queue_prio.add2queue(str(uuid.uuid4()),
                                            ''.join(['delete Log of ', node.name]),
                                            nm.starter().deleteLog,
                                            (node.name, self.getHostFromNode(node), False, self.current_user))
-        self._start_process_queue()
+        self._start_process_queue_prio()
 
     def on_dynamic_config_clicked(self):
         '''
