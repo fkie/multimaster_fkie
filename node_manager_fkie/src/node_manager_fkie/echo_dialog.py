@@ -464,7 +464,7 @@ class EchoDialog(QDialog):
                 else:
                     message_bytes = "size: %s" % (self._normilize_size_print(last))
                 byte_rate = float(sum_bytes) / float(sum_times)
-                message_bytes += " bw: %s" % (self._normilize_size_print(byte_rate))
+                message_bytes += " bw: %s/s" % (self._normilize_size_print(byte_rate))
             # the code from ROS rostopic
             n = len(self.times)
             if n < 2:
@@ -499,9 +499,9 @@ class EchoDialog(QDialog):
 
     def _normilize_size_print(self, size):
         if size > 999999:
-            return "%.2fMB" % (size / 1048576.0)
+            return "%.2fMiB" % (size / 1048576.0)
         if size > 999:
-            return "%.2fKB" % (size / 1024.0)
+            return "%.2fKiB" % (size / 1024.0)
         return "%dB" % size
 
     def _print_status(self):
