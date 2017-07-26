@@ -333,31 +333,30 @@ class EchoDialog(QDialog):
             self._msgs.append((msg, current_time))
             if len(self._msgs) > 25:
                 self._msgs.pop()
-        msg_len = -1
-        if (self.SHOW_BYTES or self.show_only_rate):
-            buff = None
-            try:
-                from cStringIO import StringIO  # Python 2.x
-                buff = StringIO()
-                import os
-                msg.serialize(buff)
-                buff.seek(0, os.SEEK_END)
-                msg_len = buff.tell()
-            except ImportError:
-                from io import BytesIO  # Python 3.x
-                buff = BytesIO()
-                msg.serialize(buff)
-                msg_len = buff.getbuffer().nbytes
-        if store:
+            msg_len = -1
+            if (self.SHOW_BYTES or self.show_only_rate):
+                buff = None
+                try:
+                    from cStringIO import StringIO  # Python 2.x
+                    buff = StringIO()
+                    import os
+                    msg.serialize(buff)
+                    buff.seek(0, os.SEEK_END)
+                    msg_len = buff.tell()
+                except ImportError:
+                    from io import BytesIO  # Python 3.x
+                    buff = BytesIO()
+                    msg.serialize(buff)
+                    msg_len = buff.getbuffer().nbytes
             self._count_messages(current_time, msg_len)
-        # skip messages, if they are received often then MESSAGE_HZ_LIMIT
-        if self._last_received_ts != 0 and self.receiving_hz != 0:
-            if current_time - self._last_received_ts < 1.0 / self.receiving_hz:
-                if (not latched or (latched and current_time - self._start_time > 3.0)):
-                    self._scrapped_msgs += 1
-                    self._scrapped_msgs_sl += 1
-                    return
-        self._last_received_ts = current_time
+            # skip messages, if they are received often then MESSAGE_HZ_LIMIT
+            if self._last_received_ts != 0 and self.receiving_hz != 0:
+                if current_time - self._last_received_ts < 1.0 / self.receiving_hz:
+                    if (not latched or (latched and current_time - self._start_time > 3.0)):
+                        self._scrapped_msgs += 1
+                        self._scrapped_msgs_sl += 1
+                        return
+            self._last_received_ts = current_time
         if not self.show_only_rate:
             # convert message to string and reduce line width to current limit
             msg = message.strify_message(msg, field_filter=self.field_filter_fn)
@@ -381,7 +380,8 @@ class EchoDialog(QDialog):
             if msg_cated:
                 txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">message has been cut off</pre>'
                 self.display.append(txt)
-        self._print_status()
+        if store:
+            self._print_status()
 
     def _count_messages(self, ts=time.time(), msg_len=-1):
         '''
