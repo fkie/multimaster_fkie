@@ -321,6 +321,7 @@ class Editor(QMainWindow):
             self._search_thread = TextSearchThread(search_text, filename, path_text=self.tabWidget.widget(0).document().toPlainText(), recursive=True)
             self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
             self._search_thread.start()
+        self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():
@@ -356,6 +357,7 @@ class Editor(QMainWindow):
         except Exception:
             import traceback
             rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
+        self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def reject(self):
         if self.find_dialog.isVisible():
