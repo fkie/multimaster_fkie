@@ -276,7 +276,7 @@ class Editor(QMainWindow):
             settings.setValue("window_state", self.saveState())
             settings.endGroup()
 
-    def on_load_request(self, filename, search_text=''):
+    def on_load_request(self, filename, search_text='', insert_index=-1):
         '''
         Loads a file in a new tab or focus the tab, if the file is already open.
         @param filename: the path to file
@@ -292,7 +292,11 @@ class Editor(QMainWindow):
                 tab_name = self.__getTabName(filename)
                 editor = TextEdit(filename, self.tabWidget)
                 linenumber_editor = LineNumberWidget(editor)
-                tab_index = self.tabWidget.addTab(linenumber_editor, tab_name)
+                tab_index = 0
+                if insert_index > -1:
+                    tab_index = self.tabWidget.insertTab(insert_index, linenumber_editor, tab_name)
+                else:
+                    tab_index = self.tabWidget.addTab(linenumber_editor, tab_name)
                 self.files.append(filename)
                 editor.setCurrentPath(os.path.basename(filename))
                 editor.load_request_signal.connect(self.on_load_request)
@@ -434,13 +438,12 @@ class Editor(QMainWindow):
             else:
                 ret = self._find_inc_file(self.tabWidget.currentWidget().filename, files)
                 if ret:
-                    self.on_load_request(ret, basename_cur)
+                    self.on_load_request(ret, basename_cur, self.tabWidget.currentIndex())
 
     def _find_inc_file(self, filename, files):
         for f in files:
             inc_files = LaunchConfig.getIncludedFiles(f, recursive=False)
             if filename in inc_files:
-                self.on_load_request(f, os.path.basename(filename))
                 return f
             else:
                 retf = self._find_inc_file(filename, inc_files)
