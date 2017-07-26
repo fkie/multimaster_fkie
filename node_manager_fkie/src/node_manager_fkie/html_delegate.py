@@ -59,7 +59,7 @@ class HTMLDelegate(QStyledItemDelegate):
 
         doc = QTextDocument()
         doc.setHtml(self.toHTML(options.text))
-        doc.setTextWidth(option.rect.width())
+        # doc.setTextWidth(option.rect.width())
 
         options.text = ''
         style.drawControl(QStyle.CE_ItemViewItem, options, painter)
