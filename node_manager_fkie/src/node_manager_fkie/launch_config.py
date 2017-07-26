@@ -205,7 +205,8 @@ class LaunchConfig(QObject):
                                                      QRegExp("\\bdefault\\b"),
                                                      QRegExp("\\bvalue=.*pkg:\/\/\\b"),
                                                      QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                     QRegExp("\\bvalue=.*\$\(find\\b")]):
+                                                     QRegExp("\\bvalue=.*\$\(find\\b")],
+                         recursive=True):
         '''
         Reads the configuration file and searches for included files. This files
         will be returned in a list.
@@ -236,7 +237,7 @@ class LaunchConfig(QObject):
                             path = cls.interpretPath(fileName, os.path.dirname(inc_file))
                             if os.path.isfile(path):
                                 result.add(path)
-                                if path.endswith('.launch'):
+                                if recursive and path.endswith('.launch'):
                                     result.update(cls.getIncludedFiles(path, regexp_list))
                         except:
                             pass

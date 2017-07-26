@@ -426,18 +426,19 @@ class Editor(QMainWindow):
         Opens the file which include the current open file
         '''
         if self.tabWidget.currentIndex() != 0:
-            files = LaunchConfig.getIncludedFiles(self.tabWidget.widget(0).filename)
+            files = LaunchConfig.getIncludedFiles(self.tabWidget.widget(0).filename, recursive=False)
+            basename_cur = "/%s" % os.path.basename(self.tabWidget.currentWidget().filename)
             if self.tabWidget.currentWidget().filename in files:
-                self.on_load_request(self.tabWidget.widget(0).filename, os.path.basename(self.tabWidget.currentWidget().filename))
+                self.on_load_request(self.tabWidget.widget(0).filename, basename_cur)
 #                self.tabWidget.setCurrentIndex(0)
             else:
                 ret = self._find_inc_file(self.tabWidget.currentWidget().filename, files)
                 if ret:
-                    self.on_load_request(ret, os.path.basename(self.tabWidget.currentWidget().filename))
+                    self.on_load_request(ret, basename_cur)
 
     def _find_inc_file(self, filename, files):
         for f in files:
-            inc_files = LaunchConfig.getIncludedFiles(f)
+            inc_files = LaunchConfig.getIncludedFiles(f, recursive=False)
             if filename in inc_files:
                 self.on_load_request(f, os.path.basename(filename))
                 return f
