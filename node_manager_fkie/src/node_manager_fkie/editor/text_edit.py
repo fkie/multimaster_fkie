@@ -311,9 +311,10 @@ class TextEdit(QTextEdit):
             # handle the shifting of the block
             if event.modifiers() == Qt.NoModifier and event.key() == Qt.Key_Tab:
                 self.shiftText()
-            elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Tab:
+            elif event.modifiers() == Qt.ShiftModifier and event.key() == Qt.Key_Backtab:
                 self.shiftText(back=True)
             else:
+                event.accept()
                 QTextEdit.keyPressEvent(self, event)
         else:
             event.accept()
