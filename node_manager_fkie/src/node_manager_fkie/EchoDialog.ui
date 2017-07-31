@@ -462,10 +462,6 @@
         <property name="text">
          <string>filter</string>
         </property>
-        <property name="icon">
-         <iconset theme="document-page-setup">
-          <normaloff>../../../../../../../../../../.designer/backup</normaloff>../../../../../../../../../../.designer/backup</iconset>
-        </property>
         <property name="checkable">
          <bool>true</bool>
         </property>

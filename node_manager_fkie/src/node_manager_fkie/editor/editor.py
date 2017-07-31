@@ -156,26 +156,16 @@ class Editor(QMainWindow):
         self.horizontalLayout = QHBoxLayout(self.buttons)
         self.horizontalLayout.setContentsMargins(4, 0, 4, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # add the search button
-        self.searchButton = QPushButton(self)
-        self.searchButton.setObjectName("searchButton")
-#        self.searchButton.clicked.connect(self.on_shortcut_find)
-        self.searchButton.toggled.connect(self.on_toggled_find)
-        self.searchButton.setText(self._translate("&Find"))
-        self.searchButton.setToolTip('Open a search dialog (Ctrl+F)')
-        self.searchButton.setFlat(True)
-        self.searchButton.setCheckable(True)
-        self.horizontalLayout.addWidget(self.searchButton)
-        # add the replace button
-        self.replaceButton = QPushButton(self)
-        self.replaceButton.setObjectName("replaceButton")
-#        self.replaceButton.clicked.connect(self.on_shortcut_replace)
-        self.replaceButton.toggled.connect(self.on_toggled_replace)
-        self.replaceButton.setText(self._translate("&Replace"))
-        self.replaceButton.setToolTip('Open a search&replace dialog (Ctrl+R)')
-        self.replaceButton.setFlat(True)
-        self.replaceButton.setCheckable(True)
-        self.horizontalLayout.addWidget(self.replaceButton)
+        # add open upper launchfile button
+        self.upperButton = QPushButton(self)
+        self.upperButton.setObjectName("upperButton")
+        self.upperButton.clicked.connect(self.on_upperButton_clicked)
+        self.upperButton.setIcon(QIcon(":/icons/up.png"))
+        # self.upperButton.setText(self._translate("&Upper"))
+        self.upperButton.setShortcut("Ctrl+U")
+        self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
+        self.upperButton.setFlat(True)
+        self.horizontalLayout.addWidget(self.upperButton)
         # add the goto button
         self.gotoButton = QPushButton(self)
         self.gotoButton.setObjectName("gotoButton")
@@ -188,6 +178,16 @@ class Editor(QMainWindow):
         # add a tag button
         self.tagButton = self._create_tag_button(self)
         self.horizontalLayout.addWidget(self.tagButton)
+        # add save button
+        self.saveButton = QPushButton(self)
+        self.saveButton.setObjectName("saveButton")
+        self.saveButton.setIcon(QIcon.fromTheme("document-save"))
+        self.saveButton.clicked.connect(self.on_saveButton_clicked)
+        self.saveButton.setText(self._translate("&Save"))
+        self.saveButton.setShortcut("Ctrl+S")
+        self.saveButton.setToolTip('Save the changes to the file (Ctrl+S)')
+        self.saveButton.setFlat(True)
+        self.horizontalLayout.addWidget(self.saveButton)
         # add spacer
         spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
@@ -197,25 +197,26 @@ class Editor(QMainWindow):
         # add spacer
         spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
-        # add open upper launchfile button
-        self.upperButton = QPushButton(self)
-        self.upperButton.setObjectName("upperButton")
-        self.upperButton.clicked.connect(self.on_upperButton_clicked)
-        self.upperButton.setIcon(QIcon(":/icons/up.png"))
-        # self.upperButton.setText(self._translate("&Upper"))
-        self.upperButton.setShortcut("Ctrl+U")
-        self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
-        self.upperButton.setFlat(True)
-        self.horizontalLayout.addWidget(self.upperButton)
-        # add save button
-        self.saveButton = QPushButton(self)
-        self.saveButton.setObjectName("saveButton")
-        self.saveButton.clicked.connect(self.on_saveButton_clicked)
-        self.saveButton.setText(self._translate("&Save"))
-        self.saveButton.setShortcut("Ctrl+S")
-        self.saveButton.setToolTip('Save the changes to the file (Ctrl+S)')
-        self.saveButton.setFlat(True)
-        self.horizontalLayout.addWidget(self.saveButton)
+        # add the search button
+        self.searchButton = QPushButton(self)
+        self.searchButton.setObjectName("searchButton")
+#        self.searchButton.clicked.connect(self.on_shortcut_find)
+        self.searchButton.toggled.connect(self.on_toggled_find)
+        self.searchButton.setText(self._translate("&Find >>"))
+        self.searchButton.setToolTip('Open a search dialog (Ctrl+F)')
+        self.searchButton.setFlat(True)
+        self.searchButton.setCheckable(True)
+        self.horizontalLayout.addWidget(self.searchButton)
+        # add the replace button
+        self.replaceButton = QPushButton(self)
+        self.replaceButton.setObjectName("replaceButton")
+#        self.replaceButton.clicked.connect(self.on_shortcut_replace)
+        self.replaceButton.toggled.connect(self.on_toggled_replace)
+        self.replaceButton.setText(self._translate("&Replace >>"))
+        self.replaceButton.setToolTip('Open a search&replace dialog (Ctrl+R)')
+        self.replaceButton.setFlat(True)
+        self.replaceButton.setCheckable(True)
+        self.horizontalLayout.addWidget(self.replaceButton)
         return self.buttons
 
     def keyPressEvent(self, event):
@@ -431,7 +432,7 @@ class Editor(QMainWindow):
         Opens the file which include the current open file
         '''
         if self.tabWidget.currentIndex() != 0:
-            files = LaunchConfig.getIncludedFiles(self.tabWidget.widget(0).filename, recursive=False)
+            files = LaunchConfig.included_files(self.tabWidget.widget(0).filename, recursive=False)
             basename_cur = "/%s" % os.path.basename(self.tabWidget.currentWidget().filename)
             if self.tabWidget.currentWidget().filename in files:
                 self.on_load_request(self.tabWidget.widget(0).filename, basename_cur)
@@ -443,7 +444,7 @@ class Editor(QMainWindow):
 
     def _find_inc_file(self, filename, files):
         for f in files:
-            inc_files = LaunchConfig.getIncludedFiles(f, recursive=False)
+            inc_files = LaunchConfig.included_files(f, recursive=False)
             if filename in inc_files:
                 return f
             else:

@@ -1772,7 +1772,7 @@ class MainWindow(QMainWindow):
                                                                   nm.starter().transfer_files,
                                                                   ('%s' % host, path, False, username))
                         if recursive:
-                            for f in LaunchConfig.getIncludedFiles(path):
+                            for f in LaunchConfig.included_files(path):
                                 self.launch_dock.progress_queue.add2queue(str(uuid.uuid4()),
                                                                           'transfer files to %s' % host,
                                                                           nm.starter().transfer_files,

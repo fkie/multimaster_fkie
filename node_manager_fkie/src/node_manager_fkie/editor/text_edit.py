@@ -36,6 +36,7 @@ import os
 
 from node_manager_fkie.common import package_name
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
 
 from .parser_functions import interpret_path
@@ -91,6 +92,7 @@ class TextEdit(QTextEdit):
                             QRegExp("\\bfile\\b"), QRegExp("\\bvalue=.*pkg:\/\/\\b"),
                             QRegExp("\\bvalue=.*package:\/\/\\b"),
                             QRegExp("\\bvalue=.*\$\(find\\b"),
+                            QRegExp("\\bargs=.*\$\(find\\b"),
                             QRegExp("\\bdefault=.*\$\(find\\b")]
         self.filename = filename
         self.file_info = None
@@ -245,32 +247,27 @@ class TextEdit(QTextEdit):
         '''
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
-            index = self.index(cursor.block().text())
-            if index > -1:
-                startIndex = cursor.block().text().find('"', index)
-                if startIndex > -1:
-                    endIndex = cursor.block().text().find('"', startIndex + 1)
-                    fileName = cursor.block().text()[startIndex + 1:endIndex]
-                    if len(fileName) > 0:
-                        try:
-                            qf = QFile(interpret_path(fileName))
-                            if not qf.exists():
-                                # create a new file, if it does not exists
-                                result = QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", qf.fileName()]), QMessageBox.Yes | QMessageBox.No)
-                                if result == QMessageBox.Yes:
-                                    d = os.path.dirname(qf.fileName())
-                                    if not os.path.exists(d):
-                                        os.makedirs(d)
-                                    with open(qf.fileName(), 'w') as f:
-                                        if qf.fileName().endswith('.launch'):
-                                            f.write('<launch>\n\n</launch>')
-                                    event.setAccepted(True)
-                                    self.load_request_signal.emit(qf.fileName())
-                            else:
-                                event.setAccepted(True)
-                                self.load_request_signal.emit(qf.fileName())
-                        except Exception, e:
-                            WarningMessageBox(QMessageBox.Warning, "File not found %s" % fileName, str(e)).exec_()
+            inc_files = LaunchConfig.included_files(cursor.block().text(), recursive=False)
+            if inc_files:
+                try:
+                    qf = QFile(inc_files[0])
+                    if not qf.exists():
+                        # create a new file, if it does not exists
+                        result = QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", qf.fileName()]), QMessageBox.Yes | QMessageBox.No)
+                        if result == QMessageBox.Yes:
+                            d = os.path.dirname(qf.fileName())
+                            if not os.path.exists(d):
+                                os.makedirs(d)
+                            with open(qf.fileName(), 'w') as f:
+                                if qf.fileName().endswith('.launch'):
+                                    f.write('<launch>\n\n</launch>')
+                            event.setAccepted(True)
+                            self.load_request_signal.emit(qf.fileName())
+                    else:
+                        event.setAccepted(True)
+                        self.load_request_signal.emit(qf.fileName())
+                except Exception, e:
+                    WarningMessageBox(QMessageBox.Warning, "File not found %s" % inc_files[0], str(e)).exec_()
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):

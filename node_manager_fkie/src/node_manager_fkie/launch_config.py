@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QObject, QRegExp
+from python_qt_binding.QtCore import QFile, QObject, QRegExp
 from xml.dom.minidom import parse  # , parseString
 import os
 import re
@@ -86,7 +86,6 @@ class LaunchConfig(QObject):
         self.hostname = get_hostname(self.__masteruri)
         self.__launch_id = '%.9f' % time.time()
         nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
-#    nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
 
     def __del__(self):
         # Delete to avoid segfault if the LaunchConfig class is destroyed recently
@@ -199,32 +198,31 @@ class LaunchConfig(QObject):
         return path
 
     @classmethod
-    def getIncludedFiles(cls, inc_file, regexp_list=[QRegExp("\\binclude\\b"),
-                                                     QRegExp("\\btextfile\\b"),
-                                                     QRegExp("\\bfile\\b"),
-                                                     QRegExp("\\bdefault\\b"),
-                                                     QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                                                     QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                     QRegExp("\\bvalue=.*\$\(find\\b")],
-                         recursive=True):
-        '''
-        Reads the configuration file and searches for included files. This files
-        will be returned in a list.
-        @param inc_file: path of the ROS launch file
-        @param regexp_list: pattern of
-        @return: the list with all files needed for the configuration
-        @rtype: C{[str,...]}
-        '''
+    def included_files(cls, text_or_path, regexp_list=[QRegExp("\\btextfile\\b"),
+                                                       QRegExp("\\bfile\\b"),
+                                                       QRegExp("\\bdefault\\b"),
+                                                       QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                       QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                       QRegExp("\\bvalue=.*\$\(find\\b"),
+                                                       QRegExp("\\bargs=.*\$\(find\\b")],
+                       recursive=True):
         result = set()
-        with open(inc_file, 'r') as f:
-            content = f.read()
-            # remove the comments
-            comment_pattern = QRegExp("<!--.*?-->")
-            pos = comment_pattern.indexIn(content)
-            while pos != -1:
-                content = content[:pos] + content[pos + comment_pattern.matchedLength():]
+        lines = []
+        pwd = '.'
+        f = QFile(text_or_path)
+        if f.exists():
+            pwd = os.path.dirname(text_or_path)
+            with open(text_or_path, 'r') as f:
+                content = f.read()
+                # remove the comments
+                comment_pattern = QRegExp("<!--.*?-->")
                 pos = comment_pattern.indexIn(content)
-            lines = content.splitlines()
+                while pos != -1:
+                    content = content[:pos] + content[pos + comment_pattern.matchedLength():]
+                    pos = comment_pattern.indexIn(content)
+                lines = content.splitlines()
+        else:
+            lines = [text_or_path]
         for line in lines:
             index = cls._index(line, regexp_list)
             if index > -1:
@@ -234,12 +232,13 @@ class LaunchConfig(QObject):
                     fileName = line[startIndex + 1:endIndex]
                     if len(fileName) > 0:
                         try:
-                            path = cls.interpretPath(fileName, os.path.dirname(inc_file))
+                            path = cls.interpretPath(fileName, pwd)
                             if os.path.isfile(path):
                                 result.add(path)
-                                if recursive and path.endswith('.launch'):
-                                    result.update(cls.getIncludedFiles(path, regexp_list))
-                        except:
+                                ext = os.path.splitext(path)
+                                if recursive and ext[1] in nm.settings().SEARCH_IN_EXT:
+                                    result.update(cls.included_files(path, regexp_list))
+                        except Exception:
                             pass
         return list(result)
 
@@ -258,13 +257,13 @@ class LaunchConfig(QObject):
             self.argv = self.resolveArgs(argv)
             loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
-            nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.getIncludedFiles(self.Filename))
+            nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.included_files(self.Filename))
             if not nm.is_local(get_hostname(self.__masteruri)):
-                files = self.getIncludedFiles(self.Filename,
-                                              regexp_list=[QRegExp("\\bdefault\\b"),
-                                                           QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                                                           QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                           QRegExp("\\bvalue=.*\$\(find\\b")])
+                files = self.included_files(self.Filename)
+#                                              regexp_list=[QRegExp("\\bdefault\\b"),
+#                                                           QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+#                                                           QRegExp("\\bvalue=.*package:\/\/\\b"),
+#                                                           QRegExp("\\bvalue=.*\$\(find\\b")])
                 nm.file_watcher_param().add_launch(self.__masteruri,
                                                    self.__launchFile,
                                                    self.__launch_id,
@@ -321,7 +320,6 @@ class LaunchConfig(QObject):
         self._argv_values = dict()
         arg_subs = []
         args = []
-#    for filename in self.getIncludedFiles(self.Filename):
         # get only the args in the top launch file
         for filename in [self.Filename]:
             try:
