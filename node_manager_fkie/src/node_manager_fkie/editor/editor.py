@@ -209,7 +209,7 @@ class Editor(QMainWindow):
         self.graphButton = QPushButton(self)
         self.graphButton.setObjectName("graphButton")
         self.graphButton.toggled.connect(self.on_toggled_graph)
-        self.graphButton.setText("&Include Graph >>")
+        self.graphButton.setText("Includ&e Graph >>")
         self.graphButton.setCheckable(True)
         # self.graphButton.setIcon(QIcon(":/icons/button_graph.png"))
         self.graphButton.setShortcut("Ctrl+E")
@@ -268,6 +268,8 @@ class Editor(QMainWindow):
                     self.on_toggled_graph(True)
             else:
                 self.graphButton.setChecked(not self.graphButton.isChecked())
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W:
+            self.on_close_tab(self.tabWidget.currentIndex())
         else:
             event.accept()
             QMainWindow.keyPressEvent(self, event)

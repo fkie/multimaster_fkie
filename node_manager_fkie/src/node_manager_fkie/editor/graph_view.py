@@ -124,13 +124,13 @@ class GraphViewWidget(QDockWidget):
 
     def _refill_tree(self, included_from, includes, create_tree=True):
         deep = 0
+        file_dsrc = self._root_path
+        try:
+            file_dsrc = os.path.basename(self._root_path)
+        except Exception:
+            pass
+        self.setWindowTitle("Include Graph - %s" % file_dsrc)
         if not self._created_tree and create_tree:
-            file_dsrc = self._root_path
-            try:
-                file_dsrc = os.path.basename(self._root_path)
-            except Exception:
-                pass
-            self.setWindowTitle("Include Graph - %s" % file_dsrc)
             with CHACHE_MUTEX:
                 if self._root_path in GRAPH_CACHE:
                     pkg, _ = package_name(os.path.dirname(self._root_path))
