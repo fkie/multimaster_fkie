@@ -43,10 +43,11 @@ from node_manager_fkie.launch_config import LaunchConfig
 
 try:
     from python_qt_binding.QtGui import QCheckBox, QFrame, QLabel, QTreeWidget, QTreeWidgetItem, QPushButton, QGroupBox, QDockWidget
-    from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy, QAbstractItemView
+    from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy, QAbstractItemView, QItemSelectionModel
 except:
     from python_qt_binding.QtWidgets import QCheckBox, QFrame, QLabel, QTreeWidget, QTreeWidgetItem, QPushButton, QGroupBox, QDockWidget
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy, QAbstractItemView
+    from python_qt_binding.QtCore import QItemSelectionModel
 
 
 GRAPH_CACHE = {}
@@ -72,6 +73,7 @@ class GraphViewWidget(QDockWidget):
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self._tabwidget = tabwidget
         self._current_path = None
+        self._root_path = None
         self.graphTreeView.setSelectionBehavior(QAbstractItemView.SelectRows)
         model = QStandardItemModel()
 #        model.setHorizontalHeaderLabels([''])
@@ -81,16 +83,23 @@ class GraphViewWidget(QDockWidget):
         self.htmlDelegate = HTMLDelegate()
         self.graphTreeView.setItemDelegateForColumn(0, self.htmlDelegate)
         self.graphTreeView.activated.connect(self.on_activated)
-        self._refill_tree([], [])
+        self._created_tree = False
+        self._refill_tree([], [], False)
 
     def clear_cache(self):
         with CHACHE_MUTEX:
             GRAPH_CACHE.clear()
 
     def set_file(self, current_path, root_path):
+        self._root_path = root_path
+        file_dsrc = self._root_path
+        try:
+            file_dsrc = os.path.basename(self._root_path)
+        except Exception:
+            pass
+        self.setWindowTitle("Include Graph - %s" % file_dsrc)
         if self._current_path != current_path:
             self._current_path = current_path
-            self.setWindowTitle("Include Graph - %s" % os.path.basename(self._current_path))
             # TODO: run analyzer/path parser in a new thread
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)
@@ -106,29 +115,66 @@ class GraphViewWidget(QDockWidget):
         self.activateWindow()
         self.graphTreeView.setFocus()
 
-    def _refill_tree(self, included_from, includes):
-        self.graphTreeView.model().clear()
-        included_from_item = QStandardItem('included from [%d]' % len(included_from))
-        for inc_lnr, inc_path in included_from:
-            pkg, _ = package_name(os.path.dirname(inc_path))
-            itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
-            inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
-            inc_item.setData(inc_path, self.DATA_FILE)
-            inc_item.setData(inc_lnr + 1, self.DATA_LINE)
-            inc_item.setData('', self.DATA_INC_FILE)
-            included_from_item.appendRow(inc_item)
-        self.graphTreeView.model().appendRow(included_from_item)
-        includes_item = QStandardItem('include [%d]' % len(includes))
-        for inc_lnr, inc_path in includes:
-            pkg, _ = package_name(os.path.dirname(inc_path))
-            itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
-            inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
-            inc_item.setData(self._current_path, self.DATA_FILE)
-            inc_item.setData(inc_lnr + 1, self.DATA_LINE)
-            inc_item.setData(inc_path, self.DATA_INC_FILE)
-            includes_item.appendRow(inc_item)
-        self.graphTreeView.model().appendRow(includes_item)
+    def _refill_tree(self, included_from, includes, create_tree=True):
+        # if self.graphTreeView.model().rowCount() > 2:
+        #     self.graphTreeView.model().takeRow(3)
+        #     self.graphTreeView.model().takeRow(2)
+        # else:
+        #     self.graphTreeView.model().clear()
+        if not self._created_tree and create_tree:
+            with CHACHE_MUTEX:
+                if self._root_path in GRAPH_CACHE:
+                    pkg, _ = package_name(os.path.dirname(self._root_path))
+                    itemstr = '%s [%s]' % (os.path.basename(self._root_path), pkg)
+                    inc_item = QStandardItem('%s' % itemstr)
+                    inc_item.setData(self._root_path, self.DATA_FILE)
+                    inc_item.setData(-1, self.DATA_LINE)
+                    inc_item.setData(self._root_path, self.DATA_INC_FILE)
+                    self._append_items(inc_item)
+                    self.graphTreeView.model().appendRow(inc_item)
+                    # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
+                self._created_tree = True
+        items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 1, Qt.MatchRecursive)
+        if items:
+            self.graphTreeView.selectionModel().select(items[0], QItemSelectionModel.SelectCurrent)
+#         included_from_item = QStandardItem('included from [%d]' % len(included_from))
+#         for inc_lnr, inc_path in included_from:
+#             pkg, _ = package_name(os.path.dirname(inc_path))
+#             itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
+#             inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
+#             inc_item.setData(inc_path, self.DATA_FILE)
+#             inc_item.setData(inc_lnr + 1, self.DATA_LINE)
+#             inc_item.setData('', self.DATA_INC_FILE)
+#             included_from_item.appendRow(inc_item)
+#         self.graphTreeView.model().appendRow(included_from_item)
+#         includes_item = QStandardItem('include [%d]' % len(includes))
+#         for inc_lnr, inc_path in includes:
+#             pkg, _ = package_name(os.path.dirname(inc_path))
+#             itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
+#             inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
+#             inc_item.setData(self._current_path, self.DATA_FILE)
+#             inc_item.setData(inc_lnr + 1, self.DATA_LINE)
+#             inc_item.setData(inc_path, self.DATA_INC_FILE)
+#             includes_item.appendRow(inc_item)
+#         self.graphTreeView.model().appendRow(includes_item)
+#         self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(included_from_item))
+#         self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(includes_item))
         self.graphTreeView.expandAll()
+
+    def _append_items(self, item):
+        path = item.data(self.DATA_INC_FILE)
+        if not path:
+            path = item.data(self.DATA_FILE)
+        if path in GRAPH_CACHE:
+            for inc_lnr, inc_path in GRAPH_CACHE[path]:
+                pkg, _ = package_name(os.path.dirname(inc_path))
+                itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
+                inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
+                inc_item.setData(path, self.DATA_FILE)
+                inc_item.setData(inc_lnr + 1, self.DATA_LINE)
+                inc_item.setData(inc_path, self.DATA_INC_FILE)
+                self._append_items(inc_item)
+                item.appendRow(inc_item)
 
 
 class GraphThread(QObject, threading.Thread):
@@ -160,9 +206,8 @@ class GraphThread(QObject, threading.Thread):
         try:
             includes = self._get_includes(self.current_path)
             included_from = []
-            if self.root_path != self.current_path:
-                incs = self._get_includes(self.root_path)
-                included_from = self._find_inc_file(self.current_path, incs, self.root_path)
+            incs = self._get_includes(self.root_path)
+            included_from = self._find_inc_file(self.current_path, incs, self.root_path)
             self.graph.emit(included_from, includes)
         except Exception:
             import traceback

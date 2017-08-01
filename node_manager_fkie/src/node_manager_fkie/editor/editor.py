@@ -208,10 +208,11 @@ class Editor(QMainWindow):
         self.graphButton = QPushButton(self)
         self.graphButton.setObjectName("graphButton")
         self.graphButton.toggled.connect(self.on_toggled_graph)
+        self.graphButton.setText("&Include Graph >>")
         self.graphButton.setCheckable(True)
-        self.graphButton.setIcon(QIcon(":/icons/button_graph.png"))
-        self.graphButton.setShortcut("Ctrl+R")
-        self.graphButton.setToolTip('Shows include and include from files (Ctrl+R)')
+        # self.graphButton.setIcon(QIcon(":/icons/button_graph.png"))
+        self.graphButton.setShortcut("Ctrl+E")
+        self.graphButton.setToolTip('Shows include and include from files (Ctrl+E)')
         self.graphButton.setFlat(True)
         self.horizontalLayout.addWidget(self.graphButton)
         # add the search button
@@ -258,6 +259,14 @@ class Editor(QMainWindow):
                     self.on_toggled_replace(True)
             else:
                 self.replaceButton.setChecked(not self.replaceButton.isChecked())
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_E:
+            if self.tabWidget.currentWidget().hasFocus():
+                if not self.graphButton.isChecked():
+                    self.graphButton.setChecked(True)
+                else:
+                    self.on_toggled_graph(True)
+            else:
+                self.graphButton.setChecked(not self.graphButton.isChecked())
         else:
             event.accept()
             QMainWindow.keyPressEvent(self, event)
@@ -352,13 +361,15 @@ class Editor(QMainWindow):
         insert_index = self.tabWidget.currentIndex() + 1
         if not inc_path:
             insert_index = self.tabWidget.currentIndex()
+        # open the included file
+        self.on_load_request(inc_path, insert_index=insert_index, goto_line=-1)
         # on first call goes to the line, which include the file. If we are there, open the included file
-        same_line = (linenr == self.tabWidget.currentWidget().textCursor().blockNumber() + 1)
-        same_file = (path == self.tabWidget.currentWidget().filename)
-        if same_file and same_line:
-            self.on_load_request(inc_path, insert_index=insert_index, goto_line=-1)
-        else:
-            self.on_load_request(path, insert_index=insert_index, goto_line=linenr)
+        # same_line = (linenr == self.tabWidget.currentWidget().textCursor().blockNumber() + 1)
+        # same_file = (path == self.tabWidget.currentWidget().filename)
+        # if same_file and same_line:
+        #     self.on_load_request(inc_path, insert_index=insert_index, goto_line=-1)
+        # else:
+        #     self.on_load_request(path, insert_index=insert_index, goto_line=linenr)
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():
