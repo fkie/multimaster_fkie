@@ -566,8 +566,8 @@ class Editor(QMainWindow):
                 mov = QTextCursor.NextBlock if curpos < linenr else QTextCursor.PreviousBlock
                 self.tabWidget.currentWidget().moveCursor(mov)
                 curpos = self.tabWidget.currentWidget().textCursor().blockNumber() + 1
-            self.tabWidget.currentWidget().moveCursor(QTextCursor.StartOfBlock)
-            self.tabWidget.currentWidget().moveCursor(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
+            self.tabWidget.currentWidget().moveCursor(QTextCursor.EndOfBlock)
+            self.tabWidget.currentWidget().moveCursor(QTextCursor.StartOfBlock, QTextCursor.KeepAnchor)
 
     ##############################################################################
     # SLOTS for search dialog
