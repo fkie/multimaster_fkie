@@ -90,6 +90,7 @@ class GraphViewWidget(QDockWidget):
     def set_file(self, current_path, root_path):
         if self._current_path != current_path:
             self._current_path = current_path
+            self.setWindowTitle("Include Graph - %s" % os.path.basename(self._current_path))
             # TODO: run analyzer/path parser in a new thread
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)

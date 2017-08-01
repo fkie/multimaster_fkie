@@ -164,15 +164,14 @@ class Editor(QMainWindow):
         self.horizontalLayout.setContentsMargins(4, 0, 4, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         # add open upper launchfile button
-        self.upperButton = QPushButton(self)
-        self.upperButton.setObjectName("upperButton")
-        self.upperButton.clicked.connect(self.on_upperButton_clicked)
-        self.upperButton.setIcon(QIcon(":/icons/up.png"))
-        # self.upperButton.setText(self._translate("&Upper"))
-        self.upperButton.setShortcut("Ctrl+U")
-        self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
-        self.upperButton.setFlat(True)
-        self.horizontalLayout.addWidget(self.upperButton)
+        # self.upperButton = QPushButton(self)
+        # self.upperButton.setObjectName("upperButton")
+        # self.upperButton.clicked.connect(self.on_upperButton_clicked)
+        # self.upperButton.setIcon(QIcon(":/icons/up.png"))
+        # self.upperButton.setShortcut("Ctrl+U")
+        # self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
+        # self.upperButton.setFlat(True)
+        # self.horizontalLayout.addWidget(self.upperButton)
 
         # add the goto button
         self.gotoButton = QPushButton(self)
@@ -211,7 +210,6 @@ class Editor(QMainWindow):
         self.graphButton.toggled.connect(self.on_toggled_graph)
         self.graphButton.setCheckable(True)
         self.graphButton.setIcon(QIcon(":/icons/button_graph.png"))
-        # self.upperButton.setText(self._translate("&Upper"))
         self.graphButton.setShortcut("Ctrl+R")
         self.graphButton.setToolTip('Shows include and include from files (Ctrl+R)')
         self.graphButton.setFlat(True)
@@ -348,7 +346,7 @@ class Editor(QMainWindow):
             self._search_thread.start()
         if goto_line != -1:
             self._goto(goto_line, True)
-        self.upperButton.setEnabled(self.tabWidget.count() > 1)
+        # self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def on_goto_in_file(self, path, linenr, inc_path):
         insert_index = -1
@@ -367,7 +365,8 @@ class Editor(QMainWindow):
             self.find_dialog.file_changed(self.tabWidget.currentWidget().filename)
 
     def on_tab_changed(self, index):
-        self.graph_view.set_file(self.tabWidget.widget(index).filename, self.tabWidget.widget(0).filename)
+        if index > -1:
+            self.graph_view.set_file(self.tabWidget.widget(index).filename, self.tabWidget.widget(0).filename)
 
     def on_close_tab(self, tab_index):
         '''
@@ -399,7 +398,7 @@ class Editor(QMainWindow):
         except Exception:
             import traceback
             rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
-        self.upperButton.setEnabled(self.tabWidget.count() > 1)
+        # self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def reject(self):
         if self.find_dialog.isVisible():
