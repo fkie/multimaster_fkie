@@ -164,14 +164,14 @@ class Editor(QMainWindow):
         self.horizontalLayout.setContentsMargins(4, 0, 4, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         # add open upper launchfile button
-        # self.upperButton = QPushButton(self)
-        # self.upperButton.setObjectName("upperButton")
-        # self.upperButton.clicked.connect(self.on_upperButton_clicked)
-        # self.upperButton.setIcon(QIcon(":/icons/up.png"))
-        # self.upperButton.setShortcut("Ctrl+U")
-        # self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
-        # self.upperButton.setFlat(True)
-        # self.horizontalLayout.addWidget(self.upperButton)
+        self.upperButton = QPushButton(self)
+        self.upperButton.setObjectName("upperButton")
+        self.upperButton.clicked.connect(self.on_upperButton_clicked)
+        self.upperButton.setIcon(QIcon(":/icons/up.png"))
+        self.upperButton.setShortcut("Ctrl+U")
+        self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
+        self.upperButton.setFlat(True)
+        self.horizontalLayout.addWidget(self.upperButton)
 
         # add the goto button
         self.gotoButton = QPushButton(self)
@@ -346,10 +346,10 @@ class Editor(QMainWindow):
             self._search_thread.start()
         if goto_line != -1:
             self._goto(goto_line, True)
-        # self.upperButton.setEnabled(self.tabWidget.count() > 1)
+        self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def on_goto_in_file(self, path, linenr, inc_path):
-        insert_index = -1
+        insert_index = self.tabWidget.currentIndex() + 1
         if not inc_path:
             insert_index = self.tabWidget.currentIndex()
         # on first call goes to the line, which include the file. If we are there, open the included file
@@ -398,7 +398,7 @@ class Editor(QMainWindow):
         except Exception:
             import traceback
             rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
-        # self.upperButton.setEnabled(self.tabWidget.count() > 1)
+        self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def reject(self):
         if self.find_dialog.isVisible():
@@ -468,26 +468,20 @@ class Editor(QMainWindow):
         Opens the file which include the current open file
         '''
         if self.tabWidget.currentIndex() != 0:
-            files = LaunchConfig.included_files(self.tabWidget.widget(0).filename, recursive=False)
-            basename_cur = "/%s" % os.path.basename(self.tabWidget.currentWidget().filename)
-            if self.tabWidget.currentWidget().filename in files:
-                self.on_load_request(self.tabWidget.widget(0).filename, basename_cur)
-#                self.tabWidget.setCurrentIndex(0)
-            else:
-                ret = self._find_inc_file(self.tabWidget.currentWidget().filename, files)
-                if ret:
-                    self.on_load_request(ret, basename_cur, self.tabWidget.currentIndex())
+            files = LaunchConfig.included_files(self.tabWidget.widget(0).filename, recursive=False, unique=False)
+            ret = self._find_inc_file(self.tabWidget.currentWidget().filename, files, self.tabWidget.widget(0).filename)
+            if ret[1]:
+                self.on_load_request(ret[1], insert_index=self.tabWidget.currentIndex(), goto_line=ret[0] + 1)
 
-    def _find_inc_file(self, filename, files):
+    def _find_inc_file(self, filename, files, root_path):
         for f in files:
-            inc_files = LaunchConfig.included_files(f, recursive=False)
-            if filename in inc_files:
-                return f
-            else:
-                retf = self._find_inc_file(filename, inc_files)
-                if retf:
-                    return retf
-        return ''
+            if filename == f[1]:
+                return (f[0], root_path)
+            inc_files = LaunchConfig.included_files(f[1], recursive=False, unique=False)
+            retf = self._find_inc_file(filename, inc_files, f[1])
+            if retf[1]:
+                return retf
+        return (-1, '')
 
     def on_saveButton_clicked(self):
         '''
