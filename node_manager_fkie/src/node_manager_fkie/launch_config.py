@@ -205,8 +205,8 @@ class LaunchConfig(QObject):
                                                        QRegExp("\\bvalue=.*package:\/\/\\b"),
                                                        QRegExp("\\bvalue=.*\$\(find\\b"),
                                                        QRegExp("\\bargs=.*\$\(find\\b")],
-                       recursive=True):
-        result = set()
+                       recursive=True, unique=True):
+        result = []
         lines = []
         pwd = '.'
         f = QFile(text_or_path)
@@ -223,6 +223,7 @@ class LaunchConfig(QObject):
                 lines = content.splitlines()
         else:
             lines = [text_or_path]
+        line_index = 0
         for line in lines:
             index = cls._index(line, regexp_list)
             if index > -1:
@@ -234,13 +235,20 @@ class LaunchConfig(QObject):
                         try:
                             path = cls.interpretPath(fileName, pwd)
                             if os.path.isfile(path):
-                                result.add(path)
+                                if not unique:
+                                    result.append((line_index, path))
+                                else:
+                                    result.append(path)
                                 ext = os.path.splitext(path)
                                 if recursive and ext[1] in nm.settings().SEARCH_IN_EXT:
-                                    result.update(cls.included_files(path, regexp_list))
+                                    result += cls.included_files(path, regexp_list)
                         except Exception:
-                            pass
-        return list(result)
+                            import traceback
+                            print traceback.format_exc()
+            line_index += 1
+        if unique:
+            return list(set(result))
+        return result
 
     def load(self, argv):
         '''

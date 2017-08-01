@@ -116,6 +116,13 @@ class HTMLDelegate(QStyledItemDelegate):
                 result = '<div><b>{</b><span style="color:gray;">%s%s</span><b>%s}</b></div>' % (ns, sep, name)
             else:
                 result = '<div><b>{%s}</b></div>' % (name)
+        elif text.find('[') > -1:
+            nr_idx = text.find(':')
+            pkg_idx = text.find('[', nr_idx)
+            if nr_idx > -1:
+                result = '<div>%s<b>%s</b><span style="color:gray;">%s</span></div>' % (text[0:nr_idx + 1], text[nr_idx + 1:pkg_idx], text[pkg_idx:])
+            else:
+                result = '<div>%s<span style="color:gray;">%s</span></div>' % (text[0:pkg_idx], text[pkg_idx:])
         elif not is_legal_name(text):  # handle all invalid names (used space in the name)
             ns, sep, name = text.rpartition('/')
             result = ''
