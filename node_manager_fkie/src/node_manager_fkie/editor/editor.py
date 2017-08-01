@@ -144,7 +144,8 @@ class Editor(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.find_dialog)
 
         self.graph_view = GraphViewWidget(self.tabWidget, self)
-        self.graph_view.goto_signal.connect(self.on_goto_in_file)
+        self.graph_view.load_signal.connect(self.on_graph_load_file)
+        self.graph_view.goto_signal.connect(self.on_graph_goto)
         self.addDockWidget(Qt.RightDockWidgetArea, self.graph_view)
         # open the files
         for f in filenames:
@@ -357,19 +358,16 @@ class Editor(QMainWindow):
             self._goto(goto_line, True)
         self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
-    def on_goto_in_file(self, path, linenr, inc_path):
+    def on_graph_load_file(self, path, insert_after=True):
         insert_index = self.tabWidget.currentIndex() + 1
-        if not inc_path:
+        if not insert_after:
             insert_index = self.tabWidget.currentIndex()
-        # open the included file
-        self.on_load_request(inc_path, insert_index=insert_index, goto_line=-1)
-        # on first call goes to the line, which include the file. If we are there, open the included file
-        # same_line = (linenr == self.tabWidget.currentWidget().textCursor().blockNumber() + 1)
-        # same_file = (path == self.tabWidget.currentWidget().filename)
-        # if same_file and same_line:
-        #     self.on_load_request(inc_path, insert_index=insert_index, goto_line=-1)
-        # else:
-        #     self.on_load_request(path, insert_index=insert_index, goto_line=linenr)
+        self.on_load_request(path, insert_index=insert_index)
+
+    def on_graph_goto(self, path, linenr):
+        if path == self.tabWidget.currentWidget().filename:
+            if linenr != -1:
+                self._goto(linenr, True)
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():

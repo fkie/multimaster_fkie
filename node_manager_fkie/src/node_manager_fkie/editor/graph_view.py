@@ -58,12 +58,14 @@ class GraphViewWidget(QDockWidget):
     '''
     A frame to find text in the Editor.
     '''
-    goto_signal = Signal(str, int, str)
-    ''' @ivar: filename, line to open, included file (in case the user activate the included file twice, open this file)
-    '''
+    load_signal = Signal(str, bool)
+    ''' @ivar: filename of file to load, True if insert after the current open tab'''
+    goto_signal = Signal(str, int)
+    ''' @ivar: filename, line to go'''
     DATA_FILE = Qt.UserRole + 1
     DATA_LINE = Qt.UserRole + 2
     DATA_INC_FILE = Qt.UserRole + 3
+    DATA_LEVEL = Qt.UserRole + 4
 
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "LaunchGraph", parent)
@@ -74,40 +76,45 @@ class GraphViewWidget(QDockWidget):
         self._tabwidget = tabwidget
         self._current_path = None
         self._root_path = None
+        self._current_deep = 0
         self.graphTreeView.setSelectionBehavior(QAbstractItemView.SelectRows)
         model = QStandardItemModel()
-#        model.setHorizontalHeaderLabels([''])
         self.graphTreeView.setModel(model)
         self.graphTreeView.setUniformRowHeights(True)
         self.graphTreeView.header().hide()
         self.htmlDelegate = HTMLDelegate()
         self.graphTreeView.setItemDelegateForColumn(0, self.htmlDelegate)
         self.graphTreeView.activated.connect(self.on_activated)
+        self.graphTreeView.clicked.connect(self.on_clicked)
         self._created_tree = False
         self._refill_tree([], [], False)
 
     def clear_cache(self):
         with CHACHE_MUTEX:
             GRAPH_CACHE.clear()
+            self._created_tree = False
+            self.graphTreeView.model().clear()
+            crp = self._current_path
+            self._current_path = None
+            self.set_file(crp, self._root_path)
 
     def set_file(self, current_path, root_path):
         self._root_path = root_path
-        file_dsrc = self._root_path
-        try:
-            file_dsrc = os.path.basename(self._root_path)
-        except Exception:
-            pass
-        self.setWindowTitle("Include Graph - %s" % file_dsrc)
         if self._current_path != current_path:
             self._current_path = current_path
             # TODO: run analyzer/path parser in a new thread
+            self.setWindowTitle("Include Graph - loading...")
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)
             self._fill_graph_thread.start()
 
     def on_activated(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
-        self.goto_signal.emit(item.data(self.DATA_FILE), item.data(self.DATA_LINE), item.data(self.DATA_INC_FILE))
+        self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
+
+    def on_clicked(self, index):
+        item = self.graphTreeView.model().itemFromIndex(index)
+        self.goto_signal.emit(item.data(self.DATA_FILE), item.data(self.DATA_LINE))
 
     def enable(self):
         self.setVisible(True)
@@ -116,12 +123,14 @@ class GraphViewWidget(QDockWidget):
         self.graphTreeView.setFocus()
 
     def _refill_tree(self, included_from, includes, create_tree=True):
-        # if self.graphTreeView.model().rowCount() > 2:
-        #     self.graphTreeView.model().takeRow(3)
-        #     self.graphTreeView.model().takeRow(2)
-        # else:
-        #     self.graphTreeView.model().clear()
+        deep = 0
         if not self._created_tree and create_tree:
+            file_dsrc = self._root_path
+            try:
+                file_dsrc = os.path.basename(self._root_path)
+            except Exception:
+                pass
+            self.setWindowTitle("Include Graph - %s" % file_dsrc)
             with CHACHE_MUTEX:
                 if self._root_path in GRAPH_CACHE:
                     pkg, _ = package_name(os.path.dirname(self._root_path))
@@ -130,38 +139,18 @@ class GraphViewWidget(QDockWidget):
                     inc_item.setData(self._root_path, self.DATA_FILE)
                     inc_item.setData(-1, self.DATA_LINE)
                     inc_item.setData(self._root_path, self.DATA_INC_FILE)
-                    self._append_items(inc_item)
+                    inc_item.setData(deep, self.DATA_LEVEL)
+                    self._append_items(inc_item, deep + 1)
                     self.graphTreeView.model().appendRow(inc_item)
                     # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
                 self._created_tree = True
         items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 1, Qt.MatchRecursive)
         if items:
+            self._current_deep = items[0].data(self.DATA_LEVEL)
             self.graphTreeView.selectionModel().select(items[0], QItemSelectionModel.SelectCurrent)
-#         included_from_item = QStandardItem('included from [%d]' % len(included_from))
-#         for inc_lnr, inc_path in included_from:
-#             pkg, _ = package_name(os.path.dirname(inc_path))
-#             itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
-#             inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
-#             inc_item.setData(inc_path, self.DATA_FILE)
-#             inc_item.setData(inc_lnr + 1, self.DATA_LINE)
-#             inc_item.setData('', self.DATA_INC_FILE)
-#             included_from_item.appendRow(inc_item)
-#         self.graphTreeView.model().appendRow(included_from_item)
-#         includes_item = QStandardItem('include [%d]' % len(includes))
-#         for inc_lnr, inc_path in includes:
-#             pkg, _ = package_name(os.path.dirname(inc_path))
-#             itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
-#             inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
-#             inc_item.setData(self._current_path, self.DATA_FILE)
-#             inc_item.setData(inc_lnr + 1, self.DATA_LINE)
-#             inc_item.setData(inc_path, self.DATA_INC_FILE)
-#             includes_item.appendRow(inc_item)
-#         self.graphTreeView.model().appendRow(includes_item)
-#         self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(included_from_item))
-#         self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(includes_item))
         self.graphTreeView.expandAll()
 
-    def _append_items(self, item):
+    def _append_items(self, item, deep):
         path = item.data(self.DATA_INC_FILE)
         if not path:
             path = item.data(self.DATA_FILE)
@@ -173,7 +162,8 @@ class GraphViewWidget(QDockWidget):
                 inc_item.setData(path, self.DATA_FILE)
                 inc_item.setData(inc_lnr + 1, self.DATA_LINE)
                 inc_item.setData(inc_path, self.DATA_INC_FILE)
-                self._append_items(inc_item)
+                inc_item.setData(deep, self.DATA_LEVEL)
+                self._append_items(inc_item, deep + 1)
                 item.appendRow(inc_item)
 
 
