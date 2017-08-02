@@ -32,11 +32,14 @@
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
       </property>
-      <property name="uniformRowHeights">
-       <bool>false</bool>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
       </property>
       <property name="sortingEnabled">
        <bool>true</bool>
+      </property>
+      <property name="expandsOnDoubleClick">
+       <bool>false</bool>
       </property>
       <attribute name="headerVisible">
        <bool>false</bool>

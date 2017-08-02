@@ -479,20 +479,7 @@ class Editor(QMainWindow):
         Opens the file which include the current open file
         '''
         if self.tabWidget.currentIndex() != 0:
-            files = LaunchConfig.included_files(self.tabWidget.widget(0).filename, recursive=False, unique=False)
-            ret = self._find_inc_file(self.tabWidget.currentWidget().filename, files, self.tabWidget.widget(0).filename)
-            if ret[1]:
-                self.on_load_request(ret[1], insert_index=self.tabWidget.currentIndex(), goto_line=ret[0] + 1)
-
-    def _find_inc_file(self, filename, files, root_path):
-        for f in files:
-            if filename == f[1]:
-                return (f[0], root_path)
-            inc_files = LaunchConfig.included_files(f[1], recursive=False, unique=False)
-            retf = self._find_inc_file(filename, inc_files, f[1])
-            if retf[1]:
-                return retf
-        return (-1, '')
+            self.graph_view.find_parent_file()
 
     def on_saveButton_clicked(self):
         '''

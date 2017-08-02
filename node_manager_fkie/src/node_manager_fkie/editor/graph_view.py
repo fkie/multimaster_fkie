@@ -108,6 +108,12 @@ class GraphViewWidget(QDockWidget):
             self._fill_graph_thread.graph.connect(self._refill_tree)
             self._fill_graph_thread.start()
 
+    def find_parent_file(self):
+        selected = self.graphTreeView.selectionModel().selectedIndexes()
+        for index in selected:
+            item = self.graphTreeView.model().itemFromIndex(index.parent())
+            self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
+
     def on_activated(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
         self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
@@ -144,10 +150,16 @@ class GraphViewWidget(QDockWidget):
                     self.graphTreeView.model().appendRow(inc_item)
                     # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
                 self._created_tree = True
-        items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 1, Qt.MatchRecursive)
-        if items:
-            self._current_deep = items[0].data(self.DATA_LEVEL)
-            self.graphTreeView.selectionModel().select(items[0], QItemSelectionModel.SelectCurrent)
+        items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
+        first = True
+        self.graphTreeView.selectionModel().clearSelection()
+        for item in items:
+            if first:
+                self._current_deep = item.data(self.DATA_LEVEL)
+                self.graphTreeView.selectionModel().select(item, QItemSelectionModel.SelectCurrent)
+                first = False
+            else:
+                self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
         self.graphTreeView.expandAll()
 
     def _append_items(self, item, deep):
