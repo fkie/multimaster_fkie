@@ -31,6 +31,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import itertools
+import math
+import sys
+import threading
+import time
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QUrl, QTimer, Signal
@@ -40,18 +45,36 @@ try:
 except:
     from python_qt_binding.QtWidgets import QApplication, QDialog
 
-import math
-import threading
-import time
-
 from roslib import message
+from genpy.rostime import Time, TVal
 import rospy
 
 import gui_resources
 import node_manager_fkie as nm
 
 
-# import roslib
+def isstring(s):
+    """Small helper version to check an object is a string in a way that works
+    for both Python 2 and 3
+    """
+    try:
+        return isinstance(s, basestring)
+    except NameError:
+        return isinstance(s, str)
+
+
+def _convert_getattr(val, f, t):
+    """
+    Convert atttribute types on the fly, if necessary.  This is mainly
+    to convert uint8[] fields back to an array type.
+    """
+    attr = getattr(val, f)
+    if isstring(attr) and 'uint8[' in t:
+        return [ord(x) for x in attr]
+    else:
+        return attr
+
+
 class EchoDialog(QDialog):
 
     MESSAGE_CHARS_LIMIT = 1000
@@ -132,6 +155,7 @@ class EchoDialog(QDialog):
         self.receiving_hz = self.MESSAGE_HZ_LIMIT
         self.line_limit = self.MESSAGE_LINE_LIMIT
         self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
+        self.digits_after_in_array = 2
 
         self.field_filter_fn = None
         self._latched = False
@@ -147,6 +171,7 @@ class EchoDialog(QDialog):
             self.showStringsCheckBox.toggled.connect(self.on_no_str_checkbox_toggled)
             self.maxLenStringComboBox.activated[str].connect(self.combobox_reduce_ch_activated)
             self.showArraysCheckBox.toggled.connect(self.on_no_arr_checkbox_toggled)
+            self.maxDigitsComboBox.activated[str].connect(self.combobox_reduce_digits_activated)
             self.maxLenComboBox.activated[str].connect(self.on_combobox_chars_activated)
             self.maxHzComboBox.activated[str].connect(self.on_combobox_hz_activated)
             self.displayCountComboBox.activated[str].connect(self.on_combobox_count_activated)
@@ -260,6 +285,16 @@ class EchoDialog(QDialog):
         for msg, current_time in self._msgs:
             self._append_message(msg, self._latched, current_time, False)
 
+    def combobox_reduce_digits_activated(self, ch_txt):
+        try:
+            self.digits_after_in_array = int(ch_txt)
+        except ValueError:
+            self.digits_after_in_array = None
+            self.maxDigitsComboBox.setEditText('')
+        self.display.clear()
+        for msg, current_time in self._msgs:
+            self._append_message(msg, self._latched, current_time, False)
+
     def on_combobox_chars_activated(self, chars_txt):
         try:
             self.chars_limit = int(chars_txt)
@@ -359,7 +394,7 @@ class EchoDialog(QDialog):
             self._last_received_ts = current_time
         if not self.show_only_rate:
             # convert message to string and reduce line width to current limit
-            msg = message.strify_message(msg, field_filter=self.field_filter_fn)
+            msg = self.strify_message(msg, field_filter=self.field_filter_fn)
             if isinstance(msg, tuple):
                 msg = msg[0]
             msg = self._trim_width(msg)
@@ -605,3 +640,90 @@ class EchoDialog(QDialog):
                     self.text_error_signal.emit(text)
         except Exception:
             pass
+
+# #############################################################################
+# PARTS OF genpy/messages.py
+# #############################################################################
+
+    def strify_message(self, val, indent='', time_offset=None, current_time=None, field_filter=None, fixed_numeric_width=None):
+        """
+        Convert value to string representation
+        :param val: to convert to string representation. Most likely a Message.  ``Value``
+        :param indent: indentation. If indent is set, then the return value will have a leading \n, ``str``
+        :param time_offset: if not None, time fields will be displayed
+          as deltas from  time_offset, ``Time``
+
+        :param current_time: currently not used. Only provided for API
+          compatibility. current_time passes in the current time with
+          respect to the message, ``Time``
+        :param field_filter: filter the fields that are strified for Messages, ``fn(Message)->iter(str)``
+        :returns: string (YAML) representation of message, ``str``
+        """
+
+        type_ = type(val)
+        if type_ in (int, long, float) and fixed_numeric_width is not None:
+            if type_ is float:
+                return ('%.' + str(fixed_numeric_width) + 'f') % val
+            else:
+                return ('%d') % val
+        elif type_ in (int, long, float, bool):
+            return str(val)
+        elif isstring(val):
+            # TODO: need to escape strings correctly
+            if not val:
+                return "''"
+            return val
+        elif isinstance(val, TVal):
+            if time_offset is not None and isinstance(val, Time):
+                val = val - time_offset
+            if fixed_numeric_width is not None:
+                format_str = '%d'
+                sec_str = '\n%ssecs: ' % indent + (format_str % val.secs)
+                nsec_str = '\n%snsecs: ' % indent + (format_str % val.nsecs)
+                return sec_str + nsec_str
+            else:
+                return '\n%ssecs: %s\n%snsecs: %9d' % (indent, val.secs, indent, val.nsecs)
+
+        elif type_ in (list, tuple):
+            if len(val) == 0:
+                return "[]"
+            val0 = val[0]
+            if type(val0) in (int, float) and self.digits_after_in_array is not None:
+                list_str = '[' + ''.join(self.strify_message(v, indent, time_offset, current_time, field_filter, self.digits_after_in_array) + ', ' for v in val).rstrip(', ') + ']'
+                return list_str
+            elif type(val0) in (int, float, str, bool):
+                # TODO: escape strings properly
+                return str(list(val))
+            else:
+                pref = indent + '- '
+                indent = indent + '  '
+                return '\n' + '\n'.join([pref + self.strify_message(v, indent, time_offset, current_time, field_filter, self.digits_after_in_array) for v in val])
+        elif isinstance(val, message.Message):
+            # allow caller to select which fields of message are strified
+            if field_filter is not None:
+                fields = list(field_filter(val))
+            else:
+                fields = val.__slots__
+
+            p = '%s%%s: %%s' % (indent)
+            ni = '  ' + indent
+            python_zip = None
+            if sys.hexversion > 0x03000000:  # Python3
+                python_zip = zip
+            else:  # Python2
+                python_zip = itertools.izip
+                slots = []
+                for f, t in python_zip(val.__slots__, val._slot_types):
+                    if f in fields:
+                        cval = _convert_getattr(val, f, t)
+                        slot_name = f
+                        if isinstance(cval, (list, tuple)):
+                            slot_name = "%s[%d]" % (f, len(cval))
+                        slots.append(p % (slot_name, self.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
+                vals = '\n'.join(slots)
+            if indent:
+                return '\n' + vals
+            else:
+                return vals
+        else:
+            return str(val)  # punt
