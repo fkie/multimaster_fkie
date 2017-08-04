@@ -144,7 +144,7 @@
             <item>
              <widget class="QLabel" name="maxDigitsLabel">
               <property name="text">
-               <string>digits after '.'</string>
+               <string>decimal length</string>
               </property>
              </widget>
             </item>
