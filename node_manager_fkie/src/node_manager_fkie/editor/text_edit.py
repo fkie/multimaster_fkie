@@ -312,7 +312,11 @@ class TextEdit(QTextEdit):
                 self.shiftText(back=True)
             else:
                 event.accept()
+                if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
+                    ident = self.getIdentOfCurretLine()
                 QTextEdit.keyPressEvent(self, event)
+                if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
+                    self.indentCurrentLine(ident)
         else:
             event.accept()
             QTextEdit.keyPressEvent(self, event)
@@ -475,6 +479,49 @@ class TextEdit(QTextEdit):
                     cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start + inserted)
             self.setTextCursor(cursor)
             cursor.endEditBlock()
+
+    def indentCurrentLine(self, count=0):
+        '''
+        Increase indentation of current line according to the preview line.
+        '''
+        cursor = self.textCursor()
+        if not cursor.isNull():
+            # one undo operation
+            cursor.beginEditBlock()
+            start = cursor.selectionStart()
+            end = cursor.selectionEnd()
+            cursor.setPosition(start)
+            block_start = cursor.blockNumber()
+            cursor.setPosition(end)
+            block_end = cursor.blockNumber()
+            ident = ''
+            for _ in range(count):
+                ident += ' '
+            if block_end - block_start == 0:
+                # shift one line of count spaces to the right
+                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
+                cursor.insertText(ident)
+            else:
+                # shift selected block two spaces to the right
+                inserted = 0
+                for i in reversed(range(start, end)):
+                    cursor.setPosition(i)
+                    if cursor.atBlockStart():
+                        cursor.insertText(ident)
+                        inserted += count
+                cursor.setPosition(start)
+                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start + inserted)
+            self.setTextCursor(cursor)
+            cursor.endEditBlock()
+
+    def getIdentOfCurretLine(self):
+        cursor = self.textCursor()
+        if not cursor.isNull():
+            cursor.movePosition(QTextCursor.StartOfLine)
+            cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+            line = cursor.selectedText()
+            return len(line) - len(line.lstrip(' '))
+        return 0
 
     #############################################################################
     ########## Drag&Drop                                                   ######
