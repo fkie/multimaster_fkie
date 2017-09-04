@@ -443,8 +443,17 @@ class TextEdit(QTextEdit):
                     cursor.movePosition(QTextCursor.StartOfLine)
                 else:
                     # shift one line two spaces to the right
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
-                    cursor.insertText('  ')
+                    indent_prev = self.getIndentOfPreviewsBlock()
+                    if self.textCursor().positionInBlock() >= indent_prev:
+                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
+                        cursor.insertText('  ')
+                    else:
+                        # move to the position of previous indent
+                        cursor.movePosition(QTextCursor.StartOfLine)
+                        pose_of_line = cursor.position()
+                        cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                        cursor.insertText("%s%s" % (' ' * indent_prev, cursor.selectedText().lstrip()))
+                        cursor.setPosition(pose_of_line + indent_prev, QTextCursor.MoveAnchor)
             else:
                 # shift the selected block two spaces to the left
                 if back:
@@ -518,6 +527,15 @@ class TextEdit(QTextEdit):
         cursor = self.textCursor()
         if not cursor.isNull():
             cursor.movePosition(QTextCursor.StartOfLine)
+            cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+            line = cursor.selectedText()
+            return len(line) - len(line.lstrip(' '))
+        return 0
+
+    def getIndentOfPreviewsBlock(self):
+        cursor = self.textCursor()
+        if not cursor.isNull():
+            cursor.movePosition(QTextCursor.PreviousBlock)
             cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
             line = cursor.selectedText()
             return len(line) - len(line.lstrip(' '))
