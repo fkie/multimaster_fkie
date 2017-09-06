@@ -160,6 +160,7 @@ class MasterViewProxy(QWidget):
         self.__force_update = False
         self.__configs = dict()  # [file name] : LaunchConfig or tuple(ROS node name, ROS service uri, ROS master URI) : ROS nodes
         self.__online = False
+        self.__run_id = ''
 #    self.rosconfigs = dict() # [launch file path] = LaunchConfig()
         self.__in_question = []  # stores the changed files, until the user is interacted
 #    self.__uses_confgs = dict() # stores the decisions of the user for used configuration to start of node
@@ -489,7 +490,7 @@ class MasterViewProxy(QWidget):
         self.__force_update = True
 
     def update_system_parameter(self):
-        self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/use_sim_time", "/robot_icon", "/roslaunch/uris"])
+        self.parameterHandler_sim.requestParameterValues(self.masteruri, ["/run_id", "/use_sim_time", "/robot_icon", "/roslaunch/uris"])
 
     def markNodesAsDuplicateOf(self, running_nodes):
         '''
@@ -2955,6 +2956,15 @@ class MasterViewProxy(QWidget):
                     if code_n == 1:
                         for _, value in val.items():
                             self.launch_server_handler.updateLaunchServerInfo(value)
+                elif p == "/run_id":
+                    if self.__run_id != val:
+                        self.__run_id = val
+                        # you have to launch global parameter
+                        for filename, launch_cfg in self.__configs.items():
+                            try:
+                                launch_cfg.global_param_done.remove(masteruri)
+                            except ValueError:
+                                pass
         else:
             rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), msg)
         if not robot_icon_found:
