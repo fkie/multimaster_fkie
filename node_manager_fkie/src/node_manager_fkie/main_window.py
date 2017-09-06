@@ -1836,18 +1836,19 @@ class MainWindow(QMainWindow):
             choices = dict()
             for (muri, lfile) in new_affected:
                 master = self.getMaster(muri)
-                if master is not None:
+                if master is not None and master.online:
                     master.launchfile = lfile
                     choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-            cfgs, _ = SelectDialog.getValue('Reload configurations?',
-                                            '<b>%s</b> was changed.<br>Select affected configurations to reload:' % ', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
-                                            False, True,
-                                            ':/icons/crystal_clear_launch_file.png',
-                                            self)
+            if choices:
+                cfgs, _ = SelectDialog.getValue('Reload configurations?',
+                                                '<b>%s</b> was changed.<br>Select affected configurations to reload:' % ', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
+                                                False, True,
+                                                ':/icons/crystal_clear_launch_file.png',
+                                                self)
+                for c in cfgs:
+                    choices[c][0].launchfiles = choices[c][1]
             for (muri, lfile) in new_affected:
                 self.__in_question.remove((muri, lfile))
-            for c in cfgs:
-                choices[c][0].launchfiles = choices[c][1]
         self._changed_files.clear()
 
     def _check_for_changed_binaries(self):

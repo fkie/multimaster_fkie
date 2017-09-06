@@ -2960,7 +2960,7 @@ class MasterViewProxy(QWidget):
                     if self.__run_id != val:
                         self.__run_id = val
                         # you have to launch global parameter
-                        for filename, launch_cfg in self.__configs.items():
+                        for _, launch_cfg in self.__configs.items():
                             try:
                                 launch_cfg.global_param_done.remove(masteruri)
                             except ValueError:
