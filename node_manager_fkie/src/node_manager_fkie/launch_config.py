@@ -198,14 +198,20 @@ class LaunchConfig(QObject):
         return path
 
     @classmethod
-    def included_files(cls, text_or_path, regexp_list=[QRegExp("\\btextfile\\b"),
-                                                       QRegExp("\\bfile\\b"),
-                                                       QRegExp("\\bdefault\\b"),
-                                                       QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-                                                       QRegExp("\\bvalue=.*package:\/\/\\b"),
-                                                       QRegExp("\\bvalue=.*\$\(find\\b"),
-                                                       QRegExp("\\bargs=.*\$\(find\\b")],
+    def included_files(cls, text_or_path,
+                       regexp_retruns=[],
+                       regexp_filelist=[QRegExp("\\btextfile\\b"),
+                                        QRegExp("\\bfile\\b"),
+                                        QRegExp("\\bdefault\\b"),
+                                        QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                        QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                        QRegExp("\\bvalue=.*\$\(find\\b"),
+                                        QRegExp("\\bargs=.*\$\(find\\b")],
                        recursive=True, unique=True):
+        '''
+        :param regexp_retruns: the list with patterns which are returned as result. If empy it's the same as 'regexp_filelist'
+        :param regexp_filelist: the list with all patterns to find include files
+        '''
         result = []
         lines = []
         pwd = '.'
@@ -225,7 +231,7 @@ class LaunchConfig(QObject):
             lines = [text_or_path]
         line_index = 0
         for line in lines:
-            index = cls._index(line, regexp_list)
+            index = cls._index(line, regexp_filelist)
             if index > -1:
                 startIndex = line.find('"', index)
                 if startIndex > -1:
@@ -235,13 +241,14 @@ class LaunchConfig(QObject):
                         try:
                             path = cls.interpretPath(fileName, pwd)
                             if os.path.isfile(path):
-                                if not unique:
-                                    result.append((line_index, path))
-                                else:
-                                    result.append(path)
+                                if not regexp_retruns or cls._index(line, regexp_retruns) > -1:
+                                    if not unique:
+                                        result.append((line_index, path))
+                                    else:
+                                        result.append(path)
                                 ext = os.path.splitext(path)
                                 if recursive and ext[1] in nm.settings().SEARCH_IN_EXT:
-                                    result += cls.included_files(path, regexp_list)
+                                    result += cls.included_files(path, regexp_filelist)
                         except Exception:
                             import traceback
                             print traceback.format_exc()
@@ -267,11 +274,12 @@ class LaunchConfig(QObject):
             self.__roscfg = roscfg
             nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.included_files(self.Filename))
             if not nm.is_local(get_hostname(self.__masteruri)):
-                files = self.included_files(self.Filename)
-#                                              regexp_list=[QRegExp("\\bdefault\\b"),
-#                                                           QRegExp("\\bvalue=.*pkg:\/\/\\b"),
-#                                                           QRegExp("\\bvalue=.*package:\/\/\\b"),
-#                                                           QRegExp("\\bvalue=.*\$\(find\\b")])
+                files = self.included_files(self.Filename,
+                                            regexp_retruns=[QRegExp("\\bdefault\\b"),
+                                                            QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                                                            QRegExp("\\bvalue=.*package:\/\/\\b"),
+                                                            QRegExp("\\bvalue=.*\$\(find\\b"),
+                                                            QRegExp("\\bargs=.*\$\(find\\b")])
                 nm.file_watcher_param().add_launch(self.__masteruri,
                                                    self.__launchFile,
                                                    self.__launch_id,
