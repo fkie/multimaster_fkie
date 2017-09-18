@@ -3,6 +3,7 @@ import roslib
 import rospy
 
 from master_discovery_fkie.common import resolve_url
+from node_manager_fkie.common import utf8
 
 
 def interpret_path(path):
@@ -27,7 +28,7 @@ def interpret_path(path):
                     pkg = roslib.packages.get_pkg_dir(script[1])
                     return os.path.normpath('%s/%s' % (pkg, path[endIndex + 1:]))
                 except Exception as e:
-                    rospy.logwarn(str(e))
+                    rospy.logwarn(utf8(e))
     else:
         try:
             return resolve_url(path)

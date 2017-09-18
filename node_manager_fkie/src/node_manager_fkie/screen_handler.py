@@ -39,6 +39,7 @@ import rospy
 from detailed_msg_box import DetailedError
 from supervised_popen import SupervisedPopen
 import node_manager_fkie as nm
+from node_manager_fkie.common import utf8
 
 
 class ScreenHandlerException(Exception):
@@ -77,9 +78,9 @@ class ScreenHandler(object):
         @return: name for the screen session.
         @rtype: C{str}
         '''
-#    package_name = str(package) if not package is None else ''
-#    lanchfile_name = str(launchfile).replace('.launch', '') if not launchfile is None else ''
-        node_name = str(node).replace('/', cls.SLASH_SEP) if node is not None else ''
+#    package_name = utf8(package) if not package is None else ''
+#    lanchfile_name = utf8(launchfile).replace('.launch', '') if not launchfile is None else ''
+        node_name = utf8(node).replace('/', cls.SLASH_SEP) if node is not None else ''
 #    result = ''.join([node_name, '.', package_name, '.', lanchfile_name])
         return node_name
 
@@ -331,7 +332,7 @@ class ScreenHandler(object):
                                 nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
                             except:
                                 import traceback
-                                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", str(pid), str(host), traceback.format_exc(1))
+                                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(pid), utf8(host), traceback.format_exc(1))
                     if nm.is_local(host):
                         SupervisedPopen([cls.SCREEN, '-wipe'], object_id='screen -wipe', description="screen: clean up the socket with -wipe")
                     else:

@@ -48,7 +48,7 @@ import xmlrpclib
 
 from master_discovery_fkie.common import get_hostname
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_fkie.common import masteruri_from_ros, get_packages, package_name, resolve_paths
+from node_manager_fkie.common import masteruri_from_ros, get_packages, package_name, resolve_paths, utf8
 from node_manager_fkie.default_cfg_handler import DefaultConfigHandler
 from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
 from node_manager_fkie.html_delegate import HTMLDelegate
@@ -94,7 +94,7 @@ class LaunchArgsSelectionRequest(Exception):
         self.error = error
 
     def __str__(self):
-        return "LaunchArgsSelectionRequest for " + str(self.args_dict) + "::" + repr(self.error)
+        return "LaunchArgsSelectionRequest for " + utf8(self.args_dict) + "::" + repr(self.error)
 
 
 class MasterViewProxy(QWidget):
@@ -634,7 +634,7 @@ class MasterViewProxy(QWidget):
         argv = []
         if isinstance(launchfile, tuple):
             lfile, argv = launchfile
-        self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+        self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                             'Loading %s' % os.path.basename(lfile),
                                             self._load_launchfile,
                                             (lfile, argv))
@@ -686,7 +686,7 @@ class MasterViewProxy(QWidget):
             raise
         except Exception as e:
             err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
-            err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
+            err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
             rospy.logwarn("Loading launch file: %s", err_details)
             raise DetailedError("Loading launch file", err_text, err_details)
 #      WarningMessageBox(QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
@@ -731,8 +731,8 @@ class MasterViewProxy(QWidget):
             self.updateRunningNodesInModel(self.__master_info)
             # detect files changes
             if stored_roscfg and self.__configs[launchfile].Roscfg:
-                stored_values = [(name, str(p.value)) for name, p in stored_roscfg.params.items()]
-                new_values = [(name, str(p.value)) for name, p in self.__configs[launchfile].Roscfg.params.items()]
+                stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
+                new_values = [(name, utf8(p.value)) for name, p in self.__configs[launchfile].Roscfg.params.items()]
                 # detect changes parameter
                 paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
                 # detect new parameter
@@ -795,7 +795,7 @@ class MasterViewProxy(QWidget):
                 del self._start_nodes_after_load_cfg[launchfile]
         except Exception as e:
             err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
-            err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", str(e)])
+            err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
             rospy.logwarn("Loading launch file: %s", err_details)
             WarningMessageBox(QMessageBox.Warning, "Loading launch file", err_text, err_details).exec_()
         except:
@@ -869,7 +869,7 @@ class MasterViewProxy(QWidget):
             except:
                 pass
         self.__current_robot_icon = self.__current_parameter_robot_icon
-        self.robot_icon_updated.emit(self.masteruri, str(self.__current_robot_icon))
+        self.robot_icon_updated.emit(self.masteruri, utf8(self.__current_robot_icon))
         return self.__current_robot_icon
 
     def appendConfigToModel(self, launchfile, rosconfig):
@@ -1086,16 +1086,16 @@ class MasterViewProxy(QWidget):
         for lsuri, (pid, nodes) in self.__launch_servers.items():
             try:
                 if not self._is_master_launch_server(nodes):
-                    self._progress_queue.add2queue(str(uuid.uuid4()),
-                                                   ''.join(['kill roslaunch ', lsuri, '(', str(pid), ')']),
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   ''.join(['kill roslaunch ', lsuri, '(', utf8(pid), ')']),
                                                    nm.starter().kill,
                                                    (get_hostname(lsuri), pid, False, self.current_user))
                     self.launch_server_handler.updateLaunchServerInfo(lsuri, delayed_exec=3.0)
             except Exception as e:
-                rospy.logwarn("Error while kill roslaunch %s: %s", str(lsuri), str(e))
+                rospy.logwarn("Error while kill roslaunch %s: %s", utf8(lsuri), utf8(e))
                 raise DetailedError("Kill error",
                                     ''.join(['Error while kill roslaunch ', lsuri]),
-                                    str(e))
+                                    utf8(e))
         self._start_process_queue()
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1688,28 +1688,28 @@ class MasterViewProxy(QWidget):
                 try:
                     nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
                 except socket.error as se:
-                    rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, str(se))
+                    rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
                     raise DetailedError("Start error",
                                         'Error while start %s\n\nStart canceled!' % node.name,
-                                        '%s' % se)
+                                        '%s' % utf8(se))
                     return False
                 except nm.InteractionNeededError as _:
                     raise
                 except (Exception, nm.StartException) as e:
                     print type(e)
                     print traceback.format_exc(3)
-                    rospy.logwarn("Error while start '%s': %s" % (node.name, e))
-                    raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % e)
+                    rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
+                    raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
             elif isinstance(config, (str, unicode)):
                 # start with default configuration
                 from multimaster_msgs_fkie.srv import Task
                 try:
                     nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
                 except (Exception, nm.StartException) as e:
-                    rospy.logwarn("Error while call a service of node '%s': %s" % (node.name, e))
+                    rospy.logwarn("Error while call a service of node '%s': %s" % (node.name, utf8(e)))
                     raise DetailedError("Service error",
                                         'Error while call a service of node %s [%s]' % (node.name, self.master_info.getService(config).uri),
-                                        '%s' % e)
+                                        '%s' % utf8(e))
 
     def start_nodes(self, nodes, force=False, force_host=None, use_adv_cfg=False):
         '''
@@ -1745,7 +1745,7 @@ class MasterViewProxy(QWidget):
                     ch_keys = choices.keys()
                     if ch_keys:
                         ch_keys.sort()
-                        choises_str = str(ch_keys)
+                        choises_str = utf8(ch_keys)
                         if choises_str not in cfg_choices.keys():
                             choice, ok = self._getUserCfgChoice(choices, node.name)
                             if choice is not None:
@@ -1792,12 +1792,12 @@ class MasterViewProxy(QWidget):
                     diag_canceled = True
                     WarningMessageBox(QMessageBox.Warning, "Get advanced start parameter",
                                       'Error while parse parameter',
-                                      str(e)).exec_()
+                                      utf8(e)).exec_()
         if not diag_canceled:
             # put into the queue and start
             for node in nodes:
                 if node.name in cfg_nodes:
-                    self._progress_queue.add2queue(str(uuid.uuid4()),
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    ''.join(['start ', node.node_info.name]),
                                                    self.start_node,
                                                    (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging))
@@ -1898,7 +1898,7 @@ class MasterViewProxy(QWidget):
             except Exception, e:
                 WarningMessageBox(QMessageBox.Warning, "Start error",
                                   'Error while parse parameter',
-                                  str(e)).exec_()
+                                  utf8(e)).exec_()
         self.masterTab.startButton.setEnabled(True)
 
     def _getDefaultCfgChoises(self, node):
@@ -1914,7 +1914,7 @@ class MasterViewProxy(QWidget):
             if c:
                 if not isinstance(c, tuple):
                     launch = self.launchfiles[c]
-                    result[''.join([str(launch.LaunchName), ' [', str(launch.PackageName), ']'])] = self.launchfiles[c]
+                    result[''.join([utf8(launch.LaunchName), ' [', utf8(launch.PackageName), ']'])] = self.launchfiles[c]
                 elif not ignore_defaults:
                     result[' '.join(['[default]', c[0]])] = roslib.names.ns_join(c[0], 'run')
         return result
@@ -1953,7 +1953,7 @@ class MasterViewProxy(QWidget):
     def stop_node(self, node, force=False):
         if node is not None and node.uri is not None and (not self._is_in_ignore_list(node.name) or force):
             try:
-                rospy.loginfo("Stop node '%s'[%s]", str(node.name), str(node.uri))
+                rospy.loginfo("Stop node '%s'[%s]", utf8(node.name), utf8(node.uri))
                 nm.filewatcher().rem_binary(node.name)
                 # 'print "STOP set timeout", node
                 socket.setdefaulttimeout(10)
@@ -1963,11 +1963,11 @@ class MasterViewProxy(QWidget):
                 p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.mastername]))
                 # 'print "STOP stop finished", node
             except Exception, e:
-                rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
-                if str(e).find(' 111') == 1:
+                rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
+                if utf8(e).find(' 111') == 1:
                     raise DetailedError("Stop error",
                                         ''.join(['Error while stop node ', node.name]),
-                                        str(e))
+                                        utf8(e))
             finally:
                 socket.setdefaulttimeout(None)
         elif isinstance(node, NodeItem) and node.is_ghost:
@@ -1984,7 +1984,7 @@ class MasterViewProxy(QWidget):
         '''
         # put into the queue and start the que handling
         for node in nodes:
-            self._progress_queue.add2queue(str(uuid.uuid4()),
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'stop %s' % node.name,
                                            self.stop_node,
                                            (node, (len(nodes) == 1) or force))
@@ -2021,16 +2021,16 @@ class MasterViewProxy(QWidget):
             # kill the node
             if pid is not None:
                 try:
-                    self._progress_queue.add2queue(str(uuid.uuid4()),
-                                                   ''.join(['kill ', node.name, '(', str(pid), ')']),
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   ''.join(['kill ', node.name, '(', utf8(pid), ')']),
                                                    nm.starter().kill,
                                                    (self.getHostFromNode(node), pid, False, self.current_user))
                     self._start_process_queue()
                 except Exception as e:
-                    rospy.logwarn("Error while kill the node %s: %s", str(node.name), str(e))
+                    rospy.logwarn("Error while kill the node %s: %s", utf8(node.name), utf8(e))
                     raise DetailedError("Kill error",
                                         ''.join(['Error while kill the node ', node.name]),
-                                        str(e))
+                                        utf8(e))
         return True
 
     def killall_roscore(self):
@@ -2038,7 +2038,7 @@ class MasterViewProxy(QWidget):
         if host:
             try:
                 if not nm.is_local(self.mastername):
-                    self._progress_queue.add2queue(str(uuid.uuid4()),
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    'killall roscore on %s' % host,
                                                    nm.starter().killall_roscore,
                                                    (host, self.current_user))
@@ -2046,10 +2046,10 @@ class MasterViewProxy(QWidget):
                 else:
                     nm.starter().killall_roscore(host, self.current_user)
             except Exception as e:
-                rospy.logwarn("Error while killall roscore on %s: %s" % (host, e))
+                rospy.logwarn("Error while killall roscore on %s: %s" % (host, utf8(e)))
                 raise DetailedError("Killall roscore error",
                                     'Error while killall roscore',
-                                    '%s' % e)
+                                    '%s' % utf8(e))
         return True
 
     def on_kill_nodes(self):
@@ -2057,7 +2057,7 @@ class MasterViewProxy(QWidget):
 
         # put into the queue and start the que handling
         for node in selectedNodes:
-            self._progress_queue.add2queue(str(uuid.uuid4()),
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            ''.join(['kill ', node.name]),
                                            self.kill_node,
                                            (node, (len(selectedNodes) == 1)))
@@ -2070,7 +2070,7 @@ class MasterViewProxy(QWidget):
             #   p = xmlrpclib.ServerProxy(node.uri)
             #   p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
             # except Exception, e:
-            #   rospy.logwarn("Error while stop node '%s': %s", str(node.name), str(e))
+            #   rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
             #   self.masterTab.stopButton.setEnabled(False)
             # unregister all entries of the node from ROS master
             try:
@@ -2095,10 +2095,10 @@ class MasterViewProxy(QWidget):
                     if code != 1:
                         rospy.logwarn("unregistration failed: %s", msg)
             except Exception, e:
-                rospy.logwarn("Error while unregister node %s: %s", str(node.name), str(e))
+                rospy.logwarn("Error while unregister node %s: %s", utf8(node.name), utf8(e))
                 raise DetailedError("Unregister error",
                                     ''.join(['Error while Unregister node ', node.name]),
-                                    str(e))
+                                    utf8(e))
             finally:
                 socket.setdefaulttimeout(None)
         return True
@@ -2108,7 +2108,7 @@ class MasterViewProxy(QWidget):
         # put into the queue and start the que handling
         for node in selectedNodes:
             if node.pid is None or len(selectedNodes) == 1:
-                self._progress_queue.add2queue(str(uuid.uuid4()),
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                ''.join(['unregister node ', node.name]),
                                                self.unregister_node,
                                                (node, (len(selectedNodes) == 1)))
@@ -2158,11 +2158,11 @@ class MasterViewProxy(QWidget):
                 if selectedNodes:
                     ret = True
                     if len(selectedNodes) > 5:
-                        ret = QMessageBox.question(self, "Show IO", "You are going to open the IO of " + str(len(selectedNodes)) + " nodes at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
+                        ret = QMessageBox.question(self, "Show IO", "You are going to open the IO of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
                         ret = (ret == QMessageBox.Ok)
                     if ret:
                         for node in selectedNodes:
-                            self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+                            self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                                 ''.join(['show IO of ', node.name]),
                                                                 nm.screen().openScreen,
                                                                 (node.name, self.getHostFromNode(node), False, self.current_user))
@@ -2181,7 +2181,7 @@ class MasterViewProxy(QWidget):
         try:
             selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
             for node in selectedNodes:
-                self._progress_queue.add2queue(str(uuid.uuid4()),
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                ''.join(['kill screen of ', node.name]),
                                                nm.screen().killScreens,
                                                (node.name, self.getHostFromNode(node), False, self.current_user))
@@ -2202,19 +2202,19 @@ class MasterViewProxy(QWidget):
                 screens = nm.screen().getActiveScreens(host, auto_pw_request=True, user=self.current_user)
                 sel_screen, _ = SelectDialog.getValue('Open screen', '', screens, False, False, self)  # _:=ok
             except Exception, e:
-                rospy.logwarn("Error while get screen list: %s", str(e))
+                rospy.logwarn("Error while get screen list: %s", utf8(e))
                 WarningMessageBox(QMessageBox.Warning, "Screen list error",
                                   ''.join(['Error while get screen list from ', host]),
-                                  str(e)).exec_()
+                                  utf8(e)).exec_()
             for screen in sel_screen:
                 try:
                     if not nm.screen().openScreenTerminal(host, screen, screen, self.current_user):
                         pass
                 except Exception, e:
-                    rospy.logwarn("Error while show IO for %s: %s", str(screen), str(e))
+                    rospy.logwarn("Error while show IO for %s: %s", utf8(screen), utf8(e))
                     WarningMessageBox(QMessageBox.Warning, "Show IO error",
                                       ''.join(['Error while show IO ', screen, ' on ', host]),
-                                      str(e)).exec_()
+                                      utf8(e)).exec_()
         finally:
             self.setCursor(cursor)
 
@@ -2230,21 +2230,21 @@ class MasterViewProxy(QWidget):
             selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
             ret = True
             if len(selectedNodes) > 5:
-                ret = QMessageBox.question(self, "Show Log", "You are going to open the logs of " + str(len(selectedNodes)) + " nodes at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
+                ret = QMessageBox.question(self, "Show Log", "You are going to open the logs of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
                 ret = (ret == QMessageBox.Ok)
             if ret:
                 for node in selectedNodes:
-                    self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+                    self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                         ''.join(['show log of ', node.name]),
                                                         nm.starter().openLog,
                                                         (node.name, self.getHostFromNode(node), self.current_user, only_screen))
                 self._start_process_queue_prio()
         except Exception, e:
             print traceback.format_exc(1)
-            rospy.logwarn("Error while show log: %s", str(e))
+            rospy.logwarn("Error while show log: %s", utf8(e))
             WarningMessageBox(QMessageBox.Warning, "Show log error",
                               'Error while show Log',
-                              str(e)).exec_()
+                              utf8(e)).exec_()
 
     def on_log_path_copy(self):
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
@@ -2258,8 +2258,8 @@ class MasterViewProxy(QWidget):
         except Exception as e:
             WarningMessageBox(QMessageBox.Warning, "Get log path",
                               'Error while get log path',
-                              str(e)).exec_()
-#    self._progress_queue.add2queue(str(uuid.uuid4()),
+                              utf8(e)).exec_()
+#    self._progress_queue.add2queue(utf8(uuid.uuid4()),
 #                                   'Get log path',
 #                                   nm.starter().get_log_path,
 #                                   (get_hostname(self.masteruri), nodenames))
@@ -2271,10 +2271,10 @@ class MasterViewProxy(QWidget):
 #      screens = nm.screen().getActiveScreens(host, auto_pw_request=True)
 #      sel_screen, ok = SelectDialog.getValue('Open log', '', screens, False, self)
 #    except Exception, e:
-#      rospy.logwarn("Error while get screen list: %s", str(e))
+#      rospy.logwarn("Error while get screen list: %s", utf8(e))
 #      WarningMessageBox(QMessageBox.Warning, "Screen list error",
 #                        ''.join(['Error while get screen list from ', host]),
-#                        str(e)).exec_()
+#                        utf8(e)).exec_()
 
     def on_log_delete_clicked(self):
         '''
@@ -2282,7 +2282,7 @@ class MasterViewProxy(QWidget):
         '''
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
         for node in selectedNodes:
-            self._progress_queue_prio.add2queue(str(uuid.uuid4()),
+            self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                            ''.join(['delete Log of ', node.name]),
                                            nm.starter().deleteLog,
                                            (node.name, self.getHostFromNode(node), False, self.current_user))
@@ -2305,19 +2305,19 @@ class MasterViewProxy(QWidget):
                         if items is None:
                             items = []
                     if len(items) > 3:
-                        ret = QMessageBox.question(self, 'Start dynamic reconfigure', 'It will starts %s dynamic reconfigure nodes?\n\n Are you sure?' % str(len(items)), QMessageBox.Yes, QMessageBox.No)
+                        ret = QMessageBox.question(self, 'Start dynamic reconfigure', 'It will starts %s dynamic reconfigure nodes?\n\n Are you sure?' % utf8(len(items)), QMessageBox.Yes, QMessageBox.No)
                         if ret != QMessageBox.Yes:
                             return
                     for node in items:
                         env = dict(os.environ)
-                        env["ROS_MASTER_URI"] = str(self.master_info.masteruri)
+                        env["ROS_MASTER_URI"] = utf8(self.master_info.masteruri)
                         rospy.loginfo("Start dynamic reconfiguration for '%s'" % node)
                         _ = SupervisedPopen(['rosrun', 'node_manager_fkie', 'dynamic_reconfigure', node, '__ns:=dynamic_reconfigure'], env=env, object_id=node, description='Start dynamic reconfiguration for %s failed' % node)
                 except Exception, e:
-                    rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s" % (n.name, e))
+                    rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s" % (n.name, utf8(e)))
                     WarningMessageBox(QMessageBox.Warning, "Start dynamic reconfiguration error",
                                       'Start dynamic reconfiguration for %s failed!' % n.name,
-                                      str(e)).exec_()
+                                      utf8(e)).exec_()
 
     def on_edit_config_clicked(self):
         '''
@@ -2348,7 +2348,7 @@ class MasterViewProxy(QWidget):
                     inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded as not 'default' and the parameter in the launch file will be reloaded on start of the ROS node.")
                 inputDia.show()
             except:
-                rospy.logwarn("Error on retrieve parameter for %s: %s", str(node.name), traceback.format_exc(1))
+                rospy.logwarn("Error on retrieve parameter for %s: %s", utf8(node.name), traceback.format_exc(1))
 
     def on_save_clicked(self):
         # save the profile
@@ -2366,7 +2366,7 @@ class MasterViewProxy(QWidget):
                 if path[2] == self.masteruri:
                     choices['DEFAULT CFG: %s' % path[0]] = path
             else:
-                package = str(package_name(os.path.dirname(path))[0])
+                package = utf8(package_name(os.path.dirname(path))[0])
                 choices['%s [%s]' % (os.path.basename(path), package)] = path
         cfg_items = choices.keys()
         cfg_items.sort()
@@ -2405,13 +2405,13 @@ class MasterViewProxy(QWidget):
             # on shutdown stop only the /master_dsicovery node to remove it from lists
             # in other remote nodes
             self.stop_nodes_by_name(['/master_discovery'], True)
-            self._progress_queue.add2queue(str(uuid.uuid4()),
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'poweroff `%s`' % self.mastername,
                                            nm.starter().poweroff,
                                            ('%s' % self.mastername,))
             self._start_process_queue()
         except (Exception, nm.StartException), emsg:
-            rospy.logwarn("Error while poweroff %s: %s", self.mastername, str(emsg))
+            rospy.logwarn("Error while poweroff %s: %s", self.mastername, utf8(emsg))
             WarningMessageBox(QMessageBox.Warning, "Run error",
                               'Error while poweroff %s' % self.mastername,
                               '%s' % emsg).exec_()
@@ -2492,17 +2492,17 @@ class MasterViewProxy(QWidget):
                             self._start_publisher(params['Name'], params['Type'])
                         except Exception, e:
                             print traceback.format_exc(1)
-                            rospy.logwarn("Publish topic '%s' failed: %s", str(params['Name']), str(e))
+                            rospy.logwarn("Publish topic '%s' failed: %s", utf8(params['Name']), utf8(e))
                             WarningMessageBox(QMessageBox.Warning, "Publish topic error",
                                               ''.join(['Publish topic ', params['Name'], ' failed!']),
-                                              str(e)).exec_()
+                                              utf8(e)).exec_()
                     else:
                         WarningMessageBox(QMessageBox.Warning, "Invalid name or type",
                                           "Can't publish to topic '%s' with type '%s'!" % (params['Name'], params['Type'])).exec_()
                 except (KeyError, ValueError), e:
                     WarningMessageBox(QMessageBox.Warning, "Warning",
                                       'Error while add a parameter to the ROS parameter server',
-                                      str(e)).exec_()
+                                      utf8(e)).exec_()
 
     def start_publisher(self, topic_name, republish=False):
         '''
@@ -2560,7 +2560,7 @@ class MasterViewProxy(QWidget):
                             i = float(rate)
                         if i > 0:
                             opt_str = ''.join(['-r ', rate])
-                            opt_name_suf = '__%sHz_' % (str(rate).replace('.', '_'))
+                            opt_name_suf = '__%sHz_' % (utf8(rate).replace('.', '_'))
                     except:
                         pass
                 # remove empty lists
@@ -2568,7 +2568,7 @@ class MasterViewProxy(QWidget):
                 if topic_type in params:
                     topic_params = self._rem_empty_lists(params[topic_type])
                 pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
-                self._progress_queue.add2queue(str(uuid.uuid4()),
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                'start publisher for %s' % topic_name,
                                                nm.starter().runNodeWithoutConfig,
                                                (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', 'rostopic_pub%s%s%s' % (topic_name, opt_name_suf, str(rospy.Time.now())), [pub_cmd], self.masteruri, False, self.current_user))
@@ -2577,11 +2577,11 @@ class MasterViewProxy(QWidget):
             else:
                 return False
         except Exception, e:
-            rospy.logwarn("Publish topic '%s' failed: %s", str(topic_name), str(e))
+            rospy.logwarn("Publish topic '%s' failed: %s", utf8(topic_name), utf8(e))
             WarningMessageBox(QMessageBox.Warning, "Publish topic error",
                               ''.join(['Publish topic ', topic_name, ' failed!']),
-                              str(e)).exec_()
-            print traceback.format_exc(1)
+                              utf8(e)).exec_()
+            print utf8(traceback.format_exc(1))
             return False
 
     def _rem_empty_lists(self, param_dict):
@@ -2617,7 +2617,7 @@ class MasterViewProxy(QWidget):
         selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
         ret = True
         if len(selectedTopics) > 5:
-            ret = QMessageBox.question(self, "Show echo", "You are going to open the echo of " + str(len(selectedTopics)) + " topics at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
+            ret = QMessageBox.question(self, "Show echo", "You are going to open the echo of " + utf8(len(selectedTopics)) + " topics at once\nContinue?", QMessageBox.Ok, QMessageBox.Cancel)
             ret = (ret == QMessageBox.Ok)
         if ret:
             for topic in selectedTopics:
@@ -2639,10 +2639,10 @@ class MasterViewProxy(QWidget):
                 # connect to topic on remote host
             import shlex
             env = dict(os.environ)
-            env["ROS_MASTER_URI"] = str(self.masteruri)
+            env["ROS_MASTER_URI"] = utf8(self.masteruri)
             namespace = rospy.names.namespace(topic.name)
             nodename = os.path.basename(topic.name)
-            namespace = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', str(get_hostname(self.masteruri)), namespace)
+            namespace = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', utf8(get_hostname(self.masteruri)), namespace)
             cmd = 'rosrun node_manager_fkie node_manager --echo %s %s %s %s __name:=%s __ns:=%s' % (topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename, namespace)
             rospy.loginfo("Echo topic: %s" % cmd)
             ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, object_id=topic.name, description='Echo topic: %s' % topic.name)
@@ -2668,7 +2668,7 @@ class MasterViewProxy(QWidget):
             param.show()
 
     def service_call(self, service_name):
-        service = self.master_info.getService(str(service_name))
+        service = self.master_info.getService(utf8(service_name))
         if service is not None:
             param = ServiceDialog(service, self)
             param.show()
@@ -2742,7 +2742,7 @@ class MasterViewProxy(QWidget):
                         if value is None:
                             value = []
                     except yaml.MarkedYAMLError, e:
-                        QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QMessageBox.Ok)
+                        QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), QMessageBox.Ok)
                         return
                 else:
                     value = params['value']
@@ -2752,7 +2752,7 @@ class MasterViewProxy(QWidget):
             except (KeyError, ValueError), e:
                 WarningMessageBox(QMessageBox.Warning, "Warning",
                                   'Error while add a parameter to the ROS parameter server',
-                                  str(e)).exec_()
+                                  utf8(e)).exec_()
 
     def on_delete_parameter_clicked(self):
         '''
@@ -2812,10 +2812,10 @@ class MasterViewProxy(QWidget):
 #            print yaml.dump(values, default_flow_style=False)
                         f.write(yaml.dump(values, default_flow_style=False))
                 except Exception as e:
-                    print traceback.format_exc(1)
+                    print utf8(traceback.format_exc(1))
                     WarningMessageBox(QMessageBox.Warning, "Save parameter Error",
                                       'Error while save parameter',
-                                      str(e)).exec_()
+                                      utf8(e)).exec_()
 
     def _replaceDoubleSlash(self, liste):
         '''
@@ -2857,8 +2857,8 @@ class MasterViewProxy(QWidget):
                             value = []
                         value = self._replaceDoubleSlash(value)
                     except yaml.MarkedYAMLError, e:
-                        QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QMessageBox.Ok)
-                        item.setText(unicode(item.value))
+                        QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), QMessageBox.Ok)
+                        item.setText(utf8(item.value))
                         return
                 else:
                     value = item.text()
@@ -2867,7 +2867,7 @@ class MasterViewProxy(QWidget):
             except ValueError, e:
                 WarningMessageBox(QMessageBox.Warning, "Warning",
                                   'Error while add changes to the ROS parameter server',
-                                  str(e)).exec_()
+                                  utf8(e)).exec_()
                 item.setText(item.value)
 
     def _on_param_list(self, masteruri, code, msg, params):
@@ -2907,7 +2907,7 @@ class MasterViewProxy(QWidget):
                     self.__use_sim_time = (code_n == 1 and val)
             self.parameter_model.updateModelData(result)
         else:
-            rospy.logwarn("Error on retrieve parameter from %s: %s", str(masteruri), str(msg))
+            rospy.logwarn("Error on retrieve parameter from %s: %s", utf8(masteruri), utf8(msg))
 
     def _on_delivered_values(self, masteruri, code, msg, params):
         '''
@@ -2966,7 +2966,7 @@ class MasterViewProxy(QWidget):
                             except ValueError:
                                 pass
         else:
-            rospy.logwarn("Error on retrieve sim parameter value from %s: %s", str(masteruri), msg)
+            rospy.logwarn("Error on retrieve sim parameter value from %s: %s", utf8(masteruri), utf8(msg))
         if not robot_icon_found:
             self.__current_parameter_robot_icon = ''
             self.update_robot_icon()

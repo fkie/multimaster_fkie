@@ -40,6 +40,7 @@ import rospy
 import sys
 import threading
 
+from node_manager_fkie.common import utf8
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 from node_manager_fkie.parameter_handler import ParameterHandler
@@ -113,7 +114,7 @@ class ParameterDescription(object):
         return self._value_org
 
     def changed(self):
-        return unicode(self.origin_value()) != unicode(self._value)
+        return utf8(self.origin_value()) != utf8(self._value)
 
     def name(self):
         return self._name
@@ -195,9 +196,9 @@ class ParameterDescription(object):
                             if self._value is None:
                                 self._value = []
                         except yaml.MarkedYAMLError, e:
-                            raise Exception("Field [%s] yaml error: %s" % (self.fullName(), str(e)))
+                            raise Exception("Field [%s] yaml error: %s" % (self.fullName(), utf8(e)))
                     if not self.arrayLength() is None and self.arrayLength() != len(self._value):
-                        raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", str(len(self._value)), " != ", str(self.arrayLength())]))
+                        raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(self._value)), " != ", str(self.arrayLength())]))
                 else:
                     if 'int' in self.baseType() or 'byte' in self.baseType():
                         self._value = int(value)
@@ -209,7 +210,7 @@ class ParameterDescription(object):
                         else:
                             self._value = str2bool(value)
                     elif self.isBinaryType():
-                        self._value = unicode(value)
+                        self._value = utf8(value)
                     elif self.isTimeType():
                         if value == 'now':
                             self._value = 'now'
@@ -222,7 +223,7 @@ class ParameterDescription(object):
                                     secs = int(val)
                                     nsecs = int((val - secs) * 1000000000)
                                     self._value = {'secs': secs, 'nsecs': nsecs}
-                            except:
+                            except Exception:
                                 self._value = {'secs': 0, 'nsecs': 0}
                     else:
                         self._value = value.encode(sys.getfilesystemencoding())
@@ -238,14 +239,14 @@ class ParameterDescription(object):
                     elif 'bool' in self.baseType():
                         self._value = False
                     elif self.isBinaryType():
-                        self._value = unicode(value)
+                        self._value = utf8(value)
                     elif self.isTimeType():
                         self._value = {'secs': 0, 'nsecs': 0}
                     else:
                         self._value = ''
             nm.history().addParamCache(self.fullName(), value)
         except Exception, e:
-            raise Exception(''.join(["Error while set value '", unicode(value), "' for '", self.fullName(), "': ", str(e)]))
+            raise Exception("Error while set value '%s', for '%s': %s" % (utf8(value), self.fullName(), utf8(e)))
         return self._value
 
     def value(self):
@@ -282,12 +283,12 @@ class ParameterDescription(object):
                 items = []
                 if isinstance(value, list):
                     if self.isArrayType():
-                        items.append(','.join([str(val) for val in value]))
+                        items.append(','.join([utf8(val) for val in value]))
                     else:
                         items[len(items):] = value
                 else:
                     if value is not None and value:
-                        items.append(unicode(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
+                        items.append(utf8(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
                     elif self.isTimeType():
                         items.append('now')
                 self._value_org = items[0] if items else ''
@@ -448,9 +449,9 @@ class MainBox(QWidget):
                             field.setChecked(value)
                         elif isinstance(field, QLineEdit):
                             # avoid ' or " that escapes the string values
-                            field.setText(', '.join([unicode(v) for v in value]) if isinstance(value, list) else unicode(value))
+                            field.setText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
                         elif isinstance(field, QComboBox):
-                            field.setEditText(', '.join([unicode(v) for v in value]) if isinstance(value, list) else unicode(value))
+                            field.setEditText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
         elif isinstance(values, list):
             raise Exception("Setting 'list' values in MainBox or GroupBox not supported!!!")
 
@@ -531,9 +532,9 @@ class ArrayEntry(MainBox):
     '''
 
     def __init__(self, index, param_type, parent=None):
-        MainBox.__init__(self, ''.join(['#', str(index)]), param_type, True, parent)
+        MainBox.__init__(self, ''.join(['#', utf8(index)]), param_type, True, parent)
         self.index = index
-        self.setObjectName(''.join(['[', str(index), ']']))
+        self.setObjectName(''.join(['[', utf8(index), ']']))
         self.param_widget.setFrameShape(QFrame.Box)
         self.param_widget.setFrameShadow(QFrame.Plain)
         self.type_label.setVisible(False)
@@ -584,7 +585,7 @@ class ArrayBox(MainBox):
                         self.param_widget.layout().addRow(entry_frame)
                         entry_frame._createFieldFromDict(v)
                         self._dynamic_items_count += 1
-                        self.count_label.setText(str(self._dynamic_items_count))
+                        self.count_label.setText(utf8(self._dynamic_items_count))
                         break
         finally:
             self.setUpdatesEnabled(True)
@@ -610,7 +611,7 @@ class ArrayBox(MainBox):
             except:
                 import traceback
                 print traceback.format_exc(1)
-            self.count_label.setText(str(self._dynamic_items_count))
+            self.count_label.setText(utf8(self._dynamic_items_count))
 
     def createFieldFromValue(self, value):
         self.setUpdatesEnabled(False)
@@ -685,7 +686,7 @@ class ParameterDialog(QDialog):
         @type params: C{dict(str:(str, {value, [..], dict()}))}
         '''
         QDialog.__init__(self, parent=parent)
-        self.setObjectName('ParameterDialog - %s' % str(params))
+        self.setObjectName('ParameterDialog - %s' % utf8(params))
 
         self.__current_path = nm.settings().current_dialog_path
         self.horizontalLayout = QHBoxLayout(self)
@@ -933,7 +934,7 @@ class ParameterDialog(QDialog):
             import traceback
             print traceback.format_exc(1)
             WarningMessageBox(QMessageBox.Warning, "Save parameter Error",
-                              'Error while save parameter', str(e)).exec_()
+                              'Error while save parameter', utf8(e)).exec_()
 
     def _load_parameter(self):
         try:
@@ -952,7 +953,7 @@ class ParameterDialog(QDialog):
             print traceback.format_exc(1)
             WarningMessageBox(QMessageBox.Warning, "Load parameter Error",
                               'Error while load parameter',
-                              str(e)).exec_()
+                              utf8(e)).exec_()
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1030,7 +1031,7 @@ class MasterParameterDialog(ParameterDialog):
                 params = self.keywords2params(params)
                 ros_params = dict()
                 for p, v in params.items():
-                    rospy.logdebug("updated parameter: %s, %s, %s", p, unicode(v), type(v))
+                    rospy.logdebug("updated parameter: %s, %s, %s", p, utf8(v), type(v))
                     ros_params[roslib.names.ns_join(self.ns, p)] = v
                 if ros_params:
                     self.is_send = True
@@ -1041,7 +1042,7 @@ class MasterParameterDialog(ParameterDialog):
             except Exception, e:
                 import traceback
                 print traceback.format_exc(1)
-                QMessageBox.warning(self, self.tr("Warning"), str(e), QMessageBox.Ok)
+                QMessageBox.warning(self, self.tr("Warning"), utf8(e), QMessageBox.Ok)
         elif self.masteruri is None:
             QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QMessageBox.Ok)
 
@@ -1075,7 +1076,7 @@ class MasterParameterDialog(ParameterDialog):
                             if value is None:
                                 value = []
                         except yaml.MarkedYAMLError, e:
-                            QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % str(e), QMessageBox.Ok)
+                            QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), QMessageBox.Ok)
                     else:
                         value = params['value']
                     self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)})
@@ -1084,7 +1085,7 @@ class MasterParameterDialog(ParameterDialog):
             except ValueError, e:
                 import traceback
                 print traceback.format_exc(1)
-                QMessageBox.warning(self, self.tr("Warning"), unicode(e), QMessageBox.Ok)
+                QMessageBox.warning(self, self.tr("Warning"), utf8(e), QMessageBox.Ok)
 
     def _on_param_list(self, masteruri, code, msg, params):
         '''
@@ -1120,7 +1121,7 @@ class MasterParameterDialog(ParameterDialog):
                 if code_n != 1:
                     val = ''
                 type_str = 'string'
-                value = unicode(val)
+                value = utf8(val)
                 if isinstance(val, bool):
                     type_str = 'bool'
                 elif isinstance(val, int):
@@ -1134,7 +1135,7 @@ class MasterParameterDialog(ParameterDialog):
                     for v in val:
                         if len(value) > 0:
                             value = value + ', '
-                        value = value + unicode(v)
+                        value = value + utf8(v)
                 elif isinstance(val, Binary):
                     type_str = 'binary'
                 param = p.replace(self.ns, '')
@@ -1159,7 +1160,7 @@ class MasterParameterDialog(ParameterDialog):
             except Exception, e:
                 import traceback
                 print traceback.format_exc(1)
-                QMessageBox.warning(self, self.tr("Warning"), unicode(e), QMessageBox.Ok)
+                QMessageBox.warning(self, self.tr("Warning"), utf8(e), QMessageBox.Ok)
         else:
             self.setText(msg)
 
@@ -1240,19 +1241,19 @@ class ServiceDialog(ParameterDialog):
             thread.setDaemon(True)
             thread.start()
         except Exception, e:
-            rospy.logwarn("Error while reading parameter for %s service: %s", str(self.service.name), unicode(e))
-            self.setText(''.join(['Error while reading parameter:\n', unicode(e)]))
+            rospy.logwarn("Error while reading parameter for %s service: %s", utf8(self.service.name), utf8(e))
+            self.setText(''.join(['Error while reading parameter:\n', utf8(e)]))
 
     def _callService(self, params={}):
-        req = unicode(params) if params else ''
+        req = utf8(params) if params else ''
         try:
             req, resp = nm.starter().callService(self.service.uri, self.service.name, self.service.get_service_class(), [params])
-            self.service_resp_signal.emit(str(req), str(resp))
+            self.service_resp_signal.emit(utf8(req), utf8(resp))
         except Exception, e:
             import traceback
             print traceback.format_exc(1)
-            rospy.logwarn("Error while call service '%s': %s", str(self.service.name), str(e))
-            self.service_resp_signal.emit(unicode(req), unicode(e))
+            rospy.logwarn("Error while call service '%s': %s", utf8(self.service.name), utf8(e))
+            self.service_resp_signal.emit(utf8(req), utf8(e))
 
     @classmethod
     def _params_from_slots(cls, slots, types, values={}):
@@ -1279,9 +1280,9 @@ class ServiceDialog(ParameterDialog):
                 except ValueError, e:
                     import traceback
                     print traceback.format_exc(1)
-                    rospy.logwarn("Error while parse message type '%s': %s", str(msg_type), str(e))
+                    rospy.logwarn("Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result
 
     def _handle_resp(self, req, resp):
         self.setWindowTitle(''.join(['Request / Response of ', self.service.name]))
-        self.setText('\n'.join([unicode(req), '---', unicode(resp)]))
+        self.setText('\n'.join([utf8(req), '---', utf8(resp)]))

@@ -35,6 +35,7 @@ from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
 from master_discovery_fkie.common import get_hostname
 import node_manager_fkie as nm
+from node_manager_fkie.common import utf8
 
 
 class ServiceItem(QStandardItem):
@@ -87,7 +88,7 @@ class ServiceItem(QStandardItem):
         items = []
         item = ServiceItem(service)
         # removed tooltip for clarity !!!
-#    item.setToolTip(''.join(['<div><h4>', str(service.name), '</h4><dl><dt>', str(service.uri),'</dt></dl></div>']))
+#    item.setToolTip(''.join(['<div><h4>', utf8(service.name), '</h4><dl><dt>', utf8(service.uri),'</dt></dl></div>']))
         items.append(item)
         typeItem = QStandardItem()
         ServiceItem.updateTypeView(service, typeItem)
@@ -115,10 +116,10 @@ class ServiceItem(QStandardItem):
 #      tooltip = ''
 #      tooltip = ''.join([tooltip, '<h4>', service_class._type, '</h4>'])
 #      tooltip = ''.join([tooltip, '<b><u>', 'Request', ':</u></b>'])
-#      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._request_class.__slots__), '</dt></dl>'])
+#      tooltip = ''.join([tooltip, '<dl><dt>', utf8(service_class._request_class.__slots__), '</dt></dl>'])
 #
 #      tooltip = ''.join([tooltip, '<b><u>', 'Response', ':</u></b>'])
-#      tooltip = ''.join([tooltip, '<dl><dt>', str(service_class._response_class.__slots__), '</dt></dl>'])
+#      tooltip = ''.join([tooltip, '<dl><dt>', utf8(service_class._response_class.__slots__), '</dt></dl>'])
 #
 #      item.setToolTip(''.join(['<div>', tooltip, '</div>']))
             item.setToolTip('')
@@ -131,9 +132,9 @@ class ServiceItem(QStandardItem):
         if role == self.NAME_ROLE:
             return self.service.name
         elif role == self.TYPE_ROLE:
-            return str(self.service.get_service_class(False))
+            return utf8(self.service.get_service_class(False))
         elif role == self.NODENAMES_ROLE:
-            return str(self.service.serviceProvider)
+            return utf8(self.service.serviceProvider)
         else:
             return QStandardItem.data(self, role)
 

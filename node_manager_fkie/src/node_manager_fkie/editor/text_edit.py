@@ -34,7 +34,7 @@ from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QRegExp, Qt, S
 from python_qt_binding.QtGui import QFont, QTextCursor
 import os
 
-from node_manager_fkie.common import package_name
+from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
 from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
@@ -267,7 +267,7 @@ class TextEdit(QTextEdit):
                         event.setAccepted(True)
                         self.load_request_signal.emit(qf.fileName())
                 except Exception, e:
-                    WarningMessageBox(QMessageBox.Warning, "File not found %s" % inc_files[0], str(e)).exec_()
+                    WarningMessageBox(QMessageBox.Warning, "File not found %s" % inc_files[0], utf8(e)).exec_()
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):

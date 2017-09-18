@@ -41,7 +41,7 @@ import shutil
 
 import node_manager_fkie as nm
 
-from .common import is_package, package_name
+from .common import is_package, package_name, utf8
 from .detailed_msg_box import WarningMessageBox
 from .packages_thread import PackagesThread
 
@@ -253,7 +253,7 @@ class LaunchListModel(QStandardItemModel):
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
                 text = '%sfile://%s' % (prev, item.path)
-        mimeData.setData('text/plain', str(text))
+        mimeData.setData('text/plain', utf8(text))
         return mimeData
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,7 +374,7 @@ class LaunchListModel(QStandardItemModel):
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
                 text = '%sfile://%s' % (prev, item.path)
-        mimeData.setData('text/plain', str(text))
+        mimeData.setData('text/plain', utf8(text))
         QApplication.clipboard().setMimeData(mimeData)
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

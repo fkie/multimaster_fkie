@@ -40,6 +40,7 @@ import rospy
 from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnectionException
 import master_discovery_fkie.interface_finder as interface_finder
 
+from node_manager_fkie.common import utf8
 
 try:
     import std_srvs.srv
@@ -48,7 +49,7 @@ try:
 except ImportError, e:
     import sys
     print >> sys.stderr, "Can't import messages and services of multimaster_msgs_fkie. Is multimaster_msgs_fkie package compiled?"
-    raise ImportError(str(e))
+    raise ImportError(utf8(e))
 
 
 class MasterListService(QObject):
@@ -176,7 +177,8 @@ class MasterListThread(QObject, threading.Thread):
                 try:
                     resp = discoverMasters()
                 except rospy.ServiceException, e:
-                    rospy.logwarn("Service call 'list_masters' failed: %s", str(e))
+                    err_msg = "Service call 'list_masters' failed: %s" % utf8(e)
+                    rospy.logwarn(err_msg)
                     self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (service_name, err_msg), False)
                 else:
                     if resp.masters:
@@ -220,7 +222,7 @@ class MasterRefreshThread(QObject, threading.Thread):
                     _ = refreshMasters()
                     self.ok_signal.emit(self._masteruri)
                 except rospy.ServiceException, e:
-                    rospy.logwarn("ERROR Service call 'refresh' failed: %s", str(e))
+                    rospy.logwarn("ERROR Service call 'refresh' failed: %s", utf8(e))
                     self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % err_msg, True)
                 finally:
                     socket.setdefaulttimeout(None)
@@ -390,13 +392,13 @@ class OwnMasterMonitoring(QObject):
                         mon_state = self._master_monitor.getCurrentState()
                         # publish the new state
                         state = MasterState(MasterState.STATE_CHANGED,
-                                            ROSMaster(str(self._local_addr),
-                                                      str(self._masteruri),
+                                            ROSMaster(utf8(self._local_addr),
+                                                      utf8(self._masteruri),
                                                       mon_state.timestamp,
                                                       mon_state.timestamp_local,
                                                       True,
                                                       rospy.get_name(),
-                                                      ''.join(['http://localhost:', str(self._master_monitor.rpcport)])))
+                                                      ''.join(['http://localhost:', utf8(self._master_monitor.rpcport)])))
                         self.state_signal.emit(state)
                     # adapt the check rate to the CPU usage time
                     cputimes = os.times()

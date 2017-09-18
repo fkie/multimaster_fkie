@@ -39,6 +39,7 @@ import threading
 
 import rospy
 
+from node_manager_fkie.common import utf8
 from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
 import node_manager_fkie as nm
 
@@ -91,7 +92,7 @@ class ProgressQueue(QObject):
                 print "  Progress queue '%s' stopped!" % self._name
         except Exception:
             import traceback
-            print traceback.format_exc()
+            print utf8(traceback.format_exc())
 
     def add2queue(self, ident, descr, target=None, args=()):
         '''
@@ -201,7 +202,7 @@ class ProgressQueue(QObject):
             self.__running = False
         except:
             import traceback
-            print traceback.format_exc(1)
+            print utf8(traceback.format_exc(1))
 
     def _on_request_interact(self, ident, descr, req):
         '''
@@ -328,7 +329,7 @@ class ProgressThread(QObject, threading.Thread):
             while not last_line and len(formatted_lines) > index:
                 index += 1
                 last_line = formatted_lines[-index]
-            rospy.logwarn("%s failed:\n\t%s", str(self.descr), last_line)
             self.error_signal.emit(self._id, 'Progress Job Error',
-                                   "%s failed:\n%s" % (str(self.descr), last_line),
-                                   traceback.format_exc(4))
+                                   "%s failed:\n%s" % (utf8(self.descr), utf8(last_line)),
+                                   utf8(traceback.format_exc(4)))
+            rospy.logwarn("%s failed:\n\t%s", utf8(self.descr), utf8(last_line))

@@ -36,6 +36,7 @@ import socket
 
 import rospy
 from master_discovery_fkie.common import get_hostname
+from node_manager_fkie.common import utf8
 
 RESOLVE_CACHE = {}  # hostname : address
 
@@ -52,9 +53,9 @@ class MasterEntry(object):
         self.add_address(address)
 
     def __repr__(self):
-        return ''.join([str(self.masteruri), ':\n',
-                        '  masternames: ', str(self._masternames), '\n',
-                        '  addresses: ', str(self._addresses), '\n'])
+        return ''.join([utf8(self.masteruri), ':\n',
+                        '  masternames: ', utf8(self._masternames), '\n',
+                        '  addresses: ', utf8(self._addresses), '\n'])
 
     def entry(self):
         return (self.masteruri, list(self._masternames), list(self._addresses))

@@ -39,6 +39,7 @@ import rospy
 
 from supervised_popen import SupervisedPopen
 import node_manager_fkie as nm
+from node_manager_fkie.common import utf8
 
 import Crypto.Cipher.AES
 orig_new = Crypto.Cipher.AES.new
@@ -143,7 +144,7 @@ class SSHhandler(object):
             try:
                 ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
                 if ssh is not None:
-                    cmd_str = str(' '.join(cmd))
+                    cmd_str = utf8(' '.join(cmd))
                     rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
                     (stdin, stdout, stderr) = (None, None, None)
                     if get_pty:
@@ -195,9 +196,9 @@ class SSHhandler(object):
                 if title is not None:
                     cmd_str = nm.settings().terminal_cmd([ssh_str, ' '.join(cmd)], title)
                 else:
-                    cmd_str = str(' '.join([ssh_str, ' '.join(cmd)]))
+                    cmd_str = utf8(' '.join([ssh_str, ' '.join(cmd)]))
                 rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
-                return SupervisedPopen(shlex.split(cmd_str), object_id=str(title), description="REMOTE x11 execute on %s: %s" % (host, cmd_str))
+                return SupervisedPopen(shlex.split(cmd_str), object_id=utf8(title), description="REMOTE x11 execute on %s: %s" % (host, cmd_str))
             except:
                 raise
 
@@ -224,7 +225,7 @@ class SSHhandler(object):
                     session.connect(host, username=user, password=pw, timeout=3, compress=True)
                     self.SSH_AUTH[host] = user
                 except Exception, e:
-                    if str(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
+                    if utf8(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
                         if auto_pw_request:
                             # 'print "REQUEST PW-AUTO"
                             res, user, pw = self._requestPW(user, host)
@@ -232,10 +233,10 @@ class SSHhandler(object):
                                 return None
                             self.SSH_AUTH[host] = user
                         else:
-                            raise AuthenticationRequest(user, host, str(e))
+                            raise AuthenticationRequest(user, host, utf8(e))
                     else:
-                        rospy.logwarn("ssh connection to %s failed: %s", host, str(e))
-                        raise Exception(' '.join(["ssh connection to", host, "failed:", str(e)]))
+                        rospy.logwarn("ssh connection to %s failed: %s", host, utf8(e))
+                        raise Exception(' '.join(["ssh connection to", host, "failed:", utf8(e)]))
                 else:
                     SSHhandler.SSH_SESSIONS[host] = session
             if not session.get_transport() is None:
@@ -258,7 +259,7 @@ class SSHhandler(object):
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'PasswordInput.ui')
         loadUi(ui_file, pwInput)
         pwInput.setWindowTitle(''.join(['Enter the password for user ', user, ' on ', host]))
-        pwInput.userLine.setText(str(user))
+        pwInput.userLine.setText(utf8(user))
         pwInput.pwLine.setText("")
         pwInput.pwLine.setFocus(Qt.OtherFocusReason)
         if pwInput.exec_():

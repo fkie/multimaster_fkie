@@ -36,7 +36,7 @@ import os
 
 import rospy
 
-from node_manager_fkie.common import package_name
+from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.run_dialog import PackageDialog
 from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
@@ -102,7 +102,7 @@ class Editor(QMainWindow):
         @type search_text: C{str} (Default: C{Empty String})
         '''
         QMainWindow.__init__(self, parent)
-        self.setObjectName(' - '.join(['Editor', str(filenames)]))
+        self.setObjectName('Editor - %s' % utf8(filenames))
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowFlags(Qt.Window)
         self.mIcon = QIcon(":/icons/crystal_clear_edit_launch.png")
@@ -709,7 +709,7 @@ class Editor(QMainWindow):
         dia = PackageDialog()
         if dia.exec_():
             self._insert_text('<node name="%s" pkg="%s" type="%s"\n'
-                              '      args="arg1" machine="machine-name"\n'
+                              '      args="arg1" machine="machine_name"\n'
                               '      respawn="true" required="true"\n'
                               '      ns="foo" clear_params="true|false"\n'
                               '      output="log|screen" cwd="ROS_HOME|node"\n'

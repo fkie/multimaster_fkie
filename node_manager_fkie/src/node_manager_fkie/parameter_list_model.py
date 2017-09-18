@@ -34,6 +34,8 @@ from python_qt_binding.QtCore import QSize, Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 from xmlrpclib import Binary
 
+from node_manager_fkie.common import utf8
+
 
 class ParameterValueItem(QStandardItem):
     '''
@@ -54,7 +56,7 @@ class ParameterValueItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        QStandardItem.__init__(self, unicode(value) if not isinstance(value, Binary) else str(value))
+        QStandardItem.__init__(self, utf8(value) if not isinstance(value, Binary) else utf8(value))
         self._name = name
         '''@ivar: the name of parameter '''
         self._value = value
@@ -73,7 +75,7 @@ class ParameterValueItem(QStandardItem):
     @value.setter
     def value(self, value):
         self._value = value
-        self.setText(unicode(value) if not isinstance(value, Binary) else str(value))
+        self.setText(utf8(value) if not isinstance(value, Binary) else utf8(value))
         if isinstance(value, (str, unicode)) and value.find('\n') > -1:
             self.setSizeHint(QSize(-1, 45))
 
@@ -84,9 +86,9 @@ class ParameterValueItem(QStandardItem):
         if role == self.NAME_ROLE:
             return self.name
         elif role == self.VALUE_ROLE:
-            return str(self.value)
+            return utf8(self.value)
         elif role == self.TYPE_ROLE:
-            return str(type(self.value).replace('<type \'').replace('\'>'))
+            return utf8(type(self.value).replace('<type \'').replace('\'>'))
         else:
             return QStandardItem.data(self, role)
 
@@ -95,9 +97,9 @@ class ParameterValueItem(QStandardItem):
         Compares the value of parameter.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
-            return unicode(self.value) == item
+            return utf8(self.value) == utf8(item)
         elif not (item is None):
-            return unicode(self.value) == unicode(item.value)
+            return utf8(self.value) == utf8(item.value)
         return False
 
     def __gt__(self, item):
@@ -105,9 +107,9 @@ class ParameterValueItem(QStandardItem):
         Compares the value of parameter.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
-            return unicode(self.value) > item
+            return utf8(self.value) > utf8(item)
         elif not (item is None):
-            return unicode(self.value) > unicode(item.value)
+            return utf8(self.value) > utf8(item.value)
         return False
 
 
@@ -147,7 +149,7 @@ class ParameterNameItem(QStandardItem):
     @value.setter
     def value(self, value):
         self._value = value
-        self.setText(str(value))
+        self.setText(utf8(value))
 
     def type(self):
         return ParameterValueItem.ITEM_TYPE
@@ -156,9 +158,9 @@ class ParameterNameItem(QStandardItem):
         if role == self.NAME_ROLE:
             return self.name
         elif role == self.VALUE_ROLE:
-            return str(self.value)
+            return utf8(self.value)
         elif role == self.TYPE_ROLE:
-            return str(type(self.value).replace('<type \'').replace('\'>'))
+            return utf8(type(self.value).replace('<type \'').replace('\'>'))
         else:
             return QStandardItem.data(self, role)
 
@@ -202,7 +204,7 @@ class ParameterTypeItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        QStandardItem.__init__(self, str(type(value)).replace("<type '", '').replace("'>", ''))
+        QStandardItem.__init__(self, utf8(type(value)).replace("<type '", '').replace("'>", ''))
         self._name = name
         '''@ivar: the name of parameter '''
         self._value = value
@@ -219,7 +221,7 @@ class ParameterTypeItem(QStandardItem):
     @value.setter
     def value(self, value):
         self._value = value
-        self.setText(str(value))
+        self.setText(utf8(value))
 
     def type(self):
         return ParameterValueItem.ITEM_TYPE
@@ -228,9 +230,9 @@ class ParameterTypeItem(QStandardItem):
         if role == self.NAME_ROLE:
             return self.name
         elif role == self.VALUE_ROLE:
-            return str(self.value)
+            return utf8(self.value)
         elif role == self.TYPE_ROLE:
-            return str(type(self.value).replace('<type \'').replace('\'>'))
+            return utf8(type(self.value).replace('<type \'').replace('\'>'))
         else:
             return QStandardItem.data(self, role)
 

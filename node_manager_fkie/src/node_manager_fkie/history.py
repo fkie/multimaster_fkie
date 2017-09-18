@@ -31,9 +31,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from python_qt_binding.QtCore import QObject
 import os
+import codecs
 
 import rospy
 
+from node_manager_fkie.common import utf8
 import node_manager_fkie as nm
 
 
@@ -75,8 +77,8 @@ class History(QObject):
         result = {}
         historyFile = os.path.join(nm.settings().cfg_path, history_file)
         if os.path.isfile(historyFile):
-            with open(historyFile, 'r') as f:
-                line = f.readline()
+            with codecs.open(historyFile, 'r', encoding='utf-8') as f:
+                line = utf8(f.readline())
                 while line:
                     if line:
                         line = line.strip()
@@ -87,7 +89,7 @@ class History(QObject):
                                     result[key] = [value]
                                 elif len(result[key]) <= nm.settings().param_history_length:
                                     result[key].append(value)
-                    line = f.readline()
+                    line = utf8(f.readline())
         return result
 
     def storeCache(self, history_file, cache, history_len):
@@ -101,26 +103,26 @@ class History(QObject):
         @type history_len: C{int}
         '''
         ignored = dict()
-        with open(os.path.join(nm.settings().cfg_path, history_file), 'w') as f:
+        with codecs.open(os.path.join(nm.settings().cfg_path, history_file), 'w', encoding='utf-8') as f:
             for key in cache.keys():
                 count = 0
                 for value in cache[key]:
                     if count < history_len:
                         try:
-                            f.write(''.join([key, ':=', value, '\n']))
+                            f.write(''.join([key, ':=', utf8(value), '\n']))
                         except UnicodeEncodeError, e:
-                            ignored[key] = (value, str(e))
+                            ignored[key] = (value, utf8(e))
                         except:
                             import traceback
-                            rospy.logwarn("Storing history aborted: %s", traceback.format_exc(1))
+                            rospy.logwarn("Storing history aborted: %s", traceback.format_exc(3))
                         count += 1
                     else:
                         break
         if ignored:
-            rospy.logwarn("Error while storing follow keys: %s", str(ignored))
+            rospy.logwarn("Error while storing follow keys: %s", utf8(ignored))
 
     def _add2Cache(self, cache, key, value):
-        uvalue = unicode(value)
+        uvalue = utf8(value)
         if key and uvalue:
             if key not in cache:
                 cache[key] = [uvalue]
@@ -133,7 +135,7 @@ class History(QObject):
                 cache[key].insert(0, uvalue)
 
     def _removeFromCache(self, cache, key, value):
-        uvalue = unicode(value)
+        uvalue = utf8(value)
         if key and uvalue:
             if key in cache:
                 value_list = cache[key]

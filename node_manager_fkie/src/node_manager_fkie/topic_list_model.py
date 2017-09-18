@@ -40,6 +40,8 @@ except:
 from detailed_msg_box import WarningMessageBox
 from master_discovery_fkie.master_info import TopicInfo
 
+from node_manager_fkie.common import utf8
+
 
 class TopicItem(QStandardItem):
     '''
@@ -125,9 +127,9 @@ class TopicItem(QStandardItem):
 # #          tooltip = ''
 #           try:
 #             mclass = roslib.message.get_message_class(self.topic.type)
-# #            tooltip = str(mclass)
+# #            tooltip = utf8(mclass)
 #             if not mclass is None:
-# #              tooltip = str(mclass.__slots__)
+# #              tooltip = utf8(mclass.__slots__)
 #               for f in mclass.__slots__:
 #                 idx = mclass.__slots__.index(f)
 #                 idtype = mclass._slot_types[idx]
@@ -141,7 +143,7 @@ class TopicItem(QStandardItem):
 #                     primitive = "class", list_msg_class.__slots__
 #                   except ValueError:
 #                     pass
-# #                tooltip = ''.join([tooltip, '\n\t', str(f), ': ', str(idtype), ' (', str(primitive),')'])
+# #                tooltip = ''.join([tooltip, '\n\t', utf8(f), ': ', utf8(idtype), ' (', utf8(primitive),')'])
 #           except ValueError:
 #             pass
 #          cfg_col.setToolTip(tooltip)
@@ -171,7 +173,7 @@ class TopicItem(QStandardItem):
         if role == self.NAME_ROLE:
             return self.topic.name
         elif role == self.NODENAMES_ROLE:
-            return str(self.topic.publisherNodes) + str(self.topic.subscriberNodes)
+            return utf8(self.topic.publisherNodes) + utf8(self.topic.subscriberNodes)
         else:
             return QStandardItem.data(self, role)
 

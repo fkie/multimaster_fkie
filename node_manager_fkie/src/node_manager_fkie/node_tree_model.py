@@ -39,6 +39,7 @@ import traceback
 
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
+from node_manager_fkie.common import utf8
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
 import node_manager_fkie as nm
@@ -542,7 +543,7 @@ class GroupItem(QStandardItem):
                     from docutils import examples
                     if self.descr:
                         tooltip += '<b><u>Detailed description:</u></b>'
-                        tooltip += examples.html_body(unicode(self.descr))
+                        tooltip += examples.html_body(utf8(self.descr))
                 except:
                     rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
                     tooltip += '<br>'
@@ -716,7 +717,7 @@ class HostItem(GroupItem):
             name = address
         hostname = nm.nameres().hostname(address)
         if hostname is None:
-            hostname = str(address)
+            hostname = utf8(address)
         if not nm.settings().show_domain_suffix:
             name = subdomain(name)
         result = '%s@%s' % (name, hostname)
@@ -755,15 +756,15 @@ class HostItem(GroupItem):
         tooltip += '<h3>%s</h3>' % self.mastername
         tooltip += '<font size="+1"><i>%s</i></font><br>' % self.masteruri
         tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' %s' % self.addresses if self.addresses else '')
-        tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (str(self.masteruri).replace('http://', ''))
+        tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (utf8(self.masteruri).replace('http://', ''))
         tooltip += '<p>'
-        tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (str(self.masteruri).replace('http://', ''))
+        tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (utf8(self.masteruri).replace('http://', ''))
         tooltip += '<p>'
         tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.hostname, self.hostname)
         tooltip += '<p>'
         tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
         tooltip += '<p>'
-        tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % str(self.masteruri).replace('http://', '')
+        tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
         tooltip += '<p>'
         # get sensors
         capabilities = []
@@ -1072,7 +1073,7 @@ class NodeItem(QStandardItem):
         if self.parent_item is not None:
             uri_col = self.parent_item.child(self.row(), NodeItem.COL_URI)
             if uri_col is not None and isinstance(uri_col, QStandardItem):
-                uri_col.setText(str(self.node_info.uri) if self.node_info.uri is not None else "")
+                uri_col.setText(utf8(self.node_info.uri) if self.node_info.uri is not None else "")
 
     @property
     def cfgs(self):
@@ -1119,7 +1120,7 @@ class NodeItem(QStandardItem):
             cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
             if cfg_col is not None and isinstance(cfg_col, QStandardItem):
                 cfg_count = len(self._cfgs)
-                cfg_col.setText(str(''.join(['[', str(cfg_count), ']'])) if cfg_count > 1 else "")
+                cfg_col.setText(utf8(''.join(['[', utf8(cfg_count), ']'])) if cfg_count > 1 else "")
                 # set tooltip
                 # removed tooltip for clarity !!!
 #        tooltip = ''
@@ -1444,7 +1445,7 @@ class NodeTreeModel(QStandardItemModel):
                     hostItem.addCapabilities('', capabilities, hostItem.masteruri)
                 hostItem.clearUp()
         else:
-            rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", str(masteruri), msg)
+            rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
 
     def set_std_capablilities(self, capabilities):
         '''
@@ -1627,7 +1628,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
-            if root.child(i) == (unicode(masteruri), unicode(host)):
+            if root.child(i) == (utf8(masteruri), utf8(host)):
                 h = root.child(i)
                 h.updateDescription(descr_type, descr_name, descr)
                 return h.updateTooltip()

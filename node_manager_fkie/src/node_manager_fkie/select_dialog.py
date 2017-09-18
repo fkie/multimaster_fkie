@@ -40,6 +40,7 @@ except:
 from python_qt_binding.QtGui import QPixmap
 import re
 
+from node_manager_fkie.common import utf8
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 
 
@@ -57,7 +58,7 @@ class SelectDialog(QDialog):
         @type items: C{list()}
         '''
         QDialog.__init__(self, parent=parent)
-        self.setObjectName(' - '.join(['SelectDialog', str(items)]))
+        self.setObjectName(' - '.join(['SelectDialog', utf8(items)]))
 
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")

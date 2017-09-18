@@ -46,6 +46,7 @@ import rospy
 from master_discovery_fkie.master_discovery import Discoverer
 from master_discovery_fkie.udp import DiscoverSocket, QueueReceiveItem
 import node_manager_fkie as nm
+from node_manager_fkie.common import utf8
 
 
 class NetworkDiscoveryDialog(QDialog, threading.Thread):
@@ -111,7 +112,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                 hostname = self._hosts[address[0]]
             except:
                 self.status_text_signal.emit("resolve %s" % address[0])
-                hostname = nm.nameres().hostname(str(address[0]), resolve=True)
+                hostname = nm.nameres().hostname(utf8(address[0]), resolve=True)
                 self._hosts[address[0]] = hostname
             try:
                 (_version, _msg_tuple) = Discoverer.msg2masterState(msg, address)
@@ -164,9 +165,9 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.display_clear_signal.emit()
         text = '<div style="font-family:Fixedsys,Courier,monospace; padding:10px;">\n'
         for index, addr_dict in self._discovered.items():
-            text = ''.join([text, 'Network <b>', str(index), '</b>: <a href="', str(index), '">join</a><dl>'])
+            text = ''.join([text, 'Network <b>', utf8(index), '</b>: <a href="', utf8(index), '">join</a><dl>'])
             for addr, (hostname, ts) in addr_dict.items():
-                text = ''.join([text, '<dt>', self._getTsStr(ts), '   <b><u>', str(hostname), '</u></b> ', str(addr), ', received messages: ', str(self._msg_counts[hostname]), '</dt>\n'])
+                text = ''.join([text, '<dt>', self._getTsStr(ts), '   <b><u>', utf8(hostname), '</u></b> ', utf8(addr), ', received messages: ', str(self._msg_counts[hostname]), '</dt>\n'])
             text = ''.join([text, '</dl><br>'])
         text = ''.join([text, '</div>'])
         self.display_append_signal.emit(text)

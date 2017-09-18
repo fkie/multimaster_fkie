@@ -35,7 +35,7 @@ import os
 import roslib
 import rospy
 
-from node_manager_fkie.common import get_ros_home, masteruri_from_ros
+from node_manager_fkie.common import get_ros_home, masteruri_from_ros, utf8
 
 
 class LoggingConfig(object):
@@ -553,7 +553,7 @@ class Settings(object):
             l = l.replace('"', '')
             l = l.replace("'", '')
             l = l.replace(",", ' ')
-            return [str(i).strip() for i in l.split(' ') if i]
+            return [utf8(i).strip() for i in l.split(' ') if i]
         except:
             return []
 

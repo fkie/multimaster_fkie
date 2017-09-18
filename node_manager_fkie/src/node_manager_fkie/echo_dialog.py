@@ -51,6 +51,7 @@ import rospy
 
 import gui_resources
 import node_manager_fkie as nm
+from node_manager_fkie.common import utf8
 
 
 def isstring(s):
@@ -667,7 +668,7 @@ class EchoDialog(QDialog):
             else:
                 return ('%d') % val
         elif type_ in (int, long, float, bool):
-            return str(val)
+            return utf8(val)
         elif isstring(val):
             # TODO: need to escape strings correctly
             if not val:
@@ -693,7 +694,7 @@ class EchoDialog(QDialog):
                 return list_str
             elif type(val0) in (int, float, str, bool):
                 # TODO: escape strings properly
-                return str(list(val))
+                return utf8(list(val))
             else:
                 pref = indent + '- '
                 indent = indent + '  '
@@ -726,4 +727,4 @@ class EchoDialog(QDialog):
             else:
                 return vals
         else:
-            return str(val)  # punt
+            return utf8(val)  # punt

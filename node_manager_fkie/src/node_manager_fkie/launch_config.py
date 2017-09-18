@@ -43,7 +43,7 @@ import roslib
 from master_discovery_fkie.common import get_hostname, resolve_url
 import node_manager_fkie as nm
 
-from .common import package_name, resolve_paths
+from .common import package_name, resolve_paths, utf8
 
 
 # from xml.dom import Node as DomNode #avoid aliasing
@@ -285,8 +285,8 @@ class LaunchConfig(QObject):
                                                    self.__launch_id,
                                                    files)
         except roslaunch.XmlParseException, e:
-            test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
-            message = str(e)
+            test = list(re.finditer(r"environment variable '\w+' is not set", utf8(e)))
+            message = utf8(e)
             if test:
                 message = ''.join([message, '\n', 'environment substitution is not supported, use "arg" instead!'])
             raise LaunchConfigException(message)

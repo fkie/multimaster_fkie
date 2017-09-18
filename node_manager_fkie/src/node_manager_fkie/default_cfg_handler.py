@@ -37,6 +37,7 @@ import time
 import rospy
 
 import node_manager_fkie as nm
+from node_manager_fkie.common import utf8
 
 
 try:
@@ -44,7 +45,7 @@ try:
 except ImportError, e:
     import sys
     print >> sys.stderr, "Can't import services of default_cfg_fkie. Is default_cfg_fkie package compiled?"
-    raise ImportError(str(e))
+    raise ImportError(utf8(e))
 
 
 class DefaultConfigHandler(QObject):
@@ -180,7 +181,7 @@ class ServiceThread(QObject, threading.Thread):
             except:
                 import traceback
                 lines = traceback.format_exc(1).splitlines()
-                rospy.logwarn("Error while retrieve the node list from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
+                rospy.logwarn("Error while retrieve the node list from %s[%s]: %s", utf8(self._service), utf8(self._service_uri), utf8(lines[-1]))
                 self.err_signal.emit(self._service_uri, self._service, lines[-1])
 
 
@@ -212,5 +213,5 @@ class ServiceDescriptionThread(QObject, threading.Thread):
             except:
                 import traceback
                 lines = traceback.format_exc(1).splitlines()
-                rospy.logwarn("Error while retrieve the description from %s[%s]: %s", str(self._service), str(self._service_uri), str(lines[-1]))
+                rospy.logwarn("Error while retrieve the description from %s[%s]: %s", utf8(self._service), utf8(self._service_uri), utf8(lines[-1]))
                 self.err_signal.emit(self._service_uri, self._service, lines[-1])

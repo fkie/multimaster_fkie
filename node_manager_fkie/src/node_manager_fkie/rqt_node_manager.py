@@ -6,6 +6,7 @@ except:
 from qt_gui.plugin import Plugin
 
 import node_manager_fkie
+from node_manager_fkie.common import utf8
 
 from .main_window import MainWindow
 
@@ -38,7 +39,7 @@ class NodeManager(Plugin):
 #          self._widget.read_view_history()
         except Exception, e:
             msgBox = QMessageBox()
-            msgBox.setText(str(e))
+            msgBox.setText(utf8(e))
             msgBox.exec_()
             raise
         # Get path to UI file which is a sibling of this file

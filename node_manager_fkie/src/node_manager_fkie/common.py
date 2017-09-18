@@ -13,6 +13,14 @@ except ImportError:
 PACKAGE_CACHE = {}
 
 
+def utf8(s, errors='replace'):
+    if isinstance(s, (str, buffer)):
+        return unicode(s, "utf-8", errors=errors)
+    elif not isinstance(s, unicode):
+        return unicode(str(s))
+    return s
+
+
 def get_ros_home():
     '''
     Returns the ROS HOME depending on ROS distribution API.

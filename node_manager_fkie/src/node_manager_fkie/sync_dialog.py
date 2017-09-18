@@ -30,14 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QObject, QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QFont, QIcon, QTextCharFormat
+from python_qt_binding.QtCore import QObject, Qt, Signal
+from python_qt_binding.QtGui import QIcon
 import os
 import threading
 
 import rospy
 
-from node_manager_fkie.common import is_package
+from node_manager_fkie.common import is_package, utf8
 from node_manager_fkie.detailed_msg_box import WarningMessageBox
 from node_manager_fkie.editor.yaml_highlighter import YamlHighlighter
 import node_manager_fkie as nm
@@ -315,7 +315,7 @@ class SyncDialog(QDialog):
             except Exception as e:
                 WarningMessageBox(QMessageBox.Warning, "Create sync interface",
                                   "Error while create interface",
-                                  str(e)).exec_()
+                                  utf8(e)).exec_()
         elif self.interface_field.isVisible():
             interface = self.interface_field.currentText()
             if self._interfaces_files and interface in self._interfaces_files:
@@ -385,7 +385,7 @@ class SyncDialog(QDialog):
             except Exception as e:
                 WarningMessageBox(QMessageBox.Warning, "Edit sync interface",
                                   "Error while open interface",
-                                  str(e)).exec_()
+                                  utf8(e)).exec_()
         self.resize(350, 300)
 
     def resetView(self):
