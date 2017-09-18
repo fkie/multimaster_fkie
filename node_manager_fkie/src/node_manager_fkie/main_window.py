@@ -436,7 +436,7 @@ class MainWindow(QMainWindow):
                             if not m.is_local:
                                 m.killall_roscore()
                     except Exception as e:
-                        rospy.logwarn("Error while stop nodes on %s: %s" % (uri, e))
+                        rospy.logwarn("Error while stop nodes on %s: %s" % (uri, utf8(e)))
                 QTimer.singleShot(200, self._test_for_finish)
             else:
                 self._close_on_exit = True
@@ -981,15 +981,15 @@ class MainWindow(QMainWindow):
                     except (Exception, nm.StartException) as err:
                         import traceback
                         print traceback.format_exc(1)
-                        rospy.logwarn("Error while show LOG for master_discovery %s: %s" % (utf8(hostname), err))
+                        rospy.logwarn("Error while show LOG for master_discovery %s: %s" % (utf8(hostname), utf8(err)))
                         WarningMessageBox(QMessageBox.Warning, "Show log error",
                                           'Error while show log of master_discovery',
-                                          '%s' % err).exec_()
+                                          '%s' % utf8(err)).exec_()
                     self._progress_queue.start()
             except Exception as err:
                 WarningMessageBox(QMessageBox.Warning, "Show log error",
                                   'Error while parse parameter',
-                                  '%s' % err).exec_()
+                                  '%s' % utf8(err)).exec_()
 
     def on_set_time_clicked(self):
         if self.currentMaster is not None:  # and not self.currentMaster.is_local:
@@ -1021,7 +1021,7 @@ class MainWindow(QMainWindow):
                                 errormsg += "\n\nBe aware, it does not replace the time synchronization!"
                                 errormsg += "\nIt sets approximate time without undue delays on communication layer."
                             WarningMessageBox(QMessageBox.Warning, "Time set error",
-                                              'Error while set time on %s' % uri, '%s' % errormsg).exec_()
+                                              'Error while set time on %s' % uri, '%s' % utf8(errormsg)).exec_()
                         else:
                             timediff = time.time() - newtime
                             rospy.loginfo("  New time difference to %s is approx.: %.3fs" % (self.currentMaster.master_state.uri, timediff))
@@ -1030,10 +1030,10 @@ class MainWindow(QMainWindow):
                         errormsg = '%s' % e
                         if errormsg.find('setTime') > -1:
                             errormsg += "\nUpdate remote multimaster_fkie!"
-                        rospy.logwarn("Error while set time on %s: %s" % (self.currentMaster.master_state.uri, errormsg))
+                        rospy.logwarn("Error while set time on %s: %s" % (self.currentMaster.master_state.uri, utf8(errormsg)))
                         WarningMessageBox(QMessageBox.Warning, "Time sync error",
                                           'Error while set time on %s' % self.currentMaster.master_state.uri,
-                                          '%s' % errormsg).exec_()
+                                          '%s' % utf8(errormsg)).exec_()
                     finally:
                         socket.setdefaulttimeout(None)
                 elif time_dialog.ntpdateRadioButton.isChecked():
@@ -1128,8 +1128,8 @@ class MainWindow(QMainWindow):
                                                               False))
             except (Exception, nm.StartException), e:
                 import traceback
-                print traceback.format_exc(1)
-                rospy.logwarn("Error while start %s: %s" % (name, e))
+                print utf8(traceback.format_exc(1))
+                rospy.logwarn("Error while start %s: %s" % (name, utf8(e)))
                 WarningMessageBox(QMessageBox.Warning, "Start error",
                                   'Error while start %s' % name,
                                   '%s' % e).exec_()
@@ -2160,4 +2160,4 @@ class MainWindow(QMainWindow):
                 if DIAGNOSTICS_AVAILABLE:
                     self.diagnostics_signal.emit(diagnostic)
         except Exception as err:
-            rospy.logwarn('Error while process diagnostic messages: %s' % err)
+            rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))

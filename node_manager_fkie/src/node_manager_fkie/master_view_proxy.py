@@ -2649,7 +2649,7 @@ class MasterViewProxy(QWidget):
             ps.finished.connect(self._topic_dialog_closed)
             self.__echo_topics_dialogs[topic.name] = ps
         except Exception, e:
-            rospy.logwarn("Echo topic '%s' failed: %s" % (topic.name, e))
+            rospy.logwarn("Echo topic '%s' failed: %s" % (topic.name, utf8(e)))
             WarningMessageBox(QMessageBox.Warning, "Echo of topic error",
                               'Echo of topic %s failed!' % topic.name,
                               '%s' % e).exec_()

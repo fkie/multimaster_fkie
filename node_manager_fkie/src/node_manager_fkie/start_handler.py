@@ -608,7 +608,7 @@ class StartHandler(object):
                     if count >= 11:
                         raise StartException('Cannot connect to the ROS-Master: ' + utf8(masteruri))
                 except Exception as e:
-                    raise Exception("Error while call '%s': %s" % (cmd_args, e))
+                    raise Exception("Error while call '%s': %s" % (cmd_args, utf8(e)))
             else:
                 raise Exception("ROS master '%s' is not reachable" % masteruri)
         finally:

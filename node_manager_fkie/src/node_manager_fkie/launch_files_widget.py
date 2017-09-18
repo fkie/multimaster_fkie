@@ -45,7 +45,7 @@ import os
 import rospy
 
 import node_manager_fkie as nm
-from .common import package_name  # , masteruri_from_ros
+from .common import package_name, utf8  # , masteruri_from_ros
 from .detailed_msg_box import WarningMessageBox
 from .launch_list_model import LaunchListModel, LaunchItem
 from .parameter_dialog import ParameterDialog
@@ -144,7 +144,7 @@ class LaunchFilesWidget(QDockWidget):
                     elif item.isConfigFile():
                         self.edit_signal.emit([lfile])
             except Exception as e:
-                rospy.logwarn("Error while load launch file %s: %s" % (item, e))
+                rospy.logwarn("Error while load launch file %s: %s" % (item, utf8(e)))
                 WarningMessageBox(QMessageBox.Warning, "Load error",
                                   'Error while load launch file:\n%s' % item.name,
                                   "%s" % e).exec_()

@@ -223,7 +223,7 @@ class MasterRefreshThread(QObject, threading.Thread):
                     self.ok_signal.emit(self._masteruri)
                 except rospy.ServiceException, e:
                     rospy.logwarn("ERROR Service call 'refresh' failed: %s", utf8(e))
-                    self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % err_msg, True)
+                    self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % utf8(err_msg), True)
                 finally:
                     socket.setdefaulttimeout(None)
 

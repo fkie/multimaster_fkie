@@ -195,7 +195,7 @@ class EchoDialog(QDialog):
                 errmsg = "Cannot load message class for [%s]. Did you build messages?" % msg_type
         except Exception as e:
             self.__msg_class = None
-            errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s" % (msg_type, e)
+            errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s" % (msg_type, utf8(e))
         # variables for Subscriber
         self.msg_signal.connect(self._append_message)
         self.sub = None
@@ -351,7 +351,7 @@ class EchoDialog(QDialog):
                     self.ssh_output_file = None
                 self.topicControlButton.setIcon(QIcon(':/icons/deleket_deviantart_play.png'))
         except Exception as e:
-            rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, e))
+            rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, utf8(e)))
 
     def _msg_handle(self, data):
         self.msg_signal.emit(data, (data._connection_header['latching'] != '0'))
