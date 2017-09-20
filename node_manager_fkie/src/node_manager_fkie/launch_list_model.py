@@ -253,7 +253,7 @@ class LaunchListModel(QStandardItemModel):
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
                 text = '%sfile://%s' % (prev, item.path)
-        mimeData.setData('text/plain', utf8(text))
+        mimeData.setData('text/plain', text)
         return mimeData
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
