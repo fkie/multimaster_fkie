@@ -1157,7 +1157,7 @@ class MasterViewProxy(QWidget):
             self.on_service_selection_changed(None, None, True)
 
     def on_host_inserted(self, item):
-        if item == (self.masteruri, get_hostname(self.masteruri)):
+        if item == (self.masteruri, nm.nameres().hostname(get_hostname(self.masteruri))):
             index = self.node_tree_model.indexFromItem(item)
             model_index = self.node_proxy_model.mapFromSource(index)
             if model_index.isValid():

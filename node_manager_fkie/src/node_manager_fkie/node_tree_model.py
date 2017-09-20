@@ -721,7 +721,11 @@ class HostItem(GroupItem):
         if not nm.settings().show_domain_suffix:
             name = subdomain(name)
         result = '%s@%s' % (name, hostname)
-        if get_hostname(masteruri) != hostname:
+        maddr = get_hostname(masteruri)
+        mname = nm.nameres().hostname(maddr)
+        if mname is None:
+            mname = utf8(maddr)
+        if mname != hostname:
             result += '[%s]' % masteruri
             self._has_remote_launched_nodes = True
         return result
@@ -1303,7 +1307,8 @@ class NodeTreeModel(QStandardItemModel):
         '''
         if masteruri is None:
             return None
-        host = (masteruri, address)
+        resaddr = nm.nameres().hostname(address)
+        host = (masteruri, resaddr)
         # [address] + nm.nameres().resolve_cached(address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
                  self._local_masteruri == masteruri)
@@ -1313,12 +1318,12 @@ class NodeTreeModel(QStandardItemModel):
             if root.child(i) == host:
                 return root.child(i)
             elif root.child(i) > host:
-                hostItem = HostItem(masteruri, address, local)
+                hostItem = HostItem(masteruri, resaddr, local)
                 self.insertRow(i, hostItem)
                 self.hostInserted.emit(hostItem)
                 self._set_std_capabilities(hostItem)
                 return hostItem
-        hostItem = HostItem(masteruri, address, local)
+        hostItem = HostItem(masteruri, resaddr, local)
         self.appendRow(hostItem)
         self.hostInserted.emit(hostItem)
         self._set_std_capabilities(hostItem)
