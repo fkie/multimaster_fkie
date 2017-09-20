@@ -637,7 +637,7 @@ class StartHandler(object):
         @see: U{rospy.SerivceProxy<http://docs.ros.org/kinetic/api/rospy/html/rospy.impl.tcpros_service.ServiceProxy-class.html>}
 
         '''
-        service = utf8(service)
+        service = str(service)
         rospy.loginfo("Call service %s[%s]: %s, %s", utf8(service), utf8(service_uri), utf8(service_type), utf8(service_args))
         from rospy.core import parse_rosrpc_uri, is_shutdown
 #    from rospy.msg import args_kwds_to_message
@@ -829,7 +829,7 @@ class StartHandler(object):
             rospy.loginfo("kill: %s", utf8(pid))
         else:
             # kill on a remote machine
-            cmd = ['kill -9', utf8(pid)]
+            cmd = ['kill -9', str(pid)]
             _, stdout, stderr, ok = nm.ssh().ssh_exec(host, cmd, user, pw, False, close_stdin=True)
             if ok:
                 output = stdout.read()
@@ -982,7 +982,7 @@ class StartHandler(object):
         '''
         mesg = "synchronize time on '%s' using '%s'" % (utf8(host), cmd)
         rospy.loginfo(mesg)
-        title_opt = "ntpdate on %s" % utf8(host)  # '%s on %s' % (cmd, host)
+        title_opt = "ntpdate on %s" % str(host)  # '%s on %s' % (cmd, host)
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd([cmd], title_opt, noclose=True)
             rospy.loginfo("EXEC: %s" % cmd)

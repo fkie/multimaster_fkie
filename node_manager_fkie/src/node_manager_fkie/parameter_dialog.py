@@ -1248,12 +1248,12 @@ class ServiceDialog(ParameterDialog):
         req = utf8(params) if params else ''
         try:
             req, resp = nm.starter().callService(self.service.uri, self.service.name, self.service.get_service_class(), [params])
-            self.service_resp_signal.emit(utf8(req), utf8(resp))
+            self.service_resp_signal.emit(utf8(repr(req)), utf8(repr(resp)))
         except Exception, e:
             import traceback
             print traceback.format_exc(1)
             rospy.logwarn("Error while call service '%s': %s", utf8(self.service.name), utf8(e))
-            self.service_resp_signal.emit(utf8(req), utf8(e))
+            self.service_resp_signal.emit(utf8(repr(req)), utf8(e))
 
     @classmethod
     def _params_from_slots(cls, slots, types, values={}):
