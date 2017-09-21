@@ -593,22 +593,30 @@ class StartHandler(object):
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
                 cmd_args = '%s roscore --port %d' % (nm.ScreenHandler.getSceenCmd('/roscore--%d' % master_port), master_port)
-                try:
-                    SupervisedPopen(shlex.split(cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
-                    # wait for roscore to avoid connection problems while init_node
-                    result = -1
-                    count = 1
-                    while result == -1 and count < 11:
-                        try:
-                            master = xmlrpclib.ServerProxy(masteruri)
-                            result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
-                        except:
-                            time.sleep(1)
-                            count += 1
-                    if count >= 11:
-                        raise StartException('Cannot connect to the ROS-Master: ' + utf8(masteruri))
-                except Exception as e:
-                    raise Exception("Error while call '%s': %s" % (cmd_args, utf8(e)))
+                for n in [1, 2, 3, 4]:
+                    try:
+                        if n == 1:
+                            print("Launch ROS Master in screen  ...")
+                            SupervisedPopen(shlex.split(cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
+                        elif n == 2:
+                            print("ROS Master takes too long for start, wait for next 10 sec ...")
+                        elif n == 3:
+                            print("A really slow start, wait for last 10 sec ...")
+                        # wait for roscore to avoid connection problems while init_node
+                        result = -1
+                        count = 1
+                        while result == -1 and count < 11:
+                            try:
+                                master = xmlrpclib.ServerProxy(masteruri)
+                                result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
+                                return
+                            except Exception:
+                                time.sleep(1)
+                                count += 1
+                        if n == 4 and count >= 11:
+                            raise StartException('Cannot connect to ROS-Master: %s\n--> please run "roscore" manually!' % utf8(masteruri))
+                    except Exception as e:
+                        raise Exception("Error while call '%s': %s" % (cmd_args, utf8(e)))
             else:
                 raise Exception("ROS master '%s' is not reachable" % masteruri)
         finally:
