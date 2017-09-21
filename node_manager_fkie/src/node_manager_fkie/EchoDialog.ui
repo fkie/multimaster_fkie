@@ -195,6 +195,16 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="enableMsgFilterCheckBox">
+           <property name="text">
+            <string>enable message filters</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QFrame" name="maxLenFrame">
            <layout class="QHBoxLayout" name="horizontalLayout_2">
             <property name="spacing">
@@ -312,6 +322,13 @@
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
           </widget>
          </item>
          <item>

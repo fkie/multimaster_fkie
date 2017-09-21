@@ -158,6 +158,7 @@ class EchoDialog(QDialog):
         self.max_displayed_msgs = self.MAX_DISPLAY_MSGS
         self.digits_after_in_array = 2
 
+        self.enabled_message_filter = True
         self.field_filter_fn = None
         self._latched = False
         self._msgs = []
@@ -173,6 +174,7 @@ class EchoDialog(QDialog):
             self.maxLenStringComboBox.activated[str].connect(self.combobox_reduce_ch_activated)
             self.showArraysCheckBox.toggled.connect(self.on_no_arr_checkbox_toggled)
             self.maxDigitsComboBox.activated[str].connect(self.combobox_reduce_digits_activated)
+            self.enableMsgFilterCheckBox.toggled.connect(self.on_enable_msg_filter_checkbox_toggled)
             self.maxLenComboBox.activated[str].connect(self.on_combobox_chars_activated)
             self.maxHzComboBox.activated[str].connect(self.on_combobox_hz_activated)
             self.displayCountComboBox.activated[str].connect(self.on_combobox_count_activated)
@@ -269,9 +271,11 @@ class EchoDialog(QDialog):
         self.filterFrame.setVisible(checked)
 
     def on_no_str_checkbox_toggled(self, state):
+        self.maxLenStringComboBox.setEnabled(state)
         self.field_filter_fn = self.create_field_filter(not state, not self.showArraysCheckBox.isChecked())
 
     def on_no_arr_checkbox_toggled(self, state):
+        self.maxDigitsComboBox.setEnabled(state)
         self.field_filter_fn = self.create_field_filter(not self.showStringsCheckBox.isChecked(), not state)
 
     def combobox_reduce_ch_activated(self, ch_txt):
@@ -296,7 +300,23 @@ class EchoDialog(QDialog):
         for msg, current_time in self._msgs:
             self._append_message(msg, self._latched, current_time, False)
 
-    def on_combobox_chars_activated(self, chars_txt):
+    def on_enable_msg_filter_checkbox_toggled(self, state):
+        self.enabled_message_filter = state
+        self.maxLenComboBox.setEnabled(state)
+        self.maxHzComboBox.setEnabled(state)
+        if self.enabled_message_filter:
+            self.on_combobox_chars_activated(self.maxLenComboBox.currentText(), False)
+            self.on_combobox_hz_activated(self.maxHzComboBox.currentText(), False)
+        else:
+            self.chars_limit = 0
+            self.receiving_hz = 0
+        self.display.clear()
+        for msg, current_time in self._msgs:
+            self._append_message(msg, self._latched, current_time, False)
+
+    def on_combobox_chars_activated(self, chars_txt, update_display=True):
+        if not self.enabled_message_filter:
+            return
         try:
             self.chars_limit = int(chars_txt)
         except ValueError:
@@ -304,11 +324,14 @@ class EchoDialog(QDialog):
                 self.chars_limit = float(chars_txt)
             except ValueError:
                 self.maxLenComboBox.setEditText(str(self.chars_limit))
-        self.display.clear()
-        for msg, current_time in self._msgs:
-            self._append_message(msg, self._latched, current_time, False)
+        if update_display:
+            self.display.clear()
+            for msg, current_time in self._msgs:
+                self._append_message(msg, self._latched, current_time, False)
 
-    def on_combobox_hz_activated(self, hz_txt):
+    def on_combobox_hz_activated(self, hz_txt, update_display=True):
+        if not self.enabled_message_filter:
+            return
         try:
             self.receiving_hz = int(hz_txt)
         except ValueError:
@@ -316,6 +339,10 @@ class EchoDialog(QDialog):
                 self.receiving_hz = float(hz_txt)
             except ValueError:
                 self.maxHzComboBox.setEditText(str(self.receiving_hz))
+        if update_display:
+            self.display.clear()
+            for msg, current_time in self._msgs:
+                self._append_message(msg, self._latched, current_time, False)
 
     def on_combobox_count_activated(self, count_txt):
         try:
