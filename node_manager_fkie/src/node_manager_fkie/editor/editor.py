@@ -46,13 +46,14 @@ from .graph_view import GraphViewWidget
 from .text_edit import TextEdit
 from .text_search_frame import TextSearchFrame
 from .text_search_thread import TextSearchThread
+from node_manager_fkie.detailed_msg_box import MessageBox
 
 try:
-    from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QMessageBox, QWidget, QMainWindow
+    from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QWidget, QMainWindow
     from python_qt_binding.QtGui import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 except:
-    from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QMessageBox, QWidget, QMainWindow
+    from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QWidget, QMainWindow
     from python_qt_binding.QtWidgets import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
@@ -390,10 +391,10 @@ class Editor(QMainWindow):
             w = self.tabWidget.widget(tab_index)
             if w.document().isModified():
                 name = self.__getTabName(w.filename)
-                result = QMessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", name]), QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-                if result == QMessageBox.Yes:
+                result = MessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", name]))
+                if result == MessageBox.Yes:
                     self.tabWidget.currentWidget().save()
-                elif result == QMessageBox.No:
+                elif result == MessageBox.No:
                     pass
                 else:
                     doremove = False
@@ -430,16 +431,16 @@ class Editor(QMainWindow):
         if changed:
             # ask the user for save changes
             if self.isHidden():
-                buttons = QMessageBox.Yes | QMessageBox.No
+                buttons = MessageBox.Yes | MessageBox.No
             else:
-                buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-            result = QMessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", '\n'.join(changed)]), buttons)
-            if result == QMessageBox.Yes:
+                buttons = MessageBox.Yes | MessageBox.No | MessageBox.Cancel
+            result = MessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", '\n'.join(changed)]), buttons=buttons)
+            if result == MessageBox.Yes:
                 for i in range(self.tabWidget.count()):
                     w = self.tabWidget.widget(i).save()
                 self.graph_view.clear_cache()
                 event.accept()
-            elif result == QMessageBox.No:
+            elif result == MessageBox.No:
                 event.accept()
             else:
                 event.ignore()
@@ -488,7 +489,7 @@ class Editor(QMainWindow):
         '''
         saved, errors, msg = self.tabWidget.currentWidget().save(True)
         if errors:
-            QMessageBox.critical(self, "Error", msg)
+            MessageBox.critical(self, "Error", msg)
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), msg)
         elif saved:

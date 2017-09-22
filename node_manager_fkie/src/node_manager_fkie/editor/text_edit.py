@@ -35,7 +35,7 @@ from python_qt_binding.QtGui import QFont, QTextCursor
 import os
 
 from node_manager_fkie.common import package_name, utf8
-from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
 
@@ -45,9 +45,9 @@ from .yaml_highlighter import YamlHighlighter
 
 
 try:
-    from python_qt_binding.QtGui import QApplication, QMenu, QMessageBox, QTextEdit
+    from python_qt_binding.QtGui import QApplication, QMenu, QTextEdit
 except:
-    from python_qt_binding.QtWidgets import QApplication, QMenu, QMessageBox, QTextEdit
+    from python_qt_binding.QtWidgets import QApplication, QMenu, QTextEdit
 
 
 class TextEdit(QTextEdit):
@@ -227,15 +227,15 @@ class TextEdit(QTextEdit):
             if self.filename and self.file_info:
                 if self.file_info.lastModified() != QFileInfo(self.filename).lastModified():
                     self.file_info = QFileInfo(self.filename)
-                    result = QMessageBox.question(self, "File changed", "File was changed, reload?", QMessageBox.Yes | QMessageBox.No)
-                    if result == QMessageBox.Yes:
+                    result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
+                    if result == MessageBox.Yes:
                         f = QFile(self.filename)
                         if f.open(QIODevice.ReadOnly | QIODevice.Text):
                             self.setText(unicode(f.readAll(), "utf-8"))
                             self.document().setModified(False)
                             self.textChanged.emit()
                         else:
-                            QMessageBox.critical(self, "Error", "Cannot open launch file%s" % self.filename)
+                            MessageBox.critical(self, "Error", "Cannot open launch file%s" % self.filename)
         except:
             pass
         QTextEdit.focusInEvent(self, event)
@@ -253,8 +253,8 @@ class TextEdit(QTextEdit):
                     qf = QFile(inc_files[0])
                     if not qf.exists():
                         # create a new file, if it does not exists
-                        result = QMessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", qf.fileName()]), QMessageBox.Yes | QMessageBox.No)
-                        if result == QMessageBox.Yes:
+                        result = MessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", qf.fileName()]), buttons=MessageBox.Yes | MessageBox.No)
+                        if result == MessageBox.Yes:
                             d = os.path.dirname(qf.fileName())
                             if not os.path.exists(d):
                                 os.makedirs(d)
@@ -267,7 +267,7 @@ class TextEdit(QTextEdit):
                         event.setAccepted(True)
                         self.load_request_signal.emit(qf.fileName())
                 except Exception, e:
-                    WarningMessageBox(QMessageBox.Warning, "File not found %s" % inc_files[0], utf8(e)).exec_()
+                    MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):

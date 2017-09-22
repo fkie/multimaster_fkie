@@ -31,16 +31,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, Signal
-try:
-    from python_qt_binding.QtGui import QMessageBox
-except:
-    from python_qt_binding.QtWidgets import QMessageBox
 import threading
 
 import rospy
 
 from node_manager_fkie.common import utf8
-from node_manager_fkie.detailed_msg_box import WarningMessageBox, DetailedError
+from node_manager_fkie.detailed_msg_box import MessageBox, DetailedError
 import node_manager_fkie as nm
 
 
@@ -66,7 +62,6 @@ class ProgressQueue(QObject):
 
     def __init__(self, progress_frame, progress_bar, progress_cancel_button, name=''):
         QObject.__init__(self)
-        self.__ignore_err_list = []
         self.__progress_queue = []
         self.__running = False
         self._name = name
@@ -167,23 +162,15 @@ class ProgressQueue(QObject):
             # print "PG finished delete all ok"
 
     def _progress_thread_error(self, ident, title, msg, detailed_msg):
-        if detailed_msg in self.__ignore_err_list:
-            self._progress_thread_finished(ident)
-            return
-        btns = (QMessageBox.Ignore)
+        btns = (MessageBox.Ignore | MessageBox.Avoid)
         if len(self.__progress_queue) > 1:
-            btns = (QMessageBox.Ignore | QMessageBox.Abort)
-        res = WarningMessageBox(QMessageBox.Warning, title, msg, detailed_msg,
-                                buttons=btns).exec_()
-        if res == QMessageBox.Abort:
+            btns = (btns | MessageBox.Abort)
+        res = MessageBox(MessageBox.Critical, title, msg, detailed_msg, buttons=btns).exec_()
+        if res == MessageBox.Abort:
             self.__progress_queue = []
             self._progress_frame.setVisible(False)
             self.__running = False
         else:
-            # HACK: the number is returned, if "Don't show again" is pressed,
-            # instead 'QMessageBox.HelpRole' (4)
-            if res == 1 or res == 0:
-                self.__ignore_err_list.append(detailed_msg)
             self._progress_thread_finished(ident)
 
     def _on_progress_canceled(self):

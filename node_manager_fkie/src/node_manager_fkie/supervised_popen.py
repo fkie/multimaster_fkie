@@ -31,14 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, Signal
-try:
-    from python_qt_binding.QtGui import QMessageBox
-except:
-    from python_qt_binding.QtWidgets import QMessageBox
 import subprocess
 import threading
 
-from .detailed_msg_box import WarningMessageBox
+from .detailed_msg_box import MessageBox
 
 
 class SupervisedPopen(QObject):
@@ -110,5 +106,5 @@ class SupervisedPopen(QObject):
         self.finished.emit(self._object_id)
 
     def on_error(self, object_id, descr, msg):
-        WarningMessageBox(QMessageBox.Warning, object_id, '%s\n\n'
-                          '%s' % (descr, msg), ' '.join(self._args)).exec_()
+        MessageBox.warning(None, object_id, '%s\n\n'
+                           '%s' % (descr, msg), ' '.join(self._args))

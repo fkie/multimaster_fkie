@@ -36,9 +36,9 @@ try:
 except:
     from python_qt_binding.QtCore import QSortFilterProxyModel
 try:
-    from python_qt_binding.QtGui import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu, QMessageBox
+    from python_qt_binding.QtGui import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu
 except:
-    from python_qt_binding.QtWidgets import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu, QMessageBox
+    from python_qt_binding.QtWidgets import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu
 from python_qt_binding.QtGui import QKeySequence
 import os
 
@@ -46,7 +46,7 @@ import rospy
 
 import node_manager_fkie as nm
 from .common import package_name, utf8  # , masteruri_from_ros
-from .detailed_msg_box import WarningMessageBox
+from .detailed_msg_box import MessageBox
 from .launch_list_model import LaunchListModel, LaunchItem
 from .parameter_dialog import ParameterDialog
 from .progress_queue import ProgressQueue  # , ProgressThread
@@ -145,9 +145,9 @@ class LaunchFilesWidget(QDockWidget):
                         self.edit_signal.emit([lfile])
             except Exception as e:
                 rospy.logwarn("Error while load launch file %s: %s" % (item, utf8(e)))
-                WarningMessageBox(QMessageBox.Warning, "Load error",
-                                  'Error while load launch file:\n%s' % item.name,
-                                  "%s" % e).exec_()
+                MessageBox.warning(self, "Load error",
+                                   'Error while load launch file:\n%s' % item.name,
+                                   "%s" % utf8(e))
 #        self.launchlist_model.reloadCurrentPath()
 
     def load_file(self, path, argv=[], masteruri=None):
@@ -217,8 +217,7 @@ class LaunchFilesWidget(QDockWidget):
             try:
                 (pkg, _) = package_name(os.path.dirname(fileName))  # _:=pkg_path
                 if pkg is None:
-                    WarningMessageBox(QMessageBox.Warning, "New File Error",
-                                      'The new file is not in a ROS package').exec_()
+                    MessageBox.warning(self, "New File Error", 'The new file is not in a ROS package')
                     return
                 with open(fileName, 'w+') as f:
                     f.write("<launch>\n"
@@ -236,9 +235,9 @@ class LaunchFilesWidget(QDockWidget):
                 self.launchlist_model.setPath(self.__current_path)
                 self.edit_signal.emit([fileName])
             except EnvironmentError as e:
-                WarningMessageBox(QMessageBox.Warning, "New File Error",
-                                  'Error while create a new file',
-                                  '%s' % e).exec_()
+                MessageBox.warning(self, "New File Error",
+                                   'Error while create a new file',
+                                   '%s' % utf8(e))
 
     def on_open_xml_clicked(self):
         (fileName, _) = QFileDialog.getOpenFileName(self,
@@ -299,9 +298,9 @@ class LaunchFilesWidget(QDockWidget):
                         nm.settings().launch_history_add(path)
                         self.load_as_default_signal.emit(path, host)
                     except Exception, e:
-                        WarningMessageBox(QMessageBox.Warning, "Load default config error",
-                                          'Error while parse parameter',
-                                          '%s' % e).exec_()
+                        MessageBox.warning(self, "Load default config error",
+                                           'Error while parse parameter',
+                                           '%s' % utf8(e))
 
     def on_load_as_default(self):
         '''

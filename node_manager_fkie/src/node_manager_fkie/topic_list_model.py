@@ -32,12 +32,8 @@
 
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
-try:
-    from python_qt_binding.QtGui import QMessageBox
-except:
-    from python_qt_binding.QtWidgets import QMessageBox
 
-from detailed_msg_box import WarningMessageBox
+from detailed_msg_box import MessageBox
 from master_discovery_fkie.master_info import TopicInfo
 
 from node_manager_fkie.common import utf8
@@ -162,9 +158,9 @@ class TopicItem(QStandardItem):
         self.setIcon(QIcon())
 
     def show_error_msg(self, msg):
-        WarningMessageBox(QMessageBox.Warning, "Publish error",
-                          'Error while publish to %s' % self.topic.name,
-                          tr(msg)).exec_()
+        MessageBox.warning(self, "Publish error",
+                           'Error while publish to %s' % self.topic.name,
+                           tr(utf8(msg)))
 
     def type(self):
         return TopicItem.ITEM_TYPE

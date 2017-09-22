@@ -553,10 +553,6 @@ class StartHandler(object):
                     if error:
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
                         raise StartException(''.join(['The host "', host, '" reports:\n', error]))
-    #          from python_qt_binding import QtGui
-    #          QtGui.QMessageBox.warning(None, 'Error while remote start %s'%utf8(name),
-    #                                      utf8(''.join(['The host "', host, '" reports:\n', error])),
-    #                                      QtGui.QMessageBox.Ok)
                     if output:
                         rospy.logdebug("STDOUT while start '%s': %s", name, output)
                 else:

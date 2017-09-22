@@ -1,12 +1,8 @@
-try:
-    from python_qt_binding.QtGui import QMessageBox
-except:
-    from python_qt_binding.QtWidgets import QMessageBox
-
 from qt_gui.plugin import Plugin
 
 import node_manager_fkie
 from node_manager_fkie.common import utf8
+from node_manager_fkie.detailed_msg_box import MessageBox
 
 from .main_window import MainWindow
 
@@ -38,9 +34,7 @@ class NodeManager(Plugin):
             self._widget = MainWindow()
 #          self._widget.read_view_history()
         except Exception, e:
-            msgBox = QMessageBox()
-            msgBox.setText(utf8(e))
-            msgBox.exec_()
+            MessageBox.critical(self, "Node Manager", utf8(e))
             raise
         # Get path to UI file which is a sibling of this file
         # in this example the .ui and .py file are in the same folder

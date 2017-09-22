@@ -317,12 +317,9 @@ class ScreenHandler(object):
             if screens:
                 do_kill = True
                 if auto_ok_request:
-                    try:
-                        from python_qt_binding.QtGui import QMessageBox
-                    except:
-                        from python_qt_binding.QtWidgets import QMessageBox
-                    result = QMessageBox.question(None, "Kill SCREENs?", '\n'.join(screens), QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
-                    if result & QMessageBox.Ok:
+                    from node_manager_fkie.detailed_msg_box import MessageBox
+                    result = MessageBox.question(None, "Kill SCREENs?", '\n'.join(screens), buttons=MessageBox.Ok | MessageBox.Cancel)
+                    if result == MessageBox.Ok:
                         do_kill = True
                 if do_kill:
                     for s in screens:

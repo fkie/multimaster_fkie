@@ -41,17 +41,17 @@ import sys
 import threading
 
 from node_manager_fkie.common import utf8
-from node_manager_fkie.detailed_msg_box import WarningMessageBox
+from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 from node_manager_fkie.parameter_handler import ParameterHandler
 
 import node_manager_fkie as nm
 try:
-    from python_qt_binding.QtGui import QApplication, QComboBox, QCheckBox, QLineEdit, QMessageBox, QScrollArea, QWidget
+    from python_qt_binding.QtGui import QApplication, QComboBox, QCheckBox, QLineEdit, QScrollArea, QWidget
     from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtGui import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
 except:
-    from python_qt_binding.QtWidgets import QApplication, QComboBox, QCheckBox, QLineEdit, QMessageBox, QScrollArea, QWidget
+    from python_qt_binding.QtWidgets import QApplication, QComboBox, QCheckBox, QLineEdit, QScrollArea, QWidget
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtWidgets import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
 
@@ -933,8 +933,9 @@ class ParameterDialog(QDialog):
         except Exception as e:
             import traceback
             print traceback.format_exc(1)
-            WarningMessageBox(QMessageBox.Warning, "Save parameter Error",
-                              'Error while save parameter', utf8(e)).exec_()
+            MessageBox.warning(self, "Save parameter Error",
+                               'Error while save parameter',
+                               utf8(e))
 
     def _load_parameter(self):
         try:
@@ -951,9 +952,9 @@ class ParameterDialog(QDialog):
         except Exception as e:
             import traceback
             print traceback.format_exc(1)
-            WarningMessageBox(QMessageBox.Warning, "Load parameter Error",
-                              'Error while load parameter',
-                              utf8(e)).exec_()
+            MessageBox.warning(self, "Load parameter Error",
+                               'Error while load parameter',
+                               utf8(e))
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1042,9 +1043,9 @@ class MasterParameterDialog(ParameterDialog):
             except Exception, e:
                 import traceback
                 print traceback.format_exc(1)
-                QMessageBox.warning(self, self.tr("Warning"), utf8(e), QMessageBox.Ok)
+                MessageBox.warning(self, self.tr("Warning"), utf8(e))
         elif self.masteruri is None:
-            QMessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI', QMessageBox.Ok)
+            MessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%          ROS parameter handling       %%%%%%%%%%%%%%%%%%%%%
@@ -1076,16 +1077,16 @@ class MasterParameterDialog(ParameterDialog):
                             if value is None:
                                 value = []
                         except yaml.MarkedYAMLError, e:
-                            QMessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), QMessageBox.Ok)
+                            MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e))
                     else:
                         value = params['value']
                     self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)})
                 else:
-                    QMessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!', QMessageBox.Ok)
+                    MessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!')
             except ValueError, e:
                 import traceback
                 print traceback.format_exc(1)
-                QMessageBox.warning(self, self.tr("Warning"), utf8(e), QMessageBox.Ok)
+                MessageBox.warning(self, self.tr("Warning"), utf8(e))
 
     def _on_param_list(self, masteruri, code, msg, params):
         '''
@@ -1160,7 +1161,7 @@ class MasterParameterDialog(ParameterDialog):
             except Exception, e:
                 import traceback
                 print traceback.format_exc(1)
-                QMessageBox.warning(self, self.tr("Warning"), utf8(e), QMessageBox.Ok)
+                MessageBox.warning(self, self.tr("Warning"), utf8(e))
         else:
             self.setText(msg)
 
@@ -1186,7 +1187,7 @@ class MasterParameterDialog(ParameterDialog):
         if errmsg:
             import traceback
             print traceback.format_exc(1)
-            QMessageBox.warning(self, self.tr("Warning"), errmsg, QMessageBox.Ok)
+            MessageBox.warning(self, self.tr("Warning"), utf8(errmsg))
             self.is_delivered = False
             self.is_send = False
             self.setInfoActive(False)
