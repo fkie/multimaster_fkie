@@ -33,6 +33,7 @@
 from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QRegExp, Qt, Signal
 from python_qt_binding.QtGui import QFont, QTextCursor
 import os
+import re
 
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
@@ -333,7 +334,47 @@ class TextEdit(QTextEdit):
             event.accept()
             QTextEdit.keyReleaseEvent(self, event)
 
+    def _has_uncommented(self):
+        cursor = QTextCursor(self.textCursor())
+        if not cursor.isNull():
+#            cursor.beginEditBlock()
+            start = cursor.selectionStart()
+            end = cursor.selectionEnd()
+            cursor.setPosition(start)
+            block_start = cursor.blockNumber()
+            cursor.setPosition(end)
+            block_end = cursor.blockNumber()
+            if block_end - block_start > 0 and end - cursor.block().position() <= 0:
+                # skip the last block, if no characters are selected
+                block_end -= 1
+            cursor.setPosition(start, QTextCursor.MoveAnchor)
+            cursor.movePosition(QTextCursor.StartOfLine)
+            start = cursor.position()
+            xmlre = re.compile(r"\A\s*<!--")
+            otherre = re.compile(r"\A\s*#")
+            ext = os.path.splitext(self.filename)
+            # XML comment
+            xml_file = ext[1] in self.CONTEXT_FILE_EXT
+            while (cursor.block().blockNumber() < block_end + 1):
+                cursor.movePosition(QTextCursor.StartOfLine)
+                cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                if xml_file:
+                    if not xmlre.match(cursor.selectedText()):
+#                        cursor.endEditBlock()
+#                        self.undo()
+                        return True
+                else:
+                    if not otherre.match(cursor.selectedText()):
+#                        cursor.endEditBlock()
+#                        self.undo()
+                        return True
+                cursor.movePosition(QTextCursor.NextBlock)
+#            self.undo()
+#            cursor.endEditBlock()
+        return False
+
     def commentText(self):
+        do_comment = self._has_uncommented()
         cursor = self.textCursor()
         if not cursor.isNull():
             cursor.beginEditBlock()
@@ -349,61 +390,42 @@ class TextEdit(QTextEdit):
             cursor.setPosition(start, QTextCursor.MoveAnchor)
             cursor.movePosition(QTextCursor.StartOfLine)
             start = cursor.position()
+            ext = os.path.splitext(self.filename)
+            # XML comment
+            xml_file = ext[1] in self.CONTEXT_FILE_EXT
             while (cursor.block().blockNumber() < block_end + 1):
                 cursor.movePosition(QTextCursor.StartOfLine)
-                ext = os.path.splitext(self.filename)
                 # XML comment
-                if ext[1] in self.CONTEXT_FILE_EXT:
-                    # skipt the existing spaces at the start of the line
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
-                    while cursor.selectedText() in [' ', '\t']:
-                        cursor.setPosition(cursor.position(), QTextCursor.MoveAnchor)
-                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
-                    cursor.movePosition(QTextCursor.PreviousCharacter, 1)
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 4)
-                    # only comments breakers at the start of the line are removed
-                    if cursor.selectedText() == '<!--':
-                        cursor.insertText('')
-                        # remove spaces between comment and text
-                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
-                        while cursor.selectedText() in [' ', '\t']:
-                            cursor.insertText('')
-                            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
-                        cursor.movePosition(QTextCursor.EndOfLine)
-                        cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 3)
-                        if cursor.selectedText() == '-->':
-                            cursor.insertText('')
-                        # remove spaces between comment and text
-                        cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 1)
-                        while cursor.selectedText() in [' ', '\t']:
-                            cursor.insertText('')
-                            cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor, 1)
+                if xml_file:
+                    xmlre_start = re.compile(r"<!-- ?")
+                    xmlre_end = re.compile(r" ?-->")
+                    cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                    if do_comment:
+                        cursor.insertText("<!-- %s -->" % cursor.selectedText().replace("--", "- -"))
                     else:
-                        cursor.setPosition(cursor.anchor())
-                        cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
-                        # only comment out, if no comments are found
-                        if cursor.selectedText().find('<!--') < 0 and cursor.selectedText().find('-->') < 0:
-                            cursor.movePosition(QTextCursor.StartOfLine)
-                            # skipt the current existing spaces
-                            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
-                            while cursor.selectedText() in [' ', '\t']:
-                                cursor.setPosition(cursor.position(), QTextCursor.MoveAnchor)
-                                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
-                            cursor.movePosition(QTextCursor.PreviousCharacter, 1)
-                            cursor.insertText('<!-- ')
-                            cursor.movePosition(QTextCursor.EndOfLine)
-                            cursor.insertText(' -->')
+                        res = cursor.selectedText()
+                        mstart = xmlre_start.search(res)
+                        if mstart:
+                            res = res.replace(mstart.group(), "", 1)
+                            res = res.replace("<!- -", "<!--", 1)
+                        mend = xmlre_end.search(res)
+                        if mend:
+                            res = res.replace(mend.group(), "", 1)
+                            last_pos = res.rfind("- ->")
+                            if last_pos > -1:
+                                res = "%s-->" % res[0:last_pos]
+                        cursor.insertText(res)
                 else:  # other comments
-                    if cursor.block().length() < 2:
-                        cursor.movePosition(QTextCursor.NextBlock)
-                        continue
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 2)
-                    # only comments breakers at the start of the line are removed
-                    if cursor.selectedText() == '# ':
-                        cursor.insertText('')
-                    else:
-                        cursor.movePosition(QTextCursor.StartOfLine)
+                    hash_re = re.compile(r"# ?")
+                    if do_comment:
                         cursor.insertText('# ')
+                    else:
+                        cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                        res = cursor.selectedText()
+                        hres = hash_re.search(res)
+                        if hres:
+                            res = res.replace(hres.group(), "", 1)
+                        cursor.insertText(res)
                 cursor.movePosition(QTextCursor.NextBlock)
             # Set our cursor's selection to span all of the involved lines.
             cursor.endEditBlock()
