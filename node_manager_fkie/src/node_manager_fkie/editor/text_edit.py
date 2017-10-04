@@ -337,7 +337,6 @@ class TextEdit(QTextEdit):
     def _has_uncommented(self):
         cursor = QTextCursor(self.textCursor())
         if not cursor.isNull():
-#            cursor.beginEditBlock()
             start = cursor.selectionStart()
             end = cursor.selectionEnd()
             cursor.setPosition(start)
@@ -360,17 +359,11 @@ class TextEdit(QTextEdit):
                 cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
                 if xml_file:
                     if not xmlre.match(cursor.selectedText()):
-#                        cursor.endEditBlock()
-#                        self.undo()
                         return True
                 else:
                     if not otherre.match(cursor.selectedText()):
-#                        cursor.endEditBlock()
-#                        self.undo()
                         return True
                 cursor.movePosition(QTextCursor.NextBlock)
-#            self.undo()
-#            cursor.endEditBlock()
         return False
 
     def commentText(self):
