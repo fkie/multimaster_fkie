@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.6 (2017-10-04)
+------------------
+
 0.7.5 (2017-07-17)
 ------------------
 * master_discovery_fkie: reduced warning outputs in cases a node or service is not reachable

@@ -2,6 +2,52 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.6 (2017-10-04)
+------------------
+* node_manager_fkie: updated version
+* node_manager_fkie: editor: removed commented blocks
+* node_manager_fkie: editor: fixed un/comment function
+* node_manager_fkie: detailed dialog: created own one, enable resize feature
+* node_manager_fkie: echo dialog: added a checkbox to dis-/enable message filter
+* node_manager_fkie: added log for start and wait for ROS master at the beginning
+* node_manager_fkie: fixed utf8 problem with service call
+* node_manager_fkie: fixed view problem if ROS_IP is set
+* node_manager_fkie: fixed crash while navigation in launch editor
+* node_manager_fkie: convert error messages to utf-8
+* node_manager_fkie: fixed a lot of utf8 problems
+* node_manager_fkie: do not ask changed files for reload an offline master
+* node_manager_fkie: reload global parameter, if ROS master was restarted
+* node_manager_fkie: file_watcher: fixed wrong detection for paths in parameter values
+* node_manager_fkie: editor: adapt indent to previous line on tab
+* node_manager_fkie: editor: ident to preview line on pressed return/enter
+* node_manager_fkie: label for decimal length changed
+* node_manager_fkie: echo_dialog: added array length and a filter for digits after '.' in arrays
+* node_manager_fkie: launch dialog: improved graph view
+* node_manager_fkie: launch editor: changed line selection behaviour
+* node_manager_fkie: added Ctrl+W to close current tab in launch editor
+* node_manager_fkie: event connection between launch editor and graph view
+* node_manager_fkie: create complete include graph
+* node_manager_fkie: added upperBotton again
+* node_manager_fkie: removed uppper Button, use Include Graph instead
+* node_manager_fkie: added dock widget with include files overview for launch file editor
+* node_manager_fkie: reorganized buttons in launch editor and fixed search for included files
+* node_manager_fkie: fixed display not complete node/topic/service name
+* node_manager_fkie: fixed icon space in description panel
+* node_manager_fkie: added icons
+  1. in editor for going to next higher launch file
+  2. restart node and reload global parameter of the launch file
+* node_manager_fkie: changed behaviour after filter changes
+* node_manager_fkie: open upper files and insert these in between
+* node_manager_fkie: Tab and Backtab fixed
+* node_manager_fkie: size units fixed
+* node_manager_fkie: fixed search for included files in editor
+* node_manager_fkie: enable / disable upper button
+* node_manager_fkie: added upper button to the editor dialog
+  opens the file which include the current open launch file
+* node_manager_fkie: redesigned echo dialog
+* node_manager_fkie: added priority queue for opening output console before all nodes are started
+* Contributors: Alexander Tiderko
+
 0.7.5 (2017-07-17)
 ------------------
 * node_manager_fkie: improved echo dialog
