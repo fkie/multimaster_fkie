@@ -413,6 +413,18 @@ p, li { white-space: pre-wrap; }
    </layout>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>xmlFileView</tabstop>
+  <tabstop>progressCancelButton_cfg</tabstop>
+  <tabstop>loadXmlButton</tabstop>
+  <tabstop>loadXmlAsDefaultButton</tabstop>
+  <tabstop>refreshXmlButton</tabstop>
+  <tabstop>editXmlButton</tabstop>
+  <tabstop>newXmlButton</tabstop>
+  <tabstop>openXmlButton</tabstop>
+  <tabstop>transferButton</tabstop>
+  <tabstop>searchPackageLine</tabstop>
+ </tabstops>
  <resources>
   <include location="GUI.qrc"/>
  </resources>

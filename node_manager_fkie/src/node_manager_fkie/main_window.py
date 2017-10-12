@@ -342,6 +342,8 @@ class MainWindow(QMainWindow):
         if DIAGNOSTICS_AVAILABLE:
             self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
         self.launch_dock.launchlist_model.reloadPackages()
+        self._timer_alt = None
+        self._select_index = 0
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
@@ -2075,11 +2077,59 @@ class MainWindow(QMainWindow):
         else:
             return utf8(url.host())
 
+    def keyPressEvent(self, event):
+        '''
+        Track long hold Alt-Key
+        '''
+        if event.modifiers() == Qt.AltModifier and event.key() == Qt.Key_Alt:
+            self._select_index = 0
+            self._timer_alt = rospy.Timer(rospy.Duration(1.1), self._show_section_menu)  # , oneshot=True)
+        else:
+            if self._timer_alt is not None:
+                self._timer_alt.shutdown()
+                self._timer_alt = None
+            QMainWindow.keyPressEvent(self, event)
+
+    def _show_section_menu(self, event):
+        # self._timer_alt = None
+        if self._select_index == 0:
+            if self.currentMaster is not None:
+                if self.currentMaster._is_current_tab_name('tabNodes'):
+                    self.currentMaster.masterTab.nodeTreeView.setFocus(Qt.TabFocusReason)
+                elif self.currentMaster._is_current_tab_name('tabTopics'):
+                    self.currentMaster.masterTab.topicsView.setFocus(Qt.TabFocusReason)
+                elif self.currentMaster._is_current_tab_name('tabServices'):
+                    self.currentMaster.masterTab.servicesView.setFocus(Qt.TabFocusReason)
+                elif self.currentMaster._is_current_tab_name('tabParameter'):
+                    self.currentMaster.masterTab.parameterView.setFocus(Qt.TabFocusReason)
+        elif self._select_index == 1:
+            self.launch_dock.raise_()
+            self.launch_dock.xmlFileView.setFocus(Qt.TabFocusReason)
+        elif self._select_index == 2:
+            self.descriptionDock.raise_()
+            self.descriptionTextEdit.setFocus(Qt.TabFocusReason)
+        elif self._select_index == 3:
+            self.settings_dock.raise_()
+            self.settings_dock.settingsTreeView.setFocus(Qt.TabFocusReason)
+        elif self._select_index == 4:
+            self.helpDock.raise_()
+            self.textBrowser.setFocus(Qt.TabFocusReason)
+        elif self._select_index == 5:
+            self.startRobotButton.setFocus(Qt.TabFocusReason)
+        elif self._select_index == 6:
+            self.hideDocksButton.setFocus(Qt.TabFocusReason)
+        else:
+            self._select_index = -1
+        self._select_index += 1
+
     def keyReleaseEvent(self, event):
         '''
         Defines some of shortcuts for navigation/management in launch
         list view or topics view.
         '''
+        if self._timer_alt is not None:
+            self._timer_alt.shutdown()
+            self._timer_alt = None
         key_mod = QApplication.keyboardModifiers()
         if self.currentMaster is not None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
             if event.key() == Qt.Key_F4 and not key_mod:

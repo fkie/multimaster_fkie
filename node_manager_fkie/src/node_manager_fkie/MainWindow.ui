@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>976</width>
-    <height>752</height>
+    <height>753</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
    <enum>Qt::DefaultContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>RoSe Service Manager</string>
+   <string>ROS Node Manager</string>
   </property>
   <property name="locale">
    <locale language="English" country="UnitedStates"/>
@@ -680,7 +680,7 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>976</width>
-     <height>21</height>
+     <height>30</height>
     </rect>
    </property>
   </widget>
@@ -1161,6 +1161,9 @@ p, li { white-space: pre-wrap; }
          </disabled>
         </palette>
        </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
        <property name="textInteractionFlags">
         <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
        </property>
@@ -1173,6 +1176,27 @@ p, li { white-space: pre-wrap; }
    </widget>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>hideDocksButton</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>userComboBox</tabstop>
+  <tabstop>setTimeButton</tabstop>
+  <tabstop>refreshHostButton</tabstop>
+  <tabstop>runButton</tabstop>
+  <tabstop>rqtButton</tabstop>
+  <tabstop>syncButton</tabstop>
+  <tabstop>logButton</tabstop>
+  <tabstop>infoButton</tabstop>
+  <tabstop>startRobotButton</tabstop>
+  <tabstop>masterLogButton</tabstop>
+  <tabstop>discoveryButton</tabstop>
+  <tabstop>refreshAllButton</tabstop>
+  <tabstop>progressCancelButton</tabstop>
+  <tabstop>progressCancelButton_sync</tabstop>
+  <tabstop>masterTableView</tabstop>
+  <tabstop>descriptionTextEdit</tabstop>
+  <tabstop>textBrowser</tabstop>
+ </tabstops>
  <resources>
   <include location="GUI.qrc"/>
  </resources>
