@@ -260,6 +260,8 @@ class MainWindow(QMainWindow):
             self.startRobotButton.setEnabled(False)
 
         self._sync_dialog = SyncDialog()
+        self._shortcut_focus = QShortcut(QKeySequence(self.tr("Ctrl+Shift+F", "switch to next focus area")), self)
+        self._shortcut_focus.activated.connect(self._show_section_menu)
 
         self.editor_dialogs = dict()  # [file] = Editor
         '''@ivar: stores the open Editor '''
@@ -342,7 +344,6 @@ class MainWindow(QMainWindow):
         if DIAGNOSTICS_AVAILABLE:
             self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
         self.launch_dock.launchlist_model.reloadPackages()
-        self._timer_alt = None
         self._select_index = 0
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
@@ -2079,18 +2080,10 @@ class MainWindow(QMainWindow):
 
     def keyPressEvent(self, event):
         '''
-        Track long hold Alt-Key
         '''
-        if event.modifiers() == Qt.AltModifier and event.key() == Qt.Key_Alt:
-            self._select_index = 0
-            self._timer_alt = rospy.Timer(rospy.Duration(1.1), self._show_section_menu)  # , oneshot=True)
-        else:
-            if self._timer_alt is not None:
-                self._timer_alt.shutdown()
-                self._timer_alt = None
-            QMainWindow.keyPressEvent(self, event)
+        QMainWindow.keyPressEvent(self, event)
 
-    def _show_section_menu(self, event):
+    def _show_section_menu(self, event=None):
         # self._timer_alt = None
         if self._select_index == 0:
             if self.currentMaster is not None:
@@ -2127,9 +2120,6 @@ class MainWindow(QMainWindow):
         Defines some of shortcuts for navigation/management in launch
         list view or topics view.
         '''
-        if self._timer_alt is not None:
-            self._timer_alt.shutdown()
-            self._timer_alt = None
         key_mod = QApplication.keyboardModifiers()
         if self.currentMaster is not None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
             if event.key() == Qt.Key_F4 and not key_mod:
