@@ -2,6 +2,12 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.7 (2017-10-27)
+------------------
+* node_manager_fkie: fixed install problem #65
+* node_manager_fkie: changed tab order and added Ctrl+Shift+F behaviour
+* Contributors: Alexander Tiderko
+
 0.7.6 (2017-10-04)
 ------------------
 * node_manager_fkie: editor: fixed un/comment function
