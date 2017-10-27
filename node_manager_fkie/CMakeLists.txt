@@ -45,3 +45,10 @@ install(
         ./src/node_manager_fkie/GUI.qrc
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
+
+install(
+   FILES
+        ./src/node_manager_fkie/editor/GraphDockWidget.ui
+   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
+)
+
