@@ -33,6 +33,7 @@ install(
 
 install(
    FILES
+        ./src/node_manager_fkie/EchoDialog.ui
         ./src/node_manager_fkie/MasterTab.ui
         ./src/node_manager_fkie/LaunchFilesDockWidget.ui
         ./src/node_manager_fkie/LogDockWidget.ui
@@ -40,6 +41,14 @@ install(
         ./src/node_manager_fkie/ProfileWidget.ui
         ./src/node_manager_fkie/MainWindow.ui
         ./src/node_manager_fkie/SettingsDockWidget.ui
+        ./src/node_manager_fkie/TimeInput.ui
         ./src/node_manager_fkie/GUI.qrc
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
+
+install(
+   FILES
+        ./src/node_manager_fkie/editor/GraphDockWidget.ui
+   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
+)
+

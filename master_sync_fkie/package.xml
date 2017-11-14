@@ -5,7 +5,7 @@
      discovered by master_discovery_fkie node. The registration
      of topics and services is only perform by local ROS master.
   </description>
-  <version>0.7.6</version>
+  <version>0.7.7</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
