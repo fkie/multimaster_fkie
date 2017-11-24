@@ -345,6 +345,8 @@ class MainWindow(QMainWindow):
             self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
         self.launch_dock.launchlist_model.reloadPackages()
         self._select_index = 0
+        self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+R", "restart selected nodes")), self)
+        self._shortcut_restart_nodes.activated.connect(self._restart_nodes)
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
@@ -2077,6 +2079,10 @@ class MainWindow(QMainWindow):
             return utf8(url.encodedHost())
         else:
             return utf8(url.host())
+
+    def _restart_nodes(self):
+        if self.currentMaster is not None:
+            self.currentMaster.on_force_start_nodes()
 
     def keyPressEvent(self, event):
         '''
