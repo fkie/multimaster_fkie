@@ -287,8 +287,9 @@ class EchoDialog(QDialog):
             except ValueError:
                 self.maxLenStringComboBox.setEditText(str(self.line_limit))
         self.display.clear()
-        for msg, current_time in self._msgs:
-            self._append_message(msg, self._latched, current_time, False)
+        with self.lock:
+            for msg, current_time in self._msgs:
+                self._append_message(msg, self._latched, current_time, False)
 
     def combobox_reduce_digits_activated(self, ch_txt):
         try:
@@ -297,8 +298,9 @@ class EchoDialog(QDialog):
             self.digits_after_in_array = None
             self.maxDigitsComboBox.setEditText('')
         self.display.clear()
-        for msg, current_time in self._msgs:
-            self._append_message(msg, self._latched, current_time, False)
+        with self.lock:
+            for msg, current_time in self._msgs:
+                self._append_message(msg, self._latched, current_time, False)
 
     def on_enable_msg_filter_checkbox_toggled(self, state):
         self.enabled_message_filter = state
@@ -311,8 +313,9 @@ class EchoDialog(QDialog):
             self.chars_limit = 0
             self.receiving_hz = 0
         self.display.clear()
-        for msg, current_time in self._msgs:
-            self._append_message(msg, self._latched, current_time, False)
+        with self.lock:
+            for msg, current_time in self._msgs:
+                self._append_message(msg, self._latched, current_time, False)
 
     def on_combobox_chars_activated(self, chars_txt, update_display=True):
         if not self.enabled_message_filter:
@@ -326,8 +329,9 @@ class EchoDialog(QDialog):
                 self.maxLenComboBox.setEditText(str(self.chars_limit))
         if update_display:
             self.display.clear()
-            for msg, current_time in self._msgs:
-                self._append_message(msg, self._latched, current_time, False)
+            with self.lock:
+                for msg, current_time in self._msgs:
+                    self._append_message(msg, self._latched, current_time, False)
 
     def on_combobox_hz_activated(self, hz_txt, update_display=True):
         if not self.enabled_message_filter:
@@ -341,8 +345,9 @@ class EchoDialog(QDialog):
                 self.maxHzComboBox.setEditText(str(self.receiving_hz))
         if update_display:
             self.display.clear()
-            for msg, current_time in self._msgs:
-                self._append_message(msg, self._latched, current_time, False)
+            with self.lock:
+                for msg, current_time in self._msgs:
+                    self._append_message(msg, self._latched, current_time, False)
 
     def on_combobox_count_activated(self, count_txt):
         try:
@@ -354,6 +359,7 @@ class EchoDialog(QDialog):
     def on_clear_btn_clicked(self):
         self.display.clear()
         with self.lock:
+            del self._msgs[:]
             self.message_count = 0
             self._scrapped_msgs = 0
             del self.times[:]
@@ -393,9 +399,10 @@ class EchoDialog(QDialog):
             current_time = time.time()
         self._latched = latched
         if store:
-            self._msgs.append((msg, current_time))
-            if len(self._msgs) > 25:
-                self._msgs.pop()
+            with self.lock:
+                self._msgs.append((msg, current_time))
+                if len(self._msgs) > 25:
+                    self._msgs.pop()
             msg_len = -1
             if (self.SHOW_BYTES or self.show_only_rate):
                 buff = None
