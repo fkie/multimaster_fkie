@@ -183,6 +183,7 @@ class MasterViewProxy(QWidget):
         self._start_nodes_after_load_cfg = dict()
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = dict()  # dict (node name : masteruri)
+        self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
         self.default_cfg_handler = DefaultConfigHandler()
         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
@@ -770,6 +771,18 @@ class MasterViewProxy(QWidget):
             # expand items to restore old view
             if expanded_items is not None:
                 self._expand_groups(expanded_items)
+            # update nodelets
+            nodelets = {}
+            for n in launchConfig.Roscfg.nodes:
+                if n.package == 'nodelet' and n.type == 'nodelet':
+                    args = n.args.split(' ')
+                    if len(args) == 3 and args[0] == 'load':
+                        nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
+                        if nodelet_mngr not in nodelets:
+                            nodelets[nodelet_mngr] = []
+                        nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+            self._nodelets[launchfile] = nodelets
+
 #      print "MASTER:", launchConfig.Roscfg.master
 #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
 #      for n in launchConfig.Roscfg.nodes:
@@ -808,6 +821,28 @@ class MasterViewProxy(QWidget):
             # self.on_node_selection_changed(None, None, True)
         except:
             pass
+
+    def _get_nodelets(self, nodename, configname=''):
+        if configname and configname in self._nodelets:
+            if nodename in self._nodelets[configname]:
+                return self._nodelets[configname][nodename]
+        else:
+            for configname, mngrs in self._nodelets.iteritems():
+                if nodename in mngrs:
+                    return mngrs[nodename]
+        return []
+
+    def _get_nodelet_manager(self, nodename, configname=''):
+        if configname and configname in self._nodelets:
+            for mngr, nodelets in self._nodelets[configname].iteritems():
+                if nodename in nodelets:
+                    return mngr
+        else:
+            for configname, mngrs in self._nodelets.iteritems():
+                for mngr, nodelets in mngrs.iteritems():
+                    if nodename in nodelets:
+                        return mngr
+        return None
 
     def _get_expanded_groups(self):
         '''
@@ -1711,7 +1746,7 @@ class MasterViewProxy(QWidget):
                                         'Error while call a service of node %s [%s]' % (node.name, self.master_info.getService(config).uri),
                                         '%s' % utf8(e))
 
-    def start_nodes(self, nodes, force=False, force_host=None, use_adv_cfg=False):
+    def start_nodes(self, nodes, force=False, force_host=None, use_adv_cfg=False, check_nodelets=True):
         '''
         Internal method to start a list with nodes
         @param nodes: the list with nodes to start
@@ -1795,23 +1830,8 @@ class MasterViewProxy(QWidget):
                                        utf8(e))
         if not diag_canceled:
             # check for nodelets
-            nodenames = [n.name for n in nodes]
-            for node in nodes:
-                try:
-                    if node.name in cfg_nodes:
-                        n = node.launched_cfg.getNode(node.name)
-                        if n is None:
-                            raise nm.StartException("Node '%s' not found!" % node.name)
-                        args = n.args.split(' ')
-                        if len(args) == 3 and args[0] == 'load':
-                            nodelet = roslib.names.ns_join(n.namespace, args[2])
-                            if nodelet not in nodenames:
-                                ret = MessageBox.question(self, 'Question', "Nodelet manager '%s' not in current list. (Re)Start nodelet manager?" % nodelet, buttons=MessageBox.Yes | MessageBox.No)
-                                nodenames.append(nodelet)
-                                if ret == MessageBox.Yes:
-                                    self.start_nodes_by_name([nodelet], node.launched_cfg)
-                except Exception as err:
-                    rospy.logwarn("Error while test for nodelets: %s" % utf8(err))
+            if check_nodelets:
+                self._check_for_nodelets(nodes)
             # put into the queue and start
             for node in nodes:
                 if node.name in cfg_nodes:
@@ -1821,7 +1841,46 @@ class MasterViewProxy(QWidget):
                                                    (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging))
         self._start_process_queue()
 
-    def start_nodes_by_name(self, nodes, cfg, force=False):
+    def _check_for_nodelets(self, nodes):
+        nodenames = [n.name for n in nodes]
+        for node in nodes:
+            try:
+                nodelets = self._get_nodelets(node.name, node.launched_cfg.Filename)
+                if nodelets:
+                    # TODO: restart all plungins
+                    nodelets = self._get_nodelets(node.name, node.launched_cfg.Filename)
+                    r_nn = []
+                    for nn in nodelets:
+                        if nn not in nodenames:
+                            r_nn.append(nn)
+                    if r_nn:
+                        ret = MessageBox.question(self, 'Question', "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % node.name, buttons=MessageBox.Yes | MessageBox.No)
+                        nodenames.extend(r_nn)
+                        if ret == MessageBox.Yes:
+                            self.stop_nodes_by_name(r_nn)
+                            self.start_nodes_by_name(r_nn, node.launched_cfg, force=True, check_nodelets=False)
+                else:
+                    nodelet_mngr = self._get_nodelet_manager(node.name, node.launched_cfg.Filename)
+                    if nodelet_mngr:
+                        if nodelet_mngr not in nodenames:
+                            ret = MessageBox.question(self, 'Question', "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, buttons=MessageBox.Yes | MessageBox.No)
+                            nodenames.append(nodelet_mngr)
+                            if ret == MessageBox.Yes:
+                                self.stop_nodes_by_name([nodelet_mngr])
+                                self.start_nodes_by_name([nodelet_mngr], node.launched_cfg, force=True, check_nodelets=False)
+                                nodelets = self._get_nodelets(nodelet_mngr, node.launched_cfg.Filename)
+                                r_nn = []
+                                for nn in nodelets:
+                                    if nn not in nodenames:
+                                        nodenames.append(nn)
+                                        r_nn.append(nn)
+                                if r_nn:
+                                    self.stop_nodes_by_name(r_nn)
+                                    self.start_nodes_by_name(r_nn, node.launched_cfg, force=True, check_nodelets=False)
+            except Exception as err:
+                rospy.logwarn("Error while test for nodelets: %s" % utf8(err))
+
+    def start_nodes_by_name(self, nodes, cfg, force=False, check_nodelets=True):
         '''
         Start nodes given in a list by their names.
         @param nodes: a list with full node names
@@ -1848,7 +1907,7 @@ class MasterViewProxy(QWidget):
                         node_item.next_start_cfg = cfg
                 if node_item is not None:
                     result.append(node_item)
-        self.start_nodes(result, force)
+        self.start_nodes(result, force, check_nodelets=check_nodelets)
 
     def start_nodes_after_load_cfg(self, cfg_name, nodes, force=False):
         '''
