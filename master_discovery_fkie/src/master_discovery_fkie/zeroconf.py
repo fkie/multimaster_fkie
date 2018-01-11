@@ -414,7 +414,7 @@ class Zeroconf(threading.Thread):
     def on_group_failure(self, error):
         rospy.logfatal("Template: on_group_failure - %s", error)
         self.stop()
-        sys.exit("ERROR: Template: on_group_failure - EXIT! [%s]", error)
+        sys.exit("ERROR: Template: on_group_failure - EXIT! [%s]" % error)
 
     def on_group_removed(self, name):
         rospy.loginfo("Template: on_group_removed - %s", name)
@@ -764,7 +764,7 @@ class Discoverer(Zeroconf):
         # test the host for local entry
         masterhost, masterport = MasterInfo.MasteruriToAddr(materuri)
         if (masterhost in ['localhost', '127.0.0.1']):
-            sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!", masterhost)
+            sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % masterhost)
         rpcuri = ''.join(['http://', socket.gethostname(), ':', str(monitor_port), '/'])
         txtArray = ["timestamp=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
