@@ -190,6 +190,12 @@ class LaunchFilesWidget(QDockWidget):
         self.loadXmlButton.setEnabled(False)
         self.transferButton.setEnabled(False)
         self.loadXmlAsDefaultButton.setEnabled(False)
+        try:
+            from roslaunch import substitution_args
+            import rospkg
+            substitution_args._rospack = rospkg.RosPack()
+        except Exception as err:
+            rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
 
     def on_edit_xml_clicked(self):
         '''
