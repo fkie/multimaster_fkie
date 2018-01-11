@@ -34,10 +34,10 @@ from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QPixmap
 
 try:
-    from python_qt_binding.QtGui import QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
+    from python_qt_binding.QtGui import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
     from python_qt_binding.QtGui import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
 except:
-    from python_qt_binding.QtWidgets import QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
+    from python_qt_binding.QtWidgets import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
     from python_qt_binding.QtWidgets import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
 
 
@@ -90,6 +90,7 @@ class MessageBox(QDialog):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowTitleHint)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint & ~Qt.WindowMinimizeButtonHint)
         self.setObjectName('MessageBox')
+        self._use_checkbox = True
         self.text = text
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -143,6 +144,7 @@ class MessageBox(QDialog):
         if detailed_text:
             self.btn_show_details = QPushButton(self.tr('Details...'))
             self.btn_show_details.setCheckable(True)
+            self.btn_show_details.setChecked(True)
             self.btn_show_details.toggled.connect(self.on_toggled_details)
             self.buttonBox.addButton(self.btn_show_details, QDialogButtonBox.ActionRole)
             # create area for detailed text
@@ -150,8 +152,12 @@ class MessageBox(QDialog):
             textEdit.setObjectName("textEdit")
             textEdit.setReadOnly(True)
             textEdit.setText(detailed_text)
-            self.textEdit.setVisible(False)
+            # textEdit.setVisible(False)
+            self.verticalLayout.addWidget(self.textEdit)
         self.resize(480, self.verticalLayout.totalSizeHint().height())
+        buttons_in_box = self.buttonBox.buttons()
+        if buttons_in_box:
+            self.buttonBox.buttons()[0].setFocus()
 
     def setAcceptButton(self, button):
         '''
@@ -364,10 +370,15 @@ class MessageBox(QDialog):
             bt.clicked.connect(self._on_ignore_clicked)
             self.buttonBox.addButton(bt, QDialogButtonBox.AcceptRole)
         if MessageBox.Avoid & buttons:
-            bt = QPushButton(self.tr("&Don't show again"))
-            bt.setMaximumHeight(24)
-            bt.clicked.connect(self._add_to_ignore)
-            self.buttonBox.addButton(bt, QDialogButtonBox.HelpRole)
+            if self._use_checkbox:
+                checkbox = QCheckBox("&Don't show again", self)
+                checkbox.stateChanged.connect(self._check_ignore)
+                self.buttonBox.addButton(checkbox, QDialogButtonBox.HelpRole)
+            else:
+                bt = QPushButton(self.tr("&Don't show again"))
+                bt.setMaximumHeight(24)
+                bt.clicked.connect(self._add_to_ignore)
+                self.buttonBox.addButton(bt, QDialogButtonBox.HelpRole)
 
     def _on_ok_clicked(self):
         self.done(MessageBox.Ok)
@@ -426,3 +437,12 @@ class MessageBox(QDialog):
     def _add_to_ignore(self):
         IGNORED_ERRORS.append(self.text)
         self.accept()
+
+    def _check_ignore(self, state):
+        if state:
+            IGNORED_ERRORS.append(self.text)
+        else:
+            try:
+                IGNORED_ERRORS.remove(self.text)
+            except Exception:
+                pass
