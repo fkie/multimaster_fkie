@@ -1794,6 +1794,24 @@ class MasterViewProxy(QWidget):
                                        'Error while parse parameter',
                                        utf8(e))
         if not diag_canceled:
+            # check for nodelets
+            nodenames = [n.name for n in nodes]
+            for node in nodes:
+                try:
+                    if node.name in cfg_nodes:
+                        n = node.launched_cfg.getNode(node.name)
+                        if n is None:
+                            raise nm.StartException("Node '%s' not found!" % node.name)
+                        args = n.args.split(' ')
+                        if len(args) == 3 and args[0] == 'load':
+                            nodelet = roslib.names.ns_join(n.namespace, args[2])
+                            if nodelet not in nodenames:
+                                ret = MessageBox.question(self, 'Question', "Nodelet manager '%s' not in current list. (Re)Start nodelet manager?" % nodelet, buttons=MessageBox.Yes | MessageBox.No)
+                                nodenames.append(nodelet)
+                                if ret == MessageBox.Yes:
+                                    self.start_nodes_by_name([nodelet], node.launched_cfg)
+                except Exception as err:
+                    rospy.logwarn("Error while test for nodelets: %s" % utf8(err))
             # put into the queue and start
             for node in nodes:
                 if node.name in cfg_nodes:
