@@ -98,10 +98,13 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.mutex = threading.RLock()
         self.sockets = []
         with self.mutex:
-            for p in range(networks_count):
-                msock = DiscoverSocket(default_port + p, default_mcast_group)
-                self.sockets.append(msock)
-                msock.settimeout(self.TIMEOUT)
+            try:
+                for p in range(networks_count):
+                    msock = DiscoverSocket(default_port + p, default_mcast_group)
+                    self.sockets.append(msock)
+                    msock.settimeout(self.TIMEOUT)
+            except Exception as e:
+                self.display.setText(utf8(e))
         self.setDaemon(True)
         self.start()
 
