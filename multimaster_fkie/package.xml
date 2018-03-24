@@ -4,7 +4,7 @@
     The metapackage to combine the nodes required to establish and manage a multimaster network. 
     This requires no or minimal configuration. The changes are automatically detected and synchronized.
   </description>
-  <version>0.7.7</version>
+  <version>0.7.8</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>

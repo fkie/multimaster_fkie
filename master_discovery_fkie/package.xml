@@ -7,7 +7,7 @@
      The alternative is to use a zeroconf/avahi daemon to register the ROS 
      master as service and discover other ROS masters.
   </description>
-  <version>0.7.7</version>
+  <version>0.7.8</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>

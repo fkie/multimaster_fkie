@@ -5,7 +5,7 @@
      list or start the contained nodes. It provides additional description 
      extracted from launch file. This is used by node_manager_fkie.
   </description>
-  <version>0.7.7</version>
+  <version>0.7.8</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
