@@ -2,6 +2,13 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.8 (2018-03-24)
+------------------
+* Fix catkin_lint warnings
+* Merge pull request `#69 <https://github.com/fkie/multimaster_fkie/issues/69>`_ from AlexisTM/fix_exit_zeroconf
+  Solve zeroconf sys.exit( ..., ...) issue
+* Contributors: Alexander Tiderko, Alexis Paques, Timo Röhling
+
 0.7.7 (2017-10-27)
 ------------------
 

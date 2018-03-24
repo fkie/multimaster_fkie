@@ -2,6 +2,11 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.8 (2018-03-24)
+------------------
+* Fix catkin_lint warnings
+* Contributors: Timo Röhling
+
 0.7.7 (2017-10-27)
 ------------------
 

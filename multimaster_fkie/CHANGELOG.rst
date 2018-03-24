@@ -2,6 +2,24 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.8 (2018-03-24)
+------------------
+* Fix catkin_lint warnings
+* node_manager_fkie: fixed crash on errors while open network discovery dialog
+* node_manager_fkie: fixed copy function in launch file browser
+* node_manager_fkie: fixed file name copy crash
+* node_manager_fkie: added more checks while handle nodelet restarts
+* node_manager_fkie: added check for restart of nodelet manager
+* node_manager_fkie: reset package cache on reload in lauch widget
+  so you don't need to restart node_manager if new packages are added at
+  runtime
+* node_manager_fkie: changed behaviour of detailed message box
+* node_manager_fkie: fixed clear in echo dialog
+* node_manager_fkie: added shortcut Ctrl+R to restart nodes
+* Merge pull request `#69 <https://github.com/fkie/multimaster_fkie/issues/69>`_ from AlexisTM/fix_exit_zeroconf
+  Solve zeroconf sys.exit( ..., ...) issue
+* Contributors: Alexander Tiderko, Alexis Paques, Timo Röhling
+
 0.7.7 (2017-10-27)
 ------------------
 * node_manager_fkie: fixed install problem #65
