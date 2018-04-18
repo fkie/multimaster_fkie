@@ -648,5 +648,5 @@ class Settings(object):
             QColor(233, 224, 210).rgb(),
             QColor(236, 236, 231).rgb(),
             QColor(43, 43, 44).rgb(),
-            QColor(121, 123, 122)
+            QColor(121, 123, 122).rgb()
         ]
