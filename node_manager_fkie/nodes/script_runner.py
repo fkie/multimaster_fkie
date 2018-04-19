@@ -104,10 +104,14 @@ class RunThread(threading.Thread):
         '''
         threading.Thread.__init__(self)
         self._script = script
-        self._cmd = shlex.split(script)
-        if self._cmd[0].startswith("pkg://"):
-            resolved = resolve_url(self._cmd.pop(0))
-            self._cmd.insert(0, resolved)
+        cmd_list = shlex.split(script)
+        self._cmd = []
+        for cmd in cmd_list:
+            if cmd.startswith("pkg://"):
+                resolved = resolve_url(cmd)
+                self._cmd.append(resolved)
+            else:
+                self._cmd.append(cmd)
         self.setDaemon(True)
         self.spopen = None
         self.stop = False
