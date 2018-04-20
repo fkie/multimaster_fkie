@@ -30,13 +30,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import rospy
 import ntplib
-
-ntplib
+from threading import Thread
 
 class NTPSync(object):
+  __ntpclient = None
+
   """docstring for NTPSync"""
-  def __init__(self, arg):
+  def __init__(self):
     super(NTPSync, self).__init__()
-    self.arg = arg
-    
+    self.thread_pool = []
+
+    if self.__ntpclient is None:
+      self.__ntpclient = ntplib.NTPClient()
+
+  def offset(self, host, callback=None):
+    try:
+      res = ntplib.NTPClient().request(host, version=3)
+      if callback is not None:
+        callback(res.offset)
+      return res.offset
+    except Exception as e:
+      rospy.warninfo("Error on offset: " + e)
+      return None
+
+  def get_offset(self, host, callback=None):
+      if callback is not None:
+        t = Thread(target=offset, args=(host, callback), daemon=True)
+        t.start()
+        self.thread_pool.append(t)
+        return True
+      else:
+        return self.offset()
