@@ -75,7 +75,7 @@ class DiscoveredMaster(object):
     :type timestamp:  float (Default: ``0``)
 
     :param timestamp_local: The timestamp of the state of the remoter ROS master,
-                            without the changes maked while a synchronization.
+                            without the changes made while a synchronization.
 
     :type timestamp_local:  float (Default: ``0``)
 
@@ -90,7 +90,7 @@ class DiscoveredMaster(object):
     ERR_SOCKET = 2
 
     def __init__(self, monitoruri, is_local=False, heartbeat_rate=1.,
-                 timestamp=0.0, timestamp_local=0.0, callback_master_state=None):
+                 timestamp=0.0, timestamp_local=0.0, callback_master_state=None, offset=None):
         '''
         Initialize method for the DiscoveredMaster class.
 
@@ -110,7 +110,7 @@ class DiscoveredMaster(object):
 
         :type timestamp:  float (Default: ``0``)
 
-        :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes maked while a synchronization.
+        :param timestamp_local: The timestamp of the state of the remoter ROS master, without the changes made while a synchronization.
 
         :type timestamp_local:  float (Default: ``0``)
 
@@ -141,6 +141,7 @@ class DiscoveredMaster(object):
         # create a thread to retrieve additional information about the remote ROS master
         self._get_into_timer = threading.Timer(0.1, self.__retrieve_masterinfo)
         self._get_into_timer.start()
+        self.offset = offset
 
     def finish(self):
         try:
@@ -158,7 +159,7 @@ class DiscoveredMaster(object):
         :type timestamp:  float
 
         :param timestamp_local: The timestamp of the state of the remoter ROS
-                          master, without the changes maked while a synchronization.
+                          master, without the changes made while a synchronization.
 
         :type timestamp_local:  float (Default: ``0``)
 

@@ -19,6 +19,8 @@ add_message_files(
   SyncMasterInfo.msg
   SyncServiceInfo.msg
   SyncTopicInfo.msg
+  TimeSync.msg
+  TimeSyncAll.msg
 )
 
 ## Generate services in the 'srv' folder
