@@ -5,6 +5,7 @@ env:
   matrix:
     - ROS_DISTRO="indigo" ROS_REPO="ros"
     - ROS_DISTRO="jade" ROS_REPO="ros"
+    - ROS_DISTRO="kinetic" ROS_REPO="ros-shadow-fixed"
     - ROS_DISTRO="kinetic" ROS_REPO="ros"
     - ROS_DISTRO="lunar" ROS_REPO="ros"
 before_config:
