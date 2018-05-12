@@ -2740,15 +2740,27 @@ class MasterViewProxy(QWidget):
         calls a service.
         '''
         selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
-        for service in selectedServices:
-            param = ServiceDialog(service, self)
-            param.show()
+        try:
+            for service in selectedServices:
+                param = ServiceDialog(service, self)
+                param.show()
+        except Exception, e:
+            rospy.logwarn("Call service '%s' failed: %s" % (service.name, utf8(e)))
+            MessageBox.warning(self, "Call service error",
+                               'Call service %s failed!' % service.name,
+                               '%s' % utf8(e))
 
     def service_call(self, service_name):
         service = self.master_info.getService(utf8(service_name))
         if service is not None:
-            param = ServiceDialog(service, self)
-            param.show()
+            try:
+                param = ServiceDialog(service, self)
+                param.show()
+            except Exception, e:
+                rospy.logwarn("Call service '%s' failed: %s" % (service.name, utf8(e)))
+                MessageBox.warning(self, "Call service error",
+                                   'Call service %s failed!' % service.name,
+                                   '%s' % utf8(e))
 
     def on_node_filter_changed(self, text):
         '''
