@@ -806,7 +806,10 @@ class StartHandler(object):
         else:
             try:
                 # output ignored: output, error, ok
-                nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request, close_stdin=True, close_stdout=True, close_stderr=True)
+                _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request, close_stdin=True, close_stdout=False, close_stderr=True)
+                if ok:
+                    stdout.readlines()
+                    stdout.close()
             except nm.AuthenticationRequest as e:
                 raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
 
