@@ -63,6 +63,7 @@ class LaunchItem(QStandardItem):
     FOLDER = 20
     PACKAGE = 21
     STACK = 22
+    REMOTE_DAEMON = 23
 
     def __init__(self, name, path, lid, parent=None):
         '''
@@ -90,6 +91,8 @@ class LaunchItem(QStandardItem):
             self.setIcon(QIcon(":/icons/crystal_clear_profile.png"))
         elif self.id == LaunchItem.RECENT_PROFILE:
             self.setIcon(QIcon(":/icons/crystal_clear_profile_recent.png"))
+        elif self.id == LaunchItem.REMOTE_DAEMON:
+            self.setIcon(QIcon(":/icons/stock_connect.png"))
 
 #  def __del__(self):
 #    print "delete LAUNCH", self.name
@@ -108,6 +111,8 @@ class LaunchItem(QStandardItem):
             # return the displayed item name
             if self.id == LaunchItem.RECENT_FILE or self.id == LaunchItem.RECENT_PROFILE:
                 return "%s   [%s]" % (self.name, self.package_name)  # .decode(sys.getfilesystemencoding())
+            elif self.id == LaunchItem.REMOTE_DAEMON:
+                return "@%s" % self.name
             else:
                 return "%s" % self.name
         elif role == Qt.ToolTipRole:
@@ -311,6 +316,10 @@ class LaunchListModel(QStandardItemModel):
             return path
         elif item_id == LaunchItem.RECENT_FILE or item_id == LaunchItem.LAUNCH_FILE:
             raise Exception("Invalid file path: %s", path)
+        elif item_id == LaunchItem.REMOTE_DAEMON:
+            print "connect to %s" % path
+            root_path = path
+            items = []
         else:
             key_mod = QApplication.keyboardModifiers()
             onestep = False
@@ -400,6 +409,8 @@ class LaunchListModel(QStandardItemModel):
         # add new items
         if root_path is not None:
             self._addPathToList('..', root_path, LaunchItem.NOTHING)
+        else:
+            self._addPathToList('localhost', 'localhost:12311', LaunchItem.REMOTE_DAEMON)
         for item_name, item_path, item_id in items:
             self._addPathToList(item_name, item_path, item_id)
         self.currentPath = root_path

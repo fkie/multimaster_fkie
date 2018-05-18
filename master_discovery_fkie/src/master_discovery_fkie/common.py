@@ -143,7 +143,7 @@ def masteruri_from_master():
     return result
 
 
-def resolve_url(interface_url):
+def resolve_url(interface_url, pwd='.'):
     '''
     The supported URL begins with `file:///`, `package://` or `pkg://`.
     The package URL will be resolved to a valid file path. If the file is in a
@@ -157,7 +157,7 @@ def resolve_url(interface_url):
     '''
     filename = ''
     if interface_url:
-        if interface_url.startswith('file:///'):
+        if interface_url.startswith('file://'):
             filename = interface_url[7:]
         elif interface_url.startswith('package://') or interface_url.startswith('pkg://'):
             length = 6 if interface_url.startswith('pkg://') else 10
@@ -174,8 +174,10 @@ def resolve_url(interface_url):
             filename = interface_url
         if filename == '.':
             filename = ''
-        if filename and not os.path.exists(filename):
-            raise ValueError('unsupported interface URL or interface file not found: ' + filename)
+        if filename:
+            filename = os.path.join(pwd, filename)
+            if not os.path.exists(filename):
+                raise ValueError('unsupported interface URL or interface file not found: ' + interface_url)
     return filename
 
 

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<!--
+	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch">
+	-->
+	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch"/>
+
+	<!--	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch"> -->
+	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch" />
+	<include file="$(find invalid_package)/tests/resources/included1.launch"/>
+	<arg name="include1" value= "$(find node_manager_daemon_fkie)/tests/resources/included1.launch" />
+	<rosparam param="paramter" file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch" command="load" subst_value="true"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find node_manager_daemon_fkie)/launch/invalid_cfg.rviz"/>
+
+</launch>

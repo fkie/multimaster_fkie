@@ -1,19 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(node_manager_fkie)
-find_package(catkin REQUIRED COMPONENTS diagnostic_msgs master_discovery_fkie multimaster_msgs_fkie)
+find_package(catkin REQUIRED COMPONENTS diagnostic_msgs multimaster_msgs_fkie master_discovery_fkie node_manager_daemon_fkie diagnostic_msgs)
 
 catkin_python_setup()
-catkin_package(CATKIN_DEPENDS diagnostic_msgs master_discovery_fkie multimaster_msgs_fkie)
+catkin_package(CATKIN_DEPENDS diagnostic_msgs multimaster_msgs_fkie master_discovery_fkie node_manager_daemon_fkie diagnostic_msgs)
 
 install(
-    PROGRAMS
-        nodes/dynamic_reconfigure
-        nodes/nm
+    PROGRAMS 
         nodes/node_manager
+        nodes/dynamic_reconfigure
         nodes/script_runner.py
-        scripts/reduced_nm.py
         scripts/remote_nm.py
         scripts/respawn
+        scripts/reduced_nm.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
