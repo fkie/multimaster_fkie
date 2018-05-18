@@ -110,7 +110,7 @@ class TextSearchThread(QObject, threading.Thread):
                 if not self._isrunning:
                     break
                 if recursive:
-                    self.search(search_text, incf)
+                    self.search(search_text, incf, recursive)
 
     def _get_text(self, path):
         if path in self._path_text:
