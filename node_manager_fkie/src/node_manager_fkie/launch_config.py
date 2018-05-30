@@ -248,7 +248,7 @@ class LaunchConfig(QObject):
                                         result.append(path)
                                 ext = os.path.splitext(path)
                                 if recursive and ext[1] in nm.settings().SEARCH_IN_EXT:
-                                    result += cls.included_files(path, regexp_filelist)
+                                    result += cls.included_files(path, regexp_retruns, regexp_filelist)
                         except Exception:
                             import traceback
                             print traceback.format_exc()
