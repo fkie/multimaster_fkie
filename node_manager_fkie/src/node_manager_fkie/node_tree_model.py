@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QFile, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
 import re
 import roslib
 import rospy
@@ -43,6 +43,35 @@ from node_manager_fkie.common import utf8
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
 import node_manager_fkie as nm
+
+
+class CellItem(QStandardItem):
+    '''
+    Item for a cell. References to a node item.
+    '''
+    ITEM_TYPE = Qt.UserRole + 41
+
+    def __init__(self, name, node_item=None, parent=None):
+        '''
+        Initialize the CellItem object with given values.
+        @param name: the name of the group
+        @type name: C{str}
+        @param parent: the parent item. In most cases this is the HostItem. The
+        variable is used to determine the different columns of the NodeItem.
+        @type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
+        '''
+        QStandardItem.__init__(self)
+        self.parent_item = parent
+        self._name = name
+        self.node_item = node_item
+
+    @property
+    def name(self):
+        '''
+        The name of this group.
+        @rtype: C{str}
+        '''
+        return self._name
 
 
 ################################################################################
@@ -297,14 +326,14 @@ class GroupItem(QStandardItem):
                     items = []
                     newItem = GroupItem(group_name, self)
                     items.append(newItem)
-                    cfgitem = QStandardItem()
+                    cfgitem = CellItem(group_name)
                     items.append(cfgitem)
                     self.insertRow(i, items)
                     return newItem
         items = []
         newItem = GroupItem(group_name, self)
         items.append(newItem)
-        cfgitem = QStandardItem()
+        cfgitem = CellItem(group_name)
         items.append(cfgitem)
         self.appendRow(items)
         return newItem
@@ -863,6 +892,8 @@ class NodeItem(QStandardItem):
         self.setIcon(QIcon(':/icons/state_off.png'))
         self._state = NodeItem.STATE_OFF
         self.diagnostic_array = []
+        self.nodelet_mngr = ''
+        self.nodelets = []
 
     @property
     def state(self):
@@ -1172,7 +1203,7 @@ class NodeItem(QStandardItem):
         items = []
         item = NodeItem(NodeInfo(name, masteruri))
         items.append(item)
-        cfgitem = QStandardItem()
+        cfgitem = CellItem(name, item)
         items.append(cfgitem)
 #    uriitem = QStandardItem()
 #    items.append(uriitem)
@@ -1186,6 +1217,20 @@ class NodeItem(QStandardItem):
 
     def has_std_cfg(self):
         return self._std_config == ''
+
+    def count_launch_cfgs(self):
+        result = 0
+        for c in self.cfgs:
+            if not self.is_default_cfg(c):
+                result += 1
+        return result
+
+    def count_default_cfgs(self):
+        result = 0
+        for c in self.cfgs:
+            if self.is_default_cfg(c):
+                result += 1
+        return result
 
     @classmethod
     def has_launch_cfgs(cls, cfgs):

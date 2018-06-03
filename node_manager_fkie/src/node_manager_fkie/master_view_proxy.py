@@ -31,8 +31,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QKeySequence
+from python_qt_binding.QtCore import QRegExp, Qt, Signal, QRect
+from python_qt_binding.QtGui import QImage, QKeySequence, QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
 import os
@@ -54,7 +54,8 @@ from node_manager_fkie.detailed_msg_box import MessageBox, DetailedError
 from node_manager_fkie.html_delegate import HTMLDelegate
 from node_manager_fkie.launch_config import LaunchConfig  # , LaunchConfigException
 from node_manager_fkie.launch_server_handler import LaunchServerHandler
-from node_manager_fkie.node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem
+from node_manager_fkie.message_frame import MessageData, MessageFrame
+from node_manager_fkie.node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, CellItem
 from node_manager_fkie.parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
 from node_manager_fkie.parameter_handler import ParameterHandler
 from node_manager_fkie.parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
@@ -67,10 +68,10 @@ from node_manager_fkie.topic_list_model import TopicModel, TopicItem
 import node_manager_fkie as nm
 try:
     from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
-    from python_qt_binding.QtGui import QApplication, QVBoxLayout
+    from python_qt_binding.QtGui import QApplication, QVBoxLayout, QItemDelegate, QStyle
 except:
     from python_qt_binding.QtWidgets import QAction, QFileDialog, QMenu, QShortcut, QWidget
-    from python_qt_binding.QtWidgets import QApplication, QVBoxLayout
+    from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QItemDelegate, QStyle
 
 
 try:
@@ -213,6 +214,8 @@ class MasterViewProxy(QWidget):
             self.masterTab.nodeTreeView.setColumnWidth(i, width)
         self.nodeNameDelegate = HTMLDelegate()
         self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
+        self.node_delegate = IconsDelegate()
+        self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
         self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
         self.masterTab.nodeTreeView.expanded.connect(self.on_node_expanded)
         sm = self.masterTab.nodeTreeView.selectionModel()
@@ -349,6 +352,11 @@ class MasterViewProxy(QWidget):
         self._shortcut_stop = QShortcut(QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
         self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
+        self.message_frame = MessageFrame(self)
+        self.masterTab.questionFrameLayout.addWidget(self.message_frame.frameui)
+        self.message_frame.accept_signal.connect(self._on_question_ok)
+        self.message_frame.cancel_signal.connect(self._on_question_cancel)
+        self._changed_launch_files = {}
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
@@ -648,6 +656,10 @@ class MasterViewProxy(QWidget):
         `InteractionNeededError`. After the file is successful loaded a
         `loaded_config` signal will be emitted.
         '''
+        if argv_forced:
+            rospy.loginfo("LOAD launch: %s with args: %s" % (launchfile, argv_forced))
+        else:
+            rospy.loginfo("LOAD launch: %s" % launchfile)
         stored_argv = None
         if launchfile in self.__configs:
             # close the current loaded configuration with the same name
@@ -781,6 +793,14 @@ class MasterViewProxy(QWidget):
                         if nodelet_mngr not in nodelets:
                             nodelets[nodelet_mngr] = []
                         nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+            for mngr, nlist in nodelets.iteritems():
+                mngr_nodes = self.node_tree_model.getNode(mngr, self.masteruri)
+                for mn in mngr_nodes:
+                    mn.nodelets = nlist
+                for nlet in nlist:
+                    nlet_nodes = self.node_tree_model.getNode(nlet, self.masteruri)
+                    for nn in nlet_nodes:
+                        nn.nodelet_mngr = mngr
             self._nodelets[launchfile] = nodelets
 
 #      print "MASTER:", launchConfig.Roscfg.master
@@ -811,6 +831,8 @@ class MasterViewProxy(QWidget):
             err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
             rospy.logwarn("Loading launch file: %s", err_details)
             MessageBox.warning(self, "Loading launch file", err_text, err_details)
+            import traceback
+            print traceback.format_exc(3)
         except:
             print traceback.format_exc(3)
         self.update_robot_icon(True)
@@ -821,6 +843,11 @@ class MasterViewProxy(QWidget):
             # self.on_node_selection_changed(None, None, True)
         except:
             pass
+
+    def question_reload_changed_file(self, changed, affected):
+        self._changed_launch_files[affected] = changed
+        if self.message_frame.questionid == 0:
+            self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload %s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected), MessageFrame.IconLaunchFile)
 
     def _get_nodelets(self, nodename, configname=''):
         if configname and configname in self._nodelets:
@@ -1166,6 +1193,8 @@ class MasterViewProxy(QWidget):
             self.on_log_clicked()
 
     def on_node_clicked(self, index):
+        if self.message_frame.questionid == MessageFrame.QuestionNodelet:
+            self.message_frame.hide_question()
         if time.time() - self.__last_selection > 1.:
             self.on_node_selection_changed(None, None, True)
 
@@ -1842,43 +1871,47 @@ class MasterViewProxy(QWidget):
         self._start_process_queue()
 
     def _check_for_nodelets(self, nodes):
+        self._restart_nodelets = {}
         nodenames = [n.name for n in nodes]
+        nodelet_mngr = ''
+        nlmngr = ''
         for node in nodes:
             try:
-                nodelets = self._get_nodelets(node.name, node.launched_cfg.Filename)
+                cfg_name = node.launched_cfg
+                if isinstance(node.launched_cfg, LaunchConfig):
+                    cfg_name = node.launched_cfg.Filename
+                nodelets = self._get_nodelets(node.name, cfg_name)
                 if nodelets:
-                    # TODO: restart all plungins
-                    nodelets = self._get_nodelets(node.name, node.launched_cfg.Filename)
+                    nodelets = self._get_nodelets(node.name, cfg_name)
                     r_nn = []
                     for nn in nodelets:
                         if nn not in nodenames:
                             r_nn.append(nn)
-                    if r_nn:
-                        ret = MessageBox.question(self, 'Question', "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % node.name, buttons=MessageBox.Yes | MessageBox.No)
-                        nodenames.extend(r_nn)
-                        if ret == MessageBox.Yes:
-                            self.stop_nodes_by_name(r_nn)
-                            self.start_nodes_by_name(r_nn, node.launched_cfg, force=True, check_nodelets=False)
+                            if cfg_name not in self._restart_nodelets:
+                                self._restart_nodelets[cfg_name] = []
+                            self._restart_nodelets[cfg_name].append(nn)
+                    if self._restart_nodelets:
+                        nlmngr = node.name
                 else:
-                    nodelet_mngr = self._get_nodelet_manager(node.name, node.launched_cfg.Filename)
+                    nodelet_mngr = self._get_nodelet_manager(node.name, cfg_name)
                     if nodelet_mngr:
                         if nodelet_mngr not in nodenames:
-                            ret = MessageBox.question(self, 'Question', "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, buttons=MessageBox.Yes | MessageBox.No)
-                            nodenames.append(nodelet_mngr)
-                            if ret == MessageBox.Yes:
-                                self.stop_nodes_by_name([nodelet_mngr])
-                                self.start_nodes_by_name([nodelet_mngr], node.launched_cfg, force=True, check_nodelets=False)
-                                nodelets = self._get_nodelets(nodelet_mngr, node.launched_cfg.Filename)
-                                r_nn = []
-                                for nn in nodelets:
-                                    if nn not in nodenames:
-                                        nodenames.append(nn)
-                                        r_nn.append(nn)
-                                if r_nn:
-                                    self.stop_nodes_by_name(r_nn)
-                                    self.start_nodes_by_name(r_nn, node.launched_cfg, force=True, check_nodelets=False)
+                            if cfg_name not in self._restart_nodelets:
+                                self._restart_nodelets[cfg_name] = []
+                            self._restart_nodelets[cfg_name].append(nodelet_mngr)
+                            nodelets = self._get_nodelets(nodelet_mngr, cfg_name)
+                            r_nn = []
+                            for nn in nodelets:
+                                if nn not in nodenames:
+                                    r_nn.append(nn)
+                                    self._restart_nodelets[cfg_name].append(nn)
+                            nodelet_mngr = nodelet_mngr
             except Exception as err:
                 rospy.logwarn("Error while test for nodelets: %s" % utf8(err))
+        if nodelet_mngr:
+            self.message_frame.show_question(MessageFrame.QuestionNodelet, "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
+        elif self._restart_nodelets:
+            self.message_frame.show_question(MessageFrame.QuestionNodelet, "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % nlmngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
 
     def start_nodes_by_name(self, nodes, cfg, force=False, check_nodelets=True):
         '''
@@ -3089,6 +3122,41 @@ class MasterViewProxy(QWidget):
                     self.on_node_selection_changed(None, None)
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # %%%%%%%%%%%%%   Nodelet handling                                 %%%%%%%%
+    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    def _on_question_cancel(self, questionid, data):
+        if questionid == MessageFrame.QuestionLaunchFile:
+            try:
+                del self._changed_launch_files[data.data]
+            except Exception as err:
+                rospy.logwarn("Error while cancel reload launch file %s: %s" % (data.data, utf8(err)))
+        if self._changed_launch_files:
+            for affected, changed in self._changed_launch_files.iteritems():
+                self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload %s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected), MessageFrame.IconLaunchFile)
+                break
+
+    def _on_question_ok(self, questionid, data):
+        if questionid == MessageFrame.QuestionNodelet:
+            try:
+                for cfgs, nodes in data.data.iteritems():
+                    self.stop_nodes_by_name(nodes)
+                    self.start_nodes_by_name(nodes, cfgs, force=True, check_nodelets=False)
+            except Exception as err:
+                rospy.logwarn("Error while start nodelets: %s" % utf8(err))
+        elif questionid == MessageFrame.QuestionLaunchFile:
+            try:
+                self.launchfiles = data.data
+                del self._changed_launch_files[data.data]
+            except Exception as err:
+                rospy.logwarn("Error while reload launch file %s: %s" % (data.data, utf8(err)))
+                MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
+        if self._changed_launch_files:
+            for affected, changed in self._changed_launch_files.iteritems():
+                self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload %s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected), MessageFrame.IconLaunchFile)
+                break
+
+    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -3297,3 +3365,57 @@ class ParameterSortFilterProxyModel(QSortFilterProxyModel):
         regex = self.filterRegExp()
         return (regex.indexIn(self.sourceModel().data(index0, ParameterNameItem.NAME_ROLE)) != -1 or
                 regex.indexIn(self.sourceModel().data(index2, ParameterValueItem.VALUE_ROLE)) != -1)
+
+
+class IconsDelegate(QItemDelegate):
+
+    def __init__(self, parent=None, *args):
+        QItemDelegate.__init__(self, parent, *args)
+        self._idx_icon = 1
+        self.IMAGES = {'launchfile': QImage(':/icons/crystal_clear_launch_file.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'defaultcfg': QImage(":/icons/default_cfg.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'nodelet': QImage(":/icons/crystal_clear_nodelet.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       }
+
+    def paint(self, painter, option, index):
+        painter.save()
+        self._idx_icon = 1
+        model_index = index.model().mapToSource(index)
+        item = model_index.model().itemFromIndex(model_index)
+        if isinstance(item, CellItem) and item.node_item is not None:
+            lcfgs = item.node_item.count_launch_cfgs()
+            if lcfgs > 0:
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['launchfile'])
+                if lcfgs > 1:
+                    painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
+            dcfgs = item.node_item.count_default_cfgs()
+            if dcfgs > 0:
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['defaultcfg'])
+                if dcfgs > 1:
+                    painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
+            if item.node_item.nodelets:
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['nodelet_mngr'])
+            if item.node_item.nodelet_mngr:
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['nodelet'])
+            if item.node_item.nodelets:
+                item.setToolTip("This is a nodelet manager")
+            elif item.node_item.nodelet_mngr:
+                item.setToolTip("This is a nodelet for %s" % item.node_item.nodelet_mngr)
+            else:
+                item.setToolTip("")
+        painter.restore()
+
+    def calcDecorationRect(self, main_rect):
+        rect = QRect()
+        rect.setX(main_rect.x() + self._idx_icon)
+        rect.setY(main_rect.y() + 1)
+        rect.setWidth(15)
+        rect.setHeight(15)
+        self._idx_icon += 17
+        return rect

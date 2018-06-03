@@ -1624,10 +1624,6 @@ class MainWindow(QMainWindow):
         :param path: the path of the launch file.
         :type path: str
         '''
-        if argv:
-            rospy.loginfo("LOAD launch: %s with args: %s" % (path, argv))
-        else:
-            rospy.loginfo("LOAD launch: %s" % path)
         master_proxy = None
         if masteruri is not None:
             master_proxy = self.getMaster(masteruri, False)
@@ -1825,7 +1821,7 @@ class MainWindow(QMainWindow):
         '''
         if self.isActiveWindow():
             self._changed_binaries[changed] = affected
-            self._check_for_changed_files()
+            self._check_for_changed_binaries()
         else:
             self._changed_binaries[changed] = affected
 
@@ -1833,30 +1829,35 @@ class MainWindow(QMainWindow):
         '''
         Check the dictinary with changed files and notify the masters about changes.
         '''
-        new_affected = list()
-        for _, affected in self._changed_files.items():  # :=changed
+#         new_affected = dict()
+        for changed, affected in self._changed_files.items():  # :=changed
             for (muri, lfile) in affected:
-                if not (muri, lfile) in self.__in_question:
-                    self.__in_question.add((muri, lfile))
-                    new_affected.append((muri, lfile))
-        # if there are no question to reload the launch file -> ask
-        if new_affected:
-            choices = dict()
-            for (muri, lfile) in new_affected:
                 master = self.getMaster(muri)
-                if master is not None and master.online:
-                    master.launchfile = lfile
-                    choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-            if choices:
-                cfgs, _ = SelectDialog.getValue('Reload configurations?',
-                                                '<b>%s</b> was changed.<br>Select affected configurations to reload:' % ', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
-                                                False, True,
-                                                ':/icons/crystal_clear_launch_file.png',
-                                                self)
-                for c in cfgs:
-                    choices[c][0].launchfiles = choices[c][1]
-            for (muri, lfile) in new_affected:
-                self.__in_question.remove((muri, lfile))
+                if master is not None:
+                    master.question_reload_changed_file(changed, lfile)
+#                 if not (muri, lfile) in self.__in_question:
+#                     self.__in_question.add((muri, lfile))
+#                     new_affected.append((muri, lfile))
+#         # if there are no question to reload the launch file -> ask
+#         if new_affected:
+#             choices = dict()
+#             for (muri, lfile) in new_affected:
+#                 master = self.getMaster(muri)
+#                 if master is not None:
+#                      master.question_reload_changed_files()
+# #                    master.launchfile = lfile
+#                     choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
+#             if choices:
+#                 ...
+#                 cfgs, _ = SelectDialog.getValue('Reload configurations?',
+#                                                 '<b>%s</b> was changed.<br>Select affected configurations to reload:' % ', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
+#                                                 False, True,
+#                                                 ':/icons/crystal_clear_launch_file.png',
+#                                                 self)
+#                 for c in cfgs:
+#                     choices[c][0].launchfiles = choices[c][1]
+#             for (muri, lfile) in new_affected:
+#                 self.__in_question.remove((muri, lfile))
         self._changed_files.clear()
 
     def _check_for_changed_binaries(self):
@@ -1874,7 +1875,7 @@ class MainWindow(QMainWindow):
             choices = dict()
             for (nname, muri, lfile) in new_affected:
                 master = self.getMaster(muri)
-                if master is not None:
+                if master is not None and master.online:
                     master_nodes = master.getNode(nname)
                     if master_nodes and master_nodes[0].is_running():
                         choices[nname] = (master, lfile)
