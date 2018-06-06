@@ -106,25 +106,9 @@
              <property name="spacing">
               <number>0</number>
              </property>
-             <property name="leftMargin">
-              <number>3</number>
-             </property>
-             <property name="topMargin">
+             <property name="margin">
               <number>0</number>
              </property>
-             <property name="rightMargin">
-              <number>3</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QTreeView" name="nodeTreeView">
-               <property name="selectionMode">
-                <enum>QAbstractItemView::ExtendedSelection</enum>
-               </property>
-              </widget>
-             </item>
              <item>
               <widget class="QFrame" name="questionFrame">
                <property name="sizePolicy">
@@ -147,6 +131,13 @@
               </widget>
              </item>
              <item>
+              <widget class="QTreeView" name="nodeTreeView">
+               <property name="selectionMode">
+                <enum>QAbstractItemView::ExtendedSelection</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QFrame" name="progressPrioFrame">
                <property name="frameShape">
                 <enum>QFrame::NoFrame</enum>
@@ -161,7 +152,16 @@
                 <property name="spacing">
                  <number>1</number>
                 </property>
-                <property name="margin">
+                <property name="leftMargin">
+                 <number>3</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
                  <number>1</number>
                 </property>
                 <item>
@@ -210,7 +210,16 @@
                 <property name="spacing">
                  <number>1</number>
                 </property>
-                <property name="margin">
+                <property name="leftMargin">
+                 <number>3</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
                  <number>1</number>
                 </property>
                 <item>

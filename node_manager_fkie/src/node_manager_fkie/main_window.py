@@ -1829,35 +1829,11 @@ class MainWindow(QMainWindow):
         '''
         Check the dictinary with changed files and notify the masters about changes.
         '''
-#         new_affected = dict()
         for changed, affected in self._changed_files.items():  # :=changed
             for (muri, lfile) in affected:
                 master = self.getMaster(muri)
                 if master is not None:
                     master.question_reload_changed_file(changed, lfile)
-#                 if not (muri, lfile) in self.__in_question:
-#                     self.__in_question.add((muri, lfile))
-#                     new_affected.append((muri, lfile))
-#         # if there are no question to reload the launch file -> ask
-#         if new_affected:
-#             choices = dict()
-#             for (muri, lfile) in new_affected:
-#                 master = self.getMaster(muri)
-#                 if master is not None:
-#                      master.question_reload_changed_files()
-# #                    master.launchfile = lfile
-#                     choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-#             if choices:
-#                 ...
-#                 cfgs, _ = SelectDialog.getValue('Reload configurations?',
-#                                                 '<b>%s</b> was changed.<br>Select affected configurations to reload:' % ', '.join([os.path.basename(f) for f in self._changed_files.keys()]), choices.keys(),
-#                                                 False, True,
-#                                                 ':/icons/crystal_clear_launch_file.png',
-#                                                 self)
-#                 for c in cfgs:
-#                     choices[c][0].launchfiles = choices[c][1]
-#             for (muri, lfile) in new_affected:
-#                 self.__in_question.remove((muri, lfile))
         self._changed_files.clear()
 
     def _check_for_changed_binaries(self):
@@ -1904,7 +1880,6 @@ class MainWindow(QMainWindow):
         @type affected: list
         '''
         # create a list of launch files and masters, which are affected by the changed file
-        # and are not currently in question
         if self.isActiveWindow():
             self._changed_files_param[changed] = affected
             self._check_for_changed_files_param()
@@ -1915,35 +1890,11 @@ class MainWindow(QMainWindow):
         '''
         Check the dictinary with changed files and notify about the transfer of changed file.
         '''
-        new_affected = list()
         for changed, affected in self._changed_files_param.items():
             for (muri, lfile) in affected:
-                if not (muri, changed) in self.__in_question:
-                    self.__in_question.add((muri, changed))
-                    new_affected.append((muri, changed))
-        # if there are no question to reload the launch file -> ask
-        if new_affected:
-            choices = dict()
-            for (muri, lfile) in new_affected:
                 master = self.getMaster(muri)
                 if master is not None:
-                    master.launchfile = lfile
-                    choices[''.join([os.path.basename(lfile), ' [', master.mastername, ']'])] = (master, lfile)
-            cfgs, _ = SelectDialog.getValue('Transfer configurations?',
-                                            'Configuration files referenced by parameter are changed.<br>Select affected configurations for copy to remote host: (don\'t forget to restart the nodes!)',
-                                            choices.keys(), False, True,
-                                            ':/icons/crystal_clear_launch_file_transfer.png',
-                                            self)
-            for (muri, lfile) in new_affected:
-                self.__in_question.remove((muri, lfile))
-            for c in cfgs:
-                host = '%s' % get_hostname(choices[c][0].masteruri)
-                username = choices[c][0].current_user
-                self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                          'transfer files to %s' % host,
-                                                          nm.starter().transfer_files,
-                                                          (host, choices[c][1], False, username))
-            self.launch_dock.progress_queue.start()
+                    master.question_transfer_changed_file(changed, lfile)
         self._changed_files_param.clear()
 
     def changeEvent(self, event):

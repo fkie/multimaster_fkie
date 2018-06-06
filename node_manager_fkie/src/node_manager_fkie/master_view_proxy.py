@@ -150,6 +150,7 @@ class MasterViewProxy(QWidget):
         self.setObjectName(' - '.join(['MasterViewProxy', masteruri]))
         self.masteruri = masteruri
         self.mastername = masteruri
+        self.main_window = parent
         try:
             self.mastername = get_hostname(self.masteruri)
         except:
@@ -356,7 +357,6 @@ class MasterViewProxy(QWidget):
         self.masterTab.questionFrameLayout.addWidget(self.message_frame.frameui)
         self.message_frame.accept_signal.connect(self._on_question_ok)
         self.message_frame.cancel_signal.connect(self._on_question_cancel)
-        self._changed_launch_files = {}
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
@@ -845,9 +845,12 @@ class MasterViewProxy(QWidget):
             pass
 
     def question_reload_changed_file(self, changed, affected):
-        self._changed_launch_files[affected] = changed
-        if self.message_frame.questionid == 0:
-            self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload %s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected), MessageFrame.IconLaunchFile)
+        self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload <b>%s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected))
+
+    def question_transfer_changed_file(self, changed, affected):
+        self.message_frame.show_question(MessageFrame.QuestionTransfer,
+                                         "Configuration file '%s' referenced by parameter in <b>%s</b> is changed.<br>Copy to remote host?"
+                                         "<br>Don\'t forget to restart the corresponding nodes!" % (changed, os.path.basename(affected)), MessageData(changed))
 
     def _get_nodelets(self, nodename, configname=''):
         if configname and configname in self._nodelets:
@@ -1193,8 +1196,7 @@ class MasterViewProxy(QWidget):
             self.on_log_clicked()
 
     def on_node_clicked(self, index):
-        if self.message_frame.questionid == MessageFrame.QuestionNodelet:
-            self.message_frame.hide_question()
+        self.message_frame.hide_question([MessageFrame.QuestionNodelet])
         if time.time() - self.__last_selection > 1.:
             self.on_node_selection_changed(None, None, True)
 
@@ -1425,6 +1427,10 @@ class MasterViewProxy(QWidget):
             text += '<dt><b>URI</b>: %s</dt>' % node.node_info.uri
             text += '<dt><b>PID</b>: %s</dt>' % node.node_info.pid
             text += '<dt><b>ORG.MASTERURI</b>: %s</dt>' % node.node_info.masteruri
+            if node.nodelet_mngr:
+                text += '<dt><b>Nodelet manager</b>: %s</dt>' % node.nodelet_mngr
+            if node.nodelets:
+                text += '<dt>Manager for <b>%d</b> nodelets</dt>' % len(node.nodelets)
             if not is_legal_name(node.name):
                 text += '<dt><font color="#FF6600"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
             if node.is_ghost:
@@ -3126,15 +3132,7 @@ class MasterViewProxy(QWidget):
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def _on_question_cancel(self, questionid, data):
-        if questionid == MessageFrame.QuestionLaunchFile:
-            try:
-                del self._changed_launch_files[data.data]
-            except Exception as err:
-                rospy.logwarn("Error while cancel reload launch file %s: %s" % (data.data, utf8(err)))
-        if self._changed_launch_files:
-            for affected, changed in self._changed_launch_files.iteritems():
-                self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload %s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected), MessageFrame.IconLaunchFile)
-                break
+        pass
 
     def _on_question_ok(self, questionid, data):
         if questionid == MessageFrame.QuestionNodelet:
@@ -3147,14 +3145,21 @@ class MasterViewProxy(QWidget):
         elif questionid == MessageFrame.QuestionLaunchFile:
             try:
                 self.launchfiles = data.data
-                del self._changed_launch_files[data.data]
             except Exception as err:
                 rospy.logwarn("Error while reload launch file %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
-        if self._changed_launch_files:
-            for affected, changed in self._changed_launch_files.iteritems():
-                self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload %s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected), MessageFrame.IconLaunchFile)
-                break
+        elif questionid == MessageFrame.QuestionTransfer:
+            try:
+                host = '%s' % get_hostname(self.masteruri)
+                username = self.current_user
+                self.main_window.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                                      'transfer %s to %s' % (host, data.data),
+                                                                      nm.starter().transfer_files,
+                                                                      (host, data.data, False, username))
+                self.main_window.launch_dock.progress_queue.start()
+            except Exception as err:
+                rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))
+                MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%

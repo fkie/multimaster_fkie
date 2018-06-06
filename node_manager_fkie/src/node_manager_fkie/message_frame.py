@@ -31,16 +31,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import rospy
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QPixmap
 from node_manager_fkie.common import utf8
 
-
 try:
     from python_qt_binding.QtGui import QFrame
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QFrame
 
 
@@ -49,6 +47,15 @@ class MessageData(object):
 
     def __init__(self, data):
         self.data = data
+
+    def __str__(self):
+        return utf8(self.data)
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+    def __ne__(self, other):
+        return self.data != other.data
 
 
 class MessageFrame(QFrame):
@@ -65,6 +72,7 @@ class MessageFrame(QFrame):
     IconDefaultCfg = 3
     IconNodelet = 4
     IconBinary = 5
+    IconTransfer = 6
 
     QuestionInvalid = 0
     QuestionNoname = 1
@@ -72,6 +80,7 @@ class MessageFrame(QFrame):
     QuestionDefaultCfg = 3
     QuestionNodelet = 4
     QuestionBinary = 5
+    QuestionTransfer = 6
 
     ICON_SIZE = 32
 
@@ -87,7 +96,8 @@ class MessageFrame(QFrame):
                        2: QPixmap(':/icons/crystal_clear_launch_file.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        3: QPixmap(":/icons/default_cfg.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        4: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       5: QPixmap(":/icons/crystal_clear_question.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       5: QPixmap(":/icons/crystal_clear_question.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       6: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self.frameui = QFrame()
@@ -96,36 +106,130 @@ class MessageFrame(QFrame):
         self.frameui.setVisible(False)
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
         self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
+        # we use different queues for priority
+        self._queue_launchfile = []
+        self._queue_transfer_files = []
+        self._queue_other = []
+        self._do_not_ask = {}
 
     def show_question(self, questionid, text, data=MessageData(None), icon=0):
+        ic = icon
+        if ic == 0:
+            ic = questionid
+        try:
+            # is it in the list for not ask again?
+            if self._do_not_ask[utf8((questionid, str(data)))]:
+                self.accept_signal.emit(questionid, data)
+            else:
+                self.cancel_signal.emit(questionid, data)
+            return
+        except Exception:
+            pass
         self._new_request = True
-        self.questionid = questionid
-        self.text = text
-        self.iconid = icon
-        self.data = data
-        self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
-        self.frameui.questionLabel.setText(text)
-        self.frameui.setVisible(True)
+        if self.questionid == 0:
+            # currently not question active, show
+            self.questionid = questionid
+            self.text = text
+            self.iconid = ic
+            self.data = data
+            self.frameui.questionIcon.setPixmap(self.IMAGES[ic])
+            self.frameui.questionLabel.setText(text)
+            self._frameui_4_request(self._new_request)
+        else:
+            # put it in the queue
+            if questionid == 2:
+                if not self._is_launch_data_in_queue(data) and self.data != data:
+                    self._queue_launchfile.append((text, data, ic))
+            elif questionid == 6:
+                if not self._is_transfer_data_in_queue(data):
+                    if self.data != data:
+                        self._queue_transfer_files.append((text, data, ic))
+            else:
+                if not self._is_other_data_in_queue(questionid, text, data):
+                    if questionid != self.questionid and self.text != text and self.data != data:
+                        self._queue_other.append((questionid, text, data, ic))
 
-    def hide_question(self):
-        self._new_request = False
-        self.frameui.setVisible(False)
-        self.cancel_signal.emit(self.questionid, self.data)
-        if not self._new_request:
+    def hide_question(self, questionids):
+        if self.questionid in questionids:
+            self._new_request = False
+            self.frameui.setVisible(False)
+            self.cancel_signal.emit(self.questionid, self.data)
+            self._new_request = self._read_next_item()
+            self._frameui_4_request(self._new_request)
+
+    def _frameui_4_request(self, request):
+        if request:
+            self.frameui.checkBox_dnaa.setChecked(False)
+            self.frameui.setVisible(True)
+        else:
             self.questionid = 0
+            self.frameui.setVisible(False)
 
     def _on_question_ok(self):
+        if self.frameui.checkBox_dnaa.isChecked():
+            # save the decision
+            self._do_not_ask[utf8((self.questionid, str(self.data)))] = True
         self._new_request = False
         self.frameui.setVisible(False)
         self.accept_signal.emit(self.questionid, self.data)
-        if not self._new_request:
-            self.questionid = 0
+        self._new_request = self._read_next_item()
+        self._frameui_4_request(self._new_request)
 
     def _on_question_cancel(self):
+        if self.frameui.checkBox_dnaa.isChecked():
+            # save the decision
+            self._do_not_ask[utf8((self.questionid, str(self.data)))] = False
         self._new_request = False
         self.frameui.setVisible(False)
         self.cancel_signal.emit(self.questionid, self.data)
-        if not self._new_request:
-            self.questionid = 0
+        self._new_request = self._read_next_item()
+        self._frameui_4_request(self._new_request)
 
+    def _is_launch_data_in_queue(self, newdata):
+        for _, data, _ in self._queue_launchfile:
+            if data == newdata:
+                return True
+        return False
 
+    def _is_transfer_data_in_queue(self, newdata):
+        for _, data, _ in self._queue_transfer_files:
+            if data == newdata:
+                return True
+        return False
+
+    def _is_other_data_in_queue(self, questionid, text, data):
+        for cqid, ctxt, cd, _ in self._queue_other:
+            if cqid == questionid and cd == data and ctxt == text:
+                return True
+        return False
+
+    def _read_next_item(self):
+        result = False
+        if self._queue_launchfile:
+            result = True
+            text, data, icon = self._queue_launchfile.pop(0)
+            self.questionid = self.QuestionLaunchFile
+            self.text = text
+            self.iconid = icon
+            self.data = data
+            self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
+            self.frameui.questionLabel.setText(text)
+        elif self._queue_transfer_files:
+            result = True
+            text, data, icon = self._queue_transfer_files.pop(0)
+            self.questionid = self.QuestionTransfer
+            self.text = text
+            self.iconid = icon
+            self.data = data
+            self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
+            self.frameui.questionLabel.setText(text)
+        elif self._queue_other:
+            result = True
+            questionid, text, data, icon = self._queue_other.pop(0)
+            self.questionid = questionid
+            self.text = text
+            self.iconid = icon
+            self.data = data
+            self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
+            self.frameui.questionLabel.setText(text)
+        return result
