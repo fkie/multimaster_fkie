@@ -1427,10 +1427,6 @@ class MasterViewProxy(QWidget):
             text += '<dt><b>URI</b>: %s</dt>' % node.node_info.uri
             text += '<dt><b>PID</b>: %s</dt>' % node.node_info.pid
             text += '<dt><b>ORG.MASTERURI</b>: %s</dt>' % node.node_info.masteruri
-            if node.nodelet_mngr:
-                text += '<dt><b>Nodelet manager</b>: %s</dt>' % node.nodelet_mngr
-            if node.nodelets:
-                text += '<dt>Manager for <b>%d</b> nodelets</dt>' % len(node.nodelets)
             if not is_legal_name(node.name):
                 text += '<dt><font color="#FF6600"><b>This node has an illegal <node> name.<br><a href="http://ros.org/wiki/Names">http://ros.org/wiki/Names</a><br>This will likely cause problems with other ROS tools.</b></font></dt>'
             if node.is_ghost:
@@ -1463,6 +1459,10 @@ class MasterViewProxy(QWidget):
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
             text += '</dl>'
+            if node.nodelet_mngr:
+                text += '<dt><b>Nodelet manager</b>: %s</dt>' % self._create_html_list('', [node.nodelet_mngr], 'NODE')
+            if node.nodelets:
+                text += '<dt>Manager for <b>%d</b> nodelets</dt>' % len(node.nodelets)
             if nm.settings().transpose_pub_sub_descr:
                 text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
                 text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
