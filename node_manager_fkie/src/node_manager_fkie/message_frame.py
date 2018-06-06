@@ -33,7 +33,7 @@
 import os
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
-from python_qt_binding.QtGui import QPalette, QPixmap
+from python_qt_binding.QtGui import QColor, QPixmap
 from node_manager_fkie.common import utf8
 import node_manager_fkie as nm
 
@@ -105,7 +105,7 @@ class MessageFrame(QFrame):
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MessageFrame.ui')
         loadUi(ui_file, self.frameui)
         self.frameui.setVisible(False)
-        bg_style = "QFrame#questionFame { background-color: lightGray;}"
+        bg_style = "QFrame#questionFame { background-color: %s;}" % QColor(255, 207, 121).name()
         self.frameui.setStyleSheet("%s" % (bg_style))
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
         self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
@@ -155,7 +155,7 @@ class MessageFrame(QFrame):
         if self.questionid == self.QuestionNodelet:
             self.frameui.checkBox_dnaa.setText("don't ask again, never!")
         else:
-            self.frameui.checkBox_dnaa.setText("don't ask again, temporary")
+            self.frameui.checkBox_dnaa.setText("don't ask again, for session")
 
     def hide_question(self, questionids):
         if self.questionid in questionids:
