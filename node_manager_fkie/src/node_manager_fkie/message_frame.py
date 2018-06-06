@@ -33,7 +33,7 @@
 import os
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
-from python_qt_binding.QtGui import QPixmap
+from python_qt_binding.QtGui import QPalette, QPixmap
 from node_manager_fkie.common import utf8
 
 try:
@@ -104,6 +104,8 @@ class MessageFrame(QFrame):
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MessageFrame.ui')
         loadUi(ui_file, self.frameui)
         self.frameui.setVisible(False)
+        bg_style = "QFrame#questionFame { background-color: lightGray;}"
+        self.frameui.setStyleSheet("%s" % (bg_style))
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
         self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
         # we use different queues for priority
