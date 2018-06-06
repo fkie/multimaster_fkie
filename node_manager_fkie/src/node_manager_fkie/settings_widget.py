@@ -186,6 +186,14 @@ class SettingsWidget(QDockWidget):
                                          "double-click on hostname in description panel. To remove a setted color "
                                          "delete it manually from $HOME/.ros/node_manager/settings.ini</p>"
                                          },),
+                    'Check for nodelets at start:': ({'value': nm.settings().check_for_nodelets_at_start,
+                                                      'settings': nm.settings(),
+                                                      'attrname': 'check_for_nodelets_at_start',
+                                                      'value_default': nm.settings().CHECK_FOR_NODELETS_AT_START,
+                                                      'tooltip': "Test the startlist for nodelet manager and all nodelets. "
+                                                      "If one of the nodes is not in the list a dialog is displayed with "
+                                                      "proposal to start other nodes, too.</p>"
+                                                      },),
                     'Show domain suffix:': ({'value': nm.settings().show_domain_suffix,
                                              'settings': nm.settings(),
                                              'attrname': 'show_domain_suffix',

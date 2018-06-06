@@ -35,6 +35,7 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QPalette, QPixmap
 from node_manager_fkie.common import utf8
+import node_manager_fkie as nm
 
 try:
     from python_qt_binding.QtGui import QFrame
@@ -108,6 +109,7 @@ class MessageFrame(QFrame):
         self.frameui.setStyleSheet("%s" % (bg_style))
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
         self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
+        self.frameui.checkBox_dnaa.stateChanged.connect(self._on_checkbox_state_changed)
         # we use different queues for priority
         self._queue_launchfile = []
         self._queue_transfer_files = []
@@ -150,6 +152,10 @@ class MessageFrame(QFrame):
                 if not self._is_other_data_in_queue(questionid, text, data):
                     if questionid != self.questionid and self.text != text and self.data != data:
                         self._queue_other.append((questionid, text, data, ic))
+        if self.questionid == self.QuestionNodelet:
+            self.frameui.checkBox_dnaa.setText("don't ask again, never!")
+        else:
+            self.frameui.checkBox_dnaa.setText("don't ask again, temporary")
 
     def hide_question(self, questionids):
         if self.questionid in questionids:
@@ -179,8 +185,11 @@ class MessageFrame(QFrame):
 
     def _on_question_cancel(self):
         if self.frameui.checkBox_dnaa.isChecked():
-            # save the decision
-            self._do_not_ask[utf8((self.questionid, str(self.data)))] = False
+            if self.questionid == self.QuestionNodelet:
+                nm.settings().check_for_nodelets_at_start = False
+            else:
+                # save the decision
+                self._do_not_ask[utf8((self.questionid, str(self.data)))] = False
         self._new_request = False
         self.frameui.setVisible(False)
         self.cancel_signal.emit(self.questionid, self.data)
@@ -235,3 +244,10 @@ class MessageFrame(QFrame):
             self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
             self.frameui.questionLabel.setText(text)
         return result
+
+    def _on_checkbox_state_changed(self, state):
+        if state:
+            if self.questionid == self.QuestionNodelet:
+                self.frameui.questionOkButton.setVisible(False)
+        else:
+            self.frameui.questionOkButton.setVisible(True)

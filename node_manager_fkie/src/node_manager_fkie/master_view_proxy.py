@@ -1914,10 +1914,11 @@ class MasterViewProxy(QWidget):
                             nodelet_mngr = nodelet_mngr
             except Exception as err:
                 rospy.logwarn("Error while test for nodelets: %s" % utf8(err))
-        if nodelet_mngr:
-            self.message_frame.show_question(MessageFrame.QuestionNodelet, "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
-        elif self._restart_nodelets:
-            self.message_frame.show_question(MessageFrame.QuestionNodelet, "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % nlmngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
+        if nm.settings().check_for_nodelets_at_start:
+            if nodelet_mngr and nodelet_mngr not in nodenames:
+                self.message_frame.show_question(MessageFrame.QuestionNodelet, "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
+            elif self._restart_nodelets:
+                self.message_frame.show_question(MessageFrame.QuestionNodelet, "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % nlmngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
 
     def start_nodes_by_name(self, nodes, cfg, force=False, check_nodelets=True):
         '''
