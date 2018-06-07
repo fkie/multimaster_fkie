@@ -2282,11 +2282,15 @@ class MasterViewProxy(QWidget):
                         ret = MessageBox.question(self, "Show IO", "You are going to open the IO of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
                         ret = (ret == MessageBox.Ok)
                     if ret:
+                        queue = self._progress_queue_prio
+                        # we use normal queue, if there are not a lot of processes
+                        if self._progress_queue.count() < 5:
+                            queue = self._progress_queue
                         for node in selectedNodes:
-                            self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
-                                                                ''.join(['show IO of ', node.name]),
-                                                                nm.screen().openScreen,
-                                                                (node.name, self.getHostFromNode(node), False, self.current_user))
+                            queue.add2queue(utf8(uuid.uuid4()),
+                                            ''.join(['show IO of ', node.name]),
+                                            nm.screen().openScreen,
+                                            (node.name, self.getHostFromNode(node), False, self.current_user))
                         self._start_process_queue_prio()
                 else:
                     self.on_show_all_screens()
