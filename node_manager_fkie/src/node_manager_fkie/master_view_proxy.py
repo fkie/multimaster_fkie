@@ -557,12 +557,14 @@ class MasterViewProxy(QWidget):
         '''
         return self.node_tree_model.getNode("%s" % node_name, self.masteruri)
 
-    def updateButtons(self):
+    def updateButtons(self, selected_nodes=None):
         '''
         Updates the enable state of the buttons depending of the selection and
         running state of the selected node.
         '''
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = selected_nodes
+        if selectedNodes is None:
+            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
         has_running = False
         has_stopped = False
         for node in selectedNodes:
@@ -1174,7 +1176,9 @@ class MasterViewProxy(QWidget):
         @param index: The index of the activated node
         @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
         '''
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes(), False)
+        selectedNodes = []
+        if index.column() == 0:
+            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes(), False)
         if not selectedNodes:
             return
         has_running = False
@@ -1397,7 +1401,7 @@ class MasterViewProxy(QWidget):
         if (self._is_current_tab_name('tabNodes') and self.__last_info_text != text) or force_emit:
             self.__last_info_text = text
             self.description_signal.emit(name, text, True if selected or deselected or force_emit else False)
-        self.updateButtons()
+        self.updateButtons(selectedNodes)
 
     def get_node_description(self, node_name, node=None):
         text = ''
