@@ -40,6 +40,7 @@ except:
 from python_qt_binding.QtGui import QPixmap
 import re
 
+import threading
 from node_manager_fkie.common import utf8
 from node_manager_fkie.editor.line_edit import EnchancedLineEdit
 
@@ -51,7 +52,7 @@ class SelectDialog(QDialog):
 
     def __init__(self, items=list(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, exclusive=False,
                  preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True,
-                 checkitem1='', checkitem2=''):
+                 checkitem1='', checkitem2='', closein=0):
         '''
         Creates an input dialog.
         @param items: a list with strings
@@ -125,6 +126,15 @@ class SelectDialog(QDialog):
             spacerItem = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding)
             self.verticalLayout.addItem(spacerItem)
 
+        self._close_timer = None
+        self._closein = closein - 1
+        if closein > 0:
+            self.closein_label = QLabel("OK in %d sec..." % closein)
+            self.closein_label.setAlignment(Qt.AlignRight)
+            self.verticalLayout.addWidget(self.closein_label)
+            self._close_timer = threading.Timer(1.0, self._on_close_timer)
+            self._close_timer.start()
+
         # create buttons
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setObjectName("buttonBox")
@@ -148,21 +158,25 @@ class SelectDialog(QDialog):
 #    print "************ destroy", self.objectName()
 
     def _on_main_toggle(self, state):
+        self.cancel_autoclose()
         self._ignore_next_toggle = state != self.select_all_checkbox.checkState()
         self.select_all_checkbox.setCheckState(state)
 
     def _on_select_all_checkbox_stateChanged(self, state):
+        self.cancel_autoclose()
         if not self._ignore_next_toggle:
             self.content.setState(state)
         self._ignore_next_toggle = False
 
     def _on_select_checkitem1_checkbox_stateChanged(self, state):
+        self.cancel_autoclose()
         if state == Qt.Checked:
             self.checkitem1_result = True
         elif state == Qt.Unchecked:
             self.checkitem1_result = False
 
     def _on_select_checkitem2_checkbox_stateChanged(self, state):
+        self.cancel_autoclose()
         if state == Qt.Checked:
             self.checkitem2_result = True
         elif state == Qt.Unchecked:
@@ -171,12 +185,26 @@ class SelectDialog(QDialog):
     def _on_filter_changed(self):
         self.content.filter(self.filter_field.text())
 
+    def _on_close_timer(self):
+        self.closein_label.setText("OK in %d sec..." % self._closein)
+        if self._closein == 0:
+            self.buttonBox.accepted.emit()
+            return
+        self._closein -= 1
+        self._close_timer = threading.Timer(1.0, self._on_close_timer)
+        self._close_timer.start()
+
+    def cancel_autoclose(self):
+        if self._close_timer is not None:
+            self._close_timer.cancel()
+            self.closein_label.setVisible(False)
+
     def getSelected(self):
         return self.content.getSelected()
 
     @staticmethod
-    def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2=''):
-        selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2)
+    def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2='', closein=0):
+        selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein)
         selectDia.setWindowTitle(title)
         selectDia.resize(480, 256)
         if selectDia.exec_():

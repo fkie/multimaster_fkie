@@ -424,7 +424,8 @@ class MainWindow(QMainWindow):
             res = SelectDialog.getValue('Stop nodes?', "Select masters where to stop:",
                                         masters, False, False, '', self,
                                         select_if_single=False,
-                                        checkitem1="don't show this dialog again")
+                                        checkitem1="don't show this dialog again",
+                                        closein=3)
             masters2stop, self._close_on_exit = res[0], res[1]
             nm.settings().confirm_exit_when_closing = not res[2]
             if self._close_on_exit:
