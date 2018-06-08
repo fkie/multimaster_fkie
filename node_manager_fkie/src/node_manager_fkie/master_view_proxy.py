@@ -204,6 +204,8 @@ class MasterViewProxy(QWidget):
         tabLayout.addWidget(self.masterTab)
         self._progress_queue_prio = ProgressQueue(self.masterTab.progressPrioFrame, self.masterTab.progressPrioBar, self.masterTab.progressCancelPrioButton, 'Prio Master - %s' % self.mastername)
         self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton, 'Master - %s' % self.mastername)
+        self._progress_queue_prio.no_screen_error_signal.connect(self._on_no_screen_error)
+        self._progress_queue.no_screen_error_signal.connect(self._on_no_screen_error)
 
         # setup the node view
         self.node_tree_model = NodeTreeModel(nm.nameres().address(self.masteruri), self.masteruri)
@@ -357,6 +359,10 @@ class MasterViewProxy(QWidget):
         self.masterTab.questionFrameLayout.addWidget(self.message_frame.frameui)
         self.message_frame.accept_signal.connect(self._on_question_ok)
         self.message_frame.cancel_signal.connect(self._on_question_cancel)
+
+        self.info_frame = MessageFrame(self, info=True)
+        self.masterTab.infoFrameLayout.addWidget(self.info_frame.frameui)
+        self.info_frame.accept_signal.connect(self._on_info_ok)
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
@@ -844,10 +850,10 @@ class MasterViewProxy(QWidget):
             pass
 
     def question_reload_changed_file(self, changed, affected):
-        self.message_frame.show_question(MessageFrame.QuestionLaunchFile, '<b>%s</b> was changed.<br>Reload <b>%s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected))
+        self.message_frame.show_question(MessageFrame.TYPE_LAUNCH_FILE, '<b>%s</b> was changed.<br>Reload <b>%s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected))
 
     def question_transfer_changed_file(self, changed, affected):
-        self.message_frame.show_question(MessageFrame.QuestionTransfer,
+        self.message_frame.show_question(MessageFrame.TYPE_TRANSFER,
                                          "Configuration file '%s' referenced by parameter in <b>%s</b> is changed.<br>Copy to remote host?"
                                          "<br>Don\'t forget to restart the corresponding nodes!" % (changed, os.path.basename(affected)), MessageData(changed))
 
@@ -1196,7 +1202,8 @@ class MasterViewProxy(QWidget):
             self.on_log_clicked()
 
     def on_node_clicked(self, index):
-        self.message_frame.hide_question([MessageFrame.QuestionNodelet])
+        self.message_frame.hide_question([MessageFrame.TYPE_NODELET])
+        self.info_frame.hide_question([MessageFrame.TYPE_NOSCREEN])
         if time.time() - self.__last_selection > 1.:
             self.on_node_selection_changed(None, None, True)
 
@@ -1916,9 +1923,9 @@ class MasterViewProxy(QWidget):
                 rospy.logwarn("Error while test for nodelets: %s" % utf8(err))
         if nm.settings().check_for_nodelets_at_start:
             if nodelet_mngr and nodelet_mngr not in nodenames:
-                self.message_frame.show_question(MessageFrame.QuestionNodelet, "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
+                self.message_frame.show_question(MessageFrame.TYPE_NODELET, "Nodelet manager '%s' not in current list. (Re)Start nodelet manager and all nodelets?" % nodelet_mngr, MessageData(self._restart_nodelets))
             elif self._restart_nodelets:
-                self.message_frame.show_question(MessageFrame.QuestionNodelet, "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % nlmngr, MessageData(self._restart_nodelets), MessageFrame.IconNodelet)
+                self.message_frame.show_question(MessageFrame.TYPE_NODELET, "Not all nodelets of manager '%s' are in the start list. (Re)Start these?" % nlmngr, MessageData(self._restart_nodelets))
 
     def start_nodes_by_name(self, nodes, cfg, force=False, check_nodelets=True):
         '''
@@ -2264,34 +2271,45 @@ class MasterViewProxy(QWidget):
         '''
         Shows IO of the selected nodes.
         '''
-        key_mod = QApplication.keyboardModifiers()
-        if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
-            self.masterTab.ioButton.showMenu()
-        else:
-            cursor = self.cursor()
-            self.setCursor(Qt.WaitCursor)
-            try:
-                selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
-                if selectedNodes:
-                    ret = True
-                    if len(selectedNodes) > 5:
-                        ret = MessageBox.question(self, "Show IO", "You are going to open the IO of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
-                        ret = (ret == MessageBox.Ok)
-                    if ret:
-                        queue = self._progress_queue_prio
-                        # we use normal queue, if there are not a lot of processes
-                        if self._progress_queue.count() < 5:
-                            queue = self._progress_queue
-                        for node in selectedNodes:
-                            queue.add2queue(utf8(uuid.uuid4()),
-                                            ''.join(['show IO of ', node.name]),
-                                            nm.screen().openScreen,
-                                            (node.name, self.getHostFromNode(node), False, self.current_user))
-                        self._start_queue(queue)
-                else:
-                    self.on_show_all_screens()
-            finally:
-                self.setCursor(cursor)
+        # key_mod = QApplication.keyboardModifiers()
+        # use_mod = key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier
+        # if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
+        #     self.masterTab.ioButton.showMenu()
+        # else:
+        cursor = self.cursor()
+        self.setCursor(Qt.WaitCursor)
+        try:
+            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            if selectedNodes:
+                ret = True
+                if len(selectedNodes) > 5:
+                    ret = MessageBox.question(self, "Show IO", "You are going to open the IO of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
+                    ret = (ret == MessageBox.Ok)
+                if ret:
+                    queue = self._progress_queue_prio
+                    # we use normal queue, if there are not a lot of processes
+                    if self._progress_queue.count() < 5:
+                        queue = self._progress_queue
+                    for node in selectedNodes:
+                        queue.add2queue(utf8(uuid.uuid4()),
+                                        'show IO of %s' % node.name,
+                                        nm.screen().openScreen,
+                                        (node.name, self.getHostFromNode(node), False, self.current_user))
+                    self._start_queue(queue)
+            else:
+                self.on_show_all_screens()
+        finally:
+            self.setCursor(cursor)
+
+    def _on_no_screen_error(self, node, host):
+        msg = nm.NoScreenOpenLogRequest(node, host).msg()
+        rospy.logwarn("%s" % msg)
+        muri = nm.nameres().masterurisbyaddr(host)
+        if muri:
+            nodes = self.node_tree_model.getNode(node, muri[0])
+            for node in nodes:
+                node.has_screen = False
+        self.info_frame.add_info_no_screen(node.name)
 
     def on_kill_screens(self):
         '''
@@ -3140,20 +3158,20 @@ class MasterViewProxy(QWidget):
         pass
 
     def _on_question_ok(self, questionid, data):
-        if questionid == MessageFrame.QuestionNodelet:
+        if questionid == MessageFrame.TYPE_NODELET:
             try:
                 for cfgs, nodes in data.data.iteritems():
                     self.stop_nodes_by_name(nodes)
                     self.start_nodes_by_name(nodes, cfgs, force=True, check_nodelets=False)
             except Exception as err:
                 rospy.logwarn("Error while start nodelets: %s" % utf8(err))
-        elif questionid == MessageFrame.QuestionLaunchFile:
+        elif questionid == MessageFrame.TYPE_LAUNCH_FILE:
             try:
                 self.launchfiles = data.data
             except Exception as err:
                 rospy.logwarn("Error while reload launch file %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
-        elif questionid == MessageFrame.QuestionTransfer:
+        elif questionid == MessageFrame.TYPE_TRANSFER:
             try:
                 host = '%s' % get_hostname(self.masteruri)
                 username = self.current_user
@@ -3165,6 +3183,9 @@ class MasterViewProxy(QWidget):
             except Exception as err:
                 rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
+
+    def _on_info_ok(self, questionid, data):
+        pass
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%
@@ -3386,7 +3407,8 @@ class IconsDelegate(QItemDelegate):
                        'defaultcfg': QImage(":/icons/default_cfg.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'nodelet': QImage(":/icons/crystal_clear_nodelet.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
 
     def paint(self, painter, option, index):
@@ -3395,6 +3417,9 @@ class IconsDelegate(QItemDelegate):
         model_index = index.model().mapToSource(index)
         item = model_index.model().itemFromIndex(model_index)
         if isinstance(item, CellItem) and item.node_item is not None:
+            if not item.node_item.has_screen:
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['noscreen'])
             lcfgs = item.node_item.count_launch_cfgs()
             if lcfgs > 0:
                 rect = self.calcDecorationRect(option.rect)

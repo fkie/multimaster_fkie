@@ -59,6 +59,7 @@ class ProgressQueue(QObject):
     '''
     The queue provides a threaded execution of given tasks.
     '''
+    no_screen_error_signal = Signal(str, str)
 
     def __init__(self, progress_frame, progress_bar, progress_cancel_button, name=''):
         QObject.__init__(self)
@@ -260,6 +261,9 @@ class ProgressQueue(QObject):
             else:
                 self._progress_thread_finished(ident)
                 return
+        elif isinstance(req.request, nm.NoScreenOpenLogRequest):
+            self.no_screen_error_signal.emit(req.request. node, req.request.host)
+            self._progress_thread_finished(ident)
 
 
 class ProgressThread(QObject, threading.Thread):
@@ -307,7 +311,7 @@ class ProgressThread(QObject, threading.Thread):
             self.request_interact_signal.emit(self._id, self.descr, ine)
         except DetailedError as err:
             self.error_signal.emit(self._id, err.title, err.value, err.detailed_text)
-        except:
+        except Exception:
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()

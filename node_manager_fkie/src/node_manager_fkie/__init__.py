@@ -46,7 +46,7 @@ from node_manager_fkie.history import History
 from node_manager_fkie.master_view_proxy import LaunchArgsSelectionRequest
 from node_manager_fkie.name_resolution import NameResolution
 from node_manager_fkie.progress_queue import InteractionNeededError
-from node_manager_fkie.screen_handler import ScreenHandler, ScreenSelectionRequest
+from node_manager_fkie.screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
 from node_manager_fkie.settings import Settings
 from node_manager_fkie.ssh_handler import SSHhandler, AuthenticationRequest
 from node_manager_fkie.start_handler import StartException, AdvRunCfg

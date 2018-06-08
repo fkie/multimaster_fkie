@@ -138,6 +138,27 @@
               </widget>
              </item>
              <item>
+              <widget class="QFrame" name="infoFrame">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="lineWidth">
+                <number>0</number>
+               </property>
+               <layout class="QHBoxLayout" name="infoFrameLayout">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="margin">
+                 <number>0</number>
+                </property>
+               </layout>
+              </widget>
+             </item>
+             <item>
               <widget class="QFrame" name="progressPrioFrame">
                <property name="frameShape">
                 <enum>QFrame::NoFrame</enum>

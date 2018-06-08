@@ -894,6 +894,7 @@ class NodeItem(QStandardItem):
         self.diagnostic_array = []
         self.nodelet_mngr = ''
         self.nodelets = []
+        self.has_screen = True
 
     @property
     def state(self):
@@ -955,6 +956,7 @@ class NodeItem(QStandardItem):
             run_changed = True
         # update the tooltip and icon
         if run_changed and (self.is_running() or self.has_configs) or abbos_changed:
+            self.has_screen = True
             self.updateDispayedName()
 #      self.updateDisplayedURI()
             if self.parent_item is not None and not isinstance(self.parent_item, HostItem):
@@ -1288,7 +1290,7 @@ class NodeTreeModel(QStandardItemModel):
 #           'def_cfg'        : QIcon(":/icons/default_cfg.png") }
 
     header = [('Name', 450),
-              ('Cfgs', -1)]
+              ('Info', -1)]
 #            ('URI', -1)]
 
     hostInserted = Signal(HostItem)

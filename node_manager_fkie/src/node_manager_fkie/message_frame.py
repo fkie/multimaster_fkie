@@ -38,9 +38,9 @@ from node_manager_fkie.common import utf8
 import node_manager_fkie as nm
 
 try:
-    from python_qt_binding.QtGui import QFrame
+    from python_qt_binding.QtGui import QFrame, QLabel
 except Exception:
-    from python_qt_binding.QtWidgets import QFrame
+    from python_qt_binding.QtWidgets import QFrame, QLabel
 
 
 class MessageData(object):
@@ -59,6 +59,41 @@ class MessageData(object):
         return self.data != other.data
 
 
+class MessageQueue(object):
+
+    def __init__(self):
+        self._queue = {
+            MessageFrame.TYPE_EMPTY: [],
+            MessageFrame.TYPE_QUESTION: [],
+            MessageFrame.TYPE_LAUNCH_FILE: [],
+            MessageFrame.TYPE_DEFAULT_CFG: [],
+            MessageFrame.TYPE_NODELET: [],
+            MessageFrame.TYPE_TRANSFER: [],
+            MessageFrame.TYPE_BINARY: [],
+            MessageFrame.TYPE_NOSCREEN: []
+        }
+
+    def add(self, questionid, text, data):
+        if questionid in self._queue.keys():
+            if questionid == MessageFrame.TYPE_NOSCREEN:
+                if self._queue[questionid]:
+                    self._queue[questionid][0][1].data.append(data.data)
+                else:
+                    self._queue[questionid].append(('', data))
+            else:
+                self._queue[questionid].append((text, data))
+
+    def get(self):
+        '''
+        Returns a tuple of (questionid, text, data)
+        '''
+        for qid, values in self._queue.iteritems():
+            if values:
+                text, data = values.pop(0)
+                return (qid, text, data)
+        return (0, '', None)
+
+
 class MessageFrame(QFrame):
 
     accept_signal = Signal(int, MessageData)
@@ -67,101 +102,94 @@ class MessageFrame(QFrame):
     cancel_signal = Signal(int, MessageData)
     ''' @ivar: A signal on cancel button clicked (id, data)'''
 
-    IconEmpty = 0
-    IconQuestion = 1
-    IconLaunchFile = 2
-    IconDefaultCfg = 3
-    IconNodelet = 4
-    IconBinary = 5
-    IconTransfer = 6
-
-    QuestionInvalid = 0
-    QuestionNoname = 1
-    QuestionLaunchFile = 2
-    QuestionDefaultCfg = 3
-    QuestionNodelet = 4
-    QuestionBinary = 5
-    QuestionTransfer = 6
+    TYPE_INVALID = 0
+    TYPE_EMPTY = 1
+    TYPE_QUESTION = 2
+    TYPE_LAUNCH_FILE = 3
+    TYPE_DEFAULT_CFG = 4
+    TYPE_NODELET = 5
+    TYPE_TRANSFER = 6
+    TYPE_BINARY = 7
+    TYPE_NOSCREEN = 8
 
     ICON_SIZE = 32
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, info=False):
         QFrame.__init__(self, parent=parent)
         self.setObjectName('MessageFrame')
-        self.questionid = self.QuestionInvalid
+        self.questionid = self.TYPE_INVALID
         self.text = ""
-        self.iconid = self.IconEmpty
         self.data = MessageData(None)
-        self.IMAGES = {0: QPixmap(),
-                       1: QPixmap(':/icons/crystal_clear_question.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       2: QPixmap(':/icons/crystal_clear_launch_file.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       3: QPixmap(":/icons/default_cfg.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       4: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       5: QPixmap(":/icons/crystal_clear_question.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       6: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        self.IMAGES = {1: QPixmap(),
+                       2: QPixmap(':/icons/crystal_clear_question.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       3: QPixmap(':/icons/crystal_clear_launch_file.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       4: QPixmap(":/icons/default_cfg.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       5: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       6: QPixmap(":/icons/crystal_clear_question.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       7: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self.frameui = QFrame()
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MessageFrame.ui')
         loadUi(ui_file, self.frameui)
+        color = QColor(255, 207, 121)
         self.frameui.setVisible(False)
-        bg_style = "QFrame#questionFame { background-color: %s;}" % QColor(255, 207, 121).name()
-        self.frameui.setStyleSheet("%s" % (bg_style))
+        self.frameui.scrollArea.setVisible(False)
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
         self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
         self.frameui.checkBox_dnaa.stateChanged.connect(self._on_checkbox_state_changed)
-        # we use different queues for priority
-        self._queue_launchfile = []
-        self._queue_transfer_files = []
-        self._queue_other = []
+        self._ask = 'ask'
+        if info:
+            color = QColor(232, 104, 80)
+            self.frameui.questionCancelButton.setVisible(False)
+            self._ask = 'show'
+        bg_style = "QFrame#questionFame { background-color: %s;}" % color.name()
+        self.frameui.setStyleSheet("%s" % (bg_style))
+        self._queue = MessageQueue()
         self._do_not_ask = {}
 
-    def show_question(self, questionid, text, data=MessageData(None), icon=0):
-        ic = icon
-        if ic == 0:
-            ic = questionid
+    def show_question(self, questionid, text, data=MessageData(None), color=None):
+        if questionid == 0:
+            return
+        if color is not None:
+            bg_style = "QFrame#questionFame { background-color: %s;}" % color.name()
+            self.frameui.setStyleSheet("%s" % (bg_style))
         try:
             # is it in the list for not ask again?
-            if self._do_not_ask[utf8((questionid, str(data)))]:
+            if self._do_not_ask[questionid]:
                 self.accept_signal.emit(questionid, data)
             else:
                 self.cancel_signal.emit(questionid, data)
             return
         except Exception:
             pass
-        self._new_request = True
-        if self.questionid == 0:
-            # currently not question active, show
-            self.questionid = questionid
-            self.text = text
-            self.iconid = ic
-            self.data = data
-            self.frameui.questionIcon.setPixmap(self.IMAGES[ic])
-            self.frameui.questionLabel.setText(text)
+        self._queue.add(questionid, text, data)
+        if self.questionid == self.TYPE_INVALID:
+            self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
-        else:
-            # put it in the queue
-            if questionid == 2:
-                if not self._is_launch_data_in_queue(data) and self.data != data:
-                    self._queue_launchfile.append((text, data, ic))
-            elif questionid == 6:
-                if not self._is_transfer_data_in_queue(data):
-                    if self.data != data:
-                        self._queue_transfer_files.append((text, data, ic))
+            if self.questionid == self.TYPE_NODELET:
+                self.frameui.checkBox_dnaa.setText("don't %s again, never!" % self._ask)
             else:
-                if not self._is_other_data_in_queue(questionid, text, data):
-                    if questionid != self.questionid and self.text != text and self.data != data:
-                        self._queue_other.append((questionid, text, data, ic))
-        if self.questionid == self.QuestionNodelet:
-            self.frameui.checkBox_dnaa.setText("don't ask again, never!")
+                self.frameui.checkBox_dnaa.setText("don't %s again, for session" % self._ask)
+
+    def add_info_no_screen(self, nodename):
+        if self.questionid == self.TYPE_NOSCREEN:
+            self.data.data.append(nodename)
+            self.frameui.scrollAreaLayout.addWidget(QLabel(nodename))
         else:
-            self.frameui.checkBox_dnaa.setText("don't ask again, for session")
+            self._queue.add(self.TYPE_NOSCREEN, '', MessageData([nodename]))
+            if self.questionid == self.TYPE_INVALID:
+                self._new_request = self._read_next_item()
+                self._frameui_4_request(self._new_request)
 
     def hide_question(self, questionids):
         if self.questionid in questionids:
             self._new_request = False
             self.frameui.setVisible(False)
             self.cancel_signal.emit(self.questionid, self.data)
+            self.questionid = 0
+            self._clear_scroll_area()
             self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
 
@@ -169,17 +197,21 @@ class MessageFrame(QFrame):
         if request:
             self.frameui.checkBox_dnaa.setChecked(False)
             self.frameui.setVisible(True)
+            self.frameui.scrollArea.setVisible(self.frameui.scrollAreaLayout.count() > 0)
         else:
             self.questionid = 0
             self.frameui.setVisible(False)
+            self.frameui.scrollArea.setVisible(False)
 
     def _on_question_ok(self):
         if self.frameui.checkBox_dnaa.isChecked():
             # save the decision
-            self._do_not_ask[utf8((self.questionid, str(self.data)))] = True
+            self._do_not_ask[self.questionid] = True
         self._new_request = False
         self.frameui.setVisible(False)
         self.accept_signal.emit(self.questionid, self.data)
+        self.questionid = 0
+        self._clear_scroll_area()
         self._new_request = self._read_next_item()
         self._frameui_4_request(self._new_request)
 
@@ -189,10 +221,12 @@ class MessageFrame(QFrame):
                 nm.settings().check_for_nodelets_at_start = False
             else:
                 # save the decision
-                self._do_not_ask[utf8((self.questionid, str(self.data)))] = False
+                self._do_not_ask[self.questionid] = False
         self._new_request = False
         self.frameui.setVisible(False)
         self.cancel_signal.emit(self.questionid, self.data)
+        self.questionid = 0
+        self._clear_scroll_area()
         self._new_request = self._read_next_item()
         self._frameui_4_request(self._new_request)
 
@@ -215,39 +249,34 @@ class MessageFrame(QFrame):
         return False
 
     def _read_next_item(self):
-        result = False
-        if self._queue_launchfile:
-            result = True
-            text, data, icon = self._queue_launchfile.pop(0)
-            self.questionid = self.QuestionLaunchFile
-            self.text = text
-            self.iconid = icon
+        (qid, text, data) = self._queue.get()
+        if qid == self.TYPE_NOSCREEN:
+            self.questionid = self.TYPE_NOSCREEN
+            self.text = 'No screens found! See log for details!<br>The following nodes are affected:'
             self.data = data
-            self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
-            self.frameui.questionLabel.setText(text)
-        elif self._queue_transfer_files:
-            result = True
-            text, data, icon = self._queue_transfer_files.pop(0)
-            self.questionid = self.QuestionTransfer
+            self.frameui.questionIcon.setPixmap(self.IMAGES[qid])
+            self.frameui.questionLabel.setText(self.text)
+            for nodename in data.data:
+                self.frameui.scrollAreaLayout.addWidget(QLabel(nodename))
+            self.frameui.scrollArea.setVisible(True)
+        elif qid != self.TYPE_INVALID:
+            self.questionid = qid
             self.text = text
-            self.iconid = icon
             self.data = data
-            self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
+            self.frameui.questionIcon.setPixmap(self.IMAGES[qid])
             self.frameui.questionLabel.setText(text)
-        elif self._queue_other:
-            result = True
-            questionid, text, data, icon = self._queue_other.pop(0)
-            self.questionid = questionid
-            self.text = text
-            self.iconid = icon
-            self.data = data
-            self.frameui.questionIcon.setPixmap(self.IMAGES[icon])
-            self.frameui.questionLabel.setText(text)
-        return result
+        return qid != self.TYPE_INVALID
 
     def _on_checkbox_state_changed(self, state):
         if state:
-            if self.questionid == self.QuestionNodelet:
+            if self.questionid == self.TYPE_NODELET:
                 self.frameui.questionOkButton.setVisible(False)
         else:
             self.frameui.questionOkButton.setVisible(True)
+
+    def _clear_scroll_area(self):
+        child = self.frameui.scrollAreaLayout.takeAt(0)
+        while child:
+            child.widget().setParent(None)
+            del child
+            child = self.frameui.scrollAreaLayout.takeAt(0)
