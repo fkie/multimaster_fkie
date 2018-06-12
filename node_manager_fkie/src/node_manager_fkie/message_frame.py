@@ -81,6 +81,9 @@ class MessageQueue(object):
                 else:
                     self._queue[questionid].append(('', data))
             else:
+                for txt, dt in self._queue[questionid]:
+                    if txt == text and dt == data:
+                        return
                 self._queue[questionid].append((text, data))
 
     def get(self):
@@ -164,7 +167,8 @@ class MessageFrame(QFrame):
             return
         except Exception:
             pass
-        self._queue.add(questionid, text, data)
+        if self.questionid != questionid or self.text != text or data != self.data:
+            self._queue.add(questionid, text, data)
         if self.questionid == self.TYPE_INVALID:
             self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
