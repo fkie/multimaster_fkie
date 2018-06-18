@@ -3408,7 +3408,8 @@ class IconsDelegate(QItemDelegate):
                        'nodelet': QImage(":/icons/crystal_clear_nodelet.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
 
     def paint(self, painter, option, index):
@@ -3416,34 +3417,49 @@ class IconsDelegate(QItemDelegate):
         self._idx_icon = 1
         model_index = index.model().mapToSource(index)
         item = model_index.model().itemFromIndex(model_index)
-        if isinstance(item, CellItem) and item.node_item is not None:
-            if not item.node_item.has_screen:
-                rect = self.calcDecorationRect(option.rect)
-                painter.drawImage(rect, self.IMAGES['noscreen'])
-            lcfgs = item.node_item.count_launch_cfgs()
-            if lcfgs > 0:
-                rect = self.calcDecorationRect(option.rect)
-                painter.drawImage(rect, self.IMAGES['launchfile'])
-                if lcfgs > 1:
-                    painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
-            dcfgs = item.node_item.count_default_cfgs()
-            if dcfgs > 0:
-                rect = self.calcDecorationRect(option.rect)
-                painter.drawImage(rect, self.IMAGES['defaultcfg'])
-                if dcfgs > 1:
-                    painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
-            if item.node_item.nodelets:
-                rect = self.calcDecorationRect(option.rect)
-                painter.drawImage(rect, self.IMAGES['nodelet_mngr'])
-            if item.node_item.nodelet_mngr:
-                rect = self.calcDecorationRect(option.rect)
-                painter.drawImage(rect, self.IMAGES['nodelet'])
-            if item.node_item.nodelets:
-                item.setToolTip("This is a nodelet manager")
-            elif item.node_item.nodelet_mngr:
-                item.setToolTip("This is a nodelet for %s" % item.node_item.nodelet_mngr)
-            else:
-                item.setToolTip("")
+        if isinstance(item, CellItem):
+            if isinstance(item.item, NodeItem):
+                if not item.item.has_screen:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['noscreen'])
+                lcfgs = item.item.count_launch_cfgs()
+                if lcfgs > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['launchfile'])
+                    if lcfgs > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
+                dcfgs = item.item.count_default_cfgs()
+                if dcfgs > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['defaultcfg'])
+                    if dcfgs > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
+                if item.item.nodelets:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['nodelet_mngr'])
+                if item.item.nodelet_mngr:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['nodelet'])
+                if item.item.nodelets:
+                    item.setToolTip("This is a nodelet manager")
+                elif item.item.nodelet_mngr:
+                    item.setToolTip("This is a nodelet for %s" % item.item.nodelet_mngr)
+                else:
+                    item.setToolTip("")
+            elif isinstance(item.item, GroupItem):
+                lcfgs, dcfgs = item.item.get_configs()
+                # rect = self.calcDecorationRect(option.rect)
+                # painter.drawText(rect, Qt.AlignCenter, str(item.item.rowCount()))
+                if lcfgs > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['launchfile'])
+                    if lcfgs > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
+                if dcfgs > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['defaultcfg'])
+                    if dcfgs > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
         painter.restore()
 
     def calcDecorationRect(self, main_rect):

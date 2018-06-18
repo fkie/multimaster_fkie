@@ -51,7 +51,7 @@ class CellItem(QStandardItem):
     '''
     ITEM_TYPE = Qt.UserRole + 41
 
-    def __init__(self, name, node_item=None, parent=None):
+    def __init__(self, name, item=None, parent=None):
         '''
         Initialize the CellItem object with given values.
         @param name: the name of the group
@@ -63,7 +63,7 @@ class CellItem(QStandardItem):
         QStandardItem.__init__(self)
         self.parent_item = parent
         self._name = name
-        self.node_item = node_item
+        self.item = item
 
     @property
     def name(self):
@@ -326,14 +326,14 @@ class GroupItem(QStandardItem):
                     items = []
                     newItem = GroupItem(group_name, self)
                     items.append(newItem)
-                    cfgitem = CellItem(group_name)
+                    cfgitem = CellItem(group_name, newItem)
                     items.append(cfgitem)
                     self.insertRow(i, items)
                     return newItem
         items = []
         newItem = GroupItem(group_name, self)
         items.append(newItem)
-        cfgitem = CellItem(group_name)
+        cfgitem = CellItem(group_name, newItem)
         items.append(cfgitem)
         self.appendRow(items)
         return newItem
@@ -638,6 +638,24 @@ class GroupItem(QStandardItem):
                     cfg_col.setIcon(QIcon(':/icons/default_cfg.png'))
                 else:
                     cfg_col.setIcon(QIcon())
+
+    def get_configs(self):
+        '''
+        Returns a tuple with counts for launch and default configurations.
+        '''
+        cfgs = []
+        for j in range(self.rowCount()):
+            if self.child(j).cfgs:
+                cfgs[len(cfgs):] = self.child(j).cfgs
+        cfgs = list(set(cfgs))
+        dccfgs = 0
+        lccfgs = 0
+        for c in cfgs:
+            if NodeItem.is_default_cfg(c):
+                dccfgs += 1
+            else:
+                lccfgs += 1
+        return (lccfgs, dccfgs)
 
     def type(self):
         return GroupItem.ITEM_TYPE
