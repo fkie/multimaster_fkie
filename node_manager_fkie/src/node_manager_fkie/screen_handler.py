@@ -36,10 +36,24 @@ import subprocess
 
 import rospy
 
-from detailed_msg_box import DetailedError
 from supervised_popen import SupervisedPopen
 import node_manager_fkie as nm
 from node_manager_fkie.common import utf8
+
+
+class NoScreenOpenLogRequest(Exception):
+    ''' '''
+
+    def __init__(self, node, host):
+        Exception.__init__(self)
+        self.node = node
+        self.host = host
+
+    def msg(self):
+        return 'No screen for %s on %s found! See log for details!' % (self.node, self.host)
+
+    def __str__(self):
+        return "NoScreenOpenLogRequest for %s on %s" % (self.node, self.host)
 
 
 class ScreenHandlerException(Exception):
@@ -293,7 +307,7 @@ class ScreenHandler(object):
                         else:
                             raise ScreenSelectionRequest(choices, 'Show screen')
                     else:
-                        raise DetailedError('Show screen', 'No screen for %s on %s found!\nSee log for details!' % (node, host))
+                        raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, (node, host, user))
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:
             raise nm.InteractionNeededError(e, cls.openScreen, (node, host, auto_item_request))

@@ -5,6 +5,7 @@
     <file>icons/crystal_clear_action_db_remove.png</file>
     <file>icons/crystal_clear_action_db_update.png</file>
     <file>icons/crystal_clear_add.png</file>
+    <file>icons/crystal_clear_button_apply.png</file>
     <file>icons/crystal_clear_button_close.png</file>
     <file>icons/crystal_clear_clicknrun.png</file>
     <file>icons/crystal_clear_copy_log_path_24.png</file>
@@ -14,6 +15,7 @@
     <file>icons/crystal_clear_folder.png</file>
     <file>icons/crystal_clear_folder_open.png</file>
     <file>icons/crystal_clear_get_parameter.png</file>
+    <file>icons/crystal_clear_group.png</file>
     <file>icons/crystal_clear_helpcenter.png</file>
     <file>icons/crystal_clear_info.png</file>
     <file>icons/crystal_clear_launch_file.png</file>
@@ -23,6 +25,10 @@
     <file>icons/crystal_clear_launch_file_transfer.png</file>
     <file>icons/crystal_clear_launch_server.png</file>
     <file>icons/crystal_clear_miscellaneous.png</file>
+    <file>icons/crystal_clear_no_io.png</file>
+    <file>icons/crystal_clear_nodelet.png</file>
+    <file>icons/crystal_clear_nodelet_mngr.png</file>
+    <file>icons/crystal_clear_nodelet_q.png</file>
     <file>icons/crystal_clear_not_sync.png</file>
     <file>icons/crystal_clear_package.png</file>
     <file>icons/crystal_clear_profile_new.png</file>
@@ -30,6 +36,7 @@
     <file>icons/crystal_clear_profile.png</file>
     <file>icons/crystal_clear_prop_run.png</file>
     <file>icons/crystal_clear_prop_run_echo.png</file>
+    <file>icons/crystal_clear_question.png</file>
     <file>icons/crystal_clear_reload.png</file>
     <file>icons/crystal_clear_run_zeroconf.png</file>
     <file>icons/crystal_clear_show_delete_log.png</file>

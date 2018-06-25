@@ -128,6 +128,7 @@ class Settings(object):
     CONFIRM_EXIT_WHEN_CLOSING = True
     HIGHLIGHT_XML_BLOCKS = True
     COLORIZE_HOSTS = True
+    CHECK_FOR_NODELETS_AT_START = True
 
     SHOW_DOMAIN_SUFFIX = False
 
@@ -190,6 +191,7 @@ class Settings(object):
         self._confirm_exit_when_closing = self.str2bool(settings.value('confirm_exit_when_closing', self.CONFIRM_EXIT_WHEN_CLOSING))
         self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
         self._colorize_hosts = self.str2bool(settings.value('colorize_hosts', self.COLORIZE_HOSTS))
+        self._check_for_nodelets_at_start = self.str2bool(settings.value('check_for_nodelets_at_start', self.CHECK_FOR_NODELETS_AT_START))
         self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         settings.beginGroup('host_colors')
@@ -422,6 +424,19 @@ class Settings(object):
             self._colorize_hosts = val
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('colorize_hosts', self._colorize_hosts)
+
+    @property
+    def check_for_nodelets_at_start(self):
+        return self._check_for_nodelets_at_start
+
+    @check_for_nodelets_at_start.setter
+    def check_for_nodelets_at_start(self, value):
+        val = self.str2bool(value)
+        if self._check_for_nodelets_at_start != val:
+            self._check_for_nodelets_at_start = val
+            print self._check_for_nodelets_at_start
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('check_for_nodelets_at_start', self._check_for_nodelets_at_start)
 
     @property
     def show_domain_suffix(self):
