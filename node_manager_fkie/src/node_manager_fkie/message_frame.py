@@ -178,6 +178,8 @@ class MessageFrame(QFrame):
                 self.frameui.checkBox_dnaa.setText("don't %s again, for session" % self._ask)
 
     def add_info_no_screen(self, nodename):
+        if self.is_do_not_ask(self.TYPE_NOSCREEN):
+            return
         if self.questionid == self.TYPE_NOSCREEN:
             self.data.data.append(nodename)
             self.frameui.scrollAreaLayout.addWidget(QLabel(nodename))
@@ -186,6 +188,13 @@ class MessageFrame(QFrame):
             if self.questionid == self.TYPE_INVALID:
                 self._new_request = self._read_next_item()
                 self._frameui_4_request(self._new_request)
+
+    def is_do_not_ask(self, questionid):
+        try:
+            # is it in the list for not ask again?
+            return self._do_not_ask[questionid]
+        except Exception:
+            return False
 
     def hide_question(self, questionids):
         if self.questionid in questionids:
