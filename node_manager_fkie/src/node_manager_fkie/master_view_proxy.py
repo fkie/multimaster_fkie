@@ -1506,12 +1506,15 @@ class MasterViewProxy(QWidget):
             self.masterTab.hzSshTopicButton.setEnabled(topics_selected)
             self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
         if len(selectedTopics) == 1:
-            topic = selectedTopics[0]
-            text = self.get_topic_description(topic_name, topic)
-            info_text = '<div>%s</div>' % text
-            if (self._is_current_tab_name('tabTopics') and self.__last_info_text != info_text) or force_emit:
-                self.__last_info_text = info_text
-                self.description_signal.emit(topic.name, info_text, True if selected or deselected or force_emit else False)
+            try:
+                topic = selectedTopics[0]
+                text = self.get_topic_description(topic_name, topic)
+                info_text = '<div>%s</div>' % text
+                if (self._is_current_tab_name('tabTopics') and self.__last_info_text != info_text) or force_emit:
+                    self.__last_info_text = info_text
+                    self.description_signal.emit(topic.name, info_text, True if selected or deselected or force_emit else False)
+            except Exception as _:
+                pass
 
     def get_topic_description(self, topic_name, topic=None):
         text = ''
@@ -3409,7 +3412,8 @@ class IconsDelegate(QItemDelegate):
                        'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'group': QImage(':/icons/crystal_clear_group.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
 
     def paint(self, painter, option, index):
@@ -3448,8 +3452,10 @@ class IconsDelegate(QItemDelegate):
                     item.setToolTip("")
             elif isinstance(item.item, GroupItem):
                 lcfgs, dcfgs = item.item.get_configs()
-                # rect = self.calcDecorationRect(option.rect)
-                # painter.drawText(rect, Qt.AlignCenter, str(item.item.rowCount()))
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['group'])
+                if item.item.rowCount() > 1:
+                    painter.drawText(rect, Qt.AlignCenter, str(item.item.rowCount()))
                 if lcfgs > 0:
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['launchfile'])
