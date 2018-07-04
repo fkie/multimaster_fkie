@@ -139,6 +139,13 @@ class SettingsWidget(QDockWidget):
                                               'value_default': nm.settings().STORE_GEOMETRY,
                                               'tooltip': ''
                                               },),
+                    'Movable dock widgets:': ({'value': nm.settings().movable_dock_widgets,
+                                               'settings': nm.settings(),
+                                               'attrname': 'movable_dock_widgets',
+                                               'value_default': nm.settings().MOVABLE_DOCK_WIDGETS,
+                                               'tooltip': 'On false you can\'t reorganize docking widgets. Needs restart!',
+                                               'need_restart': True
+                                               },),
                     'Max time difference:': ({'value': nm.settings().max_timediff,
                                               'settings': nm.settings(),
                                               'attrname': 'max_timediff',
