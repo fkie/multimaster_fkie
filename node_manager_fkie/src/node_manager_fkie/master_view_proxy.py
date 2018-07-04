@@ -355,12 +355,12 @@ class MasterViewProxy(QWidget):
         self._shortcut_stop = QShortcut(QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
         self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
-        self.message_frame = MessageFrame(self)
+        self.message_frame = MessageFrame()
         self.masterTab.questionFrameLayout.addWidget(self.message_frame.frameui)
         self.message_frame.accept_signal.connect(self._on_question_ok)
         self.message_frame.cancel_signal.connect(self._on_question_cancel)
 
-        self.info_frame = MessageFrame(self, info=True)
+        self.info_frame = MessageFrame(info=True)
         self.masterTab.infoFrameLayout.addWidget(self.info_frame.frameui)
         self.info_frame.accept_signal.connect(self._on_info_ok)
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
