@@ -121,6 +121,7 @@ class Settings(object):
     LAUNCH_VIEW_EXT = ['.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test']
 
     STORE_GEOMETRY = True
+    MOVABLE_DOCK_WIDGETS = True
     AUTOUPDATE = True
     MAX_TIMEDIFF = 0.5
 
@@ -178,6 +179,7 @@ class Settings(object):
         self._respawn_script = self.RESPAWN_SCRIPT
         self._launch_view_file_ext = self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))
         self._store_geometry = self.str2bool(settings.value('store_geometry', self.STORE_GEOMETRY))
+        self._movable_dock_widgets = self.str2bool(settings.value('movable_dock_widgets', self.MOVABLE_DOCK_WIDGETS))
         self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
         self._autoupdate = self.str2bool(settings.value('autoupdate', self.AUTOUPDATE))
         self._max_timediff = float(settings.value('max_timediff', self.MAX_TIMEDIFF))
@@ -337,6 +339,18 @@ class Settings(object):
             self._store_geometry = v
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('store_geometry', self._store_geometry)
+
+    @property
+    def movable_dock_widgets(self):
+        return self._movable_dock_widgets
+
+    @movable_dock_widgets.setter
+    def movable_dock_widgets(self, value):
+        v = self.str2bool(value)
+        if self._movable_dock_widgets != v:
+            self._movable_dock_widgets = v
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('movable_dock_widgets', self._movable_dock_widgets)
 
     @property
     def autoupdate(self):

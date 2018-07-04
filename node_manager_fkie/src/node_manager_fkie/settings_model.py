@@ -33,6 +33,8 @@
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
+from node_manager_fkie.detailed_msg_box import MessageBox
+
 
 class SettingsNameItem(QStandardItem):
 
@@ -74,7 +76,7 @@ class SettingsValueItem(QStandardItem):
 
     def __init__(self, value, (settings, attrname)=(None, None),
                  edit_type=0,
-                 value_default=None, value_min=None, value_max=None, value_list=[], value_step=None):
+                 value_default=None, value_min=None, value_max=None, value_list=[], value_step=None, need_restart=False):
         '''
         :param value: the current value
         :type value: any std types
@@ -102,6 +104,7 @@ class SettingsValueItem(QStandardItem):
         self._edit_type = edit_type
         self._value_list = value_list
         self._value_step = value_step
+        self._need_restart = need_restart
 
     def type(self):
         return SettingsValueItem.ITEM_TYPE
@@ -153,6 +156,8 @@ class SettingsValueItem(QStandardItem):
             self._value = value
             if hasattr(self._settings, self._attrname):
                 setattr(self._settings, self._attrname, value)
+                if self._need_restart:
+                    MessageBox.information(None, "restart Node Manager", "This parameter change is only valid after restart!")
         return QStandardItem.setData(self, value, role)
 
 
@@ -202,7 +207,8 @@ class SettingsGroupItem(QStandardItem):
     @classmethod
     def getSettingsItemList(self, name, value, (settings, attrname)=(None, None),
                             tooltip='', edit_type=SettingsValueItem.EDIT_TYPE_AUTODETECT,
-                            value_default=None, value_min=None, value_max=None, value_list=[], value_step=None):
+                            value_default=None, value_min=None, value_max=None, value_list=[],
+                            value_step=None, need_restart=False):
         '''
         Creates the list of the items . This list is used for the
         visualization of settings group data as a table row.
@@ -213,7 +219,7 @@ class SettingsGroupItem(QStandardItem):
         item = SettingsNameItem(name, tooltip)
         items.append(item)
         item = SettingsValueItem(value, (settings, attrname), edit_type,
-                                 value_default, value_min, value_max, value_list, value_step)
+                                 value_default, value_min, value_max, value_list, value_step, need_restart)
         items.append(item)
         return items
 
@@ -299,7 +305,8 @@ class SettingsModel(QStandardItemModel):
                     self._get_settings_param(value, 'value_min'),
                     self._get_settings_param(value, 'value_max'),
                     self._get_settings_param(value, 'value_list'),
-                    self._get_settings_param(value, 'value_step')
+                    self._get_settings_param(value, 'value_step'),
+                    self._get_settings_param(value, 'need_restart', False)
                     )
             new_item_row = SettingsGroupItem.getSettingsItemList(*args)
             root.appendRow(new_item_row)

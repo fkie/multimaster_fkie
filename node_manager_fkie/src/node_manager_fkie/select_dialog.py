@@ -225,10 +225,12 @@ class SelectDialog(QDialog):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def accept(self):
+        self.cancel_autoclose()
         self.setResult(QDialog.Accepted)
         self.hide()
 
     def reject(self):
+        self.cancel_autoclose()
         self.setResult(QDialog.Rejected)
         self.hide()
 
@@ -239,6 +241,7 @@ class SelectDialog(QDialog):
         '''
         Test the open files for changes and save this if needed.
         '''
+        self.cancel_autoclose()
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         QDialog.closeEvent(self, event)
 

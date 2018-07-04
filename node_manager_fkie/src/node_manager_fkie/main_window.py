@@ -306,6 +306,14 @@ class MainWindow(QMainWindow):
             self.on_hide_docks_toggled(True)
         self.hideDocksButton.clicked.connect(self.on_hide_docks_toggled)
 
+        if not nm.settings().movable_dock_widgets:
+            self.networkDock.setFeatures(self.networkDock.NoDockWidgetFeatures)
+            self.launch_dock.setFeatures(self.launch_dock.NoDockWidgetFeatures)
+            self.descriptionDock.setFeatures(self.descriptionDock.NoDockWidgetFeatures)
+            self.settings_dock.setFeatures(self.settings_dock.NoDockWidgetFeatures)
+            self.helpDock.setFeatures(self.helpDock.NoDockWidgetFeatures)
+            self.log_dock.setFeatures(self.log_dock.NoDockWidgetFeatures)
+
         # =============================
         # Initialize the update handler
         # =============================
