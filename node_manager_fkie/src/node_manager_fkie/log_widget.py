@@ -67,12 +67,14 @@ class LogWidget(QDockWidget):
         # load the UI file
         log_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'LogDockWidget.ui')
         loadUi(log_dock_file, self)
-        self.hide()
+        self.setObjectName("LogWidget")
+        self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         # connect to the button signals
         self.clearCloseButton.clicked.connect(self._on_log_clear_close_clicked)
         self.closeButton.clicked.connect(self.hide)
         # initialize the listener to the rosout topic
         self._rosout_listener = RosoutListener()
+        self._rosout_listener.rosinfo_signal.connect(self._on_roslog_info)
         self._rosout_listener.roswarn_signal.connect(self._on_roslog_warn)
         self._rosout_listener.roserr_signal.connect(self._on_roslog_err)
         self._rosout_listener.rosfatal_signal.connect(self._on_roslog_fatal)
@@ -104,14 +106,15 @@ class LogWidget(QDockWidget):
         self._rosout_listener.stop()
 
     def _on_roslog_info(self, msg):
-        self._log_info_count += 1
-        text = ('<pre style="padding:10px;"><dt><font color="#000000">'
-                '<b>[INFO]</b> %s (%s:%s:%s):'
-                '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                              msg.file, msg.function, msg.line,
-                                              msg.msg))
-        self.textBrowser.append(text)
-        self._update_info_label()
+        # self._log_info_count += 1
+        if self.checkBox_info.isChecked():
+            text = ('<pre style="padding:10px;"><dt><font color="#000000">'
+                    '<b>[INFO]</b> %s (%s:%s:%s):'
+                    '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                                  msg.file, msg.function, msg.line,
+                                                  msg.msg))
+            self.textBrowser.append(text)
+        # self._update_info_label()
 
     def _on_roslog_warn(self, msg):
         self._log_warn_count += 1
@@ -145,7 +148,7 @@ class LogWidget(QDockWidget):
 
     def _on_log_clear_close_clicked(self):
         self.clear()
-        self.hide()
+        # self.hide()
 
     def _update_info_label(self):
         info_text = ''
