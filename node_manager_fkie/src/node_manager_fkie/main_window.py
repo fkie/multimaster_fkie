@@ -119,7 +119,8 @@ class MainWindow(QMainWindow):
         self._history_selected_robot = ''
         self.__icons = {'empty': (QIcon(), ''),
                         'default_pc': (QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
-                        'log_warning': (QIcon(':/icons/crystal_clear_warning.png'), ':/icons/crystal_clear_warning.png')
+                        'log_warning': (QIcon(':/icons/crystal_clear_no_io.png'), ':/icons/crystal_clear_no_io.png'),
+                        'show_io': (QIcon(':/icons/crystal_clear_show_io.png'), ':/icons/crystal_clear_show_io.png')
                         }  # (masnter name : (QIcon, path))
         self.__current_icon = None
         self.__current_master_label_name = None
@@ -136,6 +137,7 @@ class MainWindow(QMainWindow):
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MainWindow.ui')
         loadUi(ui_file, self)
         self.setObjectName('MainUI')
+        self.setDockOptions(QMainWindow.AllowNestedDocks | QMainWindow.AllowTabbedDocks | QMainWindow.AnimatedDocks | QMainWindow.VerticalTabs)
         self.user_frame.setVisible(False)
         self._add_user_to_combo(getpass.getuser())
         self.userComboBox.editTextChanged.connect(self.on_user_changed)
@@ -160,13 +162,14 @@ class MainWindow(QMainWindow):
         self.settings_dock = SettingsWidget(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.settings_dock)
         # setup logger widget
-        self.log_dock = LogWidget(self)
+        self.log_dock = LogWidget()
         self.log_dock.added_signal.connect(self._on_log_added)
         self.log_dock.cleared_signal.connect(self._on_log_cleared)
+        self.log_dock.setVisible(False)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
         self.logButton.clicked.connect(self._on_log_button_clicked)
         # setup the launch files view
-        self.launch_dock = LaunchFilesWidget(self)
+        self.launch_dock = LaunchFilesWidget()
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
         self.launch_dock.load_profile_signal.connect(self.profiler.on_load_profile_file)
         self.launch_dock.load_as_default_signal.connect(self.on_load_launch_as_default)
@@ -372,9 +375,9 @@ class MainWindow(QMainWindow):
         self.logButton.setEnabled(True)
 
     def _on_log_cleared(self):
-        self.logButton.setIcon(self.__icons['log_warning'][0])
+        self.logButton.setIcon(self.__icons['show_io'][0])
         self.logButton.setText('')
-        self.logButton.setEnabled(False)
+        # self.logButton.setEnabled(False)
 
     def on_hide_docks_toggled(self, checked):
         if self.dockWidgetArea(self.launch_dock) == Qt.LeftDockWidgetArea:
@@ -1320,7 +1323,7 @@ class MainWindow(QMainWindow):
         self.masternameLabel.setEnabled(online)
         self.masterInfoFrame.setEnabled((timestamp is not None))
         # update warning symbol / text
-        if self.logButton.isEnabled():
+        if not self.log_dock.isVisible() and self.log_dock.count():
             if self.logButton.text():
                 self.logButton.setIcon(self.__icons['log_warning'][0])
                 self.logButton.setText('')
@@ -1731,10 +1734,9 @@ class MainWindow(QMainWindow):
                 last_path = files[-1]
                 try:
                     self.editor_dialogs[path].on_load_request(last_path, search_text)
-                    self.editor_dialogs[path].restore()
-                    # self.editor_dialogs[path].raise_()
+                    self.editor_dialogs[path].raise_()
                     self.editor_dialogs[path].activateWindow()
-                except Exception:
+                except:
                     if trynr > 1:
                         raise
                     del self.editor_dialogs[path]
