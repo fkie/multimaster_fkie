@@ -1734,9 +1734,9 @@ class MainWindow(QMainWindow):
                 last_path = files[-1]
                 try:
                     self.editor_dialogs[path].on_load_request(last_path, search_text)
-                    self.editor_dialogs[path].raise_()
+                    self.editor_dialogs[path].restore()
                     self.editor_dialogs[path].activateWindow()
-                except:
+                except Exception:
                     if trynr > 1:
                         raise
                     del self.editor_dialogs[path]
