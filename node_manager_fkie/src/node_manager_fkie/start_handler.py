@@ -554,7 +554,10 @@ class StartHandler(object):
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
                         raise StartException(''.join(['The host "', host, '" reports:\n', error]))
                     if output:
-                        rospy.logdebug("STDOUT while start '%s': %s", name, output)
+                        if output.find("dn't") != -1:
+                            rospy.logwarn("Warning while start '%s': %s", name, output)
+                        else:
+                            rospy.loginfo("STDOUT while start '%s': %s", name, output)
                 else:
                     if error:
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
