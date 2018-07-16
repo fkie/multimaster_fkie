@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.0 (2018-07-16)
+------------------
+
 0.7.8 (2018-03-24)
 ------------------
 * Fix catkin_lint warnings
