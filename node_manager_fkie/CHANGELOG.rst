@@ -2,6 +2,36 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.0 (2018-07-16)
+------------------
+* node_manager_fkie: added warning if while remote start no executable was found
+  rosrun throws no error if no executable was found it is only an output.
+* node_manager_fkie: fixed activation of minimized launch editor
+* node_manager_fkie: added settings parameter 'movable dock widgets' to prevent dock widgets from moving
+* node_manager_fkie: fixed error in select_dialog on close node_manager
+* node_manager_fkie: added group icon with count of nodes inside
+* node_manager_fkie: added info icons for groups
+* node_manager_fkie: added timer to close exit dialog on close node_manager
+* node_manager_fkie: fixed delay open io screen
+* node_manager_fkie: use priority queue for sreen io only if normal queue has more than 5 elements
+* node_manager_fkie: reduced update count
+* node_manager_fkie: changed color of question box
+* node_manager_fkie: added link for nodelet manager in description of nodelets
+* node_manager_fkie: add an option to disable the question dialog while restart nodelets
+* node_manager_fkie: changed background of question dialog to non transparent
+* node_manager_fkie: changed question dialog for launch and transfer files
+* changed visualization for available configurations, added visualisation for nodelets
+  changed qestion dialog on changes of launch files and restart of
+  nodelets
+* node_manager_fkie: fixed trasfer of wrong files on change to remote hosts
+* node_manager_fkie: editor: fix recursive search
+* node_manager_fkie: fixed crash on call of an unknown service
+* node_manager_fkie: fix administratively prohibited error while delete logs
+  This error occurs while delete more than 10 logs on remote host
+* node_manager_fkie: resolve pkg:// in all arguments
+* node_manager_fkie: fix crash while assigne color
+* Contributors: Alexander Tiderko
+
 0.7.8 (2018-03-24)
 ------------------
 * Fix catkin_lint warnings
