@@ -130,6 +130,7 @@ class Settings(object):
     HIGHLIGHT_XML_BLOCKS = True
     COLORIZE_HOSTS = True
     CHECK_FOR_NODELETS_AT_START = True
+    SHOW_NOSCREEN_ERROR = True
 
     SHOW_DOMAIN_SUFFIX = False
 
@@ -194,6 +195,7 @@ class Settings(object):
         self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
         self._colorize_hosts = self.str2bool(settings.value('colorize_hosts', self.COLORIZE_HOSTS))
         self._check_for_nodelets_at_start = self.str2bool(settings.value('check_for_nodelets_at_start', self.CHECK_FOR_NODELETS_AT_START))
+        self._show_noscreen_error = self.str2bool(settings.value('show_noscreen_error', self.SHOW_NOSCREEN_ERROR))
         self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         settings.beginGroup('host_colors')
@@ -448,9 +450,20 @@ class Settings(object):
         val = self.str2bool(value)
         if self._check_for_nodelets_at_start != val:
             self._check_for_nodelets_at_start = val
-            print self._check_for_nodelets_at_start
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('check_for_nodelets_at_start', self._check_for_nodelets_at_start)
+
+    @property
+    def show_noscreen_error(self):
+        return self._show_noscreen_error
+
+    @show_noscreen_error.setter
+    def show_noscreen_error(self, value):
+        val = self.str2bool(value)
+        if self._show_noscreen_error != val:
+            self._show_noscreen_error = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('show_noscreen_error', self._show_noscreen_error)
 
     @property
     def show_domain_suffix(self):

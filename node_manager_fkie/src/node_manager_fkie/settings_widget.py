@@ -201,6 +201,12 @@ class SettingsWidget(QDockWidget):
                                                       "If one of the nodes is not in the list a dialog is displayed with "
                                                       "proposal to start other nodes, too.</p>"
                                                       },),
+                    'Show noscreen error:': ({'value': nm.settings().show_noscreen_error,
+                                              'settings': nm.settings(),
+                                              'attrname': 'show_noscreen_error',
+                                              'value_default': nm.settings().SHOW_NOSCREEN_ERROR,
+                                              'tooltip': "Shows an error if requested screen for a node is not available.</p>"
+                                              },),
                     'Show domain suffix:': ({'value': nm.settings().show_domain_suffix,
                                              'settings': nm.settings(),
                                              'attrname': 'show_domain_suffix',
