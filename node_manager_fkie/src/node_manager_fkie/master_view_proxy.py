@@ -846,11 +846,12 @@ class MasterViewProxy(QWidget):
         try:
             self.__configs[launchfile].global_param_done.remove(self.masteruri)
             # self.on_node_selection_changed(None, None, True)
-        except:
+        except Exception:
             pass
 
     def question_reload_changed_file(self, changed, affected):
-        self.message_frame.show_question(MessageFrame.TYPE_LAUNCH_FILE, '<b>%s</b> was changed.<br>Reload <b>%s</b>?' % (os.path.basename(changed), os.path.basename(affected)), MessageData(affected))
+        changed_res = "%s[%s]" % (os.path.basename(changed), utf8(package_name(os.path.dirname(changed))[0]))
+        self.message_frame.show_question(MessageFrame.TYPE_LAUNCH_FILE, 'Reload <b>%s</b>?<br>Changed files:' % os.path.basename(affected), MessageData(affected, [changed_res]))
 
     def question_transfer_changed_file(self, changed, affected):
         self.message_frame.show_question(MessageFrame.TYPE_TRANSFER,
@@ -2312,7 +2313,8 @@ class MasterViewProxy(QWidget):
             nodes = self.node_tree_model.getNode(node, muri[0])
             for node in nodes:
                 node.has_screen = False
-        self.info_frame.add_info_no_screen(node.name)
+        if nm.settings().show_noscreen_error:
+            self.info_frame.show_info(MessageFrame.TYPE_NOSCREEN, 'No screens found! See log for details!<br>The following nodes are affected:', MessageData('', [node.name]))
 
     def on_kill_screens(self):
         '''

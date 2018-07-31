@@ -105,7 +105,7 @@ class HTMLDelegate(QStyledItemDelegate):
             name, sep, host = text.rpartition('@')
             result = ''
             if sep:
-                result = '<div>%s<span style="color:gray;">%s%s</span></div>' % (name, sep, host)
+                result = '%s<span style="color:gray;">%s%s</span>' % (name, sep, host)
             else:
                 result = text
         elif text.find('{') > -1:  # handle group names
@@ -113,28 +113,32 @@ class HTMLDelegate(QStyledItemDelegate):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<div><b>{</b><span style="color:gray;">%s%s</span><b>%s}</b></div>' % (ns, sep, name)
+                result = '<b>{</b><span style="color:gray;">%s%s</span><b>%s}</b>' % (ns, sep, name)
             else:
-                result = '<div><b>{%s}</b></div>' % (name)
+                result = '<b>{%s}</b>' % (name)
         elif text.find('[') > -1:
+            start_idx = text.find('[')
+            end_idx = text.find(']', start_idx)
             nr_idx = text.find(':')
-            pkg_idx = text.find('[', nr_idx)
+            last_part = ""
+            if end_idx + 1 < len(text):
+                last_part = text[end_idx + 1:]
             if nr_idx > -1:
-                result = '<div>%s<b>%s</b><span style="color:gray;">%s</span></div>' % (text[0:nr_idx + 1], text[nr_idx + 1:pkg_idx], text[pkg_idx:])
+                result = '%s<b>%s</b><span style="color:gray;">%s</span><b>%s</b>' % (text[0:nr_idx + 1], text[nr_idx + 1:start_idx], text[start_idx:end_idx + 1], last_part)
             else:
-                result = '<div>%s<span style="color:gray;">%s</span></div>' % (text[0:pkg_idx], text[pkg_idx:])
+                result = '<b>%s</b><span style="color:gray;">%s</span><b>%s</b>' % (text[0:start_idx], text[start_idx:end_idx + 1], last_part)
         elif not is_legal_name(text):  # handle all invalid names (used space in the name)
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<div><span style="color:#FF6600;">%s%s<b>%s</b></span></div>' % (ns, sep, name)
+                result = '<span style="color:#FF6600;">%s%s<b>%s</b></span' % (ns, sep, name)
             else:
-                result = '<div><span style="color:#FF6600;">%s</span></div>' % (name)
+                result = '<span style="color:#FF6600;">%s</span>' % (name)
         else:  # handle all ROS names
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<div><span style="color:gray;">%s%s</span><b>%s</b></div>' % (ns, sep, name)
+                result = '<span style="color:gray;">%s%s</span><b>%s</b>' % (ns, sep, name)
             else:
                 result = name
         return result

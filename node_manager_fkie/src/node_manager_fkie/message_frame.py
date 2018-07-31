@@ -35,6 +35,7 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QColor, QPixmap
 from node_manager_fkie.common import utf8
+from node_manager_fkie.html_delegate import HTMLDelegate
 import node_manager_fkie as nm
 
 try:
@@ -46,8 +47,9 @@ except Exception:
 class MessageData(object):
     ''' '''
 
-    def __init__(self, data):
+    def __init__(self, data, data_list=[]):
         self.data = data
+        self.data_list = data_list
 
     def __str__(self):
         return utf8(self.data)
@@ -75,16 +77,13 @@ class MessageQueue(object):
 
     def add(self, questionid, text, data):
         if questionid in self._queue.keys():
-            if questionid == MessageFrame.TYPE_NOSCREEN:
-                if self._queue[questionid]:
-                    self._queue[questionid][0][1].data.append(data.data)
-                else:
-                    self._queue[questionid].append(('', data))
-            else:
-                for txt, dt in self._queue[questionid]:
-                    if txt == text and dt == data:
-                        return
-                self._queue[questionid].append((text, data))
+            for txt, dt in self._queue[questionid]:
+                if txt == text and dt == data:
+                    no_in_list = [x for x in data.data_list if x not in dt.data_list]
+                    for item in no_in_list:
+                        dt.data_list.append(item)
+                    return
+            self._queue[questionid].append((text, data))
 
     def get(self):
         '''
@@ -138,7 +137,7 @@ class MessageFrame(QFrame):
         loadUi(ui_file, self.frameui)
         color = QColor(255, 207, 121)
         self.frameui.setVisible(False)
-        self.frameui.scrollArea.setVisible(False)
+        self.frameui.listLabel.setVisible(False)
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
         self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
         self.frameui.checkBox_dnaa.stateChanged.connect(self._on_checkbox_state_changed)
@@ -155,9 +154,6 @@ class MessageFrame(QFrame):
     def show_question(self, questionid, text, data=MessageData(None), color=None):
         if questionid == 0:
             return
-        if color is not None:
-            bg_style = "QFrame#questionFame { background-color: %s;}" % color.name()
-            self.frameui.setStyleSheet("%s" % (bg_style))
         try:
             # is it in the list for not ask again?
             if self._do_not_ask[questionid]:
@@ -169,25 +165,19 @@ class MessageFrame(QFrame):
             pass
         if self.questionid != questionid or self.text != text or data != self.data:
             self._queue.add(questionid, text, data)
+        elif data.data_list:  # update the list of files or nodes which causes this question
+            self._update_list_label(data.data_list)
+        # if no question is active pop first element from the queue
         if self.questionid == self.TYPE_INVALID:
             self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
-            if self.questionid == self.TYPE_NODELET:
+            if self.questionid in [self.TYPE_NODELET, self.TYPE_NOSCREEN]:
                 self.frameui.checkBox_dnaa.setText("don't %s again, never!" % self._ask)
             else:
                 self.frameui.checkBox_dnaa.setText("don't %s again, for session" % self._ask)
 
-    def add_info_no_screen(self, nodename):
-        if self.is_do_not_ask(self.TYPE_NOSCREEN):
-            return
-        if self.questionid == self.TYPE_NOSCREEN:
-            self.data.data.append(nodename)
-            self.frameui.scrollAreaLayout.addWidget(QLabel(nodename))
-        else:
-            self._queue.add(self.TYPE_NOSCREEN, '', MessageData([nodename]))
-            if self.questionid == self.TYPE_INVALID:
-                self._new_request = self._read_next_item()
-                self._frameui_4_request(self._new_request)
+    def show_info(self, infoid, text, data=MessageData(None), color=None):
+        self.show_question(infoid, text=text, data=data, color=color)
 
     def is_do_not_ask(self, questionid):
         try:
@@ -202,44 +192,51 @@ class MessageFrame(QFrame):
             self.frameui.setVisible(False)
             self.cancel_signal.emit(self.questionid, self.data)
             self.questionid = 0
-            self._clear_scroll_area()
+            self._update_list_label([])
             self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
+
+    def _update_list_label(self, items=[]):
+        '''
+        Put list elements into the list label in the question frame
+        '''
+        if items:
+            for item in items:
+                ltext = self.frameui.listLabel.text()
+                if ltext:
+                    self.frameui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item)))
+                else:
+                    self.frameui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item)))
+            self.frameui.listLabel.setVisible(True)
+        else:
+            self.frameui.listLabel.setText('')
+            self.frameui.listLabel.setVisible(False)
 
     def _frameui_4_request(self, request):
         if request:
             self.frameui.checkBox_dnaa.setChecked(False)
             self.frameui.setVisible(True)
-            self.frameui.scrollArea.setVisible(self.frameui.scrollAreaLayout.count() > 0)
+            self.frameui.listLabel.setVisible(True)
         else:
             self.questionid = 0
             self.frameui.setVisible(False)
-            self.frameui.scrollArea.setVisible(False)
+            self.frameui.listLabel.setVisible(False)
 
     def _on_question_ok(self):
-        if self.frameui.checkBox_dnaa.isChecked():
-            # save the decision
-            self._do_not_ask[self.questionid] = True
         self._new_request = False
         self.frameui.setVisible(False)
         self.accept_signal.emit(self.questionid, self.data)
         self.questionid = 0
-        self._clear_scroll_area()
+        self._update_list_label([])
         self._new_request = self._read_next_item()
         self._frameui_4_request(self._new_request)
 
     def _on_question_cancel(self):
-        if self.frameui.checkBox_dnaa.isChecked():
-            if self.questionid == self.QuestionNodelet:
-                nm.settings().check_for_nodelets_at_start = False
-            else:
-                # save the decision
-                self._do_not_ask[self.questionid] = False
         self._new_request = False
         self.frameui.setVisible(False)
         self.cancel_signal.emit(self.questionid, self.data)
         self.questionid = 0
-        self._clear_scroll_area()
+        self._update_list_label([])
         self._new_request = self._read_next_item()
         self._frameui_4_request(self._new_request)
 
@@ -263,29 +260,24 @@ class MessageFrame(QFrame):
 
     def _read_next_item(self):
         (qid, text, data) = self._queue.get()
-        if qid == self.TYPE_NOSCREEN:
-            self.questionid = self.TYPE_NOSCREEN
-            self.text = 'No screens found! See log for details!<br>The following nodes are affected:'
-            self.data = data
-            self.frameui.questionIcon.setPixmap(self.IMAGES[qid])
-            self.frameui.questionLabel.setText(self.text)
-            for nodename in data.data:
-                self.frameui.scrollAreaLayout.addWidget(QLabel(nodename))
-            self.frameui.scrollArea.setVisible(True)
-        elif qid != self.TYPE_INVALID:
+        if qid != self.TYPE_INVALID:
             self.questionid = qid
             self.text = text
             self.data = data
             self.frameui.questionIcon.setPixmap(self.IMAGES[qid])
             self.frameui.questionLabel.setText(text)
+            self._update_list_label(self.data.data_list)
         return qid != self.TYPE_INVALID
 
     def _on_checkbox_state_changed(self, state):
-        if state:
-            if self.questionid == self.TYPE_NODELET:
-                self.frameui.questionOkButton.setVisible(False)
+        if self.questionid == self.TYPE_NODELET:
+            self.frameui.questionOkButton.setVisible(not state)
+            nm.settings().check_for_nodelets_at_start = not state
+        elif self.questionid == self.TYPE_NOSCREEN:
+            self.frameui.questionCancelButton.setVisible(not state)
+            nm.settings().show_noscreen_error = not state
         else:
-            self.frameui.questionOkButton.setVisible(True)
+            self._do_not_ask[self.questionid] = state
 
     def _clear_scroll_area(self):
         child = self.frameui.scrollAreaLayout.takeAt(0)
