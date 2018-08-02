@@ -165,8 +165,12 @@ class MessageFrame(QFrame):
             pass
         if self.questionid != questionid or self.text != text or data != self.data:
             self._queue.add(questionid, text, data)
-        elif data.data_list:  # update the list of files or nodes which causes this question
-            self._update_list_label(data.data_list)
+        elif data.data_list:  # same question again
+            # update the list of files or nodes which causes this question in current question
+            for dt in data.data_list:
+                if dt not in self.data.data_list:
+                    self.data.data_list.append(dt)
+            self._update_list_label(self.data.data_list)
         # if no question is active pop first element from the queue
         if self.questionid == self.TYPE_INVALID:
             self._new_request = self._read_next_item()
@@ -201,6 +205,7 @@ class MessageFrame(QFrame):
         Put list elements into the list label in the question frame
         '''
         if items:
+            self.frameui.listLabel.setText('')
             for item in items:
                 ltext = self.frameui.listLabel.text()
                 if ltext:
