@@ -2,6 +2,11 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.1 (2018-08-03)
+------------------
+* node_manager_fkie: changed behaviour on question to reload files and display noscreen errors
+* Contributors: Alexander Tiderko
+
 0.8.0 (2018-07-16)
 ------------------
 * node_manager_fkie: added warning if while remote start no executable was found
