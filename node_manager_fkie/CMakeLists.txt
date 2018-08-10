@@ -40,6 +40,7 @@ install(
         src/node_manager_fkie/LogDockWidget.ui
         src/node_manager_fkie/MainWindow.ui
         src/node_manager_fkie/MasterTab.ui
+        src/node_manager_fkie/MessageFrame.ui
         src/node_manager_fkie/PasswordInput.ui
         src/node_manager_fkie/ProfileWidget.ui
         src/node_manager_fkie/SettingsDockWidget.ui
