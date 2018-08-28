@@ -135,6 +135,7 @@ class Settings(object):
     SHOW_DOMAIN_SUFFIX = False
 
     TRANSPOSE_PUB_SUB_DESCR = True
+    TIMEOUT_CLOSE_DIALOG = 5.0
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -198,6 +199,7 @@ class Settings(object):
         self._show_noscreen_error = self.str2bool(settings.value('show_noscreen_error', self.SHOW_NOSCREEN_ERROR))
         self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
+        self._timeout_close_dialog = float(settings.value('timeout_close_dialog', self.TIMEOUT_CLOSE_DIALOG))
         settings.beginGroup('host_colors')
         self._host_colors = dict()
         for k in settings.childKeys():
@@ -488,6 +490,18 @@ class Settings(object):
             self._transpose_pub_sub_descr = val
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('transpose_pub_sub_descr', self._transpose_pub_sub_descr)
+
+    @property
+    def timeout_close_dialog(self):
+        return self._timeout_close_dialog
+
+    @timeout_close_dialog.setter
+    def timeout_close_dialog(self, value):
+        v = float(value)
+        if self._timeout_close_dialog != v:
+            self._timeout_close_dialog = v
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('timeout_close_dialog', self._timeout_close_dialog)
 
     def host_color(self, host, default_color):
         if self.colorize_hosts:

@@ -436,7 +436,7 @@ class MainWindow(QMainWindow):
                                         masters, False, False, '', self,
                                         select_if_single=False,
                                         checkitem1="don't show this dialog again",
-                                        closein=3)
+                                        closein=nm.settings().timeout_close_dialog)
             masters2stop, self._close_on_exit = res[0], res[1]
             nm.settings().confirm_exit_when_closing = not res[2]
             if self._close_on_exit:
