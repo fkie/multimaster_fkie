@@ -38,6 +38,7 @@ service LaunchService {
 	rpc GetLoadedFiles (Empty) returns (stream LoadedFile);
 	rpc LoadLaunch (LoadLaunchRequest) returns (LoadLaunchReply);
 	rpc ReloadLaunch (LaunchFile) returns (LoadLaunchReply);
+	rpc UnloadLaunch (LaunchFile) returns (LoadLaunchReply);
 	rpc GetNodes (ListNodesRequest) returns (stream LaunchContent);
 	rpc StartNode (stream Node) returns (stream StartNodeReply);
 	rpc StartStandaloneNode (StartConfig) returns (StartNodeReply);
@@ -55,6 +56,9 @@ message Empty {
  * :param load_params: loads all parameter into ROS parameter server after successful load.
  * :param args: arguments to load the launch file. If args are empty but the launch file needs them,
  *   the reply status has code PARAMS_REQUIRED and args list will be filled with requested args.
+ * :param force_first_file: use first file if more than one was found in the package.
+ * :param masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+ *   the nodes are started on the host specified by hostname of the masteruri.
  * :param host: start nodes of this file on specified host.
  */
 message LoadLaunchRequest {
@@ -65,18 +69,21 @@ message LoadLaunchRequest {
 	repeated Argument args = 5;
 	bool force_first_file = 6;
 	bool request_args = 7;
-	string host = 8;
+	string masteruri = 8;
+	string host = 9;
 }
 
 /** The response message with load status
  * :param status: the status of the load process.
  * :param args: a list of requested arguments, only if PARAMS_REQUIRED is returned.
  * :param path: the path of the launch file on this host.
+ * :param changed_nodes: changed nodes (new nodes or changed parameter). Changes on global parameter are not handled!
  */
 message LoadLaunchReply {
 	ReturnStatus status = 1;
 	repeated Argument args = 2;
 	repeated string path = 3;
+	repeated string changed_nodes = 4;
 }
 
 message Argument {
@@ -92,6 +99,8 @@ message LaunchFile {
  * :param launch: launch file in the package path.
  * :param path: full path of the launch file. Will be preferred!
  * :param args: arguments used to load this launch file.
+ * :param masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+ *   the nodes are started on the host specified by hostname of the masteruri.
  * :param host: if not empty, the nodes of this launch file are launched on specified host.
  */
 message LoadedFile {
@@ -99,7 +108,8 @@ message LoadedFile {
 	string launch = 2;
 	string path = 3;
 	repeated Argument args = 4;
-	string host = 5;
+	string masteruri = 5;
+	string host = 6;
 }
 
 /** Requests the nodes configured by this launch manager.
@@ -113,13 +123,18 @@ message ListNodesRequest {
 
 /** Report the nodes of a launch file.
  * :param launch_file: full path of the launch file with contains the reported nodes.
+ * :param masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+ *   the nodes are started on the host specified by hostname of the masteruri.
+ * :param host: if not empty, the nodes of this launch file are launched on specified host.
  * :param node: list of node names.
  * :param description: a list of robot descriptions :message:RobotDescription.
  */
 message LaunchContent {
 	string launch_file = 1;
-	repeated string node = 2;
-	repeated RobotDescription description = 3;
+	string masteruri = 2;
+	string host = 3;
+	repeated string node = 4;
+	repeated RobotDescription description = 5;
 }
 
 /** Description of the robot configured by this launch file.
@@ -192,9 +207,9 @@ message StartConfig {
 	string masteruri = 14;
 	sint32 loglevel = 15;
 	bool respawn = 16;
-	float respawn_delay = 17;
+	double respawn_delay = 17;
 	sint32 respawn_max = 19;
-	float respawn_min_runtime = 18;
+	double respawn_min_runtime = 18;
 }
 
 message Remapping {

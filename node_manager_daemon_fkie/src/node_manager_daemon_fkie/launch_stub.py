@@ -36,7 +36,7 @@ import exceptions
 import settings
 import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
-from .robot_description import RobotDescription, Capability
+from .launch_description import LaunchDescription, RobotDescription, Capability
 # from .startcfg import StartConfig
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
@@ -54,13 +54,13 @@ class LaunchStub(object):
     def __init__(self, channel):
         self.lm_stub = lgrpc.LaunchServiceStub(channel)
 
-    def load_launch(self, package, launch, path='', args=None, request_args=False):
+    def load_launch(self, package, launch, path='', args=None, request_args=False, masteruri='', host=''):
         '''
         '''
         arguments = args
         if arguments is None:
             arguments = {}
-        request = lmsg.LoadLaunchRequest(package=package, launch=launch, path=path, request_args=request_args)
+        request = lmsg.LoadLaunchRequest(package=package, launch=launch, path=path, request_args=request_args, masteruri=masteruri, host=host)
         request.args.extend([lmsg.Argument(name=name, value=value) for name, value in arguments.items()])
         response = self.lm_stub.LoadLaunch(request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code == OK:
@@ -85,41 +85,74 @@ class LaunchStub(object):
                 raise exceptions.ResourceNotFound(path, response.status.error_msg)
             else:
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
+        return response.path, response.changed_nodes
+
+    def unload_launch(self, path):
+        '''
+        '''
+        request = lmsg.LaunchFile(path=path)
+        response = self.lm_stub.UnloadLaunch(request, timeout=settings.GRPC_TIMEOUT)
+        if response.status.code != OK:
+            if response.status.code == FILE_NOT_FOUND:
+                raise exceptions.ResourceNotFound(path, response.status.error_msg)
+            else:
+                raise exceptions.RemoteException(response.status.code, response.status.error_msg)
         return response.path
 
     def get_nodes(self, request_description=False):
-        result = dict()
+        result = []
         request = lmsg.ListNodesRequest(request_description=request_description)
         response_stream = self.lm_stub.GetNodes(request, timeout=settings.GRPC_TIMEOUT)
-        descriptions = []
         for response in response_stream:
-            result[response.launch_file] = list(response.node)
+            descriptions = []
             for descr in response.description:
                 rd = RobotDescription(machine=descr.machine, robot_name=descr.robot_name, robot_type=descr.robot_type, robot_images=list(descr.robot_images), robot_descr=descr.robot_descr)
                 for cap in descr.capabilities:
                     cp = Capability(name=cap.name, namespace=cap.namespace, cap_type=cap.type, images=[img for img in cap.images], description=cap.description, nodes=[n for n in cap.nodes])
                     rd.capabilities.append(cp)
                 descriptions.append(rd)
-        return result, descriptions
+            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(response.node), descriptions)
+            result.append(ld)
+        return result
 
-    def get_included_path(self, string,
-                          recursive=True,
-                          unique=False,
-                          include_pattern=None):
+    def _get_included_files(self, path, recursive=True, unique=False, include_pattern=[]):
         '''
+        :return: Returns the result from grpc server
+        :rtype: stream lmsg.IncludedFilesReply
+        '''
+        request = lmsg.IncludedFilesRequest(path=path, recursive=recursive, unique=unique, pattern=include_pattern)
+        return self.lm_stub.GetIncludedFiles(request, timeout=settings.GRPC_TIMEOUT)
+
+    def get_included_files_unique(self, root, recursive=True, include_pattern=[]):
+        '''
+        :param str root: the root path to search for included files
+        :param bool recursive: True for recursive search
+        :param include_pattern: the list with regular expression patterns to find include files.
+        :type include_pattern: [str]
+        :return: Returns a list of included files.
+        :rtype: [str]
+        '''
+        reply = self._get_included_files(path=root, recursive=recursive, unique=True, include_pattern=include_pattern)
+        result = set()
+        for response in reply:
+            result.add(response.path)
+        return list(result)
+
+    def get_included_files(self, root, recursive=True, include_pattern=[]):
+        '''
+        :param str root: the root path to search for included files
+        :param bool recursive: True for recursive search
+        :param include_pattern: the list with regular expression patterns to find include files.
+        :type include_pattern: [str]
         :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: set() or [(int, str, bool, [])]
+        :rtype: [(int, str, bool, [])]
         '''
-        pattern = include_pattern
-        if pattern is None:
-            pattern = []
-        request = lmsg.IncludedFilesRequest(path=string, recursive=recursive, unique=unique, pattern=pattern)
-        response_stream = self.lm_stub.GetIncludedFiles(request, timeout=settings.GRPC_TIMEOUT)
+        reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_pattern=include_pattern)
         result = []
-        queue = [(string, result)]
-        current_root = string
+        queue = [(root, result)]
+        current_root = root
         last_root = ''
-        for response in response_stream:
+        for response in reply:
             if current_root == response.root_path:
                 last_root = response.path
                 queue[-1][1].append((response.linenr, response.path, response.exists, []))
@@ -139,6 +172,20 @@ class LaunchStub(object):
                     queue[-1][1].append((response.linenr, response.path, response.exists, []))
                 else:
                     raise Exception("wrong root item: %s" % response.root_path)
+        return result
+
+    def get_included_path(self, text, include_pattern=[]):
+        '''
+        :param str text: text to search for included files
+        :param include_pattern: the list with regular expression patterns to find include files.
+        :type include_pattern: [str]
+        :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
+        :rtype: [(int, str, bool, [])]
+        '''
+        reply = self._get_included_files(path=text, recursive=False, unique=False, include_pattern=include_pattern)
+        result = []
+        for response in reply:
+            result.append((response.linenr, response.path, response.exists, []))
         return result
 
     def _gen_node_list(self, nodes):

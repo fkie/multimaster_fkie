@@ -32,20 +32,24 @@
 
 from python_qt_binding.QtCore import QFile, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+import grpc
 import os
 import re
 import roslib
 import rospy
+import uuid
 import traceback
 from urlparse import urlparse
 
+import node_manager_fkie as nm
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_fkie.common import utf8
-from node_manager_fkie.name_resolution import NameResolution
-from parameter_handler import ParameterHandler
-import node_manager_fkie as nm
 from node_manager_daemon_fkie.file_item import FileItem
+from .common import utf8
+from .name_resolution import NameResolution
+from .parameter_handler import ParameterHandler
+from .detailed_msg_box import MessageBox
+from .nmd_client import NmdClient
 
 
 # ###############################################################################
@@ -56,10 +60,15 @@ class PathItem(QStandardItem):
     The PathItem stores the information about a file/directory.
     '''
     ITEM_TYPE = Qt.UserRole + 41
+    NAME_ROLE = Qt.UserRole + 1
+    DATE_ROLE = Qt.UserRole + 2
+    SIZE_ROLE = Qt.UserRole + 3
 
     NOT_FOUND = -1
     UNKNOWN = 0
     PROFILE = 5
+    RECENT_PROFILE = 6
+    RECENT_FILE = 10
     LAUNCH_FILE = 11
     CFG_FILE = 12
     FOLDER = 20
@@ -67,7 +76,7 @@ class PathItem(QStandardItem):
     STACK = 22
     REMOTE_DAEMON = 23
 
-    def __init__(self, path, parent=None, path_id=0):
+    def __init__(self, path, path_id, mtime, size, parent=None):
         '''
         Initialize the PathItem object with given values. The name of the item is the base name of the path.
         Examples of paths:
@@ -89,8 +98,14 @@ class PathItem(QStandardItem):
         else:
             self._name = os.path.basename(self.url_parse_result.path)
         QStandardItem.__init__(self, self._name)
-        self.parent_item = parent
+        self.mtime = mtime
+        self.size = size
         self.id = path_id
+        self.parent_item = parent
+        self.item_mtime = QStandardItem()
+        self.item_mtime.setText(utf8(mtime))
+        self.item_size = QStandardItem()
+        self.item_size.setText(utf8(size))  # TODO: add size unit
 
     def _identify_path_on_ext(self, url_parse_result):
         '''
@@ -98,7 +113,7 @@ class PathItem(QStandardItem):
         :param url_parse_result: already parsed path.
         :type url_parse_result: urlparse.ParseResult
         :return: the id represents whether it is a file, package or stack
-        :rtype: constants of LaunchItem
+        :rtype: constants of PathItem
         '''
         if self.id != 0:
             return self._id
@@ -153,104 +168,120 @@ class PathItem(QStandardItem):
         self._name = new_name
         self.setText(self._name)
 
-    def addNode(self, node, cfg=''):
+    def type(self):
+        return PathItem.ITEM_TYPE
+
+    def data(self, role):
         '''
-        Adds a new node with given name.
-        @param node: the NodeInfo of the node to create
-        @type node: L{NodeInfo}
-        @param cfg: The configuration, which describes the node
-        @type cfg: C{str}
+        The view asks us for all sorts of information about our data...
+        :param role: the art of the data
+        :type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
+        :see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
-        groups = self.getCapabilityGroups(node.name)
-        if groups:
-            for _, group_list in groups.items():
-                for group_name in group_list:
-                    # insert in the group
-                    groupItem = self.getGroupItem(group_name)
-                    groupItem.addNode(node, cfg)
+        if role == Qt.DisplayRole:
+            # return the displayed item name
+            if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
+                return "%s   [%s]" % (self.name, self.package_name)  # .decode(sys.getfilesystemencoding())
+            elif self.id == PathItem.REMOTE_DAEMON:
+                return "//%s" % self.name
+            else:
+                return "%s" % self.name
+        elif role == Qt.ToolTipRole:
+            # return the tooltip of the item
+            result = "%s" % self.path
+            if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
+                result = "%s\nPress 'Delete' to remove the entry from the history list" % self.path
+            return result
+#     elif role == Qt.DecorationRole:
+#       # return the showed icon
+#       pathItem, path, pathId = self.items[index.row()]
+#       if self.id > LaunchListModel.NOTHING and self.model().icons.has_key(self.id):
+#         return self.model().icons[self.id]
+#       return None
+        elif role == Qt.EditRole:
+            return "%s" % self.name
         else:
-            # insert in order
-            new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
-            self._addRow_sorted(new_item_row)
-            new_item_row[0].node_info = node
-            if cfg or cfg == '':
-                new_item_row[0].addConfig(cfg)
+            # We don't care about anything else, so return default value
+            return QStandardItem.data(self, role)
 
-    def _addRow_sorted(self, row):
-        for i in range(self.rowCount()):
-            item = self.child(i)
-            if item > row[0].name:
-                self.insertRow(i, row)
-                row[0].parent_item = self
-                return
-        self.appendRow(row)
-        row[0].parent_item = self
+    def setData(self, value, role=Qt.EditRole):
+        # TODO: fix to use it with nm_daemon
+        if role == Qt.EditRole:
+            # rename the file or folder
+            if self.name != value and self.id in [self.RECENT_FILE, self.LAUNCH_FILE, self.RECENT_PROFILE, self.PROFILE, self.CFG_FILE, self.FOLDER]:
+                new_path = os.path.join(os.path.dirname(self.path), value)
+                if not os.path.exists(new_path):
+                    os.rename(self.path, new_path)
+                    if self.name != value and self.id in [self.RECENT_FILE, self.RECENT_PROFILE]:
+                        # update in history
+                        nm.settings().launch_history_add(new_path, replace=self.path)
+                    self.name = value
+                    self.path = new_path
+                else:
+                    MessageBox.warning(self, "Path already exists",
+                                       "`%s` already exists!" % value, "Complete path: %s" % new_path)
+        return QStandardItem.setData(self, value, role)
 
-    def clearUp(self, fixed_node_names=None):
+    def isLaunchFile(self):
         '''
-        Removes not running and not configured nodes.
-        @param fixed_node_names: If the list is not None, the node not in the list are
-        set to not running!
-        @type fixed_node_names: C{[str]}
+        :return: True if it is a launch file
+        :rtype: bool
         '''
-        # first clear sub groups
-        groups = self.getGroupItems()
-        for group in groups:
-            group.clearUp(fixed_node_names)
-        removed = False
-        # move running nodes without configuration to the upper layer, remove not running and duplicate nodes
-        for i in reversed(range(self.rowCount())):
-            item = self.child(i)
-            if isinstance(item, NodeItem):
-                # set the running state of the node to None
-                if fixed_node_names is not None and item.name not in fixed_node_names:
-                    item.node_info = NodeInfo(item.name, item.node_info.masteruri)
-                if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
-                    removed = True
-                    self.removeRow(i)
-                elif not isinstance(self, HostItem):
-                    has_launches = NodeItem.has_launch_cfgs(item.cfgs)
-                    has_defaults = NodeItem.has_default_cfgs(item.cfgs)
-                    has_std_cfg = item.has_std_cfg()
-                    if item.state == NodeItem.STATE_RUN and not (has_launches or has_defaults or has_std_cfg):
-                        # if it is in a group, is running, but has no configuration, move it to the host
-                        if self.parent_item is not None and isinstance(self.parent_item, HostItem):
-                            items_in_host = self.parent_item.getNodeItemsByName(item.name, True)
-                            if len(items_in_host) == 1:
-                                row = self.takeRow(i)
-                                self.parent_item._addRow_sorted(row)
-                            else:
-                                # remove item
-                                removed = True
-                                self.removeRow(i)
-        if removed:
-            self.updateIcon()
+        return self.path is not None and os.path.isfile(self.path) and self.path.endswith('.launch')
 
-        # remove empty groups
-        for i in reversed(range(self.rowCount())):
-            item = self.child(i)
-            if isinstance(item, PathItem):
-                if item.rowCount() == 0:
-                    self.removeRow(i)
+    def isConfigFile(self):
+        '''
+        :return: True if it is a config file
+        :rtype: bool
+        '''
+        return self.id == self.CFG_FILE
+
+    def is_profile_file(self):
+        '''
+        :return: True if it is a node_manager profile file
+        :rtype: bool
+        '''
+        return self.path is not None and os.path.isfile(self.path) and self.path.endswith('.nmprofile')
+
+    @classmethod
+    def create_row_items(self, path, path_id, mtime, size, root):
+        '''
+        Creates the list of the items. This list is used for the
+        visualization of path data as a table row.
+        :param str path: file path
+        :param int path_id: identification of the path (folder, package, launch file, ...)
+        :param int mtime: modification time
+        :param int size: file size
+        :param root: The parent QStandardItem
+        :type root: U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
+        :return: the list for the representation as a row
+        :rtype: C{[L{PathItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
+        '''
+        items = []
+        item = PathItem(path, path_id, mtime, size, parent=root)
+        items.append(item)
+        items.append(item.item_mtime)
+        items.append(item.item_size)
+        return items
 
     def __eq__(self, item):
         '''
-        Compares the name of the item.
+        Compares the path of the item.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
-            return self.name.lower() == item.lower()
+            return self.path.lower() == item.lower()
         elif not (item is None):
-            return self.name.lower() == item.name.lower()
+            return self.path.lower() == item.path.lower()
         return False
 
     def __gt__(self, item):
         '''
-        Compares the name of the item.
+        Compares the path of the item.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
-            return self.name.lower() > item.lower()
+            return self.path.lower() > item.lower()
         elif not (item is None):
-            return self.name.lower() > item.name.lower()
+            return self.path.lower() > item.path.lower()
         return False
 
 
@@ -263,57 +294,85 @@ class LaunchTreeModel(QStandardItemModel):
     The model to show file tree on local and remote hosts.
     '''
 
-    header = [('Name', 450),
+    header = [('Name', 350),
               ('Date Modified', 80),
               ('Size', -1)]
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, progress_queue=None):
         '''
         Initialize the model.
         '''
-        super(LaunchTreeModel, self).__init__(parent)
+        QStandardItemModel.__init__(self, parent)
         self.setColumnCount(len(LaunchTreeModel.header))
         self.setHorizontalHeaderLabels([label for label, _ in LaunchTreeModel.header])
+        self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        self._progress_queue = progress_queue
+        self._nmd_client = NmdClient()
+        self._nmd_client.listed_path.connect(self._listed_path)
+        self._nmd_client.error.connect(self._nmd_error)
+        self._current_path = 'grpc://localhost:12321'
+        self._nmd_client.list_path_threaded("", self._current_path)
+        self.count = 0
+
+    def _getRootItems(self):
+        result = list(nm.settings().launch_history)
+        result.extend(self.root_paths)
+        return result
+
+    def _listed_path(self, url, path, result):
+        print "RESULT", path, result
+        result_list = []
+        for path_item in result:
+            item = os.path.normpath(''.join([path, '/', path_item.path]))
+            fullpath = os.path.basename(item)
+            if fullpath == 'src':
+                fullpath = '%s (src)' % os.path.basename(os.path.dirname(item))
+            path_id = PathItem.NOT_FOUND
+            if FileItem.FILE == 0:
+                path_id = PathItem.CFG_FILE
+                # TODO
+            elif FileItem.DIR == 1:
+                path_id = PathItem.FOLDER
+            elif FileItem.SYMLINK == 2:
+                pass
+            elif FileItem.PACKAGE == 3:
+                path_id = PathItem.PACKAGE
+            if (path_id != PathItem.NOT_FOUND):
+                new_item_row = PathItem.create_row_items(path_item.path, path_id, path_item.mtime, path_item.size, self.get_file_item(path))
+                self.get_file_item(path).appendRow(new_item_row)
+                self.pyqt_workaround[path_item.path] = new_item_row[0]
+                # new_item_row[0].updateView()
+
+#                result_list.append((fullpath, item, path_id))
+#        self._setNewList((path, result_list))
+
+    def _nmd_error(self, method, url, path, error):
+        if self.count > 0:
+            import time
+            time.sleep(2)
+            self._nmd_client.list_path_threaded("", self._current_path)
+            return
+        if hasattr(error, "code") and error.code() == grpc.StatusCode.UNAVAILABLE:
+            name = "node_manager_daemon"
+            if self._progress_queue is not None:
+                rospy.loginfo("Connection problem to %s, try to start <%s>" % (url, name))
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               'start %s' % name,
+                                               nm.starter().runNodeWithoutConfig,
+                                               (get_hostname(url), '%s_fkie' % name, name,
+                                                nm.nameres().normalize_name(name), [],
+                                                None, False))
+                self._progress_queue.start()
+                self.count = 1
+                self._nmd_client.list_path_threaded("", self._current_path)
+            else:
+                rospy.logwarn("Error while call <%s> on '%s': %s" % (method, url, error))
+                rospy.logwarn("can't start <%s>, no progress queue defined!" % name)
 
     def flags(self, index):
         if not index.isValid():
             return Qt.NoItemFlags
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
-
-    def get_hostitem(self, masteruri, address):
-        '''
-        Searches for the host item in the model. If no item is found a new one will
-        created and inserted in sorted order.
-        @param masteruri: ROS master URI
-        @type masteruri: C{str}
-        @param address: the address of the host
-        @type address: C{str}
-        @return: the item associated with the given master
-        @rtype: L{HostItem}
-        '''
-        if masteruri is None:
-            return None
-        resaddr = nm.nameres().hostname(address)
-        host = (masteruri, resaddr)
-        # [address] + nm.nameres().resolve_cached(address)
-        local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
-                 self._local_masteruri == masteruri)
-        # find the host item by address
-        root = self.invisibleRootItem()
-        for i in range(root.rowCount()):
-            if root.child(i) == host:
-                return root.child(i)
-            elif root.child(i) > host:
-                hostItem = HostItem(masteruri, resaddr, local)
-                self.insertRow(i, hostItem)
-                self.hostInserted.emit(hostItem)
-                self._set_std_capabilities(hostItem)
-                return hostItem
-        hostItem = HostItem(masteruri, resaddr, local)
-        self.appendRow(hostItem)
-        self.hostInserted.emit(hostItem)
-        self._set_std_capabilities(hostItem)
-        return hostItem
 
     def get_file_item(self, path):
         '''
@@ -330,7 +389,8 @@ class LaunchTreeModel(QStandardItemModel):
             root = self.invisibleRootItem()
             for i in range(root.rowCount()):
                 if root.child(i) == "@%s" % p_res.hostname:
-                    
+                    pass  # TODO
+        return self.invisibleRootItem()
 
     def update_model(self, root_path, file_items):
         '''
@@ -340,8 +400,8 @@ class LaunchTreeModel(QStandardItemModel):
         :type paths: [node_manager_daemon_fkie.file_item.FileItem]
         '''
         for item in file_items:
-            if item.type = FileItem.DIR:
-                
+            if item.type == FileItem.DIR:
+                pass
         for (name, node) in nodes.items():
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
             addresses.append(node.masteruri)
@@ -365,3 +425,7 @@ class LaunchTreeModel(QStandardItemModel):
         self.removeEmptyHosts()
         # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
+
+    def show_packages(self, show):
+        pass
+

@@ -32,6 +32,7 @@
 
 import grpc
 import os
+import re
 import rospy
 import roslib.names
 import roslib.packages
@@ -74,7 +75,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 self._peers[context.peer()] = context
 
     def GetLoadedFiles(self, request, context):
-        self._register_callback(context)
+        # self._register_callback(context)
         for _path, lf in self._loaded_files.iteritems():
             reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, host=lf.host)
             reply.args.extend(lmsg.Argument(name=name, value=value) for name, value in lf.argv2dict(lf.argv).items())
@@ -86,6 +87,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         '''
         result = lmsg.LoadLaunchReply()
         launchfile = request.path
+        rospy.logdebug("Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s" % (launchfile, request.package, request.launch, request.masteruri, request.host, request.args))
         if not launchfile:
             # determine path from package name and launch name
             try:
@@ -102,36 +104,44 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                         result.status.error_msg = utf8("Multiple launch files with name %s in package %s found!" % (request.launch, request.package))
                         for mp in paths:
                             result.path.append(mp)
+                        rospy.logdebug("..load aborted, MULTIPLE_LAUNCHES")
                         return result
                 else:
                     launchfile = paths[0]
             except rospkg.ResourceNotFound as rnf:
                     result.status.code = FILE_NOT_FOUND
                     result.status.error_msg = utf8("Package %s not found: %s" % (request.package, rnf))
+                    rospy.logdebug("..load aborted, FILE_NOT_FOUND")
                     return result
         result.path.append(launchfile)
         # it is already loaded?
         if launchfile in self._loaded_files.keys():
             result.status.code = ALREADY_OPEN
-            result.status.error_msg = utf8("Launch files %s from package %s already loaded!" % (request.launch, request.package))
+            result.status.error_msg = utf8("Launch file %s already loaded!" % (launchfile))
+            rospy.logdebug("..load aborted, ALREADY_OPEN")
             return result
         # load launch configuration
         try:
             # test for required args
-            launch_config = LaunchConfig(launchfile, host=request.host)
+            provided_args = ["%s" % arg.name for arg in request.args]
+            launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host)
             if request.request_args:
                 # get the list with needed launch args
                 req_args = launch_config.get_args()
                 if req_args:
                     arg_dict = launch_config.argv2dict(req_args)
-                    result.args.extend([lmsg.Argument(name=arg, value=value) for arg, value in arg_dict.items()])
-                    result.status.code = PARAMS_REQUIRED
-                    return result
+                    for arg, value in arg_dict.items():
+                        if arg not in provided_args:
+                            result.args.extend([lmsg.Argument(name=arg, value=value) for arg, value in arg_dict.items()])
+                            result.status.code = PARAMS_REQUIRED
+                            rospy.logdebug("..load aborted, PARAMS_REQUIRED")
+                            return result
             argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]
             _loaded, res_argv = launch_config.load(argv)
             # parse result args for reply
             result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.argv2dict(res_argv).items()])
             self._loaded_files[launchfile] = launch_config
+            rospy.logdebug("..load complete!")
         except Exception as e:
             err_text = "%s loading failed!" % os.path.basename(launchfile)
             err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
@@ -147,13 +157,63 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         result.path.append(request.path)
         if request.path in self._loaded_files:
             try:
+                stored_roscfg = self._loaded_files[request.path].roscfg
                 argv = self._loaded_files[request.path].argv
                 self._loaded_files[request.path].load(argv)
                 result.status.code = OK
+                # detect files changes
+                if stored_roscfg and self._loaded_files[request.path].roscfg:
+                    stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
+                    new_values = [(name, utf8(p.value)) for name, p in self._loaded_files[request.path].roscfg.params.items()]
+                    # detect changes parameter
+                    paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
+                    # detect new parameter
+                    paramset |= (set(self._loaded_files[request.path].roscfg.params.keys()) - set(stored_roscfg.params.keys()))
+                    # detect removed parameter
+                    paramset |= (set(stored_roscfg.params.keys()) - set(self._loaded_files[request.path].roscfg.params.keys()))
+                    # detect new nodes
+                    stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
+                    new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in self._loaded_files[request.path].roscfg.nodes]
+                    nodes2start = set(new_nodes) - set(stored_nodes)
+                    # determine the nodes of the changed parameter
+                    for p in paramset:
+                        for n in new_nodes:
+                            if p.startswith(n):
+                                nodes2start.add(n)
+                    # detect changes in the arguments and remap
+                    for n in stored_roscfg.nodes:
+                        for new_n in self._loaded_files[request.path].roscfg.nodes:
+                            if n.name == new_n.name and n.namespace == new_n.namespace:
+                                if n.args != new_n.args or n.remap_args != new_n.remap_args:
+                                    nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
+                    # filter out anonymous nodes
+                    for n in nodes2start:
+                        if not re.search(r"\d{3,6}_\d{10,}", n):
+                            result.changed_nodes.append(n)
+#                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
             except Exception as e:
                 err_text = "%s loading failed!" % request.path
                 err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
                 rospy.logwarn("Loading launch file: %s", err_details)
+                result.status.code = ERROR
+                result.status.error_msg = utf8(err_details)
+                return result
+        else:
+            result.status.code = FILE_NOT_FOUND
+            return result
+        return result
+
+    def UnloadLaunch(self, request, context):
+        result = lmsg.LoadLaunchReply()
+        result.path.append(request.path)
+        if request.path in self._loaded_files:
+            try:
+                del self._loaded_files[request.path]
+                result.status.code = OK
+            except Exception as e:
+                err_text = "%s unloading failed!" % request.path
+                err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
+                rospy.logwarn("Unloading launch file: %s", err_details)
                 result.status.code = ERROR
                 result.status.error_msg = utf8(err_details)
                 return result
@@ -168,7 +228,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             requested_files = self._loaded_files.keys()
         for path in requested_files:
             lc = self._loaded_files[path]
-            reply = lmsg.LaunchContent(launch_file=path)
+            reply = lmsg.LaunchContent(launch_file=path, masteruri=lc.masteruri, host=lc.host)
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
                 reply.node.append(node_fullname)
@@ -246,12 +306,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binariy, loglevel=request.loglevel)
                     launcher.run_node(startcfg)
                     result.status.code = OK
+                    yield result
                 except exceptions.BinarySelectionRequest as bsr:
                     result.status.code = MULTIPLE_BINARIES
                     result.status.error_msg = "multiple binaries found for node '%s'" % request.name
                     result.launch.extend(bsr.choices)
                     yield result
-                yield result
             except Exception:
                 import traceback
                 result = lmsg.StartNodeReply(name=request.name)

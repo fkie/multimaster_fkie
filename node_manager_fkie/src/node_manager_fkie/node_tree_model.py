@@ -475,7 +475,7 @@ class GroupItem(QStandardItem):
           syncronized because of filter or errors.
         @type is_sync_running: bool
         '''
-        ignore = ['/master_sync', '/master_discovery', '/node_manager']
+        ignore = ['/master_sync', '/master_discovery', '/node_manager', '/node_manager_daemon']
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, GroupItem):
@@ -1065,6 +1065,10 @@ class NodeItem(QStandardItem):
         tooltip = '<h4>%s</h4><dl>' % self.node_info.name
         tooltip += '<dt><b>URI:</b> %s</dt>' % self.node_info.uri
         tooltip += '<dt><b>PID:</b> %s</dt>' % self.node_info.pid
+        if self.nodelet_mngr:
+            tooltip += '<dt><b>Nodelet manager</b>: %s</dt>' % self.nodelet_mngr
+        if self.nodelets:
+            tooltip += '<dt><b>This is nodelet manager for %d nodes</b></dt>' % len(self.nodelets)
         tooltip += '<dt><b>ORG.MASTERURI:</b> %s</dt></dl>' % self.node_info.masteruri
         master_discovered = nm.nameres().has_master(self.node_info.masteruri)
 #    local = False
@@ -1330,6 +1334,7 @@ class NodeTreeModel(QStandardItemModel):
                                                             '/zeroconf',
                                                             '/master_sync',
                                                             '/node_manager',
+                                                            '/node_manager_daemon',
                                                             '/dynamic_reconfigure/*'],
                                                   'type': '',
                                                   'description': 'This group contains the system management nodes.'}}}

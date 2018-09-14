@@ -29,13 +29,29 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
+import os
 import grpc
 import host
 import rospy
 
 INSECURE_CHANNEL_CACHE = dict()
 ''' the cache for channels '''
+
+try:
+    del os.environ['https_proxy']
+except Exception:
+    pass
+try:
+    del os.environ['http_proxy']
+except Exception:
+    pass
+
+# CREDENTIALS = ''
+# # read in certificate
+# with open('/home/tiderko/grpc_cert/server.crt', 'rb') as f:
+#     trusted_certs = f.read()
+#     # create credentials
+#     CREDENTIALS = grpc.ssl_channel_credentials(root_certificates=trusted_certs)
 
 
 class ChannelName:
@@ -52,18 +68,27 @@ class ChannelName:
         return self.__hash
 
 
+def clear_channels():
+    global INSECURE_CHANNEL_CACHE
+    INSECURE_CHANNEL_CACHE.clear()
+
+
 def add_insecure_channel(url):
     '''
     Adds a new insecure channel for given url. Ports are ignored!
     :param str url: the url to parse
     '''
+    global INSECURE_CHANNEL_CACHE
+#     global CREDENTIALS
     cn = ChannelName(url)
     if cn not in INSECURE_CHANNEL_CACHE:
         rospy.logdebug("add insecure channel to %s" % url)
+#         INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
         INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
 
 
 def remove_insecure_channel(url):
+    global INSECURE_CHANNEL_CACHE
     try:
         del INSECURE_CHANNEL_CACHE[url]
         rospy.logdebug("insecure channel to %s closed!" % url)
@@ -77,6 +102,8 @@ def get_insecure_channel(url):
     :return: returns insecure channel for given url. Ports are ignored!
     :rtype: grpc.Channel or None
     '''
+    global INSECURE_CHANNEL_CACHE
+#     global CREDENTIALS
     if url:
         cn = ChannelName(url)
         try:
@@ -84,5 +111,7 @@ def get_insecure_channel(url):
         except Exception:
             if host.get_port(url):
                 INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
+#                 INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
                 return INSECURE_CHANNEL_CACHE[cn]
+    print "NO URL", url
     return None

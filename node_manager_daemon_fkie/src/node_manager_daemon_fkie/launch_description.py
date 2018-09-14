@@ -31,9 +31,38 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+class LaunchDescription:
+
+    def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[]):
+        '''
+        Description of the robot configured by this launch file.
+         :param str path: path of the launch file.
+         :param str masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+             the nodes are started on the host specified by hostname of the masteruri.
+         :param str host: if not empty, the nodes of this launch file are launched on specified host.
+         :param nodes: list of node names.
+         :type nodes: [str]
+         :param robot_descriptions: a list of capabilities :message:RobotDescription.
+         :type robot_descriptions: [RobotDescription]
+        '''
+        self.path = path
+        self.masteruri = masteruri
+        self.host = host
+        self.nodes = nodes
+        self.robot_descriptions = robot_descriptions
+
+    def __repr__(self):
+        return "<%s[%s, masteruri: %s, host: %s], with %d nodes>" % (self.__class__, self.path, self.masteruri, self.host, len(self.nodes))
+
+    def __str__(self):
+        if self.nodes:
+            return "%s [%s]" % (self.__repr__(), ','.join([str(node) for node in self.nodes]))
+        return self.__repr__()
+
+
 class RobotDescription:
 
-    def __init__(self, machine='', robot_name='', robot_type='', robot_images=None, robot_descr='', capabilities=None):
+    def __init__(self, machine='', robot_name='', robot_type='', robot_images=[], robot_descr='', capabilities=[]):
         '''
         Description of the robot configured by this launch file.
          :param str machine: the address of the host.
@@ -49,12 +78,8 @@ class RobotDescription:
         self.robot_name = robot_name
         self.robot_type = robot_type
         self.robot_images = robot_images
-        if self.robot_images is None:
-            self.robot_images = []
         self.robot_descr = robot_descr
         self.capabilities = capabilities
-        if self.capabilities is None:
-            self.capabilities = []
 
     def __repr__(self):
         return "<%s[%s], with %d capabilities>" % (self.__class__, self.robot_name, len(self.capabilities))
@@ -67,7 +92,7 @@ class RobotDescription:
 
 class Capability:
 
-    def __init__(self, name='', namespace='', cap_type='', images=None, description='', nodes=None):
+    def __init__(self, name='', namespace='', cap_type='', images=[], description='', nodes=[]):
         '''
         Capabilities defined in launch file.
         :param str namespace: the ROS namespace of the capability.
@@ -83,12 +108,8 @@ class Capability:
         self.name = name
         self.type = cap_type
         self.images = images
-        if self.images is None:
-            self.images = []
         self.description = description
         self.nodes = nodes
-        if self.nodes is None:
-            self.nodes = []
 
     def __repr__(self):
         return "<%s[%s/%s], with %d nodes>" % (self.__class__, self.namespace, self.name, len(self.nodes))

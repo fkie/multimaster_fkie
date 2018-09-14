@@ -50,27 +50,27 @@ class GrpcClient:
         self.grpc_server = None
         self._channels = {}
 
-    def start(self, url='[::]:12312'):
+    def start(self, url='[::]:12322'):
         self.url = url
-        rospy.loginfo("Start grcp server on %s" % url)
+        rospy.loginfo("Start grpc server on %s" % url)
         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         fgrpc.add_FileClientServiceServicer_to_server(FileClientServicer(), self.grpc_server)
         self.grpc_server.add_insecure_port(url)
         self.grpc_server.start()
 
-    def get_file_manager(self, url='localhost:12311'):
+    def get_file_manager(self, url='tiderko:12321'):
         channel = remote.get_insecure_channel(url)
         if channel is not None:
             return fstub.FileStub(channel)
         return None
 
-    def get_launch_manager(self, url='localhost:12311'):
+    def get_launch_manager(self, url='tiderko:12321'):
         channel = remote.get_insecure_channel(url)
         if channel is not None:
             return lstub.LaunchStub(channel)
         return None
 
-    def test_list_path(self, path='', url='localhost:12311'):
+    def test_list_path(self, path='', url='tiderko:12321'):
         fm = self.get_file_manager(url)
         print("FM", fm)
         if fm is None:
@@ -88,7 +88,7 @@ class GrpcClient:
             import traceback
             print(traceback.format_exc())
 
-    def test_get_file_content(self, path='', url='localhost:12311'):
+    def test_get_file_content(self, path='', url='tiderko:12321'):
         fm = self.get_file_manager(url)
         if fm is None:
             return
@@ -106,7 +106,7 @@ class GrpcClient:
         for ln, ph, ex, ifi in inc_files:
             self._print_inc_file(indent + 2, ln, ph, ex, ifi)
 
-    def test_get_included_files(self, path='', url='localhost:12311'):
+    def test_get_included_files(self, path='', url='tiderko:12321'):
         lm = self.get_launch_manager(url)
         if lm is None:
             return
@@ -120,7 +120,7 @@ class GrpcClient:
             import traceback
             print(traceback.format_exc())
 
-    def test_load_launch(self, package, launch, url='localhost:12311'):
+    def test_load_launch(self, package, launch, url='tiderko:12321'):
         lm = self.get_launch_manager(url)
         if lm is None:
             return ''
@@ -153,7 +153,7 @@ class GrpcClient:
         rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
         return launch_file
 
-    def test_reload_launch(self, path, url='localhost:12311'):
+    def test_reload_launch(self, path, url='tiderko:12321'):
         lm = self.get_launch_manager(url)
         if lm is None:
             return
@@ -173,7 +173,7 @@ class GrpcClient:
             print(traceback.format_exc())
         rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
 
-    def test_get_nodes(self, url='localhost:12311'):
+    def test_get_nodes(self, url='tiderko:12321'):
         lm = self.get_launch_manager(url)
         if lm is None:
             return
@@ -191,7 +191,7 @@ class GrpcClient:
             import traceback
             print(traceback.format_exc())
 
-    def test_start_node(self, name, url='localhost:12311'):
+    def test_start_node(self, name, url='tiderko:12321'):
         lm = self.get_launch_manager(url)
         if lm is None:
             return

@@ -54,7 +54,7 @@ class LaunchConfig(object):
     def __init__(self, launch_file, package=None, masteruri=None, host='', argv=None):
         '''
         Creates the LaunchConfig object. The launch file will be not loaded on
-        creation, first on request of Roscfg value.
+        creation, first on request of roscfg value.
         @param launch_file: The absolute or relative path with the launch file.
                            By using relative path a package must be valid for
                            remote launches.
@@ -71,7 +71,7 @@ class LaunchConfig(object):
         '''
         self.__launchfile = launch_file
         self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
-        self.__masteruri = masteruri if masteruri is not None else 'localhost'
+        self.__masteruri = masteruri if masteruri is not None else ''
         self.__roscfg = None
         self.argv = argv
         if self.argv is None:
@@ -362,7 +362,8 @@ class LaunchConfig(object):
         self._capabilities = result
         return result
 
-    def argv2dict(self, argv):
+    @classmethod
+    def argv2dict(cls, argv):
         result = dict()
         for a in argv:
             key, sep, value = a.partition(':=')

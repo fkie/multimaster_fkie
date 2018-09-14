@@ -93,9 +93,9 @@ class TestFileServiceServicer(unittest.TestCase):
         self.assertEqual(os.getcwd(), launch_response.path, "reported list for different path: %s, expected: %s" % (launch_response.path, os.getcwd()))
         self.assertEqual(len(os.listdir(os.getcwd())), len(launch_response.items), "reported different count of items in working directory: %s" % os.getcwd())
         # test cache
-        launch_response = fs.ListPath(fmsg.ListPathRequest(path="%s/.." % os.getcwd()), DummyContext())
+        launch_response = fs.ListPath(fmsg.ListPathRequest(path="%s/../.." % os.getcwd()), DummyContext())
         count_dirs = len([d for d in launch_response.items if d.type in [1, 3]])
-        launch_response = fs.ListPath(fmsg.ListPathRequest(path="%s/.." % os.getcwd()), DummyContext())
+        launch_response = fs.ListPath(fmsg.ListPathRequest(path="%s/../.." % os.getcwd()), DummyContext())
         self.assertEqual(len([d for d in launch_response.items if d.type in [1, 3]]), count_dirs, "count of directories from cache is different")
         # test invalid path
         launch_response = fs.ListPath(fmsg.ListPathRequest(path="/unknown"), DummyContext())
@@ -104,6 +104,7 @@ class TestFileServiceServicer(unittest.TestCase):
 
     def test_get_content(self):
         fs = FileServicer()
+        fs.FILE_CHUNK_SIZE = 10
         content_response = fs.GetFileContent(fmsg.GetFileContentRequest(path=""), DummyContext())
         self.assertEqual(content_response.next().status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), "wrong status code if path is empty")
         content_response = fs.GetFileContent(fmsg.GetFileContentRequest(path=self.test_get_content_path), DummyContext())

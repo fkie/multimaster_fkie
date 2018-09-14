@@ -46,6 +46,9 @@ class HTMLDelegate(QStyledItemDelegate):
     '''
     A class to display the HTML text in QTreeView.
     '''
+    def __init__(self, parent=None, check_for_ros_names=True):
+        QStyledItemDelegate.__init__(self, parent)
+        self._check_for_ros_names = check_for_ros_names
 
     def paint(self, painter, option, index):
         '''
@@ -58,8 +61,7 @@ class HTMLDelegate(QStyledItemDelegate):
         style = QApplication.style() if options.widget is None else options.widget.style()
 
         doc = QTextDocument()
-        doc.setHtml(self.toHTML(options.text))
-        # doc.setTextWidth(option.rect.width())
+        doc.setHtml(self.toHTML(options.text, self._check_for_ros_names))
 
         options.text = ''
         style.drawControl(QStyle.CE_ItemViewItem, options, painter)
@@ -71,6 +73,9 @@ class HTMLDelegate(QStyledItemDelegate):
         #  ctx.palette.setColor(QPalette::Text, optionV4.palette.color(QPalette::Active, QPalette::HighlightedText));
 
         textRect = style.subElementRect(QStyle.SE_ItemViewItemText, options, options.widget)
+        if textRect.width() < 10:
+            textRect.setWidth(options.rect.width())
+            textRect.setHeight(options.rect.height())
         painter.save()
         painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - 3))
         painter.setClipRect(textRect.translated(-textRect.topLeft()))
@@ -93,7 +98,7 @@ class HTMLDelegate(QStyledItemDelegate):
         return QSize(doc.idealWidth(), metric.height() + 4)
 
     @classmethod
-    def toHTML(cls, text):
+    def toHTML(cls, text, check_for_ros_names=True):
         '''
         Creates a HTML representation of the given text. It could be a node, topic service or group name.
         @param text: a name with ROS representation
@@ -123,11 +128,11 @@ class HTMLDelegate(QStyledItemDelegate):
             last_part = ""
             if end_idx + 1 < len(text):
                 last_part = text[end_idx + 1:]
-            if nr_idx > -1:
+            if nr_idx > -1 and nr_idx < start_idx:
                 result = '%s<b>%s</b><span style="color:gray;">%s</span><b>%s</b>' % (text[0:nr_idx + 1], text[nr_idx + 1:start_idx], text[start_idx:end_idx + 1], last_part)
             else:
                 result = '<b>%s</b><span style="color:gray;">%s</span><b>%s</b>' % (text[0:start_idx], text[start_idx:end_idx + 1], last_part)
-        elif not is_legal_name(text):  # handle all invalid names (used space in the name)
+        elif check_for_ros_names and not is_legal_name(text):  # handle all invalid names (used space in the name)
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:

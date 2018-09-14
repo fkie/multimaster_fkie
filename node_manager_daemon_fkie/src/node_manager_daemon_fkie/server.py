@@ -50,9 +50,18 @@ class GrpcServer:
         self.server.stop(3)
 
     def start(self, url='[::]:12311'):
-        rospy.loginfo("Start grcp server on %s" % url)
+        rospy.loginfo("Start grpc server on %s" % url)
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        # create credentials
+        # read in key and certificate
+#         with open('/home/tiderko/grpc_cert/server.key', 'rb') as f:
+#             private_key = f.read()
+#         with open('/home/tiderko/grpc_cert/server.crt', 'rb') as f:
+#             certificate_chain = f.read()
+#         # create server credentials
+#         server_credentials = grpc.ssl_server_credentials(((private_key, certificate_chain,),))
+#         print("port: ", self.server.add_secure_port(url, server_credentials))
+        print("port: ", self.server.add_insecure_port(url))
         fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
         lgrpc.add_LaunchServiceServicer_to_server(LaunchServicer(), self.server)
-        self.server.add_insecure_port(url)
         self.server.start()

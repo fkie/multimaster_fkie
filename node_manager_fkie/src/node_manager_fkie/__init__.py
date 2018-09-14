@@ -40,17 +40,17 @@ import sys
 import threading
 
 from master_discovery_fkie.common import get_hostname
-from node_manager_fkie.common import get_ros_home, masteruri_from_ros
-from node_manager_fkie.file_watcher import FileWatcher
-from node_manager_fkie.history import History
-from node_manager_fkie.master_view_proxy import LaunchArgsSelectionRequest
-from node_manager_fkie.name_resolution import NameResolution
-from node_manager_fkie.progress_queue import InteractionNeededError
-from node_manager_fkie.screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
-from node_manager_fkie.settings import Settings
-from node_manager_fkie.ssh_handler import SSHhandler, AuthenticationRequest
-from node_manager_fkie.start_handler import StartException, AdvRunCfg
-from node_manager_fkie.start_handler import StartHandler, BinarySelectionRequest
+from .common import get_ros_home, masteruri_from_ros
+from .file_watcher import FileWatcher
+from .history import History
+from .name_resolution import NameResolution
+from .nmd_client import NmdClient, LaunchArgsSelectionRequest
+from .progress_queue import InteractionNeededError
+from .screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
+from .settings import Settings
+from .ssh_handler import SSHhandler, AuthenticationRequest
+from .start_handler import StartException, AdvRunCfg
+from .start_handler import StartHandler, BinarySelectionRequest
 
 
 PKG_NAME = 'node_manager_fkie'
@@ -76,6 +76,7 @@ _LOCK = threading.RLock()
 
 _MAIN_FORM = None
 _SETTINGS = None
+_NMD_CLIENT = None
 _SSH_HANDLER = None
 _SCREEN_HANDLER = None
 _START_HANDLER = None
@@ -92,6 +93,14 @@ def settings():
     @rtype: L{Settings}
     '''
     return _SETTINGS
+
+
+def nmd():
+    '''
+    @return: Node manager daemon client
+    @rtype: L{NmdClient}
+    '''
+    return _NMD_CLIENT
 
 
 def ssh():
@@ -279,6 +288,7 @@ def init_globals(masteruri):
     :rtype: bool
     '''
     # initialize the global handler
+    global _NMD_CLIENT
     global _SSH_HANDLER
     global _SCREEN_HANDLER
     global _START_HANDLER
@@ -286,6 +296,8 @@ def init_globals(masteruri):
     global _HISTORY
     global _FILE_WATCHER
     global _FILE_WATCHER_PARAM
+    _NMD_CLIENT = NmdClient()
+    # _NMD_CLIENT.start()
     _SSH_HANDLER = SSHhandler()
     _SCREEN_HANDLER = ScreenHandler()
     _START_HANDLER = StartHandler()
@@ -343,6 +355,7 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
     except Exception as err:
         print("Error while set the log level: %s\n->INFO level will be used!" % err)
         log_level = rospy.INFO
+    log_level = rospy.DEBUG
     rospy.init_node(prog_name, anonymous=False, log_level=log_level)
     set_terminal_name(prog_name)
     set_process_name(prog_name)
@@ -395,6 +408,8 @@ def main(name):
         else:
             _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file)
     except Exception as err:
+        import traceback
+        print traceback.format_exc()
         sys.exit("%s" % err)
 
     exit_code = 0
@@ -412,4 +427,5 @@ def main(name):
         exit_code = -1
         rospy.on_shutdown(finish)
         exit_code = _QAPP.exec_()
+        nmd().stop()
     return exit_code

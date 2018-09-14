@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='launch.proto',
   package='node_manager_daemon_fkie',
   syntax='proto3',
-  serialized_pb=_b('\n\x0claunch.proto\x12\x18node_manager_daemon_fkie\"\x07\n\x05\x45mpty\"\xc7\x01\n\x11LoadLaunchRequest\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x13\n\x0bload_params\x18\x04 \x01(\x08\x12\x30\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x18\n\x10\x66orce_first_file\x18\x06 \x01(\x08\x12\x14\n\x0crequest_args\x18\x07 \x01(\x08\x12\x0c\n\x04host\x18\x08 \x01(\t\"\x89\x01\n\x0fLoadLaunchReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x30\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x0c\n\x04path\x18\x03 \x03(\t\"\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x1a\n\nLaunchFile\x12\x0c\n\x04path\x18\x01 \x01(\t\"{\n\nLoadedFile\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x30\n\x04\x61rgs\x18\x04 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x0c\n\x04host\x18\x05 \x01(\t\"E\n\x10ListNodesRequest\x12\x14\n\x0claunch_files\x18\x01 \x03(\t\x12\x1b\n\x13request_description\x18\x02 \x01(\x08\"s\n\rLaunchContent\x12\x13\n\x0blaunch_file\x18\x01 \x01(\t\x12\x0c\n\x04node\x18\x02 \x03(\t\x12?\n\x0b\x64\x65scription\x18\x03 \x03(\x0b\x32*.node_manager_daemon_fkie.RobotDescription\"\xb2\x01\n\x10RobotDescription\x12\x0f\n\x07machine\x18\x01 \x01(\t\x12\x12\n\nrobot_name\x18\x02 \x01(\t\x12\x12\n\nrobot_type\x18\x03 \x01(\t\x12\x14\n\x0crobot_images\x18\x04 \x03(\t\x12\x13\n\x0brobot_descr\x18\x05 \x01(\t\x12:\n\x0c\x63\x61pabilities\x18\x06 \x03(\x0b\x32$.node_manager_daemon_fkie.Capability\"o\n\nCapability\x12\x11\n\tnamespace\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06images\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\r\n\x05nodes\x18\x06 \x03(\t\"O\n\x04Node\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0bopt_binariy\x18\x02 \x01(\t\x12\x12\n\nopt_launch\x18\x03 \x01(\t\x12\x10\n\x08loglevel\x18\x04 \x01(\x11\"\xa0\x04\n\x0bStartConfig\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tnamespace\x18\x05 \x01(\t\x12\x10\n\x08\x66ullname\x18\x06 \x01(\t\x12\x0e\n\x06prefix\x18\x07 \x01(\t\x12\x0b\n\x03\x63wd\x18\x08 \x01(\t\x12/\n\x03\x65nv\x18\t \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x33\n\x06remaps\x18\n \x03(\x0b\x32#.node_manager_daemon_fkie.Remapping\x12\x32\n\x06params\x18\x0b \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x14\n\x0c\x63lear_params\x18\x0c \x03(\t\x12\x0c\n\x04\x61rgs\x18\r \x03(\t\x12\x11\n\tmasteruri\x18\x0e \x01(\t\x12\x10\n\x08loglevel\x18\x0f \x01(\x11\x12\x0f\n\x07respawn\x18\x10 \x01(\x08\x12\x15\n\rrespawn_delay\x18\x11 \x01(\x02\x12\x13\n\x0brespawn_max\x18\x13 \x01(\x11\x12\x1b\n\x13respawn_min_runtime\x18\x12 \x01(\x02\"N\n\x08LogLevel\x12\r\n\tUNCHANGED\x10\x00\x12\t\n\x05\x46\x41TAL\x10\x01\x12\t\n\x05\x45RROR\x10\x02\x12\x08\n\x04WARN\x10\x03\x12\x08\n\x04INFO\x10\x04\x12\t\n\x05\x44\x45\x42UG\x10\x05\"/\n\tRemapping\x12\x11\n\tfrom_name\x18\x01 \x01(\t\x12\x0f\n\x07to_name\x18\x02 \x01(\t\"t\n\x0eStartNodeReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x0e\n\x06launch\x18\x04 \x03(\t\"X\n\x14IncludedFilesRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\trecursive\x18\x02 \x01(\x08\x12\x0e\n\x06unique\x18\x03 \x01(\x08\x12\x0f\n\x07pattern\x18\x04 \x03(\t\"U\n\x12IncludedFilesReply\x12\x11\n\troot_path\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0e\n\x06linenr\x18\x03 \x01(\x04\x12\x0e\n\x06\x65xists\x18\x04 \x01(\x08\"\xce\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\"\x9c\x01\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x10\n\x0c\x41LREADY_OPEN\x10\x02\x12\x15\n\x11MULTIPLE_BINARIES\x10\x03\x12\x15\n\x11MULTIPLE_LAUNCHES\x10\x04\x12\x13\n\x0fPARAMS_REQUIRED\x10\x05\x12\x12\n\x0e\x46ILE_NOT_FOUND\x10\x06\x12\x12\n\x0eNODE_NOT_FOUND\x10\x07\x32\xa8\x06\n\rLaunchService\x12Y\n\x0eGetLoadedFiles\x12\x1f.node_manager_daemon_fkie.Empty\x1a$.node_manager_daemon_fkie.LoadedFile0\x01\x12\x64\n\nLoadLaunch\x12+.node_manager_daemon_fkie.LoadLaunchRequest\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cReloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12\x61\n\x08GetNodes\x12*.node_manager_daemon_fkie.ListNodesRequest\x1a\'.node_manager_daemon_fkie.LaunchContent0\x01\x12Y\n\tStartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12\x66\n\x13StartStandaloneNode\x12%.node_manager_daemon_fkie.StartConfig\x1a(.node_manager_daemon_fkie.StartNodeReply\x12[\n\x0bRestartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12r\n\x10GetIncludedFiles\x12..node_manager_daemon_fkie.IncludedFilesRequest\x1a,.node_manager_daemon_fkie.IncludedFilesReply0\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x0claunch.proto\x12\x18node_manager_daemon_fkie\"\x07\n\x05\x45mpty\"\xda\x01\n\x11LoadLaunchRequest\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x13\n\x0bload_params\x18\x04 \x01(\x08\x12\x30\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x18\n\x10\x66orce_first_file\x18\x06 \x01(\x08\x12\x14\n\x0crequest_args\x18\x07 \x01(\x08\x12\x11\n\tmasteruri\x18\x08 \x01(\t\x12\x0c\n\x04host\x18\t \x01(\t\"\xa0\x01\n\x0fLoadLaunchReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x30\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x15\n\rchanged_nodes\x18\x04 \x03(\t\"\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x1a\n\nLaunchFile\x12\x0c\n\x04path\x18\x01 \x01(\t\"\x8e\x01\n\nLoadedFile\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x30\n\x04\x61rgs\x18\x04 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x11\n\tmasteruri\x18\x05 \x01(\t\x12\x0c\n\x04host\x18\x06 \x01(\t\"E\n\x10ListNodesRequest\x12\x14\n\x0claunch_files\x18\x01 \x03(\t\x12\x1b\n\x13request_description\x18\x02 \x01(\x08\"\x94\x01\n\rLaunchContent\x12\x13\n\x0blaunch_file\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04node\x18\x04 \x03(\t\x12?\n\x0b\x64\x65scription\x18\x05 \x03(\x0b\x32*.node_manager_daemon_fkie.RobotDescription\"\xb2\x01\n\x10RobotDescription\x12\x0f\n\x07machine\x18\x01 \x01(\t\x12\x12\n\nrobot_name\x18\x02 \x01(\t\x12\x12\n\nrobot_type\x18\x03 \x01(\t\x12\x14\n\x0crobot_images\x18\x04 \x03(\t\x12\x13\n\x0brobot_descr\x18\x05 \x01(\t\x12:\n\x0c\x63\x61pabilities\x18\x06 \x03(\x0b\x32$.node_manager_daemon_fkie.Capability\"o\n\nCapability\x12\x11\n\tnamespace\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06images\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\r\n\x05nodes\x18\x06 \x03(\t\"O\n\x04Node\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0bopt_binariy\x18\x02 \x01(\t\x12\x12\n\nopt_launch\x18\x03 \x01(\t\x12\x10\n\x08loglevel\x18\x04 \x01(\x11\"\xa0\x04\n\x0bStartConfig\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tnamespace\x18\x05 \x01(\t\x12\x10\n\x08\x66ullname\x18\x06 \x01(\t\x12\x0e\n\x06prefix\x18\x07 \x01(\t\x12\x0b\n\x03\x63wd\x18\x08 \x01(\t\x12/\n\x03\x65nv\x18\t \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x33\n\x06remaps\x18\n \x03(\x0b\x32#.node_manager_daemon_fkie.Remapping\x12\x32\n\x06params\x18\x0b \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x14\n\x0c\x63lear_params\x18\x0c \x03(\t\x12\x0c\n\x04\x61rgs\x18\r \x03(\t\x12\x11\n\tmasteruri\x18\x0e \x01(\t\x12\x10\n\x08loglevel\x18\x0f \x01(\x11\x12\x0f\n\x07respawn\x18\x10 \x01(\x08\x12\x15\n\rrespawn_delay\x18\x11 \x01(\x01\x12\x13\n\x0brespawn_max\x18\x13 \x01(\x11\x12\x1b\n\x13respawn_min_runtime\x18\x12 \x01(\x01\"N\n\x08LogLevel\x12\r\n\tUNCHANGED\x10\x00\x12\t\n\x05\x46\x41TAL\x10\x01\x12\t\n\x05\x45RROR\x10\x02\x12\x08\n\x04WARN\x10\x03\x12\x08\n\x04INFO\x10\x04\x12\t\n\x05\x44\x45\x42UG\x10\x05\"/\n\tRemapping\x12\x11\n\tfrom_name\x18\x01 \x01(\t\x12\x0f\n\x07to_name\x18\x02 \x01(\t\"t\n\x0eStartNodeReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x0e\n\x06launch\x18\x04 \x03(\t\"X\n\x14IncludedFilesRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\trecursive\x18\x02 \x01(\x08\x12\x0e\n\x06unique\x18\x03 \x01(\x08\x12\x0f\n\x07pattern\x18\x04 \x03(\t\"U\n\x12IncludedFilesReply\x12\x11\n\troot_path\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0e\n\x06linenr\x18\x03 \x01(\x04\x12\x0e\n\x06\x65xists\x18\x04 \x01(\x08\"\xce\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\"\x9c\x01\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x10\n\x0c\x41LREADY_OPEN\x10\x02\x12\x15\n\x11MULTIPLE_BINARIES\x10\x03\x12\x15\n\x11MULTIPLE_LAUNCHES\x10\x04\x12\x13\n\x0fPARAMS_REQUIRED\x10\x05\x12\x12\n\x0e\x46ILE_NOT_FOUND\x10\x06\x12\x12\n\x0eNODE_NOT_FOUND\x10\x07\x32\x89\x07\n\rLaunchService\x12Y\n\x0eGetLoadedFiles\x12\x1f.node_manager_daemon_fkie.Empty\x1a$.node_manager_daemon_fkie.LoadedFile0\x01\x12\x64\n\nLoadLaunch\x12+.node_manager_daemon_fkie.LoadLaunchRequest\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cReloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cUnloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12\x61\n\x08GetNodes\x12*.node_manager_daemon_fkie.ListNodesRequest\x1a\'.node_manager_daemon_fkie.LaunchContent0\x01\x12Y\n\tStartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12\x66\n\x13StartStandaloneNode\x12%.node_manager_daemon_fkie.StartConfig\x1a(.node_manager_daemon_fkie.StartNodeReply\x12[\n\x0bRestartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12r\n\x10GetIncludedFiles\x12..node_manager_daemon_fkie.IncludedFilesRequest\x1a,.node_manager_daemon_fkie.IncludedFilesReply0\x01\x62\x06proto3')
 )
 
 
@@ -57,8 +57,8 @@ _STARTCONFIG_LOGLEVEL = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1617,
-  serialized_end=1695,
+  serialized_start=1713,
+  serialized_end=1791,
 )
 _sym_db.RegisterEnumDescriptor(_STARTCONFIG_LOGLEVEL)
 
@@ -103,8 +103,8 @@ _RETURNSTATUS_STATUSTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2092,
-  serialized_end=2248,
+  serialized_start=2188,
+  serialized_end=2344,
 )
 _sym_db.RegisterEnumDescriptor(_RETURNSTATUS_STATUSTYPE)
 
@@ -190,8 +190,15 @@ _LOADLAUNCHREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='host', full_name='node_manager_daemon_fkie.LoadLaunchRequest.host', index=7,
+      name='masteruri', full_name='node_manager_daemon_fkie.LoadLaunchRequest.masteruri', index=7,
       number=8, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='host', full_name='node_manager_daemon_fkie.LoadLaunchRequest.host', index=8,
+      number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -209,7 +216,7 @@ _LOADLAUNCHREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=52,
-  serialized_end=251,
+  serialized_end=270,
 )
 
 
@@ -241,6 +248,13 @@ _LOADLAUNCHREPLY = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='changed_nodes', full_name='node_manager_daemon_fkie.LoadLaunchReply.changed_nodes', index=3,
+      number=4, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -253,8 +267,8 @@ _LOADLAUNCHREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=254,
-  serialized_end=391,
+  serialized_start=273,
+  serialized_end=433,
 )
 
 
@@ -291,8 +305,8 @@ _ARGUMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=393,
-  serialized_end=432,
+  serialized_start=435,
+  serialized_end=474,
 )
 
 
@@ -322,8 +336,8 @@ _LAUNCHFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=434,
-  serialized_end=460,
+  serialized_start=476,
+  serialized_end=502,
 )
 
 
@@ -363,8 +377,15 @@ _LOADEDFILE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='host', full_name='node_manager_daemon_fkie.LoadedFile.host', index=4,
+      name='masteruri', full_name='node_manager_daemon_fkie.LoadedFile.masteruri', index=4,
       number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='host', full_name='node_manager_daemon_fkie.LoadedFile.host', index=5,
+      number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -381,8 +402,8 @@ _LOADEDFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=462,
-  serialized_end=585,
+  serialized_start=505,
+  serialized_end=647,
 )
 
 
@@ -419,8 +440,8 @@ _LISTNODESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=587,
-  serialized_end=656,
+  serialized_start=649,
+  serialized_end=718,
 )
 
 
@@ -439,15 +460,29 @@ _LAUNCHCONTENT = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='node', full_name='node_manager_daemon_fkie.LaunchContent.node', index=1,
-      number=2, type=9, cpp_type=9, label=3,
+      name='masteruri', full_name='node_manager_daemon_fkie.LaunchContent.masteruri', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='host', full_name='node_manager_daemon_fkie.LaunchContent.host', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='node', full_name='node_manager_daemon_fkie.LaunchContent.node', index=3,
+      number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='description', full_name='node_manager_daemon_fkie.LaunchContent.description', index=2,
-      number=3, type=11, cpp_type=10, label=3,
+      name='description', full_name='node_manager_daemon_fkie.LaunchContent.description', index=4,
+      number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -464,8 +499,8 @@ _LAUNCHCONTENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=658,
-  serialized_end=773,
+  serialized_start=721,
+  serialized_end=869,
 )
 
 
@@ -530,8 +565,8 @@ _ROBOTDESCRIPTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=776,
-  serialized_end=954,
+  serialized_start=872,
+  serialized_end=1050,
 )
 
 
@@ -596,8 +631,8 @@ _CAPABILITY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=956,
-  serialized_end=1067,
+  serialized_start=1052,
+  serialized_end=1163,
 )
 
 
@@ -648,8 +683,8 @@ _NODE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1069,
-  serialized_end=1148,
+  serialized_start=1165,
+  serialized_end=1244,
 )
 
 
@@ -774,7 +809,7 @@ _STARTCONFIG = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='respawn_delay', full_name='node_manager_daemon_fkie.StartConfig.respawn_delay', index=16,
-      number=17, type=2, cpp_type=6, label=1,
+      number=17, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -788,7 +823,7 @@ _STARTCONFIG = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='respawn_min_runtime', full_name='node_manager_daemon_fkie.StartConfig.respawn_min_runtime', index=18,
-      number=18, type=2, cpp_type=6, label=1,
+      number=18, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -806,8 +841,8 @@ _STARTCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1151,
-  serialized_end=1695,
+  serialized_start=1247,
+  serialized_end=1791,
 )
 
 
@@ -844,8 +879,8 @@ _REMAPPING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1697,
-  serialized_end=1744,
+  serialized_start=1793,
+  serialized_end=1840,
 )
 
 
@@ -896,8 +931,8 @@ _STARTNODEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1746,
-  serialized_end=1862,
+  serialized_start=1842,
+  serialized_end=1958,
 )
 
 
@@ -948,8 +983,8 @@ _INCLUDEDFILESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1864,
-  serialized_end=1952,
+  serialized_start=1960,
+  serialized_end=2048,
 )
 
 
@@ -1000,8 +1035,8 @@ _INCLUDEDFILESREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1954,
-  serialized_end=2039,
+  serialized_start=2050,
+  serialized_end=2135,
 )
 
 
@@ -1039,8 +1074,8 @@ _RETURNSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2042,
-  serialized_end=2248,
+  serialized_start=2138,
+  serialized_end=2344,
 )
 
 _LOADLAUNCHREQUEST.fields_by_name['args'].message_type = _ARGUMENT
@@ -1201,8 +1236,8 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=2251,
-  serialized_end=3059,
+  serialized_start=2347,
+  serialized_end=3252,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetLoadedFiles',
@@ -1232,9 +1267,18 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     options=None,
   ),
   _descriptor.MethodDescriptor(
+    name='UnloadLaunch',
+    full_name='node_manager_daemon_fkie.LaunchService.UnloadLaunch',
+    index=3,
+    containing_service=None,
+    input_type=_LAUNCHFILE,
+    output_type=_LOADLAUNCHREPLY,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
     name='GetNodes',
     full_name='node_manager_daemon_fkie.LaunchService.GetNodes',
-    index=3,
+    index=4,
     containing_service=None,
     input_type=_LISTNODESREQUEST,
     output_type=_LAUNCHCONTENT,
@@ -1243,7 +1287,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='StartNode',
     full_name='node_manager_daemon_fkie.LaunchService.StartNode',
-    index=4,
+    index=5,
     containing_service=None,
     input_type=_NODE,
     output_type=_STARTNODEREPLY,
@@ -1252,7 +1296,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='StartStandaloneNode',
     full_name='node_manager_daemon_fkie.LaunchService.StartStandaloneNode',
-    index=5,
+    index=6,
     containing_service=None,
     input_type=_STARTCONFIG,
     output_type=_STARTNODEREPLY,
@@ -1261,7 +1305,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='RestartNode',
     full_name='node_manager_daemon_fkie.LaunchService.RestartNode',
-    index=6,
+    index=7,
     containing_service=None,
     input_type=_NODE,
     output_type=_STARTNODEREPLY,
@@ -1270,7 +1314,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='GetIncludedFiles',
     full_name='node_manager_daemon_fkie.LaunchService.GetIncludedFiles',
-    index=7,
+    index=8,
     containing_service=None,
     input_type=_INCLUDEDFILESREQUEST,
     output_type=_INCLUDEDFILESREPLY,

@@ -31,14 +31,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, Signal
-from python_qt_binding.QtCore import QRegExp, QFile
-import os
 import rospy
 import threading
 
 import node_manager_fkie as nm
 
-from .parser_functions import interpret_path
+from node_manager_fkie.common import utf8
 
 
 class TextSearchThread(QObject, threading.Thread):
@@ -46,7 +44,7 @@ class TextSearchThread(QObject, threading.Thread):
     A thread to search recursive for a text in files.
     '''
     search_result_signal = Signal(str, bool, str, int, int, str)
-    ''' @ivar: A signal emitted after search_threaded was started.
+    ''' :ivar: A signal emitted after search_threaded was started.
         (search text, found or not, file, position in text, line number, line text)
         for each result a signal will be emitted.
     '''
@@ -54,12 +52,9 @@ class TextSearchThread(QObject, threading.Thread):
 
     def __init__(self, search_text, path, is_regex=False, path_text={}, recursive=False):
         '''
-        :param search_text: text to search for
-        :type search_text: str
-        :param path: initial file path
-        :type path: str
-        .param is_regex: is the search_text a regular expressions
-        :type is_regex: bool
+        :param str search_text: text to search for
+        :param str path: initial file path
+        :param bool is_regex: is the search_text a regular expressions
         '''
         QObject.__init__(self)
         threading.Thread.__init__(self)
@@ -78,12 +73,11 @@ class TextSearchThread(QObject, threading.Thread):
         '''
         try:
             self.search(self._search_text, self._path, self._recursive)
-        except:
+        except Exception:
             import traceback
-            # print traceback.print_exc()
-            formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Error while search for '%s' in '%s': %s" % (self._search_text, self._path, formatted_lines[-1]))
-            self.warning_signal.emit(formatted_lines[-1])
+            # formatted_lines = traceback.format_exc(1).splitlines()
+            rospy.logwarn("Error while search for '%s' in '%s': %s" % (self._search_text, self._path, traceback.print_exc()))
+            self.warning_signal.emit(traceback.print_exc())
         finally:
             if self._isrunning:
                 self.search_result_signal.emit(self._search_text, False, '', -1, -1, '')
@@ -91,10 +85,9 @@ class TextSearchThread(QObject, threading.Thread):
     def search(self, search_text, path, recursive=False):
         '''
         Searches for given text in this document and all included files.
-        @param search_text: text to find
-        @type search_text: C{str}
-        @return: the list with all files contain the text
-        @rtype: C{[str, ...]}
+        :param str search_text: text to find
+        :return: the list with all files contain the text
+        :rtype: [str, ...]
         '''
         data = self._get_text(path)
         pos = data.find(search_text)
@@ -105,47 +98,20 @@ class TextSearchThread(QObject, threading.Thread):
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:
-            inc_files = self._included_files(path)
-            for incf in inc_files:
-                if not self._isrunning:
-                    break
-                if recursive:
+            if recursive:
+                inc_files = nm.nmd().get_unique_included_files(path, False)
+                for incf in inc_files:
+                    if not self._isrunning:
+                        break
                     self.search(search_text, incf, recursive)
 
     def _get_text(self, path):
-        if path in self._path_text:
-            return self._path_text[path]
-        with open(path, 'r') as f:
-            data = f.read()
-            return data
-        return ''
-
-    def _included_files(self, path):
-        '''
-        Returns all included files in the given file.
-        '''
-        result = []
-        with open(path, 'r') as f:
-            data = f.read()
-            reg = QRegExp("=[\s\t]*\".*\"")
-            reg.setMinimal(True)
-            pos = reg.indexIn(data)
-            while pos != -1 and self._isrunning:
-                try:
-                    pp = interpret_path(reg.cap(0).strip('"'))
-                    f = QFile(pp)
-                    ext = os.path.splitext(pp)
-                    if f.exists() and ext[1] in nm.settings().SEARCH_IN_EXT:
-                        result.append(pp)
-                except Exception as exp:
-                    parsed_text = pp
-                    try:
-                        parsed_text = reg.cap(0).strip('"')
-                    except:
-                        pass
-                    self.warning_signal.emit("Error while parse '%s': %s" % (parsed_text, exp))
-                pos += reg.matchedLength()
-                pos = reg.indexIn(data, pos)
+        result = ''
+        try:
+            result = self._path_text[path]
+        except KeyError:
+            _, _, data = nm.nmd().get_file_content(path)
+            result = utf8(data)
         return result
 
     def _strip_text(self, data, pos):

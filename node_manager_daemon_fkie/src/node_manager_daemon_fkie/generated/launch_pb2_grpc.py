@@ -29,6 +29,11 @@ class LaunchServiceStub(object):
         request_serializer=launch__pb2.LaunchFile.SerializeToString,
         response_deserializer=launch__pb2.LoadLaunchReply.FromString,
         )
+    self.UnloadLaunch = channel.unary_unary(
+        '/node_manager_daemon_fkie.LaunchService/UnloadLaunch',
+        request_serializer=launch__pb2.LaunchFile.SerializeToString,
+        response_deserializer=launch__pb2.LoadLaunchReply.FromString,
+        )
     self.GetNodes = channel.unary_stream(
         '/node_manager_daemon_fkie.LaunchService/GetNodes',
         request_serializer=launch__pb2.ListNodesRequest.SerializeToString,
@@ -75,6 +80,13 @@ class LaunchServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def ReloadLaunch(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def UnloadLaunch(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -131,6 +143,11 @@ def add_LaunchServiceServicer_to_server(servicer, server):
       ),
       'ReloadLaunch': grpc.unary_unary_rpc_method_handler(
           servicer.ReloadLaunch,
+          request_deserializer=launch__pb2.LaunchFile.FromString,
+          response_serializer=launch__pb2.LoadLaunchReply.SerializeToString,
+      ),
+      'UnloadLaunch': grpc.unary_unary_rpc_method_handler(
+          servicer.UnloadLaunch,
           request_deserializer=launch__pb2.LaunchFile.FromString,
           response_serializer=launch__pb2.LoadLaunchReply.SerializeToString,
       ),

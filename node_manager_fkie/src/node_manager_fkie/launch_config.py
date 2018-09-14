@@ -75,8 +75,8 @@ class LaunchConfig(QObject):
         @raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
         QObject.__init__(self)
-        self.__launchFile = launch_file
-        self.__package = package_name(os.path.dirname(self.__launchFile))[0] if package is None else package
+        self.__launchfile = launch_file
+        self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
         self.__masteruri = masteruri if masteruri is not None else 'localhost'
         self.__roscfg = None
         self.argv = argv
@@ -85,12 +85,12 @@ class LaunchConfig(QObject):
         self.global_param_done = []  # masteruri's where the global parameters are registered
         self.hostname = get_hostname(self.__masteruri)
         self.__launch_id = '%.9f' % time.time()
-        nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
+        nm.filewatcher().add_launch(self.__masteruri, self.__launchfile, self.__launch_id, [self.__launchfile])
 
     def __del__(self):
         # Delete to avoid segfault if the LaunchConfig class is destroyed recently
         # after creation and xmlrpclib.ServerProxy process a method call.
-        nm.filewatcher().rem_launch(self.__masteruri, self.__launchFile, self.__launch_id)
+        nm.filewatcher().rem_launch(self.__masteruri, self.__launchfile, self.__launch_id)
 
     @property
     def masteruri(self):
@@ -121,14 +121,14 @@ class LaunchConfig(QObject):
         Returns an existing path with file name or an empty string.
         @rtype: C{str}
         '''
-        if os.path.isfile(self.__launchFile):
-            return self.__launchFile
+        if os.path.isfile(self.__launchfile):
+            return self.__launchfile
         elif self.__package is not None:
             try:
                 return roslib.packages.find_resource(self.PackageName, self.LaunchName).pop()
             except Exception:
                 raise LaunchConfigException(''.join(['launch file ', self.LaunchName, ' not found!']))
-        raise LaunchConfigException(''.join(['launch file ', self.__launchFile, ' not found!']))
+        raise LaunchConfigException(''.join(['launch file ', self.__launchfile, ' not found!']))
 
     @property
     def LaunchName(self):
@@ -136,7 +136,7 @@ class LaunchConfig(QObject):
         Returns the name of the launch file with extension, e.g. 'test.launch'
         @rtype: C{str}
         '''
-        return os.path.basename(self.__launchFile)
+        return os.path.basename(self.__launchfile)
 
     @property
     def PackageName(self):
@@ -272,7 +272,7 @@ class LaunchConfig(QObject):
             self.argv = self.resolveArgs(argv)
             loader.load(self.Filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
-            nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.included_files(self.Filename))
+            nm.filewatcher().add_launch(self.__masteruri, self.__launchfile, self.__launch_id, self.included_files(self.Filename))
             if not nm.is_local(get_hostname(self.__masteruri)):
                 files = self.included_files(self.Filename,
                                             regexp_retruns=[QRegExp("\\bdefault\\b"),
@@ -281,7 +281,7 @@ class LaunchConfig(QObject):
                                                             QRegExp("\\bvalue=.*\$\(find\\b"),
                                                             QRegExp("\\bargs=.*\$\(find\\b")])
                 nm.file_watcher_param().add_launch(self.__masteruri,
-                                                   self.__launchFile,
+                                                   self.__launchfile,
                                                    self.__launch_id,
                                                    files)
         except roslaunch.XmlParseException, e:

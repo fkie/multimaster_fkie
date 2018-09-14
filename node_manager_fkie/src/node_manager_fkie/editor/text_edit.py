@@ -30,14 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFile, QFileInfo, QIODevice, QRegExp, Qt, Signal
+from python_qt_binding.QtCore import QFile, QRegExp, Qt, Signal
 from python_qt_binding.QtGui import QFont, QTextCursor
 import os
 import re
+import rospy
 
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
-from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
 
 from .parser_functions import interpret_path
@@ -59,10 +59,10 @@ class TextEdit(QTextEdit):
     '''
 
     load_request_signal = Signal(str)
-    ''' @ivar: A signal for request to open a configuration file'''
+    ''' :ivar: A signal for request to open a configuration file'''
 
     search_result_signal = Signal(str, bool, str, int)
-    ''' @ivar: A signal emitted after search_threaded was started.
+    ''' :ivar: A signal emitted after search_threaded was started.
         (search text, found or not, file, position in text)
         for each result a signal will be emitted.
     '''
@@ -96,12 +96,14 @@ class TextEdit(QTextEdit):
                             QRegExp("\\bargs=.*\$\(find\\b"),
                             QRegExp("\\bdefault=.*\$\(find\\b")]
         self.filename = filename
-        self.file_info = None
+        self.file_mtime = 0
         if self.filename:
-            f = QFile(filename)
-            if f.open(QIODevice.ReadOnly | QIODevice.Text):
-                self.file_info = QFileInfo(filename)
-                self.setText(unicode(f.readAll(), "utf-8"))
+            _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
+            self.setText(unicode(file_content, "utf-8"))
+#             f = QFile(filename)
+#             if f.open(QIODevice.ReadOnly | QIODevice.Text):
+#                 self.file_info = QFileInfo(filename)
+#                 self.setText(unicode(f.readAll(), "utf-8"))
 
         self.path = '.'
         # enables drop events
@@ -128,13 +130,11 @@ class TextEdit(QTextEdit):
         :return: saved, errors, msg
         :rtype: bool, bool, str
         '''
-        if force or self.document().isModified() or not QFileInfo(self.filename).exists():
-            f = QFile(self.filename)
-            if f.open(QIODevice.WriteOnly | QIODevice.Text):
-                f.write(self.toPlainText().encode('utf-8'))
-                self.document().setModified(False)
-                self.file_info = QFileInfo(self.filename)
-
+        if force or self.document().isModified():
+            try:
+                mtime = nm.nmd().save_file(self.filename, self.toPlainText().encode('utf-8'), 0 if force else self.file_mtime)
+                self.file_mtime = mtime
+                self.document().setModified(mtime == 0)
                 ext = os.path.splitext(self.filename)
                 # validate the xml structure of the launch files
                 if ext[1] in self.CONTEXT_FILE_EXT:
@@ -156,8 +156,18 @@ class TextEdit(QTextEdit):
                     except yaml.MarkedYAMLError as e:
                         return True, True, "%s" % e
                 return True, False, ''
-            else:
-                return False, True, "Cannot write XML file"
+            except IOError as ioe:
+                if ioe.errno in [4, 5]:
+                    result = MessageBox.question(self, "Changed file", "%s\n%s" % (utf8(ioe), "Save anyway?"), buttons=MessageBox.Yes | MessageBox.No)
+                    if result == MessageBox.Yes:
+                        return self.save(force=True)
+                else:
+                    rospy.logwarn("Error while save file: %s" % ioe)
+                    MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(self.filename), detailed_text=utf8(ioe))
+            except Exception as e:
+                rospy.logwarn("Error while save file: %s" % e)
+                import traceback
+                print(traceback.format_exc())
         return False, False, ''
 
     def markLine(self, no):
@@ -168,15 +178,14 @@ class TextEdit(QTextEdit):
                 cursor.movePosition(QTextCursor.NextBlock, QTextCursor.MoveAnchor)
             cursor.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
             self.setTextCursor(cursor)
-        except:
+        except Exception:
             pass
 
     def setCurrentPath(self, path):
         '''
         Sets the current working path. This path is to open the included files,
         which contains the relative path.
-        @param path: the path of the current opened file (without the file)
-        @type path: C{str}
+        :param str path: the path of the current opened file (without the file)
         '''
         self.path = path
 
@@ -184,10 +193,9 @@ class TextEdit(QTextEdit):
         '''
         Searches in the given text for key indicates the including of a file and
         return their index.
-        @param text: text to find
-        @type text: C{str}
-        @return: the index of the including key or -1
-        @rtype: C{int}
+        :param str text: text to find
+        :return: the index of the including key or -1
+        :rtype: int
         '''
         for pattern in self.regexp_list:
             index = pattern.indexIn(text)
@@ -216,7 +224,7 @@ class TextEdit(QTextEdit):
                             ext = os.path.splitext(path)
                             if f.exists() and ext[1] in nm.settings().SEARCH_IN_EXT:
                                 result.append(path)
-                        except:
+                        except Exception:
                             import traceback
                             print traceback.format_exc(1)
             b = b.next()
@@ -224,22 +232,21 @@ class TextEdit(QTextEdit):
 
     def focusInEvent(self, event):
         # check for file changes
-        try:
-            if self.filename and self.file_info:
-                if self.file_info.lastModified() != QFileInfo(self.filename).lastModified():
-                    self.file_info = QFileInfo(self.filename)
-                    result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
-                    if result == MessageBox.Yes:
-                        f = QFile(self.filename)
-                        if f.open(QIODevice.ReadOnly | QIODevice.Text):
-                            self.setText(unicode(f.readAll(), "utf-8"))
-                            self.document().setModified(False)
-                            self.textChanged.emit()
-                        else:
-                            MessageBox.critical(self, "Error", "Cannot open launch file%s" % self.filename)
-        except:
-            pass
+        if self.filename and self.file_mtime:
+            nm.nmd().check_for_changed_file_threaded(self.filename, self.file_mtime)
         QTextEdit.focusInEvent(self, event)
+
+    def file_changed(self, mtime):
+        self.file_mtime = mtime
+        result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
+        if result == MessageBox.Yes:
+            try:
+                _, self.file_mtime, file_content = nm.nmd().get_file_content(self.filename, force=True)
+                self.setText(unicode(file_content, "utf-8"))
+                self.document().setModified(False)
+                self.textChanged.emit()
+            except Exception as err:
+                MessageBox.critical(self, "Error", "Cannot open launch file %s" % self.filename, utf8(err))
 
     def mouseReleaseEvent(self, event):
         '''
@@ -248,25 +255,21 @@ class TextEdit(QTextEdit):
         '''
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
-            inc_files = LaunchConfig.included_files(cursor.block().text(), recursive=False)
+            inc_files = nm.nmd().get_included_path(self.filename, text=cursor.block().text())
             if inc_files:
                 try:
-                    qf = QFile(inc_files[0])
-                    if not qf.exists():
-                        # create a new file, if it does not exists
-                        result = MessageBox.question(self, "File not found", '\n\n'.join(["Create a new file?", qf.fileName()]), buttons=MessageBox.Yes | MessageBox.No)
-                        if result == MessageBox.Yes:
-                            d = os.path.dirname(qf.fileName())
-                            if not os.path.exists(d):
-                                os.makedirs(d)
-                            with open(qf.fileName(), 'w') as f:
-                                if qf.fileName().endswith('.launch'):
-                                    f.write('<launch>\n\n</launch>')
-                            event.setAccepted(True)
-                            self.load_request_signal.emit(qf.fileName())
-                    else:
+                    _, path, exists, _ = inc_files[0]
+                    if exists:
                         event.setAccepted(True)
-                        self.load_request_signal.emit(qf.fileName())
+                        self.load_request_signal.emit(path)
+
+                    else:
+                        # create a new file, if it does not exists
+                        result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
+                        if result == MessageBox.Yes:
+                            nm.nmd().save_file(path, '<launch>\n\n</launch>', 0)
+                            event.setAccepted(True)
+                            self.load_request_signal.emit(path)
                 except Exception, e:
                     MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
         QTextEdit.mouseReleaseEvent(self, event)
@@ -556,9 +559,9 @@ class TextEdit(QTextEdit):
             return len(line) - len(line.lstrip(' '))
         return 0
 
-    #############################################################################
-    ########## Drag&Drop                                                   ######
-    #############################################################################
+    # ############################################################################
+    # ######### Drag&Drop                                                   ######
+    # ############################################################################
 
     def dragEnterEvent(self, e):
         if e.mimeData().hasFormat('text/plain'):
@@ -593,9 +596,9 @@ class TextEdit(QTextEdit):
                 cursor.insertText(e.mimeData().text())
         e.accept()
 
-    #############################################################################
-    ########## Ctrl&Space  Context menu                                    ######
-    #############################################################################
+    # ############################################################################
+    # ######### Ctrl&Space  Context menu                                    ######
+    # ############################################################################
 
     def show_custom_context_menu(self, pos):
         menu = QTextEdit.createStandardContextMenu(self)
@@ -636,7 +639,7 @@ class TextEdit(QTextEdit):
                             action.setData(data)
                         menu.addMenu(menu_tags)
                     return menu
-                except:
+                except Exception:
                     import traceback
                     print traceback.format_exc(1)
                     return None
@@ -657,7 +660,7 @@ class TextEdit(QTextEdit):
                         else:
                             action.setData("(%s" % arg if text[pos] == '$' else "%s" % arg)
                     return menu
-            except:
+            except Exception:
                 pass
         return None
 

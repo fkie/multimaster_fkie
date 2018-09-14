@@ -527,8 +527,8 @@ class Settings(object):
             if i >= self.launch_history_length:
                 break
             launch_file = history_file.value("file")
-            if os.path.isfile(launch_file):
-                result.append(launch_file)
+            # TODO: if os.path.isfile(launch_file):
+            result.append(launch_file)
         history_file.endArray()
         self._launch_history = result
         return self._launch_history

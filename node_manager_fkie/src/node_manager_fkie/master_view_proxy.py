@@ -46,25 +46,27 @@ import traceback
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import get_hostname
+from master_discovery_fkie.common import get_hostname, masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_fkie.common import masteruri_from_ros, get_packages, package_name, resolve_paths, utf8
-from node_manager_fkie.default_cfg_handler import DefaultConfigHandler
-from node_manager_fkie.detailed_msg_box import MessageBox, DetailedError
-from node_manager_fkie.html_delegate import HTMLDelegate
-from node_manager_fkie.launch_config import LaunchConfig  # , LaunchConfigException
-from node_manager_fkie.launch_server_handler import LaunchServerHandler
-from node_manager_fkie.message_frame import MessageData, MessageFrame
-from node_manager_fkie.node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, CellItem
-from node_manager_fkie.parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
-from node_manager_fkie.parameter_handler import ParameterHandler
-from node_manager_fkie.parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
-from node_manager_fkie.progress_queue import ProgressQueue, InteractionNeededError  # , ProgressThread
-from node_manager_fkie.select_dialog import SelectDialog
-from node_manager_fkie.service_list_model import ServiceModel, ServiceItem
-from node_manager_fkie.start_handler import AdvRunCfg
-from node_manager_fkie.supervised_popen import SupervisedPopen
-from node_manager_fkie.topic_list_model import TopicModel, TopicItem
+from .launcher_threaded import LauncherThreaded
+from .common import get_packages, package_name, resolve_paths
+from node_manager_daemon_fkie.common import get_nmd_url, utf8
+from .default_cfg_handler import DefaultConfigHandler
+from .detailed_msg_box import MessageBox, DetailedError
+from .html_delegate import HTMLDelegate
+from .launch_config import LaunchConfig  # , LaunchConfigException
+from .launch_server_handler import LaunchServerHandler
+from .message_frame import MessageData, MessageFrame
+from .node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, CellItem
+from .parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
+from .parameter_handler import ParameterHandler
+from .parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
+from .progress_queue import ProgressQueue, InteractionNeededError  # , ProgressThread
+from .select_dialog import SelectDialog
+from .service_list_model import ServiceModel, ServiceItem
+from .start_handler import AdvRunCfg
+from .supervised_popen import SupervisedPopen
+from .topic_list_model import TopicModel, TopicItem
 import node_manager_fkie as nm
 try:
     from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
@@ -80,24 +82,6 @@ except:
     from python_qt_binding.QtCore import QItemSelection, QItemSelectionModel, QItemSelectionRange, QSortFilterProxyModel
 
 
-class LaunchArgsSelectionRequest(Exception):
-    ''' Request needed to set the args of a launchfile from another thread.
-    @param args: a dictionary with args and values
-    @type args: dict
-    @param error: an error description
-    @type error: str
-    '''
-
-    def __init__(self, launchfile, args, error):
-        Exception.__init__(self)
-        self.launchfile = launchfile
-        self.args_dict = args
-        self.error = error
-
-    def __str__(self):
-        return "LaunchArgsSelectionRequest for " + utf8(self.args_dict) + "::" + repr(self.error)
-
-
 class MasterViewProxy(QWidget):
     '''
     This class stores the informations about a ROS master and shows it on request.
@@ -110,16 +94,16 @@ class MasterViewProxy(QWidget):
 
     capabilities_update_signal = Signal(str, str, str, list)
     '''@ivar: the signal is emitted if a description with capabilities is received
-  and has the ROS master URI, host address, the name of the default_cfg node and a list with
-  descriptions (U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response) as parameter.'''
+  and has the ROS master URI, host address, the name of the config and a list with
+  descriptions (node_manager_daemon_fkie.launch_description.RobotDescription) as parameter.'''
     remove_config_signal = Signal(str)
     '''@ivar: the signal is emitted if a default_cfg was removed'''
 
     description_signal = Signal(str, str, bool)
     '''@ivar: the signal is emitted to show a description (title, description)'''
 
-    request_xml_editor = Signal(list, str)
-    '''@ivar: the signal to open a xml editor dialog (list with files, search text)'''
+    request_xml_editor = Signal(str, str)
+    '''@ivar: the signal to open a xml editor dialog (configuration path, search text)'''
 
     stop_nodes_signal = Signal(str, list)
     '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
@@ -161,6 +145,7 @@ class MasterViewProxy(QWidget):
         self.__master_info = None
         self.__force_update = False
         self.__configs = dict()  # [file name] : LaunchConfig or tuple(ROS node name, ROS service uri, ROS master URI) : ROS nodes
+        self.__expanded_items = dict()  # [file name] : list of expanded nodes
         self.__online = False
         self.__run_id = ''
 #    self.rosconfigs = dict() # [launch file path] = LaunchConfig()
@@ -190,6 +175,10 @@ class MasterViewProxy(QWidget):
         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
         self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
+
+        self._launcher_threaded = LauncherThreaded()
+        self._launcher_threaded.update_signal.connect(self.on_launch_description_retrieved)
+        self._launcher_threaded.err_signal.connect(self.on_launch_description_err)
 
         self.__launch_servers = {}  # uri : (pid, nodes)
         self.launch_server_handler = LaunchServerHandler()
@@ -438,6 +427,9 @@ class MasterViewProxy(QWidget):
         @param master_info: the mater information object
         @type master_info: U{master_discovery_fkie.msg.MasterInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
         '''
+        nmd_uri = get_nmd_url(self.masteruri)
+        self._launcher_threaded.update_info(nmd_uri)
+        nm.nmd().list_packages_threaded(nmd_uri)
         try:
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
             if self.__master_info is None:
@@ -592,10 +584,7 @@ class MasterViewProxy(QWidget):
                         break
             self.masterTab.dynamicConfigButton.setEnabled(dyn_cfg_available)
         # the configuration is only available, if only one node is selected
-        cfg_enable = False
-        if len(selectedNodes) >= 1:
-            cfg_enable = len(self._getCfgChoises(selectedNodes[0], True)) > 0
-        self.masterTab.editConfigButton.setEnabled(cfg_enable and len(selectedNodes) == 1)
+        self.masterTab.editConfigButton.setEnabled(len(selectedNodes) == 1 and selectedNodes[0].has_configs())
 #    self.startNodesAtHostAct.setEnabled(cfg_enable)
         self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
         # self.masterTab.saveButton.setEnabled(len(self.launchfiles) > 1)
@@ -645,73 +634,102 @@ class MasterViewProxy(QWidget):
         @type launchfile: C{str}
         '''
         lfile = launchfile
-        argv = []
+        args = {}
         if isinstance(launchfile, tuple):
-            lfile, argv = launchfile
+            lfile, args = launchfile
         self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                             'Loading %s' % os.path.basename(lfile),
                                             self._load_launchfile,
-                                            (lfile, argv))
+                                            (lfile, args))
         self._start_queue(self._progress_queue_prio)
 
-    def _load_launchfile(self, launchfile, argv_forced=[], pqid=None):
+    def _load_launchfile(self, launchfile, args_forced={}, pqid=None):
         '''
         This method will be called in another thread. The configuration parameter
         of the launch file will be requested using `LaunchArgsSelectionRequest` and
         `InteractionNeededError`. After the file is successful loaded a
         `loaded_config` signal will be emitted.
         '''
-        if argv_forced:
-            rospy.loginfo("LOAD launch: %s with args: %s" % (launchfile, argv_forced))
+        import inspect
+        print("CALLERfmm:", inspect.stack()[1][3])
+
+        if args_forced:
+            rospy.loginfo("LOAD launch: %s with args: %s" % (launchfile, args_forced))
         else:
             rospy.loginfo("LOAD launch: %s" % launchfile)
-        stored_argv = None
-        if launchfile in self.__configs:
+#        stored_argv = None
+#        if launchfile in self.__configs:
             # close the current loaded configuration with the same name
-            stored_argv = self.__configs[launchfile].argv
+#            stored_argv = self.__configs[launchfile]
         # load launch configuration
         try:
+            if launchfile in self.__configs.keys():
+                _, changed_nodes = nm.nmd().reload_launch(launchfile)
+                if self._progress_queue_prio.has_id(pqid):
+                    self.loaded_config.emit(launchfile, changed_nodes)
+                #print "RESTART nodes:", path, changed_nodes
+            # TODO: set host
+            else:
+                # nm.nmd().load_launch(launchfile, argv_forced)  CREATE DICT
+                nm.nmd().load_launch(launchfile, args=args_forced)
             # test for required args
-            launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
-            loaded = False
-            # if the launch file currently open these args will be used
-            if stored_argv is None:
-                if argv_forced:
-                    # if the parameter already requested `argv_forced` is filled: load!
-                    loaded = launchConfig.load(argv_forced)
-                else:
-                    # get the list with needed launch args
-                    req_args = launchConfig.getArgs()
-                    if req_args:
-                        params = dict()
-                        arg_dict = launchConfig.argvToDict(req_args)
-                        for arg in arg_dict.keys():
-                            params[arg] = ('string', [arg_dict[arg]])
-                        # request the args: the dialog must run in the main thread of Qt
-                        req = LaunchArgsSelectionRequest(launchfile, params, 'Needs input for args')
-                        raise nm.InteractionNeededError(req, self._load_launchfile, (launchfile,))
-            # load the launch file with args of currently open launch file
-            if not loaded or stored_argv is not None:
-                launchConfig.load(req_args if stored_argv is None else stored_argv)
-            # update the names of the hosts stored in the launch file
-            for _, machine in launchConfig.Roscfg.machines.items():  # _:=name
-                if machine.name:
-                    nm.nameres().add_info(machine.name, machine.address)
+#             launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
+#             loaded = False
+#             # if the launch file currently open these args will be used
+#             if stored_argv is None:
+#                 if argv_forced:
+#                     # if the parameter already requested `argv_forced` is filled: load!
+#                     loaded = launchConfig.load(argv_forced)
+#                 else:
+#                     # get the list with needed launch args
+#                     req_args = launchConfig.getArgs()
+#                     if req_args:
+#                         params = dict()
+#                         arg_dict = launchConfig.argvToDict(req_args)
+#                         for arg in arg_dict.keys():
+#                             params[arg] = ('string', [arg_dict[arg]])
+#                         # request the args: the dialog must run in the main thread of Qt
+#                         req = LaunchArgsSelectionRequest(launchfile, params, 'Needs input for args')
+#                         raise nm.InteractionNeededError(req, self._load_launchfile, (launchfile,))
+#             # load the launch file with args of currently open launch file
+#             if not loaded or stored_argv is not None:
+#                 launchConfig.load(req_args if stored_argv is None else stored_argv)
+#             # update the names of the hosts stored in the launch file
+#             for _, machine in launchConfig.Roscfg.machines.items():  # _:=name
+#                 if machine.name:
+#                     nm.nameres().add_info(machine.name, machine.address)
             # do not load if the loadings process was canceled
-            if self._progress_queue_prio.has_id(pqid):
-                self.loaded_config.emit(launchfile, launchConfig)
-        except InteractionNeededError:
-            raise
+            # TODO:
+            #if self._progress_queue_prio.has_id(pqid):
+                #self.loaded_config.emit(launchfile, launchConfig)
+            print "LOADED", launchfile
+            self._launcher_threaded.update_info(launchfile)
+        except nm.LaunchArgsSelectionRequest as lasr:
+            raise nm.InteractionNeededError(lasr, self._load_launchfile, (launchfile,))
         except Exception as e:
             err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
             err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
             rospy.logwarn("Loading launch file: %s", err_details)
             raise DetailedError("Loading launch file", err_text, err_details)
 #      MessageBox.warning(self, "Loading launch file", err_text, err_details)
-        except:
-            print traceback.format_exc(3)
+        except Exception:
+            print traceback.format_exc()
 
-    def _apply_launch_config(self, launchfile, launchConfig):
+    def _apply_launch_config(self, launchfile, changed_nodes):
+        # restart nodes
+        if changed_nodes:
+            restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self)
+            if ok:
+                self.stop_nodes_by_name(restart)
+                self.start_nodes_by_name(restart, launchfile, True)
+        if launchfile in self.__configs:
+            # store expanded items
+            self.__expanded_items[launchfile] = self._get_expanded_groups()
+            # close the current loaded configuration with the same name
+            self.removeConfigFromModel(launchfile)
+            del self.__configs[launchfile]
+
+    def _apply_launch_config_old(self, launchfile, launchConfig):
         stored_roscfg = None
         expanded_items = None
         if launchfile in self.__configs:
@@ -897,7 +915,7 @@ class MasterViewProxy(QWidget):
                                 item = self.node_tree_model.itemFromIndex(model_index)
                                 if isinstance(item, (GroupItem, HostItem)):
                                     result.append(item.name)
-        except:
+        except Exception:
             print traceback.format_exc(3)
         return result
 
@@ -919,7 +937,7 @@ class MasterViewProxy(QWidget):
                                 if isinstance(item, (GroupItem, HostItem)):
                                     if groups is None or item.name in groups:
                                         self.masterTab.nodeTreeView.setExpanded(index_cap, True)
-        except:
+        except Exception:
             print traceback.format_exc(3)
 
     def update_robot_icon(self, force=False):
@@ -937,7 +955,7 @@ class MasterViewProxy(QWidget):
                         self.__current_robot_icon = icon
                         self.robot_icon_updated.emit(self.masteruri, icon)
                     return icon
-            except:
+            except Exception:
                 pass
         self.__current_robot_icon = self.__current_parameter_robot_icon
         self.robot_icon_updated.emit(self.masteruri, utf8(self.__current_robot_icon))
@@ -975,8 +993,7 @@ class MasterViewProxy(QWidget):
         @param launchfile: the launch file path
         @type launchfile: C{str}
         '''
-        if isinstance(launchfile, tuple):
-            self.remove_config_signal.emit(launchfile[0])
+        self.remove_config_signal.emit(launchfile)
         self.node_tree_model.removeConfigNodes(launchfile)
         self.updateButtons()
 
@@ -1079,12 +1096,12 @@ class MasterViewProxy(QWidget):
             for c in items[0].capabilities:
                 if c.namespace not in caps:
                     caps[c.namespace] = dict()
-                caps[c.namespace][c.name.decode(sys.getfilesystemencoding())] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding())), 'nodes': list(c.nodes)}
+                caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
             if host_addr is None:
                 host_addr = get_hostname(key[1])
             self.node_tree_model.addCapabilities(masteruri, host_addr, key, caps)
             # set host description
-            tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, items[0].robot_name.decode(sys.getfilesystemencoding()), resolve_paths(items[0].robot_descr.decode(sys.getfilesystemencoding())))
+            tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, utf8(items[0].robot_name), resolve_paths(utf8(items[0].robot_descr)))
             self.host_description_updated.emit(masteruri, host_addr, tooltip)
             self.capabilities_update_signal.emit(masteruri, host_addr, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
 
@@ -1102,6 +1119,99 @@ class MasterViewProxy(QWidget):
 #    MessageBox.warning(self, 'Error while call %s'%service,
 #                              utf8(msg),
 #                              buttons=MessageBox.Ok)
+
+    def on_launch_description_retrieved(self, url, launch_descriptions):
+        '''
+        Handles the new list with nodes from default configuration service.
+        :param str url: the URI of the node manager daemon
+        :param launch_descriptions: a list with node_manager_daemon_fkie.launch_description.LaunchDescription
+        :type launch_descriptions: [node_manager_daemon_fkie.launch_description.LaunchDescription]
+        '''
+        # remove the current state
+        masteruri = self.masteruri
+        host = get_hostname(masteruri)
+        host_addr = nm.nameres().address(host)
+        if host_addr is None:
+            host_addr = host
+        new_configs = {}
+        for ld in launch_descriptions:
+            # TODO: check masteruri and host
+            if ld.masteruri != masteruri:
+                pass
+            # add the new config
+            node_cfgs = dict()
+            for n in ld.nodes:
+                node_cfgs[n] = ld.path
+            self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
+            new_configs[ld.path] = ld.nodes
+            # update capabilities
+            for rd in ld.robot_descriptions:
+                # add capabilities
+                caps = dict()
+                for c in rd.capabilities:
+                    if c.namespace not in caps:
+                        caps[c.namespace] = dict()
+                    caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
+                self.node_tree_model.addCapabilities(masteruri, host_addr, ld.path, caps)
+                # set host description
+                tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), resolve_paths(utf8(rd.robot_descr)))
+                self.host_description_updated.emit(masteruri, host_addr, tooltip)
+                self.capabilities_update_signal.emit(masteruri, host_addr, ld.path, ld.robot_descriptions)
+            # set the robot_icon
+            if ld.path in self.__robot_icons:
+                self.__robot_icons.remove(ld.path)
+            self.__robot_icons.insert(0, ld.path)
+            self.markNodesAsDuplicateOf(self.__running_nodes)
+            # expand items to restore old view
+            if ld.path in self.__expanded_items:
+                self._expand_groups(self.__expanded_items[ld.path])
+                del self.__expanded_items[ld.path]
+#             # update nodelets
+#             nodelets = {}
+#             for n in launchConfig.Roscfg.nodes:
+#                 if n.package == 'nodelet' and n.type == 'nodelet':
+#                     args = n.args.split(' ')
+#                     if len(args) == 3 and args[0] == 'load':
+#                         nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
+#                         if nodelet_mngr not in nodelets:
+#                             nodelets[nodelet_mngr] = []
+#                         nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+#             for mngr, nlist in nodelets.iteritems():
+#                 mngr_nodes = self.node_tree_model.getNode(mngr, self.masteruri)
+#                 for mn in mngr_nodes:
+#                     mn.nodelets = nlist
+#                 for nlet in nlist:
+#                     nlet_nodes = self.node_tree_model.getNode(nlet, self.masteruri)
+#                     for nn in nlet_nodes:
+#                         nn.nodelet_mngr = mngr
+#             self._nodelets[launchfile] = nodelets
+        removed_configs = set(self.__configs.keys()) - set(new_configs.keys())
+        for cfg in removed_configs:
+            self.removeConfigFromModel(cfg)
+        self.__configs.clear()
+        self.__configs = new_configs
+#         key = (cfg_name, service_uri, masteruri)
+# #    if self.__configs.has_key(key):
+# #      self.node_tree_model.removeConfigNodes(key)
+#         # add the new config
+#         node_cfgs = dict()
+#         for n in nodes:
+#             node_cfgs[n] = key
+#         self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
+#         self.__configs[key] = nodes
+#         # start nodes in the queue
+#         if cfg_name in self._start_nodes_after_load_cfg:
+#             self.start_nodes_by_name(self._start_nodes_after_load_cfg[cfg_name], roslib.names.ns_join(cfg_name, 'run'), True)
+#             del self._start_nodes_after_load_cfg[cfg_name]
+        self.updateButtons()
+
+    def on_launch_description_err(self, url, error):
+        '''
+        Handles the error messages from launch updater.
+        :param str url: the URI of the node manager daemon
+        :param Exception error: on occurred exception
+        '''
+        rospy.logwarn("Error while get launch configuration from %s: %s" % (url, utf8(error)))
 
     @property
     def launch_servers(self):
@@ -1282,7 +1392,7 @@ class MasterViewProxy(QWidget):
                             count = len(tpc.subscriberNodes)
                             if name not in tpc.publisherNodes:
                                 count = None
-                    except:
+                    except Exception:
                         pass
                     # add the count
                     if count is not None:
@@ -1300,12 +1410,13 @@ class MasterViewProxy(QWidget):
                             item += '   <a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a>' % (self.mastername, i)
                         else:
                             item = '<span style="color:red;">!sync </span>%s' % (item_name)
-                    except:
+                    except Exception:
                         item = '<span style="color:red;">!sync </span>%s' % (item_name)
                 elif list_type == 'LAUNCH':
-                    item = '<a href="launch://%s">%s</a>' % (i, item_name)
-                    if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
-                        item += '%s<br><a href="reload-globals://%s"><font color="#339900">reload global parameter @next start</font></a>' % (item, i)
+                    item = '<a href="%s">%s</a>' % (i.replace('grpc', 'file'), item_name)
+                    # TODO: fix global_param_done
+#                     if i in self.__configs and self.masteruri in self.__configs[i].global_param_done:
+#                         item += '%s<br><a href="reload-globals://%s"><font color="#339900">reload global parameter @next start</font></a>' % (item, i)
                 result += '\n%s<br>' % (item)
             result += '</ul>'
         return result
@@ -1765,32 +1876,49 @@ class MasterViewProxy(QWidget):
             if config is None:
                 raise DetailedError("Start error",
                                     'Error while start %s:\nNo configuration found!' % node.name)
-            if isinstance(config, LaunchConfig):
-                try:
-                    nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
-                except socket.error as se:
-                    rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
-                    raise DetailedError("Start error",
-                                        'Error while start %s\n\nStart canceled!' % node.name,
-                                        '%s' % utf8(se))
-                    return False
-                except nm.InteractionNeededError as _:
-                    raise
-                except (Exception, nm.StartException) as e:
-                    print type(e)
-                    print traceback.format_exc(3)
-                    rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
-                    raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
-            elif isinstance(config, (str, unicode)):
-                # start with default configuration
-                from multimaster_msgs_fkie.srv import Task
-                try:
-                    nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
-                except (Exception, nm.StartException) as e:
-                    rospy.logwarn("Error while call a service of node '%s': %s" % (node.name, utf8(e)))
-                    raise DetailedError("Service error",
-                                        'Error while call a service of node %s [%s]' % (node.name, self.master_info.getService(config).uri),
-                                        '%s' % utf8(e))
+            try:
+                result = nm.nmd().start_node(node.name, config)
+                print result
+                # nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
+            except socket.error as se:
+                rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
+                raise DetailedError("Start error",
+                                    'Error while start %s\n\nStart canceled!' % node.name,
+                                    '%s' % utf8(se))
+                return False
+            except nm.InteractionNeededError as _:
+                raise
+            except (Exception, nm.StartException) as e:
+                print type(e)
+                print traceback.format_exc(3)
+                rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
+                raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
+#             if isinstance(config, LaunchConfig):
+#                 try:
+#                     nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
+#                 except socket.error as se:
+#                     rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
+#                     raise DetailedError("Start error",
+#                                         'Error while start %s\n\nStart canceled!' % node.name,
+#                                         '%s' % utf8(se))
+#                     return False
+#                 except nm.InteractionNeededError as _:
+#                     raise
+#                 except (Exception, nm.StartException) as e:
+#                     print type(e)
+#                     print traceback.format_exc(3)
+#                     rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
+#                     raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
+#             elif isinstance(config, (str, unicode)):
+#                 # start with default configuration
+#                 from multimaster_msgs_fkie.srv import Task
+#                 try:
+#                     nm.starter().callService(self.master_info.getService(config).uri, config, Task, [node.name])
+#                 except (Exception, nm.StartException) as e:
+#                     rospy.logwarn("Error while call a service of node '%s': %s" % (node.name, utf8(e)))
+#                     raise DetailedError("Service error",
+#                                         'Error while call a service of node %s [%s]' % (node.name, self.master_info.getService(config).uri),
+#                                         '%s' % utf8(e))
 
     def start_nodes(self, nodes, force=False, force_host=None, use_adv_cfg=False, check_nodelets=True):
         '''
@@ -1804,8 +1932,9 @@ class MasterViewProxy(QWidget):
         '''
         cfg_choices = dict()
         cfg_nodes = dict()
-        has_launch_files = False
+#        has_launch_files = False
         for node in nodes:
+            print "START", node
             # do not start node, if it is in ingnore list and multiple nodes are selected
             if (node.pid is None or (node.pid is not None and force)) and not node.is_ghost:
                 # test for duplicate nodes
@@ -1833,8 +1962,8 @@ class MasterViewProxy(QWidget):
                                 cfg_choices[choises_str] = choices[choice]
                                 cfg_nodes[node.name] = choices[choice]
                                 node.launched_cfg = choices[choice]
-                                if isinstance(choices[choice], LaunchConfig):
-                                    has_launch_files = True
+#                                 if isinstance(choices[choice], LaunchConfig):
+#                                     has_launch_files = True
                             elif ok:
                                 MessageBox.warning(self, "Start error",
                                                    'Error while start %s:\nNo configuration selected!' % node.name)
@@ -1847,7 +1976,7 @@ class MasterViewProxy(QWidget):
         # get the advanced configuration
         logging = None
         diag_canceled = False
-        if use_adv_cfg and has_launch_files:
+        if use_adv_cfg:
             log_params = {'Level': ('string', nm.settings().logging.get_alternatives('loglevel')),
                           'Level (roscpp)': ('string', nm.settings().logging.get_alternatives('loglevel_roscpp')),
                           'Level (super)': ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
@@ -2040,11 +2169,14 @@ class MasterViewProxy(QWidget):
         result = {}
         for c in node.cfgs:
             if c:
-                if not isinstance(c, tuple):
-                    launch = self.launchfiles[c]
-                    result[''.join([utf8(launch.LaunchName), ' [', utf8(launch.PackageName), ']'])] = self.launchfiles[c]
-                elif not ignore_defaults:
-                    result[' '.join(['[default]', c[0]])] = roslib.names.ns_join(c[0], 'run')
+                # TODO: create name
+                print "_getCfgChoises", c, type(c)
+                result[c] = c
+#                 if not isinstance(c, tuple):
+#                     launch = self.launchfiles[c]
+#                     result[''.join([utf8(launch.LaunchName), ' [', utf8(launch.PackageName), ']'])] = self.launchfiles[c]
+#                 elif not ignore_defaults:
+#                     result[' '.join(['[default]', c[0]])] = roslib.names.ns_join(c[0], 'run')
         return result
 
     def _getUserCfgChoice(self, choices, nodename):
@@ -2471,13 +2603,15 @@ class MasterViewProxy(QWidget):
             choices = self._getCfgChoises(node, True)
             choice, ok = self._getUserCfgChoice(choices, node.name)
             config = choices[choice] if choices and choice else ''
-            if ok and isinstance(config, LaunchConfig):
-                # get the file, which include the node and the main configuration file
-                node_cfg = config.getNode(node.name)
-                files = [config.Filename]
-                if node_cfg.filename not in files:
-                    files.append(node_cfg.filename)
-                self.request_xml_editor.emit(files, ''.join(['name="', os.path.basename(node.name), '"']))
+            if ok and config:
+                self.request_xml_editor.emit(config, 'name="%s"' % os.path.basename(node.name))
+#             if ok and isinstance(config, LaunchConfig):
+#                 # get the file, which include the node and the main configuration file
+#                 node_cfg = config.getNode(node.name)
+#                 files = [config.Filename]
+#                 if node_cfg.filename not in files:
+#                     files.append(node_cfg.filename)
+#                 self.request_xml_editor.emit(files, ''.join(['name="', os.path.basename(node.name), '"']))
 
     def on_edit_rosparam_clicked(self):
         '''
@@ -2491,7 +2625,7 @@ class MasterViewProxy(QWidget):
                 if node.has_launch_cfgs(node.cfgs):
                     inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded as not 'default' and the parameter in the launch file will be reloaded on start of the ROS node.")
                 inputDia.show()
-            except:
+            except Exception:
                 rospy.logwarn("Error on retrieve parameter for %s: %s", utf8(node.name), traceback.format_exc(1))
 
     def on_save_clicked(self):
@@ -2506,12 +2640,8 @@ class MasterViewProxy(QWidget):
         choices = dict()
 
         for path, _ in self.__configs.items():
-            if isinstance(path, tuple):
-                if path[2] == self.masteruri:
-                    choices['DEFAULT CFG: %s' % path[0]] = path
-            else:
-                package = utf8(package_name(os.path.dirname(path))[0])
-                choices['%s [%s]' % (os.path.basename(path), package)] = path
+            package = utf8(package_name(os.path.dirname(path))[0])
+            choices['%s [%s]' % (os.path.basename(path), package)] = path
         cfg_items = choices.keys()
         cfg_items.sort()
         res = SelectDialog.getValue('Close/Stop/Shutdown', '',
@@ -2563,24 +2693,11 @@ class MasterViewProxy(QWidget):
     def _close_cfg(self, cfg):
         try:
             self.removeConfigFromModel(cfg)
-            if isinstance(cfg, tuple):
-                if self.master_info is not None:
-                    # close default configuration: stop the default_cfg node
-                    node = self.master_info.getNode(cfg[0])
-                    if node is not None:
-                        self.stop_nodes([node])
-            else:
-                # remove from name resolution
-                try:
-                    for _, machine in self.__configs[cfg].Roscfg.machines.items():  # _:=name
-                        if machine.name:
-                            nm.nameres().remove_info(machine.name, machine.address)
-                except:
-                    pass
+            nm.nmd().unload_launch(cfg)
             del self.__configs[cfg]
-        except:
-            print traceback.format_exc(1)
-            pass
+            self._launcher_threaded.update_info(cfg)
+        except Exception:
+            rospy.logwarn(traceback.format_exc())
 
     def on_topic_echo_clicked(self):
         '''

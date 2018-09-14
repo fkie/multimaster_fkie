@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>icons/back.png</file>
     <file>icons/button_graph.png</file>
     <file>icons/crystal_clear_action_db_add.png</file>
     <file>icons/crystal_clear_action_db_remove.png</file>

@@ -253,7 +253,7 @@ class ProgressQueue(QObject):
                     if val:
                         argv.append('%s:=%s' % (prm, val))
                 res = argv
-                pt = ProgressThread(ident, descr, req.method, (req.args + (argv,)))
+                pt = ProgressThread(ident, descr, req.method, (req.args + (params,)))
                 pt.finished_signal.connect(self._progress_thread_finished)
                 pt.error_signal.connect(self._progress_thread_error)
                 pt.request_interact_signal.connect(self._on_request_interact)

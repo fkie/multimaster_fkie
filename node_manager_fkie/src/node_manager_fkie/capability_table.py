@@ -38,7 +38,7 @@ import sys
 
 import node_manager_fkie as nm
 
-from .common import resolve_paths
+from .common import resolve_paths, utf8
 try:
     from python_qt_binding.QtGui import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
     from python_qt_binding.QtGui import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
@@ -425,12 +425,13 @@ class CapabilityTable(QTableWidget):
         robot_name = description.robot_name if description.robot_name else nm.nameres().mastername(masteruri)
         # append a new robot
         new_robot = False
+        descr_utf8 = utf8(description.robot_descr.replace("\\n ", "\n"))
         if robot_index == -1:
             robot_index = self._robotHeader.insertSortedItem(masteruri, robot_name)
             self.insertColumn(robot_index)
 #      robot_index = self.columnCount()-1
 #      self._robotHeader.insertItem(robot_index)
-            self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
+            self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
             item = QTableWidgetItem()
             item.setSizeHint(QSize(96, 96))
             self.setHorizontalHeaderItem(robot_index, item)
@@ -438,24 +439,26 @@ class CapabilityTable(QTableWidget):
             new_robot = True
         else:
             # update
-            self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, description.robot_descr.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), description.robot_images)
+            self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
 
         # set the capabilities
         for c in description.capabilities:
-            cap_index = self._capabilityHeader.index(c.name.decode(sys.getfilesystemencoding()))
+            cname = utf8(c.name)
+            cdescription = utf8(c.description.replace("\\n ", "\n"))
+            cap_index = self._capabilityHeader.index(cname)
             if cap_index == -1 or new_robot:
                 if cap_index == -1:
                     # append a new capability
-                    cap_index = self._capabilityHeader.insertSortedItem(c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()))
+                    cap_index = self._capabilityHeader.insertSortedItem(cname, cname)
                     self.insertRow(cap_index)
                     self.setRowHeight(cap_index, 96)
-                    self._capabilityHeader.setDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
+                    self._capabilityHeader.setDescription(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                     item = QTableWidgetItem()
                     item.setSizeHint(QSize(96, 96))
                     self.setVerticalHeaderItem(cap_index, item)
-                    self.verticalHeaderItem(cap_index).setText(c.name.decode(sys.getfilesystemencoding()))
+                    self.verticalHeaderItem(cap_index).setText(cname)
                 else:
-                    self._capabilityHeader.setDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
+                    self._capabilityHeader.setDescription(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                 # add the capability control widget
                 controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.namespace, c.nodes)
                 controlWidget.start_nodes_signal.connect(self._start_nodes)
@@ -463,7 +466,7 @@ class CapabilityTable(QTableWidget):
                 self.setCellWidget(cap_index, robot_index, controlWidget)
                 self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
             else:
-                self._capabilityHeader.updateDescription(cap_index, cfg_name, c.name.decode(sys.getfilesystemencoding()), c.name.decode(sys.getfilesystemencoding()), c.type, c.description.replace("\\n ", "\n").decode(sys.getfilesystemencoding()), c.images)
+                self._capabilityHeader.updateDescription(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                 try:
                     self.cellWidget(cap_index, robot_index).updateNodes(cfg_name, c.namespace, c.nodes)
                 except:

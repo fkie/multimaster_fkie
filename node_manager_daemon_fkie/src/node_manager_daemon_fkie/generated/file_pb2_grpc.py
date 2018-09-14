@@ -29,6 +29,11 @@ class FileServiceStub(object):
         request_serializer=file__pb2.ListPathRequest.SerializeToString,
         response_deserializer=file__pb2.ListPathReply.FromString,
         )
+    self.ListPackages = channel.unary_unary(
+        '/FileService/ListPackages',
+        request_serializer=file__pb2.ListPackagesRequest.SerializeToString,
+        response_deserializer=file__pb2.ListPackagesReply.FromString,
+        )
 
 
 class FileServiceServicer(object):
@@ -56,6 +61,13 @@ class FileServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def ListPackages(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FileServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -73,6 +85,11 @@ def add_FileServiceServicer_to_server(servicer, server):
           servicer.ListPath,
           request_deserializer=file__pb2.ListPathRequest.FromString,
           response_serializer=file__pb2.ListPathReply.SerializeToString,
+      ),
+      'ListPackages': grpc.unary_unary_rpc_method_handler(
+          servicer.ListPackages,
+          request_deserializer=file__pb2.ListPackagesRequest.FromString,
+          response_serializer=file__pb2.ListPackagesReply.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

@@ -42,5 +42,7 @@
   <exec_depend>rosmsg</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>rosservice</exec_depend>
+  <!-- <depend>grpc</depend>  -->
+  
 
 </package>

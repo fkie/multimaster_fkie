@@ -252,6 +252,7 @@ class ProfileWidget(QDockWidget):
                                     if cfg_name in master.launchfiles:
                                         reload_launch = set(master.launchfiles[cfg_name].argv) != set(argv)
                                 if reload_launch:
+                                    print "UUUUUUU", argv
                                     self._main_window.launch_dock.load_file(cfg_name, argv, master.masteruri)
                                 if 'nodes' in cmdict:
                                     self._current_profile[rmuri].update(cmdict['nodes'])

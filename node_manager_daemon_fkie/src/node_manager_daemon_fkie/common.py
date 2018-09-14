@@ -32,8 +32,8 @@
 
 import os
 import re
-import socket
 from urlparse import urlparse
+from master_discovery_fkie.common import masteruri_from_master
 
 import rospy
 import roslib
@@ -49,6 +49,8 @@ INCLUDE_PATTERN = ["\s*(\$\(find.*?)\"",
                    "\"\s*(pkg:\/\/.*?)\"",
                    "\"\s*(package:\/\/.*?)\""]
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml']
+
+NMD_SERVER_PORT_OFFSET = 1010
 
 try:
     from catkin_pkg.package import parse_package
@@ -89,23 +91,22 @@ def get_cwd(cwd, binary=''):
     return result
 
 
-def masteruri_from_ros():
-    '''
-    Returns the master URI depending on ROS distribution API.
-    :return: ROS master URI
-    :rtype: str
-    '''
-    try:
-        import rospkg.distro
-        distro = rospkg.distro.current_distro_codename()
-        if distro in ['electric', 'diamondback', 'cturtle']:
-            import roslib.rosenv
-            return roslib.rosenv.get_master_uri()
-        else:
-            import rosgraph
-            return rosgraph.rosenv.get_master_uri()
-    except Exception:
-        return os.environ['ROS_MASTER_URI']
+def get_nmd_url(masteruri='', prefix='grpc://'):
+    muri = masteruri
+    if not muri:
+        muri = masteruri_from_master()
+    o = urlparse(muri)
+    port = o.port + NMD_SERVER_PORT_OFFSET
+    return "%s%s:%d" % (prefix, o.hostname, port)
+#    return "%s%s:%d" % (prefix, '128.7.92.114', port)
+
+
+def get_nmd_port(masteruri=''):
+    muri = masteruri
+    if not muri:
+        muri = masteruri_from_master()
+    o = urlparse(muri)
+    return o.port + NMD_SERVER_PORT_OFFSET
 
 
 def get_rosparam(param, masteruri):
@@ -239,8 +240,8 @@ def included_files(string,
     :param str string: Path to an exists file or test with included file.
     :param bool recursive: parse also found included files (Default: True)
     :param bool unique: returns the same files once (Default: False)
-    :param include_tags: the list with patterns to find include files.
-    :type include_tags: [str]
+    :param include_pattern: the list with patterns to find include files.
+    :type include_pattern: [str]
     :return: Returns a set of included file is `unique` is True,
         otherwise a list of tuples with line number, path of included file and a recursive list of tuples with included files.
     :rtype: set() or [(int, str, [])]
@@ -276,8 +277,9 @@ def included_files(string,
                     if recursive and os.path.isfile(file_name):
                         ext = os.path.splitext(file_name)
                         if ext[1] in SEARCH_IN_EXT:
-                            res_list = included_files(file_name, include_pattern, unique=unique)
+                            res_list = included_files(file_name, recursive, unique, include_pattern)
                             if not unique:
+                                # if not unique the result build a tree with all included files
                                 recursive_list = res_list
                             else:
                                 result += res_list

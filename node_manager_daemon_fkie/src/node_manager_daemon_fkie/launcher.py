@@ -43,9 +43,9 @@ import roslaunch
 import exceptions
 import screen
 import host
-from master_discovery_fkie.common import get_port
+from master_discovery_fkie.common import get_port, masteruri_from_ros
 from .launch_stub import LaunchStub
-from .common import get_cwd, masteruri_from_ros, utf8
+from .common import get_cwd, utf8
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 import remote

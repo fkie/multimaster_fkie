@@ -31,23 +31,28 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
+from python_qt_binding.QtGui import QIcon, QKeySequence
 try:
     from python_qt_binding.QtGui import QSortFilterProxyModel
 except:
     from python_qt_binding.QtCore import QSortFilterProxyModel
 try:
-    from python_qt_binding.QtGui import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu
+    from python_qt_binding.QtGui import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu, QWidget
 except:
-    from python_qt_binding.QtWidgets import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu
-from python_qt_binding.QtGui import QKeySequence
+    from python_qt_binding.QtWidgets import QAbstractItemView, QAction, QApplication, QDockWidget, QFileDialog, QLineEdit, QMenu, QWidget
+
 import os
 
 import rospy
 
+from node_manager_daemon_fkie.common import get_nmd_url
+from master_discovery_fkie.common import get_hostname
 import node_manager_fkie as nm
-from .common import package_name, utf8  # , masteruri_from_ros
+from .common import package_name, utf8, grpc_join  # , masteruri_from_ros
 from .detailed_msg_box import MessageBox
-from .launch_list_model import LaunchListModel, LaunchItem
+from .html_delegate import HTMLDelegate
+from .launch_list_model import LaunchListModel, PathItem
+#from .launch_tree_model import LaunchTreeModel, PathItem
 from .parameter_dialog import ParameterDialog
 from .progress_queue import ProgressQueue  # , ProgressThread
 
@@ -57,16 +62,16 @@ class LaunchFilesWidget(QDockWidget):
     Launch file browser.
     '''
 
-    load_signal = Signal(str, list, str)
-    ''' load the launch file with given arguments (launchfile, argv, masteruri)'''
+    load_signal = Signal(str, dict, str)
+    ''' load the launch file with given arguments (launchfile, args, masteruri)'''
     load_profile_signal = Signal(str)
     ''' load the profile file '''
     load_as_default_signal = Signal(str, str)
     ''' load the launch file as default (path, host) '''
-    edit_signal = Signal(list)
+    edit_signal = Signal(str)
     ''' list of paths to open in an editor '''
     transfer_signal = Signal(list)
-    ''' list of paths selected for transfer '''
+    ''' list of tuples of (url, path) selected for transfer '''
 
     def __init__(self, parent=None):
         '''
@@ -78,35 +83,54 @@ class LaunchFilesWidget(QDockWidget):
         # load the UI file
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'LaunchFilesDockWidget.ui')
         loadUi(ui_file, self)
-        # initialize the view for the launch files
-        self.launchlist_model = LaunchListModel()
-        self.launchlist_proxyModel = QSortFilterProxyModel(self)
-        self.launchlist_proxyModel.setSourceModel(self.launchlist_model)
-        self.xmlFileView.setModel(self.launchlist_proxyModel)
-        self.xmlFileView.setAlternatingRowColors(True)
-        self.xmlFileView.activated.connect(self.on_launch_selection_activated)
-        self.xmlFileView.setDragDropMode(QAbstractItemView.DragOnly)
-        self.xmlFileView.setDragEnabled(True)
-        sm = self.xmlFileView.selectionModel()
-        sm.selectionChanged.connect(self.on_xmlFileView_selection_changed)
-#    self.searchPackageLine.setVisible(False)
-        self.searchPackageLine.textChanged.connect(self.set_package_filter)
-        self.searchPackageLine.focusInEvent = self._searchline_focusInEvent
-        # connect to the button signals
-        self.refreshXmlButton.clicked.connect(self.on_refresh_xml_clicked)
-        self.editXmlButton.clicked.connect(self.on_edit_xml_clicked)
-        self.newXmlButton.clicked.connect(self.on_new_xml_clicked)
-        self.openXmlButton.clicked.connect(self.on_open_xml_clicked)
-        self.transferButton.clicked.connect(self.on_transfer_file_clicked)
-        self.loadXmlButton.clicked.connect(self.on_load_xml_clicked)
-        self.loadXmlAsDefaultButton.clicked.connect(self.on_load_as_default)
-        # creates a default config menu
-        start_menu = QMenu(self)
-        self.loadDeafaultAtHostAct = QAction("&Load default config on host", self, statusTip="Loads the default config at given host", triggered=self.on_load_as_default_at_host)
-        start_menu.addAction(self.loadDeafaultAtHostAct)
-        self.loadXmlAsDefaultButton.setMenu(start_menu)
+        self._current_search = ''
         # initialize the progress queue
-        self.progress_queue = ProgressQueue(self.progressFrame_cfg, self.progressBar_cfg, self.progressCancelButton_cfg, 'Launch File')
+        self.progress_queue = ProgressQueue(self.ui_frame_progress_cfg, self.ui_bar_progress_cfg, self.ui_button_progress_cancel_cfg, 'Launch File')
+        # initialize the view for the launch files
+#         self.launchlist_model = LaunchTreeModel(self, progress_queue=self.progress_queue)
+#         self.launchlist_proxy_model = FilesSortFilterProxyModel(self)
+#         self.launchlist_proxy_model.setSourceModel(self.launchlist_model)
+#         self.ui_file_view.setModel(self.launchlist_model)
+#         for i, (_, width) in enumerate(LaunchTreeModel.header):  # _:=name
+#             self.ui_file_view.setColumnWidth(i, width)
+#         self.name_delegate = HTMLDelegate()
+#         self.ui_file_view.setItemDelegateForColumn(0, self.name_delegate)
+# #        self.node_delegate = IconsDelegate()
+# #        self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
+#         #self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
+#         #self.masterTab.nodeTreeView.expanded.connect(self.on_node_expanded)
+#         sm = self.ui_file_view.selectionModel()
+#         sm.selectionChanged.connect(self.on_launch_selection_changed)
+#         self.ui_file_view.activated.connect(self.on_launch_selection_activated)
+        #self.ui_file_view.clicked.connect(self.on_node_clicked)
+        #####
+        self.launchlist_model = LaunchListModel(progress_queue=self.progress_queue)
+        self.launchlist_proxy_model = QSortFilterProxyModel(self)
+        self.launchlist_proxy_model.setSourceModel(self.launchlist_model)
+        self.name_delegate = HTMLDelegate(check_for_ros_names=False)
+        self.ui_file_view.setItemDelegateForColumn(0, self.name_delegate)
+        self.ui_file_view.setModel(self.launchlist_proxy_model)
+        self.ui_file_view.setAlternatingRowColors(True)
+        self.ui_file_view.activated.connect(self.on_launch_selection_activated)
+        self.ui_file_view.setDragDropMode(QAbstractItemView.DragOnly)
+        self.ui_file_view.setDragEnabled(True)
+        sm = self.ui_file_view.selectionModel()
+        sm.selectionChanged.connect(self.on_ui_file_view_selection_changed)
+        self.launchlist_model.pathlist_handled.connect(self.on_pathlist_handled)
+        self.launchlist_model.error_on_path.connect(self.on_error_on_path)
+
+#    self.ui_search_line.setVisible(False)
+        # self.ui_search_line.textChanged.connect(self.set_package_filter)
+        self.ui_search_line.refresh_signal.connect(self.set_package_filter)
+        self.ui_search_line.stop_signal.connect(self.stop)
+        # self.ui_search_line.focusInEvent = self._searchline_focusInEvent
+        # connect to the button signals
+        # self.ui_button_refresh_path.clicked.connect(self.on_refresh_xml_clicked)
+        self.ui_button_edit.clicked.connect(self.on_edit_xml_clicked)
+        self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
+        self.ui_button_open_path.clicked.connect(self.on_open_xml_clicked)
+        self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
+        self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
 
     def stop(self):
         '''
@@ -114,18 +138,23 @@ class LaunchFilesWidget(QDockWidget):
         called at the exit!
         '''
         self.progress_queue.stop()
+        self.ui_search_line.set_process_active(False)
 
     def on_launch_selection_activated(self, activated):
         '''
         Tries to load the launch file, if one was activated.
         '''
-        selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+        print "activated"
+        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
             try:
-                lfile = self.launchlist_model.expandItem(item.name, item.path, item.id)
-                self.searchPackageLine.setText('')
+                self.ui_search_line.set_process_active(True)
+                lfile = self.launchlist_model.expand_item(item.path, item.id)
+                print "after expand", lfile
+                # self.ui_search_line.setText('')
                 if lfile is not None:
-                    if item.isLaunchFile():
+                    self.ui_search_line.set_process_active(False)
+                    if item.is_launch_file():
                         nm.settings().launch_history_add(item.path)
                         key_mod = QApplication.keyboardModifiers()
                         if key_mod & Qt.ShiftModifier:
@@ -133,79 +162,108 @@ class LaunchFilesWidget(QDockWidget):
                         elif key_mod & Qt.ControlModifier:
                             self.launchlist_model.setPath(os.path.dirname(item.path))
                         else:
-                            self.load_signal.emit(item.path, [], None)
-                    elif item.isProfileFile():
+                            print "send load signal"
+                            self.load_signal.emit(item.path, {}, None)
+                    elif item.is_profile_file():
                         nm.settings().launch_history_add(item.path)
                         key_mod = QApplication.keyboardModifiers()
                         if key_mod & Qt.ControlModifier:
                             self.launchlist_model.setPath(os.path.dirname(item.path))
                         else:
                             self.load_profile_signal.emit(item.path)
-                    elif item.isConfigFile():
-                        self.edit_signal.emit([lfile])
+                    elif item.is_config_file():
+                        self.edit_signal.emit(lfile)
+                if self.launchlist_model.current_path:
+                    self.setWindowTitle('Launch @%s' % get_hostname(self.launchlist_model.current_url))
+                else:
+                    self.setWindowTitle('Launch files')
             except Exception as e:
+                import traceback
+                print traceback.format_exc()
                 rospy.logwarn("Error while load launch file %s: %s" % (item, utf8(e)))
                 MessageBox.warning(self, "Load error",
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
 #        self.launchlist_model.reloadCurrentPath()
 
-    def load_file(self, path, argv=[], masteruri=None):
+    def on_pathlist_handled(self, gpath):
+        self.ui_search_line.set_process_active(False)
+
+    def on_error_on_path(self, gpath):
+        if gpath == self._current_search:
+            self.ui_search_line.set_process_active(False)
+
+    def on_launch_selection_changed(self, selected, deselected):
+        print "selection launch changed"
+
+    def load_file(self, path, args={}, masteruri=None):
         '''
         Tries to load the launch file, if one was activated.
         '''
         if path is not None:
             if os.path.isfile(path):
                 if path.endswith('.launch'):
-                    self.load_signal.emit(path, argv, masteruri)
+                    self.load_signal.emit(path, args, masteruri)
                 elif path.endswith('.nmprofile'):
                     self.load_profile_signal.emit(path)
 
-    def on_xmlFileView_selection_changed(self, selected, deselected):
+    def on_ui_file_view_selection_changed(self, selected, deselected):
         '''
         On selection of a launch file, the buttons are enabled otherwise disabled.
         '''
-        selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
-            islaunch = item.isLaunchFile()
-            isconfig = item.isConfigFile()
-            isprofile = item.isProfileFile()
-            self.editXmlButton.setEnabled(islaunch or isconfig or isprofile)
-            self.loadXmlButton.setEnabled(islaunch or isprofile)
-            self.transferButton.setEnabled(islaunch or isconfig)
-            self.loadXmlAsDefaultButton.setEnabled(islaunch)
+            islaunch = item.is_launch_file()
+            isconfig = item.is_config_file()
+            isprofile = item.is_profile_file()
+            self.ui_button_edit.setEnabled(islaunch or isconfig or isprofile)
+            self.ui_button_load.setEnabled(islaunch or isprofile)
+            self.ui_button_transfer.setEnabled(islaunch or isconfig)
 
     def set_package_filter(self, text):
-        self.launchlist_proxyModel.setFilterRegExp(QRegExp(text,
-                                                           Qt.CaseInsensitive,
-                                                           QRegExp.Wildcard))
+        if text.startswith('s '):
+            if len(text) > 2:
+                search_text = text[2:]
+                self.launchlist_proxy_model.setFilterRegExp(QRegExp(search_text, Qt.CaseInsensitive, QRegExp.Wildcard))
+                import glob
+                print glob.glob1(self.launchlist_model.current_path, text)
+            else:
+                self.ui_search_line.set_process_active(False)
+        else:
+            print "new path:", text
+            if text:
+                if text.startswith(os.path.sep):
+                    self._current_search = grpc_join(self.launchlist_model.current_url, text)
+                    print "SET PATH", self._current_search
+                    self.launchlist_model.set_path(text)
+                else:
+                    # search for a package
+                    self.launchlist_model.show_packages(text)
+                    self.ui_search_line.set_process_active(False)
+            else:
+                self.launchlist_model.reload_current_path(clear_cache=True)
 
     def on_refresh_xml_clicked(self):
         '''
         Reload the current path.
         '''
         self.launchlist_model.reloadCurrentPath()
-        self.launchlist_model.reloadPackages()
-        self.editXmlButton.setEnabled(False)
-        self.loadXmlButton.setEnabled(False)
-        self.transferButton.setEnabled(False)
-        self.loadXmlAsDefaultButton.setEnabled(False)
-        try:
-            from roslaunch import substitution_args
-            import rospkg
-            substitution_args._rospack = rospkg.RosPack()
-        except Exception as err:
-            rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
+        print "UPDATE PACKAGES LOCAL", get_nmd_url()
+        nm.nmd().list_packages_threaded(get_nmd_url(), True)
+        # TODO: self.launchlist_model.reload_packages()
+        self.ui_button_edit.setEnabled(False)
+        self.ui_button_load.setEnabled(False)
+        self.ui_button_transfer.setEnabled(False)
 
     def on_edit_xml_clicked(self):
         '''
         Opens an XML editor to edit the launch file.
         '''
-        selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
-            path = self.launchlist_model.expandItem(item.name, item.path, item.id)
+            path = self.launchlist_model.expand_item(item.path, item.id)
             if path is not None:
-                self.edit_signal.emit([path])
+                self.edit_signal.emit(path)
 
     def on_new_xml_clicked(self):
         '''
@@ -239,7 +297,7 @@ class LaunchFilesWidget(QDockWidget):
                             )
                 self.__current_path = os.path.dirname(fileName)
                 self.launchlist_model.setPath(self.__current_path)
-                self.edit_signal.emit([fileName])
+                self.edit_signal.emit(fileName)
             except EnvironmentError as e:
                 MessageBox.warning(self, "New File Error",
                                    'Error while create a new file',
@@ -253,16 +311,17 @@ class LaunchFilesWidget(QDockWidget):
         if fileName:
             self.__current_path = os.path.dirname(fileName)
             nm.settings().launch_history_add(fileName)
-            self.load_signal.emit(fileName, [], None)
+            self.load_signal.emit(fileName, {}, None)
 
     def on_transfer_file_clicked(self):
         '''
         Emit the signal to copy the selected file to a remote host.
         '''
-        selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+        # TODO
+        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         paths = list()
         for item in selected:
-            path = self.launchlist_model.expandItem(item.name, item.path, item.id)
+            path = self.launchlist_model.expand_item(item.path, item.id)
             if path is not None:
                 paths.append(path)
         if paths:
@@ -273,12 +332,12 @@ class LaunchFilesWidget(QDockWidget):
         Tries to load the selected launch file. The button is only enabled and this
         method is called, if the button was enabled by on_launch_selection_clicked()
         '''
-        selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
-            path = self.launchlist_model.expandItem(item.name, item.path, item.id)
+            path = self.launchlist_model.expand_item(item.path, item.id)
             if path is not None:
                 nm.settings().launch_history_add(item.path)
-                self.load_signal.emit(path, [], None)
+                self.load_signal.emit(path, {}, None)
 
     def on_load_as_default_at_host(self):
         '''
@@ -286,7 +345,7 @@ class LaunchFilesWidget(QDockWidget):
         is only enabled and this method is called, if the button was enabled by
         on_launch_selection_clicked()
         '''
-        selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
             path = self.launchlist_model.expandItem(item.name, item.path, item.id)
             if path is not None:
@@ -308,31 +367,31 @@ class LaunchFilesWidget(QDockWidget):
                                            'Error while parse parameter',
                                            '%s' % utf8(e))
 
-    def on_load_as_default(self):
-        '''
-        Tries to load the selected launch file as default configuration. The button
-        is only enabled and this method is called, if the button was enabled by
-        on_launch_selection_clicked()
-        '''
-        key_mod = QApplication.keyboardModifiers()
-        if (key_mod & Qt.ShiftModifier):
-            self.loadXmlAsDefaultButton.showMenu()
-        else:
-            selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
-            for item in selected:
-                path = self.launchlist_model.expandItem(item.name, item.path, item.id)
-                if path is not None:
-                    rospy.loginfo("LOAD the launch file as default: %s", path)
-                    nm.settings().launch_history_add(path)
-                    self.load_as_default_signal.emit(path, None)
+#     def on_load_as_default(self):
+#         '''
+#         Tries to load the selected launch file as default configuration. The button
+#         is only enabled and this method is called, if the button was enabled by
+#         on_launch_selection_clicked()
+#         '''
+#         key_mod = QApplication.keyboardModifiers()
+#         if key_mod & Qt.ShiftModifier:
+#             self.loadXmlAsDefaultButton.showMenu()
+#         else:
+#             selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+#             for item in selected:
+#                 path = self.launchlist_model.expandItem(item.name, item.path, item.id)
+#                 if path is not None:
+#                     rospy.loginfo("LOAD the launch file as default: %s", path)
+#                     nm.settings().launch_history_add(path)
+#                     self.load_as_default_signal.emit(path, None)
 
-    def _launchItemsFromIndexes(self, indexes, recursive=True):
+    def _pathItemsFromIndexes(self, indexes, recursive=True):
         result = []
         for index in indexes:
             if index.column() == 0:
-                model_index = self.launchlist_proxyModel.mapToSource(index)
+                model_index = self.launchlist_proxy_model.mapToSource(index)
                 item = self.launchlist_model.itemFromIndex(model_index)
-                if item is not None and isinstance(item, LaunchItem):
+                if item is not None and isinstance(item, PathItem):
                     result.append(item)
         return result
 
@@ -342,36 +401,89 @@ class LaunchFilesWidget(QDockWidget):
         list view or topics view.
         '''
         key_mod = QApplication.keyboardModifiers()
-        if not self.xmlFileView.state() == QAbstractItemView.EditingState:
+        if not self.ui_file_view.state() == QAbstractItemView.EditingState:
             # remove history file from list by pressing DEL
             if event == QKeySequence.Delete:
-                selected = self._launchItemsFromIndexes(self.xmlFileView.selectionModel().selectedIndexes(), False)
+                selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
                 for item in selected:
                     nm.settings().launch_history_remove(item.path)
                     self.launchlist_model.reloadCurrentPath()
-            elif not key_mod and event.key() == Qt.Key_F4 and self.editXmlButton.isEnabled():
+            elif not key_mod and event.key() == Qt.Key_F4 and self.ui_button_edit.isEnabled():
                 # open selected launch file in xml editor by F4
                 self.on_edit_xml_clicked()
             elif event == QKeySequence.Find:
                 # set focus to filter box for packages
-                self.searchPackageLine.setFocus(Qt.ActiveWindowFocusReason)
+                self.ui_search_line.setFocus(Qt.ActiveWindowFocusReason)
             elif event == QKeySequence.Paste:
                 # paste files from clipboard
                 self.launchlist_model.paste_from_clipboard()
             elif event == QKeySequence.Copy:
                 # copy the selected items as file paths into clipboard
-                selected = self.xmlFileView.selectionModel().selectedIndexes()
+                selected = self.ui_file_view.selectionModel().selectedIndexes()
                 indexes = []
                 for s in selected:
-                    indexes.append(self.launchlist_proxyModel.mapToSource(s))
+                    indexes.append(self.launchlist_proxy_model.mapToSource(s))
                 self.launchlist_model.copy_to_clipboard(indexes)
-        if self.searchPackageLine.hasFocus() and event.key() == Qt.Key_Escape:
+        if self.ui_search_line.hasFocus() and event.key() == Qt.Key_Escape:
             # cancel package filtering on pressing ESC
-            self.launchlist_model.show_packages(False)
-            self.searchPackageLine.setText('')
-            self.xmlFileView.setFocus(Qt.ActiveWindowFocusReason)
+            self.launchlist_model.reload_current_path()
+            self.ui_search_line.setText('')
+            self.ui_file_view.setFocus(Qt.ActiveWindowFocusReason)
         QDockWidget.keyReleaseEvent(self, event)
 
     def _searchline_focusInEvent(self, event):
         self.launchlist_model.show_packages(True)
-        QLineEdit.focusInEvent(self.searchPackageLine, event)
+        QLineEdit.focusInEvent(self.ui_search_line, event)
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%   Filter handling                               %%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+class FilesSortFilterProxyModel(QSortFilterProxyModel):
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        '''
+        Perform filtering on column 0 (Name)
+        '''
+        if not self.filterRegExp().pattern():
+            return True
+        if (self.filterAcceptsRowItself(sourceRow, sourceParent)):
+            return True
+#         # accept if any of the parents is accepted on it's own merits
+#         parent = sourceParent
+#         while (parent.isValid()):
+#             if (self.filterAcceptsRowItself(parent.row(), parent.parent())):
+#                 return True
+#             parent = parent.parent()
+        # accept if any of the children is accepted on it's own merits
+        if (self.hasAcceptedChildren(sourceRow, sourceParent)):
+            return True
+        return False
+
+    def hasAcceptedChildren(self, sourceRow, sourceParent):
+        index = self.sourceModel().index(sourceRow, 0, sourceParent)
+        if not index.isValid():
+            return False
+        # check if there are children
+        childCount = index.model().rowCount(index)
+        if childCount == 0:
+            return False
+        for i in range(childCount):
+            if (self.filterAcceptsRowItself(i, index)):
+                return True
+            # recursive call -> NOTICE that this is depth-first searching, you're probably better off with breadth first search...
+            if (self.hasAcceptedChildren(i, index)):
+                return True
+        return False
+
+    def filterAcceptsRowItself(self, sourceRow, sourceParent):
+        index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
+        item = self.sourceModel().data(index0)
+        if item is not None:
+            # skip groups
+            if '{' not in item:
+                regex = self.filterRegExp()
+                return (regex.indexIn(self.sourceModel().data(index0)) != -1)
+        return False

@@ -52,7 +52,8 @@ class FileStub(object):
 
     def list_path(self, path):
         result = []
-        response = self.fm_stub.ListPath(fmsg.ListPathRequest(path=path), timeout=settings.GRPC_TIMEOUT, metadata=[('authorization', 'user:robot')])
+#        response = self.fm_stub.ListPath(fmsg.ListPathRequest(path=path), timeout=settings.GRPC_TIMEOUT, metadata=[('authorization', 'user:robot')])
+        response = self.fm_stub.ListPath(fmsg.ListPathRequest(path=path))
         if response.status.code == OK:
             for p in response.items:
                 item = FileItem(p.path, p.type, p.size, p.mtime)
@@ -63,6 +64,16 @@ class FileStub(object):
             raise IOError(response.status.error_code, response.status.error_msg, response.status.error_file)
         elif response.status.code == ERROR:
             raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
+        return result
+
+    def list_packages(self, clear_ros_cache=False):
+        result = {}
+        response = self.fm_stub.ListPackages(fmsg.ListPackagesRequest(clear_ros_cache=clear_ros_cache))
+        if response.status.code == OK:
+            for p in response.items:
+                result[p.path] = p.name
+        elif response.status.code == ERROR:
+            raise Exception(response.status.error_msg)
         return result
 
     def get_file_content(self, path):
@@ -83,3 +94,26 @@ class FileStub(object):
             elif response.status.code == ERROR:
                 raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
         return (file_size, file_mtime, file_content)
+
+    def _gen_save_content_list(self, path, content, mtime):
+        mgs = fmsg.SaveFileContentRequest()
+        mgs.overwrite = mtime == 0
+        mgs.file.path = path
+        mgs.file.mtime = mtime  # something not zero to update a not existing file
+        mgs.file.size = len(content)
+        mgs.file.data = content
+        yield mgs
+
+    def save_file_content(self, path, content, mtime):
+        result = []
+        response_stream = self.fm_stub.SaveFileContent(self._gen_save_content_list(path, content, mtime), timeout=settings.GRPC_TIMEOUT)
+        for response in response_stream:
+            if response.status.code == OK:
+                result.append(response.ack)
+            elif response.status.code == OS_ERROR:
+                raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
+            elif response.status.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
+                raise IOError(response.status.error_code, response.status.error_msg, response.status.error_file)
+            elif response.status.code == ERROR:
+                raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
+        return result

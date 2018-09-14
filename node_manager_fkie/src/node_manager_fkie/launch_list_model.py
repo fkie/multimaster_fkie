@@ -30,23 +30,31 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QMimeData, Qt
+from python_qt_binding.QtCore import QMimeData, Qt, Signal
 try:
     from python_qt_binding.QtGui import QApplication, QInputDialog, QLineEdit
 except:
     from python_qt_binding.QtWidgets import QApplication, QInputDialog, QLineEdit
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+import grpc
+import uuid
 import os
 import shutil
+from urlparse import urlparse
+import rospy
 
 import node_manager_fkie as nm
 
-from .common import is_package, package_name, utf8
+from master_discovery_fkie.common import get_hostname
+from node_manager_daemon_fkie.common import get_nmd_url
+from node_manager_daemon_fkie.file_item import FileItem
+
+from .common import is_package, package_name, utf8, grpc_join, grpc_split_url, grpc_create_url
 from .detailed_msg_box import MessageBox
 from .packages_thread import PackagesThread
 
 
-class LaunchItem(QStandardItem):
+class PathItem(QStandardItem):
     '''
     The launch item stored in the launch model.
     '''
@@ -55,9 +63,11 @@ class LaunchItem(QStandardItem):
 
     NOT_FOUND = -1
     NOTHING = 0
+    ROOT = 1
     PROFILE = 5
     RECENT_PROFILE = 6
-    RECENT_FILE = 10
+    RECENT_FILE = 7
+    FILE = 10
     LAUNCH_FILE = 11
     CFG_FILE = 12
     FOLDER = 20
@@ -65,60 +75,159 @@ class LaunchItem(QStandardItem):
     STACK = 22
     REMOTE_DAEMON = 23
 
-    def __init__(self, name, path, lid, parent=None):
+    def __init__(self, path, path_id, mtime, size, name):
         '''
-        Initialize the topic item.
-        @param name: the topic name
-        @type name: C{str}
+        Initialize the PathItem object with given values. The name of the item is the base name of the path.
+        Examples of paths:
+            grpc://localhost:12311:                 -> name: @localhost
+            grpc://localhost:12311:/absolute/path   -> name: path
+            grpc://localhost:12311:relative/path    -> name: path
+            grpc://localhost::with/default/port     -> name: port
+            /absolute/local/path                    -> name: path
+            relative/local/path                     -> name: path
+        :param str url: the url of node manager daemon
+        :param str path: file path
+        :param int path_id: identification of the path (folder, package, launch file, ...)
+        :param int mtime: modification time
+        :param int size: file size
+        :param str name: the displayed name
         '''
-        QStandardItem.__init__(self, name)
-        self.parent_item = parent
-        self.name = name
-        self.path = path
-        self.package_name = package_name(os.path.dirname(self.path))[0]
-        self.id = lid
-        if self.id == LaunchItem.FOLDER:
+#        self._url = url
+#        self.url_parse_result = urlparse(url)
+        self._path = path
+        self.id = self._identify_path_on_ext(path) if path_id == self.FILE else path_id
+        pathname = name
+        if pathname == 'src':
+            pathname = '%s (src)' % os.path.basename(os.path.dirname(path))
+        self._name = pathname
+        QStandardItem.__init__(self, self._name)
+        self.mtime = mtime
+        self.size = size
+        if self.id == self.RECENT_FILE or self.id == self.RECENT_PROFILE:
+            pname = package_name(path)[0]
+            if pname is None:
+                pname, _ = grpc_split_url(path)
+            self.package_name = pname
+#             if self.package_name is None:
+#                 self.package_name, _ = grpc_split_url(self.path)
+        if self.id == self.FOLDER:
             self.setIcon(QIcon(":/icons/crystal_clear_folder.png"))
-        elif self.id == LaunchItem.PACKAGE:
+        elif self.id == self.PACKAGE:
             self.setIcon(QIcon(":/icons/crystal_clear_package.png"))
-        elif self.id == LaunchItem.LAUNCH_FILE:
+        elif self.id == self.LAUNCH_FILE:
             self.setIcon(QIcon(":/icons/crystal_clear_launch_file.png"))
-        elif self.id == LaunchItem.RECENT_FILE:
+        elif self.id == self.RECENT_FILE:
             self.setIcon(QIcon(":/icons/crystal_clear_launch_file_recent.png"))
-        elif self.id == LaunchItem.STACK:
+        elif self.id == self.STACK:
             self.setIcon(QIcon(":/icons/crystal_clear_stack.png"))
-        elif self.id == LaunchItem.PROFILE:
+        elif self.id == self.PROFILE:
             self.setIcon(QIcon(":/icons/crystal_clear_profile.png"))
-        elif self.id == LaunchItem.RECENT_PROFILE:
+        elif self.id == self.RECENT_PROFILE:
             self.setIcon(QIcon(":/icons/crystal_clear_profile_recent.png"))
-        elif self.id == LaunchItem.REMOTE_DAEMON:
+        elif self.id == self.REMOTE_DAEMON:
             self.setIcon(QIcon(":/icons/stock_connect.png"))
+        elif self.id == self.ROOT:
+            self.setIcon(QIcon(":/icons/back.png"))
 
 #  def __del__(self):
 #    print "delete LAUNCH", self.name
 
+    def _identify_path_on_ext(self, path):
+        '''
+        Determines the id based on file extension.
+        :param str path: path
+        :return: the id represents whether it is a file, package or stack
+        :rtype: constants of PathItem
+        '''
+        _filename, file_extension = os.path.splitext(path)
+        if not file_extension:
+            return self.FILE
+        if file_extension == '.launch':
+            return PathItem.LAUNCH_FILE
+        elif file_extension == '.nmprofile':
+            return PathItem.PROFILE
+        elif file_extension in nm.settings().launch_view_file_ext:
+            return PathItem.CFG_FILE
+        return self.FILE
+
+    def _update_icon(self):
+        if self.id == PathItem.UNKNOWN:
+            return
+        if self.id == PathItem.FOLDER:
+            self.setIcon(QIcon(":/icons/crystal_clear_folder.png"))
+        elif self.id == PathItem.PACKAGE:
+            self.setIcon(QIcon(":/icons/crystal_clear_package.png"))
+        elif self.id == PathItem.LAUNCH_FILE:
+            if self.parent_item is None:
+                self.setIcon(QIcon(":/icons/crystal_clear_launch_file_recent.png"))
+            else:
+                self.setIcon(QIcon(":/icons/crystal_clear_launch_file.png"))
+        elif self.id == PathItem.STACK:
+            self.setIcon(QIcon(":/icons/crystal_clear_stack.png"))
+        elif self.id == PathItem.PROFILE:
+            if self.parent_item is None:
+                self.setIcon(QIcon(":/icons/crystal_clear_profile_recent.png"))
+            else:
+                self.setIcon(QIcon(":/icons/crystal_clear_profile.png"))
+        elif self.id == PathItem.REMOTE_DAEMON:
+            self.setIcon(QIcon(":/icons/stock_connect.png"))
+
+    @property
+    def name(self):
+        '''
+        The name of this item.
+        :rtype: str
+        '''
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        '''
+        Set the new name of this item and updates the path of the item.
+        :param str new_name: new name
+        '''
+        self._name = new_name
+        self.setText(self._name)
+        # TODO: update the path
+
+    @property
+    def path(self):
+        '''
+        The path of this item.
+        :rtype: str
+        '''
+        return self._path
+
+#     @property
+#     def url(self):
+#         '''
+#         The url of this item.
+#         :rtype: str
+#         '''
+#         return self._url
+
     def type(self):
-        return LaunchItem.ITEM_TYPE
+        return PathItem.ITEM_TYPE
 
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
-        @param role: the art of the data
-        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+        :param role: the art of the data
+        :type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
+        :see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if role == Qt.DisplayRole:
             # return the displayed item name
-            if self.id == LaunchItem.RECENT_FILE or self.id == LaunchItem.RECENT_PROFILE:
+            if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
                 return "%s   [%s]" % (self.name, self.package_name)  # .decode(sys.getfilesystemencoding())
-            elif self.id == LaunchItem.REMOTE_DAEMON:
-                return "@%s" % self.name
+            elif self.id == PathItem.REMOTE_DAEMON:
+                return "//%s" % self.name
             else:
                 return "%s" % self.name
         elif role == Qt.ToolTipRole:
             # return the tooltip of the item
             result = "%s" % self.path
-            if self.id == LaunchItem.RECENT_FILE or self.id == LaunchItem.RECENT_PROFILE:
+            if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
                 result = "%s\nPress 'Delete' to remove the entry from the history list" % self.path
             return result
 #     elif role == Qt.DecorationRole:
@@ -134,6 +243,7 @@ class LaunchItem(QStandardItem):
             return QStandardItem.data(self, role)
 
     def setData(self, value, role=Qt.EditRole):
+        # TODO: fix to use it with nm_daemon
         if role == Qt.EditRole:
             # rename the file or folder
             if self.name != value and self.id in [self.RECENT_FILE, self.LAUNCH_FILE, self.RECENT_PROFILE, self.PROFILE, self.CFG_FILE, self.FOLDER]:
@@ -151,66 +261,128 @@ class LaunchItem(QStandardItem):
         return QStandardItem.setData(self, value, role)
 
     @classmethod
-    def getItemList(self, name, path, item_id, root):
+    def create_row_items(self, path, path_id, mtime, size, name):
         '''
-        Creates the list of the items . This list is used for the
-        visualization of topic data as a table row.
-        @param name: the topic name
-        @type name: C{str}
-        @param root: The parent QStandardItem
-        @type root: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
-        @return: the list for the representation as a row
-        @rtype: C{[L{LaunchItem} or U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
+        Creates the list of the items. This list is used for the
+        visualization of path data as a table row.
+        :param str path: file path combined with the url of node manager daemon
+        :param int path_id: identification of the path (folder, package, launch file, ...)
+        :param int mtime: modification time
+        :param int size: file size
+        :param str name: the displayed name
+        :return: the list for the representation as a row
+        :rtype: C{[L{PathItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
-        item = LaunchItem(name, path, item_id, parent=root)
+        item = PathItem(path, path_id, mtime, size, name)
         items.append(item)
+        # items.append(item.item_mtime)
+        # items.append(item.item_size)
         return items
 
-    def isLaunchFile(self):
+    def is_launch_file(self):
         '''
-        @return: C{True} if it is a launch file
-        @rtype: C{boolean}
+        :return: True if it is a launch file
+        :rtype: bool
         '''
-        return self.path is not None and os.path.isfile(self.path) and self.path.endswith('.launch')
+        return self.path is not None and self.id in [self.LAUNCH_FILE, self.RECENT_FILE] and self.path.endswith('.launch')
 
-    def isConfigFile(self):
+    def is_config_file(self):
         '''
-        @return: C{True} if it is a config file
-        @rtype: C{boolean}
+        :return: True if it is a config file
+        :rtype: bool
         '''
         return self.id == self.CFG_FILE
 
-    def isProfileFile(self):
+    def is_profile_file(self):
         '''
-        @return: C{True} if it is a node_manager profile file
-        @rtype: C{boolean}
+        :return: True if it is a node_manager profile file
+        :rtype: bool
         '''
-        return self.path is not None and os.path.isfile(self.path) and self.path.endswith('.nmprofile')
+        return self.path is not None and self.id in [self.PROFILE, self.RECENT_PROFILE] and self.path.endswith('.nmprofile')
+
+    def __eq__(self, item):
+        '''
+        Compares the path of the item.
+        '''
+        if isinstance(item, str) or isinstance(item, unicode):
+            return self.lower() == item.lower()
+        elif not (item is None):
+            return self.path.lower() == item.path.lower()
+        return False
+
+    def __gt__(self, item):
+        '''
+        Compares the path of the item.
+        '''
+        if isinstance(item, str) or isinstance(item, unicode):
+            return self.lower() > item.lower()
+        elif not (item is None):
+            return self.path.lower() > item.path.lower()
+        return False
+
+
+# ###############################################################################
+# #############                LaunchListModel                     ##############
+# ###############################################################################
 
 
 class LaunchListModel(QStandardItemModel):
     '''
     The model to manage the list with launch files.
     '''
+    pathlist_handled = Signal(str)
+    error_on_path = Signal(str, Exception)
+
     header = [('Name', -1)]
     '''@ivar: the list with columns C{[(name, width), ...]}'''
 
-    def __init__(self):
+    def __init__(self, parent=None, progress_queue=None):
         '''
         Creates a new list model.
         '''
-        QStandardItemModel.__init__(self)
+        QStandardItemModel.__init__(self, parent)
+        # self._default_url = 'grpc://localhost:12321'
         self.setColumnCount(len(LaunchListModel.header))
         self.setHorizontalHeaderLabels([label for label, _width in LaunchListModel.header])
         self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
         self.items = []
         self.DIR_CACHE = {}
-        self.currentPath = None
+        self._current_path = ''
+        self._path_tree = []
+#        self._current_url = self._default_url
         self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-        self._setNewList(self._moveUp(None))
+        # self._setNewList(self._moveUp(None))
         self.__packages = {}
-        self._fill_packages_thread = PackagesThread()
+        self._progress_queue = progress_queue
+        # self._fill_packages_thread = PackagesThread()
+        self._add_history()
+        nm.nmd().listed_path.connect(self._listed_path)
+        nm.nmd().error.connect(self._nmd_error)
+        nm.nmd().list_path_threaded(get_nmd_url())
+        self.count = 0
+
+    @property
+    def current_path(self):
+        '''
+        Current path listed in this model. If empty it is a root.
+        :rtype: str
+        '''
+        return self._current_path
+
+    @property
+    def current_url(self):
+        '''
+        Current URL of the node manager daemon.
+        :rtype: str
+        '''
+        netloc, _ = grpc_split_url(self._current_path)
+        return "grpc://%s" % netloc
+
+    def _add_history(self):
+        print "HISTORY", nm.settings().launch_history
+        for hitem in nm.settings().launch_history:
+            self._add_path(hitem, PathItem.RECENT_FILE, 0, 0, os.path.basename(hitem))
 
     def _getRootItems(self):
         result = list(nm.settings().launch_history)
@@ -219,6 +391,78 @@ class LaunchListModel(QStandardItemModel):
 
     def _fill_packages(self, packages):
         self.__packages = packages
+
+    def _listed_path(self, url, path, result, store_cache=True):
+        result_list = []
+        if (store_cache):
+            self.DIR_CACHE[(url, path)] = result
+        for path_item in result:
+            item = os.path.normpath(os.path.join(path, path_item.path))
+            gpath = grpc_create_url(url, item)
+            path_id = PathItem.NOT_FOUND
+            if FileItem.FILE == path_item.type:
+                path_id = PathItem.FILE
+            elif FileItem.DIR == path_item.type:
+                path_id = PathItem.FOLDER
+            elif FileItem.SYMLINK == path_item.type:
+                pass
+            elif FileItem.PACKAGE == path_item.type:
+                path_id = PathItem.PACKAGE
+            if path_id != PathItem.NOT_FOUND and not os.path.basename(path_item.path).startswith('.'):
+                # TODO: create filter for files
+                result_list.append((gpath, path_id, path_item.mtime, path_item.size, os.path.basename(path_item.path)))
+        root_path = grpc_create_url(url, path)
+        self._set_new_list(root_path, result_list)
+        self.pathlist_handled.emit(root_path)
+
+    def _nmd_error(self, method, url, path, error):
+        if self.count > 0:
+            import time
+            time.sleep(2)
+            nm.nmd().list_path_threaded(self._current_path)
+            return
+        if hasattr(error, "code") and error.code() == grpc.StatusCode.UNAVAILABLE:
+            name = "node_manager_daemon"
+            return
+            if self._progress_queue is not None:
+                rospy.loginfo("Connection problem to %s, try to start <%s>" % (url, name))
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               'start %s' % name,
+                                               nm.starter().runNodeWithoutConfig,
+                                               (get_hostname(url), '%s_fkie' % name, name,
+                                                nm.nameres().normalize_name(name), [],
+                                                None, False))
+                self._progress_queue.start()
+                self.count = 1
+                nm.nmd().list_path_threaded(self._current_path)
+            else:
+                rospy.logwarn("Error while call <%s> on '%s': %s" % (method, url, error))
+                rospy.logwarn("can't start <%s>, no progress queue defined!" % name)
+        else:
+            print "ERRRR", error
+            root = self.invisibleRootItem()
+            path_item = PathItem.create_row_items(utf8(error), PathItem.NOTHING, 0, 0, '')
+            root.appendRow(path_item)
+            self.pyqt_workaround[path_item[0].name] = path_item[0]
+            self.error_on_path.emit(grpc_create_url(url, path), error)
+
+    def get_file_item(self, path):
+        '''
+        :return: Return an existing ``FileItem`` object corresponding to the given path.
+        :rtype: FileItem
+        :raise: LookupError if no item for given path was found
+        '''
+        if not path:
+            return self.invisibleRootItem()
+        p_res = urlparse(path)
+        if p_res.scheme == 'grpc':
+            if p_res.hostname is None:
+                raise LookupError("can not find FileItem for %s. Invalid hostname in `grpc` scheme!" % path)
+            root = self.invisibleRootItem()
+            for i in range(root.rowCount()):
+                if root.child(i) == "@%s" % p_res.hostname:
+                    pass  # TODO
+        return self.invisibleRootItem()
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
@@ -237,10 +481,10 @@ class LaunchListModel(QStandardItemModel):
         try:
             item = self.itemFromIndex(index)
             result = Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsDragEnabled
-            if item.id in [LaunchItem.RECENT_FILE, LaunchItem.RECENT_PROFILE, LaunchItem.LAUNCH_FILE, LaunchItem.CFG_FILE, LaunchItem.FOLDER, LaunchItem.PROFILE]:
+            if item.id in [PathItem.RECENT_FILE, PathItem.RECENT_PROFILE, PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.FOLDER, PathItem.PROFILE]:
                 result = result | Qt.ItemIsEditable | Qt.ItemIsDragEnabled
             return result
-        except:
+        except Exception:
             return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,6 +510,7 @@ class LaunchListModel(QStandardItemModel):
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def reloadPackages(self):
+        return
         '''
         Reloads the cached packag list.
         '''
@@ -274,103 +519,161 @@ class LaunchListModel(QStandardItemModel):
             self._fill_packages_thread.packages.connect(self._fill_packages)
             self._fill_packages_thread.start()
 
-    def reloadCurrentPath(self):
+    def reload_current_path(self, clear_cache=False):
         '''
         Reloads the current path.
         '''
         # clear the cache for package names
-        try:
-            from .common import PACKAGE_CACHE
-            PACKAGE_CACHE.clear()
-            self.DIR_CACHE = {}
-        except:
-            import traceback
-            print traceback.format_exc(2)
-        try:
-            if self.currentPath is None:
-                self._setNewList(self._moveUp(self.currentPath))
-            else:
-                self._setNewList(self._moveDown(self.currentPath))
-        except:
-            self._setNewList(self._moveUp(None))
+        if clear_cache:
+            nm.nmd().list_packages_threaded(grpc_create_url(self.current_url, ''), True)
+#         if clear_cache:
+#             try:
+#                 from .common import PACKAGE_CACHE
+#                 PACKAGE_CACHE.clear()
+#                 self.DIR_CACHE = {}
+#             except Exception:
+#                 import traceback
+#                 print traceback.format_exc(2)
+        self.expand_item(self._current_path, PathItem.FOLDER)
+#         try:
+#             from .common import PACKAGE_CACHE
+#             PACKAGE_CACHE.clear()
+#             self.DIR_CACHE = {}
+#         except Exception:
+#             import traceback
+#             print traceback.format_exc(2)
+#         try:
+#             if self._current_path is None:
+#                 self._setNewList(self._moveUp(self._current_path))
+#             else:
+#                 self._setNewList(self._moveDown(self._current_path))
+#         except Exception:
+#             self._setNewList(self._moveUp(None))
 
-    def expandItem(self, path_item, path, item_id):
+#    def expand_item(self, path_item, path, item_id, host):
+    def expand_item(self, path, path_id):
         '''
         Returns for the given item and path the file path if this is a file. Otherwise the
         folder will be expanded and None will be returned.
-        @param path_item: the list item
-        @type path_item: C{str}
         @param path: the real path of the item
         @type path: C{str}
         @return: path of the launch file or None
         @rtype: C{str}
         @raise Exception if no path to given item was found
         '''
-        if path_item == '..':
-            goto_path = os.path.dirname(path)
-            key_mod = QApplication.keyboardModifiers()
-            if key_mod & Qt.ControlModifier:
-                goto_path = None
-            root_path, items = self._moveUp(goto_path)
-        elif os.path.isfile(path):
+        print "expand", path, path_id
+#             print "PPP:", path, ", item: ", path_item, host
+#             if isinstance(path, FileItem):
+#                 print "path", path.path, host
+#                 self._nmd_client.list_path_threaded(path.path, host)
+#                 root_path = path.path
+#                 items = []
+#             else:
+#                 goto_path = os.path.dirname(path)
+#                 key_mod = QApplication.keyboardModifiers()
+#                 if key_mod & Qt.ControlModifier:
+#                     goto_path = None
+#                 root_path, items = self._moveUp(goto_path)
+#        elif os.path.isfile(path):
+        if path_id in [PathItem.NOTHING]:
+            return None
+        if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
             return path
-        elif item_id == LaunchItem.RECENT_FILE or item_id == LaunchItem.LAUNCH_FILE:
-            raise Exception("Invalid file path: %s", path)
-        elif item_id == LaunchItem.REMOTE_DAEMON:
+#         elif path_id in [PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
+#             raise Exception("Invalid file path: %s", path)
+        elif path_id == PathItem.REMOTE_DAEMON:
             print "connect to %s" % path
-            root_path = path
-            items = []
+            nm.nmd().list_path_threaded(path)
         else:
-            key_mod = QApplication.keyboardModifiers()
-            onestep = False
-            if key_mod & Qt.ControlModifier:
-                onestep = True
-            root_path, items = self._moveDown(path, onestep)
-        self._setNewList((root_path, items))
+            print "list path"
+            root = self.invisibleRootItem()
+            while root.rowCount():
+                root.removeRow(0)
+            self.pyqt_workaround.clear()
+            print "path", path
+            print "self._path_tree", self._path_tree
+            print "current_path", self._current_path
+            if Qt.ControlModifier & QApplication.keyboardModifiers():
+                self._path_tree = []
+                self._current_path = ''
+            else:
+                if path_id in [PathItem.ROOT]:
+                    if self._path_tree:
+                        self._current_path = self._path_tree[-1]
+                        self._path_tree = self._path_tree[:-1]
+                elif self._current_path != path:
+                    print "ASD", self._current_path, path
+                    self._path_tree.append(self._current_path)
+                    self._current_path = path
+            _, path = grpc_split_url(self._current_path)
+            if path:
+                self._add_path(self._current_path, PathItem.ROOT, 0, 0, '')
+            else:
+                self._path_tree = []
+                self._add_history()
+            try:
+                self._listed_path(self._current_path, self.DIR_CACHE[self._current_path], store_cache=True)
+            except KeyError:
+                nm.nmd().list_path_threaded(self._current_path)
+            print "current_path_end", self._current_path
+#         else:
+#             key_mod = QApplication.keyboardModifiers()
+#             onestep = False
+#             if key_mod & Qt.ControlModifier:
+#                 onestep = True
+#             root_path, items = self._moveDown(path, onestep)
+#        self._setNewList((root_path, items))
         return None
 
-    def setPath(self, path):
+    def set_path(self, path):
         '''
         Shows the new path in the launch configuration view. Only if the new path
         is in ros package paths
-        @param path: new path
-        @type path: C{str}
+        :param str path: new path
         '''
+        # TODO
+        toset = path
+        if not path.startswith('grpc://'):
+            toset = grpc_create_url(self.current_url, path)
+        self.expand_item(toset, PathItem.FOLDER)
 #    if self._is_in_ros_packages(path):
-        self._setNewList(self._moveDown(path))
+#        self._setNewList(self._moveDown(path))
 
-    def show_packages(self, show):
-        if show:
-            # clear the cache for package names
-            try:
-                items = []
-                for package, path in self.__packages.items():
-                    items.append((package, path, LaunchItem.PACKAGE))
-                self._setNewList((self.currentPath if self.currentPath else '', items))
-            except:
-                import traceback
-                print traceback.format_exc(2)
-        else:
-            self._setNewList(self._moveUp(self.currentPath))
+    def show_packages(self, filter):
+        try:
+            root = self.invisibleRootItem()
+            while root.rowCount():
+                root.removeRow(0)
+            self.pyqt_workaround.clear()
+            items = []
+            for url, packages in nm.nmd().get_packages().items():
+                for path, name in packages.items():
+                    if filter in name:
+                        print path, url
+                        items.append((grpc_join(url, path), PathItem.PACKAGE, 0, 0, name))
+            self._set_new_list(self._current_path, items)
+        except Exception:
+            import traceback
+            print traceback.format_exc(2)
 
     def paste_from_clipboard(self):
         '''
         Copy the file or folder to new position...
         '''
-        if QApplication.clipboard().mimeData().hasText() and self.currentPath:
+        if QApplication.clipboard().mimeData().hasText() and self._current_path:
             text = QApplication.clipboard().mimeData().text()
             if text.startswith('file://'):
                 path = text.replace('file://', '')
                 basename = os.path.basename(text)
                 ok = True
-                if os.path.exists(os.path.join(self.currentPath, basename)):
+                if os.path.exists(os.path.join(self._current_path, basename)):
                     basename, ok = QInputDialog.getText(None, 'File exists', 'New name (or override):', QLineEdit.Normal, basename)
                 if ok and basename:
                     if os.path.isdir(path):
-                        shutil.copytree(path, os.path.join(self.currentPath, basename))
+                        shutil.copytree(path, os.path.join(self._current_path, basename))
                     elif os.path.isfile(path):
-                        shutil.copy2(path, os.path.join(self.currentPath, basename))
-                    self.reloadCurrentPath()
+                        shutil.copy2(path, os.path.join(self._current_path, basename))
+                    self.reloadcurrent_path()
 
     def copy_to_clipboard(self, indexes):
         '''
@@ -390,7 +693,25 @@ class LaunchListModel(QStandardItemModel):
     # %%%%%%%%%%%%%              Functionality                         %%%%%%%%
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    def _setNewList(self, (root_path, items)):
+    def _set_new_list(self, root_path, items):
+        '''
+        Sets the list to the given path and insert the items. If the root path is not
+        empty the additional item '<-' to go back will be inserted.
+        :see: L{LaunchListModel._listed_path()}
+        :param str root_path: the root directory
+        :param items: the list with characterized items
+        :type items: C{[(item, path, id)]}
+        '''
+        # add new items
+#         if root_path:
+#             # _addPathToList('..', root_path, PathItem.NOTHING)
+#         else:
+#             self._addPathToList('localhost', 'localhost:12321', PathItem.REMOTE_DAEMON)
+        for path, path_id, mtime, size, name in items:
+            self._add_path(path, path_id, mtime, size, name)
+
+
+    def _setNewList(self, (root_path, items), url=''):
         '''
         Sets the list to the given path and insert the items. If the root path is not
         None the additional item '..' to go up will be inserted. The items parameter
@@ -408,12 +729,12 @@ class LaunchListModel(QStandardItemModel):
         self.pyqt_workaround.clear()
         # add new items
         if root_path is not None:
-            self._addPathToList('..', root_path, LaunchItem.NOTHING)
+            self._addPathToList('', root_path, PathItem.NOTHING)
         else:
-            self._addPathToList('localhost', 'localhost:12311', LaunchItem.REMOTE_DAEMON)
+            self._addPathToList('localhost', 'localhost:12321', PathItem.REMOTE_DAEMON)
         for item_name, item_path, item_id in items:
             self._addPathToList(item_name, item_path, item_id)
-        self.currentPath = root_path
+        self._current_path = root_path
 
     def _is_in_ros_packages(self, path):
         '''
@@ -427,37 +748,36 @@ class LaunchListModel(QStandardItemModel):
                 return True
         return False
 
-    def _addPathToList(self, item, path, path_id):
+    def _add_path(self, path, path_id, mtime, size, name):
         '''
         Inserts the given item in the list model.
-        @param item: the displayed name
-        @type item: C{str}
-        @param path: the path of the item
-        @type path: C{str}
-        @param path_id: the id of the item, which represents whether it is a file, package or stack.
-        @type path_id: C{constants of LaunchListModel}
+        :param str path: the path of the item combined with the url of the node manager daemon
+        :param int path_id: the id (constants of PathItem) of the item, which represents whether it is a file, package or stack
+        :param int mtime: modification time
+        :param int size: file size
+        :param str name: the displayed name
         '''
+#        print "add path to list", url, path, path_id
         root = self.invisibleRootItem()
-        if item is None or path is None or path_id == LaunchItem.NOT_FOUND:
+        if path is None or path_id == PathItem.NOT_FOUND:
             return False
-        if (path_id != LaunchItem.NOT_FOUND):
+        if (path_id != PathItem.NOT_FOUND):
             # add sorted a new entry
             try:
+                path_item = PathItem.create_row_items(path, path_id, mtime, size, name)
                 for i in range(root.rowCount()):
-                    launchItem = root.child(i)
-                    launch_file_cmp = (path_id in [LaunchItem.RECENT_FILE, LaunchItem.LAUNCH_FILE, LaunchItem.RECENT_PROFILE, LaunchItem.PROFILE] and item < launchItem.name)
-                    launch_id_cmp = (launchItem.id > path_id and launchItem.id > LaunchItem.LAUNCH_FILE)
-                    launch_name_cmp = (launchItem.id == path_id and item < launchItem.name)
+                    curr_item = root.child(i)
+                    launch_file_cmp = (path_id in [PathItem.RECENT_FILE, PathItem.LAUNCH_FILE, PathItem.RECENT_PROFILE, PathItem.PROFILE] and curr_item.name < path_item[0].name)
+                    launch_id_cmp = (curr_item.id > path_id and curr_item.id > PathItem.LAUNCH_FILE)
+                    launch_name_cmp = (curr_item.id == path_id and path_item[0].name < curr_item.name)
                     if launch_file_cmp or launch_id_cmp or launch_name_cmp:
-                        new_item_row = LaunchItem.getItemList(item, path, path_id, root)
-                        root.insertRow(i, new_item_row)
-                        self.pyqt_workaround[item] = new_item_row[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+                        root.insertRow(i, path_item)
+                        self.pyqt_workaround[path_item[0].name] = path_item[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
                         return True
-                new_item_row = LaunchItem.getItemList(item, path, path_id, root)
-                root.appendRow(new_item_row)
-                self.pyqt_workaround[item] = new_item_row[0]
+                root.appendRow(path_item)
+                self.pyqt_workaround[path_item[0].name] = path_item[0]
                 return True
-            except:
+            except Exception:
                 import traceback
                 print traceback.format_exc(2)
             return False
@@ -466,48 +786,48 @@ class LaunchListModel(QStandardItemModel):
         '''
         Determines the id of the given path
         @return: the id represents whether it is a file, package or stack
-        @rtype: C{constants of LaunchItem}
+        @rtype: C{constants of PathItem}
         '''
         if path in self.DIR_CACHE:
             if path in nm.settings().launch_history:
                 if path.endswith('.nmprofile'):
-                    return LaunchItem.RECENT_PROFILE
-                return LaunchItem.RECENT_FILE
+                    return PathItem.RECENT_PROFILE
+                return PathItem.RECENT_FILE
             return self.DIR_CACHE[path]
         if os.path.basename(path)[0] != '.':
             if path in nm.settings().launch_history:
                 if path.endswith('.nmprofile'):
-                    self.DIR_CACHE[path] = LaunchItem.RECENT_PROFILE
-                    return LaunchItem.RECENT_PROFILE
+                    self.DIR_CACHE[path] = PathItem.RECENT_PROFILE
+                    return PathItem.RECENT_PROFILE
                 else:
-                    self.DIR_CACHE[path] = LaunchItem.RECENT_FILE
-                    return LaunchItem.RECENT_FILE
+                    self.DIR_CACHE[path] = PathItem.RECENT_FILE
+                    return PathItem.RECENT_FILE
             elif os.path.isfile(path):
                 if (path.endswith('.launch')):
-                    self.DIR_CACHE[path] = LaunchItem.LAUNCH_FILE
-                    return LaunchItem.LAUNCH_FILE
+                    self.DIR_CACHE[path] = PathItem.LAUNCH_FILE
+                    return PathItem.LAUNCH_FILE
                 elif (path.endswith('.nmprofile')):
-                    self.DIR_CACHE[path] = LaunchItem.PROFILE
-                    return LaunchItem.PROFILE
+                    self.DIR_CACHE[path] = PathItem.PROFILE
+                    return PathItem.PROFILE
                 else:
                     for e in nm.settings().launch_view_file_ext:
                         if path.endswith(e):
-                            self.DIR_CACHE[path] = LaunchItem.CFG_FILE
-                            return LaunchItem.CFG_FILE
+                            self.DIR_CACHE[path] = PathItem.CFG_FILE
+                            return PathItem.CFG_FILE
             elif os.path.isdir(path):
                 fileList = os.listdir(path)
                 if self._containsLaunches(path):
                     if 'stack.xml' in fileList:
-                        self.DIR_CACHE[path] = LaunchItem.STACK
-                        return LaunchItem.STACK
+                        self.DIR_CACHE[path] = PathItem.STACK
+                        return PathItem.STACK
                     elif is_package(fileList):
-                        self.DIR_CACHE[path] = LaunchItem.PACKAGE
-                        return LaunchItem.PACKAGE
+                        self.DIR_CACHE[path] = PathItem.PACKAGE
+                        return PathItem.PACKAGE
                     else:
-                        self.DIR_CACHE[path] = LaunchItem.FOLDER
-                        return LaunchItem.FOLDER
-        self.DIR_CACHE[path] = LaunchItem.NOT_FOUND
-        return LaunchItem.NOT_FOUND
+                        self.DIR_CACHE[path] = PathItem.FOLDER
+                        return PathItem.FOLDER
+        self.DIR_CACHE[path] = PathItem.NOT_FOUND
+        return PathItem.NOT_FOUND
 
     def _containsLaunches(self, path):
         '''
@@ -543,7 +863,7 @@ class LaunchListModel(QStandardItemModel):
             if pathItem == 'src':
                 pathItem = '%s (src)' % os.path.basename(os.path.dirname(item))
             pathId = self._identifyPath(item)
-            if (pathId != LaunchItem.NOT_FOUND):
+            if (pathId != PathItem.NOT_FOUND):
                 result_list.append((pathItem, item, pathId))
         if len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
             if not onestep:
@@ -570,10 +890,10 @@ class LaunchListModel(QStandardItemModel):
             if pathItem == 'src':
                 pathItem = '%s (src)' % os.path.basename(os.path.dirname(item))
             pathId = self._identifyPath(item)
-            if (pathId != LaunchItem.NOT_FOUND):
+            if (pathId != PathItem.NOT_FOUND):
                 result_list.append((pathItem, item, pathId))
         if path is not None and len(result_list) == 1 and not os.path.isfile(result_list[0][1]):
             return self._moveUp(os.path.dirname(path))
         else:
-            self.currentPath = None
+            self._current_path = ''
         return path, result_list

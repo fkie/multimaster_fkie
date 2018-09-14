@@ -37,6 +37,7 @@ service FileService {
 	rpc GetFileContent (GetFileContentRequest) returns (stream GetFileContentReply);
 	rpc SaveFileContent (stream SaveFileContentRequest) returns (stream SaveFileContentReply);
 	rpc ListPath (ListPathRequest) returns (ListPathReply);
+	rpc ListPackages (ListPackagesRequest) returns (ListPackagesReply);
 }
 
 /** The client for launch manager service to receive notifications about file changes. */
@@ -53,8 +54,8 @@ message GetFileContentRequest {
 }
 
 /** The reply message with status and file content on success.
- * @param status: errors if occurred.
- * @param file: file content
+ * :param status: errors if occurred.
+ * :param file: file content
  */
 message GetFileContentReply {
 	ReturnStatus status = 1;
@@ -62,8 +63,8 @@ message GetFileContentReply {
 }
 
 /** Request to save the file content.
- * @param overwrite: force replace of existing file with new content.
- * @param file: new file content
+ * :param overwrite: force replace of existing file with new content.
+ * :param file: new file content
  */
 message SaveFileContentRequest {
 	bool overwrite = 1;
@@ -71,8 +72,8 @@ message SaveFileContentRequest {
 }
 
 /** The reply message with status and new modification time on success.
- * @param status: errors if occurred.
- * @param ack: acknowledge for received chunks.
+ * :param status: errors if occurred.
+ * :param ack: acknowledge for received chunks.
  */
 message SaveFileContentReply {
 	ReturnStatus status = 1;
@@ -80,43 +81,43 @@ message SaveFileContentReply {
 }
 
 /** The message to transfer the file content.
- * @param path: the path of the file. Required on first chunk.
- * @param mtime: time of last modification of this file. If save the content,
+ * :param path: the path of the file. Required on first chunk.
+ * :param mtime: time of last modification of this file. If save the content,
  * the time should be equal to the file already exists (zero for new file).
  * Required on first chunk.
- * @param size: size of the file in bytes.
- * @param offset: offset of data in this chunk.
- * @param data: file content.
+ * :param size: size of the file in bytes.
+ * :param offset: offset of data in this chunk.
+ * :param data: file content.
  */
 message FileChunk {
 	string path = 1;
-	float mtime = 2;
+	double mtime = 2;
 	uint64 size = 3;
 	uint64 offset = 4;
 	bytes data = 5;
 }
 
 /** The acknowledge for received chunk.
- * @param path: the path of the file. Only on first chunk.
- * @param mtime: time of last modification of this file. Only valid for last chunk.
- * @param size: current received data.
+ * :param path: the path of the file. Only on first chunk.
+ * :param mtime: time of last modification of this file. Only valid for last chunk.
+ * :param size: current received data.
  */
 message FileChunkAck {
 	string path = 1;
-	float mtime = 2;
+	double mtime = 2;
 	uint64 size = 4;
 }
 
-/** The request message to list the ROS packages in given path.
- * @param path: if path is empty the root paths specified in ROS_PACKAGE_PATH. */
+/** The request message to list the content in given path.
+ * :param path: if path is empty the root paths specified in ROS_PACKAGE_PATH. */
 message ListPathRequest {
 	string path = 1;
 }
 
 /** The response message with status and list of files in requested path on success.
- * @param status: status of the request process.
- * @param path: requested path.
- * @param items: list of files. If the status is not OK the list is empty. */
+ * :param status: status of the request process.
+ * :param path: requested path.
+ * :param items: list of files. If the status is not OK the list is empty. */
 message ListPathReply {
 	ReturnStatus status = 1;
 	string path = 2;
@@ -126,7 +127,7 @@ message ListPathReply {
 message PathObj {
 	string path = 1;
 	// time of last modification of path. The return value is a number giving the number of seconds since the epoch
-	float mtime = 2;
+	double mtime = 2;
 	// size, in bytes, of path
 	uint64 size = 3;
 
@@ -160,3 +161,23 @@ message ReturnStatus {
 	string error_msg = 3;
 	string error_file = 4;
 }
+
+/** The request message to list all ROS packages in given path.
+ * :param clear_ros_cache: clear ROS cache. */
+message ListPackagesRequest {
+	bool clear_ros_cache = 1;
+}
+
+/** The response message with status and list of packages on success.
+ * :param status: status of the request process.
+ * :param items: list of packages. If the status is not OK the list is empty. */
+message ListPackagesReply {
+	ReturnStatus status = 1;
+	repeated PackageObj items = 2;
+}
+
+message PackageObj {
+	string name = 1;
+	string path = 2;
+}
+

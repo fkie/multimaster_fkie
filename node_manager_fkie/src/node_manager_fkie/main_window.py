@@ -280,7 +280,7 @@ class MainWindow(QMainWindow):
             from docutils import examples
             with file(nm.settings().HELP_FILE) as f:
                 self.textBrowser.setText(examples.html_body(utf8(f.read())))
-        except:
+        except Exception:
             import traceback
             msg = "Error while generate help: %s" % traceback.format_exc(2)
             rospy.logwarn(msg)
@@ -354,7 +354,7 @@ class MainWindow(QMainWindow):
         self._subscribe()
         if DIAGNOSTICS_AVAILABLE:
             self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
-        self.launch_dock.launchlist_model.reloadPackages()
+        # TODO: self.launch_dock.launchlist_model.reloadPackages()
         self._select_index = 0
         self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+R", "restart selected nodes")), self)
         self._shortcut_restart_nodes.activated.connect(self._restart_nodes)
@@ -640,7 +640,7 @@ class MainWindow(QMainWindow):
         if not self.restricted_to_one_master:
             try:
                 self.masterlist_service.retrieveMasterList(self.getMasteruri(), False)
-            except:
+            except Exception:
                 pass
         else:
             self._setLocalMonitoring(True)
@@ -869,6 +869,7 @@ class MainWindow(QMainWindow):
                     new_info = master.master_info is None or master.master_info.timestamp < minfo.timestamp
 #          cputimes = os.times()
 #          cputime_init = cputimes[0] + cputimes[1]
+                    first_info = master.master_info is None
                     master.master_info = minfo
 #          cputimes = os.times()
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
@@ -891,6 +892,20 @@ class MainWindow(QMainWindow):
                             if self.default_profile_load:
                                 self.default_profile_load = False
                                 QTimer.singleShot(2000, self._load_default_profile_slot)
+                    if first_info:
+                        # start node_manager_daemon if not running on new host
+                        # TODO: add port
+                        nmd_name = "node_manager_daemon"
+                        if minfo.getNodeEndsWith(nmd_name) is None:
+                            host = get_hostname(master.masteruri)
+                            rospy.loginfo("Start <%s> on %s" % (nmd_name, host))
+                            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                           'start %s' % nmd_name,
+                                                           nm.starter().runNodeWithoutConfig,
+                                                           (host, '%s_fkie' % nmd_name, nmd_name,
+                                                            nm.nameres().normalize_name(nmd_name), [],
+                                                            None, False))
+                            self._progress_queue.start()
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception, e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
@@ -1630,7 +1645,7 @@ class MainWindow(QMainWindow):
 # Handling of the launch view signals
 # ======================================================================================================================
 
-    def on_load_launch_file(self, path, argv=[], masteruri=None):
+    def on_load_launch_file(self, path, args={}, masteruri=None):
         '''
         Load the launch file. A ROS master must be selected first.
         :param path: the path of the launch file.
@@ -1643,7 +1658,7 @@ class MainWindow(QMainWindow):
             master_proxy = self.stackedLayout.currentWidget()
         if isinstance(master_proxy, MasterViewProxy):
             try:
-                master_proxy.launchfiles = (path, argv)
+                master_proxy.launchfiles = (path, args)
             except Exception, e:
                 import traceback
                 print utf8(traceback.format_exc(1))
@@ -1718,32 +1733,32 @@ class MainWindow(QMainWindow):
         else:
             MessageBox.information(self, "Load of launch file", "Select a master first!",)
 
-    def on_launch_edit(self, files, search_text='', trynr=1):
+    def on_launch_edit(self, grpc_path, search_text='', trynr=1):
         '''
-        Opens the given files in an editor. If the first file is already open, select
-        the editor. If search text is given, search for the text in files an goto the
-        line.
-        :param file: A list with paths
-        :type file: list of strings
-        :param search_text: A string to search in file
-        :type search_text: str
+        Opens the given path in an editor. If file is already open, select the editor.
+        If search text is given, search for the text in files an goto the line.
+        :param str grpc_path: path with grpc prefix
+        :param str search_text: A string to search in file
         '''
-        if files:
-            path = files[0]
-            if path in self.editor_dialogs:
-                last_path = files[-1]
+        print "!!!on_launch_edit", grpc_path
+        if grpc_path:
+            if grpc_path in self.editor_dialogs:
                 try:
-                    self.editor_dialogs[path].on_load_request(last_path, search_text)
-                    self.editor_dialogs[path].restore()
-                    self.editor_dialogs[path].activateWindow()
+                    print "USE EXISTING EDITOR", grpc_path
+                    self.editor_dialogs[grpc_path].on_load_request(grpc_path, search_text)
+                    # self.editor_dialogs[grpc_path].restore()
+                    self.editor_dialogs[grpc_path].activateWindow()
                 except Exception:
                     if trynr > 1:
                         raise
-                    del self.editor_dialogs[path]
-                    self.on_launch_edit(files, search_text, 2)
+                    import traceback
+                    print traceback.format_exc()
+                    del self.editor_dialogs[grpc_path]
+                    self.on_launch_edit(grpc_path, search_text, 2)
             else:
-                editor = Editor(files, search_text)
-                self.editor_dialogs[path] = editor
+                print "CREATE NEW EDITOR", grpc_path
+                editor = Editor([grpc_path], search_text)
+                self.editor_dialogs[grpc_path] = editor
                 editor.finished_signal.connect(self._editor_dialog_closed)
                 editor.show()
 
@@ -2019,7 +2034,7 @@ class MainWindow(QMainWindow):
             if self.currentMaster is not None:
                 self.currentMaster.on_log_path_copy()
         elif url.toString().startswith('launch://'):
-            self.on_launch_edit([self._url_path(url)], '')
+            self.on_launch_edit(self._url_path(url), '')
         elif url.toString().startswith('reload-globals://'):
             self._reload_globals_at_next_start(self._url_path(url).replace('reload-globals://', ''))
         elif url.toString().startswith('poweroff://'):
@@ -2137,6 +2152,8 @@ class MainWindow(QMainWindow):
     def _new_color(self, color):
         bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
         self.expert_tab.setStyleSheet("%s" % (bg_style))
+        bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+        self.launch_dock.setStyleSheet("%s" % (bg_style_launch_dock))
 
     def mastername_mouseDoubleClickEvent(self, event):
         '''

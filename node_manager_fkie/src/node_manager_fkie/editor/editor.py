@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFileInfo, QPoint, QSize, Qt, Signal
+from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QKeySequence, QTextCursor, QTextDocument
 import os
 
@@ -38,7 +38,6 @@ import rospy
 
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.run_dialog import PackageDialog
-from node_manager_fkie.launch_config import LaunchConfig
 import node_manager_fkie as nm
 
 from .line_number_widget import LineNumberWidget
@@ -97,10 +96,9 @@ class Editor(QMainWindow):
 
     def __init__(self, filenames, search_text='', parent=None):
         '''
-        @param filenames: a list with filenames. The last one will be activated.
-        @type filenames: C{[str, ...]}
-        @param search_text: if not empty, searches in new document for first occurrence of the given text
-        @type search_text: C{str} (Default: C{Empty String})
+        :param filenames: a list with filenames. The last one will be activated.
+        :type filenames: [str]
+        :param str search_text: if not empty, searches in new document for first occurrence of the given text
         '''
         QMainWindow.__init__(self, parent)
         self.setObjectName('Editor - %s' % utf8(filenames))
@@ -114,7 +112,7 @@ class Editor(QMainWindow):
         if filenames:
             window_title = self.__getTabName(filenames[0])
         self.setWindowTitle(window_title)
-        self.init_filenames = list(filenames)
+        self.init_filenames = filenames
         self._search_thread = None
         # list with all open files
         self.files = []
@@ -151,10 +149,11 @@ class Editor(QMainWindow):
         # open the files
         for f in filenames:
             if f:
-                self.on_load_request(os.path.normpath(f), search_text)
+                self.on_load_request(f, search_text)
         self.readSettings()
         self.find_dialog.setVisible(False)
         self.graph_view.setVisible(False)
+        nm.nmd().changed_file.connect(self.on_changed_file)
 
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
@@ -311,10 +310,8 @@ class Editor(QMainWindow):
     def on_load_request(self, filename, search_text='', insert_index=-1, goto_line=-1):
         '''
         Loads a file in a new tab or focus the tab, if the file is already open.
-        @param filename: the path to file
-        @type filename: C{str}
-        @param search_text: if not empty, searches in new document for first occurrence of the given text
-        @type search_text: C{str} (Default: C{Empty String})
+        :param str filename: the path to file
+        :param str search_text: if not empty, searches in new document for first occurrence of the given text
         '''
         if not filename:
             return
@@ -344,9 +341,11 @@ class Editor(QMainWindow):
                     if self.tabWidget.widget(i).filename == filename:
                         self.tabWidget.setCurrentIndex(i)
                         break
-        except Exception:
+        except Exception as err:
             import traceback
-            rospy.logwarn("Error while open %s: %s", filename, traceback.format_exc(1))
+            msg = "Error while open %s: %s" % (filename, traceback.format_exc(1))
+            rospy.logwarn(msg)
+            MessageBox.critical(self, "Error", utf8(err), msg)
         self.tabWidget.setUpdatesEnabled(True)
         if search_text:
             try:
@@ -354,7 +353,8 @@ class Editor(QMainWindow):
                 self._search_thread = None
             except Exception:
                 pass
-            self._search_thread = TextSearchThread(search_text, filename, path_text=self.tabWidget.widget(0).document().toPlainText(), recursive=True)
+            # TODO: put all text of all tabs into path_text
+            self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True)
             self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
             self._search_thread.start()
         if goto_line != -1:
@@ -383,8 +383,7 @@ class Editor(QMainWindow):
     def on_close_tab(self, tab_index):
         '''
         Signal handling to close single tabs.
-        @param tab_index: tab index to close
-        @type tab_index: C{int}
+        :param int tab_index: tab index to close
         '''
         try:
             doremove = True
@@ -418,6 +417,13 @@ class Editor(QMainWindow):
         else:
             self.close()
 
+    def on_changed_file(self, grpc_path, mtime):
+        if grpc_path in self.files:
+            for i in range(self.tabWidget.count()):
+                if self.tabWidget.widget(i).filename == grpc_path:
+                    self.tabWidget.widget(i).file_changed(mtime)
+                    break
+
     def closeEvent(self, event):
         '''
         Test the open files for changes and save this if needed.
@@ -448,6 +454,7 @@ class Editor(QMainWindow):
             event.accept()
         if event.isAccepted():
             self.storeSetting()
+            nm.nmd().changed_file.disconnect(self.on_changed_file)
             self.finished_signal.emit(self.init_filenames)
 
     def on_editor_modificationChanged(self, value=None):
@@ -455,8 +462,8 @@ class Editor(QMainWindow):
         If the content was changed, a '*' will be shown in the tab name.
         '''
         tab_name = self.__getTabName(self.tabWidget.currentWidget().filename)
-        if (self.tabWidget.currentWidget().document().isModified()) or not QFileInfo(self.tabWidget.currentWidget().filename).exists():
-            tab_name = ''.join(['*', tab_name])
+        if (self.tabWidget.currentWidget().document().isModified()):
+            tab_name = '*%s' % tab_name
         self.tabWidget.setTabText(self.tabWidget.currentIndex(), tab_name)
 
     def on_editor_positionChanged(self):
@@ -487,7 +494,7 @@ class Editor(QMainWindow):
         Saves the current document. This method is called if the C{save button}
         was clicked.
         '''
-        saved, errors, msg = self.tabWidget.currentWidget().save(True)
+        saved, errors, msg = self.tabWidget.currentWidget().save()
         if errors:
             MessageBox.critical(self, "Error", msg)
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
@@ -591,8 +598,9 @@ class Editor(QMainWindow):
         if found:
             if self.tabWidget.currentWidget().filename != path:
                 focus_widget = QApplication.focusWidget()
+                if focus_widget is not None:
+                    focus_widget.setFocus()
                 self.on_load_request(path)
-                focus_widget.setFocus()
             comment_start = self.tabWidget.currentWidget().document().find('<!--', index, QTextDocument.FindBackward)
             if not comment_start.isNull():
                 comment_end = self.tabWidget.currentWidget().document().find('-->', comment_start)

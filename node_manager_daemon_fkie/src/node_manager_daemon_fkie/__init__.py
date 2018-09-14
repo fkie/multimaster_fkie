@@ -42,7 +42,7 @@ import rospy
 import remote
 from .client import GrpcClient
 from .server import GrpcServer
-from .common import interpret_path
+from .common import interpret_path, get_nmd_url, get_nmd_port
 
 
 def set_terminal_name(name):
@@ -70,23 +70,28 @@ def set_process_name(name):
         pass
 
 
-def start_server(node_name='launch_manager'):
+def start_server(node_name='node_manager_daemon'):
     '''
     Creates and runs the ROS node
     '''
     # setup the loglevel
+    log_level = rospy.DEBUG
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % node_name, "INFO"))
     except Exception as e:
         print "Error while set the log level: %s\n->INFO level will be used!" % e
-        log_level = rospy.INFO
     log_level = rospy.DEBUG
     rospy.init_node(node_name, log_level=log_level)
     set_terminal_name(node_name)
     set_process_name(node_name)
     try:
+#        port = rospy.get_param('port', 12321)
         launch_manager = GrpcServer()
-        launch_manager.start('[::]:12311')
+#        url = get_nmd_url(prefix='')
+#        print("start on", url)
+#        launch_manager.start(url)
+#        launch_manager.start('[::]:%s' % str(get_nmd_port()))
+        launch_manager.start('[::]:%s' % str(get_nmd_port()))
         rospy.spin()
     except Exception:
         # on load error the process will be killed to notify user in node_manager
@@ -97,25 +102,25 @@ def start_server(node_name='launch_manager'):
         os.kill(os.getpid(), signal.SIGKILL)
 
 
-def start_client(node_name='launch_manager_client'):
+def start_client(node_name='node_manager_daemon_client'):
     '''
     Creates and runs the ROS node
     '''
     # setup the loglevel
+    log_level = rospy.DEBUG
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % node_name, "INFO"))
     except Exception as e:
         print "Error while set the log level: %s\n->INFO level will be used!" % e
-        log_level = rospy.INFO
     log_level = rospy.DEBUG
     rospy.init_node(node_name, log_level=log_level)
     set_terminal_name(node_name)
     set_process_name(node_name)
     try:
         launch_manager = GrpcClient()
-        launch_manager.start('[::]:12312')
-        remote.add_insecure_channel('localhost:12311')
-        launch_manager.test_list_path('')
+        #launch_manager.start('[::]:12322')
+        #remote.add_insecure_channel('localhost:12321')
+        launch_manager.test_list_path('', '128.7.92.114:12321')
         launch_manager.test_list_path('/xyz')
         launch_manager.test_list_path('/home/tiderko/ros/src')
         launch_manager.test_get_file_content("%s/.bashrc" % os.getcwd())
@@ -124,9 +129,9 @@ def start_client(node_name='launch_manager_client'):
         if launch_file:
             launch_manager.test_reload_launch(launch_file)
         launch_manager.test_get_nodes()
-        launch_manager.test_start_node('/example/test_node')
+        launch_manager.test_start_node('/example/map')
         rospy.spin()
-        remote.remove_insecure_channel('localhost:12311')
+        #remote.remove_insecure_channel('localhost:12321')
     except Exception:
         # on load error the process will be killed to notify user in node_manager
         # about error

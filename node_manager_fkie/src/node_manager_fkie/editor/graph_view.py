@@ -37,7 +37,8 @@ import os
 import threading
 import rospy
 
-from node_manager_fkie.common import package_name
+import node_manager_fkie as nm
+from node_manager_fkie.common import package_name, grpc_split_url, grpc_create_url
 from node_manager_fkie.html_delegate import HTMLDelegate
 from node_manager_fkie.launch_config import LaunchConfig
 
@@ -59,9 +60,9 @@ class GraphViewWidget(QDockWidget):
     A frame to find text in the Editor.
     '''
     load_signal = Signal(str, bool)
-    ''' @ivar: filename of file to load, True if insert after the current open tab'''
+    ''' :ivar: filename of file to load, True if insert after the current open tab'''
     goto_signal = Signal(str, int)
-    ''' @ivar: filename, line to go'''
+    ''' :ivar: filename, line to go'''
     DATA_FILE = Qt.UserRole + 1
     DATA_LINE = Qt.UserRole + 2
     DATA_INC_FILE = Qt.UserRole + 3
@@ -167,12 +168,12 @@ class GraphViewWidget(QDockWidget):
         if not path:
             path = item.data(self.DATA_FILE)
         if path in GRAPH_CACHE:
-            for inc_lnr, inc_path in GRAPH_CACHE[path]:
+            for inc_lnr, inc_path, _ in GRAPH_CACHE[path]:
                 pkg, _ = package_name(os.path.dirname(inc_path))
                 itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
-                inc_item = QStandardItem('%d: %s' % (inc_lnr + 1, itemstr))
+                inc_item = QStandardItem('%d: %s' % (inc_lnr, itemstr))
                 inc_item.setData(path, self.DATA_FILE)
-                inc_item.setData(inc_lnr + 1, self.DATA_LINE)
+                inc_item.setData(inc_lnr, self.DATA_LINE)
                 inc_item.setData(inc_path, self.DATA_INC_FILE)
                 inc_item.setData(deep, self.DATA_LEVEL)
                 self._append_items(inc_item, deep + 1)
@@ -185,7 +186,7 @@ class GraphThread(QObject, threading.Thread):
     '''
     graph = Signal(list, list)
     '''
-    @ivar: graph is a signal, which emit two list for files include the current path and a list with included files.
+    :ivar: graph is a signal, which emit two list for files include the current path and a list with included files.
     Each entry is a tuple of the line number and path.
     '''
 
@@ -227,16 +228,18 @@ class GraphThread(QObject, threading.Thread):
                 if path in GRAPH_CACHE:
                     result = GRAPH_CACHE[path]
                 else:
-                    result = LaunchConfig.included_files(path, recursive=False, unique=False)
+                    filelist = nm.nmd().get_included_files(path, recursive=False)
+                    for line, fname, exists, _ in filelist:
+                        result.append((line, fname, exists))
                     GRAPH_CACHE[path] = result
         return result
 
     def _find_inc_file(self, filename, files, root_path):
         result = []
-        for f in files:
-            if filename == f[1]:
-                result.append((f[0], root_path))
-            else:
-                inc_files = self._get_includes(f[1])
-                result += self._find_inc_file(filename, inc_files, f[1])
+        for line, fname, exists in files:
+            if filename == fname:
+                result.append((line, root_path))
+            elif exists:
+                inc_files = self._get_includes(fname)
+                result += self._find_inc_file(filename, inc_files, fname)
         return result

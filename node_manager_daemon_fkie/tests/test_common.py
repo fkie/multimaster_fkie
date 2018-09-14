@@ -35,7 +35,7 @@ import unittest
 import time
 import rospkg
 
-from node_manager_daemon_fkie.common import included_files, interpret_path, package_name
+from node_manager_daemon_fkie.common import get_cwd, included_files, interpret_path, package_name
 
 PKG = 'node_manager_daemon_fkie'
 
@@ -49,6 +49,20 @@ class TestCommonLib(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def test_get_cwd(self):
+        test_path = '/this/is/path/to'
+        result_path = get_cwd('node', '%s/bin' % test_path)
+        self.assertEqual(test_path, result_path, "wrong get_cwd from 'node' type, expected: %s, got: %s" % (test_path, result_path))
+        test_path = os.getcwd()
+        result_path = get_cwd('cwd', '')
+        self.assertEqual(test_path, result_path, "wrong get_cwd from 'cwd' type, expected: %s, got: %s" % (test_path, result_path))
+        test_path = rospkg.get_ros_root()
+        result_path = get_cwd('ros-root', '')
+        self.assertEqual(test_path, result_path, "wrong get_cwd from 'ros-root' type, expected: %s, got: %s" % (test_path, result_path))
+        test_path = rospkg.get_ros_home()
+        result_path = get_cwd('', '')
+        self.assertEqual(test_path, result_path, "wrong get_cwd from empty type, expected: %s, got: %s" % (test_path, result_path))
 
     def test_package_name(self):
         pkg = package_name(os.getcwd())

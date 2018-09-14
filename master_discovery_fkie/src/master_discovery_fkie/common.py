@@ -63,7 +63,11 @@ def get_hostname(url):
     o = urlparse(url)
     hostname = o.hostname
     if hostname is None:
-        hostname = url
+        div_idx = url.find(':')
+        if div_idx > -1:
+            hostname = url[0:div_idx]
+        else:
+            hostname = url
     return hostname
 
 

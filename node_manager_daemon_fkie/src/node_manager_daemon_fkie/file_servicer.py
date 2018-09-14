@@ -33,15 +33,33 @@
 import os
 import rospy
 
+
 import node_manager_daemon_fkie.generated.file_pb2_grpc as fms_grpc
 import node_manager_daemon_fkie.generated.file_pb2 as fms
-
 from .common import is_package, utf8
 
-FILE_CHUNK_SIZE = 1024
+try:
+    from catkin_pkg.package import parse_package
+    CATKIN_SUPPORTED = True
+except ImportError:
+    CATKIN_SUPPORTED = False
+
+OK = fms.ReturnStatus.StatusType.Value('OK')
+ERROR = fms.ReturnStatus.StatusType.Value('ERROR')
+IO_ERROR = fms.ReturnStatus.StatusType.Value('IO_ERROR')
+OS_ERROR = fms.ReturnStatus.StatusType.Value('OS_ERROR')
+CHANGED_FILE = fms.ReturnStatus.StatusType.Value('CHANGED_FILE')
+REMOVED_FILE = fms.ReturnStatus.StatusType.Value('REMOVED_FILE')
+PATH_PACKAGE = fms.PathObj.PathType.Value('PACKAGE')
+PATH_DIR = fms.PathObj.PathType.Value('DIR')
+PATH_FILE = fms.PathObj.PathType.Value('FILE')
+MANIFEST_FILE = 'manifest.xml'
+PACKAGE_FILE = 'package.xml'
 
 
 class FileServicer(fms_grpc.FileServiceServicer):
+
+    FILE_CHUNK_SIZE = 1024
 
     def __init__(self):
         rospy.loginfo("Create file manger servicer")
@@ -49,35 +67,40 @@ class FileServicer(fms_grpc.FileServiceServicer):
         self.DIR_CACHE = {}
         self._peers = {}
 
-    def _terminated(self):
-        rospy.loginfo("terminated context")
-
-    def _register_callback(self, context):
-        if (context.peer() not in self._peers):
-            rospy.loginfo("Add callback to peer context @%s" % context.peer())
-            if context.add_callback(self._terminated):
-                self._peers[context.peer()] = context
+#     def _terminated(self):
+#         rospy.loginfo("terminated context")
+# 
+#     def _register_callback(self, context):
+#         if (context.peer() not in self._peers):
+#             rospy.loginfo("Add callback to peer context @%s" % context.peer())
+#             if context.add_callback(self._terminated):
+#                 pass
+#                 # self._peers[context.peer()] = context
 
     def GetFileContent(self, request, context):
-        self._register_callback(context)
+#        self._register_callback(context)
         result = fms.GetFileContentReply()
         try:
             with open(request.path, 'r') as outfile:
                 result.file.path = request.path
-                result.file.mtime = os.path.getmtime(request.path)
+                print ("FIRST", os.path.getmtime(request.path))
+                a = os.path.getmtime(request.path)
+                print("a", a)
+                result.file.mtime = a
+                print("PP", request.path, result.file.mtime, os.path.getmtime(request.path), type(result.file.mtime), type(os.path.getmtime(request.path)))
                 result.file.size = os.path.getsize(request.path)
                 result.file.offset = 0
-                result.file.data = outfile.read(FILE_CHUNK_SIZE)
+                result.file.data = outfile.read(self.FILE_CHUNK_SIZE)
                 yield result
                 datalen = len(result.file.data)
-                while len(result.file.data) == FILE_CHUNK_SIZE:
+                while len(result.file.data) == self.FILE_CHUNK_SIZE:
                     result = fms.GetFileContentReply()
                     result.file.offset = datalen
-                    result.file.data = outfile.read(FILE_CHUNK_SIZE)
+                    result.file.data = outfile.read(self.FILE_CHUNK_SIZE)
                     datalen += len(result.file.data)
                     yield result
         except IOError as ioe:
-            result.status.code = fms.ReturnStatus.StatusType.Value('IO_ERROR')
+            result.status.code = IO_ERROR
             if ioe.errno:
                 result.status.error_code = ioe.errno
             result.status.error_msg = utf8(ioe.strerror)
@@ -85,15 +108,18 @@ class FileServicer(fms_grpc.FileServiceServicer):
             yield result
 
     def SaveFileContent(self, request_iterator, context):
-        self._register_callback(context)
+#        self._register_callback(context)
         try:
+            print("SaveFileContent")
             path = ''
             dest_size = 0
             curr_size = 0
             first = True
             file_org = None
             file_tmp = None
+            count = 0
             for chunk in request_iterator:
+                print("chunk.file.path", chunk.file.path)
                 result = fms.SaveFileContentReply()
                 if first:
                     if os.path.exists(chunk.file.path):
@@ -104,8 +130,9 @@ class FileServicer(fms_grpc.FileServiceServicer):
                             path = chunk.file.path
                             dest_size = chunk.file.size
                         else:
-                            result.status.code = fms.ReturnStatus.StatusType.Value('CHANGED_FILE')
-                            result.status.error_code = 0
+                            print("TT", os.path.getmtime(chunk.file.path), chunk.file.mtime, os.path.getmtime(chunk.file.path))
+                            result.status.code = CHANGED_FILE
+                            result.status.error_code = CHANGED_FILE
                             result.status.error_msg = utf8("file was changed in meantime")
                             result.status.error_file = utf8(chunk.file.path)
                     elif chunk.overwrite or chunk.file.mtime == 0:
@@ -119,8 +146,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         path = chunk.file.path
                         dest_size = chunk.file.size
                     else:
-                        result.status.code = fms.ReturnStatus.StatusType.Value('REMOVED_FILE')
-                        result.status.error_code = 0
+                        result.status.code = REMOVED_FILE
+                        result.status.error_code = REMOVED_FILE
                         result.status.error_msg = utf8("file was removed in meantime")
                         result.status.error_file = utf8(chunk.file.path)
                     first = False
@@ -139,17 +166,25 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         os.remove(path)
                         os.rename("%s.tmp" % path, path)
                         result.ack.mtime = os.path.getmtime(path)
+                count += 1
                 yield result
+            if count == 0:
+                result.status.code = ERROR
+                result.status.error_msg = utf8("No iterating objects found")
+                result.status.error_file = utf8(path)
+                yield result
+            print("no chunks")
         except IOError as ioe:
-            result.status.code = fms.ReturnStatus.StatusType.Value('IO_ERROR')
+            result.status.code = IO_ERROR
             if ioe.errno:
                 result.status.error_code = ioe.errno
             result.status.error_msg = utf8(ioe.strerror)
             result.status.error_file = utf8(ioe.filename)
             yield result
+        print("exit")
 
     def ListPath(self, request, context):
-        self._register_callback(context)
+#        self._register_callback(context)
         result = fms.ListPathReply()
         result.path = request.path
         path_list = []
@@ -157,7 +192,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
             # list ROS root items
             for p in os.getenv('ROS_PACKAGE_PATH').split(':'):
                 path = os.path.normpath(p)
-                path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=fms.PathObj.PathType.Value('DIR'), ))
+                path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=PATH_DIR, ))
         else:
             try:
                 # list the path
@@ -165,23 +200,64 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 for cfile in dirlist:
                     path = os.path.normpath('%s%s%s' % (request.path, os.path.sep, cfile))
                     if os.path.isfile(path):
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=fms.PathObj.PathType.Value('FILE')))
+                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=PATH_FILE))
                     elif path in self.DIR_CACHE:
                         path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=self.DIR_CACHE[path]))
                     elif os.path.isdir(path):
                         fileList = os.listdir(path)
                         file_type = None
                         if is_package(fileList):
-                            file_type = fms.PathObj.PathType.Value('PACKAGE')
+                            file_type = PATH_PACKAGE
                         else:
-                            file_type = fms.PathObj.PathType.Value('DIR')
+                            file_type = PATH_DIR
                         self.DIR_CACHE[path] = file_type
                         path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
             except OSError as ose:
-                result.status.code = fms.ReturnStatus.StatusType.Value('OS_ERROR')
+                result.status.code = OS_ERROR
                 if ose.errno:
                     result.status.error_code = ose.errno
                 result.status.error_msg = utf8(ose.strerror)
                 result.status.error_file = utf8(ose.filename)
         result.items.extend(path_list)
+        return result
+
+    def _get_packages(self, path):
+        result = {}
+        if os.path.isdir(path):
+            fileList = os.listdir(path)
+            if MANIFEST_FILE in fileList:
+                return {os.path.basename(path): path}
+            if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
+                try:
+                    pkg = parse_package(path)
+                    return {pkg.name: path}
+                except Exception:
+                    pass
+                return {}
+            for f in fileList:
+                ret = self._get_packages(os.path.join(path, f))
+                result = dict(ret.items() + result.items())
+        return result
+
+    def ListPackages(self, request, context):
+        if request.clear_ros_cache:
+            try:
+                from roslaunch import substitution_args
+                import rospkg
+                substitution_args._rospack = rospkg.RosPack()
+            except Exception as err:
+                rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
+        result = fms.ListPackagesReply()
+        try:
+            # fill the input fields
+            root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+            for p in root_paths:
+                ret = self._get_packages(p)
+                for name, path in ret.items():
+                    package = fms.PackageObj(name=name, path=path)
+                    result.items.extend([package])
+            result.status.code = OK
+        except Exception as err:
+            result.status.code = ERROR
+            result.status.error_msg = utf8(err)
         return result
