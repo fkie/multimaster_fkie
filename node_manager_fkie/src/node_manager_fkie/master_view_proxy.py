@@ -3232,12 +3232,12 @@ class MasterViewProxy(QWidget):
                 elif p == "/run_id":
                     if self.__run_id != val:
                         self.__run_id = val
-                        # you have to launch global parameter
-                        for _, launch_cfg in self.__configs.items():
-                            try:
-                                launch_cfg.global_param_done.remove(masteruri)
-                            except ValueError:
-                                pass
+#                         # TODO: you have to launch global parameter
+#                         for _, launch_cfg in self.__configs.items():
+#                             try:
+#                                 launch_cfg.global_param_done.remove(masteruri)
+#                             except ValueError:
+#                                 pass
         else:
             rospy.logwarn("Error on retrieve sim parameter value from %s: %s", utf8(masteruri), utf8(msg))
         if not robot_icon_found:

@@ -86,6 +86,10 @@ class NmdClient(QObject):
     '''
     :ivar: this signal is emitted on new list with packages  {grpc_url, dict(grpc_path, name)}.
     '''
+    packages_available = Signal(str)
+    '''
+    :ivar: this signal is emitted on new list with packages  {grpc_url}.
+    '''
 
     def __init__(self):
         QObject.__init__(self)
@@ -126,10 +130,11 @@ class NmdClient(QObject):
 
     def package_name(self, grpc_path):
         result = None
-        url, path = grpc_split_url(grpc_path)
+        url, path = grpc_split_url(grpc_path, with_scheme=True)
         try:
+            print("url:", url)
             pl = self._cache_packages[url]
-            while path or path == os.path.sep:
+            while path and path != os.path.sep:
                 if path in pl:
                     return pl[path]
                 path = os.path.dirname(path)
@@ -179,12 +184,15 @@ class NmdClient(QObject):
         except KeyError:
             try:
                 result = fm.list_path(path)
+                print("OK LISTPATH", grpc_path)
             except Exception as e:
+                print("ERROR LISTPATH", grpc_path)
                 self.error.emit("list_path", "grpc://%s" % url, path, e)
                 print("type of excepption", type(e))  # e.code(), type(e.code()))
                 rospy.logwarn("LIST PATH: %s" % e)
                 import traceback
                 print(traceback.format_exc())
+                #remote.remove_insecure_channel(url)
         if result is not None:
             self.listed_path.emit("grpc://%s" % url, path, result)
 
@@ -414,6 +422,7 @@ class NmdClient(QObject):
             result = fm.list_packages(clear_ros_cache)
             self._cache_packages[grpc_url] = result
         self.packages.emit(grpc_url, result)
+        self.packages_available.emit(grpc_url)
 
     def start_node(self, name, grpc_path='grpc://localhost:12321'):
         rospy.loginfo("start node: %s" % name)

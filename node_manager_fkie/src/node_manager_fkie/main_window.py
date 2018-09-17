@@ -47,7 +47,7 @@ import time
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import get_hostname, resolve_url, subdomain
+from master_discovery_fkie.common import get_hostname, resolve_url, subdomain, masteruri_from_master
 
 import node_manager_fkie as nm
 
@@ -877,13 +877,16 @@ class MainWindow(QMainWindow):
                     if master.master_info is not None:
                         if self._history_selected_robot == minfo.mastername and self._history_selected_robot == master.mastername and self.currentMaster != master:
                             if self.currentMaster is not None and not self.currentMaster.is_local:
+                                print "$$$$$$$$$$$$$ set1"
                                 self.setCurrentMaster(master)
-                        elif nm.is_local(get_hostname(master.master_info.masteruri)) or self.restricted_to_one_master:
+#                        elif nm.is_local(get_hostname(master.master_info.masteruri)) or self.restricted_to_one_master:
+                        elif master.master_info.masteruri == masteruri_from_master() or self.restricted_to_one_master:
                             if new_info:
                                 has_discovery_service = self.hasDiscoveryService(minfo)
                                 if (not self.own_master_monitor.isPaused() or not self.masterTableView.isEnabled()) and has_discovery_service:
                                     self._subscribe()
                             if self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
+                                print "$$$$$$$$$$$$$ set2"
                                 self.setCurrentMaster(master)
 
                         # update the list view, whether master is synchronized or not
@@ -892,20 +895,20 @@ class MainWindow(QMainWindow):
                             if self.default_profile_load:
                                 self.default_profile_load = False
                                 QTimer.singleShot(2000, self._load_default_profile_slot)
-                    if first_info:
-                        # start node_manager_daemon if not running on new host
-                        # TODO: add port
-                        nmd_name = "node_manager_daemon"
-                        if minfo.getNodeEndsWith(nmd_name) is None:
-                            host = get_hostname(master.masteruri)
-                            rospy.loginfo("Start <%s> on %s" % (nmd_name, host))
-                            self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                           'start %s' % nmd_name,
-                                                           nm.starter().runNodeWithoutConfig,
-                                                           (host, '%s_fkie' % nmd_name, nmd_name,
-                                                            nm.nameres().normalize_name(nmd_name), [],
-                                                            None, False))
-                            self._progress_queue.start()
+#                     if first_info:
+#                         # start node_manager_daemon if not running on new host
+#                         # TODO: add port
+#                         nmd_name = "node_manager_daemon"
+#                         if minfo.getNodeEndsWith(nmd_name) is None:
+#                             host = get_hostname(master.masteruri)
+#                             rospy.loginfo("Start <%s> on %s" % (nmd_name, host))
+#                             self._progress_queue.add2queue(utf8(uuid.uuid4()),
+#                                                            'start %s' % nmd_name,
+#                                                            nm.starter().runNodeWithoutConfig,
+#                                                            (host, '%s_fkie' % nmd_name, nmd_name,
+#                                                             nm.nameres().normalize_name(nmd_name), [],
+#                                                             None, False))
+#                             self._progress_queue.start()
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception, e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
@@ -1439,6 +1442,8 @@ class MainWindow(QMainWindow):
                 self.userComboBox.setEditText(self.currentMaster.current_user)
             else:
                 self.stackedLayout.setCurrentIndex(0)
+        if self.currentMaster is not None:
+            self.launch_dock.set_current_master(self.currentMaster.masteruri, self.currentMaster.master_state.name)
         self.user_frame.setVisible(show_user_field)
         self.on_master_timecheck()
 
@@ -2152,8 +2157,8 @@ class MainWindow(QMainWindow):
     def _new_color(self, color):
         bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
         self.expert_tab.setStyleSheet("%s" % (bg_style))
-        bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
-        self.launch_dock.setStyleSheet("%s" % (bg_style_launch_dock))
+        # bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+        # self.launch_dock.setStyleSheet("%s" % (bg_style_launch_dock))
 
     def mastername_mouseDoubleClickEvent(self, event):
         '''

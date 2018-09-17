@@ -189,7 +189,7 @@ def grpc_create_url(masteruri, path):
 #     return 'grpc://%s%s%s' % (mh, os.path.sep, path)
 
 
-def grpc_split_url(grpc_path):
+def grpc_split_url(grpc_path, with_scheme=False):
     url = grpc_path
     if not grpc_path:
         url = get_nmd_url()
@@ -197,4 +197,6 @@ def grpc_split_url(grpc_path):
         raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
     url_parse_result = urlparse(url)
     print "url_parse_result", url_parse_result, "from", url
+    if with_scheme:
+        return ("%s://%s" % (url_parse_result.scheme, url_parse_result.netloc), url_parse_result.path)
     return (url_parse_result.netloc, url_parse_result.path)

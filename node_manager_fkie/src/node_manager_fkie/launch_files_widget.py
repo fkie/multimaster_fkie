@@ -31,7 +31,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QKeySequence
+from python_qt_binding.QtGui import QColor, QKeySequence, QPalette
+
 try:
     from python_qt_binding.QtGui import QSortFilterProxyModel
 except:
@@ -84,6 +85,9 @@ class LaunchFilesWidget(QDockWidget):
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'LaunchFilesDockWidget.ui')
         loadUi(ui_file, self)
         self._current_search = ''
+        pal = self.palette()
+        self._default_color = pal.color(QPalette.Window)
+
         # initialize the progress queue
         self.progress_queue = ProgressQueue(self.ui_frame_progress_cfg, self.ui_bar_progress_cfg, self.ui_button_progress_cancel_cfg, 'Launch File')
         # initialize the view for the launch files
@@ -131,6 +135,7 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_button_open_path.clicked.connect(self.on_open_xml_clicked)
         self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
         self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
+        self._masteruri2name = {}
 
     def stop(self):
         '''
@@ -139,6 +144,10 @@ class LaunchFilesWidget(QDockWidget):
         '''
         self.progress_queue.stop()
         self.ui_search_line.set_process_active(False)
+
+    def set_current_master(self, masteruri, mastername):
+        self.launchlist_model.set_current_master(masteruri, mastername)
+        self._masteruri2name[masteruri] = mastername
 
     def on_launch_selection_activated(self, activated):
         '''
@@ -174,7 +183,7 @@ class LaunchFilesWidget(QDockWidget):
                     elif item.is_config_file():
                         self.edit_signal.emit(lfile)
                 if self.launchlist_model.current_path:
-                    self.setWindowTitle('Launch @%s' % get_hostname(self.launchlist_model.current_url))
+                    self.setWindowTitle('Launch @%s' % get_hostname(self.launchlist_model.current_grpc))
                 else:
                     self.setWindowTitle('Launch files')
             except Exception as e:
@@ -184,7 +193,17 @@ class LaunchFilesWidget(QDockWidget):
                 MessageBox.warning(self, "Load error",
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
+        try:
+            print "CCCCCC", nm.nameres().masteruri2name(self.launchlist_model.current_masteruri), self.launchlist_model.current_masteruri
+            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[self.launchlist_model.current_masteruri], self._default_color.rgb()))
+            self._new_color(color)
+        except Exception as err:
+            rospy.logwarn("Error while set color in launch dock: %s" % utf8(err))
+
 #        self.launchlist_model.reloadCurrentPath()
+    def _new_color(self, color):
+        bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+        self.setStyleSheet("%s" % (bg_style_launch_dock))
 
     def on_pathlist_handled(self, gpath):
         self.ui_search_line.set_process_active(False)
@@ -233,7 +252,7 @@ class LaunchFilesWidget(QDockWidget):
             print "new path:", text
             if text:
                 if text.startswith(os.path.sep):
-                    self._current_search = grpc_join(self.launchlist_model.current_url, text)
+                    self._current_search = grpc_join(self.launchlist_model.current_grpc, text)
                     print "SET PATH", self._current_search
                     self.launchlist_model.set_path(text)
                 else:
