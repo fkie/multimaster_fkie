@@ -171,7 +171,7 @@ def grpc_join(url, path):
 
 def grpc_create_url(masteruri, path):
     print "!!!!!!!!!!!!!!masteruri", masteruri
-    if path.startswith(os.path.sep):
+    if path.startswith(os.path.sep) or not path:
         return "%s%s" % (get_nmd_url(masteruri), path)
     return "%s%s%s" % (get_nmd_url(masteruri), os.path.sep, path)
 #     

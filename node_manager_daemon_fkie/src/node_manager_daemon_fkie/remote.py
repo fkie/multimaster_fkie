@@ -59,7 +59,7 @@ class ChannelName:
     def __init__(self, url, hostname=''):
         self.url = url
         self.hostname = host.get_hostname(url)
-        self.__hash = hash(self.hostname)
+        self.__hash = hash(url)
 
     def __eq__(self, other):
         return self.__hash == other.__hash
@@ -102,6 +102,7 @@ def get_insecure_channel(url):
     :return: returns insecure channel for given url. Ports are ignored!
     :rtype: grpc.Channel or None
     '''
+    rospy.logdebug("get_insecure_channel to %s" % url)
     global INSECURE_CHANNEL_CACHE
 #     global CREDENTIALS
     if url:
@@ -110,6 +111,7 @@ def get_insecure_channel(url):
             return INSECURE_CHANNEL_CACHE[cn]
         except Exception:
             if host.get_port(url):
+                rospy.logdebug("create insecure channel to %s" % url)
                 INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
 #                 INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
                 return INSECURE_CHANNEL_CACHE[cn]

@@ -33,7 +33,7 @@
 from python_qt_binding.QtCore import QMimeData, Qt, Signal
 try:
     from python_qt_binding.QtGui import QApplication, QInputDialog, QLineEdit
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QInputDialog, QLineEdit
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 import grpc
@@ -46,7 +46,7 @@ import rospy
 import node_manager_fkie as nm
 
 from master_discovery_fkie.common import get_hostname, masteruri_from_master
-from node_manager_daemon_fkie.common import get_nmd_url
+from node_manager_daemon_fkie.common import equal_uri, get_nmd_url
 from node_manager_daemon_fkie.file_item import FileItem
 
 from .common import is_package, package_name, utf8, grpc_join, grpc_split_url, grpc_create_url
@@ -390,9 +390,9 @@ class LaunchListModel(QStandardItemModel):
         return self._current_masteruri
 
     def set_current_master(self, masteruri, mastername):
+        self._current_master = masteruri.rstrip(os.path.sep)
+        self._current_master_name = mastername
         if self._current_path == '':
-            self._current_master = masteruri
-            self._current_master_name = mastername
             nm.nmd().list_path_threaded(self._current_path)
 #             if masteruri != masteruri_from_master() and masteruri != self._current_masteruri:
 #                 self._current_masteruri = masteruri
@@ -405,7 +405,7 @@ class LaunchListModel(QStandardItemModel):
             current_uri = get_nmd_url(self._current_path)
             print "hitem_uri", hitem_uri
             print "current_uri", current_uri
-            if (hitem_uri == current_uri):
+            if equal_uri(hitem_uri, current_uri):
                 self._add_path(hitem, PathItem.RECENT_FILE, 0, 0, os.path.basename(hitem))
 
     def _on_new_packages(self, grpc_url):
@@ -447,8 +447,9 @@ class LaunchListModel(QStandardItemModel):
                 result_list.append((gpath, path_id, path_item.mtime, path_item.size, os.path.basename(path_item.path)))
         root_path = grpc_create_url(url, path)
         self._set_new_list(root_path, result_list)
-        if self._current_master != masteruri_from_master():
-            self._add_path(get_nmd_url(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master))
+        print "LLLLLL", self._current_master, masteruri_from_master(), equal_uri(self._current_master, masteruri_from_master())
+        if not equal_uri(self._current_master, masteruri_from_master()):
+            self._add_path(get_nmd_url(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
         self.pathlist_handled.emit(root_path)
 
     def _nmd_error(self, method, url, path, error):
@@ -458,32 +459,35 @@ class LaunchListModel(QStandardItemModel):
             time.sleep(2)
             nm.nmd().list_path_threaded(self._current_path)
             return
-        if hasattr(error, "code") and error.code() == grpc.StatusCode.UNAVAILABLE:
-            name = "node_manager_daemon"
-            print "UNAVALABLE:", url
-            self.error_on_path.emit(grpc_create_url(url, path), error)
-            return
-            if self._progress_queue is not None:
-                rospy.loginfo("Connection problem to %s, try to start <%s>" % (url, name))
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               'start %s' % name,
-                                               nm.starter().runNodeWithoutConfig,
-                                               (get_hostname(url), '%s_fkie' % name, name,
-                                                nm.nameres().normalize_name(name), [],
-                                                None, False))
-                self._progress_queue.start()
-                self.count = 1
-                nm.nmd().list_path_threaded(self._current_path)
-            else:
-                rospy.logwarn("Error while call <%s> on '%s': %s" % (method, url, error))
-                rospy.logwarn("can't start <%s>, no progress queue defined!" % name)
-        else:
-            print "ERRRR", error
-            root = self.invisibleRootItem()
-            path_item = PathItem.create_row_items(utf8(error), PathItem.NOTHING, 0, 0, '')
-            root.appendRow(path_item)
-            self.pyqt_workaround[path_item[0].name] = path_item[0]
-            self.error_on_path.emit(grpc_create_url(url, path), error)
+#         if hasattr(error, "code") and error.code() == grpc.StatusCode.UNAVAILABLE:
+#             name = "node_manager_daemon"
+#             print "UNAVALABLE:", url
+#             self.error_on_path.emit(grpc_create_url(url, path), error)
+#             return
+#             if self._progress_queue is not None:
+#                 rospy.loginfo("Connection problem to %s, try to start <%s>" % (url, name))
+#                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
+#                                                'start %s' % name,
+#                                                nm.starter().runNodeWithoutConfig,
+#                                                (get_hostname(url), '%s_fkie' % name, name,
+#                                                 nm.nameres().normalize_name(name), [],
+#                                                 None, False))
+#                 self._progress_queue.start()
+#                 self.count = 1
+#                 nm.nmd().list_path_threaded(self._current_path)
+#             else:
+#                 rospy.logwarn("Error while call <%s> on '%s': %s" % (method, url, error))
+#                 rospy.logwarn("can't start <%s>, no progress queue defined!" % name)
+#         else:
+        root = self.invisibleRootItem()
+        while root.rowCount():
+            root.removeRow(0)
+        self.pyqt_workaround.clear()
+        self._add_path(self._current_path, PathItem.ROOT, 0, 0, '')
+        path_item = PathItem.create_row_items(utf8(error), PathItem.NOTHING, 0, 0, utf8(error.details()))
+        root.appendRow(path_item)
+        self.pyqt_workaround[path_item[0].name] = path_item[0]
+        self.error_on_path.emit(grpc_create_url(url, path), error)
 
     def get_file_item(self, path):
         '''
@@ -649,6 +653,7 @@ class LaunchListModel(QStandardItemModel):
             curl, cpath = grpc_split_url(self._current_path, with_scheme=True)
             self._listed_path(curl, cpath, self.DIR_CACHE[self._current_path], store_cache=True)
         except KeyError:
+            self._add_path(self._current_path, PathItem.ROOT, 0, 0, '')
             nm.nmd().list_path_threaded(self._current_path)
         print "current_path_end", self._current_path
 #         else:
@@ -674,7 +679,7 @@ class LaunchListModel(QStandardItemModel):
 #    if self._is_in_ros_packages(path):
 #        self._setNewList(self._moveDown(path))
 
-    def show_packages(self, filter):
+    def show_packages(self, pattern):
         try:
             root = self.invisibleRootItem()
             while root.rowCount():
@@ -683,7 +688,7 @@ class LaunchListModel(QStandardItemModel):
             items = []
             for url, packages in nm.nmd().get_packages().items():
                 for path, name in packages.items():
-                    if filter in name:
+                    if pattern in name:
                         print path, url
                         items.append((grpc_join(url, path), PathItem.PACKAGE, 0, 0, name))
             self._set_new_list(self._current_path, items)
@@ -751,7 +756,6 @@ class LaunchListModel(QStandardItemModel):
             self._add_history()
         for path, path_id, mtime, size, name in items:
             self._add_path(path, path_id, mtime, size, name)
-
 
     def _setNewList(self, (root_path, items), url=''):
         '''

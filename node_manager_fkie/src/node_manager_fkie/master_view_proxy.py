@@ -429,8 +429,8 @@ class MasterViewProxy(QWidget):
         '''
         nmd_uri = get_nmd_url(self.masteruri)
         self._launcher_threaded.update_info(nmd_uri)
-        nm.nmd().list_packages_threaded(nmd_uri)
         try:
+            nm.nmd().list_packages_threaded(nmd_uri)
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
             if self.__master_info is None:
                 if (master_info.masteruri == self.masteruri):

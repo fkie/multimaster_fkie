@@ -103,7 +103,9 @@ class NmdClient(QObject):
         self._cache_packages = {}
 
     def stop(self):
+        print("clear grpc channels...")
         remote.clear_channels()
+        print("clear grpc channels...ok")
         self._cache_file_content.clear()
         self._cache_file_includes.clear()
         self._cache_file_unique_includes.clear()
@@ -406,7 +408,8 @@ class NmdClient(QObject):
 
     def _list_packages(self, grpc_url_or_path='grpc://localhost:12321', clear_ros_cache=False):
         print("grpc_url_or_path", grpc_url_or_path)
-        url, _ = grpc_split_url(grpc_url_or_path)
+        url, path = grpc_split_url(grpc_url_or_path)
+        print("LLLIIIRIISS", url, path)
         grpc_url = "grpc://%s" % url
         result = {}
         try:
@@ -419,10 +422,13 @@ class NmdClient(QObject):
             fm = self.get_file_manager(url)
             if fm is None:
                 raise Exception("Node manager daemon '%s' not reachable" % url)
-            result = fm.list_packages(clear_ros_cache)
-            self._cache_packages[grpc_url] = result
-        self.packages.emit(grpc_url, result)
-        self.packages_available.emit(grpc_url)
+            try:
+                result = fm.list_packages(clear_ros_cache)
+                self._cache_packages[grpc_url] = result
+                self.packages.emit(grpc_url, result)
+                self.packages_available.emit(grpc_url)
+            except Exception as err:
+                self.error.emit("_list_packages", "grpc://%s" % url, path, err)
 
     def start_node(self, name, grpc_path='grpc://localhost:12321'):
         rospy.loginfo("start node: %s" % name)

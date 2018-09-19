@@ -46,7 +46,7 @@ import os
 
 import rospy
 
-from node_manager_daemon_fkie.common import get_nmd_url
+from node_manager_daemon_fkie.common import get_nmd_url, get_masteruri_from_nmd
 from master_discovery_fkie.common import get_hostname
 import node_manager_fkie as nm
 from .common import package_name, utf8, grpc_join  # , masteruri_from_ros
@@ -147,7 +147,7 @@ class LaunchFilesWidget(QDockWidget):
 
     def set_current_master(self, masteruri, mastername):
         self.launchlist_model.set_current_master(masteruri, mastername)
-        self._masteruri2name[masteruri] = mastername
+        self._masteruri2name[masteruri.rstrip(os.path.sep)] = mastername
 
     def on_launch_selection_activated(self, activated):
         '''
@@ -194,10 +194,12 @@ class LaunchFilesWidget(QDockWidget):
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
         try:
-            print "CCCCCC", nm.nameres().masteruri2name(self.launchlist_model.current_masteruri), self.launchlist_model.current_masteruri
-            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[self.launchlist_model.current_masteruri], self._default_color.rgb()))
+            print "CCCCCC", nm.nameres().masteruri2name(get_masteruri_from_nmd(self.launchlist_model.current_path)), get_masteruri_from_nmd(self.launchlist_model.current_path)
+            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[get_masteruri_from_nmd(self.launchlist_model.current_path)], self._default_color.rgb()))
             self._new_color(color)
         except Exception as err:
+            import traceback
+            print traceback.format_exc()
             rospy.logwarn("Error while set color in launch dock: %s" % utf8(err))
 
 #        self.launchlist_model.reloadCurrentPath()
@@ -209,7 +211,8 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_search_line.set_process_active(False)
 
     def on_error_on_path(self, gpath):
-        if gpath == self._current_search:
+        print "ERROR on_error_on_path", gpath, "c:", self.launchlist_model.current_path
+        if gpath == self._current_search or gpath == self.launchlist_model.current_path:
             self.ui_search_line.set_process_active(False)
 
     def on_launch_selection_changed(self, selected, deselected):
