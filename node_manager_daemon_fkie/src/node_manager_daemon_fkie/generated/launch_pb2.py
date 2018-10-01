@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,7 +18,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='launch.proto',
   package='node_manager_daemon_fkie',
   syntax='proto3',
-  serialized_pb=_b('\n\x0claunch.proto\x12\x18node_manager_daemon_fkie\"\x07\n\x05\x45mpty\"\xda\x01\n\x11LoadLaunchRequest\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x13\n\x0bload_params\x18\x04 \x01(\x08\x12\x30\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x18\n\x10\x66orce_first_file\x18\x06 \x01(\x08\x12\x14\n\x0crequest_args\x18\x07 \x01(\x08\x12\x11\n\tmasteruri\x18\x08 \x01(\t\x12\x0c\n\x04host\x18\t \x01(\t\"\xa0\x01\n\x0fLoadLaunchReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x30\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x15\n\rchanged_nodes\x18\x04 \x03(\t\"\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x1a\n\nLaunchFile\x12\x0c\n\x04path\x18\x01 \x01(\t\"\x8e\x01\n\nLoadedFile\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x30\n\x04\x61rgs\x18\x04 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x11\n\tmasteruri\x18\x05 \x01(\t\x12\x0c\n\x04host\x18\x06 \x01(\t\"E\n\x10ListNodesRequest\x12\x14\n\x0claunch_files\x18\x01 \x03(\t\x12\x1b\n\x13request_description\x18\x02 \x01(\x08\"\x94\x01\n\rLaunchContent\x12\x13\n\x0blaunch_file\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04node\x18\x04 \x03(\t\x12?\n\x0b\x64\x65scription\x18\x05 \x03(\x0b\x32*.node_manager_daemon_fkie.RobotDescription\"\xb2\x01\n\x10RobotDescription\x12\x0f\n\x07machine\x18\x01 \x01(\t\x12\x12\n\nrobot_name\x18\x02 \x01(\t\x12\x12\n\nrobot_type\x18\x03 \x01(\t\x12\x14\n\x0crobot_images\x18\x04 \x03(\t\x12\x13\n\x0brobot_descr\x18\x05 \x01(\t\x12:\n\x0c\x63\x61pabilities\x18\x06 \x03(\x0b\x32$.node_manager_daemon_fkie.Capability\"o\n\nCapability\x12\x11\n\tnamespace\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06images\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\r\n\x05nodes\x18\x06 \x03(\t\"O\n\x04Node\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0bopt_binariy\x18\x02 \x01(\t\x12\x12\n\nopt_launch\x18\x03 \x01(\t\x12\x10\n\x08loglevel\x18\x04 \x01(\x11\"\xa0\x04\n\x0bStartConfig\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tnamespace\x18\x05 \x01(\t\x12\x10\n\x08\x66ullname\x18\x06 \x01(\t\x12\x0e\n\x06prefix\x18\x07 \x01(\t\x12\x0b\n\x03\x63wd\x18\x08 \x01(\t\x12/\n\x03\x65nv\x18\t \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x33\n\x06remaps\x18\n \x03(\x0b\x32#.node_manager_daemon_fkie.Remapping\x12\x32\n\x06params\x18\x0b \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x14\n\x0c\x63lear_params\x18\x0c \x03(\t\x12\x0c\n\x04\x61rgs\x18\r \x03(\t\x12\x11\n\tmasteruri\x18\x0e \x01(\t\x12\x10\n\x08loglevel\x18\x0f \x01(\x11\x12\x0f\n\x07respawn\x18\x10 \x01(\x08\x12\x15\n\rrespawn_delay\x18\x11 \x01(\x01\x12\x13\n\x0brespawn_max\x18\x13 \x01(\x11\x12\x1b\n\x13respawn_min_runtime\x18\x12 \x01(\x01\"N\n\x08LogLevel\x12\r\n\tUNCHANGED\x10\x00\x12\t\n\x05\x46\x41TAL\x10\x01\x12\t\n\x05\x45RROR\x10\x02\x12\x08\n\x04WARN\x10\x03\x12\x08\n\x04INFO\x10\x04\x12\t\n\x05\x44\x45\x42UG\x10\x05\"/\n\tRemapping\x12\x11\n\tfrom_name\x18\x01 \x01(\t\x12\x0f\n\x07to_name\x18\x02 \x01(\t\"t\n\x0eStartNodeReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x0e\n\x06launch\x18\x04 \x03(\t\"X\n\x14IncludedFilesRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\trecursive\x18\x02 \x01(\x08\x12\x0e\n\x06unique\x18\x03 \x01(\x08\x12\x0f\n\x07pattern\x18\x04 \x03(\t\"U\n\x12IncludedFilesReply\x12\x11\n\troot_path\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0e\n\x06linenr\x18\x03 \x01(\x04\x12\x0e\n\x06\x65xists\x18\x04 \x01(\x08\"\xce\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\"\x9c\x01\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x10\n\x0c\x41LREADY_OPEN\x10\x02\x12\x15\n\x11MULTIPLE_BINARIES\x10\x03\x12\x15\n\x11MULTIPLE_LAUNCHES\x10\x04\x12\x13\n\x0fPARAMS_REQUIRED\x10\x05\x12\x12\n\x0e\x46ILE_NOT_FOUND\x10\x06\x12\x12\n\x0eNODE_NOT_FOUND\x10\x07\x32\x89\x07\n\rLaunchService\x12Y\n\x0eGetLoadedFiles\x12\x1f.node_manager_daemon_fkie.Empty\x1a$.node_manager_daemon_fkie.LoadedFile0\x01\x12\x64\n\nLoadLaunch\x12+.node_manager_daemon_fkie.LoadLaunchRequest\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cReloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cUnloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12\x61\n\x08GetNodes\x12*.node_manager_daemon_fkie.ListNodesRequest\x1a\'.node_manager_daemon_fkie.LaunchContent0\x01\x12Y\n\tStartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12\x66\n\x13StartStandaloneNode\x12%.node_manager_daemon_fkie.StartConfig\x1a(.node_manager_daemon_fkie.StartNodeReply\x12[\n\x0bRestartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12r\n\x10GetIncludedFiles\x12..node_manager_daemon_fkie.IncludedFilesRequest\x1a,.node_manager_daemon_fkie.IncludedFilesReply0\x01\x62\x06proto3')
+  serialized_options=None,
+  serialized_pb=_b('\n\x0claunch.proto\x12\x18node_manager_daemon_fkie\"\x07\n\x05\x45mpty\"\xda\x01\n\x11LoadLaunchRequest\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x13\n\x0bload_params\x18\x04 \x01(\x08\x12\x30\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x18\n\x10\x66orce_first_file\x18\x06 \x01(\x08\x12\x14\n\x0crequest_args\x18\x07 \x01(\x08\x12\x11\n\tmasteruri\x18\x08 \x01(\t\x12\x0c\n\x04host\x18\t \x01(\t\"\xa0\x01\n\x0fLoadLaunchReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x30\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x15\n\rchanged_nodes\x18\x04 \x03(\t\"\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"-\n\nLaunchFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\"\x8e\x01\n\nLoadedFile\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x30\n\x04\x61rgs\x18\x04 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x11\n\tmasteruri\x18\x05 \x01(\t\x12\x0c\n\x04host\x18\x06 \x01(\t\"X\n\x10ListNodesRequest\x12\x14\n\x0claunch_files\x18\x01 \x03(\t\x12\x1b\n\x13request_description\x18\x02 \x01(\x08\x12\x11\n\tmasteruri\x18\x03 \x01(\t\"\x94\x01\n\rLaunchContent\x12\x13\n\x0blaunch_file\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04node\x18\x04 \x03(\t\x12?\n\x0b\x64\x65scription\x18\x05 \x03(\x0b\x32*.node_manager_daemon_fkie.RobotDescription\"\xb2\x01\n\x10RobotDescription\x12\x0f\n\x07machine\x18\x01 \x01(\t\x12\x12\n\nrobot_name\x18\x02 \x01(\t\x12\x12\n\nrobot_type\x18\x03 \x01(\t\x12\x14\n\x0crobot_images\x18\x04 \x03(\t\x12\x13\n\x0brobot_descr\x18\x05 \x01(\t\x12:\n\x0c\x63\x61pabilities\x18\x06 \x03(\x0b\x32$.node_manager_daemon_fkie.Capability\"o\n\nCapability\x12\x11\n\tnamespace\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06images\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\r\n\x05nodes\x18\x06 \x03(\t\"b\n\x04Node\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0bopt_binariy\x18\x02 \x01(\t\x12\x12\n\nopt_launch\x18\x03 \x01(\t\x12\x10\n\x08loglevel\x18\x04 \x01(\x11\x12\x11\n\tmasteruri\x18\x05 \x01(\t\"\xa0\x04\n\x0bStartConfig\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tnamespace\x18\x05 \x01(\t\x12\x10\n\x08\x66ullname\x18\x06 \x01(\t\x12\x0e\n\x06prefix\x18\x07 \x01(\t\x12\x0b\n\x03\x63wd\x18\x08 \x01(\t\x12/\n\x03\x65nv\x18\t \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x33\n\x06remaps\x18\n \x03(\x0b\x32#.node_manager_daemon_fkie.Remapping\x12\x32\n\x06params\x18\x0b \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x14\n\x0c\x63lear_params\x18\x0c \x03(\t\x12\x0c\n\x04\x61rgs\x18\r \x03(\t\x12\x11\n\tmasteruri\x18\x0e \x01(\t\x12\x10\n\x08loglevel\x18\x0f \x01(\x11\x12\x0f\n\x07respawn\x18\x10 \x01(\x08\x12\x15\n\rrespawn_delay\x18\x11 \x01(\x01\x12\x13\n\x0brespawn_max\x18\x13 \x01(\x11\x12\x1b\n\x13respawn_min_runtime\x18\x12 \x01(\x01\"N\n\x08LogLevel\x12\r\n\tUNCHANGED\x10\x00\x12\t\n\x05\x46\x41TAL\x10\x01\x12\t\n\x05\x45RROR\x10\x02\x12\x08\n\x04WARN\x10\x03\x12\x08\n\x04INFO\x10\x04\x12\t\n\x05\x44\x45\x42UG\x10\x05\"/\n\tRemapping\x12\x11\n\tfrom_name\x18\x01 \x01(\t\x12\x0f\n\x07to_name\x18\x02 \x01(\t\"t\n\x0eStartNodeReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x0e\n\x06launch\x18\x04 \x03(\t\"X\n\x14IncludedFilesRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\trecursive\x18\x02 \x01(\x08\x12\x0e\n\x06unique\x18\x03 \x01(\x08\x12\x0f\n\x07pattern\x18\x04 \x03(\t\"U\n\x12IncludedFilesReply\x12\x11\n\troot_path\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0e\n\x06linenr\x18\x03 \x01(\x04\x12\x0e\n\x06\x65xists\x18\x04 \x01(\x08\"\xce\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\"\x9c\x01\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x10\n\x0c\x41LREADY_OPEN\x10\x02\x12\x15\n\x11MULTIPLE_BINARIES\x10\x03\x12\x15\n\x11MULTIPLE_LAUNCHES\x10\x04\x12\x13\n\x0fPARAMS_REQUIRED\x10\x05\x12\x12\n\x0e\x46ILE_NOT_FOUND\x10\x06\x12\x12\n\x0eNODE_NOT_FOUND\x10\x07\x32\x89\x07\n\rLaunchService\x12Y\n\x0eGetLoadedFiles\x12\x1f.node_manager_daemon_fkie.Empty\x1a$.node_manager_daemon_fkie.LoadedFile0\x01\x12\x64\n\nLoadLaunch\x12+.node_manager_daemon_fkie.LoadLaunchRequest\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cReloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cUnloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12\x61\n\x08GetNodes\x12*.node_manager_daemon_fkie.ListNodesRequest\x1a\'.node_manager_daemon_fkie.LaunchContent0\x01\x12Y\n\tStartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12\x66\n\x13StartStandaloneNode\x12%.node_manager_daemon_fkie.StartConfig\x1a(.node_manager_daemon_fkie.StartNodeReply\x12[\n\x0bRestartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12r\n\x10GetIncludedFiles\x12..node_manager_daemon_fkie.IncludedFilesRequest\x1a,.node_manager_daemon_fkie.IncludedFilesReply0\x01\x62\x06proto3')
 )
 
 
@@ -32,33 +32,33 @@ _STARTCONFIG_LOGLEVEL = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='UNCHANGED', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='FATAL', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='ERROR', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='WARN', index=3, number=3,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='INFO', index=4, number=4,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='DEBUG', index=5, number=5,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=1713,
-  serialized_end=1791,
+  serialized_options=None,
+  serialized_start=1770,
+  serialized_end=1848,
 )
 _sym_db.RegisterEnumDescriptor(_STARTCONFIG_LOGLEVEL)
 
@@ -70,41 +70,41 @@ _RETURNSTATUS_STATUSTYPE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='OK', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='ERROR', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='ALREADY_OPEN', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='MULTIPLE_BINARIES', index=3, number=3,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='MULTIPLE_LAUNCHES', index=4, number=4,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARAMS_REQUIRED', index=5, number=5,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='FILE_NOT_FOUND', index=6, number=6,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='NODE_NOT_FOUND', index=7, number=7,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=2188,
-  serialized_end=2344,
+  serialized_options=None,
+  serialized_start=2245,
+  serialized_end=2401,
 )
 _sym_db.RegisterEnumDescriptor(_RETURNSTATUS_STATUSTYPE)
 
@@ -122,7 +122,7 @@ _EMPTY = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -146,70 +146,70 @@ _LOADLAUNCHREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='launch', full_name='node_manager_daemon_fkie.LoadLaunchRequest.launch', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='path', full_name='node_manager_daemon_fkie.LoadLaunchRequest.path', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='load_params', full_name='node_manager_daemon_fkie.LoadLaunchRequest.load_params', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='args', full_name='node_manager_daemon_fkie.LoadLaunchRequest.args', index=4,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='force_first_file', full_name='node_manager_daemon_fkie.LoadLaunchRequest.force_first_file', index=5,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='request_args', full_name='node_manager_daemon_fkie.LoadLaunchRequest.request_args', index=6,
       number=7, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='masteruri', full_name='node_manager_daemon_fkie.LoadLaunchRequest.masteruri', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='host', full_name='node_manager_daemon_fkie.LoadLaunchRequest.host', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -233,35 +233,35 @@ _LOADLAUNCHREPLY = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='args', full_name='node_manager_daemon_fkie.LoadLaunchReply.args', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='path', full_name='node_manager_daemon_fkie.LoadLaunchReply.path', index=2,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='changed_nodes', full_name='node_manager_daemon_fkie.LoadLaunchReply.changed_nodes', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -285,21 +285,21 @@ _ARGUMENT = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='node_manager_daemon_fkie.Argument.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -323,21 +323,28 @@ _LAUNCHFILE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='masteruri', full_name='node_manager_daemon_fkie.LaunchFile.masteruri', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=476,
-  serialized_end=502,
+  serialized_end=521,
 )
 
 
@@ -354,56 +361,56 @@ _LOADEDFILE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='launch', full_name='node_manager_daemon_fkie.LoadedFile.launch', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='path', full_name='node_manager_daemon_fkie.LoadedFile.path', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='args', full_name='node_manager_daemon_fkie.LoadedFile.args', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='masteruri', full_name='node_manager_daemon_fkie.LoadedFile.masteruri', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='host', full_name='node_manager_daemon_fkie.LoadedFile.host', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=505,
-  serialized_end=647,
+  serialized_start=524,
+  serialized_end=666,
 )
 
 
@@ -420,28 +427,35 @@ _LISTNODESREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='request_description', full_name='node_manager_daemon_fkie.ListNodesRequest.request_description', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='masteruri', full_name='node_manager_daemon_fkie.ListNodesRequest.masteruri', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=649,
-  serialized_end=718,
+  serialized_start=668,
+  serialized_end=756,
 )
 
 
@@ -458,49 +472,49 @@ _LAUNCHCONTENT = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='masteruri', full_name='node_manager_daemon_fkie.LaunchContent.masteruri', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='host', full_name='node_manager_daemon_fkie.LaunchContent.host', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='node', full_name='node_manager_daemon_fkie.LaunchContent.node', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='description', full_name='node_manager_daemon_fkie.LaunchContent.description', index=4,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=721,
-  serialized_end=869,
+  serialized_start=759,
+  serialized_end=907,
 )
 
 
@@ -517,56 +531,56 @@ _ROBOTDESCRIPTION = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='robot_name', full_name='node_manager_daemon_fkie.RobotDescription.robot_name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='robot_type', full_name='node_manager_daemon_fkie.RobotDescription.robot_type', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='robot_images', full_name='node_manager_daemon_fkie.RobotDescription.robot_images', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='robot_descr', full_name='node_manager_daemon_fkie.RobotDescription.robot_descr', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='capabilities', full_name='node_manager_daemon_fkie.RobotDescription.capabilities', index=5,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=872,
-  serialized_end=1050,
+  serialized_start=910,
+  serialized_end=1088,
 )
 
 
@@ -583,56 +597,56 @@ _CAPABILITY = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='name', full_name='node_manager_daemon_fkie.Capability.name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='type', full_name='node_manager_daemon_fkie.Capability.type', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='images', full_name='node_manager_daemon_fkie.Capability.images', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='description', full_name='node_manager_daemon_fkie.Capability.description', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nodes', full_name='node_manager_daemon_fkie.Capability.nodes', index=5,
       number=6, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1052,
-  serialized_end=1163,
+  serialized_start=1090,
+  serialized_end=1201,
 )
 
 
@@ -649,42 +663,49 @@ _NODE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='opt_binariy', full_name='node_manager_daemon_fkie.Node.opt_binariy', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='opt_launch', full_name='node_manager_daemon_fkie.Node.opt_launch', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='loglevel', full_name='node_manager_daemon_fkie.Node.loglevel', index=3,
       number=4, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='masteruri', full_name='node_manager_daemon_fkie.Node.masteruri', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1165,
-  serialized_end=1244,
+  serialized_start=1203,
+  serialized_end=1301,
 )
 
 
@@ -701,133 +722,133 @@ _STARTCONFIG = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='binary', full_name='node_manager_daemon_fkie.StartConfig.binary', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='binary_path', full_name='node_manager_daemon_fkie.StartConfig.binary_path', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='name', full_name='node_manager_daemon_fkie.StartConfig.name', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='namespace', full_name='node_manager_daemon_fkie.StartConfig.namespace', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='fullname', full_name='node_manager_daemon_fkie.StartConfig.fullname', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='prefix', full_name='node_manager_daemon_fkie.StartConfig.prefix', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='cwd', full_name='node_manager_daemon_fkie.StartConfig.cwd', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='env', full_name='node_manager_daemon_fkie.StartConfig.env', index=8,
       number=9, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='remaps', full_name='node_manager_daemon_fkie.StartConfig.remaps', index=9,
       number=10, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='params', full_name='node_manager_daemon_fkie.StartConfig.params', index=10,
       number=11, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='clear_params', full_name='node_manager_daemon_fkie.StartConfig.clear_params', index=11,
       number=12, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='args', full_name='node_manager_daemon_fkie.StartConfig.args', index=12,
       number=13, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='masteruri', full_name='node_manager_daemon_fkie.StartConfig.masteruri', index=13,
       number=14, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='loglevel', full_name='node_manager_daemon_fkie.StartConfig.loglevel', index=14,
       number=15, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='respawn', full_name='node_manager_daemon_fkie.StartConfig.respawn', index=15,
       number=16, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='respawn_delay', full_name='node_manager_daemon_fkie.StartConfig.respawn_delay', index=16,
       number=17, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='respawn_max', full_name='node_manager_daemon_fkie.StartConfig.respawn_max', index=17,
       number=19, type=17, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='respawn_min_runtime', full_name='node_manager_daemon_fkie.StartConfig.respawn_min_runtime', index=18,
       number=18, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -835,14 +856,14 @@ _STARTCONFIG = _descriptor.Descriptor(
   enum_types=[
     _STARTCONFIG_LOGLEVEL,
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1247,
-  serialized_end=1791,
+  serialized_start=1304,
+  serialized_end=1848,
 )
 
 
@@ -859,28 +880,28 @@ _REMAPPING = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='to_name', full_name='node_manager_daemon_fkie.Remapping.to_name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1793,
-  serialized_end=1840,
+  serialized_start=1850,
+  serialized_end=1897,
 )
 
 
@@ -897,42 +918,42 @@ _STARTNODEREPLY = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='name', full_name='node_manager_daemon_fkie.StartNodeReply.name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='path', full_name='node_manager_daemon_fkie.StartNodeReply.path', index=2,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='launch', full_name='node_manager_daemon_fkie.StartNodeReply.launch', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1842,
-  serialized_end=1958,
+  serialized_start=1899,
+  serialized_end=2015,
 )
 
 
@@ -949,42 +970,42 @@ _INCLUDEDFILESREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='recursive', full_name='node_manager_daemon_fkie.IncludedFilesRequest.recursive', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='unique', full_name='node_manager_daemon_fkie.IncludedFilesRequest.unique', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='pattern', full_name='node_manager_daemon_fkie.IncludedFilesRequest.pattern', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1960,
-  serialized_end=2048,
+  serialized_start=2017,
+  serialized_end=2105,
 )
 
 
@@ -1001,42 +1022,42 @@ _INCLUDEDFILESREPLY = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='path', full_name='node_manager_daemon_fkie.IncludedFilesReply.path', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='linenr', full_name='node_manager_daemon_fkie.IncludedFilesReply.linenr', index=2,
       number=3, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='exists', full_name='node_manager_daemon_fkie.IncludedFilesReply.exists', index=3,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2050,
-  serialized_end=2135,
+  serialized_start=2107,
+  serialized_end=2192,
 )
 
 
@@ -1053,14 +1074,14 @@ _RETURNSTATUS = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='error_msg', full_name='node_manager_daemon_fkie.ReturnStatus.error_msg', index=1,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -1068,14 +1089,14 @@ _RETURNSTATUS = _descriptor.Descriptor(
   enum_types=[
     _RETURNSTATUS_STATUSTYPE,
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2138,
-  serialized_end=2344,
+  serialized_start=2195,
+  serialized_end=2401,
 )
 
 _LOADLAUNCHREQUEST.fields_by_name['args'].message_type = _ARGUMENT
@@ -1235,9 +1256,9 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   full_name='node_manager_daemon_fkie.LaunchService',
   file=DESCRIPTOR,
   index=0,
-  options=None,
-  serialized_start=2347,
-  serialized_end=3252,
+  serialized_options=None,
+  serialized_start=2404,
+  serialized_end=3309,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetLoadedFiles',
@@ -1246,7 +1267,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_EMPTY,
     output_type=_LOADEDFILE,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='LoadLaunch',
@@ -1255,7 +1276,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_LOADLAUNCHREQUEST,
     output_type=_LOADLAUNCHREPLY,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='ReloadLaunch',
@@ -1264,7 +1285,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_LAUNCHFILE,
     output_type=_LOADLAUNCHREPLY,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='UnloadLaunch',
@@ -1273,7 +1294,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_LAUNCHFILE,
     output_type=_LOADLAUNCHREPLY,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='GetNodes',
@@ -1282,7 +1303,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_LISTNODESREQUEST,
     output_type=_LAUNCHCONTENT,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='StartNode',
@@ -1291,7 +1312,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_NODE,
     output_type=_STARTNODEREPLY,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='StartStandaloneNode',
@@ -1300,7 +1321,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_STARTCONFIG,
     output_type=_STARTNODEREPLY,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='RestartNode',
@@ -1309,7 +1330,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_NODE,
     output_type=_STARTNODEREPLY,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='GetIncludedFiles',
@@ -1318,7 +1339,7 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_INCLUDEDFILESREQUEST,
     output_type=_INCLUDEDFILESREPLY,
-    options=None,
+    serialized_options=None,
   ),
 ])
 _sym_db.RegisterServiceDescriptor(_LAUNCHSERVICE)

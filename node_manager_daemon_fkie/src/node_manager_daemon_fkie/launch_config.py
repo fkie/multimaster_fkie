@@ -39,6 +39,7 @@ import roslaunch
 import roslib
 import rospy
 
+from master_discovery_fkie.common import get_hostname, masteruri_from_master
 from .common import interpret_path, package_name, utf8
 
 
@@ -51,27 +52,25 @@ class LaunchConfig(object):
     A class to handle the ROS configuration stored in launch file.
     '''
 
-    def __init__(self, launch_file, package=None, masteruri=None, host='', argv=None):
+    def __init__(self, launch_file, package=None, masteruri='', host='', argv=None):
         '''
         Creates the LaunchConfig object. The launch file will be not loaded on
         creation, first on request of roscfg value.
-        @param launch_file: The absolute or relative path with the launch file.
-                           By using relative path a package must be valid for
-                           remote launches.
-        @type launch_file: C{str}
-        @param package:  the package containing the launch file. If None the
+        :param str launch_file: The absolute or relative path with the launch file.
+                                By using relative path a package must be valid for
+                                remote launches.
+        :param package: the package containing the launch file. If None the
                         launch_file will be used to determine the launch file.
                         No remote launches a possible without a valid package.
-        @type package: C{str} or C{None}
-        @param masteruri: The URL of the ROS master.
-        @type masteruri: C{str} or C{None}
-        @param argv: the list the arguments needed for loading the given launch file
-        @type argv: [str]
-        @raise roslaunch.XmlParseException: if the launch file can't be found.
+        :type package: str or None
+        :param str masteruri: The URL of the ROS master.
+        :param argv: the list the arguments needed for loading the given launch file
+        :type argv: [str]
+        :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
         self.__launchfile = launch_file
         self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
-        self.__masteruri = masteruri if masteruri is not None else ''
+        self.__masteruri = masteruri if masteruri else masteruri_from_master()
         self.__roscfg = None
         self.argv = argv
         if self.argv is None:
@@ -82,7 +81,7 @@ class LaunchConfig(object):
         self.__launch_id = '%.9f' % time.time()
         self._robot_description = None
         self._capabilities = None
-        self.host = host
+        self.host = host if masteruri else get_hostname(self.__masteruri)
         # TODO: nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
 
     def __del__(self):
@@ -296,8 +295,8 @@ class LaunchConfig(object):
         '''
         Parses the launch file for `capabilities` and `capability_group` parameter
         and creates  dictionary for grouping the nodes.
-        @return: the capabilities description stored in this configuration
-        @rtype: dict(machine : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
+        :return: the capabilities description stored in this configuration
+        :rtype: dict(machine : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
         '''
         if self._capabilities is not None:
             return self._capabilities
@@ -371,7 +370,7 @@ class LaunchConfig(object):
                 result[key] = value
         return result
 
-    def get_node(self, name):
+    def get_node(self, name, masteruri='', host=''):
         '''
         Returns a configuration node for a given node name.
         :param str name: the name of the node.

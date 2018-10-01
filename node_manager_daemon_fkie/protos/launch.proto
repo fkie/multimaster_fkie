@@ -93,6 +93,7 @@ message Argument {
 
 message LaunchFile {
 	string path = 1;
+	string masteruri = 2;
 }
 /** Loaded launch file.
  * :param package: ROS package name.
@@ -115,10 +116,12 @@ message LoadedFile {
 /** Requests the nodes configured by this launch manager.
  * :param launch_file: request the nodes only for specified launch files (full path). If empty, all will be returned.
  * :param request_description: if True the :message:RobotDescription will be filled from each launch file.
+ * :param masteruri: for specified masteruri
  */
 message ListNodesRequest {
 	repeated string launch_files = 1;
 	bool request_description = 2;
+	string masteruri = 3;
 }
 
 /** Report the nodes of a launch file.
@@ -177,6 +180,7 @@ message Node {
 	string opt_binariy = 2;
 	string opt_launch = 3;
 	sint32 loglevel = 4;
+	string masteruri = 5;
 }
 
 /** Starts a ROS node without configurations. All parameter are set by this request.
