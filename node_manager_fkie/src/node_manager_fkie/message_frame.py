@@ -49,7 +49,7 @@ class MessageData(object):
 
     def __init__(self, data, data_list=[]):
         self.data = data
-        self.data_list = data_list
+        self.data_list = data_list if data_list else []  # create a new array to a void to fill a default one
 
     def __str__(self):
         return utf8(self.data)

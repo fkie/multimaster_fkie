@@ -121,7 +121,7 @@ def package_name(path):
     '''
     Returns for given directory a tuple of package name and package path or None values.
     The results are cached!
-    @rtype: C{(name, path)}
+    :rtype: tuple(name, path)
     '''
     return (nm.nmd().package_name(path), path)
 #     if not (path is None) and path and path != os.path.sep and os.path.isdir(path):
@@ -160,6 +160,8 @@ def grpc_url_from_path(grpc_path):
 
 
 def grpc_join(url, path):
+#     import inspect
+#     print("CALLERfmm:", inspect.stack()[1][3])
     if not path.startswith('grpc://'):
         if not url.startswith('grpc://'):
             return grpc_create_url(url, path)
@@ -170,23 +172,11 @@ def grpc_join(url, path):
 
 
 def grpc_create_url(masteruri, path):
-    print "!!!!!!!!!!!!!!masteruri", masteruri
+#     import inspect
+#     print("CALLERfmm:", inspect.stack()[1][3])
     if path.startswith(os.path.sep) or not path:
         return "%s%s" % (get_nmd_url(masteruri), path)
     return "%s%s%s" % (get_nmd_url(masteruri), os.path.sep, path)
-#     
-#     print "masteruri", masteruri
-#     mh = masteruri
-#     div_idx = mh.find(':')
-#     if div_idx > -1:
-#         mh = mh[0:div_idx]
-#     if not host:
-#         mh = get_nmd_url(masteruri)
-#         if path.startswith(os.path.sep):
-#             return 'grpc://%s%s' % (mh, path)
-#     if path.startswith(os.path.sep):
-#         return 'grpc://%s%s' % (mh, path)
-#     return 'grpc://%s%s%s' % (mh, os.path.sep, path)
 
 
 def grpc_split_url(grpc_path, with_scheme=False):
@@ -196,7 +186,6 @@ def grpc_split_url(grpc_path, with_scheme=False):
     if url and not url.startswith('grpc://'):
         raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
     url_parse_result = urlparse(url)
-    print "url_parse_result", url_parse_result, "from", url
     if with_scheme:
         return ("%s://%s" % (url_parse_result.scheme, url_parse_result.netloc), url_parse_result.path)
     return (url_parse_result.netloc, url_parse_result.path)

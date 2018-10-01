@@ -69,7 +69,7 @@ class LauncherThreaded(QObject):
             service.join(3)
         print "    Default config update threads are off!"
 
-    def update_info(self, url, delay_exec=0.0):
+    def update_info(self, url, masteruri='', delay_exec=0.0):
         '''
         This method starts a thread to get the informations about loaded configurations on node_manager_daemon.
         If all informations are retrieved, a C{node_list_signal} of
@@ -83,7 +83,7 @@ class LauncherThreaded(QObject):
         with self._lock:
             clean_url = grpc_url_from_path(url)
             if clean_url not in self.__get_info_threads:
-                upthread = GetInfoThread(clean_url, delay_exec)
+                upthread = GetInfoThread(clean_url, masteruri, delay_exec)
                 upthread.update_signal.connect(self._on_info)
                 upthread.err_signal.connect(self._on_err)
                 self.__get_info_threads[clean_url] = upthread
@@ -116,10 +116,11 @@ class GetInfoThread(QObject, threading.Thread):
     update_signal = Signal(str, list)
     err_signal = Signal(str, Exception)
 
-    def __init__(self, url, delay_exec=0.0, parent=None):
+    def __init__(self, url, masteruri='', delay_exec=0.0, parent=None):
         QObject.__init__(self)
         threading.Thread.__init__(self)
         self._url = url
+        self._masteruri = masteruri
         self._delay_exec = delay_exec
         self.setDaemon(True)
 
@@ -128,9 +129,11 @@ class GetInfoThread(QObject, threading.Thread):
             try:
                 if self._delay_exec > 0:
                     time.sleep(self._delay_exec)
-                launch_descriptions = nm.nmd().get_nodes(self._url)
+                launch_descriptions = nm.nmd().get_nodes(self._url, masteruri=self._masteruri)
                 for ld in launch_descriptions:
                     ld.path = grpc_join(self._url, ld.path)
+                    print "______ld.path:", ld.path
+                print "emit", launch_descriptions
                 self.update_signal.emit(self._url, launch_descriptions)
             except Exception as err:
                 # import traceback

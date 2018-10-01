@@ -79,7 +79,7 @@ class LaunchConfig(QObject):
         self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
         self.__masteruri = masteruri if masteruri is not None else 'localhost'
         self.__roscfg = None
-        self.argv = argv
+        self.argv = argv if argv else []  # create a new array to a void to fill a default one
         self.__reqTested = False
         self.__argv_values = dict()
         self.global_param_done = []  # masteruri's where the global parameters are registered

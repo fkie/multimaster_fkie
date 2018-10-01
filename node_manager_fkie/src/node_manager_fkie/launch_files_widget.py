@@ -148,18 +148,24 @@ class LaunchFilesWidget(QDockWidget):
     def set_current_master(self, masteruri, mastername):
         self.launchlist_model.set_current_master(masteruri, mastername)
         self._masteruri2name[masteruri.rstrip(os.path.sep)] = mastername
+        try:
+            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[get_masteruri_from_nmd(self.launchlist_model.current_path)], self._default_color.rgb()))
+            self._new_color(color)
+        except Exception as _:
+            pass
+#             import traceback
+#             print traceback.format_exc()
+#             rospy.logwarn("Error while set color in launch dock: %s" % utf8(err))
 
     def on_launch_selection_activated(self, activated):
         '''
         Tries to load the launch file, if one was activated.
         '''
-        print "activated"
         selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
             try:
                 self.ui_search_line.set_process_active(True)
                 lfile = self.launchlist_model.expand_item(item.path, item.id)
-                print "after expand", lfile
                 # self.ui_search_line.setText('')
                 if lfile is not None:
                     self.ui_search_line.set_process_active(False)
@@ -171,7 +177,6 @@ class LaunchFilesWidget(QDockWidget):
                         elif key_mod & Qt.ControlModifier:
                             self.launchlist_model.setPath(os.path.dirname(item.path))
                         else:
-                            print "send load signal"
                             self.load_signal.emit(item.path, {}, None)
                     elif item.is_profile_file():
                         nm.settings().launch_history_add(item.path)
@@ -194,15 +199,14 @@ class LaunchFilesWidget(QDockWidget):
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
         try:
-            print "CCCCCC", nm.nameres().masteruri2name(get_masteruri_from_nmd(self.launchlist_model.current_path)), get_masteruri_from_nmd(self.launchlist_model.current_path)
             color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[get_masteruri_from_nmd(self.launchlist_model.current_path)], self._default_color.rgb()))
             self._new_color(color)
-        except Exception as err:
-            import traceback
-            print traceback.format_exc()
-            rospy.logwarn("Error while set color in launch dock: %s" % utf8(err))
+        except Exception as _:
+            pass
+#             import traceback
+#             print traceback.format_exc()
+#             rospy.logwarn("Error while set color in launch dock: %s" % utf8(err))
 
-#        self.launchlist_model.reloadCurrentPath()
     def _new_color(self, color):
         bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
         self.setStyleSheet("%s" % (bg_style_launch_dock))

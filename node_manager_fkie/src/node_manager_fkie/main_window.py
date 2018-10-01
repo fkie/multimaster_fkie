@@ -1653,8 +1653,7 @@ class MainWindow(QMainWindow):
     def on_load_launch_file(self, path, args={}, masteruri=None):
         '''
         Load the launch file. A ROS master must be selected first.
-        :param path: the path of the launch file.
-        :type path: str
+        :param str path: the path of the launch file.
         '''
         master_proxy = None
         if masteruri is not None:

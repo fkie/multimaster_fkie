@@ -428,12 +428,15 @@ class MasterViewProxy(QWidget):
         @type master_info: U{master_discovery_fkie.msg.MasterInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
         '''
         nmd_uri = get_nmd_url(self.masteruri)
-        self._launcher_threaded.update_info(nmd_uri)
+        self._launcher_threaded.update_info(nmd_uri, self.masteruri)
+        nmd_uri_local = get_nmd_url()
+        if nmd_uri_local != nmd_uri:
+            self._launcher_threaded.update_info(nmd_uri_local, masteruri_from_ros())
         try:
-            nm.nmd().list_packages_threaded(nmd_uri)
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
             if self.__master_info is None:
                 if (master_info.masteruri == self.masteruri):
+                    nm.nmd().list_packages_threaded(nmd_uri)
                     self.__master_info = master_info
                     update_result[0].update(self.__master_info.node_names)
                     update_result[3].update(self.__master_info.topic_names)
@@ -630,8 +633,8 @@ class MasterViewProxy(QWidget):
         '''
         Loads the launch file. If this file is already loaded, it will be reloaded.
         After successful load the node view will be updated.
-        @param launchfile: the launch file path
-        @type launchfile: C{str}
+        :param launchfile: the launch file path
+        :type launchfile: str or tuple of launchfile and dictionary with args
         '''
         lfile = launchfile
         args = {}
@@ -664,14 +667,14 @@ class MasterViewProxy(QWidget):
         # load launch configuration
         try:
             if launchfile in self.__configs.keys():
-                _, changed_nodes = nm.nmd().reload_launch(launchfile)
+                _, changed_nodes = nm.nmd().reload_launch(launchfile, masteruri=self.masteruri)
                 if self._progress_queue_prio.has_id(pqid):
                     self.loaded_config.emit(launchfile, changed_nodes)
                 #print "RESTART nodes:", path, changed_nodes
             # TODO: set host
             else:
                 # nm.nmd().load_launch(launchfile, argv_forced)  CREATE DICT
-                nm.nmd().load_launch(launchfile, args=args_forced)
+                nm.nmd().load_launch(launchfile, masteruri=self.masteruri, args=args_forced)
             # test for required args
 #             launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
 #             loaded = False
@@ -1137,13 +1140,17 @@ class MasterViewProxy(QWidget):
         for ld in launch_descriptions:
             # TODO: check masteruri and host
             if ld.masteruri != masteruri:
-                pass
+                print "skip MASTER", ld.masteruri, masteruri
+                continue
             # add the new config
+            print "add MASTER", ld.masteruri, masteruri
             node_cfgs = dict()
             for n in ld.nodes:
+                print "  n", n, ld.path
                 node_cfgs[n] = ld.path
             self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
             new_configs[ld.path] = ld.nodes
+            print "ld.robot_descriptions for:", masteruri, host_addr, ld.path
             # update capabilities
             for rd in ld.robot_descriptions:
                 # add capabilities
@@ -1151,11 +1158,13 @@ class MasterViewProxy(QWidget):
                 for c in rd.capabilities:
                     if c.namespace not in caps:
                         caps[c.namespace] = dict()
+                    print "CAP:", c.namespace, utf8(c.name), "=", {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                     caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                 self.node_tree_model.addCapabilities(masteruri, host_addr, ld.path, caps)
                 # set host description
                 tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), resolve_paths(utf8(rd.robot_descr)))
                 self.host_description_updated.emit(masteruri, host_addr, tooltip)
+                print "SIGNAL"
                 self.capabilities_update_signal.emit(masteruri, host_addr, ld.path, ld.robot_descriptions)
             # set the robot_icon
             if ld.path in self.__robot_icons:
@@ -1187,7 +1196,12 @@ class MasterViewProxy(QWidget):
 #             self._nodelets[launchfile] = nodelets
         removed_configs = set(self.__configs.keys()) - set(new_configs.keys())
         for cfg in removed_configs:
-            self.removeConfigFromModel(cfg)
+            if cfg.startswith(url):
+                print ("remove config", url, cfg)
+                self.removeConfigFromModel(cfg)
+            else:
+                print ("skip remove config", url, cfg)
+                new_configs[cfg] = self.__configs[cfg]
         self.__configs.clear()
         self.__configs = new_configs
 #         key = (cfg_name, service_uri, masteruri)
@@ -1877,7 +1891,7 @@ class MasterViewProxy(QWidget):
                 raise DetailedError("Start error",
                                     'Error while start %s:\nNo configuration found!' % node.name)
             try:
-                result = nm.nmd().start_node(node.name, config)
+                result = nm.nmd().start_node(node.name, config, self.masteruri)
                 print result
                 # nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
             except socket.error as se:
@@ -2693,7 +2707,7 @@ class MasterViewProxy(QWidget):
     def _close_cfg(self, cfg):
         try:
             self.removeConfigFromModel(cfg)
-            nm.nmd().unload_launch(cfg)
+            nm.nmd().unload_launch(cfg, self.masteruri)
             del self.__configs[cfg]
             self._launcher_threaded.update_info(cfg)
         except Exception:
