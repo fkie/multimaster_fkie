@@ -48,14 +48,9 @@ def get_hostname(url):
     '''
     Extracts the hostname from given url.
 
-    :param url: the url to parse
-
-    :type url:  str
-
+    :param str url: the url to parse
     :return: the hostname or `None`, if the url is `None` or `invalid`
-
     :rtype: str
-
     :see: http://docs.python.org/library/urlparse.html
     '''
     if url is None:
@@ -74,15 +69,9 @@ def get_hostname(url):
 def get_port(url):
     '''
     Extracts the port from given url.
-
-    :param url: the url to parse
-
-    :type url:  str
-
+    :param str url: the url to parse
     :return: the port or `None`, if the url is `None` or `invalid`
-
     :rtype: int
-
     :see: http://docs.python.org/library/urlparse.html
     '''
     if url is None:
@@ -105,13 +94,9 @@ def subdomain(hostname):
 def masteruri_from_ros():
     '''
     Returns the master URI depending on ROS distribution API.
-
     :return: ROS master URI
-
     :rtype: str
-
     :see: rosgraph.rosenv.get_master_uri() (fuerte)
-
     :see: roslib.rosenv.get_master_uri() (prior)
     '''
     try:
@@ -130,10 +115,8 @@ def masteruri_from_master():
     '''
     Requests the ROS master URI from the ROS master through the RPC interface and
     returns it. The 'materuri' attribute will be set to the requested value.
-
     :return: ROS master URI
-
-    :rtype: C{str} or C{None}
+    :rtype: str or None
     '''
     global MASTERURI
     result = MASTERURI
@@ -154,9 +137,7 @@ def resolve_url(interface_url, pwd='.'):
     subdirectory, you can replace the subdirectory by `///`.
 
     E.g.: `package://master_discovery_fkie///master_discovery.launch`
-
     :raise ValueError: on invalid URL or not existent file
-
     :return: the file path
     '''
     filename = ''
@@ -190,12 +171,8 @@ def read_interface(interface_file):
     Reads the given file. You can use :mod:`master_discovery_fkie.common.resolve_url()`
     to resolve an URL to a file.
 
-    :param interface_file: the file containing the interface.
-
-    :type interface_file: str
-
+    :param str interface_file: the file containing the interface.
     :raise ValueError: on error while read interface
-
     :return: directory with content of the given file
     '''
     data = {}
@@ -230,25 +207,12 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
     If resulting value is an empty list, `\\\\b` (http://docs.python.org/2/library/re.html)
     will be added to the pattern as `EMPTY_PATTERN`.
 
-    :param param: parameter name
-
-    :type param: str
-
-    :param data: The dictionary, which can contain the parameter name and value.
-                 The `data` will be ignored, if `has_interface` is `False`.
-
-    :type data: dict
-
-    :param has_interface: `True`, if valid data is available.
-
-    :type has_interface: bool
-
-    :param default: Default value will be added to the data
-
-    :type default: list
-
+    :param str param: parameter name
+    :param dict data: The dictionary, which can contain the parameter name and value.
+                      The `data` will be ignored, if `has_interface` is `False`.
+    :param bool has_interface: `True`, if valid data is available.
+    :param list default: Default value will be added to the data
     :return: the compiled regular expression
-
     :rtype: The result of `re.compile()`
     '''
     def_list = default
