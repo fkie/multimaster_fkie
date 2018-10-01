@@ -38,14 +38,17 @@ import roslib.names
 import roslib.packages
 import rospkg
 
+from master_discovery_fkie.common import masteruri_from_master
 import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
 
-from .common import INCLUDE_PATTERN, included_files, utf8
+from .common import INCLUDE_PATTERN, included_files, utf8, equal_uri
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 import exceptions
 import launcher
+from docutils.parsers.rst.directives import path
+from node_manager_daemon_fkie.common import get_nmd_url
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -57,13 +60,51 @@ FILE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND')
 NODE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('NODE_NOT_FOUND')
 
 
+class CfgId(object):
+    
+    def __init__(self, path, masteruri=''):
+        print "create cfgId;", path, masteruri
+        self.path = path
+        self.masteruri = masteruri
+        self._local = False
+        if not masteruri:
+            self.masteruri = masteruri_from_master()
+            self._local = True
+        elif equal_uri(self.masteruri, masteruri_from_master()):
+            self._local = True
+
+    def __hash__(self, *args, **kwargs):
+        return hash("%s%s" % (self.masteruri, self.path))
+
+    def __eq__(self, other):
+        '''
+        Compares the path of the item.
+        '''
+        if isinstance(other, tuple):
+            return self.path == other[0] and self.equal_masteruri(other[1])
+        elif other is not None:
+            return self.path == other.path and self.equal_masteruri(other.masteruri)
+        return False
+
+    def __ne__(self, other):
+        return not(self == other)
+
+    def equal_masteruri(self, masteruri):
+        if not masteruri:
+            if self._local:
+                return True
+        if equal_uri(self.masteruri, masteruri):
+            return True
+        return False
+
+
 class LaunchServicer(lgrpc.LaunchServiceServicer):
 
     def __init__(self):
         rospy.loginfo("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
         self._peers = {}
-        self._loaded_files = dict()  # dictionary of (full path: lmsg.LoadedFile)
+        self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
 
     def _terminated(self):
         rospy.loginfo("terminated launch context")
@@ -76,8 +117,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 
     def GetLoadedFiles(self, request, context):
         # self._register_callback(context)
-        for _path, lf in self._loaded_files.iteritems():
-            reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, host=lf.host)
+        for _cfgid, lf in self._loaded_files.iteritems():
+            reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, masteruri=lf.masteruri, host=lf.host)
             reply.args.extend(lmsg.Argument(name=name, value=value) for name, value in lf.argv2dict(lf.argv).items())
             yield reply
 
@@ -115,7 +156,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     return result
         result.path.append(launchfile)
         # it is already loaded?
-        if launchfile in self._loaded_files.keys():
+        if (launchfile, request.masteruri) in self._loaded_files.keys():
             result.status.code = ALREADY_OPEN
             result.status.error_msg = utf8("Launch file %s already loaded!" % (launchfile))
             rospy.logdebug("..load aborted, ALREADY_OPEN")
@@ -140,7 +181,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             _loaded, res_argv = launch_config.load(argv)
             # parse result args for reply
             result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.argv2dict(res_argv).items()])
-            self._loaded_files[launchfile] = launch_config
+            self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug("..load complete!")
         except Exception as e:
             err_text = "%s loading failed!" % os.path.basename(launchfile)
@@ -155,25 +196,28 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
     def ReloadLaunch(self, request, context):
         result = lmsg.LoadLaunchReply()
         result.path.append(request.path)
-        if request.path in self._loaded_files:
+        cfgid = CfgId(request.path, request.masteruri)
+        rospy.logdebug("reload launch file: %s, masteruri: %s", request.path, request.masteruri)
+        if cfgid in self._loaded_files:
             try:
-                stored_roscfg = self._loaded_files[request.path].roscfg
-                argv = self._loaded_files[request.path].argv
-                self._loaded_files[request.path].load(argv)
+                cfg = self._loaded_files[cfgid]
+                stored_roscfg = cfg.roscfg
+                argv = cfg.argv
+                cfg.load(argv)
                 result.status.code = OK
                 # detect files changes
-                if stored_roscfg and self._loaded_files[request.path].roscfg:
+                if stored_roscfg and cfg.roscfg:
                     stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
-                    new_values = [(name, utf8(p.value)) for name, p in self._loaded_files[request.path].roscfg.params.items()]
+                    new_values = [(name, utf8(p.value)) for name, p in cfg.roscfg.params.items()]
                     # detect changes parameter
                     paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
                     # detect new parameter
-                    paramset |= (set(self._loaded_files[request.path].roscfg.params.keys()) - set(stored_roscfg.params.keys()))
+                    paramset |= (set(cfg.roscfg.params.keys()) - set(stored_roscfg.params.keys()))
                     # detect removed parameter
-                    paramset |= (set(stored_roscfg.params.keys()) - set(self._loaded_files[request.path].roscfg.params.keys()))
+                    paramset |= (set(stored_roscfg.params.keys()) - set(cfg.roscfg.params.keys()))
                     # detect new nodes
                     stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
-                    new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in self._loaded_files[request.path].roscfg.nodes]
+                    new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in cfg.roscfg.nodes]
                     nodes2start = set(new_nodes) - set(stored_nodes)
                     # determine the nodes of the changed parameter
                     for p in paramset:
@@ -182,7 +226,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                                 nodes2start.add(n)
                     # detect changes in the arguments and remap
                     for n in stored_roscfg.nodes:
-                        for new_n in self._loaded_files[request.path].roscfg.nodes:
+                        for new_n in cfg.roscfg.nodes:
                             if n.name == new_n.name and n.namespace == new_n.namespace:
                                 if n.args != new_n.args or n.remap_args != new_n.remap_args:
                                     nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
@@ -206,9 +250,10 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
     def UnloadLaunch(self, request, context):
         result = lmsg.LoadLaunchReply()
         result.path.append(request.path)
-        if request.path in self._loaded_files:
+        cfgid = CfgId(request.path, request.masteruri)
+        if cfgid in self._loaded_files:
             try:
-                del self._loaded_files[request.path]
+                del self._loaded_files[cfgid]
                 result.status.code = OK
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
@@ -223,14 +268,19 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def GetNodes(self, request, context):
-        requested_files = request.launch_files
+        requested_files = []
+        lfiles = request.launch_files
+        for lfile in lfiles:
+            requested_files.append(CfgId(lfile, request.masteruri))
         if not requested_files:
             requested_files = self._loaded_files.keys()
-        for path in requested_files:
-            lc = self._loaded_files[path]
-            reply = lmsg.LaunchContent(launch_file=path, masteruri=lc.masteruri, host=lc.host)
+        for cfgid in requested_files:
+            lc = self._loaded_files[cfgid]
+            print("CFG:", cfgid.path)
+            reply = lmsg.LaunchContent(launch_file=cfgid.path, masteruri=lc.masteruri, host=lc.host)
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
+                print("  :", node_fullname)
                 reply.node.append(node_fullname)
             # fill the robot description and node capability groups
             if request.request_description:
@@ -267,6 +317,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                                     cap.type = descr_dict['type']
                                     cap.images.extend(descr_dict['images'])
                                     cap.description = descr_dict['description']
+                                    print("    >", descr_dict['nodes'])
                                     cap.nodes.extend(descr_dict['nodes'])
                                     caps.append(cap)
                         rd.capabilities.extend(caps)
@@ -278,20 +329,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 
     def StartNode(self, request_iterator, context):
         for request in request_iterator:
-            print("start", request.name)
+            print("start", request.name, request.masteruri)
             try:
                 result = lmsg.StartNodeReply(name=request.name)
                 launch_configs = []
                 if request.opt_launch:
-                    if request.opt_launch in self._loaded_files:
-                        launch_configs.append(self._loaded_files[request.opt_launch])
+                    cfgid = CfgId(request.opt_launch, request.masteruri)
+                    if cfgid in self._loaded_files:
+                        launch_configs.append(self._loaded_files[cfgid])
                 if not launch_configs:
                     # get launch configurations with given node
                     launch_configs = []
-                    for launchcfg in self._loaded_files.values():
-                        n = launchcfg.get_node(request.name)
-                        if n is not None:
-                            launch_configs.append(launchcfg)
+                    for cfgid, launchcfg in self._loaded_files.items():
+                        if cfgid.equal_masteruri(request.masteruri):
+                            n = launchcfg.get_node(request.name)
+                            if n is not None:
+                                launch_configs.append(launchcfg)
                 if not launch_configs:
                     result.status.code = NODE_NOT_FOUND
                     result.status.error_msg = "Node '%s' not found" % request.name
@@ -303,7 +356,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     yield result
                 try:
                     result.launch.append(launch_configs[0].filename)
-                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binariy, loglevel=request.loglevel)
+                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binariy, masteruri=request.masteruri, loglevel=request.loglevel)
+                    startcfg.host = get_nmd_url(request.masteruri)
                     launcher.run_node(startcfg)
                     result.status.code = OK
                     yield result
@@ -332,7 +386,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             startcfg.cwd = request.cwd
             startcfg.env = {env.name: env.value for env in request.env}
             startcfg.remaps = {remap.from_name: remap.to_name for remap in request.remaps}
-            startcfg.params = {param.name: param.value for param in request.params}
+            startcfg.params = {param.name: utf8(param.value) for param in request.params}
             startcfg.clear_params = list(request.clear_params)
             startcfg.args = list(request.args)
             startcfg.masteruri = request.masteruri

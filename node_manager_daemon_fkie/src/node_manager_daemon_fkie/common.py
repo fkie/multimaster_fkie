@@ -100,12 +100,9 @@ def get_nmd_url(uri='', prefix='grpc://'):
     if not muri:
         muri = masteruri_from_master()
     o = urlparse(muri)
-#    if uri.startswith('grpc://'):
-#        raise ValueError("Invalid masteruri get nmd_url: %s; `http` scheme missed!" % uri)
     port = o.port
     if o.scheme == 'http':
         port += NMD_SERVER_PORT_OFFSET
-    print "////////get_nmd_url, port: ", port, "from: ", uri
     return "%s%s:%d" % (prefix, o.hostname, port)
 
 
@@ -118,7 +115,6 @@ def get_masteruri_from_nmd(grpc_path):
     port = o.port
     if o.scheme == 'grpc':
         port -= NMD_SERVER_PORT_OFFSET
-    print "get_masteruri_from_nmd", port, "from:", grpc_path
     return "http://%s:%d" % (o.hostname, port)
 
 
@@ -127,7 +123,6 @@ def get_nmd_port(uri=''):
     if not muri:
         muri = masteruri_from_master()
     o = urlparse(muri)
-    print "////////get_nmd_port, port: ", o.port, "from: ", uri
     port = o.port
     if o.scheme == 'http':
         port += NMD_SERVER_PORT_OFFSET

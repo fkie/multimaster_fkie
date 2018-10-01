@@ -36,6 +36,7 @@ import exceptions
 import settings
 import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
+from .common import utf8
 from .launch_description import LaunchDescription, RobotDescription, Capability
 # from .startcfg import StartConfig
 
@@ -75,10 +76,10 @@ class LaunchStub(object):
             raise exceptions.RemoteException(response.status.code, response.status.error_msg)
         return response.path[0], {arg.name: arg.value for arg in response.args}
 
-    def reload_launch(self, path):
+    def reload_launch(self, path, masteruri=''):
         '''
         '''
-        request = lmsg.LaunchFile(path=path)
+        request = lmsg.LaunchFile(path=path, masteruri=masteruri)
         response = self.lm_stub.ReloadLaunch(request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code != OK:
             if response.status.code == FILE_NOT_FOUND:
@@ -87,10 +88,10 @@ class LaunchStub(object):
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
         return response.path, response.changed_nodes
 
-    def unload_launch(self, path):
+    def unload_launch(self, path, masteruri=''):
         '''
         '''
-        request = lmsg.LaunchFile(path=path)
+        request = lmsg.LaunchFile(path=path, masteruri=masteruri)
         response = self.lm_stub.UnloadLaunch(request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code != OK:
             if response.status.code == FILE_NOT_FOUND:
@@ -99,9 +100,9 @@ class LaunchStub(object):
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
         return response.path
 
-    def get_nodes(self, request_description=False):
+    def get_nodes(self, request_description=False, masteruri=''):
         result = []
-        request = lmsg.ListNodesRequest(request_description=request_description)
+        request = lmsg.ListNodesRequest(request_description=request_description, masteruri=masteruri)
         response_stream = self.lm_stub.GetNodes(request, timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             descriptions = []
@@ -189,10 +190,10 @@ class LaunchStub(object):
         return result
 
     def _gen_node_list(self, nodes):
-        for name, opt_binariy, opt_launch, loglevel in nodes:
-            yield lmsg.Node(name=name, opt_binariy=opt_binariy, opt_launch=opt_launch, loglevel=loglevel)
+        for name, opt_binariy, opt_launch, loglevel, masteruri in nodes:
+            yield lmsg.Node(name=name, opt_binariy=opt_binariy, opt_launch=opt_launch, loglevel=loglevel, masteruri=masteruri)
 
-    def start_node(self, name, opt_binariy='', opt_launch='', loglevel=0):
+    def start_node(self, name, opt_binariy='', opt_launch='', loglevel=0, masteruri=''):
         '''
         Start node.
         :param str name: full name of the ros node exists in the launch file.
@@ -203,7 +204,7 @@ class LaunchStub(object):
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         :raise exceptions.LaunchSelectionRequest: on multiple launch files
         '''
-        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binariy, opt_launch, loglevel)]), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binariy, opt_launch, loglevel, masteruri)]), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == 0:
                 pass
@@ -242,7 +243,9 @@ class LaunchStub(object):
         if startcfg.remaps:
             request.remaps.extend([lmsg.Remapping(from_name=name, to_name=value) for name, value in startcfg.remaps.items()])
         if startcfg.params:
-            request.params.extend([lmsg.Argument(name=name, value=value) for name, value in startcfg.params.items()])
+            for name, value in startcfg.params.items():
+                print("PARAMS", name, value, type(name), type(value))
+            request.params.extend([lmsg.Argument(name=name, value=utf8(value)) for name, value in startcfg.params.items()])
         if startcfg.clear_params:
             request.clear_params.extend(startcfg.clear_params)
         if startcfg.args:

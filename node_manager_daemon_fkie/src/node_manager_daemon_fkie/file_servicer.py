@@ -83,11 +83,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
         try:
             with open(request.path, 'r') as outfile:
                 result.file.path = request.path
-                print ("FIRST", os.path.getmtime(request.path))
                 a = os.path.getmtime(request.path)
-                print("a", a)
                 result.file.mtime = a
-                print("PP", request.path, result.file.mtime, os.path.getmtime(request.path), type(result.file.mtime), type(os.path.getmtime(request.path)))
                 result.file.size = os.path.getsize(request.path)
                 result.file.offset = 0
                 result.file.data = outfile.read(self.FILE_CHUNK_SIZE)
@@ -110,7 +107,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
     def SaveFileContent(self, request_iterator, context):
 #        self._register_callback(context)
         try:
-            print("SaveFileContent")
             path = ''
             dest_size = 0
             curr_size = 0
@@ -119,7 +115,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
             file_tmp = None
             count = 0
             for chunk in request_iterator:
-                print("chunk.file.path", chunk.file.path)
                 result = fms.SaveFileContentReply()
                 if first:
                     if os.path.exists(chunk.file.path):
@@ -130,7 +125,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
                             path = chunk.file.path
                             dest_size = chunk.file.size
                         else:
-                            print("TT", os.path.getmtime(chunk.file.path), chunk.file.mtime, os.path.getmtime(chunk.file.path))
                             result.status.code = CHANGED_FILE
                             result.status.error_code = CHANGED_FILE
                             result.status.error_msg = utf8("file was changed in meantime")
@@ -173,7 +167,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 result.status.error_msg = utf8("No iterating objects found")
                 result.status.error_file = utf8(path)
                 yield result
-            print("no chunks")
         except IOError as ioe:
             result.status.code = IO_ERROR
             if ioe.errno:
@@ -181,7 +174,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
             result.status.error_msg = utf8(ioe.strerror)
             result.status.error_file = utf8(ioe.filename)
             yield result
-        print("exit")
 
     def ListPath(self, request, context):
 #        self._register_callback(context)
@@ -196,6 +188,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
         else:
             try:
                 # list the path
+                print("list path", request.path)
                 dirlist = os.listdir(request.path)
                 for cfile in dirlist:
                     path = os.path.normpath('%s%s%s' % (request.path, os.path.sep, cfile))
@@ -204,15 +197,20 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     elif path in self.DIR_CACHE:
                         path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=self.DIR_CACHE[path]))
                     elif os.path.isdir(path):
-                        fileList = os.listdir(path)
-                        file_type = None
-                        if is_package(fileList):
-                            file_type = PATH_PACKAGE
-                        else:
-                            file_type = PATH_DIR
-                        self.DIR_CACHE[path] = file_type
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                        try:
+                            fileList = os.listdir(path)
+                            file_type = None
+                            if is_package(fileList):
+                                file_type = PATH_PACKAGE
+                            else:
+                                file_type = PATH_DIR
+                            self.DIR_CACHE[path] = file_type
+                            path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                        except Exception as _:
+                            pass
             except OSError as ose:
+                import traceback
+                print(traceback.format_exc())
                 result.status.code = OS_ERROR
                 if ose.errno:
                     result.status.error_code = ose.errno

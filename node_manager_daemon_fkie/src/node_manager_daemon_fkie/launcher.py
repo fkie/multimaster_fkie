@@ -43,7 +43,7 @@ import roslaunch
 import exceptions
 import screen
 import host
-from master_discovery_fkie.common import get_port, masteruri_from_ros
+from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
 from .launch_stub import LaunchStub
 from .common import get_cwd, utf8
 from .supervised_popen import SupervisedPopen
@@ -102,9 +102,9 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         launchcfg.global_param_done.append(masteruri)
     # add params and clear_params
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
-    for param, value in launchcfg.roscfg.params.items():
-        if param.startswith(nodens):
-            result.params[param] = value
+    for pname, param in launchcfg.roscfg.params.items():
+        if pname.startswith(nodens):
+            result.params[pname] = param
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
@@ -122,7 +122,8 @@ def run_node(startcfg):
     :raise exceptions.BinarySelectionRequest: on multiple binaries
     :ref: ``node_manager_fkie.host.is_local()``
     '''
-    if not startcfg.host or host.is_local(startcfg.host, wait=True):
+    hostname = get_hostname(startcfg.host)
+    if not startcfg.host or host.is_local(hostname, wait=True):
         print "RUN LOCAL"
         # run on local host
         args = list(startcfg.args)
@@ -188,7 +189,7 @@ def run_node(startcfg):
         # start
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
-        print "RUN REMOTE"
+        print "RUN REMOTE", startcfg.host
         # run on a remote machine
         channel = remote.get_insecure_channel(startcfg.host)
         if channel is None:
@@ -609,12 +610,12 @@ def get_global_params(roscfg):
     nodes = []
     for item in roscfg.resolved_node_names:
         nodes.append(item)
-    for param, value in roscfg.params.items():
+    for name, param in roscfg.params.items():
         nodesparam = False
         for n in nodes:
-            if param.startswith(n):
+            if name.startswith(n):
                 nodesparam = True
                 break
         if not nodesparam:
-            result[param] = value
+            result[name] = param
     return result
