@@ -71,7 +71,7 @@ class PathItem(QStandardItem):
     STACK = 22
     REMOTE_DAEMON = 23
 
-    def __init__(self, path, path_id, mtime, size, name):
+    def __init__(self, path, path_id, mtime, size, name, isnew=False):
         '''
         Initialize the PathItem object with given values. The name of the item is the base name of the path.
         Examples of paths:
@@ -83,11 +83,13 @@ class PathItem(QStandardItem):
         :param int mtime: modification time
         :param int size: file size
         :param str name: the displayed name
+        :param bool isnew: set to True if it a new file
         '''
 #        self._url = url
 #        self.url_parse_result = urlparse(url)
         self._path = path
         self.id = self._identify_path_on_ext(path) if path_id == self.FILE else path_id
+        self._isnew = isnew
         pathname = name
         if pathname == 'src':
             pathname = '%s (src)' % os.path.basename(os.path.dirname(path))
@@ -105,7 +107,7 @@ class PathItem(QStandardItem):
 #  def __del__(self):
 #    print "delete LAUNCH", self.name
 
-    def _identify_path_on_ext(self, path):
+    def _identify_path_on_ext(self, path, default=10):
         '''
         Determines the id based on file extension.
         :param str path: path
@@ -114,14 +116,14 @@ class PathItem(QStandardItem):
         '''
         _filename, file_extension = os.path.splitext(path)
         if not file_extension:
-            return self.FILE
+            return default
         if file_extension == '.launch':
             return PathItem.LAUNCH_FILE
         elif file_extension == '.nmprofile':
             return PathItem.PROFILE
         elif file_extension in nm.settings().launch_view_file_ext:
             return PathItem.CFG_FILE
-        return self.FILE
+        return default
 
     def _update_icon(self):
         if self.id in [self.NOTHING, self.NOT_FOUND]:
@@ -198,12 +200,6 @@ class PathItem(QStandardItem):
             if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
                 result = "%s\nPress 'Delete' to remove the entry from the history list" % self.path
             return result
-#     elif role == Qt.DecorationRole:
-#       # return the showed icon
-#       pathItem, path, pathId = self.items[index.row()]
-#       if self.id > LaunchListModel.NOTHING and self.model().icons.has_key(self.id):
-#         return self.model().icons[self.id]
-#       return None
         elif role == Qt.EditRole:
             return "%s" % self.name
         else:
@@ -211,25 +207,55 @@ class PathItem(QStandardItem):
             return QStandardItem.data(self, role)
 
     def setData(self, value, role=Qt.EditRole):
-        # TODO: fix to use it with nm_daemon
         if role == Qt.EditRole:
             # rename the file or folder
-            if self.name != value and self.id in [self.RECENT_FILE, self.LAUNCH_FILE, self.RECENT_PROFILE, self.PROFILE, self.CFG_FILE, self.FOLDER]:
+            if (self.name != value or self._isnew) and self.id in [self.RECENT_FILE, self.LAUNCH_FILE, self.RECENT_PROFILE, self.PROFILE, self.CFG_FILE, self.FOLDER]:
+                if self.name != value:
+                    # some sanity checks
+                    if self.model()._exists(value):
+                        result = MessageBox.question(self.model().viewobj, "File exists", "File '%s' exists. Override?" % value, buttons=MessageBox.Yes | MessageBox.No)
+                        if result == MessageBox.No:
+                            return QStandardItem.setData(self, value, role)
+                    if self.id not in [self.FOLDER]:
+                        _filename, file_extension = os.path.splitext(value)
+                        if file_extension not in nm.settings().launch_view_file_ext:
+                            result = MessageBox.question(self.model().viewobj, "Unknown extension", "New name has unknown extension '%s'. Rename anyway?" % file_extension, buttons=MessageBox.Yes | MessageBox.No)
+                            if result == MessageBox.No:
+                                return QStandardItem.setData(self, value, role)
                 new_path = os.path.join(os.path.dirname(self.path), value)
-                if not os.path.exists(new_path):
-                    os.rename(self.path, new_path)
+                try:
+                    # save a new file or rename existing file?
+                    content = ''
+                    new_id = self._identify_path_on_ext(new_path, self.id)
+                    if self._isnew:
+                        if new_id in [self.LAUNCH_FILE]:
+                            content = ("<launch>\n"
+                                       "    <arg name=\"robot_ns\" default=\"my_robot\"/>\n"
+                                       "    <group ns=\"$(arg robot_ns)\">\n"
+                                       "        <node pkg=\"my_pkg\" type=\"my_node\" name=\"my_name\" >\n"
+                                       "            <param name=\"capability_group\" value=\"MY_GROUP\"/>\n"
+                                       "        </node>\n"
+                                       "    </group>\n"
+                                       "</launch>\n")
+                        nm.nmd().save_file(new_path, content, 0)
+                        self._isnew = False
+                    else:
+                        nm.nmd().rename(self.path, new_path)
+                    # check for new file extension
+                    if new_id != self.id:
+                        self.id = new_id
+                        self._update_icon()
                     if self.name != value and self.id in [self.RECENT_FILE, self.RECENT_PROFILE]:
                         # update in history
                         nm.settings().launch_history_add(new_path, replace=self.path)
                     self.name = value
-                    self.path = new_path
-                else:
-                    MessageBox.warning(self, "Path already exists",
-                                       "`%s` already exists!" % value, "Complete path: %s" % new_path)
+                    self._path = new_path
+                except Exception as err:
+                    MessageBox.warning(None, "Rename failed", utf8(err))
         return QStandardItem.setData(self, value, role)
 
     @classmethod
-    def create_row_items(self, path, path_id, mtime, size, name):
+    def create_row_items(self, path, path_id, mtime, size, name, isnew=False):
         '''
         Creates the list of the items. This list is used for the
         visualization of path data as a table row.
@@ -238,11 +264,12 @@ class PathItem(QStandardItem):
         :param int mtime: modification time
         :param int size: file size
         :param str name: the displayed name
+        :param bool isnew: set to True if it a new file
         :return: the list for the representation as a row
         :rtype: C{[L{PathItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
-        item = PathItem(path, path_id, mtime, size, name)
+        item = PathItem(path, path_id, mtime, size, name, isnew)
         items.append(item)
         # items.append(item.item_mtime)
         # items.append(item.item_size)
@@ -305,33 +332,28 @@ class LaunchListModel(QStandardItemModel):
     header = [('Name', -1)]
     '''@ivar: the list with columns C{[(name, width), ...]}'''
 
-    def __init__(self, parent=None, progress_queue=None):
+    def __init__(self, parent=None, progress_queue=None, viewobj=None):
         '''
         Creates a new list model.
         '''
         QStandardItemModel.__init__(self, parent)
+        self.viewobj = viewobj
         self.setColumnCount(len(LaunchListModel.header))
         self.setHorizontalHeaderLabels([label for label, _width in LaunchListModel.header])
         self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
         self.items = []
         self._roots = {}
         self._current_path = get_nmd_url()
-        self._current_masteruri = masteruri_from_master()
         self._current_master = masteruri_from_master()
         self._current_master_name = ''
-#        self._current_url = self._default_url
         self.ros_root_paths = {}  # {url: [root pasth(str)]}
         self.ros_root_paths[self._current_path] = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-        # self._setNewList(self._moveUp(None))
-        self.__packages = {}
         self._progress_queue = progress_queue
-        # self._fill_packages_thread = PackagesThread()
-        # self._add_history()
         nm.nmd().listed_path.connect(self._listed_path)
         nm.nmd().packages_available.connect(self._on_new_packages)
         nm.nmd().error.connect(self._nmd_error)
         nm.nmd().list_path_threaded(self._current_path)
-        self.count = 0
+        # self.count = 0
 
     @property
     def current_path(self):
@@ -358,17 +380,20 @@ class LaunchListModel(QStandardItemModel):
         '''
         return self._current_master
 
+    @property
+    def is_in_root(self):
+        '''
+        Returns true if the current path is a root path
+        :rtype: bool
+        '''
+        return self._is_root(self._current_path)
+
     def _is_root(self, grpc_path):
         return grpc_path == get_nmd_url()
-#         _, path = grpc_split_url(grpc_path, with_scheme=True)
-#         if path in ['', os.path.sep]:
-#             return True
-#         return False
 
     def _is_ros_root(self, grpc_path):
         url, path = grpc_split_url(grpc_path, with_scheme=True)
         if url in self.ros_root_paths and path in self.ros_root_paths[url]:
-            print "IS ROS ROOT"
             return True
         return False
 
@@ -394,14 +419,6 @@ class LaunchListModel(QStandardItemModel):
     def _on_new_packages(self, grpc_url):
         if not self._current_path:
             self.reload_current_path()
-
-    def _getRootItems(self):
-        result = list(nm.settings().launch_history)
-        result.extend(self.ros_root_paths)
-        return result
-
-    def _fill_packages(self, packages):
-        self.__packages = packages
 
     def _listed_path(self, url, path, result):
         if not self.is_current_nmd(url):
@@ -446,12 +463,12 @@ class LaunchListModel(QStandardItemModel):
     def _nmd_error(self, method, url, path, error):
         if not self.is_current_nmd(url):
             return
-        print "UNAVALABLE:", url
-        if self.count > 0:
-            import time
-            time.sleep(2)
-            nm.nmd().list_path_threaded(self._current_path)
-            return
+#         print "UNAVALABLE:", url
+#         if self.count > 0:
+#             import time
+#             time.sleep(2)
+#             nm.nmd().list_path_threaded(self._current_path)
+#             return
 #         if hasattr(error, "code") and error.code() == grpc.StatusCode.UNAVAILABLE:
 #             name = "node_manager_daemon"
 #             print "UNAVALABLE:", url
@@ -484,24 +501,6 @@ class LaunchListModel(QStandardItemModel):
         root.appendRow(path_item)
         self.pyqt_workaround[path_item[0].name] = path_item[0]
         self.error_on_path.emit(grpc_create_url(url, path), error)
-
-    def get_file_item(self, path):
-        '''
-        :return: Return an existing ``FileItem`` object corresponding to the given path.
-        :rtype: FileItem
-        :raise: LookupError if no item for given path was found
-        '''
-        if not path:
-            return self.invisibleRootItem()
-        p_res = urlparse(path)
-        if p_res.scheme == 'grpc':
-            if p_res.hostname is None:
-                raise LookupError("can not find FileItem for %s. Invalid hostname in `grpc` scheme!" % path)
-            root = self.invisibleRootItem()
-            for i in range(root.rowCount()):
-                if root.child(i) == "@%s" % p_res.hostname:
-                    pass  # TODO
-        return self.invisibleRootItem()
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
@@ -540,7 +539,7 @@ class LaunchListModel(QStandardItemModel):
             if index.isValid():
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
-                text = '%sfile://%s' % (prev, item.path)
+                text = '%s%s' % (prev, item.path)
         mimeData.setData('text/plain', text.encode('utf-8'))
         return mimeData
 
@@ -548,33 +547,24 @@ class LaunchListModel(QStandardItemModel):
     # %%%%%%%%%%%%%              External usage                        %%%%%%%%
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#     def reloadPackages(self):
-#         return
-#         '''
-#         Reloads the cached packag list.
-#         '''
-#         if not self._fill_packages_thread.isAlive():
-#             self._fill_packages_thread = PackagesThread()
-#             self._fill_packages_thread.packages.connect(self._fill_packages)
-#             self._fill_packages_thread.start()
-
     def reload_current_path(self, clear_cache=False):
         '''
         Reloads the current path.
         '''
         if clear_cache:
             nm.nmd().list_packages_threaded(self.current_grpc, True)
-        self.expand_item(self._current_path, PathItem.FOLDER)
+        self.expand_item(self._current_path, PathItem.FOLDER, clear_cache)
 
-    def expand_item(self, path, path_id):
+    def expand_item(self, path, path_id, clear_cache=False):
         '''
         Returns for the given item and path the file path if this is a file. Otherwise the
         folder will be expanded and None will be returned.
-        @param path: the real path of the item
-        @type path: C{str}
-        @return: path of the launch file or None
-        @rtype: C{str}
-        @raise Exception if no path to given item was found
+        :param str path: the real path of the item
+        :param int path_id: the id of the path
+        :param bool clear_cache: clear cache before reload
+        :return: path of the launch file or None
+        :rtype: str
+        :raise Exception: if no path to given item was found
         '''
         print "expand", path, path_id
         if path_id in [PathItem.NOTHING]:
@@ -600,7 +590,7 @@ class LaunchListModel(QStandardItemModel):
             elif self._current_path != path:
                 self._current_path = path
         self._add_path(self._current_path, PathItem.ROOT, 0, 0, '')
-        nm.nmd().list_path_threaded(self._current_path)
+        nm.nmd().list_path_threaded(self._current_path, clear_cache)
         print "current_path_end", self._current_path
 #         else:
 #             key_mod = QApplication.keyboardModifiers()
@@ -629,7 +619,6 @@ class LaunchListModel(QStandardItemModel):
             while root.rowCount():
                 root.removeRow(0)
             self.pyqt_workaround.clear()
-            # self._add_path(self._current_path, PathItem.ROOT, 0, 0, '')
             items = []
             currurl = self.current_grpc
             for url, packages in nm.nmd().get_packages().items():
@@ -642,24 +631,25 @@ class LaunchListModel(QStandardItemModel):
             import traceback
             print traceback.format_exc(2)
 
-    def paste_from_clipboard(self):
-        '''
-        Copy the file or folder to new position...
-        '''
-        if QApplication.clipboard().mimeData().hasText() and self._current_path:
-            text = QApplication.clipboard().mimeData().text()
-            if text.startswith('file://'):
-                path = text.replace('file://', '')
-                basename = os.path.basename(text)
-                ok = True
-                if os.path.exists(os.path.join(self._current_path, basename)):
-                    basename, ok = QInputDialog.getText(None, 'File exists', 'New name (or override):', QLineEdit.Normal, basename)
-                if ok and basename:
-                    if os.path.isdir(path):
-                        shutil.copytree(path, os.path.join(self._current_path, basename))
-                    elif os.path.isfile(path):
-                        shutil.copy2(path, os.path.join(self._current_path, basename))
-                    self.reloadcurrent_path()
+#     def paste_from_clipboard(self):
+#         '''
+#         Copy the file or folder to new position...
+#         '''
+#         #TODO
+#         if QApplication.clipboard().mimeData().hasText() and self._current_path:
+#             text = QApplication.clipboard().mimeData().text()
+#             if text.startswith('file://'):
+#                 path = text.replace('file://', '')
+#                 basename = os.path.basename(text)
+#                 ok = True
+#                 if os.path.exists(os.path.join(self._current_path, basename)):
+#                     basename, ok = QInputDialog.getText(None, 'File exists', 'New name (or override):', QLineEdit.Normal, basename)
+#                 if ok and basename:
+#                     if os.path.isdir(path):
+#                         shutil.copytree(path, os.path.join(self._current_path, basename))
+#                     elif os.path.isfile(path):
+#                         shutil.copy2(path, os.path.join(self._current_path, basename))
+#                     self.reloadcurrent_path()
 
     def copy_to_clipboard(self, indexes):
         '''
@@ -671,9 +661,46 @@ class LaunchListModel(QStandardItemModel):
             if index.isValid():
                 item = self.itemFromIndex(index)
                 prev = '%s\n' % text if text else ''
-                text = '%sfile://%s' % (prev, item.path)
+                text = '%s%s' % (prev, item.path)
         mimeData.setData('text/plain', text.encode('utf-8'))
         QApplication.clipboard().setMimeData(mimeData)
+
+    def add_new_launch(self):
+        '''
+        Inserts the given item in the list model.
+        :param str path: the path of the item combined with the url of the node manager daemon
+        :param int path_id: the id (constants of PathItem) of the item, which represents whether it is a file, package or stack
+        :param int mtime: modification time
+        :param int size: file size
+        :param str name: the displayed name
+        '''
+        root = self.invisibleRootItem()
+        new_name = 'new.launch'
+        cc = 0
+        while self._exists(new_name):
+            cc += 1
+            new_name = 'new_%d.launch' % cc
+        # add sorted a new entry
+        try:
+            path_item = PathItem.create_row_items(grpc_join(self._current_path, new_name), PathItem.LAUNCH_FILE, 0, 0, new_name, isnew=True)
+            if root.rowCount() > 1:
+                root.insertRow(1, path_item)
+            else:
+                root.appendRow(path_item)
+            self.pyqt_workaround[path_item[0].name] = path_item[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+            return path_item
+        except Exception:
+            import traceback
+            print traceback.format_exc(2)
+        return []
+
+    def _exists(self, name):
+        root = self.invisibleRootItem()
+        for row in range(root.rowCount()):
+            item = root.child(row)
+            if item.name == name:
+                return True
+        return False
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%              Functionality                         %%%%%%%%
@@ -699,18 +726,6 @@ class LaunchListModel(QStandardItemModel):
         for path, path_id, mtime, size, name in items:
             self._add_path(path, path_id, mtime, size, name)
 
-    def _is_in_ros_packages(self, path):
-        '''
-        Test whether the given path is in ROS_PACKAGE_PATH.
-        @return: C{True}, if the path is in the ROS_PACKAGE_PATH
-        @rtype: C{boolean}
-        '''
-        # TODO fix for paths with symbolic links
-        for p in self.ros_root_paths:
-            if path.startswith(p):
-                return True
-        return False
-
     def _add_path(self, path, path_id, mtime, size, name):
         '''
         Inserts the given item in the list model.
@@ -720,7 +735,6 @@ class LaunchListModel(QStandardItemModel):
         :param int size: file size
         :param str name: the displayed name
         '''
-#        print "add path to list", url, path, path_id
         root = self.invisibleRootItem()
         if path is None or path_id == PathItem.NOT_FOUND:
             return False

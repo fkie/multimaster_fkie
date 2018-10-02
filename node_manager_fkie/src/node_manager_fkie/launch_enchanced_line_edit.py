@@ -44,7 +44,7 @@ class EnchancedLineEdit(QLineEdit):
                             max(msz.height(), button_reload.sizeHint().height() + frameWidth * 2 + 2))
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
-        self._timer.setInterval(2500)
+        self._timer.setInterval(800)
         self._timer.timeout.connect(self._emit_refresh_text)
 
     def resizeEvent(self, event):
@@ -70,7 +70,6 @@ class EnchancedLineEdit(QLineEdit):
         self.stop_signal.emit()
 
     def _emit_refresh_text(self):
-        print "new dely text:", self.text()
         self.set_process_active(True)
         self.refresh_signal.emit(self.text())
 
@@ -82,7 +81,6 @@ class EnchancedLineEdit(QLineEdit):
             self.setText('')
             self._timer.stop()
         elif event.key() in [Qt.Key_Return, Qt.Key_Enter]:
-            print "new text:", self.text()
             self._timer.stop()
             self._emit_refresh_text()
         else:

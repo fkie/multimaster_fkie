@@ -76,21 +76,21 @@ from .update_handler import UpdateHandler
 try:
     from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget
     from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget
     from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
 
 
 try:
     import gui_resources
-except:
+except Exception:
     print "no gui resources :-/"
 
 # from python_qt_binding import QtUiTools
 try:
     from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
     DIAGNOSTICS_AVAILABLE = True
-except:
+except Exception:
     import sys
     print >> sys.stderr, "Cannot import 'diagnostic_msgs', feature disabled."
     DIAGNOSTICS_AVAILABLE = False
@@ -247,12 +247,6 @@ class MainWindow(QMainWindow):
 
         flags = self.windowFlags()
         self.setWindowFlags(flags | Qt.WindowContextHelpButtonHint)
-
-        if self.default_load_launch:
-            if os.path.isdir(self.default_load_launch):
-                self.launch_dock.launchlist_model.setPath(self.default_load_launch)
-            elif os.path.isfile(self.default_load_launch):
-                self.launch_dock.launchlist_model.setPath(os.path.dirname(self.default_load_launch))
 
         self._discover_dialog = None
         self.restricted_to_one_master = restricted_to_one_master
@@ -414,7 +408,7 @@ class MainWindow(QMainWindow):
                 self.move(settings.value("pos", QPoint(0, 0)))
             try:
                 self.restoreState(settings.value("window_state"))
-            except:
+            except Exception:
                 pass
             settings.endGroup()
 
@@ -583,29 +577,31 @@ class MainWindow(QMainWindow):
                 self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.addWidget(self.masters[masteruri])
             if masteruri == self.getMasteruri():
-                if self.default_load_launch:
-                    try:
-                        if os.path.isfile(self.default_load_launch):
-                            if self.default_load_launch.endswith('.launch'):
-                                args = list()
-                                args.append('_package:=%s' % (package_name(os.path.dirname(self.default_load_launch))[0]))
-                                args.append('_launch_file:="%s"' % os.path.basename(self.default_load_launch))
-                                host = '%s' % nm.nameres().address(masteruri)
-                                node_name = roslib.names.SEP.join(['%s' % (nm.nameres().masteruri2name(masteruri)),
-                                                                   os.path.basename(self.default_load_launch).replace('.launch', ''),
-                                                                   'default_cfg'])
-                                self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-                                                                          'start default config @%s' % host,
-                                                                          nm.starter().runNodeWithoutConfig,
-                                                                          ('%s' % (nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
-                                                                           'default_cfg', node_name,
-                                                                           args, masteruri, False,
-                                                                           self.masters[masteruri].current_user))
-                                self.launch_dock.progress_queue.start()
-                    except Exception as e:
-                        MessageBox.warning(self, "Load default configuration",
-                                           'Load default configuration %s failed!' % self.default_load_launch,
-                                           '%s' % utf8(e))
+                self.masters[masteruri].default_load_launch = self.default_load_launch
+#                 if self.default_load_launch:
+#                     try:
+#                         if os.path.isfile(self.default_load_launch):
+#                             if self.default_load_launch.endswith('.launch'):
+#                                 # TODO
+#                                 args = list()
+#                                 args.append('_package:=%s' % (package_name(os.path.dirname(self.default_load_launch))[0]))
+#                                 args.append('_launch_file:="%s"' % os.path.basename(self.default_load_launch))
+#                                 host = '%s' % nm.nameres().address(masteruri)
+#                                 node_name = roslib.names.SEP.join(['%s' % (nm.nameres().masteruri2name(masteruri)),
+#                                                                    os.path.basename(self.default_load_launch).replace('.launch', ''),
+#                                                                    'default_cfg'])
+#                                 self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
+#                                                                           'start default config @%s' % host,
+#                                                                           nm.starter().runNodeWithoutConfig,
+#                                                                           ('%s' % (nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
+#                                                                            'default_cfg', node_name,
+#                                                                            args, masteruri, False,
+#                                                                            self.masters[masteruri].current_user))
+#                                 self.launch_dock.progress_queue.start()
+#                     except Exception as e:
+#                         MessageBox.warning(self, "Load default configuration",
+#                                            'Load default configuration %s failed!' % self.default_load_launch,
+#                                            '%s' % utf8(e))
         return self.masters[masteruri]
 
     def on_host_update_request(self, host):
@@ -671,14 +667,13 @@ class MainWindow(QMainWindow):
                     else:
                         if master.master_state is not None:
                             self.master_model.removeMaster(master.master_state.name)
-                        #self.removeMaster(uri)
             else:
                 try:
                     # determine the ROS network ID
                     mcast_group = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
                     self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
                     self._subscribe()
-                except:
+                except Exception:
                     # try to get the multicast port of master discovery from log
                     port = 0
                     network_id = -1
@@ -869,7 +864,6 @@ class MainWindow(QMainWindow):
                     new_info = master.master_info is None or master.master_info.timestamp < minfo.timestamp
 #          cputimes = os.times()
 #          cputime_init = cputimes[0] + cputimes[1]
-                    first_info = master.master_info is None
                     master.master_info = minfo
 #          cputimes = os.times()
 #          cputime = cputimes[0] + cputimes[1] - cputime_init
@@ -895,20 +889,6 @@ class MainWindow(QMainWindow):
                             if self.default_profile_load:
                                 self.default_profile_load = False
                                 QTimer.singleShot(2000, self._load_default_profile_slot)
-#                     if first_info:
-#                         # start node_manager_daemon if not running on new host
-#                         # TODO: add port
-#                         nmd_name = "node_manager_daemon"
-#                         if minfo.getNodeEndsWith(nmd_name) is None:
-#                             host = get_hostname(master.masteruri)
-#                             rospy.loginfo("Start <%s> on %s" % (nmd_name, host))
-#                             self._progress_queue.add2queue(utf8(uuid.uuid4()),
-#                                                            'start %s' % nmd_name,
-#                                                            nm.starter().runNodeWithoutConfig,
-#                                                            (host, '%s_fkie' % nmd_name, nmd_name,
-#                                                             nm.nameres().normalize_name(nmd_name), [],
-#                                                             None, False))
-#                             self._progress_queue.start()
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception, e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
@@ -1197,7 +1177,7 @@ class MainWindow(QMainWindow):
                                                         nm.starter().runNodeWithoutConfig,
                                                         ("%s" % host, 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, "%s" % master.masteruri, False, master.current_user))
                     self._progress_queue_sync.start()
-                except:
+                except Exception:
                     import traceback
                     MessageBox.warning(self, "Start sync error",
                                        "Error while start sync node",
@@ -1249,7 +1229,7 @@ class MainWindow(QMainWindow):
                                                         nm.starter().runNodeWithoutConfig,
                                                         (utf8(host), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, utf8(master.masteruri), False, master.current_user))
                     self._progress_queue_sync.start()
-                except:
+                except Exception:
                     pass
             self.syncButton.setEnabled(True)
 
@@ -1306,7 +1286,7 @@ class MainWindow(QMainWindow):
             tries = self._con_tries[masteruri]
             if tries > 1:
                 con_err = '<span style=" color:red;">connection problems (%s tries)! </span>' % utf8(tries)
-        except:
+        except Exception:
             pass
         if self.__current_master_label_name != name:
             self.__current_master_label_name = name
@@ -1480,7 +1460,7 @@ class MainWindow(QMainWindow):
     def on_discover_network_clicked(self):
         try:
             self._discover_dialog.raise_()
-        except:
+        except Exception:
             mcast_group = rospy.get_param('/master_discovery/mcast_group', '226.0.0.0')
             self._discover_dialog = NetworkDiscoveryDialog(mcast_group, 11511, 100, self)
             self._discover_dialog.network_join_request.connect(self._join_network)
@@ -1719,7 +1699,7 @@ class MainWindow(QMainWindow):
                         args.extend(launchConfig.resolveArgs([''.join([p, ":='", v, "'"]) for p, v in params.items() if v]))
                     else:
                         return
-            except:
+            except Exception:
                 import traceback
                 rospy.logwarn('Error while load %s as default: %s' % (path, traceback.format_exc(1)))
             hostname = host if host else nm.nameres().address(master_proxy.masteruri)
@@ -1762,9 +1742,10 @@ class MainWindow(QMainWindow):
             else:
                 print "CREATE NEW EDITOR", grpc_path
                 editor = Editor([grpc_path], search_text)
-                self.editor_dialogs[grpc_path] = editor
-                editor.finished_signal.connect(self._editor_dialog_closed)
-                editor.show()
+                if editor.tabWidget.count() > 0:
+                    self.editor_dialogs[grpc_path] = editor
+                    editor.finished_signal.connect(self._editor_dialog_closed)
+                    editor.show()
 
     def _editor_dialog_closed(self, files):
         '''
@@ -1777,8 +1758,9 @@ class MainWindow(QMainWindow):
         '''
         Copies the selected file to a remote host
         :param file: A list with paths
-        :type file: list of strings
+        :type file: [str]
         '''
+        # TODO: use node manager daemon
         if files:
             host = 'localhost'
             username = nm.settings().default_user
@@ -2156,8 +2138,6 @@ class MainWindow(QMainWindow):
     def _new_color(self, color):
         bg_style = "QWidget#expert_tab { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
         self.expert_tab.setStyleSheet("%s" % (bg_style))
-        # bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
-        # self.launch_dock.setStyleSheet("%s" % (bg_style_launch_dock))
 
     def mastername_mouseDoubleClickEvent(self, event):
         '''

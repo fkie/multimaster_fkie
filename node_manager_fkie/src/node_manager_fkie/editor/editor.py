@@ -146,14 +146,14 @@ class Editor(QMainWindow):
         self.graph_view.load_signal.connect(self.on_graph_load_file)
         self.graph_view.goto_signal.connect(self.on_graph_goto)
         self.addDockWidget(Qt.RightDockWidgetArea, self.graph_view)
-        # open the files
-        for f in filenames:
-            if f:
-                self.on_load_request(f, search_text)
         self.readSettings()
         self.find_dialog.setVisible(False)
         self.graph_view.setVisible(False)
         nm.nmd().changed_file.connect(self.on_changed_file)
+        # open the files
+        for f in filenames:
+            if f:
+                self.on_load_request(f, search_text)
 
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
@@ -319,7 +319,7 @@ class Editor(QMainWindow):
         try:
             if filename not in self.files:
                 tab_name = self.__getTabName(filename)
-                editor = TextEdit(filename, self.tabWidget)
+                editor = TextEdit(filename)
                 linenumber_editor = LineNumberWidget(editor)
                 tab_index = 0
                 if insert_index > -1:
@@ -341,25 +341,27 @@ class Editor(QMainWindow):
                     if self.tabWidget.widget(i).filename == filename:
                         self.tabWidget.setCurrentIndex(i)
                         break
+            self.tabWidget.setUpdatesEnabled(True)
+            if search_text:
+                try:
+                    self._search_thread.stop()
+                    self._search_thread = None
+                except Exception:
+                    pass
+                # TODO: put all text of all tabs into path_text
+                self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True)
+                self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
+                self._search_thread.start()
+            if goto_line != -1:
+                self._goto(goto_line, True)
+            self.upperButton.setEnabled(self.tabWidget.count() > 1)
         except Exception as err:
             import traceback
             msg = "Error while open %s: %s" % (filename, traceback.format_exc(1))
             rospy.logwarn(msg)
             MessageBox.critical(self, "Error", utf8(err), msg)
-        self.tabWidget.setUpdatesEnabled(True)
-        if search_text:
-            try:
-                self._search_thread.stop()
-                self._search_thread = None
-            except Exception:
-                pass
-            # TODO: put all text of all tabs into path_text
-            self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True)
-            self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
-            self._search_thread.start()
-        if goto_line != -1:
-            self._goto(goto_line, True)
-        self.upperButton.setEnabled(self.tabWidget.count() > 1)
+            if self.tabWidget.count() == 0:
+                self.close()
 
     def on_graph_load_file(self, path, insert_after=True):
         insert_index = self.tabWidget.currentIndex() + 1

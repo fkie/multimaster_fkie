@@ -32,7 +32,7 @@
 
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QRegExp, Qt, Signal, QRect
-from python_qt_binding.QtGui import QImage, QKeySequence, QBrush, QPen
+from python_qt_binding.QtGui import QImage, QKeySequence  # , QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
 import os
@@ -40,7 +40,6 @@ import re
 import roslib
 import rospy
 import socket
-import sys
 import time
 import traceback
 import uuid
@@ -49,7 +48,7 @@ import xmlrpclib
 from master_discovery_fkie.common import get_hostname, masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
 from .launcher_threaded import LauncherThreaded
-from .common import get_packages, package_name, resolve_paths
+from .common import get_packages, package_name, resolve_paths, grpc_join
 from node_manager_daemon_fkie.common import get_nmd_url, utf8
 from .default_cfg_handler import DefaultConfigHandler
 from .detailed_msg_box import MessageBox, DetailedError
@@ -61,24 +60,24 @@ from .node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, CellI
 from .parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
 from .parameter_handler import ParameterHandler
 from .parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
-from .progress_queue import ProgressQueue, InteractionNeededError  # , ProgressThread
+from .progress_queue import ProgressQueue  # , InteractionNeededError, ProgressThread
 from .select_dialog import SelectDialog
 from .service_list_model import ServiceModel, ServiceItem
-from .start_handler import AdvRunCfg
+# from .start_handler import AdvRunCfg
 from .supervised_popen import SupervisedPopen
 from .topic_list_model import TopicModel, TopicItem
 import node_manager_fkie as nm
 try:
     from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
     from python_qt_binding.QtGui import QApplication, QVBoxLayout, QItemDelegate, QStyle
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QAction, QFileDialog, QMenu, QShortcut, QWidget
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QItemDelegate, QStyle
 
 
 try:
     from python_qt_binding.QtGui import QItemSelection, QItemSelectionModel, QItemSelectionRange, QSortFilterProxyModel
-except:
+except Exception:
     from python_qt_binding.QtCore import QItemSelection, QItemSelectionModel, QItemSelectionRange, QSortFilterProxyModel
 
 
@@ -137,7 +136,7 @@ class MasterViewProxy(QWidget):
         self.main_window = parent
         try:
             self.mastername = get_hostname(self.masteruri)
-        except:
+        except Exception:
             pass
 
         self._tmpObjects = []
@@ -152,7 +151,7 @@ class MasterViewProxy(QWidget):
         self.__in_question = []  # stores the changed files, until the user is interacted
 #    self.__uses_confgs = dict() # stores the decisions of the user for used configuration to start of node
         '''@ivar: stored the question dialogs for changed files '''
-        self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'master_discovery', 'master_sync', 'default_cfg', 'zeroconf']
+        self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'node_manager_daemon', 'master_discovery', 'master_sync', 'default_cfg', 'zeroconf']
         ''' @todo: detect the names of master_discovery and master_sync ndoes'''
 
         self.__echo_topics_dialogs = dict()  # [topic name] = EchoDialog
@@ -171,6 +170,8 @@ class MasterViewProxy(QWidget):
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
+        self._first_launch = True
+        self.default_load_launch = ''
         self.default_cfg_handler = DefaultConfigHandler()
         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
@@ -374,7 +375,7 @@ class MasterViewProxy(QWidget):
         for ps in self.__echo_topics_dialogs.values():
             try:
                 ps.terminate()
-            except:
+            except Exception:
                 pass
         print "  Master", self.masteruri, " is down!"
 
@@ -441,6 +442,17 @@ class MasterViewProxy(QWidget):
                     update_result[0].update(self.__master_info.node_names)
                     update_result[3].update(self.__master_info.topic_names)
                     update_result[6].update(self.__master_info.service_names)
+                nmd_node = self.__master_info.getNode('/node_manager_daemon')
+                if nmd_node is None or nmd_node.pid is None:
+                    # start node manager daemon if not already running
+                    host_addr = nm.nameres().address(self.masteruri)
+                    rospy.loginfo("start node manager daemon for %s", self.masteruri)
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   'start node_manager_daemon for %s' % host_addr,
+                                                   nm.starter().runNodeWithoutConfig,
+                                                   (nm.nameres().address(self.masteruri),
+                                                    'node_manager_daemon_fkie', 'node_manager_daemon', 'node_manager_daemon', [], self.masteruri, False, self.current_user))
+                    self._start_queue(self._progress_queue)
             else:
                 update_result = self.__master_info.updateInfo(master_info)
 #         print "MINFO", self.__master_info.listedState()
@@ -457,7 +469,7 @@ class MasterViewProxy(QWidget):
                 for host in hosts2update:
                     if host != get_hostname(self.masteruri):
                         self.updateHostRequest.emit(host)
-            except:
+            except Exception:
                 pass
 #      cputimes = os.times()
 #      cputime_init = cputimes[0] + cputimes[1]
@@ -479,7 +491,7 @@ class MasterViewProxy(QWidget):
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
-        except:
+        except Exception:
             print traceback.format_exc(1)
 
     def _start_queue(self, queue):
@@ -670,41 +682,13 @@ class MasterViewProxy(QWidget):
                 _, changed_nodes = nm.nmd().reload_launch(launchfile, masteruri=self.masteruri)
                 if self._progress_queue_prio.has_id(pqid):
                     self.loaded_config.emit(launchfile, changed_nodes)
-                #print "RESTART nodes:", path, changed_nodes
-            # TODO: set host
             else:
                 # nm.nmd().load_launch(launchfile, argv_forced)  CREATE DICT
                 nm.nmd().load_launch(launchfile, masteruri=self.masteruri, args=args_forced)
-            # test for required args
-#             launchConfig = LaunchConfig(launchfile, masteruri=self.masteruri)
-#             loaded = False
-#             # if the launch file currently open these args will be used
-#             if stored_argv is None:
-#                 if argv_forced:
-#                     # if the parameter already requested `argv_forced` is filled: load!
-#                     loaded = launchConfig.load(argv_forced)
-#                 else:
-#                     # get the list with needed launch args
-#                     req_args = launchConfig.getArgs()
-#                     if req_args:
-#                         params = dict()
-#                         arg_dict = launchConfig.argvToDict(req_args)
-#                         for arg in arg_dict.keys():
-#                             params[arg] = ('string', [arg_dict[arg]])
-#                         # request the args: the dialog must run in the main thread of Qt
-#                         req = LaunchArgsSelectionRequest(launchfile, params, 'Needs input for args')
-#                         raise nm.InteractionNeededError(req, self._load_launchfile, (launchfile,))
-#             # load the launch file with args of currently open launch file
-#             if not loaded or stored_argv is not None:
-#                 launchConfig.load(req_args if stored_argv is None else stored_argv)
-#             # update the names of the hosts stored in the launch file
-#             for _, machine in launchConfig.Roscfg.machines.items():  # _:=name
-#                 if machine.name:
-#                     nm.nameres().add_info(machine.name, machine.address)
             # do not load if the loadings process was canceled
             # TODO:
-            #if self._progress_queue_prio.has_id(pqid):
-                #self.loaded_config.emit(launchfile, launchConfig)
+            # if self._progress_queue_prio.has_id(pqid):
+                # self.loaded_config.emit(launchfile, launchConfig)
             print "LOADED", launchfile
             self._launcher_threaded.update_info(launchfile)
         except nm.LaunchArgsSelectionRequest as lasr:
@@ -714,7 +698,6 @@ class MasterViewProxy(QWidget):
             err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
             rospy.logwarn("Loading launch file: %s", err_details)
             raise DetailedError("Loading launch file", err_text, err_details)
-#      MessageBox.warning(self, "Loading launch file", err_text, err_details)
         except Exception:
             print traceback.format_exc()
 
@@ -762,8 +745,7 @@ class MasterViewProxy(QWidget):
                     host_addr = nm.nameres().address(host)
                     tooltip = self.node_tree_model.updateHostDescription(self.masteruri, host_addr, descr['type'], descr['name'], descr['description'])
                     self.host_description_updated.emit(self.masteruri, host_addr, tooltip)
-            except:
-                import traceback
+            except Exception:
                 print traceback.format_exc()
 
             # by this call the name of the host will be updated if a new one is defined in the launch file
@@ -857,9 +839,6 @@ class MasterViewProxy(QWidget):
             err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
             rospy.logwarn("Loading launch file: %s", err_details)
             MessageBox.warning(self, "Loading launch file", err_text, err_details)
-            import traceback
-            print traceback.format_exc(3)
-        except:
             print traceback.format_exc(3)
         self.update_robot_icon(True)
 
@@ -1130,7 +1109,19 @@ class MasterViewProxy(QWidget):
         :param launch_descriptions: a list with node_manager_daemon_fkie.launch_description.LaunchDescription
         :type launch_descriptions: [node_manager_daemon_fkie.launch_description.LaunchDescription]
         '''
-        # remove the current state
+        if self._first_launch:
+            self._first_launch = False
+            if self.default_load_launch:
+                lfile = grpc_join(get_nmd_url(self.masteruri), self.default_load_launch)
+                if os.path.isdir(self.default_load_launch):
+                    self.main_window.launch_dock.launchlist_model.set_path(lfile)
+                elif os.path.isfile(self.default_load_launch):
+                    self.main_window.launch_dock.launchlist_model.set_path(os.path.dirname(self.default_load_launch))
+                    self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
+                                                        'Loading %s' % os.path.basename(lfile),
+                                                        self._load_launchfile,
+                                                        (lfile, {}))
+                    self._start_queue(self._progress_queue)
         masteruri = self.masteruri
         host = get_hostname(masteruri)
         host_addr = nm.nameres().address(host)
@@ -1146,11 +1137,9 @@ class MasterViewProxy(QWidget):
             print "add MASTER", ld.masteruri, masteruri
             node_cfgs = dict()
             for n in ld.nodes:
-                print "  n", n, ld.path
                 node_cfgs[n] = ld.path
             self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
             new_configs[ld.path] = ld.nodes
-            print "ld.robot_descriptions for:", masteruri, host_addr, ld.path
             # update capabilities
             for rd in ld.robot_descriptions:
                 # add capabilities
@@ -1158,13 +1147,11 @@ class MasterViewProxy(QWidget):
                 for c in rd.capabilities:
                     if c.namespace not in caps:
                         caps[c.namespace] = dict()
-                    print "CAP:", c.namespace, utf8(c.name), "=", {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                     caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                 self.node_tree_model.addCapabilities(masteruri, host_addr, ld.path, caps)
                 # set host description
                 tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), resolve_paths(utf8(rd.robot_descr)))
                 self.host_description_updated.emit(masteruri, host_addr, tooltip)
-                print "SIGNAL"
                 self.capabilities_update_signal.emit(masteruri, host_addr, ld.path, ld.robot_descriptions)
             # set the robot_icon
             if ld.path in self.__robot_icons:
@@ -1252,26 +1239,21 @@ class MasterViewProxy(QWidget):
         Emits a Qt signal L{host_description_updated} to notify about a new host
         description and a Qt signal L{capabilities_update_signal} to notify about a capabilities
         update.
-        @param serveruri: the URI of the roslaunch server
-        @type serveruri: C{str}
-        @param pid: the process id of the roslaunch server
-        @type pid: C{str}
-        @param nodes: list with nodes handled by the roslaunch server
-        @type nodes: C{[L{str}]}
+        :param str serveruri: the URI of the roslaunch server
+        :param str pid: the process id of the roslaunch server
+        :param [str] nodes: list with nodes handled by the roslaunch server
         '''
         self.__launch_servers[serveruri] = (pid, nodes)
 
     def on_launch_server_err(self, serveruri, msg):
         '''
         Handles the error messages from launch server hanlder.
-        @param serveruri: the URI of the launch server
-        @type serveruri: C{str}
-        @param msg: the error message
-        @type msg: C{str}
+        :param str serveruri: the URI of the launch server
+        :param str msg: the error message
         '''
         try:
             del self.__launch_servers[serveruri]
-        except:
+        except Exception:
             pass
 
     def on_remove_all_launch_server(self):
@@ -1754,7 +1736,7 @@ class MasterViewProxy(QWidget):
                 text += '<dl><dt>%s</dt></dl>' % service_class._request_class.__slots__
                 text += '<b><u>Response:</u></b>'
                 text += '<dl><dt>%s</dt></dl>' % service_class._response_class.__slots__
-            except:
+            except Exception:
                 text += '<h4><font color=red>Unknown service type</font></h4>'
                 if service.isLocal:
                     text += '<font color=red>Unable to communicate with service, is provider node running?</font>'
@@ -2288,7 +2270,7 @@ class MasterViewProxy(QWidget):
                     socket.setdefaulttimeout(10)
                     rpc_node = xmlrpclib.ServerProxy(node.uri)
                     _, _, pid = rpc_node.getPid(rospy.get_name())  # _:=code, msg
-                except:
+                except Exception:
                     pass
                 finally:
                     socket.setdefaulttimeout(None)
@@ -2831,12 +2813,12 @@ class MasterViewProxy(QWidget):
                         i = 0
                         try:
                             i = int(rate)
-                        except:
+                        except Exception:
                             i = float(rate)
                         if i > 0:
                             opt_str = ''.join(['-r ', rate])
                             opt_name_suf = '__%sHz_' % (utf8(rate).replace('.', '_'))
-                    except:
+                    except Exception:
                         pass
                 # remove empty lists
                 topic_params = dict()
@@ -3057,7 +3039,7 @@ class MasterViewProxy(QWidget):
             for code, msg, parameter in r:
                 if code != 1:
                     rospy.logwarn("Error on delete parameter '%s': %s", parameter, msg)
-        except:
+        except Exception:
             rospy.logwarn("Error on delete parameter: %s", utf8(traceback.format_exc(1)))
             MessageBox.warning(self, "Warning",
                                'Error while delete a parameter to the ROS parameter server',

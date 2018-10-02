@@ -97,9 +97,6 @@ class TextEdit(QTextEdit):
                             QRegExp("\\bdefault=.*\$\(find\\b")]
         self.filename = filename
         self.file_mtime = 0
-        if self.filename:
-            _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
-            self.setText(unicode(file_content, "utf-8"))
 #             f = QFile(filename)
 #             if f.open(QIODevice.ReadOnly | QIODevice.Text):
 #                 self.file_info = QFileInfo(filename)
@@ -116,6 +113,10 @@ class TextEdit(QTextEdit):
         # variables for threaded search
         self._search_thread = None
         self._stop = False
+        if self.filename:
+            self.setText(unicode("", "utf-8"))
+            _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
+            self.setText(unicode(file_content, "utf-8"))
 
     def _document_position_changed(self):
         if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:

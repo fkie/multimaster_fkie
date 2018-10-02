@@ -34,10 +34,8 @@ from python_qt_binding.QtCore import QObject, Signal
 import threading
 import time
 
-import rospy
-
 import node_manager_fkie as nm
-from node_manager_fkie.common import grpc_join, grpc_url_from_path, utf8
+from node_manager_fkie.common import grpc_join, grpc_url_from_path
 
 
 class LauncherThreaded(QObject):
@@ -132,8 +130,6 @@ class GetInfoThread(QObject, threading.Thread):
                 launch_descriptions = nm.nmd().get_nodes(self._url, masteruri=self._masteruri)
                 for ld in launch_descriptions:
                     ld.path = grpc_join(self._url, ld.path)
-                    print "______ld.path:", ld.path
-                print "emit", launch_descriptions
                 self.update_signal.emit(self._url, launch_descriptions)
             except Exception as err:
                 # import traceback
