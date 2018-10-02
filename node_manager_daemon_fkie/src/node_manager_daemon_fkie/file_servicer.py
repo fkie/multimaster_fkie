@@ -175,6 +175,31 @@ class FileServicer(fms_grpc.FileServiceServicer):
             result.status.error_file = utf8(ioe.filename)
             yield result
 
+    def Rename(self, request, context):
+        result = fms.ReturnStatus()
+        try:
+            os.rename(request.old, request.new)
+            result.code = OK
+        except IOError as ioe:
+            result.code = IO_ERROR
+            if ioe.errno:
+                result.error_code = ioe.errno
+            result.error_msg = utf8(ioe.strerror)
+            result.error_file = utf8(request.old)
+        except OSError as ose:
+            import traceback
+            print(traceback.format_exc())
+            result.code = OS_ERROR
+            if ose.errno:
+                result.error_code = ose.errno
+            result.error_msg = utf8(ose.strerror)
+            result.error_file = utf8(request.old)
+        except Exception as err:
+            result.code = ERROR
+            result.error_msg = utf8(err)
+            result.error_file = utf8(request.old)
+        return result
+
     def ListPath(self, request, context):
 #        self._register_callback(context)
         result = fms.ListPathReply()

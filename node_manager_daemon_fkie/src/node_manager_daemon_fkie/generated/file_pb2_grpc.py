@@ -24,6 +24,11 @@ class FileServiceStub(object):
         request_serializer=file__pb2.SaveFileContentRequest.SerializeToString,
         response_deserializer=file__pb2.SaveFileContentReply.FromString,
         )
+    self.Rename = channel.unary_unary(
+        '/FileService/Rename',
+        request_serializer=file__pb2.RenameRequest.SerializeToString,
+        response_deserializer=file__pb2.ReturnStatus.FromString,
+        )
     self.ListPath = channel.unary_unary(
         '/FileService/ListPath',
         request_serializer=file__pb2.ListPathRequest.SerializeToString,
@@ -48,6 +53,13 @@ class FileServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def SaveFileContent(self, request_iterator, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def Rename(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -80,6 +92,11 @@ def add_FileServiceServicer_to_server(servicer, server):
           servicer.SaveFileContent,
           request_deserializer=file__pb2.SaveFileContentRequest.FromString,
           response_serializer=file__pb2.SaveFileContentReply.SerializeToString,
+      ),
+      'Rename': grpc.unary_unary_rpc_method_handler(
+          servicer.Rename,
+          request_deserializer=file__pb2.RenameRequest.FromString,
+          response_serializer=file__pb2.ReturnStatus.SerializeToString,
       ),
       'ListPath': grpc.unary_unary_rpc_method_handler(
           servicer.ListPath,

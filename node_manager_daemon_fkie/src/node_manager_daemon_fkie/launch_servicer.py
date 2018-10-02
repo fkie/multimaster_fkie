@@ -61,9 +61,8 @@ NODE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('NODE_NOT_FOUND')
 
 
 class CfgId(object):
-    
+
     def __init__(self, path, masteruri=''):
-        print "create cfgId;", path, masteruri
         self.path = path
         self.masteruri = masteruri
         self._local = False

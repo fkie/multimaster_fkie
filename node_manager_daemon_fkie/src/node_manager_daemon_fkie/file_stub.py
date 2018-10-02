@@ -117,3 +117,14 @@ class FileStub(object):
             elif response.status.code == ERROR:
                 raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
         return result
+
+    def rename(self, old, new):
+        response = self.fm_stub.Rename(fmsg.RenameRequest(old=old, new=new))
+        if response.code == OK:
+            pass
+        elif response.code == OS_ERROR:
+            raise OSError(response.error_code, response.error_msg, response.error_file)
+        elif response.code in [IO_ERROR]:
+            raise IOError(response.error_code, response.error_msg, response.error_file)
+        elif response.code == ERROR:
+            raise Exception("%s %s" % (response.error_msg, response.error_file))

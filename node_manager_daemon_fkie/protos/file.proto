@@ -36,6 +36,7 @@ syntax = "proto3";
 service FileService {
 	rpc GetFileContent (GetFileContentRequest) returns (stream GetFileContentReply);
 	rpc SaveFileContent (stream SaveFileContentRequest) returns (stream SaveFileContentReply);
+	rpc Rename (RenameRequest) returns (ReturnStatus);
 	rpc ListPath (ListPathRequest) returns (ListPathReply);
 	rpc ListPackages (ListPackagesRequest) returns (ListPackagesReply);
 }
@@ -60,6 +61,11 @@ message GetFileContentRequest {
 message GetFileContentReply {
 	ReturnStatus status = 1;
 	FileChunk file = 2;
+}
+
+message RenameRequest {
+	string old = 1;
+	string new = 2;
 }
 
 /** Request to save the file content.
