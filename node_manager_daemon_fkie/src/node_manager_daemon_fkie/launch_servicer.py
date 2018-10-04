@@ -67,9 +67,9 @@ class CfgId(object):
         self.masteruri = masteruri
         self._local = False
         if not masteruri:
-            self.masteruri = masteruri_from_master()
+            self.masteruri = masteruri_from_master(True)
             self._local = True
-        elif equal_uri(self.masteruri, masteruri_from_master()):
+        elif equal_uri(self.masteruri, masteruri_from_master(True)):
             self._local = True
 
     def __hash__(self, *args, **kwargs):
@@ -275,11 +275,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             requested_files = self._loaded_files.keys()
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
-            print("CFG:", cfgid.path)
             reply = lmsg.LaunchContent(launch_file=cfgid.path, masteruri=lc.masteruri, host=lc.host)
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
-                print("  :", node_fullname)
                 reply.node.append(node_fullname)
             # fill the robot description and node capability groups
             if request.request_description:
@@ -316,7 +314,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                                     cap.type = descr_dict['type']
                                     cap.images.extend(descr_dict['images'])
                                     cap.description = descr_dict['description']
-                                    print("    >", descr_dict['nodes'])
+#                                    print("    >", descr_dict['nodes'])
                                     cap.nodes.extend(descr_dict['nodes'])
                                     caps.append(cap)
                         rd.capabilities.extend(caps)
@@ -328,7 +326,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 
     def StartNode(self, request_iterator, context):
         for request in request_iterator:
-            print("start", request.name, request.masteruri)
             try:
                 result = lmsg.StartNodeReply(name=request.name)
                 launch_configs = []
@@ -373,7 +370,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 yield result
 
     def StartStandaloneNode(self, request, context):
-        print("start standalone", request.name)
         try:
             result = lmsg.StartNodeReply(name=request.name)
             startcfg = StartConfig(request.package, request.binary)

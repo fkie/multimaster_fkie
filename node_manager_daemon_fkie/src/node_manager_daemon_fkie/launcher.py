@@ -88,7 +88,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     if loglevel is not None:
         result.loglevel = loglevel
     # set masteruri and host config
-    result.masteruri = masteruri
+    result.masteruri = masteruri if masteruri or masteruri is None else None
     result.host = launchcfg.host
     # set args
     result.args = n.args.split()

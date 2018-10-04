@@ -94,6 +94,7 @@ message SaveFileContentReply {
  * :param size: size of the file in bytes.
  * :param offset: offset of data in this chunk.
  * :param data: file content.
+ * :param package: if package name is set the path is handled as relative to the package.
  */
 message FileChunk {
 	string path = 1;
@@ -101,6 +102,7 @@ message FileChunk {
 	uint64 size = 3;
 	uint64 offset = 4;
 	bytes data = 5;
+	string package = 6;
 }
 
 /** The acknowledge for received chunk.

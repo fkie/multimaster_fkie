@@ -74,16 +74,35 @@ class TestFileServiceServicer(unittest.TestCase):
     '''
     '''
 
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
-        self.test_get_content_path = "%s/content_test.txt" % os.getcwd()
         self.current_pose = 0
+        self.test_get_content_path = "%s/tmp_get_content_test.txt" % os.getcwd()
+        self.test_save_content_path = "%s/tmp_save_content_test.txt" % os.getcwd()
+        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % os.getcwd()
+        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % os.getcwd()
 
     def tearDown(self):
         try:
             os.remove(self.test_get_content_path)
         except Exception:
             pass
-        
+        try:
+            os.remove(self.test_save_content_path)
+        except Exception:
+            pass
+        try:
+            os.remove(self.test_rename_from_file)
+        except Exception:
+            pass
+        try:
+            os.remove(self.test_rename_to_file)
+        except Exception:
+            pass
+
     def test_list_path(self):
         fs = FileServicer()
         root_paths = set(os.getenv("ROS_PACKAGE_PATH").split(':'))
@@ -101,6 +120,10 @@ class TestFileServiceServicer(unittest.TestCase):
         launch_response = fs.ListPath(fmsg.ListPathRequest(path="/unknown"), DummyContext())
         self.assertEqual(0, len(launch_response.items), "list of invalid path returns more then 0 items")
         self.assertEqual(fmsg.ReturnStatus.StatusType.Value('OS_ERROR'), launch_response.status.code, "wrong status code if path not exists")
+
+    def test_list_packages(self):
+        fs = FileServicer()
+        pacakges_response = fs.ListPackages(fmsg.ListPackagesRequest(clear_ros_cache=True), DummyContext())
 
     def test_get_content(self):
         fs = FileServicer()
@@ -124,8 +147,9 @@ class TestFileServiceServicer(unittest.TestCase):
             received_data += resp.file.data
         self.assertEqual(len(received_data), len(test_data), "wrong returned length of data in file GetFileContentReply: %d, expected: %d" % (len(resp.file.data), len(test_data)))
         self.assertEqual(received_data, test_data, "wrong returned data in file GetFileContentReply: %s, expected: %s" % (resp.file.data, test_data))
+        os.remove(self.test_get_content_path)
 
-    def _read_from_list(self, test_data):
+    def _read_from_list(self, test_data, path):
         data_len = 0
         for l in test_data:
             data_len += len(l)
@@ -133,7 +157,7 @@ class TestFileServiceServicer(unittest.TestCase):
         for line in test_data:
             content = fmsg.SaveFileContentRequest()
             content.overwrite = True
-            content.file.path = self.test_get_content_path
+            content.file.path = path
             content.file.mtime = 0.0  # something not zero to update a not existing file
             content.file.size = data_len
             content.file.offset = self.current_pose
@@ -145,21 +169,23 @@ class TestFileServiceServicer(unittest.TestCase):
         fs = FileServicer()
         test_data = "This is a test file for save content test."
         content = fmsg.SaveFileContentRequest()
-        content.file.path = self.test_get_content_path
+        content.file.path = self.test_save_content_path
         content.file.mtime = 1.0  # something not zero to update a not existing file
         content.file.size = len(test_data);
         content.file.data = test_data;
         save_response = fs.SaveFileContent([content], DummyContext()).next()
-        self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('REMOVED_FILE'), "wrong status code if file was removed in meantime.")
+        self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('REMOVED_FILE'), "wrong status code '%d' if file was removed in meantime." % save_response.status.code)
         # save new file
         content.file.mtime = 0;
         save_response = fs.SaveFileContent([content], DummyContext()).next()
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "new file was not saved")
-        self.assertTrue(os.path.exists(self.test_get_content_path), "new file was not saved to %s" % self.test_get_content_path)
-        self.assertNotEqual(save_response.ack.mtime, os.path.getmtime(self.test_get_content_path), "wrong mtime returned after create a new file")
+        self.assertTrue(os.path.exists(self.test_save_content_path), "new file was not saved to %s" % self.test_save_content_path)
+        self.assertEqual(save_response.ack.mtime, os.path.getmtime(self.test_save_content_path), "wrong mtime returned after create a new file")
+        # sleep to change the mtime in file
+        time.sleep(0.3)
         # change file in meantime
         new_utime = time.time()
-        os.utime(self.test_get_content_path, (new_utime, new_utime))
+        os.utime(self.test_save_content_path, (new_utime, new_utime))
         new_test_data = "This is a changed text for save content test."
         content.file.mtime = save_response.ack.mtime
         content.file.size = len(new_test_data)
@@ -170,8 +196,8 @@ class TestFileServiceServicer(unittest.TestCase):
         content.overwrite = True
         save_response = fs.SaveFileContent([content], DummyContext()).next()
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten")
-        self.assertNotEqual(save_response.ack.mtime, os.path.getmtime(self.test_get_content_path), "wrong mtime returned after overwrite file")
-        with open(self.test_get_content_path, 'r') as outfile:
+        self.assertEqual(save_response.ack.mtime, os.path.getmtime(self.test_save_content_path), "wrong mtime returned after overwrite file")
+        with open(self.test_save_content_path, 'r') as outfile:
             self.assertEqual(new_test_data, outfile.read(), "wrong content in file")
         # try to save in root folder
         content.file.path = '/content_test.txt'
@@ -180,11 +206,29 @@ class TestFileServiceServicer(unittest.TestCase):
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), "save in root folder returns a wrong result: %d, expected: %d" % (save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR')))
         # save file in more chunks
         test_data = ["First line.\n", "Second line.\n", "Third line.\n"]
-        for resp in fs.SaveFileContent(self._read_from_list(test_data), DummyContext()):
+        for resp in fs.SaveFileContent(self._read_from_list(test_data, self.test_save_content_path), DummyContext()):
             self.assertEqual(resp.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten")
             self.assertEqual(resp.ack.size, self.current_pose, "incorrect transferred file size: %d, expected: %d" % (resp.ack.size, self.current_pose))
-        with open(self.test_get_content_path, 'r') as outfile:
+        with open(self.test_save_content_path, 'r') as outfile:
             self.assertEqual(str(test_data), str(outfile.readlines()), "wrong content in file")
+
+    def test_rename_file(self):
+        with open(self.test_rename_from_file, 'w') as testfile:
+            testfile.write('test content for file which will be renamed')
+        fs = FileServicer()
+        # test rename of not existing file
+        rename_request = fmsg.RenameRequest()
+        rename_request.old = self.test_rename_to_file
+        rename_request.new = self.test_rename_from_file
+        rename_response = fs.Rename(rename_request, DummyContext())
+        self.assertEqual(rename_response.code, fmsg.ReturnStatus.StatusType.Value('OS_ERROR'), "rename of not existing file returns a wrong result error: %d, expected: %d" % (rename_response.code, fmsg.ReturnStatus.StatusType.Value('OS_ERROR')))
+        # test rename
+        rename_request = fmsg.RenameRequest()
+        rename_request.old = self.test_rename_from_file
+        rename_request.new = self.test_rename_to_file
+        rename_response = fs.Rename(rename_request, DummyContext())
+        if not os.path.exists(self.test_rename_to_file):
+            self.fail("After `rename` the target file does not exists")
 
 
 if __name__ == '__main__':

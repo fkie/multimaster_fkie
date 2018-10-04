@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import math
 import os
 import unittest
 import time
@@ -49,18 +50,39 @@ class TestGrpcServer(unittest.TestCase):
     '''
     '''
 
+    server = GrpcServer()
+
+    @classmethod
+    def setUpClass(cls):
+        cls.server.start('localhost:12311')
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+
     def setUp(self):
-        self.server = GrpcServer()
-        self.server.start('[::]:12311')
         url = 'localhost:12311'
         channel = remote.get_insecure_channel(url)
         self.fs = fstub.FileStub(channel)
         self.ls = lstub.LaunchStub(channel)
         self.test_include_file = "%s/resources/include_dummy.launch" % os.getcwd()
+        self.test_save_file = "%s/tmp_save_dummy.launch" % os.getcwd()
+        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % os.getcwd()
+        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % os.getcwd()
 
     def tearDown(self):
-        #self.server.shutdown()
-        pass
+        try:
+            os.remove(self.test_save_file)
+        except Exception:
+            pass
+        try:
+            os.remove(self.test_rename_from_file)
+        except Exception:
+            pass
+        try:
+            os.remove(self.test_rename_to_file)
+        except Exception:
+            pass
 
     def test_list_path(self):
         rpp = os.environ['ROS_PACKAGE_PATH'].split(':')
@@ -96,21 +118,20 @@ class TestGrpcServer(unittest.TestCase):
 
     def test_get_included_files(self):
         path = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
-        file_list = self.ls.get_included_path(path, recursive=True, unique=True, include_pattern=[])
+        file_list = self.ls.get_included_files_unique(path, recursive=True, include_pattern=[])
 #        for linenr, path, exists, file_list in inc_files:
         self.assertEqual(len(file_list), 4, "Count of unique included, recursive files is wrong, got: %d, expected: %d" % (len(file_list), 4))
-        file_list = self.ls.get_included_path(path, recursive=False, unique=True, include_pattern=[])
+        file_list = self.ls.get_included_files_unique(path, recursive=False, include_pattern=[])
         self.assertEqual(len(file_list), 3, "Count of unique included files while not recursive search is wrong, got: %d, expected: %d" % (len(file_list), 3))
-        file_list = self.ls.get_included_path(path, recursive=False, unique=False, include_pattern=[])
+        file_list = self.ls.get_included_files(path, recursive=False, include_pattern=[])
         self.assertEqual(len(file_list), 6, "Count of recursive, not unique included files is wrong, expected: %d, got: %d" % (len(file_list), 6))
-        file_list = self.ls.get_included_path(path, recursive=True, unique=False, include_pattern=[])
+        file_list = self.ls.get_included_files(path, recursive=True, include_pattern=[])
         self.assertEqual(len(file_list), 6, "Count of included files in root file is wrong, expected: %d, got: %d" % (len(file_list), 6))
         self.assertEqual(self._count_all_includes(file_list), 10, "Count of recursive included files is wrong, expected: %d, got: %d" % (self._count_all_includes(file_list), 10))
         self.assertEqual(file_list[0][0], 6, "Wrong line number of first included file, expected: %d, got: %d" % (file_list[0][0], 6))
         #self.assertEqual(file_list[0][1], file_list[0][3][0][1], "Wrong root path of second included file, expected: %s, got: %s" % (file_list[0][1], file_list[0][3][0][1]))
         self.assertEqual(file_list[1][0], 9, "Wrong line number of second included file, expected: %d, got: %d" % (file_list[1][0], 9))
         self.assertEqual(file_list[2][0], 10, "Wrong line number of third included file, expected: %d, got: %d" % (file_list[2][0], 10))
-
 
     def test_load_launch(self):
         args = {}
@@ -131,6 +152,9 @@ class TestGrpcServer(unittest.TestCase):
         try:
             launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
             self.fail("`load_launch` did not raises `exceptions.ParamSelectionRequest` on args requests")
+        except exceptions.AlreadyOpenException as aoe:
+            # it is already open from other tests
+            return
         except exceptions.ParamSelectionRequest as psr:
             request_args = False
             args = psr.choices
@@ -150,6 +174,16 @@ class TestGrpcServer(unittest.TestCase):
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on second reload, got: %s, expected: `exceptions.AlreadyOpenException`: %s" % (type(err), err))
 
+    def test_get_nodes(self):
+        self.test_load_launch()
+        result = self.ls.get_nodes()
+        self.assertEqual(len(result), 1, "wrong count of descriptions in get_nodes, got: %d, expected: %d" % (len(result), 1))
+        self.assertEqual(len(result[0].nodes), 15, "wrong count of nodes in get_nodes, got: %d, expected: %d" % (len(result[0].nodes), 15))
+        self.assertEqual(len(result[0].robot_descriptions), 0, "wrong count of robot descriptions in get_nodes, got: %d, expected: %d" % (len(result[0].robot_descriptions), 0))
+        # get robot descriptions
+        result = self.ls.get_nodes(request_description=True)
+        self.assertEqual(len(result[0].robot_descriptions), 2, "wrong count of robot descriptions in get_nodes, got: %d, expected: %d" % (len(result[0].robot_descriptions), 2))
+
     def test_reload_launch(self):
         path = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
         try:
@@ -160,7 +194,27 @@ class TestGrpcServer(unittest.TestCase):
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on reload launch file, got: %s, expected: `exceptions.ResourceNotFoundt`: %s" % (type(err), err))
 
+    def test_save_file_content(self):
+        content = "This is a temporary content to test the save functionality"
+        self.fs.FILE_CHUNK_SIZE = 3
+        acks_expected_count = math.ceil(float(len(content)) / float(self.fs.FILE_CHUNK_SIZE))
+        acks = self.fs.save_file_content(self.test_save_file, content, 0)
+        self.assertEqual(len(acks), acks_expected_count, "wrong returned count of acks, got: %d, expected: %d" % (len(acks), acks_expected_count))
+        file_size, file_mtime, file_content = self.fs.get_file_content(self.test_save_file)
+        self.assertEqual(file_size, len(content), "wrong size of saved file, got: %d, expected: %d" % (file_size, len(content)))
+        self.assertEqual(file_content, content, "wrong content of saved file, got: '%s', expected: '%s'" % (file_content, content))
+
+    def test_rename_file(self):
+        with open(self.test_rename_from_file, 'w') as testfile:
+            testfile.write('test content for file which will be renamed')
+        self.fs.rename(self.test_rename_from_file, self.test_rename_to_file)
+        if not os.path.exists(self.test_rename_to_file):
+            self.fail("After `rename` the target file does not exists")
+
+    def test_run_node(self):
+        self.test_load_launch()
+        self.ls.start_node('/example/gps')
+
 if __name__ == '__main__':
     import rosunit
     rosunit.unitrun(PKG, os.path.basename(__file__), TestGrpcServer)
-

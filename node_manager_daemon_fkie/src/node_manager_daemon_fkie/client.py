@@ -36,9 +36,9 @@ import grpc
 import rospy
 
 import exceptions
-import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
+# import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
 import remote
-from .file_client_servicer import FileClientServicer
+# from .file_client_servicer import FileClientServicer
 import file_stub as fstub
 import launch_stub as lstub
 
@@ -54,7 +54,7 @@ class GrpcClient:
         self.url = url
         rospy.loginfo("Start grpc server on %s" % url)
         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        fgrpc.add_FileClientServiceServicer_to_server(FileClientServicer(), self.grpc_server)
+        # fgrpc.add_FileClientServiceServicer_to_server(FileClientServicer(), self.grpc_server)
         self.grpc_server.add_insecure_port(url)
         self.grpc_server.start()
 

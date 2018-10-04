@@ -39,7 +39,7 @@ from grpc.beta._metadata import beta
 from node_manager_daemon_fkie.common import interpret_path
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
 from node_manager_daemon_fkie.launch_servicer import LaunchServicer
-from node_manager_daemon_fkie.robot_description import RobotDescription, Capability
+from node_manager_daemon_fkie.launch_description import RobotDescription, Capability
 
 PKG = 'node_manager_daemon_fkie'
 

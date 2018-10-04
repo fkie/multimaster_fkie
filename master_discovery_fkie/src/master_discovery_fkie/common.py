@@ -111,7 +111,7 @@ def masteruri_from_ros():
         return os.environ['ROS_MASTER_URI']
 
 
-def masteruri_from_master():
+def masteruri_from_master(from_env_on_error=False):
     '''
     Requests the ROS master URI from the ROS master through the RPC interface and
     returns it. The 'materuri' attribute will be set to the requested value.
@@ -120,13 +120,19 @@ def masteruri_from_master():
     '''
     global MASTERURI
     result = MASTERURI
-    if MASTERURI is None:
-        masteruri = masteruri_from_ros()
-        result = masteruri
-        master = xmlrpclib.ServerProxy(masteruri)
-        code, _, MASTERURI = master.getUri(rospy.get_name())
-        if code == 1:
-            result = MASTERURI
+    try:
+        if MASTERURI is None:
+            masteruri = masteruri_from_ros()
+            result = masteruri
+            master = xmlrpclib.ServerProxy(masteruri)
+            code, _, MASTERURI = master.getUri(rospy.get_name())
+            if code == 1:
+                result = MASTERURI
+    except Exception as err:
+        if from_env_on_error:
+            result = masteruri_from_ros()
+        else:
+            raise err
     return result
 
 
@@ -221,17 +227,25 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
             for item in data[param]:
                 _parse_value(item, mastername, def_list)
     else:  # reads the patterns from the ROS parameter server
-        rp = rospy.get_param('~%s' % param, [])
+        rp = get_ros_param('~%s' % param, [])
         _parse_value(rp, mastername, def_list)
         # reads the mastername specific parameters
         if mastername:
-            rph = rospy.get_param('~%s' % roslib.names.ns_join(mastername, param), [])
+            rph = get_ros_param('~%s' % roslib.names.ns_join(mastername, param), [])
             if isinstance(rp, list):
                 def_list[len(def_list):] = rph
             else:
                 def_list.append(rph)
     def_list = list(set(def_list))
     return gen_pattern(def_list, param, print_info=True, mastername=mastername)
+
+
+def get_ros_param(name, default):
+    try:
+        return rospy.get_param(name, default)
+    except Exception:
+        pass
+    return default
 
 
 def _parse_value(value, mastername, def_list):

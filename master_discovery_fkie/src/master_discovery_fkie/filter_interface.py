@@ -35,7 +35,7 @@ import re
 import rospy
 
 from .common import create_pattern, gen_pattern, is_empty_pattern, EMPTY_PATTERN
-from .common import resolve_url, read_interface
+from .common import get_ros_param, resolve_url, read_interface
 
 
 class FilterInterface(object):
@@ -65,7 +65,7 @@ class FilterInterface(object):
         '''
         Reads the parameter and creates the pattern using :mod:`master_discovery_fkie.common.create_pattern()`
         '''
-        self.__interface_file = interface_file = resolve_url(rospy.get_param('~interface_url', ''))
+        self.__interface_file = interface_file = resolve_url(get_ros_param('~interface_url', ''))
         self.__mastername = mastername
         self.__data = data = read_interface(interface_file) if interface_file else {}
         # set the pattern for ignore and sync lists
@@ -91,8 +91,8 @@ class FilterInterface(object):
         if interface_file:
             if 'sync_remote_nodes' in data:
                 self._sync_remote_nodes = data['sync_remote_nodes']
-        elif rospy.has_param('~sync_remote_nodes'):
-            self._sync_remote_nodes = rospy.get_param('~sync_remote_nodes')
+        else:
+            self._sync_remote_nodes = get_ros_param('~sync_remote_nodes', self._sync_remote_nodes)
         if do_not_sync:
             self._re_do_not_sync = gen_pattern(do_not_sync, 'do_not_sync')
         else:
@@ -100,7 +100,7 @@ class FilterInterface(object):
         self.is_valid = True
 
     def read_do_not_sync(self):
-        _do_not_sync = rospy.get_param('do_not_sync', [])
+        _do_not_sync = get_ros_param('do_not_sync', [])
         if isinstance(_do_not_sync, (str, unicode)):
             # create a list from string
             _do_not_sync = _do_not_sync.strip('[').rstrip(']').replace(' ', ',').split(',')

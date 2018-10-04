@@ -63,7 +63,10 @@ class GrpcServer:
 #         print("port: ", self.server.add_secure_port(url, server_credentials))
         insecure_port = self.server.add_insecure_port(url)
         if insecure_port == 0:
-            raise Exception("Can not add insecure channel!")
+            raise Exception("Can not add insecure channel to '%s'!" % url)
         fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
         lgrpc.add_LaunchServiceServicer_to_server(LaunchServicer(), self.server)
         self.server.start()
+
+    def shutdown(self):
+        self.server.stop(3)

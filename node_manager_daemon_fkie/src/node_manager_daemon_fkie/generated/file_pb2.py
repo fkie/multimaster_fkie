@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\nfile.proto\"\x07\n\x05\x45mpty\"%\n\x15GetFileContentRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"N\n\x13GetFileContentReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x18\n\x04\x66ile\x18\x02 \x01(\x0b\x32\n.FileChunk\")\n\rRenameRequest\x12\x0b\n\x03old\x18\x01 \x01(\t\x12\x0b\n\x03new\x18\x02 \x01(\t\"E\n\x16SaveFileContentRequest\x12\x11\n\toverwrite\x18\x01 \x01(\x08\x12\x18\n\x04\x66ile\x18\x02 \x01(\x0b\x32\n.FileChunk\"Q\n\x14SaveFileContentReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x1a\n\x03\x61\x63k\x18\x02 \x01(\x0b\x32\r.FileChunkAck\"T\n\tFileChunk\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12\x0e\n\x06offset\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\"9\n\x0c\x46ileChunkAck\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x0c\n\x04size\x18\x04 \x01(\x04\"\x1f\n\x0fListPathRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"U\n\rListPathReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x17\n\x05items\x18\x03 \x03(\x0b\x32\x08.PathObj\"\x8e\x01\n\x07PathObj\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12\x1f\n\x04type\x18\x04 \x01(\x0e\x32\x11.PathObj.PathType\"7\n\x08PathType\x12\x08\n\x04\x46ILE\x10\x00\x12\x07\n\x03\x44IR\x10\x01\x12\x0b\n\x07SYMLINK\x10\x02\x12\x0b\n\x07PACKAGE\x10\x03\"6\n\x0b\x43hangedFile\x12\x0f\n\x07\x64\x65leted\x18\x01 \x01(\x08\x12\x16\n\x04item\x18\x02 \x01(\x0b\x32\x08.PathObj\"\xb8\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x12\n\nerror_code\x18\x02 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\x12\x12\n\nerror_file\x18\x04 \x01(\t\"_\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x0c\n\x08IO_ERROR\x10\x02\x12\x0c\n\x08OS_ERROR\x10\x03\x12\x10\n\x0c\x43HANGED_FILE\x10\x04\x12\x10\n\x0cREMOVED_FILE\x10\x05\".\n\x13ListPackagesRequest\x12\x17\n\x0f\x63lear_ros_cache\x18\x01 \x01(\x08\"N\n\x11ListPackagesReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x1a\n\x05items\x18\x02 \x03(\x0b\x32\x0b.PackageObj\"(\n\nPackageObj\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t2\xa7\x02\n\x0b\x46ileService\x12@\n\x0eGetFileContent\x12\x16.GetFileContentRequest\x1a\x14.GetFileContentReply0\x01\x12\x45\n\x0fSaveFileContent\x12\x17.SaveFileContentRequest\x1a\x15.SaveFileContentReply(\x01\x30\x01\x12\'\n\x06Rename\x12\x0e.RenameRequest\x1a\r.ReturnStatus\x12,\n\x08ListPath\x12\x10.ListPathRequest\x1a\x0e.ListPathReply\x12\x38\n\x0cListPackages\x12\x14.ListPackagesRequest\x1a\x12.ListPackagesReply29\n\x11\x46ileClientService\x12$\n\nFileChange\x12\x0c.ChangedFile\x1a\x06.Empty(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\nfile.proto\"\x07\n\x05\x45mpty\"%\n\x15GetFileContentRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"N\n\x13GetFileContentReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x18\n\x04\x66ile\x18\x02 \x01(\x0b\x32\n.FileChunk\")\n\rRenameRequest\x12\x0b\n\x03old\x18\x01 \x01(\t\x12\x0b\n\x03new\x18\x02 \x01(\t\"E\n\x16SaveFileContentRequest\x12\x11\n\toverwrite\x18\x01 \x01(\x08\x12\x18\n\x04\x66ile\x18\x02 \x01(\x0b\x32\n.FileChunk\"Q\n\x14SaveFileContentReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x1a\n\x03\x61\x63k\x18\x02 \x01(\x0b\x32\r.FileChunkAck\"e\n\tFileChunk\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12\x0e\n\x06offset\x18\x04 \x01(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\x0c\x12\x0f\n\x07package\x18\x06 \x01(\t\"9\n\x0c\x46ileChunkAck\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x0c\n\x04size\x18\x04 \x01(\x04\"\x1f\n\x0fListPathRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"U\n\rListPathReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x17\n\x05items\x18\x03 \x03(\x0b\x32\x08.PathObj\"\x8e\x01\n\x07PathObj\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12\x1f\n\x04type\x18\x04 \x01(\x0e\x32\x11.PathObj.PathType\"7\n\x08PathType\x12\x08\n\x04\x46ILE\x10\x00\x12\x07\n\x03\x44IR\x10\x01\x12\x0b\n\x07SYMLINK\x10\x02\x12\x0b\n\x07PACKAGE\x10\x03\"6\n\x0b\x43hangedFile\x12\x0f\n\x07\x64\x65leted\x18\x01 \x01(\x08\x12\x16\n\x04item\x18\x02 \x01(\x0b\x32\x08.PathObj\"\xb8\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x12\n\nerror_code\x18\x02 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\x12\x12\n\nerror_file\x18\x04 \x01(\t\"_\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x0c\n\x08IO_ERROR\x10\x02\x12\x0c\n\x08OS_ERROR\x10\x03\x12\x10\n\x0c\x43HANGED_FILE\x10\x04\x12\x10\n\x0cREMOVED_FILE\x10\x05\".\n\x13ListPackagesRequest\x12\x17\n\x0f\x63lear_ros_cache\x18\x01 \x01(\x08\"N\n\x11ListPackagesReply\x12\x1d\n\x06status\x18\x01 \x01(\x0b\x32\r.ReturnStatus\x12\x1a\n\x05items\x18\x02 \x03(\x0b\x32\x0b.PackageObj\"(\n\nPackageObj\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t2\xa7\x02\n\x0b\x46ileService\x12@\n\x0eGetFileContent\x12\x16.GetFileContentRequest\x1a\x14.GetFileContentReply0\x01\x12\x45\n\x0fSaveFileContent\x12\x17.SaveFileContentRequest\x1a\x15.SaveFileContentReply(\x01\x30\x01\x12\'\n\x06Rename\x12\x0e.RenameRequest\x1a\r.ReturnStatus\x12,\n\x08ListPath\x12\x10.ListPathRequest\x1a\x0e.ListPathReply\x12\x38\n\x0cListPackages\x12\x14.ListPackagesRequest\x1a\x12.ListPackagesReply29\n\x11\x46ileClientService\x12$\n\nFileChange\x12\x0c.ChangedFile\x1a\x06.Empty(\x01\x62\x06proto3')
 )
 
 
@@ -49,8 +49,8 @@ _PATHOBJ_PATHTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=692,
-  serialized_end=747,
+  serialized_start=709,
+  serialized_end=764,
 )
 _sym_db.RegisterEnumDescriptor(_PATHOBJ_PATHTYPE)
 
@@ -87,8 +87,8 @@ _RETURNSTATUS_STATUSTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=895,
-  serialized_end=990,
+  serialized_start=912,
+  serialized_end=1007,
 )
 _sym_db.RegisterEnumDescriptor(_RETURNSTATUS_STATUSTYPE)
 
@@ -342,6 +342,13 @@ _FILECHUNK = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='package', full_name='FileChunk.package', index=5,
+      number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -355,7 +362,7 @@ _FILECHUNK = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=339,
-  serialized_end=423,
+  serialized_end=440,
 )
 
 
@@ -399,8 +406,8 @@ _FILECHUNKACK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=425,
-  serialized_end=482,
+  serialized_start=442,
+  serialized_end=499,
 )
 
 
@@ -430,8 +437,8 @@ _LISTPATHREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=484,
-  serialized_end=515,
+  serialized_start=501,
+  serialized_end=532,
 )
 
 
@@ -475,8 +482,8 @@ _LISTPATHREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=517,
-  serialized_end=602,
+  serialized_start=534,
+  serialized_end=619,
 )
 
 
@@ -528,8 +535,8 @@ _PATHOBJ = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=605,
-  serialized_end=747,
+  serialized_start=622,
+  serialized_end=764,
 )
 
 
@@ -566,8 +573,8 @@ _CHANGEDFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=749,
-  serialized_end=803,
+  serialized_start=766,
+  serialized_end=820,
 )
 
 
@@ -619,8 +626,8 @@ _RETURNSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=806,
-  serialized_end=990,
+  serialized_start=823,
+  serialized_end=1007,
 )
 
 
@@ -650,8 +657,8 @@ _LISTPACKAGESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=992,
-  serialized_end=1038,
+  serialized_start=1009,
+  serialized_end=1055,
 )
 
 
@@ -688,8 +695,8 @@ _LISTPACKAGESREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1040,
-  serialized_end=1118,
+  serialized_start=1057,
+  serialized_end=1135,
 )
 
 
@@ -726,8 +733,8 @@ _PACKAGEOBJ = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1120,
-  serialized_end=1160,
+  serialized_start=1137,
+  serialized_end=1177,
 )
 
 _GETFILECONTENTREPLY.fields_by_name['status'].message_type = _RETURNSTATUS
@@ -881,8 +888,8 @@ _FILESERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=1163,
-  serialized_end=1458,
+  serialized_start=1180,
+  serialized_end=1475,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetFileContent',
@@ -941,8 +948,8 @@ _FILECLIENTSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   serialized_options=None,
-  serialized_start=1460,
-  serialized_end=1517,
+  serialized_start=1477,
+  serialized_end=1534,
   methods=[
   _descriptor.MethodDescriptor(
     name='FileChange',

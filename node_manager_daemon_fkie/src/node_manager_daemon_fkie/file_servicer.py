@@ -69,7 +69,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
 
 #     def _terminated(self):
 #         rospy.loginfo("terminated context")
-# 
+#
 #     def _register_callback(self, context):
 #         if (context.peer() not in self._peers):
 #             rospy.loginfo("Add callback to peer context @%s" % context.peer())
@@ -78,7 +78,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
 #                 # self._peers[context.peer()] = context
 
     def GetFileContent(self, request, context):
-#        self._register_callback(context)
         result = fms.GetFileContentReply()
         try:
             with open(request.path, 'r') as outfile:
@@ -105,7 +104,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
             yield result
 
     def SaveFileContent(self, request_iterator, context):
-#        self._register_callback(context)
         try:
             path = ''
             dest_size = 0
@@ -180,15 +178,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
         try:
             os.rename(request.old, request.new)
             result.code = OK
-        except IOError as ioe:
-            result.code = IO_ERROR
-            if ioe.errno:
-                result.error_code = ioe.errno
-            result.error_msg = utf8(ioe.strerror)
-            result.error_file = utf8(request.old)
         except OSError as ose:
-            import traceback
-            print(traceback.format_exc())
             result.code = OS_ERROR
             if ose.errno:
                 result.error_code = ose.errno
@@ -201,7 +191,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
         return result
 
     def ListPath(self, request, context):
-#        self._register_callback(context)
         result = fms.ListPathReply()
         result.path = request.path
         path_list = []
@@ -213,7 +202,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
         else:
             try:
                 # list the path
-                print("list path", request.path)
                 dirlist = os.listdir(request.path)
                 for cfile in dirlist:
                     path = os.path.normpath('%s%s%s' % (request.path, os.path.sep, cfile))
@@ -234,8 +222,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         except Exception as _:
                             pass
             except OSError as ose:
-                import traceback
-                print(traceback.format_exc())
+                # import traceback
+                # print(traceback.format_exc())
                 result.status.code = OS_ERROR
                 if ose.errno:
                     result.status.error_code = ose.errno
