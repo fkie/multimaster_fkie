@@ -41,9 +41,9 @@ import threading
 # import node_manager_fkie as nm
 
 import node_manager_daemon_fkie.exceptions as exceptions
-import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
+#import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
 import node_manager_daemon_fkie.remote as remote
-from node_manager_daemon_fkie.file_client_servicer import FileClientServicer
+#from node_manager_daemon_fkie.file_client_servicer import FileClientServicer
 import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
 from .common import grpc_join, grpc_split_url, utf8
@@ -93,8 +93,8 @@ class NmdClient(QObject):
 
     def __init__(self):
         QObject.__init__(self)
-        self.url = None
-        self.grpc_server = None
+#        self.url = None
+#        self.grpc_server = None
         self._channels = {}
         self._cache_file_content = {}
         self._cache_file_includes = {}
@@ -148,13 +148,13 @@ class NmdClient(QObject):
     def get_packages(self):
         return self._cache_packages
 
-    def start(self, url='[::]:12322'):
-        self.url = url
-        rospy.loginfo("Start grpc server on %s" % url)
-        self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        fgrpc.add_FileClientServiceServicer_to_server(FileClientServicer(), self.grpc_server)
-        self.grpc_server.add_insecure_port(url)
-        self.grpc_server.start()
+#     def start(self, url='[::]:12322'):
+#         self.url = url
+#         rospy.loginfo("Start grpc server on %s" % url)
+#         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+#         # fgrpc.add_FileClientServiceServicer_to_server(FileClientServicer(), self.grpc_server)
+#         self.grpc_server.add_insecure_port(url)
+#         self.grpc_server.start()
 
     def get_file_manager(self, url='localhost:12321'):
         channel = remote.get_insecure_channel(url)
