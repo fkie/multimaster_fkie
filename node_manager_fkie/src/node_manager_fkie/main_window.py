@@ -1762,7 +1762,6 @@ class MainWindow(QMainWindow):
         # TODO: use node manager daemon
         if files:
             nmd_url = get_nmd_url()
-            username = nm.settings().default_user
             if self.currentMaster is not None:
                 nmd_url = get_hostname(self.currentMaster.masteruri)
             params = {'master': ('string', self.currentMaster.masteruri),

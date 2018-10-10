@@ -240,7 +240,7 @@ def interpret_path(path, pwd='.'):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]
             if pkg_name:
-                pkg = _get_pkg_path(pkg_name)
+                pkg = get_pkg_path(pkg_name)
                 path_suffix = path[groups.end():]
                 if path_suffix.startswith('/'):
                     paths = roslib.packages.find_resource(pkg_name, path_suffix.strip(os.path.sep))
