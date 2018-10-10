@@ -589,7 +589,7 @@ class LaunchListModel(QStandardItemModel):
                     self._current_path = grpc_join(surl, dir_path)
             elif self._current_path != path:
                 self._current_path = path
-        self._add_path(self._current_path, PathItem.ROOT, 0, 0, '')
+        self._add_path(self._current_path, PathItem.ROOT, 0, 0, 'loading...')
         nm.nmd().list_path_threaded(self._current_path, clear_cache)
         print "current_path_end", self._current_path
 #         else:
