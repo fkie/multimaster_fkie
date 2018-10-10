@@ -183,24 +183,27 @@ def package_name(path):
     :return: Returns for given directory a tuple of package name and package path.
     :rtype: tuple(str, str) or tuple(None, None)
     '''
-    if not (path is None) and path and path != os.path.sep and os.path.isdir(path):
-        if path in PACKAGE_CACHE:
-            return PACKAGE_CACHE[path]
-        package = os.path.basename(path)
-        fileList = os.listdir(path)
+    if path is not None and path and path != os.path.sep:
+        dir_path = path
+        if not os.path.isdir(dir_path):
+            dir_path = os.path.dirname(dir_path)
+        if dir_path in PACKAGE_CACHE:
+            return PACKAGE_CACHE[dir_path]
+        package = os.path.basename(dir_path)
+        fileList = os.listdir(dir_path)
         for f in fileList:
             if f == MANIFEST_FILE:
-                PACKAGE_CACHE[path] = (package, path)
-                return (package, path)
+                PACKAGE_CACHE[dir_path] = (package, dir_path)
+                return (package, dir_path)
             if CATKIN_SUPPORTED and f == PACKAGE_FILE:
                 try:
-                    pkg = parse_package(os.path.join(path, f))
-                    PACKAGE_CACHE[path] = (pkg.name, path)
-                    return (pkg.name, path)
+                    pkg = parse_package(os.path.join(dir_path, f))
+                    PACKAGE_CACHE[dir_path] = (pkg.name, dir_path)
+                    return (pkg.name, dir_path)
                 except Exception:
                     return (None, None)
-        PACKAGE_CACHE[path] = package_name(os.path.dirname(path))
-        return PACKAGE_CACHE[path]
+        PACKAGE_CACHE[dir_path] = package_name(os.path.dirname(dir_path))
+        return PACKAGE_CACHE[dir_path]
     return (None, None)
 
 
@@ -208,7 +211,7 @@ def is_package(file_list):
     return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))
 
 
-def _get_pkg_path(package_name):
+def get_pkg_path(package_name):
     ''' :noindex: '''
     global _get_pkg_path_var
     if _get_pkg_path_var is None:

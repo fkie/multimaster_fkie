@@ -36,6 +36,7 @@ syntax = "proto3";
 service FileService {
 	rpc GetFileContent (GetFileContentRequest) returns (stream GetFileContentReply);
 	rpc SaveFileContent (stream SaveFileContentRequest) returns (stream SaveFileContentReply);
+	rpc CopyFileTo (CopyToRequest) returns (ReturnStatus);
 	rpc Rename (RenameRequest) returns (ReturnStatus);
 	rpc ListPath (ListPathRequest) returns (ListPathReply);
 	rpc ListPackages (ListPackagesRequest) returns (ListPackagesReply);
@@ -84,6 +85,17 @@ message SaveFileContentRequest {
 message SaveFileContentReply {
 	ReturnStatus status = 1;
 	FileChunkAck ack = 2;
+}
+
+/** The message to transfer file to another grpc server.
+ * :param path: the path of the file.
+ * :param url: the url of the another server
+ * :param overwrite: force replace of existing file with new content or creat a new file
+ */
+message CopyToRequest {
+	string path = 1;
+	string url = 2;
+	bool overwrite = 3;
 }
 
 /** The message to transfer the file content.

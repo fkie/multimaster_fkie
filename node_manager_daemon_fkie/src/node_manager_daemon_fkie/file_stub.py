@@ -139,21 +139,18 @@ class FileStub(object):
                 raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
         return result
 
-    def copy(self, path, dest_url, override=True):
-        # get package from path
-        pname, ppath = package_name(path)
-        if pname is not None:
-            prest = path.replace(ppath, '')
-            with open(path, 'r') as outfile:
-                mtime = 0.0 if override else os.path.getmtime(path)
-                content = outfile.read()
-                # get channel to the remote grpc server
-                # TODO: get secure channel, if available
-                channel = remote.get_insecure_channel(dest_url)
-                if channel is not None:
-                    fs = FileStub(channel)
-                    # save file on remote server
-                    return fs.save_file_content(prest, content, mtime, pname)
+    def copy(self, path, dest_url, overwrite=True):
+        print("cp", path, dest_url)
+        result = self.fm_stub.CopyFileTo(fmsg.CopyToRequest(path=path, url=dest_url, overwrite=overwrite), timeout=settings.GRPC_TIMEOUT)
+        if result.code == OK:
+            print("COPY RESULT CODE OK")
+            pass
+        elif result.code == OS_ERROR:
+            raise OSError(result.error_code, result.error_msg, result.error_file)
+        elif result.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
+            raise IOError(result.error_code, result.error_msg, result.error_file)
+        elif result.code == ERROR:
+            raise Exception("%s file: %s" % (result.error_msg, result.error_file))
 
     def rename(self, old, new):
         response = self.fm_stub.Rename(fmsg.RenameRequest(old=old, new=new))

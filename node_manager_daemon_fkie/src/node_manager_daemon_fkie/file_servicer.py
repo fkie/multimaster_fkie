@@ -36,7 +36,9 @@ import rospy
 
 import node_manager_daemon_fkie.generated.file_pb2_grpc as fms_grpc
 import node_manager_daemon_fkie.generated.file_pb2 as fms
-from .common import is_package, utf8
+from .common import is_package, get_pkg_path, package_name, utf8
+import remote
+import settings
 
 try:
     from catkin_pkg.package import parse_package
@@ -113,35 +115,39 @@ class FileServicer(fms_grpc.FileServiceServicer):
             file_tmp = None
             count = 0
             for chunk in request_iterator:
+                if chunk.file.package:
+                    pkg_path = get_pkg_path(chunk.file.package)
+                    if pkg_path:
+                        path = os.path.join(pkg_path, chunk.file.path.lstrip(os.path.sep))
+                else:
+                    path = chunk.file.path
                 result = fms.SaveFileContentReply()
                 if first:
-                    if os.path.exists(chunk.file.path):
+                    if os.path.exists(path):
                         # checks for mtime
-                        if chunk.overwrite or chunk.file.mtime == os.path.getmtime(chunk.file.path):
-                            file_org = open(chunk.file.path, 'w')
-                            file_tmp = open("%s.tmp" % chunk.file.path, 'w')
-                            path = chunk.file.path
+                        if chunk.overwrite or chunk.file.mtime == os.path.getmtime(path):
+                            file_org = open(path, 'w')
+                            file_tmp = open("%s.tmp" % path, 'w')
                             dest_size = chunk.file.size
                         else:
                             result.status.code = CHANGED_FILE
                             result.status.error_code = CHANGED_FILE
                             result.status.error_msg = utf8("file was changed in meantime")
-                            result.status.error_file = utf8(chunk.file.path)
+                            result.status.error_file = utf8(path)
                     elif chunk.overwrite or chunk.file.mtime == 0:
                         # mtime == 0 stands for create a new file
                         try:
-                            os.makedirs(os.path.dirname(chunk.file.path))
+                            os.makedirs(os.path.dirname(path))
                         except OSError:
                             pass
-                        file_org = open(chunk.file.path, 'w')
-                        file_tmp = open("%s.tmp" % chunk.file.path, 'w')
-                        path = chunk.file.path
+                        file_org = open(path, 'w')
+                        file_tmp = open("%s.tmp" % path, 'w')
                         dest_size = chunk.file.size
                     else:
                         result.status.code = REMOVED_FILE
                         result.status.error_code = REMOVED_FILE
                         result.status.error_msg = utf8("file was removed in meantime")
-                        result.status.error_file = utf8(chunk.file.path)
+                        result.status.error_file = utf8(path)
                     first = False
                 if result.status.code == 0:
                     if chunk.file.data:
@@ -158,6 +164,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         os.remove(path)
                         os.rename("%s.tmp" % path, path)
                         result.ack.mtime = os.path.getmtime(path)
+                result.status.code = OK
                 count += 1
                 yield result
             if count == 0:
@@ -188,6 +195,73 @@ class FileServicer(fms_grpc.FileServiceServicer):
             result.code = ERROR
             result.error_msg = utf8(err)
             result.error_file = utf8(request.old)
+        return result
+
+    def _gen_save_content_list(self, path, content, mtime, package=''):
+        send_content = content
+        while send_content:
+            chunk = send_content
+            # split into small parts on big files
+            if len(chunk) > self.FILE_CHUNK_SIZE:
+                chunk = send_content[0:self.FILE_CHUNK_SIZE]
+                send_content = send_content[self.FILE_CHUNK_SIZE:]
+            else:
+                send_content = ''
+            msg = fms.SaveFileContentRequest()
+            msg.overwrite = mtime == 0
+            msg.file.path = path
+            msg.file.mtime = mtime  # something not zero to update a not existing file
+            msg.file.size = len(content)
+            msg.file.data = chunk
+            msg.file.package = package
+            yield msg
+
+    def CopyFileTo(self, request, context):
+        result = fms.ReturnStatus()
+        try:
+            path = request.path
+            # get package from path
+            pname, ppath = package_name(path)
+            if pname is not None:
+                prest = path.replace(ppath, '')
+                with open(path, 'r') as outfile:
+                    mtime = 0.0 if request.overwrite else os.path.getmtime(path)
+                    content = outfile.read()
+                    # get channel to the remote grpc server
+                    # TODO: get secure channel, if available
+                    dest_url = request.url
+                    channel = remote.get_insecure_channel(dest_url)
+                    if channel is not None:
+                        # save file on remote server
+                        fs = fms_grpc.FileServiceStub(channel)
+                        response_stream = fs.SaveFileContent(self._gen_save_content_list(prest, content, mtime, pname), timeout=settings.GRPC_TIMEOUT)
+                        for response in response_stream:
+                            if response.status.code == OK:
+                                result.code = OK
+                            else:
+                                result.code = response.status.code
+                                result.error_code = response.status.error_code
+                                result.error_msg = response.status.error_msg
+                                result.error_file = response.status.error_file
+                                return result
+                    else:
+                        result.code = ERROR
+                        result.error_msg = utf8("can not establish insecure channel to '%s'" % dest_url)
+                        result.error_file = utf8(request.path)
+            else:
+                result.code = ERROR
+                result.error_msg = utf8("no package found! Only launch files from packages can be copied!")
+                result.error_file = utf8(request.path)
+        except OSError as ose:
+            result.code = OS_ERROR
+            if ose.errno:
+                result.error_code = ose.errno
+            result.error_msg = utf8(ose.strerror)
+            result.error_file = utf8(request.path)
+        except Exception as err:
+            result.code = ERROR
+            result.error_msg = utf8(err)
+            result.error_file = utf8(request.path)
         return result
 
     def ListPath(self, request, context):
