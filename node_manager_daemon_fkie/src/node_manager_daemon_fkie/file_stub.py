@@ -139,13 +139,13 @@ class FileStub(object):
                 raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
         return result
 
-    def copy(self, path, dest_url, override=False):
+    def copy(self, path, dest_url, override=True):
         # get package from path
         pname, ppath = package_name(path)
         if pname is not None:
             prest = path.replace(ppath, '')
             with open(path, 'r') as outfile:
-                mtime = os.path.getmtime(path)
+                mtime = 0.0 if override else os.path.getmtime(path)
                 content = outfile.read()
                 # get channel to the remote grpc server
                 # TODO: get secure channel, if available

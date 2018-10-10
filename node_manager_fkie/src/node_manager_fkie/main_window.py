@@ -48,7 +48,7 @@ import uuid
 import xmlrpclib
 
 from master_discovery_fkie.common import get_hostname, resolve_url, subdomain, masteruri_from_master
-
+from node_manager_daemon_fkie.common import get_nmd_url
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
@@ -1762,42 +1762,48 @@ class MainWindow(QMainWindow):
         '''
         # TODO: use node manager daemon
         if files:
-            host = 'localhost'
+            nmd_url = get_nmd_url()
             username = nm.settings().default_user
             if self.currentMaster is not None:
-                host = get_hostname(self.currentMaster.masteruri)
-                username = self.currentMaster.current_user
-            params = {'Host': ('string', host),
-                      'recursive': ('bool', 'False'),
-                      'Username': ('string', '%s' % username)
+                nmd_url = get_hostname(self.currentMaster.masteruri)
+            params = {'master': ('string', self.currentMaster.masteruri),
+                      'recursive': ('bool', 'False')
                       }
             dia = ParameterDialog(params)
             dia.setFilterVisible(False)
             dia.setWindowTitle('Transfer file')
-            dia.resize(350, 120)
-            dia.setFocusField('Host')
+            dia.resize(350, 100)
+            dia.setFocusField('master')
             if dia.exec_():
                 try:
                     params = dia.getKeywords()
-                    host = params['Host']
+                    nmd_url = params['master']
                     recursive = params['recursive']
-                    username = params['Username']
                     for path in files:
-                        rospy.loginfo("TRANSFER to %s@%s: %s" % (username, host, path))
+                        nmd_url = get_nmd_url(nmd_url)
+                        rospy.loginfo("TRANSFER to %s@%s: %s" % (username, nmd_url, path))
                         self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-                                                                  'transfer files to %s' % host,
+                                                                  'transfer files to %s' % nmd_url,
                                                                   nm.starter().transfer_files,
-                                                                  ('%s' % host, path, False, username))
+                                                                  ('%s' % nmd_url, path, False))
                         if recursive:
-                            for f in LaunchConfig.included_files(path):
-                                self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                                          'transfer files to %s' % host,
-                                                                          nm.starter().transfer_files,
-                                                                          ('%s' % host, f, False, username))
+                            self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
+                                                                      "transfer recursive '%s' to %s" % (path, nmd_url),
+                                                                      self._recursive_transfer,
+                                                                      (path, nmd_url))
                     self.launch_dock.progress_queue.start()
                 except Exception, e:
                     MessageBox.warning(self, "Transfer error",
                                        'Error while transfer files', '%s' % utf8(e))
+
+    def _recursive_transfer(self, path, nmd_url):
+        includes = nm.nmd().get_included_files_set(path, True)
+        for inc in includes:
+            self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                      'transfer file %s to %s' % (inc, nmd_url),
+                                                      nm.starter().transfer_files,
+                                                      ('%s' % nmd_url, inc))
+        self.launch_dock.progress_queue.start()
 
     def _reload_globals_at_next_start(self, launch_file):
         if self.currentMaster is not None:
