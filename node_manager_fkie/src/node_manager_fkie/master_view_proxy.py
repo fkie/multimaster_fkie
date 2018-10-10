@@ -444,15 +444,19 @@ class MasterViewProxy(QWidget):
                     update_result[6].update(self.__master_info.service_names)
                 nmd_node = self.__master_info.getNode('/node_manager_daemon')
                 if nmd_node is None or nmd_node.pid is None:
-                    # start node manager daemon if not already running
-                    host_addr = nm.nameres().address(self.masteruri)
-                    rospy.loginfo("start node manager daemon for %s", self.masteruri)
-                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   'start node_manager_daemon for %s' % host_addr,
-                                                   nm.starter().runNodeWithoutConfig,
-                                                   (nm.nameres().address(self.masteruri),
-                                                    'node_manager_daemon_fkie', 'node_manager_daemon', 'node_manager_daemon', [], self.masteruri, False, self.current_user))
-                    self._start_queue(self._progress_queue)
+                    ret = MessageBox.Yes
+                    if not self.is_local:
+                        ret = MessageBox.question(self, 'Question', "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, buttons=MessageBox.Yes | MessageBox.No)
+                    if ret == MessageBox.Yes:
+                        # start node manager daemon if not already running
+                        host_addr = nm.nameres().address(self.masteruri)
+                        rospy.loginfo("start node manager daemon for %s", self.masteruri)
+                        self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                       'start node_manager_daemon for %s' % host_addr,
+                                                       nm.starter().runNodeWithoutConfig,
+                                                       (nm.nameres().address(self.masteruri),
+                                                        'node_manager_daemon_fkie', 'node_manager_daemon', 'node_manager_daemon', [], self.masteruri, False, self.current_user))
+                        self._start_queue(self._progress_queue)
             else:
                 update_result = self.__master_info.updateInfo(master_info)
 #         print "MINFO", self.__master_info.listedState()
@@ -2167,7 +2171,7 @@ class MasterViewProxy(QWidget):
     def _getCfgChoises(self, node, ignore_defaults=False):
         result = {}
         for c in node.cfgs:
-            if c:
+            if c and not isinstance(c, tuple):
                 # TODO: create name
                 print "_getCfgChoises", c, type(c)
                 result[c] = c
