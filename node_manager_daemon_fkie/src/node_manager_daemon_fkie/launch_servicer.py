@@ -181,8 +181,18 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             # parse result args for reply
             result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.argv2dict(res_argv).items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
+            result.mtime = os.path.getmtime(launchfile)
+            # add mtimes for all included files
+            inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
+            for incf in inc_files:
+                mtime = 0
+                if os.path.exists(incf):
+                    mtime = os.path.getmtime(incf)
+                result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
             rospy.logdebug("..load complete!")
         except Exception as e:
+            import traceback
+            print traceback.format_exc()
             err_text = "%s loading failed!" % os.path.basename(launchfile)
             err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
             rospy.logwarn("Loading launch file: %s", err_details)
@@ -204,6 +214,14 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 argv = cfg.argv
                 cfg.load(argv)
                 result.status.code = OK
+                result.mtime = os.path.getmtime(request.path)
+                # add mtimes for all included files
+                inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
+                for incf in inc_files:
+                    mtime = 0
+                    if os.path.exists(incf):
+                        mtime = os.path.getmtime(incf)
+                    result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
                 # detect files changes
                 if stored_roscfg and cfg.roscfg:
                     stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]

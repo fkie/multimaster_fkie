@@ -74,6 +74,9 @@ class LaunchStub(object):
             raise exceptions.AlreadyOpenException(response.path[0], response.status.error_msg)
         else:
             raise exceptions.RemoteException(response.status.code, response.status.error_msg)
+        # TODO: forward mtimes
+#        includes = {path: mtime}
+#        return launch_file, mtime, args, includes
         return response.path[0], {arg.name: arg.value for arg in response.args}
 
     def reload_launch(self, path, masteruri=''):
@@ -86,6 +89,8 @@ class LaunchStub(object):
                 raise exceptions.ResourceNotFound(path, response.status.error_msg)
             else:
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
+        # TODO: forward mtimes
+#        return launch_file, mtime, includes, changed nodes
         return response.path, response.changed_nodes
 
     def unload_launch(self, path, masteruri=''):

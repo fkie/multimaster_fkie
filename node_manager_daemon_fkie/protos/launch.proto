@@ -75,15 +75,24 @@ message LoadLaunchRequest {
 
 /** The response message with load status
  * :param status: the status of the load process.
+ * :param path: the path of the launch file on this host. Multiple paths if more then one in the package found.
+ * :param mtime: time of last modification of path. The return value is a number giving the number of seconds since the epoch
  * :param args: a list of requested arguments, only if PARAMS_REQUIRED is returned.
- * :param path: the path of the launch file on this host.
  * :param changed_nodes: changed nodes (new nodes or changed parameter). Changes on global parameter are not handled!
+ * :param included_files: included files with last modification time. 0 if file does not exists.
  */
 message LoadLaunchReply {
 	ReturnStatus status = 1;
-	repeated Argument args = 2;
+	double mtime = 2;
 	repeated string path = 3;
-	repeated string changed_nodes = 4;
+	repeated Argument args = 4;
+	repeated string changed_nodes = 5;
+	repeated FileObj included_files = 6;
+}
+
+message FileObj {
+	string path = 1;
+	double mtime = 2;
 }
 
 message Argument {

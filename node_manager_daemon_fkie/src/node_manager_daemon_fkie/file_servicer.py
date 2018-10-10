@@ -346,3 +346,13 @@ class FileServicer(fms_grpc.FileServiceServicer):
             result.status.code = ERROR
             result.status.error_msg = utf8(err)
         return result
+
+    def ChangedFiles(self, request, context):
+        result = fms.PathList()
+        for item in request.items:
+            mtime = 0
+            if os.path.exists(item.path):
+                mtime = os.path.getmtime(item.path)
+            if mtime != item.mtime:
+                result.items.append(fms.PathObj(path=item.path, mtime=mtime))
+        return result

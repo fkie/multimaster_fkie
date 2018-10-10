@@ -698,8 +698,8 @@ class MasterViewProxy(QWidget):
         except nm.LaunchArgsSelectionRequest as lasr:
             raise nm.InteractionNeededError(lasr, self._load_launchfile, (launchfile,))
         except Exception as e:
-            err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
-            err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
+            err_text = '%s loading failed!' % os.path.basename(launchfile)
+            err_details = '%s\n\n%s: %s' % (err_text, e.__class__.__name__, utf8(e))
             rospy.logwarn("Loading launch file: %s", err_details)
             raise DetailedError("Loading launch file", err_text, err_details)
         except Exception:

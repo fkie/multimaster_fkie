@@ -389,6 +389,8 @@ class NmdClient(QObject):
                 launch_file = aoe.path
         rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
         return launch_file
+#        includes = {path: mtime}
+#        return launch_file, mtime, 
 
     def reload_launch(self, grpc_path, masteruri=''):
         rospy.logdebug("reload launch %s" % grpc_path)
