@@ -88,11 +88,18 @@ class GraphViewWidget(QDockWidget):
         self.graphTreeView.activated.connect(self.on_activated)
         self.graphTreeView.clicked.connect(self.on_clicked)
         self._created_tree = False
+        self.has_none_packages = True
         self._refill_tree([], [], False)
 
-    def clear_cache(self):
+    def clear_cache(self, path=None):
         with CHACHE_MUTEX:
-            GRAPH_CACHE.clear()
+            if path is None:
+                GRAPH_CACHE.clear()
+            else:
+                try:
+                    del GRAPH_CACHE[path]
+                except KeyError:
+                    pass
             self._created_tree = False
             self.graphTreeView.model().clear()
             crp = self._current_path
@@ -139,8 +146,11 @@ class GraphViewWidget(QDockWidget):
         self.setWindowTitle("Include Graph - %s" % file_dsrc)
         if not self._created_tree and create_tree:
             with CHACHE_MUTEX:
+                has_none_packages = False
                 if self._root_path in GRAPH_CACHE:
                     pkg, _ = package_name(os.path.dirname(self._root_path))
+                    if pkg is None:
+                        has_none_packages = True
                     itemstr = '%s [%s]' % (os.path.basename(self._root_path), pkg)
                     inc_item = QStandardItem('%s' % itemstr)
                     inc_item.setData(self._root_path, self.DATA_FILE)
@@ -151,6 +161,7 @@ class GraphViewWidget(QDockWidget):
                     self.graphTreeView.model().appendRow(inc_item)
                     # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
                 self._created_tree = True
+                self.has_none_packages = has_none_packages
         items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
         first = True
         self.graphTreeView.selectionModel().clearSelection()

@@ -124,7 +124,7 @@ class LaunchStub(object):
         request = lmsg.IncludedFilesRequest(path=path, recursive=recursive, unique=unique, pattern=include_pattern)
         return self.lm_stub.GetIncludedFiles(request, timeout=settings.GRPC_TIMEOUT)
 
-    def get_included_files_unique(self, root, recursive=True, include_pattern=[]):
+    def get_included_files_set(self, root, recursive=True, include_pattern=[]):
         '''
         :param str root: the root path to search for included files
         :param bool recursive: True for recursive search

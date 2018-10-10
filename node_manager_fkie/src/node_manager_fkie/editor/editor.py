@@ -36,7 +36,7 @@ import os
 
 import rospy
 
-from node_manager_fkie.common import package_name, utf8
+from node_manager_fkie.common import grpc_url_from_path, package_name, utf8
 from node_manager_fkie.run_dialog import PackageDialog
 import node_manager_fkie as nm
 
@@ -150,6 +150,7 @@ class Editor(QMainWindow):
         self.find_dialog.setVisible(False)
         self.graph_view.setVisible(False)
         nm.nmd().changed_file.connect(self.on_changed_file)
+        nm.nmd().packages_available.connect(self._on_new_packages)
         # open the files
         for f in filenames:
             if f:
@@ -457,6 +458,7 @@ class Editor(QMainWindow):
         if event.isAccepted():
             self.storeSetting()
             nm.nmd().changed_file.disconnect(self.on_changed_file)
+            nm.nmd().packages_available.connect(self._on_new_packages)
             self.finished_signal.emit(self.init_filenames)
 
     def on_editor_modificationChanged(self, value=None):
@@ -479,6 +481,16 @@ class Editor(QMainWindow):
         base = os.path.basename(lfile).replace('.launch', '')
         (package, _) = package_name(os.path.dirname(lfile))
         return '%s [%s]' % (base, package)
+
+    def _on_new_packages(self, url):
+        try:
+            if grpc_url_from_path(url) == grpc_url_from_path(self.tabWidget.currentWidget().filename):
+                print "NEW PACAKGES, rebuild graph"
+                if self.graph_view.has_none_packages:
+                    self.graph_view.clear_cache()
+        except Exception:
+            import traceback
+            print traceback.format_exc()
 
     ##############################################################################
     # HANDLER for buttons
@@ -504,7 +516,7 @@ class Editor(QMainWindow):
         elif saved:
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
-            self.graph_view.clear_cache()
+            self.graph_view.clear_cache(self.tabWidget.currentWidget().filename)
 
     def on_shortcut_find(self):
         pass

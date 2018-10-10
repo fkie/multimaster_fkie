@@ -66,9 +66,9 @@ class PathItem(QStandardItem):
     FILE = 10
     LAUNCH_FILE = 11
     CFG_FILE = 12
-    FOLDER = 20
-    PACKAGE = 21
-    STACK = 22
+    PACKAGE = 20
+    STACK = 21
+    FOLDER = 22
     REMOTE_DAEMON = 23
 
     def __init__(self, path, path_id, mtime, size, name, isnew=False):

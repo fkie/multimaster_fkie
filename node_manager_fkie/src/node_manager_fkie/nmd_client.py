@@ -246,7 +246,7 @@ class NmdClient(QObject):
             raise Exception("Node manager daemon '%s' not reachable" % url)
         result = fm.save_file_content(path, content, mtime)
         for ack in result:
-            if ack.path == path:
+            if ack.path == path and ack.mtime != 0:
                 self._delete_cache_for(grpc_path)
                 return ack.mtime
         return 0
@@ -266,7 +266,7 @@ class NmdClient(QObject):
         for ln, ph, ex, ifi in inc_files:
             self._print_inc_file(indent + 2, ln, ph, ex, ifi)
 
-    def get_unique_included_files(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[]):
+    def get_included_files_set(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[]):
         '''
         :param str root: the root path to search for included files
         :param bool recursive: True for recursive search
@@ -279,13 +279,13 @@ class NmdClient(QObject):
         try:
             result = self._cache_file_unique_includes[grpc_path]
         except KeyError:
-            rospy.logdebug("get_unique_included_files for %s:" % grpc_path)
+            rospy.logdebug("get_included_files_set for %s:" % grpc_path)
             url, path = grpc_split_url(grpc_path, with_scheme=False)
             lm = self.get_launch_manager(url)
             if lm is None:
                 raise Exception("Node manager daemon '%s' not reachable" % url)
             url, path = grpc_split_url(grpc_path, with_scheme=True)
-            reply = lm.get_included_files_unique(path, recursive, include_pattern)
+            reply = lm.get_included_files_set(path, recursive, include_pattern)
             for fname in reply:
                 result.append(grpc_join(url, fname))
             self._cache_file_unique_includes[grpc_path] = result

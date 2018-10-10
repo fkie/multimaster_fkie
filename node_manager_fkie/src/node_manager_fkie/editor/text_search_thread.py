@@ -99,7 +99,7 @@ class TextSearchThread(QObject, threading.Thread):
             pos = data.find(search_text, pos)
         if self._isrunning:
             if recursive:
-                inc_files = nm.nmd().get_unique_included_files(path, False)
+                inc_files = nm.nmd().get_included_files_set(path, False)
                 for incf in inc_files:
                     if not self._isrunning:
                         break

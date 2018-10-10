@@ -1183,6 +1183,9 @@ class MasterViewProxy(QWidget):
 #             self._nodelets[launchfile] = nodelets
         removed_configs = set(self.__configs.keys()) - set(new_configs.keys())
         for cfg in removed_configs:
+            if isinstance(cfg, tuple):
+                rospy.logwarn("CFG: unsupported config type: %s" % str(cfg))
+                continue
             if cfg.startswith(url):
                 print ("remove config", url, cfg)
                 self.removeConfigFromModel(cfg)

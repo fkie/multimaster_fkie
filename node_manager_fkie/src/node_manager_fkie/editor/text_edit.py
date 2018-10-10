@@ -135,6 +135,8 @@ class TextEdit(QTextEdit):
             try:
                 mtime = nm.nmd().save_file(self.filename, self.toPlainText().encode('utf-8'), 0 if force else self.file_mtime)
                 self.file_mtime = mtime
+                if mtime == 0:
+                    MessageBox.warning(self, "Warning", "File not saved and not error reported: %s" % os.path.basename(self.filename))
                 self.document().setModified(mtime == 0)
                 ext = os.path.splitext(self.filename)
                 # validate the xml structure of the launch files

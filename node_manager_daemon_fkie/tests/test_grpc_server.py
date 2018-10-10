@@ -118,10 +118,10 @@ class TestGrpcServer(unittest.TestCase):
 
     def test_get_included_files(self):
         path = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
-        file_list = self.ls.get_included_files_unique(path, recursive=True, include_pattern=[])
+        file_list = self.ls.get_included_files_set(path, recursive=True, include_pattern=[])
 #        for linenr, path, exists, file_list in inc_files:
         self.assertEqual(len(file_list), 4, "Count of unique included, recursive files is wrong, got: %d, expected: %d" % (len(file_list), 4))
-        file_list = self.ls.get_included_files_unique(path, recursive=False, include_pattern=[])
+        file_list = self.ls.get_included_files_set(path, recursive=False, include_pattern=[])
         self.assertEqual(len(file_list), 3, "Count of unique included files while not recursive search is wrong, got: %d, expected: %d" % (len(file_list), 3))
         file_list = self.ls.get_included_files(path, recursive=False, include_pattern=[])
         self.assertEqual(len(file_list), 6, "Count of recursive, not unique included files is wrong, expected: %d, got: %d" % (len(file_list), 6))
