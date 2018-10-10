@@ -261,6 +261,16 @@ class NmdClient(QObject):
         print("nmd_rename: old", old, ", new: ", new)
         return fm.rename(old, new)
 
+    def copy(self, grpc_path='grpc://localhost:12321', grpc_dest='grpc://localhost:12321'):
+        url, path = grpc_split_url(grpc_path)
+        url_dest, _ = grpc_split_url(grpc_dest)
+        rospy.logdebug("copy '%s' to '%s'" % (grpc_path, url_dest))
+        fm = self.get_file_manager(url)
+        if fm is None:
+            raise Exception("Node manager daemon '%s' not reachable" % url)
+        print("nmd_rename: path", path, ", url_dest: ", url_dest)
+        fm.copy(path, url_dest)
+
     def _print_inc_file(self, indent, linenr, path, exists, inc_files):
         rospy.loginfo("%s %.4d\t%s %s" % (" " * indent, linenr, '+' if exists else '-', path))
         for ln, ph, ex, ifi in inc_files:

@@ -936,6 +936,13 @@ class StartHandler(object):
             _ = nm.ssh().ssh_x11_exec(host, cmd, 'rosclean purge on %s' % host, user)
 
     @classmethod
+    def transfer_file_nmd(cls, grpc_url, path, auto_pw_request=False, user=None, pw=None):
+        '''
+        Copies the given file to the remote host. Uses caching of remote paths.
+        '''
+        nm.nmd().copy(path, grpc_url)
+
+    @classmethod
     def transfer_files(cls, host, path, auto_pw_request=False, user=None, pw=None):
         '''
         Copies the given file to the remote host. Uses caching of remote paths.

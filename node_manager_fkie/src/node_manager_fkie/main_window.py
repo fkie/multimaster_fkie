@@ -172,7 +172,6 @@ class MainWindow(QMainWindow):
         self.launch_dock = LaunchFilesWidget()
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
         self.launch_dock.load_profile_signal.connect(self.profiler.on_load_profile_file)
-        self.launch_dock.load_as_default_signal.connect(self.on_load_launch_as_default)
         self.launch_dock.edit_signal.connect(self.on_launch_edit)
         self.launch_dock.transfer_signal.connect(self.on_launch_transfer)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.launch_dock)
@@ -1348,7 +1347,7 @@ class MainWindow(QMainWindow):
         # update the duplicate nodes
         running_nodes = dict()
         for _, m in self.masters.items():
-            if m.master_state is not None and m.master_state.online:
+            if m.online and m.master_state is not None and m.master_state.online:
                 running_nodes.update(m.getRunningNodesIfLocal())
         for _, m in self.masters.items():
             if m.master_state is not None:
@@ -1668,54 +1667,54 @@ class MainWindow(QMainWindow):
                                                    master_proxy.current_user))
         self.launch_dock.progress_queue.start()
 
-    def on_load_launch_as_default(self, path, host=None):
-        '''
-        Load the launch file as default configuration. A ROS master must be selected first.
-        :param path: the path of the launch file.
-        :type path: str
-        :param host: The host name, where the configuration start.
-        :type host: str (Default: None)
-        '''
-        rospy.loginfo("LOAD launch as default: %s" % path)
-        master_proxy = self.stackedLayout.currentWidget()
-        if isinstance(master_proxy, MasterViewProxy):
-            args = list()
-            args.append('_package:=%s' % (package_name(os.path.dirname(path))[0]))
-            args.append('_launch_file:="%s"' % os.path.basename(path))
-            try:
-                # test for requerid args
-                launchConfig = LaunchConfig(path)
-                req_args = launchConfig.getArgs()
-                if req_args:
-                    params = dict()
-                    arg_dict = launchConfig.argvToDict(req_args)
-                    for arg in arg_dict.keys():
-                        params[arg] = ('string', [arg_dict[arg]])
-                    inputDia = ParameterDialog(params)
-                    inputDia.setFilterVisible(False)
-                    inputDia.setWindowTitle('Enter the argv for %s' % path)
-                    if inputDia.exec_():
-                        params = inputDia.getKeywords()
-                        args.extend(launchConfig.resolveArgs([''.join([p, ":='", v, "'"]) for p, v in params.items() if v]))
-                    else:
-                        return
-            except Exception:
-                import traceback
-                rospy.logwarn('Error while load %s as default: %s' % (path, traceback.format_exc(1)))
-            hostname = host if host else nm.nameres().address(master_proxy.masteruri)
-            name_file_prefix = os.path.basename(path).replace('.launch', '').replace(' ', '_')
-            node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
-                                               name_file_prefix,
-                                               'default_cfg'])
-            self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-                                                      'start default config %s' % hostname,
-                                                      nm.starter().runNodeWithoutConfig,
-                                                      ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
-                                                       node_name, args, master_proxy.masteruri, False,
-                                                       master_proxy.current_user))
-            self.launch_dock.progress_queue.start()
-        else:
-            MessageBox.information(self, "Load of launch file", "Select a master first!",)
+#     def on_load_launch_as_default(self, path, host=None):
+#         '''
+#         Load the launch file as default configuration. A ROS master must be selected first.
+#         :param path: the path of the launch file.
+#         :type path: str
+#         :param host: The host name, where the configuration start.
+#         :type host: str (Default: None)
+#         '''
+#         rospy.loginfo("LOAD launch as default: %s" % path)
+#         master_proxy = self.stackedLayout.currentWidget()
+#         if isinstance(master_proxy, MasterViewProxy):
+#             args = list()
+#             args.append('_package:=%s' % (package_name(os.path.dirname(path))[0]))
+#             args.append('_launch_file:="%s"' % os.path.basename(path))
+#             try:
+#                 # test for requerid args
+#                 launchConfig = LaunchConfig(path)
+#                 req_args = launchConfig.getArgs()
+#                 if req_args:
+#                     params = dict()
+#                     arg_dict = launchConfig.argvToDict(req_args)
+#                     for arg in arg_dict.keys():
+#                         params[arg] = ('string', [arg_dict[arg]])
+#                     inputDia = ParameterDialog(params)
+#                     inputDia.setFilterVisible(False)
+#                     inputDia.setWindowTitle('Enter the argv for %s' % path)
+#                     if inputDia.exec_():
+#                         params = inputDia.getKeywords()
+#                         args.extend(launchConfig.resolveArgs([''.join([p, ":='", v, "'"]) for p, v in params.items() if v]))
+#                     else:
+#                         return
+#             except Exception:
+#                 import traceback
+#                 rospy.logwarn('Error while load %s as default: %s' % (path, traceback.format_exc(1)))
+#             hostname = host if host else nm.nameres().address(master_proxy.masteruri)
+#             name_file_prefix = os.path.basename(path).replace('.launch', '').replace(' ', '_')
+#             node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
+#                                                name_file_prefix,
+#                                                'default_cfg'])
+#             self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
+#                                                       'start default config %s' % hostname,
+#                                                       nm.starter().runNodeWithoutConfig,
+#                                                       ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
+#                                                        node_name, args, master_proxy.masteruri, False,
+#                                                        master_proxy.current_user))
+#             self.launch_dock.progress_queue.start()
+#         else:
+#             MessageBox.information(self, "Load of launch file", "Select a master first!",)
 
     def on_launch_edit(self, grpc_path, search_text='', trynr=1):
         '''
@@ -1781,10 +1780,10 @@ class MainWindow(QMainWindow):
                     recursive = params['recursive']
                     for path in files:
                         nmd_url = get_nmd_url(nmd_url)
-                        rospy.loginfo("TRANSFER to %s@%s: %s" % (username, nmd_url, path))
+                        rospy.loginfo("TRANSFER to %s: %s" % (nmd_url, path))
                         self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
                                                                   'transfer files to %s' % nmd_url,
-                                                                  nm.starter().transfer_files,
+                                                                  nm.starter().transfer_file_nmd,
                                                                   ('%s' % nmd_url, path, False))
                         if recursive:
                             self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
@@ -1801,7 +1800,7 @@ class MainWindow(QMainWindow):
         for inc in includes:
             self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
                                                       'transfer file %s to %s' % (inc, nmd_url),
-                                                      nm.starter().transfer_files,
+                                                      nm.starter().transfer_file_nmd,
                                                       ('%s' % nmd_url, inc))
         self.launch_dock.progress_queue.start()
 

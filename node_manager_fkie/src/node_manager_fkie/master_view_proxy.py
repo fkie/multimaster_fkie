@@ -172,10 +172,10 @@ class MasterViewProxy(QWidget):
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
         self._first_launch = True
         self.default_load_launch = ''
-        self.default_cfg_handler = DefaultConfigHandler()
-        self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
-        self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
-        self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
+#         self.default_cfg_handler = DefaultConfigHandler()
+#         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
+#         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
+#         self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
 
         self._launcher_threaded = LauncherThreaded()
         self._launcher_threaded.update_signal.connect(self.on_launch_description_retrieved)
@@ -366,7 +366,7 @@ class MasterViewProxy(QWidget):
 
     def stop(self):
         print "  Shutdown master", self.masteruri, "..."
-        self.default_cfg_handler.stop()
+        # self.default_cfg_handler.stop()
         self.launch_server_handler.stop()
         self._progress_queue_prio.stop()
         self._progress_queue.stop()
@@ -490,7 +490,7 @@ class MasterViewProxy(QWidget):
                 self.service_model.updateModelData(self.__master_info.services, update_result[6], update_result[7], update_result[8])
                 self.on_service_selection_changed(None, None)
                 # update the default configuration
-                self.updateDefaultConfigs(self.__master_info)
+                # self.updateDefaultConfigs(self.__master_info)
             self.__force_update = False
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
@@ -719,132 +719,132 @@ class MasterViewProxy(QWidget):
             self.removeConfigFromModel(launchfile)
             del self.__configs[launchfile]
 
-    def _apply_launch_config_old(self, launchfile, launchConfig):
-        stored_roscfg = None
-        expanded_items = None
-        if launchfile in self.__configs:
-            # store expanded items
-            expanded_items = self._get_expanded_groups()
-            # close the current loaded configuration with the same name
-            self.removeConfigFromModel(launchfile)
-            stored_roscfg = self.__configs[launchfile].Roscfg
-            del self.__configs[launchfile]
-        try:
-            # add launch file object to the list
-            self.__configs[launchfile] = launchConfig
-            self.appendConfigToModel(launchfile, launchConfig.Roscfg)
-#            self.masterTab.tabWidget.setCurrentIndex(0)
-            # get the descriptions of capabilities and hosts
-            try:
-                robot_descr = launchConfig.getRobotDescr()
-                capabilities = launchConfig.getCapabilitiesDesrc()
-                for (host, caps) in capabilities.items():
-                    if not host:
-                        host = nm.nameres().mastername(self.masteruri)
-                    host_addr = nm.nameres().address(host)
-                    self.node_tree_model.addCapabilities(self.masteruri, host_addr, launchfile, caps)
-                for (host, descr) in robot_descr.items():
-                    if not host:
-                        host = nm.nameres().mastername(self.masteruri)
-                    host_addr = nm.nameres().address(host)
-                    tooltip = self.node_tree_model.updateHostDescription(self.masteruri, host_addr, descr['type'], descr['name'], descr['description'])
-                    self.host_description_updated.emit(self.masteruri, host_addr, tooltip)
-            except Exception:
-                print traceback.format_exc()
-
-            # by this call the name of the host will be updated if a new one is defined in the launch file
-            self.updateRunningNodesInModel(self.__master_info)
-            # detect files changes
-            if stored_roscfg and self.__configs[launchfile].Roscfg:
-                stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
-                new_values = [(name, utf8(p.value)) for name, p in self.__configs[launchfile].Roscfg.params.items()]
-                # detect changes parameter
-                paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
-                # detect new parameter
-                paramset |= (set(self.__configs[launchfile].Roscfg.params.keys()) - set(stored_roscfg.params.keys()))
-                # detect removed parameter
-                paramset |= (set(stored_roscfg.params.keys()) - set(self.__configs[launchfile].Roscfg.params.keys()))
-                # detect new nodes
-                stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
-                new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in self.__configs[launchfile].Roscfg.nodes]
-                nodes2start = set(new_nodes) - set(stored_nodes)
-                # determine the nodes of the changed parameter
-                for p in paramset:
-                    for n in new_nodes:
-                        if p.startswith(n):
-                            nodes2start.add(n)
-                # detect changes in the arguments and remap
-                for n in stored_roscfg.nodes:
-                    for new_n in self.__configs[launchfile].Roscfg.nodes:
-                        if n.name == new_n.name and n.namespace == new_n.namespace:
-                            if n.args != new_n.args or n.remap_args != new_n.remap_args:
-                                nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
-                # filter out anonymous nodes
-                nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
-                # restart nodes
-                if nodes2start:
-                    restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, nodes2start, False, True, '', self)
-                    if ok:
-                        self.stop_nodes_by_name(restart)
-                        self.start_nodes_by_name(restart, launchfile, True)
-            # set the robot_icon
-            if launchfile in self.__robot_icons:
-                self.__robot_icons.remove(launchfile)
-            self.__robot_icons.insert(0, launchfile)
-            self.markNodesAsDuplicateOf(self.__running_nodes)
-            # expand items to restore old view
-            if expanded_items is not None:
-                self._expand_groups(expanded_items)
-            # update nodelets
-            nodelets = {}
-            for n in launchConfig.Roscfg.nodes:
-                if n.package == 'nodelet' and n.type == 'nodelet':
-                    args = n.args.split(' ')
-                    if len(args) == 3 and args[0] == 'load':
-                        nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
-                        if nodelet_mngr not in nodelets:
-                            nodelets[nodelet_mngr] = []
-                        nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
-            for mngr, nlist in nodelets.iteritems():
-                mngr_nodes = self.node_tree_model.getNode(mngr, self.masteruri)
-                for mn in mngr_nodes:
-                    mn.nodelets = nlist
-                for nlet in nlist:
-                    nlet_nodes = self.node_tree_model.getNode(nlet, self.masteruri)
-                    for nn in nlet_nodes:
-                        nn.nodelet_mngr = mngr
-            self._nodelets[launchfile] = nodelets
-
-#      print "MASTER:", launchConfig.Roscfg.master
-#      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
-#      for n in launchConfig.Roscfg.nodes:
-#        n.__slots__ = []
-#      print "NODES:", pickle.dumps(launchConfig.Roscfg.nodes)
-#
-            # print "ROSLAUNCH_FILES:", launchConfig.Roscfg.roslaunch_files
-#           # list of resolved node names. This is so that we can check for naming collisions
-            # print "RESOLVED_NAMES:", launchConfig.Roscfg.resolved_node_names
-#
-#      print "TESTS:", launchConfig.Roscfg.tests
-#      print "MACHINES:", launchConfig.Roscfg.machines
-        #        print "PARAMS:", launchConfig.Roscfg.params
-#        print "CLEAR_PARAMS:", launchConfig.Roscfg.clear_params
-#      print "EXECS:", launchConfig.Roscfg.executables
-#
-#        # for tools like roswtf
-#      print "ERRORS:", launchConfig.Roscfg.config_errors
-#
-#      print "M:", launchConfig.Roscfg.m
-            if launchfile in self._start_nodes_after_load_cfg:
-                self.start_nodes_by_name(self._start_nodes_after_load_cfg[launchfile], launchfile, True)
-                del self._start_nodes_after_load_cfg[launchfile]
-        except Exception as e:
-            err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
-            err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
-            rospy.logwarn("Loading launch file: %s", err_details)
-            MessageBox.warning(self, "Loading launch file", err_text, err_details)
-            print traceback.format_exc(3)
-        self.update_robot_icon(True)
+#     def _apply_launch_config_old(self, launchfile, launchConfig):
+#         stored_roscfg = None
+#         expanded_items = None
+#         if launchfile in self.__configs:
+#             # store expanded items
+#             expanded_items = self._get_expanded_groups()
+#             # close the current loaded configuration with the same name
+#             self.removeConfigFromModel(launchfile)
+#             stored_roscfg = self.__configs[launchfile].Roscfg
+#             del self.__configs[launchfile]
+#         try:
+#             # add launch file object to the list
+#             self.__configs[launchfile] = launchConfig
+#             self.appendConfigToModel(launchfile, launchConfig.Roscfg)
+# #            self.masterTab.tabWidget.setCurrentIndex(0)
+#             # get the descriptions of capabilities and hosts
+#             try:
+#                 robot_descr = launchConfig.getRobotDescr()
+#                 capabilities = launchConfig.getCapabilitiesDesrc()
+#                 for (host, caps) in capabilities.items():
+#                     if not host:
+#                         host = nm.nameres().mastername(self.masteruri)
+#                     host_addr = nm.nameres().address(host)
+#                     self.node_tree_model.addCapabilities(self.masteruri, host_addr, launchfile, caps)
+#                 for (host, descr) in robot_descr.items():
+#                     if not host:
+#                         host = nm.nameres().mastername(self.masteruri)
+#                     host_addr = nm.nameres().address(host)
+#                     tooltip = self.node_tree_model.updateHostDescription(self.masteruri, host_addr, descr['type'], descr['name'], descr['description'])
+#                     self.host_description_updated.emit(self.masteruri, host_addr, tooltip)
+#             except Exception:
+#                 print traceback.format_exc()
+# 
+#             # by this call the name of the host will be updated if a new one is defined in the launch file
+#             self.updateRunningNodesInModel(self.__master_info)
+#             # detect files changes
+#             if stored_roscfg and self.__configs[launchfile].Roscfg:
+#                 stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
+#                 new_values = [(name, utf8(p.value)) for name, p in self.__configs[launchfile].Roscfg.params.items()]
+#                 # detect changes parameter
+#                 paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
+#                 # detect new parameter
+#                 paramset |= (set(self.__configs[launchfile].Roscfg.params.keys()) - set(stored_roscfg.params.keys()))
+#                 # detect removed parameter
+#                 paramset |= (set(stored_roscfg.params.keys()) - set(self.__configs[launchfile].Roscfg.params.keys()))
+#                 # detect new nodes
+#                 stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
+#                 new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in self.__configs[launchfile].Roscfg.nodes]
+#                 nodes2start = set(new_nodes) - set(stored_nodes)
+#                 # determine the nodes of the changed parameter
+#                 for p in paramset:
+#                     for n in new_nodes:
+#                         if p.startswith(n):
+#                             nodes2start.add(n)
+#                 # detect changes in the arguments and remap
+#                 for n in stored_roscfg.nodes:
+#                     for new_n in self.__configs[launchfile].Roscfg.nodes:
+#                         if n.name == new_n.name and n.namespace == new_n.namespace:
+#                             if n.args != new_n.args or n.remap_args != new_n.remap_args:
+#                                 nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
+#                 # filter out anonymous nodes
+#                 nodes2start = [n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)]
+#                 # restart nodes
+#                 if nodes2start:
+#                     restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, nodes2start, False, True, '', self)
+#                     if ok:
+#                         self.stop_nodes_by_name(restart)
+#                         self.start_nodes_by_name(restart, launchfile, True)
+#             # set the robot_icon
+#             if launchfile in self.__robot_icons:
+#                 self.__robot_icons.remove(launchfile)
+#             self.__robot_icons.insert(0, launchfile)
+#             self.markNodesAsDuplicateOf(self.__running_nodes)
+#             # expand items to restore old view
+#             if expanded_items is not None:
+#                 self._expand_groups(expanded_items)
+#             # update nodelets
+#             nodelets = {}
+#             for n in launchConfig.Roscfg.nodes:
+#                 if n.package == 'nodelet' and n.type == 'nodelet':
+#                     args = n.args.split(' ')
+#                     if len(args) == 3 and args[0] == 'load':
+#                         nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
+#                         if nodelet_mngr not in nodelets:
+#                             nodelets[nodelet_mngr] = []
+#                         nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+#             for mngr, nlist in nodelets.iteritems():
+#                 mngr_nodes = self.node_tree_model.getNode(mngr, self.masteruri)
+#                 for mn in mngr_nodes:
+#                     mn.nodelets = nlist
+#                 for nlet in nlist:
+#                     nlet_nodes = self.node_tree_model.getNode(nlet, self.masteruri)
+#                     for nn in nlet_nodes:
+#                         nn.nodelet_mngr = mngr
+#             self._nodelets[launchfile] = nodelets
+# 
+# #      print "MASTER:", launchConfig.Roscfg.master
+# #      print "NODES_CORE:", launchConfig.Roscfg.nodes_core
+# #      for n in launchConfig.Roscfg.nodes:
+# #        n.__slots__ = []
+# #      print "NODES:", pickle.dumps(launchConfig.Roscfg.nodes)
+# #
+#             # print "ROSLAUNCH_FILES:", launchConfig.Roscfg.roslaunch_files
+# #           # list of resolved node names. This is so that we can check for naming collisions
+#             # print "RESOLVED_NAMES:", launchConfig.Roscfg.resolved_node_names
+# #
+# #      print "TESTS:", launchConfig.Roscfg.tests
+# #      print "MACHINES:", launchConfig.Roscfg.machines
+#         #        print "PARAMS:", launchConfig.Roscfg.params
+# #        print "CLEAR_PARAMS:", launchConfig.Roscfg.clear_params
+# #      print "EXECS:", launchConfig.Roscfg.executables
+# #
+# #        # for tools like roswtf
+# #      print "ERRORS:", launchConfig.Roscfg.config_errors
+# #
+# #      print "M:", launchConfig.Roscfg.m
+#             if launchfile in self._start_nodes_after_load_cfg:
+#                 self.start_nodes_by_name(self._start_nodes_after_load_cfg[launchfile], launchfile, True)
+#                 del self._start_nodes_after_load_cfg[launchfile]
+#         except Exception as e:
+#             err_text = ''.join([os.path.basename(launchfile), ' loading failed!'])
+#             err_details = ''.join([err_text, '\n\n', e.__class__.__name__, ": ", utf8(e)])
+#             rospy.logwarn("Loading launch file: %s", err_details)
+#             MessageBox.warning(self, "Loading launch file", err_text, err_details)
+#             print traceback.format_exc(3)
+#         self.update_robot_icon(True)
 
     def reload_global_parameter_at_next_start(self, launchfile):
         try:
@@ -983,128 +983,128 @@ class MasterViewProxy(QWidget):
         self.node_tree_model.removeConfigNodes(launchfile)
         self.updateButtons()
 
-    def updateDefaultConfigs(self, master_info):
-        '''
-        Updates the default configuration view based on the current master information.
-        @param master_info: the mater information object
-        @type master_info: U{master_discovery_fkie.msg.MasterInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
-        '''
-        if self.__master_info is None:
-            return
-        default_cfgs = []
-        for name in self.__master_info.service_names:
-            if name.endswith('list_nodes'):
-                srv = self.__master_info.getService(name)
-                default_cfgs.append((roslib.names.namespace(name).rstrip(roslib.names.SEP), srv.uri, srv.masteruri))
-        # remove the node contained in default configuration form the view
-        removed = list(set([c for c in self.__configs.keys() if isinstance(c, tuple)]) - set(default_cfgs))
-        if removed:
-            for r in removed:
-                self.node_tree_model.removeConfigNodes(r)
-#        service = self.__master_info.getService(roslib.names.ns_join(r[0], 'list_nodes'))
-                if r[2] == self.masteruri:
-                    self.remove_config_signal.emit(r[0])
-                del self.__configs[r]
-        if len(self.__configs) == 0:
-            address = nm.nameres().address(master_info.masteruri)
-            tooltip = self.node_tree_model.updateHostDescription(master_info.masteruri, address, '', '', '')
-            self.host_description_updated.emit(master_info.masteruri, address, tooltip)
-        # request the nodes of new default configurations
-        added = list(set(default_cfgs) - set(self.__configs.keys()))
-        for (name, uri, _) in added:  # _:= masteruri
-            self.default_cfg_handler.requestNodeList(uri, roslib.names.ns_join(name, 'list_nodes'))
-            # request the description
-            descr_service = self.__master_info.getService(roslib.names.ns_join(name, 'description'))
-            if descr_service is not None:
-                self.default_cfg_handler.requestDescriptionList(descr_service.uri, descr_service.name)
-        self.updateButtons()
+#     def updateDefaultConfigs(self, master_info):
+#         '''
+#         Updates the default configuration view based on the current master information.
+#         @param master_info: the mater information object
+#         @type master_info: U{master_discovery_fkie.msg.MasterInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
+#         '''
+#         if self.__master_info is None:
+#             return
+#         default_cfgs = []
+#         for name in self.__master_info.service_names:
+#             if name.endswith('list_nodes'):
+#                 srv = self.__master_info.getService(name)
+#                 default_cfgs.append((roslib.names.namespace(name).rstrip(roslib.names.SEP), srv.uri, srv.masteruri))
+#         # remove the node contained in default configuration form the view
+#         removed = list(set([c for c in self.__configs.keys() if isinstance(c, tuple)]) - set(default_cfgs))
+#         if removed:
+#             for r in removed:
+#                 self.node_tree_model.removeConfigNodes(r)
+# #        service = self.__master_info.getService(roslib.names.ns_join(r[0], 'list_nodes'))
+#                 if r[2] == self.masteruri:
+#                     self.remove_config_signal.emit(r[0])
+#                 del self.__configs[r]
+#         if len(self.__configs) == 0:
+#             address = nm.nameres().address(master_info.masteruri)
+#             tooltip = self.node_tree_model.updateHostDescription(master_info.masteruri, address, '', '', '')
+#             self.host_description_updated.emit(master_info.masteruri, address, tooltip)
+#         # request the nodes of new default configurations
+#         added = list(set(default_cfgs) - set(self.__configs.keys()))
+#         for (name, uri, _) in added:  # _:= masteruri
+#             self.default_cfg_handler.requestNodeList(uri, roslib.names.ns_join(name, 'list_nodes'))
+#             # request the description
+#             descr_service = self.__master_info.getService(roslib.names.ns_join(name, 'description'))
+#             if descr_service is not None:
+#                 self.default_cfg_handler.requestDescriptionList(descr_service.uri, descr_service.name)
+#         self.updateButtons()
 
-    def on_default_cfg_nodes_retrieved(self, service_uri, config_name, nodes):
-        '''
-        Handles the new list with nodes from default configuration service.
-        @param service_uri: the URI of the service provided the default configuration
-        @type service_uri: C{str}
-        @param config_name: the name of default configuration service
-        @type config_name: C{str}
-        @param nodes: the name of the nodes with name spaces
-        @type nodes: C{[str]}
-        '''
-        # remove the current state
-        masteruri = self.masteruri
-        if self.__master_info is not None:
-            service = self.__master_info.getService(config_name)
-            if service is not None:
-                masteruri = service.masteruri
-        cfg_name = roslib.names.namespace(config_name).rstrip(roslib.names.SEP)
-        key = (cfg_name, service_uri, masteruri)
-#    if self.__configs.has_key(key):
-#      self.node_tree_model.removeConfigNodes(key)
-        # add the new config
-        node_cfgs = dict()
-        for n in nodes:
-            node_cfgs[n] = key
-        host = get_hostname(service_uri)
-        host_addr = nm.nameres().address(host)
-        if host_addr is None:
-            host_addr = host
-        self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
-        self.__configs[key] = nodes
-        # start nodes in the queue
-        if cfg_name in self._start_nodes_after_load_cfg:
-            self.start_nodes_by_name(self._start_nodes_after_load_cfg[cfg_name], roslib.names.ns_join(cfg_name, 'run'), True)
-            del self._start_nodes_after_load_cfg[cfg_name]
-        self.updateButtons()
+#     def on_default_cfg_nodes_retrieved(self, service_uri, config_name, nodes):
+#         '''
+#         Handles the new list with nodes from default configuration service.
+#         @param service_uri: the URI of the service provided the default configuration
+#         @type service_uri: C{str}
+#         @param config_name: the name of default configuration service
+#         @type config_name: C{str}
+#         @param nodes: the name of the nodes with name spaces
+#         @type nodes: C{[str]}
+#         '''
+#         # remove the current state
+#         masteruri = self.masteruri
+#         if self.__master_info is not None:
+#             service = self.__master_info.getService(config_name)
+#             if service is not None:
+#                 masteruri = service.masteruri
+#         cfg_name = roslib.names.namespace(config_name).rstrip(roslib.names.SEP)
+#         key = (cfg_name, service_uri, masteruri)
+# #    if self.__configs.has_key(key):
+# #      self.node_tree_model.removeConfigNodes(key)
+#         # add the new config
+#         node_cfgs = dict()
+#         for n in nodes:
+#             node_cfgs[n] = key
+#         host = get_hostname(service_uri)
+#         host_addr = nm.nameres().address(host)
+#         if host_addr is None:
+#             host_addr = host
+#         self.node_tree_model.appendConfigNodes(masteruri, host_addr, node_cfgs)
+#         self.__configs[key] = nodes
+#         # start nodes in the queue
+#         if cfg_name in self._start_nodes_after_load_cfg:
+#             self.start_nodes_by_name(self._start_nodes_after_load_cfg[cfg_name], roslib.names.ns_join(cfg_name, 'run'), True)
+#             del self._start_nodes_after_load_cfg[cfg_name]
+#         self.updateButtons()
 
-    def on_default_cfg_descr_retrieved(self, service_uri, config_name, items):
-        '''
-        Handles the description list from default configuration service.
-        Emits a Qt signal L{host_description_updated} to notify about a new host
-        description and a Qt signal L{capabilities_update_signal} to notify about a capabilities
-        update.
-        @param service_uri: the URI of the service provided the default configuration
-        @type service_uri: C{str}
-        @param config_name: the name of default configuration service
-        @type config_name: C{str}
-        @param items: list with descriptions
-        @type items: C{[U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response]}
-        '''
-        if items:
-            masteruri = self.masteruri
-            if self.__master_info is not None:
-                service = self.__master_info.getService(config_name)
-                if service is not None:
-                    masteruri = service.masteruri
-            key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri, masteruri)
-            host = get_hostname(service_uri)
-            host_addr = nm.nameres().address(host)
-            # add capabilities
-            caps = dict()
-            for c in items[0].capabilities:
-                if c.namespace not in caps:
-                    caps[c.namespace] = dict()
-                caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
-            if host_addr is None:
-                host_addr = get_hostname(key[1])
-            self.node_tree_model.addCapabilities(masteruri, host_addr, key, caps)
-            # set host description
-            tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, utf8(items[0].robot_name), resolve_paths(utf8(items[0].robot_descr)))
-            self.host_description_updated.emit(masteruri, host_addr, tooltip)
-            self.capabilities_update_signal.emit(masteruri, host_addr, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
-
-    def on_default_cfg_err(self, service_uri, service, msg):
-        '''
-        Handles the error messages from default configuration service.
-        @param service_uri: the URI of the service provided the default configuration
-        @type service_uri: C{str}
-        @param service: the name of default configuration service
-        @type service: C{str}
-        @param msg: the error message
-        @type msg: C{str}
-        '''
-        pass
-#    MessageBox.warning(self, 'Error while call %s'%service,
-#                              utf8(msg),
-#                              buttons=MessageBox.Ok)
+#     def on_default_cfg_descr_retrieved(self, service_uri, config_name, items):
+#         '''
+#         Handles the description list from default configuration service.
+#         Emits a Qt signal L{host_description_updated} to notify about a new host
+#         description and a Qt signal L{capabilities_update_signal} to notify about a capabilities
+#         update.
+#         @param service_uri: the URI of the service provided the default configuration
+#         @type service_uri: C{str}
+#         @param config_name: the name of default configuration service
+#         @type config_name: C{str}
+#         @param items: list with descriptions
+#         @type items: C{[U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response]}
+#         '''
+#         if items:
+#             masteruri = self.masteruri
+#             if self.__master_info is not None:
+#                 service = self.__master_info.getService(config_name)
+#                 if service is not None:
+#                     masteruri = service.masteruri
+#             key = (roslib.names.namespace(config_name).rstrip(roslib.names.SEP), service_uri, masteruri)
+#             host = get_hostname(service_uri)
+#             host_addr = nm.nameres().address(host)
+#             # add capabilities
+#             caps = dict()
+#             for c in items[0].capabilities:
+#                 if c.namespace not in caps:
+#                     caps[c.namespace] = dict()
+#                 caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
+#             if host_addr is None:
+#                 host_addr = get_hostname(key[1])
+#             self.node_tree_model.addCapabilities(masteruri, host_addr, key, caps)
+#             # set host description
+#             tooltip = self.node_tree_model.updateHostDescription(masteruri, host_addr, items[0].robot_type, utf8(items[0].robot_name), resolve_paths(utf8(items[0].robot_descr)))
+#             self.host_description_updated.emit(masteruri, host_addr, tooltip)
+#             self.capabilities_update_signal.emit(masteruri, host_addr, roslib.names.namespace(config_name).rstrip(roslib.names.SEP), items)
+# 
+#     def on_default_cfg_err(self, service_uri, service, msg):
+#         '''
+#         Handles the error messages from default configuration service.
+#         @param service_uri: the URI of the service provided the default configuration
+#         @type service_uri: C{str}
+#         @param service: the name of default configuration service
+#         @type service: C{str}
+#         @param msg: the error message
+#         @type msg: C{str}
+#         '''
+#         pass
+# #    MessageBox.warning(self, 'Error while call %s'%service,
+# #                              utf8(msg),
+# #                              buttons=MessageBox.Ok)
 
     def on_launch_description_retrieved(self, url, launch_descriptions):
         '''
@@ -1593,8 +1593,8 @@ class MasterViewProxy(QWidget):
                 text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
             text += self._create_html_list('Services:', node.services, 'SERVICE', node.name)
             # set loaunch file paths
-            text += self._create_html_list('Loaded Launch Files:', launches, 'LAUNCH')
-            text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
+            text += self._create_html_list('Launch Files:', launches, 'LAUNCH')
+            # text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
 #      text += '<dt><a href="copy-log-path://%s">copy log path to clipboard</a></dt>'%node.name
         return text
 
