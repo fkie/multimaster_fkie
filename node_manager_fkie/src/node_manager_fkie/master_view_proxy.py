@@ -2391,18 +2391,19 @@ class MasterViewProxy(QWidget):
         tries to get the host from the launch configuration. If the configuration
         contains no machine assignment for this node the host of the ROS master URI
         will be used.
-        @param node:
-        @type node: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+        :param node:
+        :type node: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
         '''
         if node.uri is not None:
             return get_hostname(node.uri)
-        # try to get it from the configuration
-        for c in node.cfgs:
-            if not isinstance(c, tuple):
-                launch_config = self.__configs[c]
-                item = launch_config.getNode(node.name)
-                if item is not None and item.machine_name and not item.machine_name == 'localhost':
-                    return launch_config.Roscfg.machines[item.machine_name].address
+        # try to get it from the configuration,
+        # TODO: get it from node manager daemon?
+#         for c in node.cfgs:
+#             if not isinstance(c, tuple):
+#                 launch_config = self.__configs[c]
+#                 item = launch_config.getNode(node.name)
+#                 if item is not None and item.machine_name and not item.machine_name == 'localhost':
+#                     return launch_config.Roscfg.machines[item.machine_name].address
         # return the host of the assigned ROS master
         return get_hostname(node.masteruri)
 
@@ -2461,7 +2462,7 @@ class MasterViewProxy(QWidget):
             selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
             for node in selectedNodes:
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               ''.join(['kill screen of ', node.name]),
+                                               "kill screen of %s" % node.name,
                                                nm.screen().killScreens,
                                                (node.name, self.getHostFromNode(node), False, self.current_user))
             self._start_queue(self._progress_queue)
@@ -2483,7 +2484,7 @@ class MasterViewProxy(QWidget):
             except Exception, e:
                 rospy.logwarn("Error while get screen list: %s", utf8(e))
                 MessageBox.warning(self, "Screen list error",
-                                   ''.join(['Error while get screen list from ', host]),
+                                   "Error while get screen list from '%s'" % host,
                                    utf8(e))
             for screen in sel_screen:
                 try:
@@ -2492,7 +2493,7 @@ class MasterViewProxy(QWidget):
                 except Exception, e:
                     rospy.logwarn("Error while show IO for %s: %s", utf8(screen), utf8(e))
                     MessageBox.warning(self, "Show IO error",
-                                       ''.join(['Error while show IO ', screen, ' on ', host]),
+                                       "Error while show IO '%s' on '%s'" % (screen, host),
                                        utf8(e))
         finally:
             self.setCursor(cursor)
@@ -2514,7 +2515,7 @@ class MasterViewProxy(QWidget):
             if ret:
                 for node in selectedNodes:
                     self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
-                                                        ''.join(['show log of ', node.name]),
+                                                        'show log of %s' % node.name,
                                                         nm.starter().openLog,
                                                         (node.name, self.getHostFromNode(node), self.current_user, only_screen))
                 self._start_queue(self._progress_queue_prio)
@@ -2562,7 +2563,7 @@ class MasterViewProxy(QWidget):
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
         for node in selectedNodes:
             self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
-                                                ''.join(['delete Log of ', node.name]),
+                                                "delete Log of '%s'" % node.name,
                                                 nm.starter().deleteLog,
                                                 (node.name, self.getHostFromNode(node), False, self.current_user))
         self._start_queue(self._progress_queue_prio)
