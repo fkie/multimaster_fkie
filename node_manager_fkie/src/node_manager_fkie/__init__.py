@@ -83,7 +83,6 @@ _START_HANDLER = None
 _NAME_RESOLUTION = None
 _HISTORY = None
 _FILE_WATCHER = None
-_FILE_WATCHER_PARAM = None
 _QAPP = None
 
 
@@ -152,15 +151,6 @@ def filewatcher():
     @rtype: L{FileWatcher}
     '''
     return _FILE_WATCHER
-
-
-def file_watcher_param():
-    '''
-    @return: The file watcher object with all configuration files referenced by
-             parameter value.
-    @rtype: L{FileWatcher}
-    '''
-    return _FILE_WATCHER_PARAM
 
 
 def get_ros_hostname(url):
@@ -295,7 +285,6 @@ def init_globals(masteruri):
     global _NAME_RESOLUTION
     global _HISTORY
     global _FILE_WATCHER
-    global _FILE_WATCHER_PARAM
     _NMD_CLIENT = NmdClient()
     # _NMD_CLIENT.start()
     _SSH_HANDLER = SSHhandler()
@@ -304,7 +293,6 @@ def init_globals(masteruri):
     _NAME_RESOLUTION = NameResolution()
     _HISTORY = History()
     _FILE_WATCHER = FileWatcher()
-    _FILE_WATCHER_PARAM = FileWatcher()
 
     # test where the roscore is running (local or remote)
     __is_local('localhost')  # fill cache

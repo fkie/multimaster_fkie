@@ -44,6 +44,7 @@ service LaunchService {
 	rpc StartStandaloneNode (StartConfig) returns (StartNodeReply);
 	rpc RestartNode (stream Node) returns (stream StartNodeReply);
 	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
+	rpc GetMtime (LaunchFile) returns (MtimeReply);
 }
 
 message Empty {
@@ -83,11 +84,15 @@ message LoadLaunchRequest {
  */
 message LoadLaunchReply {
 	ReturnStatus status = 1;
+	repeated string path = 2;
+	repeated Argument args = 3;
+	repeated string changed_nodes = 4;
+}
+
+message MtimeReply {
+	string path = 1;
 	double mtime = 2;
-	repeated string path = 3;
-	repeated Argument args = 4;
-	repeated string changed_nodes = 5;
-	repeated FileObj included_files = 6;
+	repeated FileObj included_files = 3;
 }
 
 message FileObj {
@@ -190,6 +195,7 @@ message Node {
 	string opt_launch = 3;
 	sint32 loglevel = 4;
 	string masteruri = 5;
+	bool reload_global_param = 6;
 }
 
 /** Starts a ROS node without configurations. All parameter are set by this request.

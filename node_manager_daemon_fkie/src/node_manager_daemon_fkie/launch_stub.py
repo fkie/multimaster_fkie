@@ -57,6 +57,8 @@ class LaunchStub(object):
 
     def load_launch(self, package, launch, path='', args=None, request_args=False, masteruri='', host=''):
         '''
+        :return: tuple with launch file, dictionary of requested arguments
+        :rtype: str, {str: str}
         '''
         arguments = args
         if arguments is None:
@@ -74,13 +76,12 @@ class LaunchStub(object):
             raise exceptions.AlreadyOpenException(response.path[0], response.status.error_msg)
         else:
             raise exceptions.RemoteException(response.status.code, response.status.error_msg)
-        # TODO: forward mtimes
-#        includes = {path: mtime}
-#        return launch_file, mtime, args, includes
         return response.path[0], {arg.name: arg.value for arg in response.args}
 
     def reload_launch(self, path, masteruri=''):
         '''
+        :return: tuple with launch file, list of changed node after reload launch
+        :rtype: str, [str]
         '''
         request = lmsg.LaunchFile(path=path, masteruri=masteruri)
         response = self.lm_stub.ReloadLaunch(request, timeout=settings.GRPC_TIMEOUT)
@@ -89,9 +90,16 @@ class LaunchStub(object):
                 raise exceptions.ResourceNotFound(path, response.status.error_msg)
             else:
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
-        # TODO: forward mtimes
-#        return launch_file, mtime, includes, changed nodes
         return response.path, response.changed_nodes
+
+    def get_mtimes(self, path):
+        '''
+        :return: tuple with launch file, modification time and dictionary of included files and their modification times.
+        :rtype: str, double {str: double}
+        '''
+        request = lmsg.LaunchFile(path=path, masteruri='')
+        response = self.lm_stub.GetMtime(request, timeout=settings.GRPC_TIMEOUT)
+        return response.path, response.mtime, response.included_files
 
     def unload_launch(self, path, masteruri=''):
         '''
@@ -195,10 +203,10 @@ class LaunchStub(object):
         return result
 
     def _gen_node_list(self, nodes):
-        for name, opt_binariy, opt_launch, loglevel, masteruri in nodes:
-            yield lmsg.Node(name=name, opt_binariy=opt_binariy, opt_launch=opt_launch, loglevel=loglevel, masteruri=masteruri)
+        for name, opt_binariy, opt_launch, loglevel, masteruri, reload_global_param in nodes:
+            yield lmsg.Node(name=name, opt_binariy=opt_binariy, opt_launch=opt_launch, loglevel=loglevel, masteruri=masteruri, reload_global_param=reload_global_param)
 
-    def start_node(self, name, opt_binariy='', opt_launch='', loglevel=0, masteruri=''):
+    def start_node(self, name, opt_binariy='', opt_launch='', loglevel=0, masteruri='', reload_global_param=False):
         '''
         Start node.
         :param str name: full name of the ros node exists in the launch file.
@@ -209,7 +217,7 @@ class LaunchStub(object):
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         :raise exceptions.LaunchSelectionRequest: on multiple launch files
         '''
-        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binariy, opt_launch, loglevel, masteruri)]), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binariy, opt_launch, loglevel, masteruri, reload_global_param)]), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == 0:
                 pass

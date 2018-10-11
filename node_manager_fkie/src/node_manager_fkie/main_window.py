@@ -124,9 +124,7 @@ class MainWindow(QMainWindow):
                         }  # (masnter name : (QIcon, path))
         self.__current_icon = None
         self.__current_master_label_name = None
-        self._changed_files = dict()
         self._changed_binaries = dict()
-        self._changed_files_param = dict()
         self._syncs_to_start = []  # hostnames
         self._accept_next_update = False
         # self.setAttribute(Qt.WA_AlwaysShowToolTips, True)
@@ -220,9 +218,7 @@ class MainWindow(QMainWindow):
         self.currentMaster = None  # MasterViewProxy
         self._close_on_exit = True
 
-        nm.filewatcher().config_changed.connect(self.on_configfile_changed)
         nm.filewatcher().binary_changed.connect(self.on_binaryfile_changed)
-        nm.file_watcher_param().config_changed.connect(self.on_configparamfile_changed)
         self.__in_question = set()
 
         ############################################################################
@@ -1811,22 +1807,6 @@ class MainWindow(QMainWindow):
 # Change file detection
 # ======================================================================================================================
 
-    def on_configfile_changed(self, changed, affected):
-        '''
-        Signal hander to handle the changes of a loaded configuration file
-        @param changed: the changed file
-        @type changed: C{str}
-        @param affected: the list of tuples with masteruri and launchfile, which are affected by file change
-        @type affected: list
-        '''
-        # create a list of launch files and masters, which are affected by the changed file
-        # and are not currently in question
-        if self.isActiveWindow():
-            self._changed_files[changed] = affected
-            self._check_for_changed_files()
-        else:
-            self._changed_files[changed] = affected
-
     def on_binaryfile_changed(self, changed, affected):
         '''
         Signal hander to handle the changes started binaries.
@@ -1841,17 +1821,6 @@ class MainWindow(QMainWindow):
             self._check_for_changed_binaries()
         else:
             self._changed_binaries[changed] = affected
-
-    def _check_for_changed_files(self):
-        '''
-        Check the dictinary with changed files and notify the masters about changes.
-        '''
-        for changed, affected in self._changed_files.items():  # :=changed
-            for (muri, lfile) in affected:
-                master = self.getMaster(muri)
-                if master is not None:
-                    master.question_reload_changed_file(changed, lfile)
-        self._changed_files.clear()
 
     def _check_for_changed_binaries(self):
         '''
@@ -1888,40 +1857,17 @@ class MainWindow(QMainWindow):
                     choices[nname][0].start_nodes_by_name([nname], choices[nname][1], True)
         self._changed_binaries.clear()
 
-    def on_configparamfile_changed(self, changed, affected):
-        '''
-        Signal handler to handle the changes of a configuration file referenced by a parameter value
-        @param changed: the changed file
-        @type changed: C{str}
-        @param affected: the list of tuples with masteruri and launchfile, which are affected by file change
-        @type affected: list
-        '''
-        # create a list of launch files and masters, which are affected by the changed file
-        if self.isActiveWindow():
-            self._changed_files_param[changed] = affected
-            self._check_for_changed_files_param()
-        else:
-            self._changed_files_param[changed] = affected
-
-    def _check_for_changed_files_param(self):
-        '''
-        Check the dictinary with changed files and notify about the transfer of changed file.
-        '''
-        for changed, affected in self._changed_files_param.items():
-            for (muri, lfile) in affected:
-                master = self.getMaster(muri)
-                if master is not None:
-                    master.question_transfer_changed_file(changed, lfile)
-        self._changed_files_param.clear()
-
     def changeEvent(self, event):
         '''
         Check for changed files, if the main gui is activated.
         '''
+        if hasattr(self, 'currentMaster') and self.currentMaster is not None:
+            # check for file changes
+            files = self.currentMaster.get_files_for_change_check()
+            if files:
+                nm.nmd().check_for_changed_files_threaded(files)
         QMainWindow.changeEvent(self, event)
-        self._check_for_changed_files()
         self._check_for_changed_binaries()
-        self._check_for_changed_files_param()
 
 # ======================================================================================================================
 # Capabilities handling
@@ -2026,7 +1972,7 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('launch://'):
             self.on_launch_edit(self._url_path(url), '')
         elif url.toString().startswith('reload-globals://'):
-            self._reload_globals_at_next_start(self._url_path(url).replace('reload-globals://', ''))
+            self._reload_globals_at_next_start(url.toString().replace('reload-globals://', 'grpc://'))
         elif url.toString().startswith('poweroff://'):
             self.poweroff_host(self._url_host(url))
         elif url.toString().startswith('rosclean://'):

@@ -236,7 +236,7 @@ class TextEdit(QTextEdit):
     def focusInEvent(self, event):
         # check for file changes
         if self.filename and self.file_mtime:
-            nm.nmd().check_for_changed_file_threaded(self.filename, self.file_mtime)
+            nm.nmd().check_for_changed_files_threaded({self.filename: self.file_mtime})
         QTextEdit.focusInEvent(self, event)
 
     def file_changed(self, mtime):

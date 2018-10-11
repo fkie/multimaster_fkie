@@ -301,7 +301,7 @@ class PathItem(QStandardItem):
         Compares the path of the item.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
-            return self.lower() == item.lower()
+            return self.path.lower() == item.lower()
         elif not (item is None):
             return self.path.lower() == item.path.lower()
         return False
@@ -311,7 +311,7 @@ class PathItem(QStandardItem):
         Compares the path of the item.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
-            return self.lower() > item.lower()
+            return self.path.lower() > item.lower()
         elif not (item is None):
             return self.path.lower() > item.path.lower()
         return False

@@ -59,6 +59,11 @@ class LaunchServiceStub(object):
         request_serializer=launch__pb2.IncludedFilesRequest.SerializeToString,
         response_deserializer=launch__pb2.IncludedFilesReply.FromString,
         )
+    self.GetMtime = channel.unary_unary(
+        '/node_manager_daemon_fkie.LaunchService/GetMtime',
+        request_serializer=launch__pb2.LaunchFile.SerializeToString,
+        response_deserializer=launch__pb2.MtimeReply.FromString,
+        )
 
 
 class LaunchServiceServicer(object):
@@ -128,6 +133,13 @@ class LaunchServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def GetMtime(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_LaunchServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -175,6 +187,11 @@ def add_LaunchServiceServicer_to_server(servicer, server):
           servicer.GetIncludedFiles,
           request_deserializer=launch__pb2.IncludedFilesRequest.FromString,
           response_serializer=launch__pb2.IncludedFilesReply.SerializeToString,
+      ),
+      'GetMtime': grpc.unary_unary_rpc_method_handler(
+          servicer.GetMtime,
+          request_deserializer=launch__pb2.LaunchFile.FromString,
+          response_serializer=launch__pb2.MtimeReply.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

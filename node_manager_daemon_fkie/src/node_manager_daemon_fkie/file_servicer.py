@@ -349,10 +349,12 @@ class FileServicer(fms_grpc.FileServiceServicer):
 
     def ChangedFiles(self, request, context):
         result = fms.PathList()
+        chnged_files = []
         for item in request.items:
             mtime = 0
             if os.path.exists(item.path):
                 mtime = os.path.getmtime(item.path)
             if mtime != item.mtime:
-                result.items.append(fms.PathObj(path=item.path, mtime=mtime))
+                chnged_files.append(fms.PathObj(path=item.path, mtime=mtime))
+        result.items.extend(chnged_files)
         return result

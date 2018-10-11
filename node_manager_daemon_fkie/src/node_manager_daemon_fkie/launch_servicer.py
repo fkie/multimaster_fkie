@@ -181,14 +181,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             # parse result args for reply
             result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.argv2dict(res_argv).items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
-            result.mtime = os.path.getmtime(launchfile)
-            # add mtimes for all included files
-            inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
-            for incf in inc_files:
-                mtime = 0
-                if os.path.exists(incf):
-                    mtime = os.path.getmtime(incf)
-                result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
             rospy.logdebug("..load complete!")
         except Exception as e:
             import traceback
@@ -214,14 +206,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 argv = cfg.argv
                 cfg.load(argv)
                 result.status.code = OK
-                result.mtime = os.path.getmtime(request.path)
-                # add mtimes for all included files
-                inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
-                for incf in inc_files:
-                    mtime = 0
-                    if os.path.exists(incf):
-                        mtime = os.path.getmtime(incf)
-                    result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
                 # detect files changes
                 if stored_roscfg and cfg.roscfg:
                     stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
@@ -370,7 +354,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     yield result
                 try:
                     result.launch.append(launch_configs[0].filename)
-                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binariy, masteruri=request.masteruri, loglevel=request.loglevel)
+                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binariy, masteruri=request.masteruri, loglevel=request.loglevel, reload_global_param=request.reload_global_param)
                     startcfg.host = get_nmd_url(request.masteruri)
                     launcher.run_node(startcfg)
                     result.status.code = OK
@@ -452,3 +436,19 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             yield reply
             for linenr, path, file_list in node[3]:
                 queue.append(((node[2], linenr, path, file_list)))
+
+    def GetMtime(self, request, context):
+        result = lmsg.MtimeReply()
+        result.path = request.path
+        mtime = 0
+        if os.path.exists(request.path):
+            mtime = os.path.getmtime(request.path)
+        result.mtime = mtime
+        # add mtimes for all included files
+        inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
+        for incf in inc_files:
+            mtime = 0
+            if os.path.exists(incf):
+                mtime = os.path.getmtime(incf)
+            result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
+        return result

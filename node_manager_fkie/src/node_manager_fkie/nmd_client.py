@@ -90,6 +90,10 @@ class NmdClient(QObject):
     '''
     :ivar: this signal is emitted on new list with packages  {grpc_url}.
     '''
+    mtimes = Signal(str, float, dict)
+    '''
+    :ivar: this signal is emitted on new mtimes for requested files {grpc_url, mtime, {grpc_path: mtime}}.
+    '''
 
     def __init__(self):
         QObject.__init__(self)
@@ -200,25 +204,31 @@ class NmdClient(QObject):
             self._cache_path[grpc_path] = result
             self.listed_path.emit("grpc://%s" % url, path, result)
 
-    def check_for_changed_file_threaded(self, grpc_path, mtime):
-        somethingThread = threading.Thread(target=self._check_for_changed_file_threaded, args=(grpc_path, mtime))
-        somethingThread.start()
+    def check_for_changed_files_threaded(self, grpc_path_dict):
+        dests = {}
+        for grpc_path, mtime in grpc_path_dict.items():
+            url, path = grpc_split_url(grpc_path, with_scheme=True)
+            if url not in dests:
+                dests[url] = {}
+            dests[url][path] = mtime
+        for url, paths in dests.items():
+            somethingThread = threading.Thread(target=self._check_for_changed_files_threaded, args=(url, paths))
+            somethingThread.start()
 
-    def _check_for_changed_file_threaded(self, grpc_path, mtime):
-        rospy.logdebug("check_for_changed_file_threaded: %s" % grpc_path)
-        url, path = grpc_split_url(grpc_path)
+    def _check_for_changed_files_threaded(self, grpc_url, path_dict):
+        rospy.logdebug("check_for_changed_files_threaded: with %d files on %s" % (len(path_dict), grpc_url))
+        url, _path = grpc_split_url(grpc_url, with_scheme=False)
         fm = self.get_file_manager(url)
         if fm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
         try:
-            for file_item in fm.list_path(os.path.dirname(path)):
-                if file_item.path == path:
-                    if mtime != file_item.mtime:
-                        self.changed_file.emit(grpc_path, file_item.mtime)
-                    return
+            response = fm.changed_files(path_dict)
+            for item in response:
+                print("EMIT CHANGED:", item.path, item.mtime)
+                self.changed_file.emit(grpc_join(grpc_url, item.path), item.mtime)
         except Exception as e:
-            self.error.emit("list_path", "grpc://%s" % url, path, e)
-            rospy.logwarn("LIST PATH: %s" % e)
+            self.error.emit("changed_files", "grpc://%s" % url, "", e)
+            rospy.logwarn("check_for_changed_files_threaded: %s" % e)
             import traceback
             print(traceback.format_exc())
 
@@ -366,7 +376,9 @@ class NmdClient(QObject):
 #                 import inspect
 #                 print("CALLER:", inspect.stack()[1][3])
                 rospy.loginfo("load launch file %s:" % (grpc_path))
-                launch_file, _argv = lm.load_launch(package, launch, path=path, args=myargs, request_args=request_args, masteruri=masteruri, host=host)
+                launch_files, _argv = lm.load_launch(package, launch, path=path, args=myargs, request_args=request_args, masteruri=masteruri, host=host)
+                if launch_files:
+                    launch_file = launch_files[0]
                 nexttry = False
                 ok = True
             except exceptions.LaunchSelectionRequest as lsr:
@@ -398,8 +410,11 @@ class NmdClient(QObject):
         lm = self.get_launch_manager(url)
         if lm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
-        launch_file, changed_nodes = lm.reload_launch(path, masteruri=masteruri)
-        return launch_file, changed_nodes
+        launch_file = ''
+        launch_files, changed_nodes = lm.reload_launch(path, masteruri=masteruri)
+        if launch_files:
+            launch_file = launch_files[0]
+        return launch_file, [node for node in changed_nodes]
 
     def unload_launch(self, grpc_path, masteruri=''):
         rospy.logdebug("unload launch %s" % grpc_path)
@@ -418,6 +433,21 @@ class NmdClient(QObject):
 #             import traceback
 #             print(traceback.format_exc())
 #         rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
+
+    def get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
+        thread = threading.Thread(target=self._get_mtimes_threaded, args=(grpc_path,))
+        thread.setDaemon(True)
+        thread.start()
+
+    def _get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
+        url, path = grpc_split_url(grpc_path)
+        rospy.logdebug("get nodes from %s" % url)
+        lm = self.get_launch_manager(url)
+        if lm is None:
+            raise Exception("Node manager daemon '%s' not reachable" % url)
+        rpath, mtime, included_files = lm.get_mtimes(path)
+        url, _ = grpc_split_url(grpc_path, with_scheme=True)
+        self.mtimes.emit(grpc_join(url, rpath), mtime, {grpc_join(url, pobj.path): pobj.mtime for pobj in included_files})
 
     def get_nodes(self, grpc_path='grpc://localhost:12321', masteruri=''):
         url, _ = grpc_split_url(grpc_path)
@@ -458,14 +488,14 @@ class NmdClient(QObject):
                 remote.remove_insecure_channel(url)
                 self.error.emit("_list_packages", "grpc://%s" % url, path, err)
 
-    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri=''):
+    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False):
         rospy.loginfo("start node: %s on %s" % (name, masteruri))
         url, _ = grpc_split_url(grpc_path)
         lm = self.get_launch_manager(url)
         if lm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
         try:
-            return lm.start_node(name, masteruri=masteruri)
+            return lm.start_node(name, masteruri=masteruri, reload_global_param=reload_global_param)
         except Exception as err:
             remote.remove_insecure_channel(url)
             raise err

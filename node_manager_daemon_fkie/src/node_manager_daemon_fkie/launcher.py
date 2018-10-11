@@ -54,7 +54,7 @@ CACHED_PKG_PATH = dict()  # {host : {pkg: path}}
 RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
 
 
-def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel=None):
+def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel=None, reload_global_param=False):
     '''
     :return: Returns start configuration created from loaded launch file.
     :rtype: node_manager_daemon_fkie.startcfg.StartConfig
@@ -95,6 +95,9 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     # let cwd unchanged, it will be resolved on host
     result.cwd = n.cwd
     # add global parameter on start of first node of the launch
+    if reload_global_param:
+        if masteruri in launchcfg.global_param_done:
+            launchcfg.global_param_done.remove(masteruri)
     if masteruri not in launchcfg.global_param_done:
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)

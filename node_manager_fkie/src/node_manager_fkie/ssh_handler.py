@@ -258,7 +258,7 @@ class SSHhandler(object):
         pwInput = QDialog()
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'PasswordInput.ui')
         loadUi(ui_file, pwInput)
-        pwInput.setWindowTitle(''.join(['Enter the password for user ', user, ' on ', host]))
+        pwInput.setWindowTitle(''.join(['Access for ', host]))
         pwInput.userLine.setText(utf8(user))
         pwInput.pwLine.setText("")
         pwInput.pwLine.setFocus(Qt.OtherFocusReason)
