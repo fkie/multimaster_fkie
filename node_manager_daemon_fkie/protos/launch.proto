@@ -191,7 +191,7 @@ message Capability {
 /** Starts a ROS node by full name. */
 message Node {
 	string name = 1;
-	string opt_binariy = 2;
+	string opt_binary = 2;
 	string opt_launch = 3;
 	sint32 loglevel = 4;
 	string masteruri = 5;

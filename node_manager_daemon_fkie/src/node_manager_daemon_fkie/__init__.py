@@ -31,6 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 import os
 import signal
 import sys
@@ -70,6 +71,15 @@ def set_process_name(name):
         pass
 
 
+def init_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--load", nargs=1, help="loads given file on start;"
+                                                      "comma separated for multiple files")
+    parser.add_argument("-a", "--autostart", nargs=1, help="loads given file on start and launch nodes after load launch file;"
+                                                           "comma separated for multiple files")
+    return parser
+
+
 def start_server(node_name='node_manager_daemon'):
     '''
     Creates and runs the ROS node
@@ -84,15 +94,26 @@ def start_server(node_name='node_manager_daemon'):
     rospy.init_node(node_name, log_level=log_level)
     set_terminal_name(node_name)
     set_process_name(node_name)
+    # load parameter
+    parser = init_arg_parser()
+    args = rospy.myargv(argv=sys.argv)
+    parsed_args = parser.parse_args(args[1:])
+    load_files = []
+    if parsed_args.load:
+        load_files = parsed_args.load[0].split(',')
+    start_files = []
+    if parsed_args.autostart:
+        start_files = parsed_args.autostart[0].split(',')
     try:
-#        port = rospy.get_param('port', 12321)
         launch_manager = GrpcServer()
-#        url = get_nmd_url(prefix='')
-#        print("start on", url)
-#        launch_manager.start(url)
-#        launch_manager.start('[::]:%s' % str(get_nmd_port()))
         launch_manager.start('[::]:%s' % str(get_nmd_port()))
+        # load launch file from parameter
+        for lfile in load_files:
+            launch_manager.load_launch_file(lfile, autostart=False)
+        for sfile in start_files:
+            launch_manager.load_launch_file(sfile, autostart=True)
         rospy.spin()
+        launch_manager.shutdown()
     except Exception:
         # on load error the process will be killed to notify user in node_manager
         # about error

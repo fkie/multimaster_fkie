@@ -37,6 +37,7 @@ import rospy
 import roslib.names
 import roslib.packages
 import rospkg
+import threading
 
 from master_discovery_fkie.common import masteruri_from_master
 import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
@@ -58,6 +59,8 @@ MULTIPLE_LAUNCHES = lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES')
 PARAMS_REQUIRED = lmsg.ReturnStatus.StatusType.Value('PARAMS_REQUIRED')
 FILE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND')
 NODE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('NODE_NOT_FOUND')
+
+IS_RUNNING = True
 
 
 class CfgId(object):
@@ -102,6 +105,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
     def __init__(self):
         rospy.loginfo("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
+        self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
 
@@ -113,6 +117,60 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             rospy.loginfo("Add callback to peer context @%s" % context.peer())
             if context.add_callback(self._terminated):
                 self._peers[context.peer()] = context
+
+    def stop(self):
+        global IS_RUNNING
+        IS_RUNNING = False
+
+    def load_launch_file(self, path, autostart=False):
+        launch_config = LaunchConfig(path)
+        loaded, res_argv = launch_config.load([])
+        if loaded:
+            rospy.logdebug("loaded %s\n  used args: %s" % (path, utf8(res_argv)))
+            self._loaded_files[CfgId(path, '')] = launch_config
+            if autostart:
+                start_thread = threading.Thread(target=self._autostart_nodes_threaded, args=(launch_config,))
+                start_thread.start()
+        else:
+            rospy.logwarn("load %s failed!" % (path))
+
+    def _autostart_nodes_threaded(self, cfg):
+        global IS_RUNNING
+        for item in cfg.roscfg.nodes:
+            if not IS_RUNNING:
+                return
+            node_fullname = roslib.names.ns_join(item.namespace, item.name)
+            try:
+                if self._get_start_exclude(cfg, node_fullname):
+                    # skip autostart
+                    rospy.logdebug("%s is in exclude list, skip autostart", node_fullname)
+                    continue
+                startcfg = launcher.create_start_config(node_fullname, cfg, '', masteruri='', loglevel='', reload_global_param=False)
+                start_delay = self._get_start_delay(cfg, node_fullname)
+                if start_delay > 0:
+                    # start timer for delayed start
+                    start_timer = threading.Timer(start_delay, launcher.run_node, args=(startcfg,))
+                    start_timer.start()
+                else:
+                    launcher.run_node(startcfg)
+            except Exception as err:
+                rospy.logwarn("Error while start %s: %s", node_fullname, err)
+
+    def _get_start_exclude(self, cfg, node):
+        param_name = rospy.names.ns_join(node, 'autostart/exclude')
+        try:
+            return bool(cfg.roscfg.params[param_name].value)
+        except Exception:
+            pass
+        return False
+
+    def _get_start_delay(self, cfg, node):
+        param_name = rospy.names.ns_join(node, 'autostart/delay')
+        try:
+            return float(cfg.roscfg.params[param_name].value)
+        except Exception:
+            pass
+        return 0.
 
     def GetLoadedFiles(self, request, context):
         # self._register_callback(context)
@@ -183,8 +241,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug("..load complete!")
         except Exception as e:
-            import traceback
-            print traceback.format_exc()
             err_text = "%s loading failed!" % os.path.basename(launchfile)
             err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
             rospy.logwarn("Loading launch file: %s", err_details)
@@ -354,7 +410,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     yield result
                 try:
                     result.launch.append(launch_configs[0].filename)
-                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binariy, masteruri=request.masteruri, loglevel=request.loglevel, reload_global_param=request.reload_global_param)
+                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, reload_global_param=request.reload_global_param)
                     startcfg.host = get_nmd_url(request.masteruri)
                     launcher.run_node(startcfg)
                     result.status.code = OK

@@ -45,9 +45,11 @@ class GrpcServer:
 
     def __init__(self):
         self.server = None
+        self.launch_servicer = LaunchServicer()
 
     def __del__(self):
         self.server.stop(3)
+        self.launch_servicer = None
 
     def start(self, url='[::]:12311'):
         rospy.loginfo("Start grpc server on %s" % url)
@@ -65,8 +67,12 @@ class GrpcServer:
         if insecure_port == 0:
             raise Exception("Can not add insecure channel to '%s'!" % url)
         fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
-        lgrpc.add_LaunchServiceServicer_to_server(LaunchServicer(), self.server)
+        lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
         self.server.start()
 
     def shutdown(self):
+        self.launch_servicer.stop()
         self.server.stop(3)
+
+    def load_launch_file(self, path, autostart=False):
+        self.launch_servicer.load_launch_file(path, autostart)
