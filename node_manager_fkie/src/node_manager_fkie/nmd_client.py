@@ -195,6 +195,8 @@ class NmdClient(QObject):
         except KeyError:
             try:
                 result = fm.list_path(path)
+                if url not in self._cache_packages:
+                    self.list_packages_threaded(grpc_path, clear_cache)
                 print("OK LISTPATH", grpc_path)
             except Exception as e:
                 remote.remove_insecure_channel(url)

@@ -44,6 +44,7 @@ except Exception:
 
 import os
 import rospy
+import threading
 
 from node_manager_daemon_fkie.common import get_masteruri_from_nmd
 from master_discovery_fkie.common import get_hostname
@@ -109,6 +110,7 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
         self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
         self._masteruri2name = {}
+        self._reload_timer = None
 
     def stop(self):
         '''
@@ -117,6 +119,8 @@ class LaunchFilesWidget(QDockWidget):
         '''
         self.progress_queue.stop()
         self.ui_search_line.set_process_active(False)
+        if self._reload_timer is not None and self._reload_timer.is_alive():
+            self._reload_timer.cancel()
 
     def set_current_master(self, masteruri, mastername):
         self.launchlist_model.set_current_master(masteruri, mastername)
@@ -192,6 +196,9 @@ class LaunchFilesWidget(QDockWidget):
         print "ERROR on_error_on_path", gpath, "c:", self.launchlist_model.current_path
         if gpath == self._current_search or gpath == self.launchlist_model.current_path:
             self.ui_search_line.set_process_active(False)
+        if self.launchlist_model.is_in_root:
+            self._reload_timer = threading.Timer(2., nm.nmd().list_path_threaded, args=(self.launchlist_model.current_path,))
+            self._reload_timer.start()
 
     def on_launch_selection_changed(self, selected, deselected):
         print "selection launch changed"

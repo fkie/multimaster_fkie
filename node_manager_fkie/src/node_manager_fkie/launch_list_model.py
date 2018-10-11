@@ -37,8 +37,6 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QInputDialog, QLineEdit
 from python_qt_binding.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
 import os
-import shutil
-from urlparse import urlparse
 
 import node_manager_fkie as nm
 
@@ -551,8 +549,6 @@ class LaunchListModel(QStandardItemModel):
         '''
         Reloads the current path.
         '''
-        if clear_cache:
-            nm.nmd().list_packages_threaded(self.current_grpc, True)
         self.expand_item(self._current_path, PathItem.FOLDER, clear_cache)
 
     def expand_item(self, path, path_id, clear_cache=False):

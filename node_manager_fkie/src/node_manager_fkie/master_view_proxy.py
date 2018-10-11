@@ -443,7 +443,6 @@ class MasterViewProxy(QWidget):
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
             if self.__master_info is None:
                 if (master_info.masteruri == self.masteruri):
-                    nm.nmd().list_packages_threaded(nmd_uri)
                     self.__master_info = master_info
                     update_result[0].update(self.__master_info.node_names)
                     update_result[3].update(self.__master_info.topic_names)
@@ -458,6 +457,8 @@ class MasterViewProxy(QWidget):
             if nmd_node is None or nmd_node.pid is None:
                 if not self.is_local:
                     self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
+                else:
+                    self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
             try:
                 if (master_info.masteruri == self.masteruri):
                     self.update_system_parameter()
