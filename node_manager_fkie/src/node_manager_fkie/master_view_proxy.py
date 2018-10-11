@@ -448,27 +448,16 @@ class MasterViewProxy(QWidget):
                     update_result[0].update(self.__master_info.node_names)
                     update_result[3].update(self.__master_info.topic_names)
                     update_result[6].update(self.__master_info.service_names)
-                nmd_node = self.__master_info.getNode('/node_manager_daemon')
-                if nmd_node is None or nmd_node.pid is None:
-                    ret = MessageBox.Yes
-                    if not self.is_local:
-                        ret = MessageBox.question(self, 'Question', "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, buttons=MessageBox.Yes | MessageBox.No)
-                    if ret == MessageBox.Yes:
-                        # start node manager daemon if not already running
-                        host_addr = nm.nameres().address(self.masteruri)
-                        rospy.loginfo("start node manager daemon for %s", self.masteruri)
-                        self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                       'start node_manager_daemon for %s' % host_addr,
-                                                       nm.starter().runNodeWithoutConfig,
-                                                       (nm.nameres().address(self.masteruri),
-                                                        'node_manager_daemon_fkie', 'node_manager_daemon', 'node_manager_daemon', [], self.masteruri, False, self.current_user))
-                        self._start_queue(self._progress_queue)
             else:
                 update_result = self.__master_info.updateInfo(master_info)
 #         print "MINFO", self.__master_info.listedState()
             # we receive the master info from remove nodes first -> skip
             if self.__master_info is None:
                 return
+            nmd_node = master_info.getNode('/node_manager_daemon')
+            if nmd_node is None or nmd_node.pid is None:
+                # if not self.is_local:
+                self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
             try:
                 if (master_info.masteruri == self.masteruri):
                     self.update_system_parameter()
@@ -3359,6 +3348,20 @@ class MasterViewProxy(QWidget):
             except Exception as err:
                 rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
+        elif questionid == MessageFrame.TYPE_NMD:
+            try:
+                # start node manager daemon if not already running
+                host_addr = nm.nameres().address(self.masteruri)
+                rospy.loginfo("start node manager daemon for %s", self.masteruri)
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               'start node_manager_daemon for %s' % host_addr,
+                                               nm.starter().runNodeWithoutConfig,
+                                               (nm.nameres().address(self.masteruri),
+                                                'node_manager_daemon_fkie', 'node_manager_daemon', 'node_manager_daemon', [], self.masteruri, False, self.current_user))
+                self._start_queue(self._progress_queue)
+            except Exception as err:
+                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
+                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
 
     def _on_info_ok(self, questionid, data):
         pass

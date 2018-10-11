@@ -72,7 +72,8 @@ class MessageQueue(object):
             MessageFrame.TYPE_NODELET: [],
             MessageFrame.TYPE_TRANSFER: [],
             MessageFrame.TYPE_BINARY: [],
-            MessageFrame.TYPE_NOSCREEN: []
+            MessageFrame.TYPE_NOSCREEN: [],
+            MessageFrame.TYPE_NMD: []
         }
 
     def add(self, questionid, text, data):
@@ -113,6 +114,7 @@ class MessageFrame(QFrame):
     TYPE_TRANSFER = 6
     TYPE_BINARY = 7
     TYPE_NOSCREEN = 8
+    TYPE_NMD = 9
 
     ICON_SIZE = 32
 
@@ -129,7 +131,8 @@ class MessageFrame(QFrame):
                        5: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        6: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        7: QPixmap(":/icons/crystal_clear_question.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       9: QPixmap(":/icons/crystal_clear_run_zeroconf.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self.frameui = QFrame()
