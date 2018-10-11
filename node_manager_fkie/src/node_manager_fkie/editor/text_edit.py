@@ -240,16 +240,17 @@ class TextEdit(QTextEdit):
         QTextEdit.focusInEvent(self, event)
 
     def file_changed(self, mtime):
-        self.file_mtime = mtime
-        result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
-        if result == MessageBox.Yes:
-            try:
-                _, self.file_mtime, file_content = nm.nmd().get_file_content(self.filename, force=True)
-                self.setText(unicode(file_content, "utf-8"))
-                self.document().setModified(False)
-                self.textChanged.emit()
-            except Exception as err:
-                MessageBox.critical(self, "Error", "Cannot open launch file %s" % self.filename, utf8(err))
+        if self.file_mtime != mtime:
+            self.file_mtime = mtime
+            result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
+            if result == MessageBox.Yes:
+                try:
+                    _, self.file_mtime, file_content = nm.nmd().get_file_content(self.filename, force=True)
+                    self.setText(unicode(file_content, "utf-8"))
+                    self.document().setModified(False)
+                    self.textChanged.emit()
+                except Exception as err:
+                    MessageBox.critical(self, "Error", "Cannot open launch file %s" % self.filename, utf8(err))
 
     def mouseReleaseEvent(self, event):
         '''

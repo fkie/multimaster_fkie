@@ -641,10 +641,14 @@ class MasterViewProxy(QWidget):
     @property
     def launchfiles(self):
         '''
-        Returns the copy of the list with loaded launch files on this host
-        :rtype: [LaunchConfig]
+        Returns the copy of the dictionary with loaded launch files on this host
+        :rtype: dict(str(file) : LaunchConfig)
         '''
-        return self.__configs.keys()
+        result = dict()
+        for (c, cfg) in self.__configs.items():
+            if not isinstance(c, tuple):
+                result[c] = cfg
+        return result
 
     @launchfiles.setter
     def launchfiles(self, launchfile):
@@ -2056,7 +2060,8 @@ class MasterViewProxy(QWidget):
         if not diag_canceled:
             # check for nodelets
             if check_nodelets:
-                self._check_for_nodelets(nodes)
+                pass
+                # self._check_for_nodelets(nodes)
             # put into the queue and start
             for node in nodes:
                 if node.name in cfg_nodes:
@@ -2067,6 +2072,7 @@ class MasterViewProxy(QWidget):
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):
+        # TODO
         self._restart_nodelets = {}
         nodenames = [n.name for n in nodes]
         nodelet_mngr = ''
