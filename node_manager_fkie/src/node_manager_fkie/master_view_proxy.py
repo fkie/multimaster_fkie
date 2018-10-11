@@ -456,8 +456,8 @@ class MasterViewProxy(QWidget):
                 return
             nmd_node = master_info.getNode('/node_manager_daemon')
             if nmd_node is None or nmd_node.pid is None:
-                # if not self.is_local:
-                self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
+                if not self.is_local:
+                    self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
             try:
                 if (master_info.masteruri == self.masteruri):
                     self.update_system_parameter()
