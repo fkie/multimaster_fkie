@@ -358,3 +358,30 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 chnged_files.append(fms.PathObj(path=item.path, mtime=mtime))
         result.items.extend(chnged_files)
         return result
+
+    def _get_binaries(self, path, binaries):
+        if os.path.isdir(path):
+            fileList = os.listdir(path)
+            for f in fileList:
+                if f and f[0] != '.' and f not in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
+                    self._get_binaries(os.path.join(path, f), binaries)
+        elif os.path.isfile(path) and os.access(path, os.X_OK):
+            binaries.append(fms.PathObj(path=path, mtime=os.path.getmtime(path)))
+
+    def GetPackageBinaries(self, request, context):
+        result = fms.PathList()
+        binaries = []
+        try:
+            path = get_pkg_path(request.name)
+            self._get_binaries(path, binaries)
+            result.items.extend(binaries)
+            # find binaries in catkin workspace
+            from catkin.find_in_workspaces import find_in_workspaces as catkin_find
+            search_paths = catkin_find(search_dirs=['libexec', 'share'], project=request.name, first_matching_workspace_only=True)
+            for p in search_paths:
+                self._get_binaries(p, binaries)
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
+            pass
+        return result

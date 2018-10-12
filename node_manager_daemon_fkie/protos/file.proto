@@ -41,7 +41,7 @@ service FileService {
 	rpc ListPath (ListPathRequest) returns (ListPathReply);
 	rpc ListPackages (ListPackagesRequest) returns (ListPackagesReply);
 	rpc ChangedFiles (PathList) returns (PathList);
-	rpc GetPackageBinaries (PathList) returns (PathList);
+	rpc GetPackageBinaries (PackageObj) returns (PathList);
 }
 
 message Empty {

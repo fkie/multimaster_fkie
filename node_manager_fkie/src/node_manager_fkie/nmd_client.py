@@ -155,7 +155,7 @@ class NmdClient(QObject):
         if url:
             grpc_url = get_nmd_url(url)
             if grpc_url in self._cache_packages:
-                return {self._cache_packages[grpc_url]}
+                return self._cache_packages[grpc_url]
             return {}
         return self._cache_packages
 
@@ -289,6 +289,19 @@ class NmdClient(QObject):
             raise Exception("Node manager daemon '%s' not reachable" % url)
         print("nmd_rename: path", path, ", url_dest: ", url_dest)
         fm.copy(path, url_dest)
+
+    def get_package_binaries(self, pkgname, grpc_url='grpc://localhost:12321'):
+        url, _path = grpc_split_url(grpc_url)
+        rospy.logdebug("get_package_binaries for '%s' from '%s'" % (pkgname, url))
+        fm = self.get_file_manager(url)
+        if fm is None:
+            raise Exception("Node manager daemon '%s' not reachable" % url)
+        response = fm.get_package_binaries(pkgname)
+        url, _ = grpc_split_url(grpc_url, with_scheme=True)
+        result = {}
+        for item in response:
+            result[grpc_join(url, item.path)] = item.mtime
+        return result
 
     def _print_inc_file(self, indent, linenr, path, exists, inc_files):
         rospy.loginfo("%s %.4d\t%s %s" % (" " * indent, linenr, '+' if exists else '-', path))

@@ -171,3 +171,8 @@ class FileStub(object):
         request.items.extend(pathlist)
         response = self.fm_stub.ChangedFiles(request, timeout=settings.GRPC_TIMEOUT)
         return response.items
+
+    def get_package_binaries(self, pkgname):
+        request = fmsg.PackageObj(name=pkgname)
+        response = self.fm_stub.GetPackageBinaries(request, timeout=settings.GRPC_TIMEOUT)
+        return response.items

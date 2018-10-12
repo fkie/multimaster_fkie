@@ -51,7 +51,7 @@ class FileServiceStub(object):
         )
     self.GetPackageBinaries = channel.unary_unary(
         '/FileService/GetPackageBinaries',
-        request_serializer=file__pb2.PathList.SerializeToString,
+        request_serializer=file__pb2.PackageObj.SerializeToString,
         response_deserializer=file__pb2.PathList.FromString,
         )
 
@@ -156,7 +156,7 @@ def add_FileServiceServicer_to_server(servicer, server):
       ),
       'GetPackageBinaries': grpc.unary_unary_rpc_method_handler(
           servicer.GetPackageBinaries,
-          request_deserializer=file__pb2.PathList.FromString,
+          request_deserializer=file__pb2.PackageObj.FromString,
           response_serializer=file__pb2.PathList.SerializeToString,
       ),
   }

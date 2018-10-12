@@ -30,21 +30,62 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import Qt, QMetaObject
+import threading
+from python_qt_binding.QtCore import QObject, Qt, QMetaObject, Signal
 try:
     from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit, QWidget
     from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit, QWidget
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
 import os
 
+from node_manager_daemon_fkie.url import get_nmd_url
 import node_manager_fkie as nm
+
+
+class RequestBinariesThread(QObject, threading.Thread):
+    '''
+    A thread to to retrieve the binaries for a given package
+    and publish it by sending a QT signal.
+    '''
+    binaries_signal = Signal(str, dict)
+
+    def __init__(self, package, grpc_url, parent=None):
+        QObject.__init__(self)
+        threading.Thread.__init__(self)
+        self._grpc_url = grpc_url
+        self._package = package
+        self.setDaemon(True)
+        self._canceled = False
+        self._result = {}
+
+    def cancel(self):
+        self._canceled = True
+
+    @property
+    def pkgname(self):
+        return self._package
+
+    def reemit(self):
+        self.binaries_signal.emit(self._package, self._result)
+
+    def run(self):
+        '''
+        '''
+        if self._grpc_url:
+            try:
+                self._result = nm.nmd().get_package_binaries(self._package, get_nmd_url(self._grpc_url))
+                if not self._canceled:
+                    self.binaries_signal.emit(self._package, self._result)
+            except Exception:
+                import traceback
+                print traceback.format_exc()
 
 
 class PackageDialog(QDialog):
 
-    def __init__(self, parent=None):
+    def __init__(self, masteruri, parent=None):
         QDialog.__init__(self, parent)
         self.setWindowTitle('Select Binary')
         self.verticalLayout = QVBoxLayout(self)
@@ -56,7 +97,7 @@ class PackageDialog(QDialog):
         self.verticalLayout.addWidget(self.content)
 
         self.packages = None
-
+        self.masteruri = "ROS_MASTER_URI" if masteruri is None else masteruri
         package_label = QLabel("Package:", self.content)
         self.package_field = QComboBox(self.content)
         self.package_field.setInsertPolicy(QComboBox.InsertAlphabetically)
@@ -65,7 +106,6 @@ class PackageDialog(QDialog):
         self.contentLayout.addRow(package_label, self.package_field)
         binary_label = QLabel("Binary:", self.content)
         self.binary_field = QComboBox(self.content)
-#    self.binary_field.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.binary_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
         self.binary_field.setEditable(True)
         self.contentLayout.addRow(binary_label, self.binary_field)
@@ -79,11 +119,18 @@ class PackageDialog(QDialog):
         self.package_field.setFocus(Qt.TabFocusReason)
         self.package = ''
         self.binary = ''
+        self._request_bin_thread = None
 
         if self.packages is None:
             self.package_field.addItems(['packages searching...'])
             self.package_field.setCurrentIndex(0)
-
+        # fill the input fields
+        self.packages = {name: path for path, name in nm.nmd().get_packages(get_nmd_url(masteruri)).items()}
+        packages = self.packages.keys()
+        packages.sort()
+        self.package_field.clear()
+        self.package_field.clearEditText()
+        self.package_field.addItems(packages)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
         QMetaObject.connectSlotsByName(self)
@@ -95,48 +142,33 @@ class PackageDialog(QDialog):
             self.package_field.editTextChanged.connect(self.on_package_selected)
             self.binary_field.editTextChanged.connect(self.on_binary_selected)
 
-    def set_masteeruri(self, masteruri):
-        # fill the input fields
-        self.packages = {name: path for path, name in nm.nmd().get_packages(masteruri).items()}
-        packages = self.packages.keys()
-        packages.sort()
-        self.package_field.clear()
-        self.package_field.clearEditText()
-        self.package_field.addItems(packages)
-
-    def _getBinaries(self, path):
-        # TODO: get binaries from nmd
-        result = {}
-        if os.path.isdir(path):
-            fileList = os.listdir(path)
-            for f in fileList:
-                if f and f[0] != '.' and f not in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
-                    ret = self._getBinaries(os.path.join(path, f))
-                    result = dict(ret.items() + result.items())
-        elif os.path.isfile(path) and os.access(path, os.X_OK):
-            # create a selection for binaries
-            return {os.path.basename(path): path}
-        return result
-
     def on_package_selected(self, package):
-        self.binary_field.clear()
-        if self.packages and package in self.packages:
-            self.binary_field.setEnabled(True)
-            path = self.packages[package]
-            binaries = self._getBinaries(path).keys()
-            try:
-                # find binaries in catkin workspace
-                from catkin.find_in_workspaces import find_in_workspaces as catkin_find
-                search_paths = catkin_find(search_dirs=['libexec', 'share'], project=package, first_matching_workspace_only=True)
-                for p in search_paths:
-                    binaries += self._getBinaries(p).keys()
-            except:
-                pass
-            binaries = list(set(binaries))
-            binaries.sort()
-            self.binary_field.addItems(binaries)
-            self.package = package
-            self.binary = self.binary_field.currentText()
+        getnew = False
+        if self._request_bin_thread is None:
+            getnew = True
+        else:
+            if self._request_bin_thread.pkgname != package:
+                self._request_bin_thread.cancel()
+                getnew = True
+        if self._request_bin_thread is not None and self._request_bin_thread.pkgname == package:
+            # use already got data
+            self._request_bin_thread.reemit()
+        elif getnew:
+            self.binary_field.clear()
+            if self.packages and package in self.packages:
+                self.binary_field.setEnabled(True)
+                self._request_bin_thread = RequestBinariesThread(package, get_nmd_url(self.masteruri))
+                self._request_bin_thread.binaries_signal.connect(self._on_new_binaries)
+                self._request_bin_thread.start()
+
+    def _on_new_binaries(self, pkgname, binaries):
+        # update the binaries
+        binaries = [os.path.basename(item) for item in binaries.keys()]
+        binaries = list(set(binaries))
+        binaries.sort()
+        self.binary_field.addItems(binaries)
+        self.package = pkgname
+        self.binary = self.binary_field.currentText()
 
     def on_binary_selected(self, binary):
         self.binary = binary
@@ -148,7 +180,7 @@ class RunDialog(PackageDialog):
     '''
 
     def __init__(self, host, masteruri=None, parent=None):
-        PackageDialog.__init__(self, parent)
+        PackageDialog.__init__(self, masteruri, parent)
         self.host = host
         self.setWindowTitle('Run')
 
@@ -177,7 +209,6 @@ class RunDialog(PackageDialog):
 
         host_label = QLabel("Host:", self.content)
         self.host_field = QComboBox(self.content)
-#    self.host_field.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.host_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
         self.host_field.setEditable(True)
         host_label.setBuddy(self.host_field)
@@ -195,19 +226,10 @@ class RunDialog(PackageDialog):
         master_label.setBuddy(self.host_field)
         self.contentLayout.addRow(master_label, self.master_field)
         self.master_history = master_history = nm.history().cachedParamValues('/Optional Parameter/ROS Master URI')
-        self.masteruri = "ROS_MASTER_URI" if masteruri is None else masteruri
         if self.masteruri in master_history:
             master_history.remove(self.masteruri)
         master_history.insert(0, self.masteruri)
         self.master_field.addItems(master_history)
-        
-        self.set_masteeruri(self.masteruri)
-
-#    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
-        if hasattr(self.package_field, "textChanged"):  # qt compatibility
-            self.package_field.textChanged.connect(self.on_package_selected)
-        else:
-            self.package_field.editTextChanged.connect(self.on_package_selected)
         self.binary_field.activated[str].connect(self.on_binary_selected)
 
     def run_params(self):
