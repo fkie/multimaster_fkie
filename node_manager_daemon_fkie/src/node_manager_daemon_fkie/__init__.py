@@ -43,7 +43,8 @@ import rospy
 import remote
 from .client import GrpcClient
 from .server import GrpcServer
-from .common import interpret_path, get_nmd_url, get_nmd_port
+from .common import interpret_path
+from .url import get_nmd_url, get_nmd_port
 
 
 def set_terminal_name(name):

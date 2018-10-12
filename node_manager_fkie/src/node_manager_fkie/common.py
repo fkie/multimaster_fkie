@@ -1,8 +1,9 @@
 import os
 import rospy
 from urlparse import urlparse
-from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
-from node_manager_daemon_fkie.common import get_nmd_url
+from master_discovery_fkie.common import masteruri_from_ros
+from node_manager_daemon_fkie.host import get_hostname, get_port
+from node_manager_daemon_fkie.url import get_nmd_url
 
 import node_manager_fkie as nm
 
@@ -84,6 +85,7 @@ def get_packages(path):
 
 
 def resolve_paths(text):
+    # TODO
     '''
     Searches in text for $(find ...) statements and replaces it by the package path.
     @return: text with replaced statements.
@@ -124,68 +126,7 @@ def package_name(path):
     :rtype: tuple(name, path)
     '''
     return (nm.nmd().package_name(path), path)
-#     if not (path is None) and path and path != os.path.sep and os.path.isdir(path):
-#         if path in PACKAGE_CACHE:
-#             return PACKAGE_CACHE[path]
-#         package = os.path.basename(path)
-#         fileList = os.listdir(path)
-#         for f in fileList:
-#             if f == MANIFEST_FILE:
-#                 PACKAGE_CACHE[path] = (package, path)
-#                 return (package, path)
-#             if CATKIN_SUPPORTED and f == PACKAGE_FILE:
-#                 try:
-#                     pkg = parse_package(os.path.join(path, f))
-#                     PACKAGE_CACHE[path] = (pkg.name, path)
-#                     return (pkg.name, path)
-#                 except Exception:
-#                     return (None, None)
-#         PACKAGE_CACHE[path] = package_name(os.path.dirname(path))
-#         return PACKAGE_CACHE[path]
-#     return (None, None)
 
 
 def is_package(file_list):
     return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))
-
-
-def grpc_url_from_path(grpc_path):
-    url = grpc_path
-    if not grpc_path:
-        url = grpc_create_url('', '')
-    if url and not url.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
-    url_parse_result = urlparse(url)
-    return 'grpc://%s' % (url_parse_result.netloc)
-
-
-def grpc_join(url, path):
-#     import inspect
-#     print("CALLERfmm:", inspect.stack()[1][3])
-    if not path.startswith('grpc://'):
-        if not url.startswith('grpc://'):
-            return grpc_create_url(url, path)
-        if path.startswith(os.path.sep):
-            return '%s%s' % (url, path)
-        return '%s%s%s' % (url, os.path.sep, path)
-    return path
-
-
-def grpc_create_url(masteruri, path):
-#     import inspect
-#     print("CALLERfmm:", inspect.stack()[1][3])
-    if path.startswith(os.path.sep) or not path:
-        return "%s%s" % (get_nmd_url(masteruri), path)
-    return "%s%s%s" % (get_nmd_url(masteruri), os.path.sep, path)
-
-
-def grpc_split_url(grpc_path, with_scheme=False):
-    url = grpc_path
-    if not grpc_path:
-        url = get_nmd_url()
-    if url and not url.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
-    url_parse_result = urlparse(url)
-    if with_scheme:
-        return ("%s://%s" % (url_parse_result.scheme, url_parse_result.netloc), url_parse_result.path)
-    return (url_parse_result.netloc, url_parse_result.path)

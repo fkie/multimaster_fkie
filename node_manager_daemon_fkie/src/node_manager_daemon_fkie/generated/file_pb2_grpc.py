@@ -49,6 +49,11 @@ class FileServiceStub(object):
         request_serializer=file__pb2.PathList.SerializeToString,
         response_deserializer=file__pb2.PathList.FromString,
         )
+    self.GetPackageBinaries = channel.unary_unary(
+        '/FileService/GetPackageBinaries',
+        request_serializer=file__pb2.PathList.SerializeToString,
+        response_deserializer=file__pb2.PathList.FromString,
+        )
 
 
 class FileServiceServicer(object):
@@ -104,6 +109,13 @@ class FileServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def GetPackageBinaries(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FileServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -142,49 +154,12 @@ def add_FileServiceServicer_to_server(servicer, server):
           request_deserializer=file__pb2.PathList.FromString,
           response_serializer=file__pb2.PathList.SerializeToString,
       ),
-  }
-  generic_handler = grpc.method_handlers_generic_handler(
-      'FileService', rpc_method_handlers)
-  server.add_generic_rpc_handlers((generic_handler,))
-
-
-class FileClientServiceStub(object):
-  """* The client for launch manager service to receive notifications about file changes. 
-  """
-
-  def __init__(self, channel):
-    """Constructor.
-
-    Args:
-      channel: A grpc.Channel.
-    """
-    self.FileChange = channel.stream_unary(
-        '/FileClientService/FileChange',
-        request_serializer=file__pb2.ChangedFile.SerializeToString,
-        response_deserializer=file__pb2.Empty.FromString,
-        )
-
-
-class FileClientServiceServicer(object):
-  """* The client for launch manager service to receive notifications about file changes. 
-  """
-
-  def FileChange(self, request_iterator, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-
-def add_FileClientServiceServicer_to_server(servicer, server):
-  rpc_method_handlers = {
-      'FileChange': grpc.stream_unary_rpc_method_handler(
-          servicer.FileChange,
-          request_deserializer=file__pb2.ChangedFile.FromString,
-          response_serializer=file__pb2.Empty.SerializeToString,
+      'GetPackageBinaries': grpc.unary_unary_rpc_method_handler(
+          servicer.GetPackageBinaries,
+          request_deserializer=file__pb2.PathList.FromString,
+          response_serializer=file__pb2.PathList.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
-      'FileClientService', rpc_method_handlers)
+      'FileService', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))

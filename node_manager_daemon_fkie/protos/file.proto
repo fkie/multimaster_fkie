@@ -41,11 +41,7 @@ service FileService {
 	rpc ListPath (ListPathRequest) returns (ListPathReply);
 	rpc ListPackages (ListPackagesRequest) returns (ListPackagesReply);
 	rpc ChangedFiles (PathList) returns (PathList);
-}
-
-/** The client for launch manager service to receive notifications about file changes. */
-service FileClientService {
-	rpc FileChange (stream ChangedFile) returns (Empty);
+	rpc GetPackageBinaries (PathList) returns (PathList);
 }
 
 message Empty {
@@ -165,12 +161,6 @@ message PathObj {
 		PACKAGE  = 3;
 	}
 	PathType type = 4;
-}
-
-message ChangedFile {
-	bool deleted = 1;
-	// if deleted only the path of the item is valid
-	PathObj item = 2;
 }
 
 /** The status message included in replies. */

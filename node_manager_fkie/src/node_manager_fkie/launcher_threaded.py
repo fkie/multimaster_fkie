@@ -35,7 +35,7 @@ import threading
 import time
 
 import node_manager_fkie as nm
-from node_manager_fkie.common import grpc_join, grpc_url_from_path
+from node_manager_daemon_fkie.url import grpc_join, grpc_url_from_path
 
 
 class LauncherThreaded(QObject):

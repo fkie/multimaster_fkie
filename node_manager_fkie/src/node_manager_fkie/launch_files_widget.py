@@ -46,10 +46,9 @@ import os
 import rospy
 import threading
 
-from node_manager_daemon_fkie.common import get_masteruri_from_nmd
-from master_discovery_fkie.common import get_hostname
+from node_manager_daemon_fkie.host import get_hostname
+from node_manager_daemon_fkie.url import get_masteruri_from_nmd, grpc_join
 import node_manager_fkie as nm
-from .common import utf8, grpc_join
 from .detailed_msg_box import MessageBox
 from .html_delegate import HTMLDelegate
 from .launch_list_model import LaunchListModel, PathItem

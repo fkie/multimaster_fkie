@@ -39,7 +39,6 @@ except:
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
 import os
 
-from packages_thread import PackagesThread
 import node_manager_fkie as nm
 
 
@@ -84,9 +83,6 @@ class PackageDialog(QDialog):
         if self.packages is None:
             self.package_field.addItems(['packages searching...'])
             self.package_field.setCurrentIndex(0)
-            self._fill_packages_thread = PackagesThread()
-            self._fill_packages_thread.packages.connect(self._fill_packages)
-            self._fill_packages_thread.start()
 
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -99,16 +95,17 @@ class PackageDialog(QDialog):
             self.package_field.editTextChanged.connect(self.on_package_selected)
             self.binary_field.editTextChanged.connect(self.on_binary_selected)
 
-    def _fill_packages(self, packages):
+    def set_masteeruri(self, masteruri):
         # fill the input fields
-        self.packages = packages
-        packages = packages.keys()
+        self.packages = {name: path for path, name in nm.nmd().get_packages(masteruri).items()}
+        packages = self.packages.keys()
         packages.sort()
         self.package_field.clear()
         self.package_field.clearEditText()
         self.package_field.addItems(packages)
 
     def _getBinaries(self, path):
+        # TODO: get binaries from nmd
         result = {}
         if os.path.isdir(path):
             fileList = os.listdir(path)
@@ -203,6 +200,8 @@ class RunDialog(PackageDialog):
             master_history.remove(self.masteruri)
         master_history.insert(0, self.masteruri)
         self.master_field.addItems(master_history)
+        
+        self.set_masteeruri(self.masteruri)
 
 #    self.package_field.setFocus(QtCore.Qt.TabFocusReason)
         if hasattr(self.package_field, "textChanged"):  # qt compatibility

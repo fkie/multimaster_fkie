@@ -46,7 +46,8 @@ import node_manager_daemon_fkie.remote as remote
 #from node_manager_daemon_fkie.file_client_servicer import FileClientServicer
 import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
-from .common import grpc_join, grpc_split_url, utf8
+from node_manager_daemon_fkie.url import get_nmd_url, grpc_join, grpc_split_url, grpc_create_url
+from .common import utf8
 
 
 class LaunchArgsSelectionRequest(Exception):
@@ -137,7 +138,8 @@ class NmdClient(QObject):
 
     def package_name(self, grpc_path):
         result = None
-        url, path = grpc_split_url(grpc_path, with_scheme=True)
+        url, _path = grpc_split_url(grpc_path, with_scheme=True)
+        path = grpc_path
         try:
             pl = self._cache_packages[url]
             while path and path != os.path.sep:
@@ -149,7 +151,12 @@ class NmdClient(QObject):
             print(traceback.format_exc())
         return result
 
-    def get_packages(self):
+    def get_packages(self, url=''):
+        if url:
+            grpc_url = get_nmd_url(url)
+            if grpc_url in self._cache_packages:
+                return {self._cache_packages[grpc_url]}
+            return {}
         return self._cache_packages
 
 #     def start(self, url='[::]:12322'):
@@ -483,8 +490,9 @@ class NmdClient(QObject):
                 raise Exception("Node manager daemon '%s' not reachable" % url)
             try:
                 result = fm.list_packages(clear_ros_cache)
-                self._cache_packages[grpc_url] = result
-                self.packages.emit(grpc_url, result)
+                fixed_result = {grpc_join(grpc_url, path): name for path, name in result.items()}
+                self._cache_packages[grpc_url] = fixed_result
+                self.packages.emit(grpc_url, fixed_result)
                 self.packages_available.emit(grpc_url)
             except Exception as err:
                 remote.remove_insecure_channel(url)

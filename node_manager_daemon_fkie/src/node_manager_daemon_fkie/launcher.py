@@ -43,7 +43,7 @@ import roslaunch
 import exceptions
 import screen
 import host
-from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
+from master_discovery_fkie.common import masteruri_from_ros
 from .launch_stub import LaunchStub
 from .common import get_cwd, utf8
 from .supervised_popen import SupervisedPopen
@@ -125,7 +125,7 @@ def run_node(startcfg):
     :raise exceptions.BinarySelectionRequest: on multiple binaries
     :ref: ``node_manager_fkie.host.is_local()``
     '''
-    hostname = get_hostname(startcfg.host)
+    hostname = host.get_hostname(startcfg.host)
     if not startcfg.host or host.is_local(hostname, wait=True):
         print "RUN LOCAL"
         # run on local host
@@ -563,7 +563,7 @@ def _prepare_ros_master(masteruri):
         # run a roscore
         master_host = host.get_hostname(masteruri)
         if host.is_local(master_host, True):
-            master_port = get_port(masteruri)
+            master_port = host.get_port(masteruri)
             new_env = dict(os.environ)
             new_env['ROS_MASTER_URI'] = masteruri
             ros_hostname = host.get_ros_hostname(masteruri)

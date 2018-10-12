@@ -45,6 +45,7 @@ service LaunchService {
 	rpc RestartNode (stream Node) returns (stream StartNodeReply);
 	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
 	rpc GetMtime (LaunchFile) returns (MtimeReply);
+//	rpc GetChangedBinaries (Empty) returns (Empty);
 }
 
 message Empty {
@@ -194,8 +195,9 @@ message Node {
 	string opt_binary = 2;
 	string opt_launch = 3;
 	sint32 loglevel = 4;
-	string masteruri = 5;
-	bool reload_global_param = 6;
+	string logformat = 5;
+	string masteruri = 6;
+	bool reload_global_param = 7;
 }
 
 /** Starts a ROS node without configurations. All parameter are set by this request.
@@ -225,10 +227,11 @@ message StartConfig {
 	repeated string args = 13;
 	string masteruri = 14;
 	sint32 loglevel = 15;
-	bool respawn = 16;
-	double respawn_delay = 17;
+	string logformat = 16;
+	bool respawn = 17;
+	double respawn_delay = 18;
 	sint32 respawn_max = 19;
-	double respawn_min_runtime = 18;
+	double respawn_min_runtime = 20;
 }
 
 message Remapping {

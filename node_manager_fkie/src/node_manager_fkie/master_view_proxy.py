@@ -45,12 +45,14 @@ import traceback
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import get_hostname, masteruri_from_ros
+from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
 from .launcher_threaded import LauncherThreaded
-from .common import get_packages, grpc_split_url, package_name, resolve_paths, grpc_join
-from node_manager_daemon_fkie.common import get_nmd_url, utf8
-from .default_cfg_handler import DefaultConfigHandler
+from .common import get_packages, package_name, resolve_paths
+from node_manager_daemon_fkie.common import utf8
+from node_manager_daemon_fkie.host import get_hostname
+from node_manager_daemon_fkie.url import get_nmd_url, grpc_split_url, grpc_join
+# from .default_cfg_handler import DefaultConfigHandler
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
@@ -1922,7 +1924,7 @@ class MasterViewProxy(QWidget):
                     reload_global_param = True
                     self.__configs[config].global_param_done = True
                 result = nm.nmd().start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param)
-                print result
+                print result, "LOGGING", logging
                 # nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
             except socket.error as se:
                 rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
@@ -2774,6 +2776,7 @@ class MasterViewProxy(QWidget):
             packages = {}
             msg_types = []
             for p in root_paths:
+                # TODO, get packages from nmd
                 ret = get_packages(p)
                 packages = dict(ret.items() + packages.items())
             for (p, direc) in packages.items():

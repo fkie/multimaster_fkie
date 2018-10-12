@@ -40,11 +40,13 @@ import os
 
 import node_manager_fkie as nm
 
-from master_discovery_fkie.common import get_hostname, masteruri_from_master
-from node_manager_daemon_fkie.common import equal_uri, get_nmd_url, get_masteruri_from_nmd
+from master_discovery_fkie.common import masteruri_from_master
+from node_manager_daemon_fkie.host import get_hostname
+from node_manager_daemon_fkie.url import equal_uri, get_masteruri_from_nmd, get_nmd_url
+from node_manager_daemon_fkie.url import grpc_join, grpc_split_url, grpc_create_url
 from node_manager_daemon_fkie.file_item import FileItem
 
-from .common import package_name, utf8, grpc_join, grpc_split_url, grpc_create_url
+from .common import package_name, utf8
 from .detailed_msg_box import MessageBox
 
 
@@ -621,7 +623,7 @@ class LaunchListModel(QStandardItemModel):
                 if url == currurl:
                     for path, name in packages.items():
                         if pattern in name:
-                            items.append((grpc_join(url, path), PathItem.PACKAGE, 0, 0, name))
+                            items.append((path, PathItem.PACKAGE, 0, 0, name))
             self._set_new_list(self._current_path, items, add_history=False)
         except Exception:
             import traceback

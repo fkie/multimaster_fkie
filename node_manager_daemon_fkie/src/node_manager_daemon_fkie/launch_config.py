@@ -39,7 +39,8 @@ import roslaunch
 import roslib
 import rospy
 
-from master_discovery_fkie.common import get_hostname, masteruri_from_master
+from master_discovery_fkie.common import masteruri_from_master
+import host
 from .common import interpret_path, package_name, utf8
 
 
@@ -81,7 +82,7 @@ class LaunchConfig(object):
         self.__launch_id = '%.9f' % time.time()
         self._robot_description = None
         self._capabilities = None
-        self.host = host if masteruri else get_hostname(self.__masteruri)
+        self.host = host if masteruri else host.get_hostname(self.__masteruri)
         # TODO: nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
 
     def __del__(self):

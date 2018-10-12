@@ -32,8 +32,6 @@
 
 import os
 import re
-from urlparse import urlparse
-from master_discovery_fkie.common import masteruri_from_master
 
 import rospy
 import roslib
@@ -49,8 +47,6 @@ INCLUDE_PATTERN = ["\s*(\$\(find.*?)\"",
                    "\"\s*(pkg:\/\/.*?)\"",
                    "\"\s*(package:\/\/.*?)\""]
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml']
-
-NMD_SERVER_PORT_OFFSET = 1010
 
 try:
     from catkin_pkg.package import parse_package
@@ -91,62 +87,6 @@ def get_cwd(cwd, binary=''):
     return result
 
 
-def equal_uri(url1, url2):
-    return url1.rstrip(os.path.sep) == url2.rstrip(os.path.sep)
-
-
-def get_nmd_url(uri='', prefix='grpc://'):
-    muri = uri
-    if not muri:
-        muri = masteruri_from_master()
-    o = urlparse(muri)
-    port = o.port
-    if o.scheme == 'http':
-        port += NMD_SERVER_PORT_OFFSET
-    return "%s%s:%d" % (prefix, o.hostname, port)
-
-
-def get_masteruri_from_nmd(grpc_path):
-    if not grpc_path:
-        return masteruri_from_master()
-    if not grpc_path.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to get masteruri: %s; `grpc` scheme missed!" % grpc_path)
-    o = urlparse(grpc_path)
-    port = o.port
-    if o.scheme == 'grpc':
-        port -= NMD_SERVER_PORT_OFFSET
-    return "http://%s:%d" % (o.hostname, port)
-
-
-def get_nmd_port(uri=''):
-    muri = uri
-    if not muri:
-        muri = masteruri_from_master()
-    o = urlparse(muri)
-    port = o.port
-    if o.scheme == 'http':
-        port += NMD_SERVER_PORT_OFFSET
-    return port
-
-
-def get_rosparam(param, masteruri):
-    if masteruri:
-        try:
-            master = rospy.msproxy.MasterProxy(masteruri)
-            return master[param]  # MasterProxy does all the magic for us
-        except KeyError:
-            return {}
-
-
-def delete_rosparam(param, masteruri):
-    if masteruri:
-        try:
-            master = rospy.msproxy.MasterProxy(masteruri)
-            del master[param]  # MasterProxy does all the magic for us
-        except Exception:
-            pass
-
-
 def get_packages(path):
     result = {}
     if os.path.isdir(path):
@@ -163,17 +103,6 @@ def get_packages(path):
         for f in fileList:
             ret = get_packages(os.path.join(path, f))
             result = dict(ret.items() + result.items())
-    return result
-
-
-def to_url(path):
-    '''
-    Searches the package name for given path and create an URL starting with pkg://
-    '''
-    result = path
-    pkg, pth = package_name(os.path.dirname(path))
-    if pkg is not None:
-        result = "pkg://%s%s" % (pkg, path.replace(pth, ''))
     return result
 
 

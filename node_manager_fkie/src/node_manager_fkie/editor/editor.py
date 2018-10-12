@@ -36,7 +36,8 @@ import os
 
 import rospy
 
-from node_manager_fkie.common import grpc_url_from_path, package_name, utf8
+from node_manager_daemon_fkie.url import grpc_url_from_path
+from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.run_dialog import PackageDialog
 import node_manager_fkie as nm
 

@@ -47,8 +47,9 @@ import time
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import get_hostname, resolve_url, subdomain, masteruri_from_master
-from node_manager_daemon_fkie.common import get_nmd_url
+from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master
+from node_manager_daemon_fkie.host import get_hostname
+from node_manager_daemon_fkie.url import get_nmd_url
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable

@@ -43,13 +43,13 @@ from master_discovery_fkie.common import masteruri_from_master
 import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
 
-from .common import INCLUDE_PATTERN, included_files, utf8, equal_uri
+import url
+from .common import INCLUDE_PATTERN, included_files, utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 import exceptions
 import launcher
 from docutils.parsers.rst.directives import path
-from node_manager_daemon_fkie.common import get_nmd_url
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -72,7 +72,7 @@ class CfgId(object):
         if not masteruri:
             self.masteruri = masteruri_from_master(True)
             self._local = True
-        elif equal_uri(self.masteruri, masteruri_from_master(True)):
+        elif url.equal_uri(self.masteruri, masteruri_from_master(True)):
             self._local = True
 
     def __hash__(self, *args, **kwargs):
@@ -95,7 +95,7 @@ class CfgId(object):
         if not masteruri:
             if self._local:
                 return True
-        if equal_uri(self.masteruri, masteruri):
+        if url.equal_uri(self.masteruri, masteruri):
             return True
         return False
 
@@ -411,7 +411,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 try:
                     result.launch.append(launch_configs[0].filename)
                     startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, reload_global_param=request.reload_global_param)
-                    startcfg.host = get_nmd_url(request.masteruri)
+                    startcfg.host = url.get_nmd_url(request.masteruri)
                     launcher.run_node(startcfg)
                     result.status.code = OK
                     yield result
