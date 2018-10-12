@@ -46,7 +46,7 @@ from .editor import TextEdit
 try:
     from python_qt_binding.QtGui import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 
@@ -409,7 +409,7 @@ class InterfacesThread(QObject, threading.Thread):
     '''
     interfaces = Signal(dict)
     '''
-  @ivar: interfaces is a signal, which is emitted, if a list with sync files was created.
+  :ivar: interfaces is a signal, which is emitted, if a list with sync files was created.
   '''
 
     def __init__(self):
@@ -431,7 +431,7 @@ class InterfacesThread(QObject, threading.Thread):
                 ret = self._getInterfaces(p)
                 self._interfaces_files = dict(ret.items() + self._interfaces_files.items())
             self.interfaces.emit(self._interfaces_files)
-        except:
+        except Exception:
             import traceback
             formatted_lines = traceback.format_exc(1).splitlines()
             rospy.logwarn("Error while list sync interfaces:\n\t%s", formatted_lines[-1])
@@ -450,5 +450,5 @@ class InterfacesThread(QObject, threading.Thread):
                 result = dict(ret.items() + result.items())
         elif package and os.path.isfile(path) and path.endswith('.sync'):
             # create a selection for binaries
-            return {''.join(['pkg://', package, '///', os.path.basename(path)]): path}
+            return {'pkg://%s///%s' % (package, os.path.basename(path)): path}
         return result

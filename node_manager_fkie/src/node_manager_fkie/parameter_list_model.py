@@ -288,7 +288,7 @@ class ParameterModel(QStandardItemModel):
             return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
-    def updateModelData(self, parameters):
+    def update_model_data(self, parameters):
         '''
         Updates the parameter list model. New parameter will be inserted in sorting
         order. Not available parameter removed from the model.

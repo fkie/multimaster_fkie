@@ -152,7 +152,7 @@ class ProgressQueue(QObject):
             self.__progress_queue[val].start()
             self._progress_bar.setValue(val)
             # print "PG finished ok", id
-        except:
+        except Exception:
             # print "PG finished err", id
             for thread in self.__progress_queue:
                 thread.join(1)
@@ -183,12 +183,12 @@ class ProgressQueue(QObject):
                     pthread.error_signal.disconnect(self._progress_thread_error)
                     pthread.request_interact_signal.disconnect(self._on_request_interact)
 #          self.__progress_queue[self._progress_bar.value()].terminate()
-                except:
+                except Exception:
                     pass
             self.__progress_queue = []
             self._progress_frame.setVisible(False)
             self.__running = False
-        except:
+        except Exception:
             import traceback
             print utf8(traceback.format_exc(1))
 
@@ -203,11 +203,7 @@ class ProgressQueue(QObject):
             if not res:
                 self._on_progress_canceled()
                 return
-            if req.args and isinstance(req.args[0], nm.AdvRunCfg):
-                req.args[0].user = user
-                req.args[0].pw = pw
-            else:
-                req.args = req.args + (user, pw)
+            req.args = req.args + (user, pw)
             pt = ProgressThread(ident, descr, req.method, (req.args))
             pt.finished_signal.connect(self._progress_thread_finished)
             pt.error_signal.connect(self._progress_thread_error)
@@ -232,10 +228,7 @@ class ProgressQueue(QObject):
                 self._progress_thread_finished(ident)
                 return
             res = items[0]
-            if req.args and isinstance(req.args[0], nm.AdvRunCfg):
-                req.args[0].executable = res
-            else:
-                req.args = req.args + (res,)
+            req.args = req.args + (res,)
             pt = ProgressThread(ident, descr, req.method, (req.args))
             pt.finished_signal.connect(self._progress_thread_finished)
             pt.error_signal.connect(self._progress_thread_error)

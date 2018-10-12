@@ -463,32 +463,6 @@ class LaunchListModel(QStandardItemModel):
     def _nmd_error(self, method, url, path, error):
         if not self.is_current_nmd(url):
             return
-#         print "UNAVALABLE:", url
-#         if self.count > 0:
-#             import time
-#             time.sleep(2)
-#             nm.nmd().list_path_threaded(self._current_path)
-#             return
-#         if hasattr(error, "code") and error.code() == grpc.StatusCode.UNAVAILABLE:
-#             name = "node_manager_daemon"
-#             print "UNAVALABLE:", url
-#             self.error_on_path.emit(grpc_create_url(url, path), error)
-#             return
-#             if self._progress_queue is not None:
-#                 rospy.loginfo("Connection problem to %s, try to start <%s>" % (url, name))
-#                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
-#                                                'start %s' % name,
-#                                                nm.starter().runNodeWithoutConfig,
-#                                                (get_hostname(url), '%s_fkie' % name, name,
-#                                                 nm.nameres().normalize_name(name), [],
-#                                                 None, False))
-#                 self._progress_queue.start()
-#                 self.count = 1
-#                 nm.nmd().list_path_threaded(self._current_path)
-#             else:
-#                 rospy.logwarn("Error while call <%s> on '%s': %s" % (method, url, error))
-#                 rospy.logwarn("can't start <%s>, no progress queue defined!" % name)
-#         else:
         root = self.invisibleRootItem()
         while root.rowCount():
             root.removeRow(0)
@@ -508,11 +482,11 @@ class LaunchListModel(QStandardItemModel):
 
     def flags(self, index):
         '''
-        @param index: parent of the list
-        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
-        @return: Flag or the requested item
-        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+        :param index: parent of the list
+        :type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
+        :return: Flag or the requested item
+        :rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
+        :see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
         '''
         if not index.isValid():
             return Qt.NoItemFlags
@@ -564,7 +538,6 @@ class LaunchListModel(QStandardItemModel):
         :rtype: str
         :raise Exception: if no path to given item was found
         '''
-        print "expand", path, path_id
         if path_id in [PathItem.NOTHING]:
             return None
         if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
@@ -589,7 +562,7 @@ class LaunchListModel(QStandardItemModel):
                 self._current_path = path
         self._add_path(self._current_path, PathItem.ROOT, 0, 0, 'loading...')
         nm.nmd().list_path_threaded(self._current_path, clear_cache)
-        print "current_path_end", self._current_path
+        # TODO: add functionality to go deep automatically
 #         else:
 #             key_mod = QApplication.keyboardModifiers()
 #             onestep = False

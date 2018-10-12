@@ -138,7 +138,7 @@ class MasterEntry(object):
     def get_mastername(self):
         try:
             return self._masternames[0]
-        except:
+        except Exception:
             return None
 
     def get_masternames(self):
@@ -148,7 +148,7 @@ class MasterEntry(object):
         with self.mutex:
             try:
                 return self._addresses[0]
-            except:
+            except Exception:
                 return None
 
     def addresses(self):
@@ -157,13 +157,13 @@ class MasterEntry(object):
     def remove_mastername(self, mastername):
         try:
             self._masternames.remove(mastername)
-        except:
+        except Exception:
             pass
 
     def remove_address(self, address):
         try:
             self._addresses.remove(address)
-        except:
+        except Exception:
             pass
 
 
@@ -310,7 +310,7 @@ class NameResolution(object):
             if MasterEntry.is_legal_ip(address):
                 (hostname, _, _) = socket.gethostbyaddr(address)
                 return hostname
-        except:
+        except Exception:
             import traceback
             print traceback.format_exc()
         return address
@@ -324,7 +324,7 @@ class NameResolution(object):
                 result = '%s' % url.hostname
             else:
                 result = '%s_%d' % (url.hostname, url.port)
-        except:
+        except Exception:
             pass
         return cls.normalize_name(result)
 
@@ -340,7 +340,7 @@ class NameResolution(object):
     def resolve_cached(self, hostname):
         try:
             return RESOLVE_CACHE[hostname]
-        except:
+        except Exception:
             pass
         return [hostname]
 
@@ -361,7 +361,7 @@ class NameResolution(object):
                     try:
                         # ROS resolves the 'localhost' to local hostname
                         local_hostname = socket.gethostname()
-                    except:
+                    except Exception:
                         pass
                     if hostname != local_hostname:
                         return hostname

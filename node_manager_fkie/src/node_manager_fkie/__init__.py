@@ -41,7 +41,6 @@ import threading
 
 from master_discovery_fkie.common import get_hostname
 from .common import get_ros_home, masteruri_from_ros
-from .file_watcher import FileWatcher
 from .history import History
 from .name_resolution import NameResolution
 from .nmd_client import NmdClient, LaunchArgsSelectionRequest
@@ -49,7 +48,7 @@ from .progress_queue import InteractionNeededError
 from .screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
 from .settings import Settings
 from .ssh_handler import SSHhandler, AuthenticationRequest
-from .start_handler import StartException, AdvRunCfg
+from .start_handler import StartException
 from .start_handler import StartHandler, BinarySelectionRequest
 
 
@@ -58,8 +57,8 @@ PKG_NAME = 'node_manager_fkie'
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.8.2"  # git describe --tags --dirty --always
-__date__ = "2018-08-10"  # git log -1 --date=iso
+__version__ = "1.0.0"  # git describe --tags --dirty --always
+__date__ = "2018-10-10"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
@@ -69,7 +68,7 @@ __date__ = "2018-08-10"  # git log -1 --date=iso
 HOSTS_CACHE = dict()
 '''
 the cache directory to store the results of tests for local hosts.
-@see: L{is_local()}
+:see: L{is_local()}
 '''
 
 _LOCK = threading.RLock()
@@ -82,39 +81,38 @@ _SCREEN_HANDLER = None
 _START_HANDLER = None
 _NAME_RESOLUTION = None
 _HISTORY = None
-_FILE_WATCHER = None
 _QAPP = None
 
 
 def settings():
     '''
-    @return: The global settings
-    @rtype: L{Settings}
+    :return: The global settings
+    :rtype: L{Settings}
     '''
     return _SETTINGS
 
 
 def nmd():
     '''
-    @return: Node manager daemon client
-    @rtype: L{NmdClient}
+    :return: Node manager daemon client
+    :rtype: L{NmdClient}
     '''
     return _NMD_CLIENT
 
 
 def ssh():
     '''
-    @return: The SSH handler to handle the SSH connections
-    @rtype: L{SSHhandler}
+    :return: The SSH handler to handle the SSH connections
+    :rtype: L{SSHhandler}
     '''
     return _SSH_HANDLER
 
 
 def screen():
     '''
-    @return: The screen handler to the screens.
-    @rtype: L{ScreenHandler}
-    @see: U{http://linuxwiki.de/screen}
+    :return: The screen handler to the screens.
+    :rtype: L{ScreenHandler}
+    :see: U{http://linuxwiki.de/screen}
     '''
     return _SCREEN_HANDLER
 
@@ -130,37 +128,27 @@ def starter():
 
 def nameres():
     '''
-    @return: The name resolution object translate the the name to the host or
+    :return: The name resolution object translate the the name to the host or
     ROS master URI.
-    @rtype: L{NameResolution}
+    :rtype: L{NameResolution}
     '''
     return _NAME_RESOLUTION
 
 
 def history():
     '''
-    @return: The history of entered parameter.
-    @rtype: L{History}
+    :return: The history of entered parameter.
+    :rtype: L{History}
     '''
     return _HISTORY
-
-
-def filewatcher():
-    '''
-    @return: The file watcher object with all loaded configuration files.
-    @rtype: L{FileWatcher}
-    '''
-    return _FILE_WATCHER
 
 
 def get_ros_hostname(url):
     '''
     Returns the host name used in a url, if it is a name. If it is an IP an
     empty string will be returned.
-
-    @return: host or '' if url is an IP or invalid
-
-    @rtype:  C{str}
+    :return: host or '' if url is an IP or invalid
+    :rtype:  str
     '''
     return NameResolution.get_ros_hostname(url)
 
@@ -168,11 +156,10 @@ def get_ros_hostname(url):
 def is_local(hostname, wait=False):
     '''
     Test whether the given host name is the name of the local host or not.
-    @param hostname: the name or IP of the host
-    @type hostname: C{str}
-    @return: C{True} if the hostname is local or None
-    @rtype: C{bool}
-    @raise Exception: on errors while resolving host
+    :param str hostname: the name or IP of the host
+    :return: C{True} if the hostname is local or None
+    :rtype: bool
+    :raise Exception: on errors while resolving host
     '''
     if hostname is None:
         return True
@@ -245,8 +232,7 @@ def finish(*arg):
 def set_terminal_name(name):
     '''
     Change the terminal name.
-    @param name: New name of the terminal
-    @type name:  C{str}
+    :param str name: New name of the terminal
     '''
     sys.stdout.write("\x1b]2;%s\x07" % name)
 
@@ -254,8 +240,7 @@ def set_terminal_name(name):
 def set_process_name(name):
     '''
     Change the process name.
-    @param name: New process name
-    @type name:  C{str}
+    :param str name: New process name
     '''
     try:
         from ctypes import cdll, byref, create_string_buffer
@@ -263,7 +248,7 @@ def set_process_name(name):
         buff = create_string_buffer(len(name) + 1)
         buff.value = name
         libc.prctl(15, byref(buff), 0, 0, 0)
-    except:
+    except Exception:
         pass
 
 
@@ -284,7 +269,6 @@ def init_globals(masteruri):
     global _START_HANDLER
     global _NAME_RESOLUTION
     global _HISTORY
-    global _FILE_WATCHER
     _NMD_CLIENT = NmdClient()
     # _NMD_CLIENT.start()
     _SSH_HANDLER = SSHhandler()
@@ -292,7 +276,6 @@ def init_globals(masteruri):
     _START_HANDLER = StartHandler()
     _NAME_RESOLUTION = NameResolution()
     _HISTORY = History()
-    _FILE_WATCHER = FileWatcher()
 
     # test where the roscore is running (local or remote)
     __is_local('localhost')  # fill cache
@@ -364,13 +347,12 @@ def main(name):
     '''
     try:
         from python_qt_binding.QtGui import QApplication
-    except:
+    except Exception:
         try:
             from python_qt_binding.QtWidgets import QApplication
-        except:
+        except Exception:
             print >> sys.stderr, "please install 'python_qt_binding' package!!"
             sys.exit(-1)
-
     init_settings()
     parser = init_arg_parser()
     args = rospy.myargv(argv=sys.argv)

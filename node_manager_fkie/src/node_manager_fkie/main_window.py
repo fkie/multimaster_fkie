@@ -219,7 +219,7 @@ class MainWindow(QMainWindow):
         self.currentMaster = None  # MasterViewProxy
         self._close_on_exit = True
 
-        nm.filewatcher().binary_changed.connect(self.on_binaryfile_changed)
+        # nm.filewatcher().binary_changed.connect(self.on_binaryfile_changed)
         self.__in_question = set()
 
         ############################################################################
@@ -439,7 +439,7 @@ class MainWindow(QMainWindow):
                             if m.is_local:
                                 self._stop_updating()
                                 self._stop_local_master = m
-                            m.stop_nodes_by_name(m.getRunningNodesIfLocal(), True, [rospy.get_name(), '/rosout'])
+                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(), True, [rospy.get_name(), '/rosout'])
                             if not m.is_local:
                                 m.killall_roscore()
                     except Exception as e:
@@ -574,30 +574,6 @@ class MainWindow(QMainWindow):
             self.stackedLayout.addWidget(self.masters[masteruri])
             if masteruri == self.getMasteruri():
                 self.masters[masteruri].default_load_launch = self.default_load_launch
-#                 if self.default_load_launch:
-#                     try:
-#                         if os.path.isfile(self.default_load_launch):
-#                             if self.default_load_launch.endswith('.launch'):
-#                                 # TODO
-#                                 args = list()
-#                                 args.append('_package:=%s' % (package_name(os.path.dirname(self.default_load_launch))[0]))
-#                                 args.append('_launch_file:="%s"' % os.path.basename(self.default_load_launch))
-#                                 host = '%s' % nm.nameres().address(masteruri)
-#                                 node_name = roslib.names.SEP.join(['%s' % (nm.nameres().masteruri2name(masteruri)),
-#                                                                    os.path.basename(self.default_load_launch).replace('.launch', ''),
-#                                                                    'default_cfg'])
-#                                 self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-#                                                                           'start default config @%s' % host,
-#                                                                           nm.starter().runNodeWithoutConfig,
-#                                                                           ('%s' % (nm.nameres().mastername(masteruri)), 'default_cfg_fkie',
-#                                                                            'default_cfg', node_name,
-#                                                                            args, masteruri, False,
-#                                                                            self.masters[masteruri].current_user))
-#                                 self.launch_dock.progress_queue.start()
-#                     except Exception as e:
-#                         MessageBox.warning(self, "Load default configuration",
-#                                            'Load default configuration %s failed!' % self.default_load_launch,
-#                                            '%s' % utf8(e))
         return self.masters[masteruri]
 
     def on_host_update_request(self, host):
@@ -606,7 +582,7 @@ class MainWindow(QMainWindow):
                 self._update_handler.requestMasterInfo(value.master_state.uri, value.master_state.monitoruri)
 
     def on_host_description_updated(self, masteruri, host, descr):
-        # self.master_model.updateDescription(nm.nameres().mastername(masteruri, host), descr)
+        # self.master_model.update_description(nm.nameres().mastername(masteruri, host), descr)
         pass
 
     def on_capabilities_update(self, masteruri, address, config_node, descriptions):
@@ -1010,7 +986,7 @@ class MainWindow(QMainWindow):
             if self.currentMaster.is_local:
                 time_dialog.dateFrame.setVisible(False)
             if time_dialog.exec_():
-                running_nodes = self.currentMaster.getRunningNodesIfLocal(remove_system_nodes=True)
+                running_nodes = self.currentMaster.get_nodes_runningIfLocal(remove_system_nodes=True)
                 if running_nodes:
                     ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?', buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.Yes:
@@ -1072,7 +1048,7 @@ class MainWindow(QMainWindow):
             if dia.exec_():
                 params = dia.run_params()
                 if params:
-                    params = params + (False, self.currentMaster.current_user,)  # autorequest must be false
+                    params = params + (True, False, self.currentMaster.current_user,)  # autorequest must be false
                     try:
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'run `%s` on %s' % (params[2], params[0]),
@@ -1136,7 +1112,7 @@ class MainWindow(QMainWindow):
                                                              ('localhost', package, binary,
                                                               nm.nameres().normalize_name(node_name), args,
                                                               '%s' % self.currentMaster.master_state.uri,
-                                                              False))
+                                                              True, False))
             except (Exception, nm.StartException), e:
                 import traceback
                 print utf8(traceback.format_exc(1))
@@ -1168,7 +1144,7 @@ class MainWindow(QMainWindow):
                     self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                         'Start sync on %s' % host,
                                                         nm.starter().runNodeWithoutConfig,
-                                                        ("%s" % host, 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, "%s" % master.masteruri, False, master.current_user))
+                                                        ("%s" % host, 'master_sync_fkie', 'master_sync', 'master_sync', self._sync_dialog.sync_args, "%s" % master.masteruri, False, False, master.current_user))
                     self._progress_queue_sync.start()
                 except Exception:
                     import traceback
@@ -1220,7 +1196,7 @@ class MainWindow(QMainWindow):
                     self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                         'start sync on ' + utf8(host),
                                                         nm.starter().runNodeWithoutConfig,
-                                                        (utf8(host), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, utf8(master.masteruri), False, master.current_user))
+                                                        (utf8(host), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, utf8(master.masteruri), False, False, master.current_user))
                     self._progress_queue_sync.start()
                 except Exception:
                     pass
@@ -1342,10 +1318,10 @@ class MainWindow(QMainWindow):
         running_nodes = dict()
         for _, m in self.masters.items():
             if m.online and m.master_state is not None and m.master_state.online:
-                running_nodes.update(m.getRunningNodesIfLocal())
+                running_nodes.update(m.get_nodes_runningIfLocal())
         for _, m in self.masters.items():
             if m.master_state is not None:
-                m.markNodesAsDuplicateOf(running_nodes)
+                m.set_duplicate_nodes(running_nodes)
 
 
 # ======================================================================================================================
@@ -1525,7 +1501,7 @@ class MainWindow(QMainWindow):
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start discovering on %s' % hostname,
                                                        nm.starter().runNodeWithoutConfig,
-                                                       (utf8(hostname), 'master_discovery_fkie', utf8(discovery_type), utf8(discovery_type), args, muri, False, usr))
+                                                       (utf8(hostname), 'master_discovery_fkie', utf8(discovery_type), utf8(discovery_type), args, muri, False, False, usr))
 
                         # start the master sync with default settings
                         if start_sync:
@@ -1540,7 +1516,7 @@ class MainWindow(QMainWindow):
                                 self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                                     'start sync on %s' % hostname,
                                                                     nm.starter().runNodeWithoutConfig,
-                                                                    (utf8(hostname), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, muri, False, usr))
+                                                                    (utf8(hostname), 'master_sync_fkie', 'master_sync', 'master_sync', default_sync_args, muri, False, False, usr))
                                 self._progress_queue_sync.start()
                             else:
                                 if hostname not in self._syncs_to_start:
@@ -1567,7 +1543,7 @@ class MainWindow(QMainWindow):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'start discovering on ' + utf8(hostname),
                                            nm.starter().runNodeWithoutConfig,
-                                           (utf8(hostname), 'master_discovery_fkie', 'master_discovery', 'master_discovery', args, None, False))
+                                           (utf8(hostname), 'master_discovery_fkie', 'master_discovery', 'master_discovery', args, None, False, False))
             self._progress_queue.start()
         except (Exception, nm.StartException), e:
             rospy.logwarn("Error while start master_discovery for %s: %s", utf8(hostname), utf8(e))
@@ -1657,58 +1633,9 @@ class MainWindow(QMainWindow):
                                                   'start default config %s' % hostname,
                                                   nm.starter().runNodeWithoutConfig,
                                                   ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
-                                                   node_name, argv, master_proxy.masteruri, False,
+                                                   node_name, argv, master_proxy.masteruri, True, False,
                                                    master_proxy.current_user))
         self.launch_dock.progress_queue.start()
-
-#     def on_load_launch_as_default(self, path, host=None):
-#         '''
-#         Load the launch file as default configuration. A ROS master must be selected first.
-#         :param path: the path of the launch file.
-#         :type path: str
-#         :param host: The host name, where the configuration start.
-#         :type host: str (Default: None)
-#         '''
-#         rospy.loginfo("LOAD launch as default: %s" % path)
-#         master_proxy = self.stackedLayout.currentWidget()
-#         if isinstance(master_proxy, MasterViewProxy):
-#             args = list()
-#             args.append('_package:=%s' % (package_name(os.path.dirname(path))[0]))
-#             args.append('_launch_file:="%s"' % os.path.basename(path))
-#             try:
-#                 # test for requerid args
-#                 launchConfig = LaunchConfig(path)
-#                 req_args = launchConfig.getArgs()
-#                 if req_args:
-#                     params = dict()
-#                     arg_dict = launchConfig.argvToDict(req_args)
-#                     for arg in arg_dict.keys():
-#                         params[arg] = ('string', [arg_dict[arg]])
-#                     inputDia = ParameterDialog(params)
-#                     inputDia.setFilterVisible(False)
-#                     inputDia.setWindowTitle('Enter the argv for %s' % path)
-#                     if inputDia.exec_():
-#                         params = inputDia.getKeywords()
-#                         args.extend(launchConfig.resolveArgs([''.join([p, ":='", v, "'"]) for p, v in params.items() if v]))
-#                     else:
-#                         return
-#             except Exception:
-#                 import traceback
-#                 rospy.logwarn('Error while load %s as default: %s' % (path, traceback.format_exc(1)))
-#             hostname = host if host else nm.nameres().address(master_proxy.masteruri)
-#             name_file_prefix = os.path.basename(path).replace('.launch', '').replace(' ', '_')
-#             node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
-#                                                name_file_prefix,
-#                                                'default_cfg'])
-#             self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-#                                                       'start default config %s' % hostname,
-#                                                       nm.starter().runNodeWithoutConfig,
-#                                                       ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
-#                                                        node_name, args, master_proxy.masteruri, False,
-#                                                        master_proxy.current_user))
-#             self.launch_dock.progress_queue.start()
-#         else:
-#             MessageBox.information(self, "Load of launch file", "Select a master first!",)
 
     def on_launch_edit(self, grpc_path, search_text='', trynr=1):
         '''
@@ -1717,11 +1644,9 @@ class MainWindow(QMainWindow):
         :param str grpc_path: path with grpc prefix
         :param str search_text: A string to search in file
         '''
-        print "!!!on_launch_edit", grpc_path
         if grpc_path:
             if grpc_path in self.editor_dialogs:
                 try:
-                    print "USE EXISTING EDITOR", grpc_path
                     self.editor_dialogs[grpc_path].on_load_request(grpc_path, search_text)
                     # self.editor_dialogs[grpc_path].restore()
                     self.editor_dialogs[grpc_path].activateWindow()
@@ -1733,7 +1658,6 @@ class MainWindow(QMainWindow):
                     del self.editor_dialogs[grpc_path]
                     self.on_launch_edit(grpc_path, search_text, 2)
             else:
-                print "CREATE NEW EDITOR", grpc_path
                 editor = Editor([grpc_path], search_text)
                 if editor.tabWidget.count() > 0:
                     self.editor_dialogs[grpc_path] = editor
@@ -1824,6 +1748,7 @@ class MainWindow(QMainWindow):
         '''
         Check the dictinary with changed binaries and notify the masters about changes.
         '''
+        # TODO
         new_affected = list()
         for _, affected in self._changed_binaries.items():  # :=changed
             for (nname, muri, lfile) in affected:
@@ -1840,7 +1765,8 @@ class MainWindow(QMainWindow):
                     if master_nodes and master_nodes[0].is_running():
                         choices[nname] = (master, lfile)
                     else:
-                        nm.filewatcher().rem_binary(nname)
+                        # nm.filewatcher().rem_binary(nname)
+                        pass
             if choices:
                 nodes, _ = SelectDialog.getValue('Restart nodes?',
                                                  '<b>%s</b> was changed.<br>Select affected nodes to restart:' % ', '.join([os.path.basename(f) for f in self._changed_binaries.keys()]), choices.keys(),
@@ -1874,7 +1800,7 @@ class MainWindow(QMainWindow):
     def on_start_nodes(self, masteruri, cfg, nodes):
         if masteruri is not None:
             master = self.getMaster(masteruri)
-            master.start_nodes_by_name(nodes, roslib.names.ns_join(cfg, 'run'))
+            master.start_nodes_by_name(nodes, cfg)
 
     def on_stop_nodes(self, masteruri, nodes):
         if masteruri is not None:

@@ -50,36 +50,33 @@ class UpdateThread(QObject, threading.Thread):
     '''
     update_signal = Signal(MasterInfo)
     '''
-  @ivar: update_signal is a signal, which is emitted, if a new
+  :ivar: update_signal is a signal, which is emitted, if a new
   U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>} is retrieved.
   '''
 
     master_errors_signal = Signal(str, list)
     '''
-  @ivar: master_errors_signal is a signal (masteruri, list of errors),
+  :ivar: master_errors_signal is a signal (masteruri, list of errors),
   which is emitted, if we get a list with errors from remote master_discovery.
   '''
 
     error_signal = Signal(str, str)
     '''
-  @ivar: error_signal is a signal (masteruri, error message), which is emitted,
+  :ivar: error_signal is a signal (masteruri, error message), which is emitted,
   if an error while retrieving a master info was occurred.
   '''
 
     timediff_signal = Signal(str, float)
     '''
-  @ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
+  :ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
   after the difference of time to the remote host is determined.
   '''
 
     def __init__(self, monitoruri, masteruri, delayed_exec=0., parent=None):
         '''
-        @param masteruri: the URI of the remote ROS master
-        @type masteruri: C{str}
-        @param monitoruri: the URI of the monitor RPC interface of the master_discovery node
-        @type monitoruri: C{str}
-        @param delayed_exec: Delay the execution of the request for given seconds.
-        @type delayed_exec: C{float}
+        :param str masteruri: the URI of the remote ROS master
+        :param str monitoruri: the URI of the monitor RPC interface of the master_discovery node
+        :param float delayed_exec: Delay the execution of the request for given seconds.
         '''
         QObject.__init__(self)
         threading.Thread.__init__(self)
@@ -117,7 +114,7 @@ class UpdateThread(QObject, threading.Thread):
             master_info.check_ts = time.time()
             # 'print "request success", self._monitoruri
             self.update_signal.emit(master_info)
-        except:
+        except Exception:
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()

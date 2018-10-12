@@ -33,7 +33,7 @@
 from python_qt_binding.QtCore import Signal
 try:
     from python_qt_binding.QtGui import QAction, QMenu
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QAction, QMenu
 from python_qt_binding.QtGui import QIcon
 

@@ -35,7 +35,6 @@ import roslib
 import rospy
 import shlex
 import socket
-import time
 import types
 import xmlrpclib
 import roslaunch
@@ -50,7 +49,6 @@ from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 import remote
 
-CACHED_PKG_PATH = dict()  # {host : {pkg: path}}
 RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
 
 
@@ -185,7 +183,7 @@ def run_node(startcfg):
         if masteruri is None:
             masteruri = masteruri_from_ros()
         if masteruri is not None:
-            _prepare_ros_master(masteruri)
+#             _prepare_ros_master(masteruri)
             new_env['ROS_MASTER_URI'] = masteruri
             ros_hostname = host.get_ros_hostname(masteruri)
             if ros_hostname:
@@ -208,7 +206,6 @@ def run_node(startcfg):
 
 def _rosconsole_cfg_file(package, loglevel='INFO'):
     result = os.path.join(screen.LOG_PATH, '%s.rosconsole.config' % package)
-    print("RESULT", result)
     with open(result, 'w') as cfg_file:
         print("save logcfg to ", result)
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
@@ -232,7 +229,7 @@ def _get_respawn_params(node, params):
     return result
 
 
-def _load_parameters(masteruri, params, clear_params, replace_abs=False, user=None, pw=None, auto_pw_request=None):
+def _load_parameters(masteruri, params, clear_params, replace_abs=False):
     """
     Load parameters onto the parameter server
     """
@@ -264,7 +261,7 @@ def _load_parameters(masteruri, params, clear_params, replace_abs=False, user=No
             value = p.value
             if replace_abs:
                 # suppressing this as it causes too much spam
-                value, is_abs_path, found, package = _resolve_abs_paths(p.value, address, user, pw, auto_pw_request)
+                value, is_abs_path, found, package = _resolve_abs_paths(p.value, address)
                 if is_abs_path:
                     abs_paths.append((p.key, p.value, value))
                     if not found and package:
@@ -307,7 +304,7 @@ def _test_value(key, value):
     return result
 
 
-def _resolve_abs_paths(value, host, user, pw, auto_pw_request):
+def _resolve_abs_paths(value, host):
     '''
     Replaces the local absolute path by remote absolute path. Only valid ROS
     package paths are resolved.
@@ -412,60 +409,60 @@ def _resolve_abs_paths(value, host, user, pw, auto_pw_request):
 #                                  respawn=n.respawn, respawn_delay=n.respawn_delay, respawn_max=respawn_max, respawn_min_runtime=respawn_min_runtime)
 
 
-def _prepare_ros_master(masteruri):
-    if masteruri is None:
-        masteruri = masteruri_from_ros()
-    # start roscore, if needed
-    try:
-        if not os.path.isdir(screen.LOG_PATH):
-            os.makedirs(screen.LOG_PATH)
-        socket.setdefaulttimeout(3)
-        master = xmlrpclib.ServerProxy(masteruri)
-        master.getUri(rospy.get_name())
-        # restart ROSCORE on different masteruri?, not now...
-#      master_uri = master.getUri(rospy.get_name())
-#      if masteruri != master_uri[2]:
-#        # kill the local roscore...
-#        raise
-    except Exception:
-        # run a roscore
-        master_host = host.get_hostname(masteruri)
-        if host.is_local(master_host, True):
-            master_port = host.get_port(masteruri)
-            new_env = dict(os.environ)
-            new_env['ROS_MASTER_URI'] = masteruri
-            ros_hostname = host.get_ros_hostname(masteruri)
-            if ros_hostname:
-                new_env['ROS_HOSTNAME'] = ros_hostname
-            cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)
-            for n in [1, 2, 3, 4]:
-                try:
-                    if n == 1:
-                        print("Launch ROS Master in screen  ...")
-                        SupervisedPopen(shlex.split(cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
-                    elif n == 2:
-                        print("ROS Master takes too long for start, wait for next 10 sec ...")
-                    elif n == 3:
-                        print("A really slow start, wait for last 10 sec ...")
-                    # wait for roscore to avoid connection problems while init_node
-                    result = -1
-                    count = 1
-                    while result == -1 and count < 11:
-                        try:
-                            master = xmlrpclib.ServerProxy(masteruri)
-                            result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
-                            return
-                        except Exception:
-                            time.sleep(1)
-                            count += 1
-                    if n == 4 and count >= 11:
-                        raise exceptions.StartException('Cannot connect to ROS-Master: %s\n--> please run "roscore" manually!' % utf8(masteruri))
-                except Exception as e:
-                    raise Exception("Error while call '%s': %s" % (cmd_args, utf8(e)))
-        else:
-            raise Exception("ROS master '%s' is not reachable" % masteruri)
-    finally:
-        socket.setdefaulttimeout(None)
+# def _prepare_ros_master(masteruri):
+#     if masteruri is None:
+#         masteruri = masteruri_from_ros()
+#     # start roscore, if needed
+#     try:
+#         if not os.path.isdir(screen.LOG_PATH):
+#             os.makedirs(screen.LOG_PATH)
+#         socket.setdefaulttimeout(3)
+#         master = xmlrpclib.ServerProxy(masteruri)
+#         master.getUri(rospy.get_name())
+#         # restart ROSCORE on different masteruri?, not now...
+# #      master_uri = master.getUri(rospy.get_name())
+# #      if masteruri != master_uri[2]:
+# #        # kill the local roscore...
+# #        raise
+#     except Exception:
+#         # run a roscore
+#         master_host = host.get_hostname(masteruri)
+#         if host.is_local(master_host, True):
+#             master_port = host.get_port(masteruri)
+#             new_env = dict(os.environ)
+#             new_env['ROS_MASTER_URI'] = masteruri
+#             ros_hostname = host.get_ros_hostname(masteruri)
+#             if ros_hostname:
+#                 new_env['ROS_HOSTNAME'] = ros_hostname
+#             cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)
+#             for n in [1, 2, 3, 4]:
+#                 try:
+#                     if n == 1:
+#                         print("Launch ROS Master in screen  ...")
+#                         SupervisedPopen(shlex.split(cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
+#                     elif n == 2:
+#                         print("ROS Master takes too long for start, wait for next 10 sec ...")
+#                     elif n == 3:
+#                         print("A really slow start, wait for last 10 sec ...")
+#                     # wait for roscore to avoid connection problems while init_node
+#                     result = -1
+#                     count = 1
+#                     while result == -1 and count < 11:
+#                         try:
+#                             master = xmlrpclib.ServerProxy(masteruri)
+#                             result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
+#                             return
+#                         except Exception:
+#                             time.sleep(1)
+#                             count += 1
+#                     if n == 4 and count >= 11:
+#                         raise exceptions.StartException('Cannot connect to ROS-Master: %s\n--> please run "roscore" manually!' % utf8(masteruri))
+#                 except Exception as e:
+#                     raise Exception("Error while call '%s': %s" % (cmd_args, utf8(e)))
+#         else:
+#             raise Exception("ROS master '%s' is not reachable" % masteruri)
+#     finally:
+#         socket.setdefaulttimeout(None)
 
 
 def get_global_params(roscfg):

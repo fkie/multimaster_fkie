@@ -227,19 +227,9 @@ class LaunchFilesWidget(QDockWidget):
             self.ui_button_transfer.setEnabled(islaunch or isconfig)
 
     def set_package_filter(self, text):
-        #         if text.startswith('s '):
-        #             if len(text) > 2:
-        #                 search_text = text[2:]
-        #                 self.launchlist_proxy_model.setFilterRegExp(QRegExp(search_text, Qt.CaseInsensitive, QRegExp.Wildcard))
-        #                 import glob
-        #                 print glob.glob1(self.launchlist_model.current_path, text)
-        #             else:
-        #                 self.ui_search_line.set_process_active(False)
-        #         else:
         if text:
             if text.startswith(os.path.sep):
                 self._current_search = grpc_join(self.launchlist_model.current_grpc, text)
-                print "SET PATH", self._current_search
                 self.launchlist_model.set_path(text)
             else:
                 # search for a package

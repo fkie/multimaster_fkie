@@ -42,6 +42,7 @@ import node_manager_daemon_fkie.exceptions as exceptions
 import node_manager_daemon_fkie.remote as remote
 import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
+from node_manager_daemon_fkie.startcfg import StartConfig
 from node_manager_daemon_fkie.url import get_nmd_url, grpc_join, grpc_split_url
 from .common import utf8
 
@@ -153,14 +154,6 @@ class NmdClient(QObject):
                 return self._cache_packages[grpc_url]
             return {}
         return self._cache_packages
-
-#     def start(self, url='[::]:12322'):
-#         self.url = url
-#         rospy.loginfo("Start grpc server on %s" % url)
-#         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-#         # fgrpc.add_FileClientServiceServicer_to_server(FileClientServicer(), self.grpc_server)
-#         self.grpc_server.add_insecure_port(url)
-#         self.grpc_server.start()
 
     def get_file_manager(self, url='localhost:12321'):
         channel = remote.get_insecure_channel(url)
@@ -486,13 +479,44 @@ class NmdClient(QObject):
                 self.error.emit("_list_packages", "grpc://%s" % url, path, err)
 
     def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
-        rospy.loginfo("start node: %s on %s" % (name, masteruri))
+        rospy.loginfo("start node: %s with %s" % (name, grpc_path))
         url, _ = grpc_split_url(grpc_path)
         lm = self.get_launch_manager(url)
         if lm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
         try:
             return lm.start_node(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
+        except Exception as err:
+            remote.remove_insecure_channel(url)
+            raise err
+
+    def start_standalone_node(self, grpc_url, package, binary, name, ns, args=[], env={}, masteruri=None):
+        rospy.loginfo("start standalone node: %s on %s" % (name, grpc_url))
+        url, _ = grpc_split_url(grpc_url)
+        lm = self.get_launch_manager(url)
+        if lm is None:
+            raise Exception("Node manager daemon '%s' not reachable" % url)
+        try:
+            startcfg = StartConfig(package, binary)
+            startcfg.name = name
+            startcfg.namespace = ns
+            startcfg.fullname = rospy.names.ns_join(ns, name)
+            startcfg.prefix = ''
+            startcfg.cwd = ''
+            startcfg.env = env
+            startcfg.remaps = {}
+            startcfg.params = {}
+            startcfg.clear_params = []
+            startcfg.args = args
+            startcfg.masteruri = masteruri
+            startcfg.host = None
+            startcfg.loglevel = ''
+            startcfg.logformat = ''
+            startcfg.respawn = False
+            startcfg.respawn_delay = 30
+            startcfg.respawn_max = 0
+            startcfg.respawn_min_runtime = 0
+            return lm.start_standalone_node(startcfg)
         except Exception as err:
             remote.remove_insecure_channel(url)
             raise err

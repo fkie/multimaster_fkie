@@ -45,24 +45,24 @@ class UpdateHandler(QObject):
     '''
     master_info_signal = Signal(MasterInfo)
     '''
-  @ivar: master_info_signal is a signal, which is emitted, if a new
+  :ivar: master_info_signal is a signal, which is emitted, if a new
   U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>} is retrieved.
   '''
     master_errors_signal = Signal(str, list)
     '''
-  @ivar: master_errors_signal is a signal (masteruri, error list) with errors which
+  :ivar: master_errors_signal is a signal (masteruri, error list) with errors which
   are occured on remote master_discovery.
   '''
 
     error_signal = Signal(str, str)
     '''
-  @ivar: error_signal is a signal (masteruri, error message), which is emitted,
+  :ivar: error_signal is a signal (masteruri, error message), which is emitted,
   if an error while retrieving a master info was occurred.
   '''
 
     timediff_signal = Signal(str, float)
     '''
-  @ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
+  :ivar: timediff_signal is a signal (masteruri, time difference), which is emitted
   after the difference of time to the remote host is determined.
   '''
 
@@ -90,12 +90,9 @@ class UpdateHandler(QObject):
         On update error the requested update will be ignored.
         This method is thread safe.
 
-        @param masteruri: the URI of the remote ROS master
-        @type masteruri: C{str}
-        @param monitoruri: the URI of the monitor RPC interface of the master_discovery node
-        @type monitoruri: C{str}
-        @param delayed_exec: Delay the execution of the request for given seconds.
-        @type delayed_exec: C{float}
+        :param str masteruri: the URI of the remote ROS master
+        :param str monitoruri: the URI of the monitor RPC interface of the master_discovery node
+        :param float delayed_exec: Delay the execution of the request for given seconds.
         '''
         with self._lock:
             try:
@@ -103,7 +100,7 @@ class UpdateHandler(QObject):
                     self.__requestedUpdates[masteruri] = (monitoruri, delayed_exec)
                 else:
                     self.__create_update_thread(monitoruri, masteruri, delayed_exec)
-            except:
+            except Exception:
                 pass
 
     def _on_master_info(self, minfo):
@@ -129,7 +126,7 @@ class UpdateHandler(QObject):
                 self.__create_update_thread(monitoruri, masteruri, delayed_exec)
             except KeyError:
                 pass
-            except:
+            except Exception:
                 import traceback
                 print traceback.format_exc(1)
 

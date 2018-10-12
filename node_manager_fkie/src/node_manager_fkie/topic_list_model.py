@@ -252,7 +252,7 @@ class TopicModel(QStandardItemModel):
             return Qt.NoItemFlags
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
-    def updateModelData(self, topics, added_topics, updated_topics, removed_topics):
+    def update_model_data(self, topics, added_topics, updated_topics, removed_topics):
         '''
         Updates the topics model. New topic will be inserted in sorting order. Not
         available topics removed from the model.

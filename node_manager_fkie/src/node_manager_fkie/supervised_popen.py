@@ -43,10 +43,10 @@ class SupervisedPopen(QObject):
     If an error is printed out, it will be shown in a message dialog.
     '''
     error = Signal(str, str, str)
-    '''@ivar: the signal is emitted if error output was detected (id, decription, message)'''
+    ''':ivar: the signal is emitted if error output was detected (id, decription, message)'''
 
     finished = Signal(str)
-    '''@ivar: the signal is emitted on exit (id)'''
+    ''':ivar: the signal is emitted on exit (id)'''
 
     def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None,
                  stderr=subprocess.PIPE, preexec_fn=None, close_fds=False,
@@ -55,12 +55,10 @@ class SupervisedPopen(QObject):
         '''
         For arguments see https://docs.python.org/2/library/subprocess.html
         Additional arguments:
-        :param object_id: the identification string of this object and title of the
+        :param str object_id: the identification string of this object and title of the
         error message dialog
-        :type object_id: str
-        :param description: the description string used as addiotional information
+        :param str description: the description string used as addiotional information
         in dialog if an error was occured
-        :type description: str
         '''
         try:
             QObject.__init__(self)

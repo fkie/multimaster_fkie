@@ -168,11 +168,11 @@ class Settings(object):
         settings.endGroup()
         try:
             self._launch_history_length = int(settings.value('launch_history_length', self.LAUNCH_HISTORY_LENGTH))
-        except:
+        except Exception:
             self._launch_history_length = self.LAUNCH_HISTORY_LENGTH
         try:
             self._param_history_length = int(settings.value('param_history_length', self.PARAM_HISTORY_LENGTH))
-        except:
+        except Exception:
             self._param_history_length = self.PARAM_HISTORY_LENGTH
         self._current_dialog_path = self.CURRENT_DIALOG_PATH
         self._log_viewer = self.LOG_VIEWER
@@ -586,17 +586,17 @@ class Settings(object):
             return v
         return v.lower() in ("yes", "true", "t", "1")
 
-    def str2list(self, l):
-        if isinstance(l, list):
-            return l
+    def str2list(self, lstr):
+        if isinstance(lstr, list):
+            return lstr
         try:
-            l = l.strip('[]')
-            l = l.replace('u"', '')
-            l = l.replace('"', '')
-            l = l.replace("'", '')
-            l = l.replace(",", ' ')
-            return [utf8(i).strip() for i in l.split(' ') if i]
-        except:
+            lstr = lstr.strip('[]')
+            lstr = lstr.replace('u"', '')
+            lstr = lstr.replace('"', '')
+            lstr = lstr.replace("'", '')
+            lstr = lstr.replace(",", ' ')
+            return [utf8(i).strip() for i in lstr.split(' ') if i]
+        except Exception:
             return []
 
     def terminal_cmd(self, cmd, title, noclose=False):

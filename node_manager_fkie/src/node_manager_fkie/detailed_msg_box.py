@@ -163,7 +163,7 @@ class MessageBox(QDialog):
         '''
         Sets the button with given ID to accept button if more then one button with AcceptRole was added to this dialog.
         Adds the buttton to the box if is not already in.
-        :param button: int
+        :param int button: button id
         '''
         if not button & self._buttons:
             self._create_buttons(button)
@@ -173,7 +173,7 @@ class MessageBox(QDialog):
         '''
         Sets the button with given ID to reject button if more then one button with RejectRole was added to this dialog.
         Adds the buttton to the box if is not already in.
-        :param button: int
+        :param int button: button id
         '''
         if not button & self._buttons:
             self._create_buttons(button)

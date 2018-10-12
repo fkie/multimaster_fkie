@@ -34,7 +34,6 @@ from python_qt_binding.QtCore import Signal, Qt, QRect, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette, QPixmap
 import os
 import rospy
-import sys
 
 import node_manager_fkie as nm
 
@@ -42,14 +41,14 @@ from .common import resolve_paths, utf8
 try:
     from python_qt_binding.QtGui import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
     from python_qt_binding.QtGui import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
     from python_qt_binding.QtWidgets import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
 
 
-################################################################################
-##############                  CapabilityHeader                  ##############
-################################################################################
+# ###############################################################################
+# #############                  CapabilityHeader                  ##############
+# ###############################################################################
 class CapabilityHeader(QHeaderView):
     '''
     This class is used for visualization of robots or capabilities in header of
@@ -74,10 +73,9 @@ class CapabilityHeader(QHeaderView):
     def index(self, name):
         '''
         Returns the index of the object stored with given name
-        @param name: the name of the item
-        @type name: C{str}
-        @return: the index or -1 if the item was not found
-        @rtype: C{int}
+        :param str name: the name of the item
+        :return: the index or -1 if the item was not found
+        :rtype: int
         '''
         for index, entry in enumerate(self._data):
             if entry['name'] == name:
@@ -87,7 +85,7 @@ class CapabilityHeader(QHeaderView):
     def paintSection(self, painter, rect, logicalIndex):
         '''
         The method paint the robot or capability images in the backgroud of the cell.
-        @see: U{QtGui.QHeaderView.paintSection()<https://srinikom.github.io/pyside-docs/PySide/QtGui/QHeaderView.html#PySide.QtGui.PySide.QtGui.QHeaderView.paintSection>}
+        :see: U{QtGui.QHeaderView.paintSection()<https://srinikom.github.io/pyside-docs/PySide/QtGui/QHeaderView.html#PySide.QtGui.PySide.QtGui.QHeaderView.paintSection>}
         '''
         painter.save()
         QHeaderView.paintSection(self, painter, rect, logicalIndex)
@@ -124,7 +122,7 @@ class CapabilityHeader(QHeaderView):
             try:
                 from docutils import examples
                 text = examples.html_body(text)
-            except:
+            except Exception:
                 import traceback
                 rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], traceback.format_exc(1))
             self.description_requested_signal.emit(title, text)
@@ -149,7 +147,7 @@ class CapabilityHeader(QHeaderView):
                 if os.path.isfile(img):
                     obj['images'].append(QPixmap(img))
 
-    def updateDescription(self, index, cfg, name, displayed_name, robot_type, description, images):
+    def update_description(self, index, cfg, name, displayed_name, robot_type, description, images):
         '''
         Sets the values of an existing item to the given items only if the current
         value is empty.
@@ -177,8 +175,7 @@ class CapabilityHeader(QHeaderView):
     def removeDescription(self, index):
         '''
         Removes an existing value from the header.
-        @param index: the index of the item to remove.
-        @type index: C{int}
+        :param str index: the index of the item to remove.
         '''
         if index < len(self._data):
             self._data.pop(index)
@@ -186,8 +183,7 @@ class CapabilityHeader(QHeaderView):
     def insertItem(self, index):
         '''
         Inserts an item at the given index into the header.
-        @param index: the index
-        @type index: C{int}
+        :param str index: the index
         '''
         new_dict = {'cfgs': [], 'name': '', 'displayed_name': '', 'type': '', 'description': '', 'images': []}
         if index < len(self._data):
@@ -199,10 +195,9 @@ class CapabilityHeader(QHeaderView):
         '''
         Insert the new item with given name at the sorted position and return the index of
         the item.
-        @param name: the name of the new item
-        @type name: C{str}
-        @return: index of the inserted item
-        @rtype: C{int}
+        :param str name: the name of the new item
+        :return: index of the inserted item
+        :rtype: int
         '''
         new_dict = {'cfgs': [], 'name': name, 'displayed_name': displayed_name, 'type': '', 'description': '', 'images': []}
         for index, item in enumerate(self._data):
@@ -216,10 +211,9 @@ class CapabilityHeader(QHeaderView):
         '''
         Removes the configuration entries from objects and returns the list with
         indexes, where the configuration was removed.
-        @param cfg: configuration to remove
-        @type cfg: C{str}
-        @return: the list the indexes, where the configuration was removed
-        @rtype: C{[int]}
+        :param str cfg: configuration to remove
+        :return: the list the indexes, where the configuration was removed
+        :rtype: [int]
         '''
         result = []
         for index, d in enumerate(self._data):
@@ -230,15 +224,15 @@ class CapabilityHeader(QHeaderView):
 
     def count(self):
         '''
-        @return: The count of items in the header.
-        @rtype: C{int}
+        :return: The count of items in the header.
+        :rtype: int
         '''
         return len(self._data)
 
     def getConfigs(self, index):
         '''
-        @return: The configurations assigned to the item at the given index
-        @rtype: C{str}
+        :return: The configurations assigned to the item at the given index
+        :rtype: str
         '''
         result = []
         if index < len(self._data):
@@ -246,9 +240,9 @@ class CapabilityHeader(QHeaderView):
         return result
 
 
-################################################################################
-##############              CapabilityControlWidget               ##############
-################################################################################
+# ###############################################################################
+# #############              CapabilityControlWidget               ##############
+# ###############################################################################
 
 class CapabilityControlWidget(QFrame):
     '''
@@ -305,34 +299,34 @@ class CapabilityControlWidget(QFrame):
 
     def hasConfigs(self):
         '''
-        @return: True, if a configurations for this widget are available.
-        @rtype: bool
+        :return: True, if a configurations for this widget are available.
+        :rtype: bool
         '''
         return len(self._nodes) > 0
 
     def nodes(self, cfg=''):
         '''
-        @return: the list with nodes required by this capability. The nodes are
+        :return: the list with nodes required by this capability. The nodes are
         defined by ROS full name.
-        @rtype: C{[str]}
+        :rtype: [str]
         '''
         try:
             if cfg:
                 return [n for l in self._nodes[cfg].itervalues() for n in l]
             else:
                 return [n for c in self._nodes.itervalues() for l in c.itervalues() for n in l]
-        except:
+        except Exception:
             return []
 
     def setNodeState(self, running_nodes, stopped_nodes, error_nodes):
         '''
         Sets the state of this capability.
-        @param running_nodes: a list with running nodes.
-        @type running_nodes: C{[str]}
-        @param stopped_nodes: a list with not running nodes.
-        @type stopped_nodes: C{[str]}
-        @param error_nodes: a list with nodes having a problem.
-        @type error_nodes: C{[str]}
+        :param running_nodes: a list with running nodes.
+        :type running_nodes: [str]
+        :param stopped_nodes: a list with not running nodes.
+        :type stopped_nodes: [str]
+        :param error_nodes: a list with nodes having a problem.
+        :type error_nodes: [str]
         '''
         self.setAutoFillBackground(True)
         self.setBackgroundRole(QPalette.Base)
@@ -357,7 +351,7 @@ class CapabilityControlWidget(QFrame):
     def removeCfg(self, cfg):
         try:
             del self._nodes[cfg]
-        except:
+        except Exception:
             pass
 
     def updateNodes(self, cfg, ns, nodes):
@@ -380,9 +374,9 @@ class CapabilityControlWidget(QFrame):
         self.off_button.setFlat(True)
 
 
-################################################################################
-##############                  CapabilityTable                   ##############
-################################################################################
+# ###############################################################################
+# #############                  CapabilityTable                   ##############
+# ###############################################################################
 
 class CapabilityTable(QTableWidget):
     '''
@@ -413,12 +407,10 @@ class CapabilityTable(QTableWidget):
     def updateCapabilities(self, masteruri, cfg_name, description):
         '''
         Updates the capabilities view.
-        @param masteruri: the ROS master URI of updated ROS master.
-        @type masteruri: C{str}
-        @param cfg_name: The name of the node provided the capabilities description.
-        @type cfg_name: C{str}
-        @param description: The capabilities description object.
-        @type description: U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response
+        :param str masteruri: the ROS master URI of updated ROS master.
+        :param str cfg_name: The name of the node provided the capabilities description.
+        :param description: The capabilities description object.
+        :type description: U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response
         '''
         # if it is a new masteruri add a new column
         robot_index = self._robotHeader.index(masteruri)
@@ -466,17 +458,16 @@ class CapabilityTable(QTableWidget):
                 self.setCellWidget(cap_index, robot_index, controlWidget)
                 self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
             else:
-                self._capabilityHeader.updateDescription(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
+                self._capabilityHeader.update_description(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                 try:
                     self.cellWidget(cap_index, robot_index).updateNodes(cfg_name, c.namespace, c.nodes)
-                except:
+                except Exception:
                     import traceback
                     print traceback.format_exc()
 
     def removeConfig(self, cfg):
         '''
-        @param cfg: The name of the node provided the capabilities description.
-        @type cfg: C{str}
+        :param str cfg: The name of the node provided the capabilities description.
         '''
         removed_from_robots = self._robotHeader.removeCfg(cfg)
 #    for r in removed_from_robots:
@@ -518,10 +509,9 @@ class CapabilityTable(QTableWidget):
     def updateState(self, masteruri, master_info):
         '''
         Updates the run state of the capability.
-        @param masteruri: The ROS master, which sends the master_info
-        @type masteruri: C{str}
-        @param master_info: The state of the ROS master
-        @type master_info: U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
+        :param str masteruri: The ROS master, which sends the master_info
+        :param master_info: The state of the ROS master
+        :type master_info: U{master_discovery_fkie.MasterInfo<http://docs.ros.org/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
         '''
         if master_info is None or masteruri is None:
             return

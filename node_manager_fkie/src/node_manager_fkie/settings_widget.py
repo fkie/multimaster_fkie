@@ -36,7 +36,7 @@ try:
     from python_qt_binding.QtGui import QAbstractItemDelegate, QStyledItemDelegate, QHBoxLayout
     from python_qt_binding.QtGui import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, QWidget
     from python_qt_binding.QtGui import QStyleOptionViewItemV4 as QStyleOptionViewItem
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QAbstractItemDelegate, QStyledItemDelegate, QHBoxLayout
     from python_qt_binding.QtWidgets import QCheckBox, QComboBox, QDockWidget, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, QWidget
     from python_qt_binding.QtWidgets import QStyleOptionViewItem

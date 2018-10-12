@@ -188,7 +188,7 @@ class ServiceModel(QStandardItemModel):
             return Qt.NoItemFlags
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
-    def updateModelData(self, services, added_srvs, updated_srvs, removed_srvs):
+    def update_model_data(self, services, added_srvs, updated_srvs, removed_srvs):
         '''
         Updates the service list model. New services will be inserted in sorting
         order. Not available services removed from the model.

@@ -105,7 +105,7 @@ class ProfileWidget(QDockWidget):
             content = {}
             for muri, master in self._main_window.masters.items():
                 if not masteruri or masteruri == muri:
-                    running_nodes = master.getRunningNodesIfLocal()
+                    running_nodes = master.get_nodes_runningIfLocal()
                     configs = {}
                     md_param = {}
                     ms_param = {}
@@ -199,7 +199,7 @@ class ProfileWidget(QDockWidget):
                         local_hostname = get_hostname(self._main_window.getMasteruri())
                         rmuri = muri.replace('$LOCAL$', local_hostname)
                         master = self._main_window.getMaster(rmuri)
-                        running_nodes = master.getRunningNodesIfLocal()
+                        running_nodes = master.get_nodes_runningIfLocal()
                         usr = None
                         self._current_profile[rmuri] = set()
                         if 'user' in master_dict:
@@ -257,7 +257,7 @@ class ProfileWidget(QDockWidget):
                                 if 'nodes' in cmdict:
                                     self._current_profile[rmuri].update(cmdict['nodes'])
                                     force_start = True
-                                    cfg = cfg_name if not is_default else roslib.names.ns_join(cfg_name, 'run')
+                                    cfg = cfg_name
                                     if not reload_launch:
                                         force_start = False
                                         do_not_stop.update(set(cmdict['nodes']))
@@ -298,7 +298,7 @@ class ProfileWidget(QDockWidget):
                 count += len(nodes)
                 master = self._main_window.getMaster(muri, False)
                 if master is not None:
-                    running_nodes = master.getRunningNodesIfLocal()
+                    running_nodes = master.get_nodes_runningIfLocal()
                     profile_nodes = nodes & set(running_nodes.keys())
                     count_run += len(profile_nodes)
             if count > 0:
@@ -345,9 +345,9 @@ class ProfileWidget(QDockWidget):
                 for pname, pval in cfg.items():
                     args.append('_%s:=%s' % (pname, pval))
                 self._main_window._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               'start %s on %s' % (binary, hostname),
-                                               nm.starter().runNodeWithoutConfig,
-                                               (utf8(hostname), pkg, utf8(binary), utf8(binary), args, master.masteruri, False, usr))
+                                                            'start %s on %s' % (binary, hostname),
+                                                            nm.starter().runNodeWithoutConfig,
+                                                            (utf8(hostname), pkg, utf8(binary), utf8(binary), args, master.masteruri, False, False, usr))
                 self._main_window._progress_queue.start()
         except Exception as me:
             rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, utf8(me)))

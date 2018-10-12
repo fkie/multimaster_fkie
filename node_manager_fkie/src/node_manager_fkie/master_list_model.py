@@ -34,7 +34,7 @@ from python_qt_binding.QtCore import QObject, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 try:
     from python_qt_binding.QtGui import QPushButton
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QPushButton
 from socket import getaddrinfo, AF_INET6
 import threading
@@ -185,7 +185,7 @@ class MasterItem(QStandardItem):
                     self.master_ip = ' '.join([self.master_ip, ip])
                     ips.append(ip)
 #      self.updateNameView(self.master, self.quality, self)
-        except:
+        except Exception:
             import traceback
             print traceback.format_exc(1)
 
@@ -281,7 +281,7 @@ class MasterItem(QStandardItem):
         tooltip = ''.join([tooltip, '</body></html>'])
         item.setToolTip(tooltip)
 
-    def updateDescription(self, descr):
+    def update_description(self, descr):
         self.descr = descr
         self.updateNameView(self.master, self.quality, self)
 
@@ -316,7 +316,7 @@ class MasterItem(QStandardItem):
             local = False
             try:
                 local = nm.is_local(item)
-            except:
+            except Exception:
                 pass
             if self.local and not local:  # local hosts are at the top
                 return False
@@ -382,7 +382,7 @@ class MasterModel(QStandardItemModel):
                 root.removeRow(i)
                 try:
                     del self.pyqt_workaround[masterItem.master.name]
-                except:
+                except Exception:
                     pass
                 break
 
@@ -482,7 +482,7 @@ class MasterModel(QStandardItemModel):
                 try:
                     del self.pyqt_workaround_sync[masterItem.master.name]
                     del self.pyqt_workaround_info[masterItem.master.name]
-                except:
+                except Exception:
                     pass
                 break
 
@@ -518,7 +518,7 @@ class MasterModel(QStandardItemModel):
                 masterItem.updateTimeDiff(timediff)
                 break
 
-    def updateDescription(self, master, descr):
+    def update_description(self, master, descr):
         '''
         Updates the description of the master with given name.
 
@@ -531,7 +531,7 @@ class MasterModel(QStandardItemModel):
         for i in range(root.rowCount()):
             masterItem = root.child(i, self.COL_NAME)
             if masterItem and masterItem.master.name == master:
-                masterItem.updateDescription(descr)
+                masterItem.update_description(descr)
 
     def on_sync_clicked(self, checked, masteruri):
         if checked:
