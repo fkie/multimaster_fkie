@@ -1232,6 +1232,7 @@ class MasterViewProxy(QWidget):
             if cfg.startswith(url):
                 print ("remove config", url, cfg)
                 self.removeConfigFromModel(cfg)
+                del self.__configs[cfg]
             else:
                 print ("skip remove config", url, cfg)
                 pass
@@ -1532,7 +1533,7 @@ class MasterViewProxy(QWidget):
                 # text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
                 text += '&nbsp;<a href="kill-screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
             if restartable_nodes_with_launchfiles:
-                text += '&nbsp;<a href="start-node-at-host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
+                # text += '&nbsp;<a href="start-node-at-host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
                 text += '&nbsp;<a href="start-node-adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
             if unregisterble_nodes:
                 text += '<br><a href="unregister-node://all_selected_nodes">unregister [%d]</a>' % len(unregisterble_nodes)
@@ -1579,8 +1580,8 @@ class MasterViewProxy(QWidget):
             # text += '&nbsp; <a href="kill-node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
             text += '&nbsp; <a href="kill-screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>' % node.name
             if launches:
-                text += '&nbsp; <a href="start-node-at-host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>' % node.name
-#        if node.node_info.pid is None or node.node_info.uri is None:
+                #    text += '&nbsp; <a href="start-node-at-host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>' % node.name
+                # if node.node_info.pid is None or node.node_info.uri is None:
                 text += '&nbsp; <a href="start-node-adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>' % node.name
             text += '&nbsp; <a href="copy-log-path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>' % node.name
             text += '<dl>'
@@ -1923,8 +1924,15 @@ class MasterViewProxy(QWidget):
                 if not self.__configs[config].global_param_done:
                     reload_global_param = True
                     self.__configs[config].global_param_done = True
-                result = nm.nmd().start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param)
-                print result, "LOGGING", logging
+                loglevel = ''
+                logformat = ''
+                if logging is not None:
+                    if not logging.is_default('console_format'):
+                        logformat = logging.console_format
+                    if not logging.is_default('loglevel'):
+                        loglevel = logging.loglevel
+                _result = nm.nmd().start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
+                                              loglevel=loglevel, logformat=logformat)
                 # nm.starter().runNode(AdvRunCfg(node.name, config, force_host, self.masteruri, logging=logging, user=self.current_user))
             except socket.error as se:
                 rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
@@ -2024,8 +2032,8 @@ class MasterViewProxy(QWidget):
         diag_canceled = False
         if use_adv_cfg:
             log_params = {'Level': ('string', nm.settings().logging.get_alternatives('loglevel')),
-                          'Level (roscpp)': ('string', nm.settings().logging.get_alternatives('loglevel_roscpp')),
-                          'Level (super)': ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
+                          # 'Level (roscpp)': ('string', nm.settings().logging.get_alternatives('loglevel_roscpp')),
+                          # 'Level (super)': ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
                           'Format': ('string', nm.settings().logging.get_alternatives('console_format'))
                           }
             params = {'Logging': ('dict', log_params)}
@@ -2039,8 +2047,8 @@ class MasterViewProxy(QWidget):
                 try:
                     params = dia.getKeywords()
                     nm.settings().logging.loglevel = params['Logging']['Level']
-                    nm.settings().logging.loglevel_roscpp = params['Logging']['Level (roscpp)']
-                    nm.settings().logging.loglevel_superdebug = params['Logging']['Level (super)']
+                    # nm.settings().logging.loglevel_roscpp = params['Logging']['Level (roscpp)']
+                    # nm.settings().logging.loglevel_superdebug = params['Logging']['Level (super)']
                     nm.settings().logging.console_format = params['Logging']['Format']
                     nm.settings().store_logging()
                     logging = nm.settings().logging

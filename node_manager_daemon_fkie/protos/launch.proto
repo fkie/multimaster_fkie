@@ -42,7 +42,6 @@ service LaunchService {
 	rpc GetNodes (ListNodesRequest) returns (stream LaunchContent);
 	rpc StartNode (stream Node) returns (stream StartNodeReply);
 	rpc StartStandaloneNode (StartConfig) returns (StartNodeReply);
-	rpc RestartNode (stream Node) returns (stream StartNodeReply);
 	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
 	rpc GetMtime (LaunchFile) returns (MtimeReply);
 //	rpc GetChangedBinaries (Empty) returns (Empty);
@@ -194,7 +193,7 @@ message Node {
 	string name = 1;
 	string opt_binary = 2;
 	string opt_launch = 3;
-	sint32 loglevel = 4;
+	string loglevel = 4;
 	string logformat = 5;
 	string masteruri = 6;
 	bool reload_global_param = 7;
@@ -204,14 +203,6 @@ message Node {
  *
  */
 message StartConfig {
-	enum LogLevel {
-		UNCHANGED = 0;
-		FATAL = 1;
-		ERROR = 2;
-		WARN = 3;
-		INFO = 4;
-		DEBUG = 5;
-	}
 	string package = 1;
 	string binary = 2;
 	string binary_path = 3;
@@ -226,7 +217,7 @@ message StartConfig {
 	repeated string clear_params = 12;
 	repeated string args = 13;
 	string masteruri = 14;
-	sint32 loglevel = 15;
+	string loglevel = 15;  // FATAL, ERROR, WARN, INFO, DEBUG
 	string logformat = 16;
 	bool respawn = 17;
 	double respawn_delay = 18;

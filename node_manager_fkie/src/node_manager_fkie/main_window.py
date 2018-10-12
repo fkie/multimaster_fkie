@@ -867,7 +867,6 @@ class MainWindow(QMainWindow):
                     if master.master_info is not None:
                         if self._history_selected_robot == minfo.mastername and self._history_selected_robot == master.mastername and self.currentMaster != master:
                             if self.currentMaster is not None and not self.currentMaster.is_local:
-                                print "$$$$$$$$$$$$$ set1"
                                 self.setCurrentMaster(master)
 #                        elif nm.is_local(get_hostname(master.master_info.masteruri)) or self.restricted_to_one_master:
                         elif master.master_info.masteruri == masteruri_from_master() or self.restricted_to_one_master:
@@ -876,9 +875,7 @@ class MainWindow(QMainWindow):
                                 if (not self.own_master_monitor.isPaused() or not self.masterTableView.isEnabled()) and has_discovery_service:
                                     self._subscribe()
                             if self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
-                                print "$$$$$$$$$$$$$ set2"
                                 self.setCurrentMaster(master)
-
                         # update the list view, whether master is synchronized or not
                         if master.master_info.masteruri == minfo.masteruri:
                             self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)

@@ -40,7 +40,6 @@ import roslib
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_master
-import host
 from .common import interpret_path, package_name, utf8
 
 

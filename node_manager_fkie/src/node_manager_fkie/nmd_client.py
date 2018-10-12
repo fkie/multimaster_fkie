@@ -31,9 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
-from concurrent import futures
 import os
-import grpc
 from python_qt_binding.QtCore import QObject, Signal
 import rospy
 import threading
@@ -41,12 +39,10 @@ import threading
 # import node_manager_fkie as nm
 
 import node_manager_daemon_fkie.exceptions as exceptions
-#import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
 import node_manager_daemon_fkie.remote as remote
-#from node_manager_daemon_fkie.file_client_servicer import FileClientServicer
 import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
-from node_manager_daemon_fkie.url import get_nmd_url, grpc_join, grpc_split_url, grpc_create_url
+from node_manager_daemon_fkie.url import get_nmd_url, grpc_join, grpc_split_url
 from .common import utf8
 
 
@@ -147,8 +143,7 @@ class NmdClient(QObject):
                     return pl[path]
                 path = os.path.dirname(path).rstrip(os.path.sep)
         except Exception:
-            import traceback
-            print(traceback.format_exc())
+            pass
         return result
 
     def get_packages(self, url=''):
@@ -171,14 +166,12 @@ class NmdClient(QObject):
         channel = remote.get_insecure_channel(url)
         if channel is not None:
             return fstub.FileStub(channel)
-        print("return None in get_file_manager()")
         return None
 
     def get_launch_manager(self, url='localhost:12321'):
         channel = remote.get_insecure_channel(url)
         if channel is not None:
             return lstub.LaunchStub(channel)
-        print("return None in get_launch_manager()")
         return None
 
     def list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
@@ -204,7 +197,6 @@ class NmdClient(QObject):
                 result = fm.list_path(path)
                 if url not in self._cache_packages:
                     self.list_packages_threaded(grpc_path, clear_cache)
-                print("OK LISTPATH", grpc_path)
             except Exception as e:
                 remote.remove_insecure_channel(url)
                 self.error.emit("list_path", "grpc://%s" % url, path, e)
@@ -233,7 +225,6 @@ class NmdClient(QObject):
         try:
             response = fm.changed_files(path_dict)
             for item in response:
-                print("EMIT CHANGED:", item.path, item.mtime)
                 self.changed_file.emit(grpc_join(grpc_url, item.path), item.mtime)
         except Exception as e:
             self.error.emit("changed_files", "grpc://%s" % url, "", e)
@@ -277,7 +268,6 @@ class NmdClient(QObject):
         fm = self.get_file_manager(url)
         if fm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
-        print("nmd_rename: old", old, ", new: ", new)
         return fm.rename(old, new)
 
     def copy(self, grpc_path='grpc://localhost:12321', grpc_dest='grpc://localhost:12321'):
@@ -287,7 +277,6 @@ class NmdClient(QObject):
         fm = self.get_file_manager(url)
         if fm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
-        print("nmd_rename: path", path, ", url_dest: ", url_dest)
         fm.copy(path, url_dest)
 
     def get_package_binaries(self, pkgname, grpc_url='grpc://localhost:12321'):
@@ -395,8 +384,6 @@ class NmdClient(QObject):
         launch_file = ''
         while nexttry:
             try:
-#                 import inspect
-#                 print("CALLER:", inspect.stack()[1][3])
                 rospy.loginfo("load launch file %s:" % (grpc_path))
                 launch_files, _argv = lm.load_launch(package, launch, path=path, args=myargs, request_args=request_args, masteruri=masteruri, host=host)
                 if launch_files:
@@ -423,8 +410,6 @@ class NmdClient(QObject):
                 launch_file = aoe.path
         rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
         return launch_file
-#        includes = {path: mtime}
-#        return launch_file, mtime, 
 
     def reload_launch(self, grpc_path, masteruri=''):
         rospy.logdebug("reload launch %s" % grpc_path)
@@ -446,15 +431,6 @@ class NmdClient(QObject):
             raise Exception("Node manager daemon '%s' not reachable" % url)
         launch_file = lm.unload_launch(path, masteruri)
         return launch_file
-#         except exceptions.ResourceNotFound as rnf:
-#             rospy.logwarn(rnf)
-#         except exceptions.RemoteException as re:
-#             rospy.logwarn("Unexpected error code %d; %s" % (re.code, re))
-#         except Exception as e:
-#             rospy.logwarn("ERROR WHILE RELOAD LAUNCH: %s" % e)
-#             import traceback
-#             print(traceback.format_exc())
-#         rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
 
     def get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
         thread = threading.Thread(target=self._get_mtimes_threaded, args=(grpc_path,))
@@ -486,9 +462,7 @@ class NmdClient(QObject):
         somethingThread.start()
 
     def _list_packages(self, grpc_url_or_path='grpc://localhost:12321', clear_ros_cache=False):
-        print("grpc_url_or_path", grpc_url_or_path)
         url, path = grpc_split_url(grpc_url_or_path)
-        print("LLLIIIRIISS", url, path)
         grpc_url = "grpc://%s" % url
         result = {}
         try:
@@ -511,14 +485,14 @@ class NmdClient(QObject):
                 remote.remove_insecure_channel(url)
                 self.error.emit("_list_packages", "grpc://%s" % url, path, err)
 
-    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False):
+    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
         rospy.loginfo("start node: %s on %s" % (name, masteruri))
         url, _ = grpc_split_url(grpc_path)
         lm = self.get_launch_manager(url)
         if lm is None:
             raise Exception("Node manager daemon '%s' not reachable" % url)
         try:
-            return lm.start_node(name, masteruri=masteruri, reload_global_param=reload_global_param)
+            return lm.start_node(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
         except Exception as err:
             remote.remove_insecure_channel(url)
             raise err

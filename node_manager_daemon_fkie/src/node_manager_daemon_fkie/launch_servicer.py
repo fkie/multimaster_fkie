@@ -410,7 +410,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     yield result
                 try:
                     result.launch.append(launch_configs[0].filename)
-                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, reload_global_param=request.reload_global_param)
+                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param)
                     startcfg.host = url.get_nmd_url(request.masteruri)
                     launcher.run_node(startcfg)
                     result.status.code = OK
@@ -463,13 +463,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             result.status.code = ERROR
             result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
             return result
-
-    def RestartNode(self, request_iterator, context):
-        # missing associated documentation comment in .proto file
-        pass
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
 
     def GetIncludedFiles(self, request, context):
         pattern = INCLUDE_PATTERN

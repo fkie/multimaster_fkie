@@ -33,13 +33,6 @@
 
 class StartConfig():
 
-    LOG_UNCHANGED = 0
-    LOG_FATAL = 1
-    LOG_ERROR = 2
-    LOG_WARN = 3
-    LOG_INFO = 4
-    LOG_DEBUG = 5
-
     def __init__(self, package, binary):
         self.package = package
         self.binary = binary
@@ -56,7 +49,8 @@ class StartConfig():
         self.args = []
         self.masteruri = None
         self.host = None
-        self.loglevel = StartConfig.LOG_UNCHANGED
+        self.loglevel = ''
+        self.logformat = ''
         self.respawn = False
         self.respawn_delay = 30
         self.respawn_max = 0

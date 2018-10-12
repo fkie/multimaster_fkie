@@ -203,10 +203,10 @@ class LaunchStub(object):
         return result
 
     def _gen_node_list(self, nodes):
-        for name, opt_binary, opt_launch, loglevel, masteruri, reload_global_param in nodes:
-            yield lmsg.Node(name=name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, masteruri=masteruri, reload_global_param=reload_global_param)
+        for name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param in nodes:
+            yield lmsg.Node(name=name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
 
-    def start_node(self, name, opt_binary='', opt_launch='', loglevel=0, masteruri='', reload_global_param=False):
+    def start_node(self, name, opt_binary='', opt_launch='', loglevel='', logformat='', masteruri='', reload_global_param=False):
         '''
         Start node.
         :param str name: full name of the ros node exists in the launch file.
@@ -217,7 +217,7 @@ class LaunchStub(object):
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         :raise exceptions.LaunchSelectionRequest: on multiple launch files
         '''
-        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binary, opt_launch, loglevel, masteruri, reload_global_param)]), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param)]), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == 0:
                 pass

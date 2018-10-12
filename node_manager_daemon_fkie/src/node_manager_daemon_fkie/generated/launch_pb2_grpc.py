@@ -49,11 +49,6 @@ class LaunchServiceStub(object):
         request_serializer=launch__pb2.StartConfig.SerializeToString,
         response_deserializer=launch__pb2.StartNodeReply.FromString,
         )
-    self.RestartNode = channel.stream_stream(
-        '/node_manager_daemon_fkie.LaunchService/RestartNode',
-        request_serializer=launch__pb2.Node.SerializeToString,
-        response_deserializer=launch__pb2.StartNodeReply.FromString,
-        )
     self.GetIncludedFiles = channel.unary_stream(
         '/node_manager_daemon_fkie.LaunchService/GetIncludedFiles',
         request_serializer=launch__pb2.IncludedFilesRequest.SerializeToString,
@@ -119,13 +114,6 @@ class LaunchServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def RestartNode(self, request_iterator, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
   def GetIncludedFiles(self, request, context):
     # missing associated documentation comment in .proto file
     pass
@@ -176,11 +164,6 @@ def add_LaunchServiceServicer_to_server(servicer, server):
       'StartStandaloneNode': grpc.unary_unary_rpc_method_handler(
           servicer.StartStandaloneNode,
           request_deserializer=launch__pb2.StartConfig.FromString,
-          response_serializer=launch__pb2.StartNodeReply.SerializeToString,
-      ),
-      'RestartNode': grpc.stream_stream_rpc_method_handler(
-          servicer.RestartNode,
-          request_deserializer=launch__pb2.Node.FromString,
           response_serializer=launch__pb2.StartNodeReply.SerializeToString,
       ),
       'GetIncludedFiles': grpc.unary_stream_rpc_method_handler(
