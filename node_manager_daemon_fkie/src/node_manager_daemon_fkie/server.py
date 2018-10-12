@@ -33,6 +33,7 @@
 from concurrent import futures
 import grpc
 import rospy
+import time
 
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
@@ -64,11 +65,15 @@ class GrpcServer:
 #         server_credentials = grpc.ssl_server_credentials(((private_key, certificate_chain,),))
 #         print("port: ", self.server.add_secure_port(url, server_credentials))
         insecure_port = self.server.add_insecure_port(url)
-        if insecure_port == 0:
-            raise Exception("Can not add insecure channel to '%s'!" % url)
-        fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
-        lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
-        self.server.start()
+        while insecure_port == 0 and not rospy.is_shutdown():
+            rospy.logwarn("can not add insecure channel to '%s', try again..." % url)
+            time.sleep(2.)
+            insecure_port = self.server.add_insecure_port(url)
+        if insecure_port > 0:
+            fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
+            lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
+            self.server.start()
+            rospy.loginfo("Server at '%s' started!" % url)
 
     def shutdown(self):
         self.launch_servicer.stop()
