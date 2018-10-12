@@ -33,7 +33,7 @@
 
 class LaunchDescription:
 
-    def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[]):
+    def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[], nodelets={}):
         '''
         Description of the robot configured by this launch file.
          :param str path: path of the launch file.
@@ -44,12 +44,15 @@ class LaunchDescription:
          :type nodes: [str]
          :param robot_descriptions: a list of capabilities :message:RobotDescription.
          :type robot_descriptions: [RobotDescription]
+         :param nodelets: a dictionary with nodelets manager and controlled nodelet clients
+         :type nodelets: {str: [str]}
         '''
         self.path = path
         self.masteruri = masteruri
         self.host = host
         self.nodes = nodes if nodes else []  # create a new array to a void to fill a default one
         self.robot_descriptions = robot_descriptions if robot_descriptions else []  # create a new array to a void to fill a default one
+        self.nodelets = nodelets if nodelets else {}
 
     def __repr__(self):
         return "<%s[%s, masteruri: %s, host: %s], with %d nodes>" % (self.__class__, self.path, self.masteruri, self.host, len(self.nodes))

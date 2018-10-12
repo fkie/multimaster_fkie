@@ -152,6 +152,7 @@ message LaunchContent {
 	string host = 3;
 	repeated string node = 4;
 	repeated RobotDescription description = 5;
+	repeated Nodelets nodelets = 6;
 }
 
 /** Description of the robot configured by this launch file.
@@ -197,6 +198,14 @@ message Node {
 	string logformat = 5;
 	string masteruri = 6;
 	bool reload_global_param = 7;
+}
+
+/** Represents the nodelets specified in Launchfile.
+ * :param manager: nodelete manager
+ * :param nodes: list with nodes (full name) controlled by nodelet manager. */
+message Nodelets {
+	string manager = 1;
+	repeated string nodes = 2;
 }
 
 /** Starts a ROS node without configurations. All parameter are set by this request.

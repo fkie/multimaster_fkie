@@ -125,7 +125,11 @@ class LaunchStub(object):
                     cp = Capability(name=cap.name, namespace=cap.namespace, cap_type=cap.type, images=[img for img in cap.images], description=cap.description, nodes=[n for n in cap.nodes])
                     rd.capabilities.append(cp)
                 descriptions.append(rd)
-            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(response.node), descriptions)
+            nodelets = {}
+            for nitem in response.nodelets:
+                nlist = [item for item in nitem.nodes]
+                nodelets[nitem.manager] = nlist
+            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(response.node), descriptions, nodelets)
             result.append(ld)
         return result
 

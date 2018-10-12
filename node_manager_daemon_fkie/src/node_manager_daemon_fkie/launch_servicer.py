@@ -30,7 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import grpc
 import os
 import re
 import rospy
@@ -380,6 +379,20 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 except Exception:
                     import traceback
                     print traceback.format_exc()
+            # create nodelets description
+            nodelets = {}
+            for n in lc.roscfg.nodes:
+                if n.package == 'nodelet' and n.type == 'nodelet':
+                    args = n.args.split(' ')
+                    if len(args) == 3 and args[0] == 'load':
+                        nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
+                        if nodelet_mngr not in nodelets:
+                            nodelets[nodelet_mngr] = []
+                        nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+            for mngr, ndl in nodelets.items():
+                nlmsg = lmsg.Nodelets(manager=mngr)
+                nlmsg.nodes.extend(ndl)
+                reply.nodelets.extend([nlmsg])
             yield reply
 
     def StartNode(self, request_iterator, context):

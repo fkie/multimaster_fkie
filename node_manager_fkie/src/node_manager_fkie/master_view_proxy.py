@@ -166,6 +166,7 @@ class MasterViewProxy(QWidget):
         self.__current_parameter_robot_icon = ''
         self.__republish_params = {}  # { topic : params, created by dialog}
         self.__last_selection = 0
+        self.__last_question_start_nmd = 0
         self._on_stop_kill_roscore = False
         self._on_stop_poweroff = False
         self._start_nodes_after_load_cfg = dict()
@@ -455,10 +456,12 @@ class MasterViewProxy(QWidget):
                 return
             nmd_node = master_info.getNode('/node_manager_daemon')
             if nmd_node is None or nmd_node.pid is None:
-                if not self.is_local:
-                    self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
-                else:
-                    self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
+                if time.time() - self.__last_question_start_nmd > 3.:
+                    self.__last_question_start_nmd = time.time()
+                    if not self.is_local:
+                        self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
+                    else:
+                        self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
             try:
                 if (master_info.masteruri == self.masteruri):
                     self.update_system_parameter()
@@ -923,15 +926,15 @@ class MasterViewProxy(QWidget):
 #                         if nodelet_mngr not in nodelets:
 #                             nodelets[nodelet_mngr] = []
 #                         nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
-#             for mngr, nlist in nodelets.iteritems():
-#                 mngr_nodes = self.node_tree_model.getNode(mngr, self.masteruri)
-#                 for mn in mngr_nodes:
-#                     mn.nodelets = nlist
-#                 for nlet in nlist:
-#                     nlet_nodes = self.node_tree_model.getNode(nlet, self.masteruri)
-#                     for nn in nlet_nodes:
-#                         nn.nodelet_mngr = mngr
-#             self._nodelets[launchfile] = nodelets
+            for mngr, nlist in ld.nodelets.items():
+                mngr_nodes = self.node_tree_model.get_tree_node(mngr, self.masteruri)
+                for mn in mngr_nodes:
+                    mn.nodelets = nlist
+                for nlet in nlist:
+                    nlet_nodes = self.node_tree_model.get_tree_node(nlet, self.masteruri)
+                    for nn in nlet_nodes:
+                        nn.nodelet_mngr = mngr
+            self._nodelets[ld.path] = ld.nodelets
         removed_configs = set(self.__configs.keys()) - set(new_configs)
         for cfg in removed_configs:
             if isinstance(cfg, tuple):

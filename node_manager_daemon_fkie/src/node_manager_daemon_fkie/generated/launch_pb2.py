@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='node_manager_daemon_fkie',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0claunch.proto\x12\x18node_manager_daemon_fkie\"\x07\n\x05\x45mpty\"\xda\x01\n\x11LoadLaunchRequest\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x13\n\x0bload_params\x18\x04 \x01(\x08\x12\x30\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x18\n\x10\x66orce_first_file\x18\x06 \x01(\x08\x12\x14\n\x0crequest_args\x18\x07 \x01(\x08\x12\x11\n\tmasteruri\x18\x08 \x01(\t\x12\x0c\n\x04host\x18\t \x01(\t\"\xa0\x01\n\x0fLoadLaunchReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x30\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x15\n\rchanged_nodes\x18\x04 \x03(\t\"d\n\nMtimeReply\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x39\n\x0eincluded_files\x18\x03 \x03(\x0b\x32!.node_manager_daemon_fkie.FileObj\"&\n\x07\x46ileObj\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\"\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"-\n\nLaunchFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\"\x8e\x01\n\nLoadedFile\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x30\n\x04\x61rgs\x18\x04 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x11\n\tmasteruri\x18\x05 \x01(\t\x12\x0c\n\x04host\x18\x06 \x01(\t\"X\n\x10ListNodesRequest\x12\x14\n\x0claunch_files\x18\x01 \x03(\t\x12\x1b\n\x13request_description\x18\x02 \x01(\x08\x12\x11\n\tmasteruri\x18\x03 \x01(\t\"\x94\x01\n\rLaunchContent\x12\x13\n\x0blaunch_file\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04node\x18\x04 \x03(\t\x12?\n\x0b\x64\x65scription\x18\x05 \x03(\x0b\x32*.node_manager_daemon_fkie.RobotDescription\"\xb2\x01\n\x10RobotDescription\x12\x0f\n\x07machine\x18\x01 \x01(\t\x12\x12\n\nrobot_name\x18\x02 \x01(\t\x12\x12\n\nrobot_type\x18\x03 \x01(\t\x12\x14\n\x0crobot_images\x18\x04 \x03(\t\x12\x13\n\x0brobot_descr\x18\x05 \x01(\t\x12:\n\x0c\x63\x61pabilities\x18\x06 \x03(\x0b\x32$.node_manager_daemon_fkie.Capability\"o\n\nCapability\x12\x11\n\tnamespace\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06images\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\r\n\x05nodes\x18\x06 \x03(\t\"\x91\x01\n\x04Node\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x12\n\nopt_binary\x18\x02 \x01(\t\x12\x12\n\nopt_launch\x18\x03 \x01(\t\x12\x10\n\x08loglevel\x18\x04 \x01(\t\x12\x11\n\tlogformat\x18\x05 \x01(\t\x12\x11\n\tmasteruri\x18\x06 \x01(\t\x12\x1b\n\x13reload_global_param\x18\x07 \x01(\x08\"\xe3\x03\n\x0bStartConfig\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tnamespace\x18\x05 \x01(\t\x12\x10\n\x08\x66ullname\x18\x06 \x01(\t\x12\x0e\n\x06prefix\x18\x07 \x01(\t\x12\x0b\n\x03\x63wd\x18\x08 \x01(\t\x12/\n\x03\x65nv\x18\t \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x33\n\x06remaps\x18\n \x03(\x0b\x32#.node_manager_daemon_fkie.Remapping\x12\x32\n\x06params\x18\x0b \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x14\n\x0c\x63lear_params\x18\x0c \x03(\t\x12\x0c\n\x04\x61rgs\x18\r \x03(\t\x12\x11\n\tmasteruri\x18\x0e \x01(\t\x12\x10\n\x08loglevel\x18\x0f \x01(\t\x12\x11\n\tlogformat\x18\x10 \x01(\t\x12\x0f\n\x07respawn\x18\x11 \x01(\x08\x12\x15\n\rrespawn_delay\x18\x12 \x01(\x01\x12\x13\n\x0brespawn_max\x18\x13 \x01(\x11\x12\x1b\n\x13respawn_min_runtime\x18\x14 \x01(\x01\"/\n\tRemapping\x12\x11\n\tfrom_name\x18\x01 \x01(\t\x12\x0f\n\x07to_name\x18\x02 \x01(\t\"t\n\x0eStartNodeReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x0e\n\x06launch\x18\x04 \x03(\t\"X\n\x14IncludedFilesRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\trecursive\x18\x02 \x01(\x08\x12\x0e\n\x06unique\x18\x03 \x01(\x08\x12\x0f\n\x07pattern\x18\x04 \x03(\t\"U\n\x12IncludedFilesReply\x12\x11\n\troot_path\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0e\n\x06linenr\x18\x03 \x01(\x04\x12\x0e\n\x06\x65xists\x18\x04 \x01(\x08\"\xce\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\"\x9c\x01\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x10\n\x0c\x41LREADY_OPEN\x10\x02\x12\x15\n\x11MULTIPLE_BINARIES\x10\x03\x12\x15\n\x11MULTIPLE_LAUNCHES\x10\x04\x12\x13\n\x0fPARAMS_REQUIRED\x10\x05\x12\x12\n\x0e\x46ILE_NOT_FOUND\x10\x06\x12\x12\n\x0eNODE_NOT_FOUND\x10\x07\x32\x84\x07\n\rLaunchService\x12Y\n\x0eGetLoadedFiles\x12\x1f.node_manager_daemon_fkie.Empty\x1a$.node_manager_daemon_fkie.LoadedFile0\x01\x12\x64\n\nLoadLaunch\x12+.node_manager_daemon_fkie.LoadLaunchRequest\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cReloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cUnloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12\x61\n\x08GetNodes\x12*.node_manager_daemon_fkie.ListNodesRequest\x1a\'.node_manager_daemon_fkie.LaunchContent0\x01\x12Y\n\tStartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12\x66\n\x13StartStandaloneNode\x12%.node_manager_daemon_fkie.StartConfig\x1a(.node_manager_daemon_fkie.StartNodeReply\x12r\n\x10GetIncludedFiles\x12..node_manager_daemon_fkie.IncludedFilesRequest\x1a,.node_manager_daemon_fkie.IncludedFilesReply0\x01\x12V\n\x08GetMtime\x12$.node_manager_daemon_fkie.LaunchFile\x1a$.node_manager_daemon_fkie.MtimeReplyb\x06proto3')
+  serialized_pb=_b('\n\x0claunch.proto\x12\x18node_manager_daemon_fkie\"\x07\n\x05\x45mpty\"\xda\x01\n\x11LoadLaunchRequest\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x13\n\x0bload_params\x18\x04 \x01(\x08\x12\x30\n\x04\x61rgs\x18\x05 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x18\n\x10\x66orce_first_file\x18\x06 \x01(\x08\x12\x14\n\x0crequest_args\x18\x07 \x01(\x08\x12\x11\n\tmasteruri\x18\x08 \x01(\t\x12\x0c\n\x04host\x18\t \x01(\t\"\xa0\x01\n\x0fLoadLaunchReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x30\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x15\n\rchanged_nodes\x18\x04 \x03(\t\"d\n\nMtimeReply\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\x12\x39\n\x0eincluded_files\x18\x03 \x03(\x0b\x32!.node_manager_daemon_fkie.FileObj\"&\n\x07\x46ileObj\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05mtime\x18\x02 \x01(\x01\"\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"-\n\nLaunchFile\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\"\x8e\x01\n\nLoadedFile\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06launch\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x30\n\x04\x61rgs\x18\x04 \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x11\n\tmasteruri\x18\x05 \x01(\t\x12\x0c\n\x04host\x18\x06 \x01(\t\"X\n\x10ListNodesRequest\x12\x14\n\x0claunch_files\x18\x01 \x03(\t\x12\x1b\n\x13request_description\x18\x02 \x01(\x08\x12\x11\n\tmasteruri\x18\x03 \x01(\t\"\xca\x01\n\rLaunchContent\x12\x13\n\x0blaunch_file\x18\x01 \x01(\t\x12\x11\n\tmasteruri\x18\x02 \x01(\t\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04node\x18\x04 \x03(\t\x12?\n\x0b\x64\x65scription\x18\x05 \x03(\x0b\x32*.node_manager_daemon_fkie.RobotDescription\x12\x34\n\x08nodelets\x18\x06 \x03(\x0b\x32\".node_manager_daemon_fkie.Nodelets\"\xb2\x01\n\x10RobotDescription\x12\x0f\n\x07machine\x18\x01 \x01(\t\x12\x12\n\nrobot_name\x18\x02 \x01(\t\x12\x12\n\nrobot_type\x18\x03 \x01(\t\x12\x14\n\x0crobot_images\x18\x04 \x03(\t\x12\x13\n\x0brobot_descr\x18\x05 \x01(\t\x12:\n\x0c\x63\x61pabilities\x18\x06 \x03(\x0b\x32$.node_manager_daemon_fkie.Capability\"o\n\nCapability\x12\x11\n\tnamespace\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06images\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\r\n\x05nodes\x18\x06 \x03(\t\"\x91\x01\n\x04Node\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x12\n\nopt_binary\x18\x02 \x01(\t\x12\x12\n\nopt_launch\x18\x03 \x01(\t\x12\x10\n\x08loglevel\x18\x04 \x01(\t\x12\x11\n\tlogformat\x18\x05 \x01(\t\x12\x11\n\tmasteruri\x18\x06 \x01(\t\x12\x1b\n\x13reload_global_param\x18\x07 \x01(\x08\"*\n\x08Nodelets\x12\x0f\n\x07manager\x18\x01 \x01(\t\x12\r\n\x05nodes\x18\x02 \x03(\t\"\xe3\x03\n\x0bStartConfig\x12\x0f\n\x07package\x18\x01 \x01(\t\x12\x0e\n\x06\x62inary\x18\x02 \x01(\t\x12\x13\n\x0b\x62inary_path\x18\x03 \x01(\t\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tnamespace\x18\x05 \x01(\t\x12\x10\n\x08\x66ullname\x18\x06 \x01(\t\x12\x0e\n\x06prefix\x18\x07 \x01(\t\x12\x0b\n\x03\x63wd\x18\x08 \x01(\t\x12/\n\x03\x65nv\x18\t \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x33\n\x06remaps\x18\n \x03(\x0b\x32#.node_manager_daemon_fkie.Remapping\x12\x32\n\x06params\x18\x0b \x03(\x0b\x32\".node_manager_daemon_fkie.Argument\x12\x14\n\x0c\x63lear_params\x18\x0c \x03(\t\x12\x0c\n\x04\x61rgs\x18\r \x03(\t\x12\x11\n\tmasteruri\x18\x0e \x01(\t\x12\x10\n\x08loglevel\x18\x0f \x01(\t\x12\x11\n\tlogformat\x18\x10 \x01(\t\x12\x0f\n\x07respawn\x18\x11 \x01(\x08\x12\x15\n\rrespawn_delay\x18\x12 \x01(\x01\x12\x13\n\x0brespawn_max\x18\x13 \x01(\x11\x12\x1b\n\x13respawn_min_runtime\x18\x14 \x01(\x01\"/\n\tRemapping\x12\x11\n\tfrom_name\x18\x01 \x01(\t\x12\x0f\n\x07to_name\x18\x02 \x01(\t\"t\n\x0eStartNodeReply\x12\x36\n\x06status\x18\x01 \x01(\x0b\x32&.node_manager_daemon_fkie.ReturnStatus\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04path\x18\x03 \x03(\t\x12\x0e\n\x06launch\x18\x04 \x03(\t\"X\n\x14IncludedFilesRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\trecursive\x18\x02 \x01(\x08\x12\x0e\n\x06unique\x18\x03 \x01(\x08\x12\x0f\n\x07pattern\x18\x04 \x03(\t\"U\n\x12IncludedFilesReply\x12\x11\n\troot_path\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0e\n\x06linenr\x18\x03 \x01(\x04\x12\x0e\n\x06\x65xists\x18\x04 \x01(\x08\"\xce\x01\n\x0cReturnStatus\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x11\x12\x11\n\terror_msg\x18\x03 \x01(\t\"\x9c\x01\n\nStatusType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x10\n\x0c\x41LREADY_OPEN\x10\x02\x12\x15\n\x11MULTIPLE_BINARIES\x10\x03\x12\x15\n\x11MULTIPLE_LAUNCHES\x10\x04\x12\x13\n\x0fPARAMS_REQUIRED\x10\x05\x12\x12\n\x0e\x46ILE_NOT_FOUND\x10\x06\x12\x12\n\x0eNODE_NOT_FOUND\x10\x07\x32\x84\x07\n\rLaunchService\x12Y\n\x0eGetLoadedFiles\x12\x1f.node_manager_daemon_fkie.Empty\x1a$.node_manager_daemon_fkie.LoadedFile0\x01\x12\x64\n\nLoadLaunch\x12+.node_manager_daemon_fkie.LoadLaunchRequest\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cReloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12_\n\x0cUnloadLaunch\x12$.node_manager_daemon_fkie.LaunchFile\x1a).node_manager_daemon_fkie.LoadLaunchReply\x12\x61\n\x08GetNodes\x12*.node_manager_daemon_fkie.ListNodesRequest\x1a\'.node_manager_daemon_fkie.LaunchContent0\x01\x12Y\n\tStartNode\x12\x1e.node_manager_daemon_fkie.Node\x1a(.node_manager_daemon_fkie.StartNodeReply(\x01\x30\x01\x12\x66\n\x13StartStandaloneNode\x12%.node_manager_daemon_fkie.StartConfig\x1a(.node_manager_daemon_fkie.StartNodeReply\x12r\n\x10GetIncludedFiles\x12..node_manager_daemon_fkie.IncludedFilesRequest\x1a,.node_manager_daemon_fkie.IncludedFilesReply0\x01\x12V\n\x08GetMtime\x12$.node_manager_daemon_fkie.LaunchFile\x1a$.node_manager_daemon_fkie.MtimeReplyb\x06proto3')
 )
 
 
@@ -65,8 +65,8 @@ _RETURNSTATUS_STATUSTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2374,
-  serialized_end=2530,
+  serialized_start=2472,
+  serialized_end=2628,
 )
 _sym_db.RegisterEnumDescriptor(_RETURNSTATUS_STATUSTYPE)
 
@@ -546,6 +546,13 @@ _LAUNCHCONTENT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='nodelets', full_name='node_manager_daemon_fkie.LaunchContent.nodelets', index=5,
+      number=6, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -559,7 +566,7 @@ _LAUNCHCONTENT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=901,
-  serialized_end=1049,
+  serialized_end=1103,
 )
 
 
@@ -624,8 +631,8 @@ _ROBOTDESCRIPTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1052,
-  serialized_end=1230,
+  serialized_start=1106,
+  serialized_end=1284,
 )
 
 
@@ -690,8 +697,8 @@ _CAPABILITY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1232,
-  serialized_end=1343,
+  serialized_start=1286,
+  serialized_end=1397,
 )
 
 
@@ -763,8 +770,46 @@ _NODE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1346,
-  serialized_end=1491,
+  serialized_start=1400,
+  serialized_end=1545,
+)
+
+
+_NODELETS = _descriptor.Descriptor(
+  name='Nodelets',
+  full_name='node_manager_daemon_fkie.Nodelets',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='manager', full_name='node_manager_daemon_fkie.Nodelets.manager', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='nodes', full_name='node_manager_daemon_fkie.Nodelets.nodes', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1547,
+  serialized_end=1589,
 )
 
 
@@ -927,8 +972,8 @@ _STARTCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1494,
-  serialized_end=1977,
+  serialized_start=1592,
+  serialized_end=2075,
 )
 
 
@@ -965,8 +1010,8 @@ _REMAPPING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1979,
-  serialized_end=2026,
+  serialized_start=2077,
+  serialized_end=2124,
 )
 
 
@@ -1017,8 +1062,8 @@ _STARTNODEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2028,
-  serialized_end=2144,
+  serialized_start=2126,
+  serialized_end=2242,
 )
 
 
@@ -1069,8 +1114,8 @@ _INCLUDEDFILESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2146,
-  serialized_end=2234,
+  serialized_start=2244,
+  serialized_end=2332,
 )
 
 
@@ -1121,8 +1166,8 @@ _INCLUDEDFILESREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2236,
-  serialized_end=2321,
+  serialized_start=2334,
+  serialized_end=2419,
 )
 
 
@@ -1160,8 +1205,8 @@ _RETURNSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2324,
-  serialized_end=2530,
+  serialized_start=2422,
+  serialized_end=2628,
 )
 
 _LOADLAUNCHREQUEST.fields_by_name['args'].message_type = _ARGUMENT
@@ -1170,6 +1215,7 @@ _LOADLAUNCHREPLY.fields_by_name['args'].message_type = _ARGUMENT
 _MTIMEREPLY.fields_by_name['included_files'].message_type = _FILEOBJ
 _LOADEDFILE.fields_by_name['args'].message_type = _ARGUMENT
 _LAUNCHCONTENT.fields_by_name['description'].message_type = _ROBOTDESCRIPTION
+_LAUNCHCONTENT.fields_by_name['nodelets'].message_type = _NODELETS
 _ROBOTDESCRIPTION.fields_by_name['capabilities'].message_type = _CAPABILITY
 _STARTCONFIG.fields_by_name['env'].message_type = _ARGUMENT
 _STARTCONFIG.fields_by_name['remaps'].message_type = _REMAPPING
@@ -1189,6 +1235,7 @@ DESCRIPTOR.message_types_by_name['LaunchContent'] = _LAUNCHCONTENT
 DESCRIPTOR.message_types_by_name['RobotDescription'] = _ROBOTDESCRIPTION
 DESCRIPTOR.message_types_by_name['Capability'] = _CAPABILITY
 DESCRIPTOR.message_types_by_name['Node'] = _NODE
+DESCRIPTOR.message_types_by_name['Nodelets'] = _NODELETS
 DESCRIPTOR.message_types_by_name['StartConfig'] = _STARTCONFIG
 DESCRIPTOR.message_types_by_name['Remapping'] = _REMAPPING
 DESCRIPTOR.message_types_by_name['StartNodeReply'] = _STARTNODEREPLY
@@ -1288,6 +1335,13 @@ Node = _reflection.GeneratedProtocolMessageType('Node', (_message.Message,), dic
   ))
 _sym_db.RegisterMessage(Node)
 
+Nodelets = _reflection.GeneratedProtocolMessageType('Nodelets', (_message.Message,), dict(
+  DESCRIPTOR = _NODELETS,
+  __module__ = 'launch_pb2'
+  # @@protoc_insertion_point(class_scope:node_manager_daemon_fkie.Nodelets)
+  ))
+_sym_db.RegisterMessage(Nodelets)
+
 StartConfig = _reflection.GeneratedProtocolMessageType('StartConfig', (_message.Message,), dict(
   DESCRIPTOR = _STARTCONFIG,
   __module__ = 'launch_pb2'
@@ -1338,8 +1392,8 @@ _LAUNCHSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=2533,
-  serialized_end=3433,
+  serialized_start=2631,
+  serialized_end=3531,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetLoadedFiles',
