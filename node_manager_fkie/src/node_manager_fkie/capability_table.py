@@ -37,7 +37,8 @@ import rospy
 
 import node_manager_fkie as nm
 
-from .common import resolve_paths, utf8
+from node_manager_daemon_fkie.common import interpret_path
+from .common import utf8
 try:
     from python_qt_binding.QtGui import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
     from python_qt_binding.QtGui import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
@@ -138,10 +139,10 @@ class CapabilityHeader(QHeaderView):
             obj['name'] = name
             obj['displayed_name'] = displayed_name
             obj['type'] = robot_type
-            obj['description'] = resolve_paths(description)
+            obj['description'] = interpret_path(description)
             del obj['images'][:]
             for image_path in images:
-                img = resolve_paths(image_path)
+                img = interpret_path(image_path)
                 if img and img[0] != os.path.sep:
                     img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
                 if os.path.isfile(img):
@@ -163,10 +164,10 @@ class CapabilityHeader(QHeaderView):
             if not obj['type']:
                 obj['type'] = robot_type
             if not obj['description']:
-                obj['description'] = resolve_paths(description)
+                obj['description'] = interpret_path(description)
             if not obj['images']:
                 for image_path in images:
-                    img = resolve_paths(image_path)
+                    img = interpret_path(image_path)
                     if img and img[0] != os.path.sep:
                         img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
                     if os.path.isfile(img):

@@ -49,6 +49,7 @@ import threading
 from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie.url import get_masteruri_from_nmd, grpc_join
 import node_manager_fkie as nm
+from .common import utf8
 from .detailed_msg_box import MessageBox
 from .html_delegate import HTMLDelegate
 from .launch_list_model import LaunchListModel, PathItem
@@ -64,8 +65,6 @@ class LaunchFilesWidget(QDockWidget):
     ''' load the launch file with given arguments (launchfile, args, masteruri)'''
     load_profile_signal = Signal(str)
     ''' load the profile file '''
-    load_as_default_signal = Signal(str, str)
-    ''' load the launch file as default (path, host) '''
     edit_signal = Signal(str)
     ''' list of paths to open in an editor '''
     transfer_signal = Signal(list)
@@ -147,20 +146,10 @@ class LaunchFilesWidget(QDockWidget):
                     self.ui_search_line.set_process_active(False)
                     if item.is_launch_file():
                         nm.settings().launch_history_add(item.path)
-                        key_mod = QApplication.keyboardModifiers()
-                        if key_mod & Qt.ShiftModifier:
-                            self.load_as_default_signal.emit(item.path, None)
-                        elif key_mod & Qt.ControlModifier:
-                            self.launchlist_model.setPath(os.path.dirname(item.path))
-                        else:
-                            self.load_signal.emit(item.path, {}, None)
+                        self.load_signal.emit(item.path, {}, None)
                     elif item.is_profile_file():
                         nm.settings().launch_history_add(item.path)
-                        key_mod = QApplication.keyboardModifiers()
-                        if key_mod & Qt.ControlModifier:
-                            self.launchlist_model.setPath(os.path.dirname(item.path))
-                        else:
-                            self.load_profile_signal.emit(item.path)
+                        self.load_profile_signal.emit(item.path)
                     elif item.is_config_file():
                         self.edit_signal.emit(lfile)
                 if self.launchlist_model.current_path:

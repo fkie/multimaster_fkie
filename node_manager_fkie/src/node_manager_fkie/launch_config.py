@@ -30,20 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFile, QObject, QRegExp
-from xml.dom.minidom import parse  # , parseString
-import os
-import re
-import sys
 import time
-
-import roslaunch
-import roslib
-
-from master_discovery_fkie.common import get_hostname, resolve_url
-import node_manager_fkie as nm
-
-from .common import package_name, resolve_paths, utf8
+from python_qt_binding.QtCore import QObject
 
 
 # from xml.dom import Node as DomNode #avoid aliasing

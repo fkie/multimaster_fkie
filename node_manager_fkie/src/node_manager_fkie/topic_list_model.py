@@ -56,10 +56,9 @@ class TopicItem(QStandardItem):
     def __init__(self, name, topic=None, parent=None):
         '''
         Initialize the topic item.
-        @param name: the topic name
-        @type name: C{str}
-        @param topic: the topic info
-        @type topic: U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}
+        :param str name: the topic name
+        :param topic: the topic info
+        :type topic: U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}
         '''
         QStandardItem.__init__(self, name)
         self.parent_item = parent
@@ -178,12 +177,11 @@ class TopicItem(QStandardItem):
         '''
         Creates the list of the items from topic. This list is used for the
         visualization of topic data as a table row.
-        @param topic: the topic name
-        @type topic: C{str}
-        @param root: The parent QStandardItem
-        @type root: U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
-        @return: the list for the representation as a row
-        @rtype: C{[L{TopicItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
+        :param str topic: the topic name
+        :param root: The parent QStandardItem
+        :type root: U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
+        :return: the list for the representation as a row
+        :rtype: C{[L{TopicItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
         '''
         items = []
         item = TopicItem(topic.name, topic, parent=root)
@@ -229,7 +227,7 @@ class TopicModel(QStandardItemModel):
               ('Publisher', 50),
               ('Subscriber', 50),
               ('Type', -1)]
-    '''@ivar: the list with columns C{[(name, width), ...]}'''
+    ''':ivar: the list with columns C{[(name, width), ...]}'''
 
     def __init__(self):
         '''
@@ -256,14 +254,14 @@ class TopicModel(QStandardItemModel):
         '''
         Updates the topics model. New topic will be inserted in sorting order. Not
         available topics removed from the model.
-        @param topics: The dictionary with topics
-        @type topics: C{dict(topic name : U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}, ...)}
-        @param added_topics: the list of new topics in the :topics: list
-        @type added_topics: list or set
-        @param updated_topics: the list of updated topics in the :topics: list
-        @type updated_topics: list or set
-        @param removed_topics: the list of removed topics in the :topics: list
-        @type removed_topics: list or set
+        :param topics: The dictionary with topics
+        :type topics: {topic name : U{master_discovery_fkie.TopicInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.TopicInfo>}}
+        :param added_topics: the list of new topics in the :topics: list
+        :type added_topics: list or set
+        :param updated_topics: the list of updated topics in the :topics: list
+        :type updated_topics: list or set
+        :param removed_topics: the list of removed topics in the :topics: list
+        :type removed_topics: list or set
         '''
         root = self.invisibleRootItem()
         # remove or update the existing items
@@ -312,11 +310,11 @@ class TopicModel(QStandardItemModel):
         '''
         Returns for given topics the list of QModelIndex in this model.
         :param publisher: the list of publisher topics
-        :type publisher: [str, ...]
+        :type publisher: [str]
         :param subscriber: the list of subscriber topics
-        :type subscriber: [str, ...]
+        :type subscriber: [str]
         :return: the list of QModelIndex
-        :rtype: [QtCore.QModelIndex, ...]
+        :rtype: [QtCore.QModelIndex]
         '''
         result = []
         root = self.invisibleRootItem()

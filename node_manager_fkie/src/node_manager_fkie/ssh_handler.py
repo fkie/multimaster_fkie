@@ -120,9 +120,9 @@ class SSHhandler(object):
                         pass
                     sftp.put(local_file, remote_file)
                     rospy.loginfo("SSH COPY %s -> %s@%s:%s", local_file, ssh._transport.get_username(), host, remote_file)
-            except AuthenticationRequest as e:
+            except AuthenticationRequest as _aerr:
                 raise
-            except Exception, e:
+            except Exception as _err:
                 raise
 
     def ssh_exec(self, host, cmd, user=None, pw=None, auto_pw_request=False, get_pty=False, close_stdin=False, close_stdout=False, close_stderr=False):
@@ -158,9 +158,9 @@ class SSHhandler(object):
                     if close_stderr:
                         stderr.close()
                     return stdin, stdout, stderr, True
-            except AuthenticationRequest as e:
+            except AuthenticationRequest as _aerr:
                 raise
-            except Exception as e:
+            except Exception as _err:
                 raise
         raise Exception('Cannot login @%s' % host)
 

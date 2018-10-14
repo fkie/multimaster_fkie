@@ -63,49 +63,6 @@ def delete_rosparam(param, masteruri):
             pass
 
 
-def get_packages(path):
-    result = {}
-    if os.path.isdir(path):
-        fileList = os.listdir(path)
-        if MANIFEST_FILE in fileList:
-            return {os.path.basename(path): path}
-        if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
-            try:
-                pkg = parse_package(path)
-                return {pkg.name: path}
-            except Exception:
-                pass
-            return {}
-        for f in fileList:
-            ret = get_packages(os.path.join(path, f))
-            result = dict(ret.items() + result.items())
-    return result
-
-
-def resolve_paths(text):
-    # TODO
-    '''
-    Searches in text for $(find ...) statements and replaces it by the package path.
-    @return: text with replaced statements.
-    '''
-    result = text
-    startIndex = text.find('$(')
-    if startIndex > -1:
-        endIndex = text.find(')', startIndex + 2)
-        script = text[startIndex + 2: endIndex].split()
-        if len(script) == 2 and (script[0] == 'find'):
-            pkg = ''
-            try:
-                from rospkg import RosPack
-                rp = RosPack()
-                pkg = rp.get_path(script[1])
-            except Exception:
-                import roslib
-                pkg = roslib.packages.get_pkg_dir(script[1])
-            return result.replace(text[startIndex: endIndex + 1], pkg)
-    return result
-
-
 def to_url(path):
     '''
     Searches the package name for given path and create an URL starting with pkg://

@@ -206,33 +206,6 @@ class TextEdit(QTextEdit):
                 return index
         return -1
 
-    def includedFiles(self):
-        '''
-        Returns all included files in the document.
-        '''
-        result = []
-        b = self.document().begin()
-        while b != self.document().end():
-            text = b.text()
-            index = self.index(text)
-            if index > -1:
-                startIndex = text.find('"', index)
-                if startIndex > -1:
-                    endIndex = text.find('"', startIndex + 1)
-                    fileName = text[startIndex + 1:endIndex]
-                    if len(fileName) > 0:
-                        try:
-                            path = interpret_path(fileName)
-                            f = QFile(path)
-                            ext = os.path.splitext(path)
-                            if f.exists() and ext[1] in nm.settings().SEARCH_IN_EXT:
-                                result.append(path)
-                        except Exception:
-                            import traceback
-                            print traceback.format_exc(1)
-            b = b.next()
-        return result
-
     def focusInEvent(self, event):
         # check for file changes
         if self.filename and self.file_mtime:
@@ -581,9 +554,7 @@ class TextEdit(QTextEdit):
         if not cursor.isNull():
             text = e.mimeData().text()
             # the files will be included
-            if text.startswith('file://'):
-                text = text[7:]
-            if os.path.exists(text) and os.path.isfile(text):
+            if text.startswith('grpc://'):
                 # find the package name containing the included file
                 (package, path) = package_name(os.path.dirname(text))
                 if text.endswith('.launch'):

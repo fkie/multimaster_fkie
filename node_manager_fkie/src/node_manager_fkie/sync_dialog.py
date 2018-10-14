@@ -41,7 +41,6 @@ from node_manager_daemon_fkie import screen
 from node_manager_fkie.common import is_package, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.editor.yaml_highlighter import YamlHighlighter
-import node_manager_fkie as nm
 
 from .editor import TextEdit
 try:
@@ -429,7 +428,7 @@ class InterfacesThread(QObject, threading.Thread):
             self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
             self._interfaces_files = {}
             for p in self.root_paths:
-                ret = self._getInterfaces(p)
+                ret = self._get_interfaces(p)
                 self._interfaces_files = dict(ret.items() + self._interfaces_files.items())
             self.interfaces.emit(self._interfaces_files)
         except Exception:
@@ -437,7 +436,8 @@ class InterfacesThread(QObject, threading.Thread):
             formatted_lines = traceback.format_exc(1).splitlines()
             rospy.logwarn("Error while list sync interfaces:\n\t%s", formatted_lines[-1])
 
-    def _getInterfaces(self, path, package=None):
+    def _get_interfaces(self, path, package=None):
+        # TODO: get interfaces from nmd
         result = {}
         if os.path.isdir(path):
             fileList = os.listdir(path)
@@ -447,7 +447,7 @@ class InterfacesThread(QObject, threading.Thread):
                 if is_package(fileList):
                     package = os.path.basename(path)
             for f in fileList:
-                ret = self._getInterfaces(os.path.join(path, f), package)
+                ret = self._get_interfaces(os.path.join(path, f), package)
                 result = dict(ret.items() + result.items())
         elif package and os.path.isfile(path) and path.endswith('.sync'):
             # create a selection for binaries

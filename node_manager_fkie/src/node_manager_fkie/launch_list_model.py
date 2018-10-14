@@ -440,7 +440,6 @@ class LaunchListModel(QStandardItemModel):
             gpath = grpc_create_url(url, item)
             path_id = PathItem.NOT_FOUND
             if FileItem.FILE == path_item.type:
-                print "os.path.splitext(path_item.path)[1]:", os.path.splitext(path_item.path), nm.settings().launch_view_file_ext
                 _, ext = os.path.splitext(path_item.path)
                 if ext in nm.settings().launch_view_file_ext:
                     path_id = PathItem.FILE
@@ -540,14 +539,19 @@ class LaunchListModel(QStandardItemModel):
         '''
         if path_id in [PathItem.NOTHING]:
             return None
+        has_ctrl_mod = Qt.ControlModifier & QApplication.keyboardModifiers()
         if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
-            return path
+            if not has_ctrl_mod:
+                return path
         root = self.invisibleRootItem()
         while root.rowCount():
             root.removeRow(0)
         self.pyqt_workaround.clear()
-        if Qt.ControlModifier & QApplication.keyboardModifiers():
-            self._current_path = get_nmd_url()
+        if has_ctrl_mod:
+            if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
+                self._current_path = os.path.dirname(path)
+            else:
+                self._current_path = get_nmd_url()
         else:
             if path_id in [PathItem.ROOT]:
                 surl, spath = grpc_split_url(path, with_scheme=True)
@@ -572,7 +576,7 @@ class LaunchListModel(QStandardItemModel):
 #        self._setNewList((root_path, items))
         return None
 
-    def set_path(self, path):
+    def set_path(self, path,  path_id=PathItem.FOLDER):
         '''
         Shows the new path in the launch configuration view. Only if the new path
         is in ros package paths
@@ -582,7 +586,7 @@ class LaunchListModel(QStandardItemModel):
         toset = path
         if not path.startswith('grpc://'):
             toset = grpc_create_url(self.current_grpc, path)
-        self.expand_item(toset, PathItem.FOLDER)
+        self.expand_item(toset, path_id)
 
     def show_packages(self, pattern):
         try:

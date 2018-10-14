@@ -1677,7 +1677,7 @@ class MainWindow(QMainWindow):
         :param file: A list with paths
         :type file: [str]
         '''
-        # TODO: use node manager daemon
+        # use node manager daemon
         if files:
             nmd_url = get_nmd_url()
             if self.currentMaster is not None:

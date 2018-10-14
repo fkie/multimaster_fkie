@@ -36,7 +36,6 @@ from python_qt_binding.QtGui import QImage, QKeySequence  # , QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
 import os
-import re
 import roslib
 import rospy
 import socket
@@ -47,11 +46,11 @@ import xmlrpclib
 
 from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
-from .launcher_threaded import LauncherThreaded
-from .common import get_packages, package_name, resolve_paths
-from node_manager_daemon_fkie.common import utf8
+from node_manager_daemon_fkie.common import interpret_path, utf8
 from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie.url import get_nmd_url, grpc_split_url, grpc_join, get_masteruri_from_nmd
+from .launcher_threaded import LauncherThreaded
+from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
@@ -905,10 +904,10 @@ class MasterViewProxy(QWidget):
                 for c in rd.capabilities:
                     if c.namespace not in caps:
                         caps[c.namespace] = dict()
-                    caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [resolve_paths(i) for i in c.images], 'description': resolve_paths(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
+                    caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [interpret_path(i) for i in c.images], 'description': interpret_path(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                 self.node_tree_model.add_capabilities(masteruri, host_addr, ld.path, caps)
                 # set host description
-                tooltip = self.node_tree_model.update_host_description(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), resolve_paths(utf8(rd.robot_descr)))
+                tooltip = self.node_tree_model.update_host_description(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), interpret_path(utf8(rd.robot_descr)))
                 self.host_description_updated.emit(masteruri, host_addr, tooltip)
                 self.capabilities_update_signal.emit(masteruri, host_addr, ld.path, ld.robot_descriptions)
             # set the robot_icon
@@ -2444,17 +2443,18 @@ class MasterViewProxy(QWidget):
         else:  # create a new topic
             # fill the input fields
             # determine the list all available message types
-            root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-            packages = {}
+#             root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+#             packages = {}
+#             for p in root_paths:
+#                 # TODO, get packages from nmd
+#                 ret = get_packages(p)
+#                 packages = dict(ret.items() + packages.items())
+#             for (p, direc) in packages.items():
             msg_types = []
-            for p in root_paths:
-                # TODO, get packages from nmd
-                ret = get_packages(p)
-                packages = dict(ret.items() + packages.items())
-            for (p, direc) in packages.items():
+            for ppath, pname in nm.nmd().get_packages(get_nmd_url(self.masteruri)).items():
                 import rosmsg
-                for f in rosmsg._list_types('%s/msg' % direc, 'msg', rosmsg.MODE_MSG):
-                    msg_types.append("%s/%s" % (p, f))
+                for f in rosmsg._list_types('%s/msg' % ppath, 'msg', rosmsg.MODE_MSG):
+                    msg_types.append("%s/%s" % (pname, f))
             msg_types.sort()
             fields = {'Type': ('string', msg_types), 'Name': ('string', [''])}
 

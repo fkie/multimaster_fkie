@@ -111,7 +111,7 @@ class GraphViewWidget(QDockWidget):
         self._root_path = root_path
         if self._current_path != current_path:
             self._current_path = current_path
-            # TODO: run analyzer/path parser in a new thread
+            # run analyzer/path parser in a new thread
             self.setWindowTitle("Include Graph - loading...")
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)
