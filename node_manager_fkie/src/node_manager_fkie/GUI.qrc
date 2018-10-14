@@ -26,6 +26,7 @@
     <file>icons/crystal_clear_launch_file_transfer.png</file>
     <file>icons/crystal_clear_launch_server.png</file>
     <file>icons/crystal_clear_miscellaneous.png</file>
+    <file>icons/crystal_clear_mscreens.png</file>
     <file>icons/crystal_clear_no_io.png</file>
     <file>icons/crystal_clear_nodelet.png</file>
     <file>icons/crystal_clear_nodelet_mngr.png</file>
@@ -59,6 +60,7 @@
     <file>icons/deleket_deviantart_play.png</file>
     <file>icons/deleket_deviantart_refresh.png</file>
     <file>icons/deleket_deviantart_stop.png</file>
+    <file>icons/hight_load.png</file>
     <file>icons/imacadam_stop.png</file>
     <file>icons/irondevil_not_sync.png</file>
     <file>icons/irondevil_start_sync.png</file>

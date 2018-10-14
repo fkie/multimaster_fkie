@@ -5,7 +5,7 @@ import file_pb2 as file__pb2
 
 
 class FileServiceStub(object):
-  """* The launch manager service definition. 
+  """* The file manager service definition. 
   """
 
   def __init__(self, channel):
@@ -15,49 +15,49 @@ class FileServiceStub(object):
       channel: A grpc.Channel.
     """
     self.GetFileContent = channel.unary_stream(
-        '/FileService/GetFileContent',
+        '/fkie_node_manager_daemon.file.FileService/GetFileContent',
         request_serializer=file__pb2.GetFileContentRequest.SerializeToString,
         response_deserializer=file__pb2.GetFileContentReply.FromString,
         )
     self.SaveFileContent = channel.stream_stream(
-        '/FileService/SaveFileContent',
+        '/fkie_node_manager_daemon.file.FileService/SaveFileContent',
         request_serializer=file__pb2.SaveFileContentRequest.SerializeToString,
         response_deserializer=file__pb2.SaveFileContentReply.FromString,
         )
     self.CopyFileTo = channel.unary_unary(
-        '/FileService/CopyFileTo',
+        '/fkie_node_manager_daemon.file.FileService/CopyFileTo',
         request_serializer=file__pb2.CopyToRequest.SerializeToString,
         response_deserializer=file__pb2.ReturnStatus.FromString,
         )
     self.Rename = channel.unary_unary(
-        '/FileService/Rename',
+        '/fkie_node_manager_daemon.file.FileService/Rename',
         request_serializer=file__pb2.RenameRequest.SerializeToString,
         response_deserializer=file__pb2.ReturnStatus.FromString,
         )
     self.ListPath = channel.unary_unary(
-        '/FileService/ListPath',
+        '/fkie_node_manager_daemon.file.FileService/ListPath',
         request_serializer=file__pb2.ListPathRequest.SerializeToString,
         response_deserializer=file__pb2.ListPathReply.FromString,
         )
     self.ListPackages = channel.unary_unary(
-        '/FileService/ListPackages',
+        '/fkie_node_manager_daemon.file.FileService/ListPackages',
         request_serializer=file__pb2.ListPackagesRequest.SerializeToString,
         response_deserializer=file__pb2.ListPackagesReply.FromString,
         )
     self.ChangedFiles = channel.unary_unary(
-        '/FileService/ChangedFiles',
+        '/fkie_node_manager_daemon.file.FileService/ChangedFiles',
         request_serializer=file__pb2.PathList.SerializeToString,
         response_deserializer=file__pb2.PathList.FromString,
         )
     self.GetPackageBinaries = channel.unary_unary(
-        '/FileService/GetPackageBinaries',
+        '/fkie_node_manager_daemon.file.FileService/GetPackageBinaries',
         request_serializer=file__pb2.PackageObj.SerializeToString,
         response_deserializer=file__pb2.PathList.FromString,
         )
 
 
 class FileServiceServicer(object):
-  """* The launch manager service definition. 
+  """* The file manager service definition. 
   """
 
   def GetFileContent(self, request, context):
@@ -161,5 +161,5 @@ def add_FileServiceServicer_to_server(servicer, server):
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
-      'FileService', rpc_method_handlers)
+      'fkie_node_manager_daemon.file.FileService', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))

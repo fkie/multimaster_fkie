@@ -40,7 +40,7 @@ import sys
 import threading
 
 from master_discovery_fkie.common import get_hostname
-from .common import get_ros_home, masteruri_from_ros
+from .common import get_ros_home
 from .history import History
 from .name_resolution import NameResolution
 from .nmd_client import NmdClient, LaunchArgsSelectionRequest

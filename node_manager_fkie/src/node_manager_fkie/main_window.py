@@ -47,17 +47,17 @@ import time
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master
+from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
 from node_manager_daemon_fkie.host import get_hostname
+from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie.url import get_nmd_url
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
-from .common import masteruri_from_ros, package_name, utf8
+from .common import utf8
 from .detailed_msg_box import MessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .editor import Editor
-from .launch_config import LaunchConfig  # , LaunchConfigException
 from .launch_files_widget import LaunchFilesWidget
 from .log_widget import LogWidget
 from .master_list_model import MasterModel
@@ -277,7 +277,7 @@ class MainWindow(QMainWindow):
             self.textBrowser.setText(msg)
 
         try:
-            ScreenHandler.testScreen()
+            screen.test_screen()
         except Exception as e:
             rospy.logerr("No SCREEN available! You can't launch nodes.")
 #      MessageBox.warning(self, "No SCREEN",
@@ -650,7 +650,7 @@ class MainWindow(QMainWindow):
                     port = 0
                     network_id = -1
                     import re
-                    with open(ScreenHandler.getROSLogFile(node=discoverer.rstrip('/')), 'r') as mdfile:
+                    with open(screen.get_ros_logfile(node=discoverer.rstrip('/')), 'r') as mdfile:
                         for line in mdfile:
                             if line.find("Listen for multicast at") > -1:
                                 port = map(int, re.findall(r'\d+', line))[-1]
@@ -1790,6 +1790,7 @@ class MainWindow(QMainWindow):
             files = self.currentMaster.get_files_for_change_check()
             if files:
                 nm.nmd().check_for_changed_files_threaded(files)
+                nm.nmd().multiple_screens_threaded(get_nmd_url(self.currentMaster.masteruri))
         QMainWindow.changeEvent(self, event)
         self._check_for_changed_binaries()
 

@@ -15,47 +15,47 @@ class LaunchServiceStub(object):
       channel: A grpc.Channel.
     """
     self.GetLoadedFiles = channel.unary_stream(
-        '/node_manager_daemon_fkie.LaunchService/GetLoadedFiles',
+        '/fkie_node_manager_daemon.launch.LaunchService/GetLoadedFiles',
         request_serializer=launch__pb2.Empty.SerializeToString,
         response_deserializer=launch__pb2.LoadedFile.FromString,
         )
     self.LoadLaunch = channel.unary_unary(
-        '/node_manager_daemon_fkie.LaunchService/LoadLaunch',
+        '/fkie_node_manager_daemon.launch.LaunchService/LoadLaunch',
         request_serializer=launch__pb2.LoadLaunchRequest.SerializeToString,
         response_deserializer=launch__pb2.LoadLaunchReply.FromString,
         )
     self.ReloadLaunch = channel.unary_unary(
-        '/node_manager_daemon_fkie.LaunchService/ReloadLaunch',
+        '/fkie_node_manager_daemon.launch.LaunchService/ReloadLaunch',
         request_serializer=launch__pb2.LaunchFile.SerializeToString,
         response_deserializer=launch__pb2.LoadLaunchReply.FromString,
         )
     self.UnloadLaunch = channel.unary_unary(
-        '/node_manager_daemon_fkie.LaunchService/UnloadLaunch',
+        '/fkie_node_manager_daemon.launch.LaunchService/UnloadLaunch',
         request_serializer=launch__pb2.LaunchFile.SerializeToString,
         response_deserializer=launch__pb2.LoadLaunchReply.FromString,
         )
     self.GetNodes = channel.unary_stream(
-        '/node_manager_daemon_fkie.LaunchService/GetNodes',
+        '/fkie_node_manager_daemon.launch.LaunchService/GetNodes',
         request_serializer=launch__pb2.ListNodesRequest.SerializeToString,
         response_deserializer=launch__pb2.LaunchContent.FromString,
         )
     self.StartNode = channel.stream_stream(
-        '/node_manager_daemon_fkie.LaunchService/StartNode',
+        '/fkie_node_manager_daemon.launch.LaunchService/StartNode',
         request_serializer=launch__pb2.Node.SerializeToString,
         response_deserializer=launch__pb2.StartNodeReply.FromString,
         )
     self.StartStandaloneNode = channel.unary_unary(
-        '/node_manager_daemon_fkie.LaunchService/StartStandaloneNode',
+        '/fkie_node_manager_daemon.launch.LaunchService/StartStandaloneNode',
         request_serializer=launch__pb2.StartConfig.SerializeToString,
         response_deserializer=launch__pb2.StartNodeReply.FromString,
         )
     self.GetIncludedFiles = channel.unary_stream(
-        '/node_manager_daemon_fkie.LaunchService/GetIncludedFiles',
+        '/fkie_node_manager_daemon.launch.LaunchService/GetIncludedFiles',
         request_serializer=launch__pb2.IncludedFilesRequest.SerializeToString,
         response_deserializer=launch__pb2.IncludedFilesReply.FromString,
         )
     self.GetMtime = channel.unary_unary(
-        '/node_manager_daemon_fkie.LaunchService/GetMtime',
+        '/fkie_node_manager_daemon.launch.LaunchService/GetMtime',
         request_serializer=launch__pb2.LaunchFile.SerializeToString,
         response_deserializer=launch__pb2.MtimeReply.FromString,
         )
@@ -178,5 +178,5 @@ def add_LaunchServiceServicer_to_server(servicer, server):
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
-      'node_manager_daemon_fkie.LaunchService', rpc_method_handlers)
+      'fkie_node_manager_daemon.launch.LaunchService', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))

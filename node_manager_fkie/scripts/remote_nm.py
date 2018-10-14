@@ -9,6 +9,8 @@ import time
 import roslib
 import rospy
 
+from node_manager_daemon_fkie import screen
+from node_manager_daemon_fkie.launcher import RESPAWN_SCRIPT
 try:
     import node_manager_fkie as nm
 except:
@@ -95,22 +97,22 @@ def main(argv=sys.argv):
         options, args = parse_options(argv)
         if args:
             if options['show_screen_log']:
-                logfile = nm.ScreenHandler.getScreenLogFile(node=options['show_screen_log'])
+                logfile = screen.get_logfile(node=options['show_screen_log'])
                 p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
                 p.wait()
             elif options['show_ros_log']:
-                logfile = nm.ScreenHandler.getROSLogFile(node=options['show_ros_log'])
+                logfile = screen.get_ros_logfile(node=options['show_ros_log'])
                 p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
                 p.wait()
             elif options['ros_log_path']:
                 if options['ros_log_path'] == '[]':
                     print nm.get_ros_home()
                 else:
-                    print nm.ScreenHandler.getScreenLogFile(node=options['ros_log_path'])
+                    print screen.get_logfile(node=options['ros_log_path'])
             elif options['delete_logs']:
-                logfile = nm.ScreenHandler.getScreenLogFile(node=options['delete_logs'])
-                pidfile = nm.ScreenHandler.getScreenPidFile(node=options['delete_logs'])
-                roslog = nm.ScreenHandler.getROSLogFile(node=options['delete_logs'])
+                logfile = screen.get_logfile(node=options['delete_logs'])
+                pidfile = screen.get_pidfile(node=options['delete_logs'])
+                roslog = screen.get_ros_logfile(node=options['delete_logs'])
                 if os.path.isfile(logfile):
                     os.remove(logfile)
                 if os.path.isfile(pidfile):
@@ -134,7 +136,7 @@ def main(argv=sys.argv):
 
 
 def rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(nm.Settings.LOG_PATH, '%s.rosconsole.config' % package)
+    result = os.path.join(screen.LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')
@@ -164,7 +166,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
         raise nm.StartException(' '.join([executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
     # create string for node parameter. Set arguments with spaces into "'".
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
-    cmd_args = [nm.ScreenHandler.getSceenCmd(name), nm.Settings.RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
+    cmd_args = [screen.get_cmd(name), RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
     print 'run on remote host:', ' '.join(cmd_args)
     # determine the current working path
     arg_cwd = getCwdArg('__cwd', args)

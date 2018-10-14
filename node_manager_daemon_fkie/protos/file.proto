@@ -31,8 +31,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 syntax = "proto3";
+package fkie_node_manager_daemon.file;
 
-/** The launch manager service definition. */
+
+/** The file manager service definition. */
 service FileService {
 	rpc GetFileContent (GetFileContentRequest) returns (stream GetFileContentReply);
 	rpc SaveFileContent (stream SaveFileContentRequest) returns (stream SaveFileContentReply);

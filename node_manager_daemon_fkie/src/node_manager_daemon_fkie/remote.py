@@ -102,7 +102,6 @@ def get_insecure_channel(url):
     :return: returns insecure channel for given url. Ports are ignored!
     :rtype: grpc.Channel or None
     '''
-    rospy.logdebug("get_insecure_channel to %s" % url)
     global INSECURE_CHANNEL_CACHE
 #     global CREDENTIALS
     if url:

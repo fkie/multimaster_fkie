@@ -31,13 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
-import os
 import settings
 import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
 import node_manager_daemon_fkie.generated.file_pb2 as fmsg
-from .common import package_name
 from .file_item import FileItem
-import remote
 
 OK = fmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = fmsg.ReturnStatus.StatusType.Value('ERROR')

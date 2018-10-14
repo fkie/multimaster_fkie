@@ -1,7 +1,5 @@
 import os
 import rospy
-from urlparse import urlparse
-from master_discovery_fkie.common import masteruri_from_ros
 from node_manager_daemon_fkie.host import get_hostname, get_port
 from node_manager_daemon_fkie.url import get_nmd_url
 

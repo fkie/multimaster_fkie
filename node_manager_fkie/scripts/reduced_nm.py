@@ -40,7 +40,9 @@ import xmlrpclib
 from roslib.network import get_local_addresses
 import rospy
 
+from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.common import get_hostname, get_port
+from node_manager_daemon_fkie import screen
 
 
 class StartException(Exception):
@@ -67,25 +69,6 @@ def get_ros_home():
         return rosenv.get_ros_home()
 
 
-def masteruri_from_ros():
-    '''
-    Returns the master URI depending on ROS distribution API.
-    @return: ROS master URI
-    @rtype: C{str}
-    '''
-    try:
-        import rospkg.distro
-        distro = rospkg.distro.current_distro_codename()
-        if distro in ['electric', 'diamondback', 'cturtle']:
-            import roslib.rosenv
-            return roslib.rosenv.get_master_uri()
-        else:
-            import rosgraph
-            return rosgraph.rosenv.get_master_uri()
-    except:
-        return os.environ['ROS_MASTER_URI']
-
-
 def get_ros_hostname(url):
     '''
     Returns the host name used in a url, if it is a name. If it is an IP an
@@ -110,124 +93,9 @@ def get_ros_hostname(url):
 
 
 class Settings(object):
-    LOG_PATH = os.environ.get('ROS_LOG_DIR') if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
     STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
     RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
-
-
-class ScreenHandler(object):
-    '''
-    The class to handle the running screen sessions and create new sessions on
-    start of the ROS nodes.
-    '''
-
-    LOG_PATH = os.environ.get('ROS_LOG_DIR') if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
-    SCREEN = "/usr/bin/screen"
-    SLASH_SEP = '_'
-
-    @classmethod
-    def createSessionName(cls, node=None):
-        '''
-        Creates a name for the screen session. All slash separators are replaced by
-        L{SLASH_SEP}
-        @param node: the name of the node
-        @type node: C{str}
-        @return: name for the screen session.
-        @rtype: C{str}
-        '''
-#    package_name = str(package) if not package is None else ''
-#    lanchfile_name = str(launchfile).replace('.launch', '') if not launchfile is None else ''
-        node_name = str(node).replace('/', cls.SLASH_SEP) if node is not None else ''
-#    result = ''.join([node_name, '.', package_name, '.', lanchfile_name])
-        return node_name
-
-    @classmethod
-    def getScreenLogFile(cls, session=None, node=None):
-        '''
-        Generates a log file name for the screen session.
-        @param session: the name of the screen session
-        @type session: C{str}
-        @return: the log file name
-        @rtype: C{str}
-        '''
-        if session is not None:
-            return os.path.join(cls.LOG_PATH, session + '.log')
-        elif node is not None:
-            return os.path.join(cls.LOG_PATH, cls.createSessionName(node) + '.log')
-        else:
-            return os.path.join(cls.LOG_PATH, 'unknown.log')
-
-    @classmethod
-    def getROSLogFile(cls, node):
-        '''
-        Generates a log file name of the ROS log.
-        @param node: the name of the node
-        @type node: C{str}
-        @return: the ROS log file name
-        @rtype: C{str}
-        @todo: get the run_id from the ROS parameter server and search in this log folder
-        for the log file (handle the node started using a launch file).
-        '''
-        if node is not None:
-            return os.path.join(cls.LOG_PATH, node.strip(rospy.names.SEP).replace(rospy.names.SEP, '_') + '.log')
-        else:
-            return ''
-
-    @classmethod
-    def getScreenCfgFile(cls, session=None, node=None):
-        '''
-        Generates a configuration file name for the screen session.
-        @param session: the name of the screen session
-        @type session: C{str}
-        @return: the configuration file name
-        @rtype: C{str}
-        '''
-        if session is not None:
-            return os.path.join(cls.LOG_PATH, session + '.conf')
-        elif node is not None:
-            return os.path.join(cls.LOG_PATH, cls.createSessionName(node) + '.conf')
-        else:
-            return os.path.join(cls.LOG_PATH, 'unknown.conf')
-
-    @classmethod
-    def getScreenPidFile(cls, session=None, node=None):
-        '''
-        Generates a PID file name for the screen session.
-        @param session: the name of the screen session
-        @type session: C{str}
-        @return: the PID file name
-        @rtype: C{str}
-        '''
-        if session is not None:
-            return os.path.join(cls.LOG_PATH, session + '.pid')
-        elif node is not None:
-            return os.path.join(cls.LOG_PATH, cls.createSessionName(node) + '.pid')
-        else:
-            return os.path.join(cls.LOG_PATH, 'unknown.pid')
-
-    @classmethod
-    def getSceenCmd(cls, node):
-        '''
-        Generates a configuration file and return the command prefix to start the given node
-        in a screen terminal.
-        @param node: the name of the node
-        @type node: C{str}
-        @return: the command prefix
-        @rtype: C{str}
-        '''
-        f = open(cls.getScreenCfgFile(node=node), 'w')
-        f.write(''.join(["logfile ", cls.getScreenLogFile(node=node), "\n"]))
-        f.write("logfile flush 0\n")
-        f.write("defscrollback 10000\n")
-        ld_library_path = os.getenv('LD_LIBRARY_PATH', '')
-        if ld_library_path:
-            f.write(' '.join(['setenv', 'LD_LIBRARY_PATH', ld_library_path, "\n"]))
-        ros_etc_dir = os.getenv('ROS_ETC_DIR', '')
-        if ros_etc_dir:
-            f.write(' '.join(['setenv', 'ROS_ETC_DIR', ros_etc_dir, "\n"]))
-        f.close()
-        return ' '.join([cls.SCREEN, '-c', cls.getScreenCfgFile(node=node), '-L', '-dmS', cls.createSessionName(node=node)])
 
 
 class StartHandler(object):
@@ -276,8 +144,8 @@ class StartHandler(object):
             masteruri = masteruri_from_ros()
         # start roscore, if needed
         try:
-            if not os.path.isdir(ScreenHandler.LOG_PATH):
-                os.makedirs(ScreenHandler.LOG_PATH)
+            if not os.path.isdir(screen.LOG_PATH):
+                os.makedirs(screen.LOG_PATH)
             socket.setdefaulttimeout(3)
             master = xmlrpclib.ServerProxy(masteruri)
             master.getUri(rospy.get_name())
@@ -292,7 +160,7 @@ class StartHandler(object):
                 ros_hostname = get_ros_hostname(masteruri)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
-                cmd_args = '%s roscore --port %d' % (ScreenHandler.getSceenCmd('/roscore--%d' % master_port), master_port)
+                cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)
                 try:
                     subprocess.Popen(shlex.split(cmd_args), env=new_env)
                     # wait for roscore to avoid connection problems while init_node

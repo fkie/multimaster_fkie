@@ -37,6 +37,7 @@ import threading
 
 import rospy
 
+from node_manager_daemon_fkie import screen
 from node_manager_fkie.common import is_package, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.editor.yaml_highlighter import YamlHighlighter
@@ -293,7 +294,7 @@ class SyncDialog(QDialog):
     def accept(self):
         if self.textedit.isVisible():
             try:
-                tmp_file = os.path.join(nm.screen().LOG_PATH, 'tmp_sync_interface.sync')
+                tmp_file = os.path.join(screen.LOG_PATH, 'tmp_sync_interface.sync')
                 with open(tmp_file, 'w+') as f:
                     f.write(self.textedit.toPlainText())
                 from master_discovery_fkie.common import read_interface

@@ -40,9 +40,10 @@ import time
 import types
 import xmlrpclib
 
-from master_discovery_fkie.common import get_hostname, get_port
+from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
+from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie.url import get_nmd_url
-from node_manager_fkie.common import masteruri_from_ros, package_name, utf8
+from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.name_resolution import NameResolution
 from node_manager_fkie.supervised_popen import SupervisedPopen
 
@@ -122,7 +123,7 @@ class StartHandler(object):
                     raise StartException('\n'.join(err))
                 else:
                     cmd_type = cmd[0]
-                cmd_str = utf8(' '.join([nm.screen().getSceenCmd(fullname), cmd_type, ' '.join(args2)]))
+                cmd_str = utf8(' '.join([screen.get_cmd(fullname), cmd_type, ' '.join(args2)]))
             rospy.loginfo("Run without config: %s", fullname if use_nmd else cmd_str)
             new_env = dict(os.environ)
             if namespace:
@@ -176,8 +177,8 @@ class StartHandler(object):
             masteruri = masteruri_from_ros()
         # start roscore, if needed
         try:
-            if not os.path.isdir(nm.ScreenHandler.LOG_PATH):
-                os.makedirs(nm.ScreenHandler.LOG_PATH)
+            if not os.path.isdir(screen.LOG_PATH):
+                os.makedirs(screen.LOG_PATH)
             socket.setdefaulttimeout(3)
             master = xmlrpclib.ServerProxy(masteruri)
             master.getUri(rospy.get_name())
@@ -196,7 +197,7 @@ class StartHandler(object):
                 ros_hostname = NameResolution.get_ros_hostname(masteruri)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
-                cmd_args = '%s roscore --port %d' % (nm.ScreenHandler.getSceenCmd('/roscore--%d' % master_port), master_port)
+                cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)
                 for n in [1, 2, 3, 4]:
                     try:
                         if n == 1:
@@ -301,36 +302,12 @@ class StartHandler(object):
         return request, responses[0] if len(responses) > 0 else None
 
     @classmethod
-    def getGlobalParams(cls, roscfg):
-        '''
-        Return the parameter of the configuration file, which are not associated with
-        any nodes in the configuration.
-        :param roscfg: the launch configuration
-        :type roscfg: U{roslaunch.ROSLaunchConfig<http://docs.ros.org/kinetic/api/roslaunch/html/>}
-        :return: the list with names of the global parameter
-        :rtype: {param: value}
-        '''
-        result = dict()
-        nodes = []
-        for item in roscfg.resolved_node_names:
-            nodes.append(item)
-        for param, value in roscfg.params.items():
-            nodesparam = False
-            for n in nodes:
-                if param.startswith(n):
-                    nodesparam = True
-                    break
-            if not nodesparam:
-                result[param] = value
-        return result
-
-    @classmethod
     def get_log_path(cls, host, nodes=[], auto_pw_request=False, user=None, pw=None):
         if nm.is_local(host):
             if len(nodes) == 1:
-                return nm.screen().getScreenLogFile(node=nodes[0])
+                return screen.get_logfile(node=nodes[0])
             else:
-                return nm.screen().LOG_PATH
+                return screen.LOG_PATH
         else:
             request = '[]' if len(nodes) != 1 else nodes[0]
             try:
@@ -362,14 +339,14 @@ class StartHandler(object):
         title_opt = 'LOG %s on %s' % (nodename, host)
         if nm.is_local(host):
             found = False
-            screenLog = nm.screen().getScreenLogFile(node=nodename)
+            screenLog = screen.get_logfile(node=nodename)
             if os.path.isfile(screenLog):
                 cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, screenLog], title_opt)
                 rospy.loginfo("open log: %s", cmd)
                 SupervisedPopen(shlex.split(cmd), object_id="Open log", description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
                 found = True
             # open roslog file
-            roslog = nm.screen().getROSLogFile(nodename)
+            roslog = screen.get_ros_logfile(nodename)
             if os.path.isfile(roslog) and not only_screen:
                 title_opt = title_opt.replace('LOG', 'ROSLOG')
                 cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, roslog], title_opt)
@@ -394,9 +371,9 @@ class StartHandler(object):
         '''
         rospy.loginfo("delete log for '%s' on '%s'", utf8(nodename), utf8(host))
         if nm.is_local(host):
-            screenLog = nm.screen().getScreenLogFile(node=nodename)
-            pidFile = nm.screen().getScreenPidFile(node=nodename)
-            roslog = nm.screen().getROSLogFile(nodename)
+            screenLog = screen.get_logfile(node=nodename)
+            pidFile = screen.get_pidfile(node=nodename)
+            roslog = screen.get_ros_logfile(nodename)
             if os.path.isfile(screenLog):
                 os.remove(screenLog)
             if os.path.isfile(pidFile):

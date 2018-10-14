@@ -51,7 +51,7 @@ from .launcher_threaded import LauncherThreaded
 from .common import get_packages, package_name, resolve_paths
 from node_manager_daemon_fkie.common import utf8
 from node_manager_daemon_fkie.host import get_hostname
-from node_manager_daemon_fkie.url import get_nmd_url, grpc_split_url, grpc_join
+from node_manager_daemon_fkie.url import get_nmd_url, grpc_split_url, grpc_join, get_masteruri_from_nmd
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
@@ -359,6 +359,8 @@ class MasterViewProxy(QWidget):
         self.info_frame.accept_signal.connect(self._on_info_ok)
 
         nm.nmd().changed_file.connect(self.on_changed_file)
+        nm.nmd().multiple_screens.connect(self.on_multiple_screens)
+
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
@@ -374,6 +376,7 @@ class MasterViewProxy(QWidget):
         print "  Shutdown master", self.masteruri, "..."
         # self.default_cfg_handler.stop()
         nm.nmd().changed_file.disconnect(self.on_changed_file)
+        nm.nmd().multiple_screens.disconnect(self.on_multiple_screens)
         self.launch_server_handler.stop()
         self._progress_queue_prio.stop()
         self._progress_queue.stop()
@@ -885,6 +888,7 @@ class MasterViewProxy(QWidget):
                 print "skip MASTER", ld.masteruri, masteruri, ld.path, self.__configs
                 continue
             # add the new config
+            print "add MASTER", ld.masteruri, masteruri, ld.path, self.__configs
             if ld.path not in self.__configs:
                 self.__configs[ld.path] = LaunchConfig(ld.path)
                 nm.nmd().get_mtimes_threaded(ld.path)
@@ -2111,6 +2115,26 @@ class MasterViewProxy(QWidget):
         # return the host of the assigned ROS master
         return get_hostname(node.masteruri)
 
+    def _grpc_from_node(self, node):
+        '''
+        If the node is running the grpc url of the masteruri of the node will be returned. Otherwise
+        tries to get the grpc from the launch configuration. Or the ROS master URI
+        will be used.
+        :param node:
+        :type node: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+        '''
+        if node.masteruri is not None:
+            return get_nmd_url(node.masteruri)
+        # try to get it from the configuration,
+        # TODO: get it from node manager daemon?
+        for c in node.cfgs:
+            if isinstance(c, (str, unicode)):
+                launch_config = self.__configs[c]
+                if node.name in launch_config.nodes:
+                    url, _path = grpc_split_url(c, with_scheme=True)
+                    return url
+        return get_nmd_url(self.masteruri)
+
     def on_io_clicked(self):
         '''
         Shows IO of the selected nodes.
@@ -2137,8 +2161,8 @@ class MasterViewProxy(QWidget):
                     for node in selectedNodes:
                         queue.add2queue(utf8(uuid.uuid4()),
                                         'show IO of %s' % node.name,
-                                        nm.screen().openScreen,
-                                        (node.name, self.getHostFromNode(node), False, self.current_user))
+                                        nm.screen().open_screen,
+                                        (node.name, self._grpc_from_node(node), False, self.current_user))
                     self._start_queue(queue)
             else:
                 self.on_show_all_screens()
@@ -2167,8 +2191,8 @@ class MasterViewProxy(QWidget):
             for node in selectedNodes:
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                "kill screen of %s" % node.name,
-                                               nm.screen().killScreens,
-                                               (node.name, self.getHostFromNode(node), False, self.current_user))
+                                               nm.screen().kill_screens,
+                                               (node.name, self._grpc_from_node(node), False, self.current_user))
             self._start_queue(self._progress_queue)
         finally:
             self.setCursor(cursor)
@@ -2180,19 +2204,20 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            host = get_hostname(self.masteruri)
+            grpc_url = get_nmd_url(self.masteruri)
             sel_screen = []
             try:
-                screens = nm.screen().getActiveScreens(host, auto_pw_request=True, user=self.current_user)
-                sel_screen, _ = SelectDialog.getValue('Open screen', '', screens, False, False, self)  # _:=ok
+                screens = nm.nmd().get_all_screens(grpc_url)
+                sel_screen, _ = SelectDialog.getValue('Open screen', '', screens.keys(), False, False, self)  # _:=ok
             except Exception, e:
                 rospy.logwarn("Error while get screen list: %s", utf8(e))
                 MessageBox.warning(self, "Screen list error",
-                                   "Error while get screen list from '%s'" % host,
+                                   "Error while get screen list from '%s'" % grpc_url,
                                    utf8(e))
+            host = get_hostname(self.masteruri)
             for screen in sel_screen:
                 try:
-                    if not nm.screen().openScreenTerminal(host, screen, screen, self.current_user):
+                    if not nm.screen().open_screen_terminal(host, screen, screen, self.current_user):
                         pass
                 except Exception, e:
                     rospy.logwarn("Error while show IO for %s: %s", utf8(screen), utf8(e))
@@ -2201,6 +2226,14 @@ class MasterViewProxy(QWidget):
                                        utf8(e))
         finally:
             self.setCursor(cursor)
+
+    def on_multiple_screens(self, grpc_url, screens):
+        muri = get_masteruri_from_nmd(grpc_url)
+        self.node_tree_model.clear_multiple_screens(muri)
+        for node, screens in screens.items():
+            nodes = self.node_tree_model.get_tree_node(node, muri)
+            for node in nodes:
+                node.has_multiple_screens = True
 
     def on_log_clicked(self):
         '''
@@ -3220,7 +3253,8 @@ class IconsDelegate(QItemDelegate):
                        'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'group': QImage(':/icons/crystal_clear_group.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       'group': QImage(':/icons/crystal_clear_group.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
 
     def paint(self, painter, option, index):
@@ -3230,21 +3264,27 @@ class IconsDelegate(QItemDelegate):
         item = model_index.model().itemFromIndex(model_index)
         if isinstance(item, CellItem):
             if isinstance(item.item, NodeItem):
+                tooltip = ''
+                if item.item.has_multiple_screens:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['mscreens'])
+                    tooltip += 'multiple screens'
                 if not item.item.has_screen:
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['noscreen'])
+                    tooltip += 'no screen'
                 lcfgs = item.item.count_launch_cfgs()
                 if lcfgs > 0:
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['launchfile'])
                     if lcfgs > 1:
                         painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
-                dcfgs = item.item.count_default_cfgs()
-                if dcfgs > 0:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['defaultcfg'])
-                    if dcfgs > 1:
-                        painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
+#                 dcfgs = item.item.count_default_cfgs()
+#                 if dcfgs > 0:
+#                     rect = self.calcDecorationRect(option.rect)
+#                     painter.drawImage(rect, self.IMAGES['defaultcfg'])
+#                     if dcfgs > 1:
+#                         painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
                 if item.item.nodelets:
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['nodelet_mngr'])
@@ -3252,13 +3292,12 @@ class IconsDelegate(QItemDelegate):
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['nodelet'])
                 if item.item.nodelets:
-                    item.setToolTip("This is a nodelet manager")
+                    tooltip += "%sThis is a nodelet manager" % '\n' if tooltip else ''
                 elif item.item.nodelet_mngr:
-                    item.setToolTip("This is a nodelet for %s" % item.item.nodelet_mngr)
-                else:
-                    item.setToolTip("")
+                    tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
+                item.setToolTip(tooltip)
             elif isinstance(item.item, GroupItem):
-                lcfgs, dcfgs = item.item.get_configs()
+                lcfgs = item.item.get_configs()
                 rect = self.calcDecorationRect(option.rect)
                 painter.drawImage(rect, self.IMAGES['group'])
                 if item.item.rowCount() > 1:
@@ -3268,11 +3307,17 @@ class IconsDelegate(QItemDelegate):
                     painter.drawImage(rect, self.IMAGES['launchfile'])
                     if lcfgs > 1:
                         painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
-                if dcfgs > 0:
+                mscrens = item.item.get_count_mscreens()
+                if mscrens > 0:
                     rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['defaultcfg'])
-                    if dcfgs > 1:
-                        painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
+                    painter.drawImage(rect, self.IMAGES['mscreens'])
+                    if mscrens > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(mscrens))
+#                 if dcfgs > 0:
+#                     rect = self.calcDecorationRect(option.rect)
+#                     painter.drawImage(rect, self.IMAGES['defaultcfg'])
+#                     if dcfgs > 1:
+#                         painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
         painter.restore()
 
     def calcDecorationRect(self, main_rect):

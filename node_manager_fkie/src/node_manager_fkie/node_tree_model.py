@@ -39,6 +39,7 @@ import traceback
 
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
+from node_manager_daemon_fkie.url import equal_uri
 from node_manager_fkie.common import utf8
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
@@ -240,6 +241,14 @@ class GroupItem(QStandardItem):
         except Exception:
             pass
         return result
+
+    def clear_multiple_screens(self):
+        for i in range(self.rowCount()):
+            item = self.child(i)
+            if isinstance(item, GroupItem):
+                item.clear_multiple_screens()
+            elif isinstance(item, NodeItem):
+                item.has_multiple_screens = False
 
     def get_node_items_by_name(self, node_name, recursive=True):
         '''
@@ -619,21 +628,23 @@ class GroupItem(QStandardItem):
 
     def get_configs(self):
         '''
-        Returns a tuple with counts for launch and default configurations.
+        Returns count for launch configurations.
         '''
         cfgs = []
         for j in range(self.rowCount()):
             if self.child(j).cfgs:
                 cfgs[len(cfgs):] = self.child(j).cfgs
-        cfgs = list(set(cfgs))
-        dccfgs = 0
-        lccfgs = 0
-        for c in cfgs:
-            if NodeItem.is_default_cfg(c):
-                dccfgs += 1
-            else:
-                lccfgs += 1
-        return (lccfgs, dccfgs)
+        return len(set(cfgs))
+
+    def get_count_mscreens(self):
+        '''
+        Returns count for nodes with multiple screens
+        '''
+        result = 0
+        for j in range(self.rowCount()):
+            if self.child(j).has_multiple_screens:
+                result += 1
+        return result
 
     def type(self):
         return GroupItem.ITEM_TYPE
@@ -815,9 +826,9 @@ class HostItem(GroupItem):
             rospy.logwarn("compare HostItem with unicode depricated")
             return False
         elif isinstance(item, tuple):
-            return self.masteruri == item[0] and self.host == item[1]
+            return equal_uri(self.masteruri, item[0]) and self.host == item[1]
         elif isinstance(item, HostItem):
-            return self.masteruri == item.masteruri and self.host == item.host
+            return equal_uri(self.masteruri, item.masteruri) and self.host == item.host
         return False
 
     def __gt__(self, item):
@@ -886,6 +897,7 @@ class NodeItem(QStandardItem):
         self.nodelet_mngr = ''
         self.nodelets = []
         self.has_screen = True
+        self.has_multiple_screens = False
 
     @property
     def state(self):
@@ -1335,7 +1347,7 @@ class NodeTreeModel(QStandardItemModel):
         host = (masteruri, resaddr)
         # [address] + nm.nameres().resolve_cached(address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
-                 self._local_masteruri == masteruri)
+                 equal_uri(self._local_masteruri, masteruri))
         # find the host item by address
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
@@ -1582,11 +1594,17 @@ class NodeTreeModel(QStandardItemModel):
         '''
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host is not None and (masteruri is None or host.masteruri == masteruri):
+            if host is not None and (masteruri is None or equal_uri(host.masteruri, masteruri)):
                 res = host.get_node_items_by_name(node_name)
                 if res:
                     return res
         return []
+
+    def clear_multiple_screens(self, masteruri):
+        for i in reversed(range(self.invisibleRootItem().rowCount())):
+            host = self.invisibleRootItem().child(i)
+            if host is not None and (masteruri is None or equal_uri(host.masteruri, masteruri)):
+                host.clear_multiple_screens()
 
     def get_nodes_running(self):
         '''

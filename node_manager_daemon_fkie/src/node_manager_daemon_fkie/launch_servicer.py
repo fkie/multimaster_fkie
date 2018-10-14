@@ -48,7 +48,7 @@ from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 import exceptions
 import launcher
-from docutils.parsers.rst.directives import path
+#from docutils.parsers.rst.directives import path
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')

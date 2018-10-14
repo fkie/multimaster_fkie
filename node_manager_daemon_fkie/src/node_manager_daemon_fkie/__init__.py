@@ -44,6 +44,7 @@ import remote
 from .client import GrpcClient
 from .server import GrpcServer
 from .common import interpret_path
+from .screen import test_screen
 from .url import get_nmd_url, get_nmd_port
 
 
@@ -105,6 +106,10 @@ def start_server(node_name='node_manager_daemon'):
     start_files = []
     if parsed_args.autostart:
         start_files = parsed_args.autostart[0].split(',')
+    try:
+        test_screen()
+    except Exception as e:
+        rospy.logerr("No SCREEN available! You can't launch nodes.")
     try:
         launch_manager = GrpcServer()
         launch_manager.start('[::]:%s' % str(get_nmd_port()))

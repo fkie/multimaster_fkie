@@ -35,7 +35,9 @@ import os
 import roslib
 import rospy
 
-from node_manager_fkie.common import get_ros_home, masteruri_from_ros, utf8
+from master_discovery_fkie.common import masteruri_from_ros
+from node_manager_daemon_fkie import screen
+from node_manager_fkie.common import get_ros_home, utf8
 
 
 class LoggingConfig(object):
@@ -95,7 +97,7 @@ class Settings(object):
     '''@ivar: configuration path to store the history.'''
     HELP_FILE = os.path.join(PACKAGE_DIR, 'README.rst')
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
-    LOG_PATH = os.environ.get('ROS_LOG_DIR') if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
+    LOG_PATH = screen.LOG_PATH
 
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
     STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
