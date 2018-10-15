@@ -77,6 +77,7 @@ class PathItem(QStandardItem):
         Examples of paths:
             grpc://localhost:12311:                 -> name: @localhost
             grpc://localhost:12311:/absolute/path   -> name: path
+
         :param str url: the url of node manager daemon
         :param str path: file path
         :param int path_id: identification of the path (folder, package, launch file, ...)
@@ -110,6 +111,7 @@ class PathItem(QStandardItem):
     def _identify_path_on_ext(self, path, default=10):
         '''
         Determines the id based on file extension.
+
         :param str path: path
         :return: the id represents whether it is a file, package or stack
         :rtype: constants of PathItem
@@ -154,6 +156,7 @@ class PathItem(QStandardItem):
     def name(self):
         '''
         The name of this item.
+
         :rtype: str
         '''
         return self._name
@@ -162,6 +165,7 @@ class PathItem(QStandardItem):
     def name(self, new_name):
         '''
         Set the new name of this item and updates the path of the item.
+
         :param str new_name: new name
         '''
         self._name = new_name
@@ -172,6 +176,7 @@ class PathItem(QStandardItem):
     def path(self):
         '''
         The path of this item.
+
         :rtype: str
         '''
         return self._path
@@ -182,9 +187,10 @@ class PathItem(QStandardItem):
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
+
         :param role: the art of the data
-        :type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        :see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+        :type role: :class:`QtCore.Qt.DisplayRole` <https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
         '''
         if role == Qt.DisplayRole:
             # return the displayed item name
@@ -259,6 +265,7 @@ class PathItem(QStandardItem):
         '''
         Creates the list of the items. This list is used for the
         visualization of path data as a table row.
+
         :param str path: file path combined with the url of node manager daemon
         :param int path_id: identification of the path (folder, package, launch file, ...)
         :param int mtime: modification time
@@ -266,7 +273,7 @@ class PathItem(QStandardItem):
         :param str name: the displayed name
         :param bool isnew: set to True if it a new file
         :return: the list for the representation as a row
-        :rtype: C{[L{PathItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
+        :rtype: list(:class:`PathItem` or :class:`QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>)
         '''
         items = []
         item = PathItem(path, path_id, mtime, size, name, isnew)
@@ -327,10 +334,12 @@ class LaunchListModel(QStandardItemModel):
     The model to manage the list with launch files.
     '''
     pathlist_handled = Signal(str)
+    ''':ivar str pathlist_handled: signal emited after the path was handled'''
     error_on_path = Signal(str, Exception)
+    ''':ivar str,Exception error_on_path: signal emited if an exception was occurred '''
 
     header = [('Name', -1)]
-    '''@ivar: the list with columns C{[(name, width), ...]}'''
+    ''':ivar list(tuple(name, width)) header: the list with columns'''
 
     def __init__(self, parent=None, progress_queue=None, viewobj=None):
         '''
@@ -359,6 +368,7 @@ class LaunchListModel(QStandardItemModel):
     def current_path(self):
         '''
         Current path listed in this model. If empty it is a root.
+
         :rtype: str
         '''
         return self._current_path
@@ -376,6 +386,7 @@ class LaunchListModel(QStandardItemModel):
     def current_masteruri(self):
         '''
         Current URL of the ROS MASTER.
+
         :rtype: str
         '''
         return self._current_master
@@ -384,6 +395,7 @@ class LaunchListModel(QStandardItemModel):
     def is_in_root(self):
         '''
         Returns true if the current path is a root path
+
         :rtype: bool
         '''
         return self._is_root(self._current_path)
@@ -482,10 +494,10 @@ class LaunchListModel(QStandardItemModel):
     def flags(self, index):
         '''
         :param index: parent of the list
-        :type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
+        :type index: QtCore.QModelIndex <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         :return: Flag or the requested item
-        :rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        :see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+        :rtype: QtCore.Qt.ItemFlag <https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
         '''
         if not index.isValid():
             return Qt.NoItemFlags
@@ -530,6 +542,7 @@ class LaunchListModel(QStandardItemModel):
         '''
         Returns for the given item and path the file path if this is a file. Otherwise the
         folder will be expanded and None will be returned.
+
         :param str path: the real path of the item
         :param int path_id: the id of the path
         :param bool clear_cache: clear cache before reload
@@ -576,10 +589,11 @@ class LaunchListModel(QStandardItemModel):
 #        self._setNewList((root_path, items))
         return None
 
-    def set_path(self, path,  path_id=PathItem.FOLDER):
+    def set_path(self, path, path_id=PathItem.FOLDER):
         '''
         Shows the new path in the launch configuration view. Only if the new path
         is in ros package paths
+
         :param str path: new path
         '''
         # TODO
@@ -610,7 +624,7 @@ class LaunchListModel(QStandardItemModel):
 #         '''
 #         Copy the file or folder to new position...
 #         '''
-#         #TODO
+#         #TODO paste_from_clipboard
 #         if QApplication.clipboard().mimeData().hasText() and self._current_path:
 #             text = QApplication.clipboard().mimeData().text()
 #             if text.startswith('file://'):
@@ -628,7 +642,7 @@ class LaunchListModel(QStandardItemModel):
 
     def copy_to_clipboard(self, indexes):
         '''
-        Copy the selected path to the clipboard
+        Copy the selected path to the clipboard.
         '''
         mimeData = QMimeData()
         text = ''
@@ -643,6 +657,7 @@ class LaunchListModel(QStandardItemModel):
     def add_new_launch(self):
         '''
         Inserts the given item in the list model.
+
         :param str path: the path of the item combined with the url of the node manager daemon
         :param int path_id: the id (constants of PathItem) of the item, which represents whether it is a file, package or stack
         :param int mtime: modification time
@@ -685,10 +700,11 @@ class LaunchListModel(QStandardItemModel):
         '''
         Sets the list to the given path and insert the items. If the root path is not
         empty the additional item '<-' to go back will be inserted.
-        :see: L{LaunchListModel._listed_path()}
+
+        :see: :meth:`_listed_path`
         :param str root_path: the root directory
         :param items: the list with characterized items
-        :type items: C{[(item, path, id)]}
+        :type items: list(tuple(item, path, id))
         '''
         # add new items
         _, path = grpc_split_url(root_path)
@@ -704,6 +720,7 @@ class LaunchListModel(QStandardItemModel):
     def _add_path(self, path, path_id, mtime, size, name):
         '''
         Inserts the given item in the list model.
+
         :param str path: the path of the item combined with the url of the node manager daemon
         :param int path_id: the id (constants of PathItem) of the item, which represents whether it is a file, package or stack
         :param int mtime: modification time

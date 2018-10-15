@@ -87,33 +87,30 @@ class MasterViewProxy(QWidget):
 
     updateHostRequest = Signal(str)
     host_description_updated = Signal(str, str, str)
-    '''@ivar: the signal is emitted on description changes and contains the
-  ROS Master URI, host address and description a parameter.'''
+    ''':ivar str,str,str host_description_updated: the signal is emitted on description changes and contains the ROS Master URI, host address and description a parameter.'''
 
     capabilities_update_signal = Signal(str, str, str, list)
-    '''@ivar: the signal is emitted if a description with capabilities is received
-  and has the ROS master URI, host address, the name of the config and a list with
-  descriptions (node_manager_daemon_fkie.launch_description.RobotDescription) as parameter.'''
+    ''':ivar str,str,str,list(node_manager_daemon_fkie.launch_description.RobotDescription) capabilities_update_signal: the signal is emitted if a description with capabilities is received and has the ROS master URI, host address, the name of the config and a list with descriptions.'''
     remove_config_signal = Signal(str)
-    '''@ivar: the signal is emitted if a default_cfg was removed'''
+    ''':ivar str remove_config_signal: the signal is emitted if a default_cfg was removed'''
 
     description_signal = Signal(str, str, bool)
-    '''@ivar: the signal is emitted to show a description (title, description)'''
+    ''':ivar str,str,bool description_signal: the signal is emitted to show a description (title, description)'''
 
     request_xml_editor = Signal(str, str)
-    '''@ivar: the signal to open a xml editor dialog (configuration path, search text)'''
+    ''':ivar str,str request_xml_editor: the signal to open a xml editor dialog (configuration path, search text)'''
 
     stop_nodes_signal = Signal(str, list)
-    '''@ivar: the signal is emitted to stop on masteruri the nodes described in the list.'''
+    ''':ivar str,list(str) stop_nodes_signal: the signal is emitted to stop on masteruri the nodes described in the list.'''
 
     robot_icon_updated = Signal(str, str)
-    '''@ivar: the signal is emitted, if the robot icon was changed by a configuration (masteruri, path)'''
+    ''':ivar str, str robot_icon_updated: the signal is emitted, if the robot icon was changed by a configuration (masteruri, path)'''
 
     loaded_config = Signal(object, list)
-    '''@ivar: the signal is emitted, after a launchfile is successful loaded (LaunchConfig, [changed nodes (str)])'''
+    ''':ivar LaunchConfig,list(str) loaded_config: the signal is emitted, after a launchfile is successful loaded (LaunchConfig, [changed nodes (str)])'''
 
     save_profile_signal = Signal(str)
-    '''@ivar: the signal is emitted, to save profile. (masteruri) If masteruri is empty, save all masters else only for this master.'''
+    ''':ivar str save_profile_signa: the signal is emitted, to save profile. (masteruri) If masteruri is empty, save all masters else only for this master.'''
 
     DIAGNOSTIC_LEVELS = {0: 'OK',
                          1: 'WARN',
@@ -125,8 +122,8 @@ class MasterViewProxy(QWidget):
     def __init__(self, masteruri, parent=None):
         '''
         Creates a new master.
-        @param masteruri: the URI of the ROS master
-        @type masteruri: C{str}
+
+        :param str masteruri: the URI of the ROS master
         '''
         QWidget.__init__(self, parent)
         self.setObjectName(' - '.join(['MasterViewProxy', masteruri]))
@@ -151,12 +148,10 @@ class MasterViewProxy(QWidget):
 #    self.rosconfigs = dict() # [launch file path] = LaunchConfig()
         self.__in_question = []  # stores the changed files, until the user is interacted
 #    self.__uses_confgs = dict() # stores the decisions of the user for used configuration to start of node
-        '''@ivar: stored the question dialogs for changed files '''
+        ''':ivar list(str) __in_question: stored the question dialogs for changed files '''
         self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'node_manager_daemon', 'master_discovery', 'master_sync', 'default_cfg', 'zeroconf']
-        ''' @todo: detect the names of master_discovery and master_sync ndoes'''
-
         self.__echo_topics_dialogs = dict()  # [topic name] = EchoDialog
-        '''@ivar: stores the open EchoDialogs '''
+        ''':ivar dict(str:EchoDialog) __echo_topics_dialogs: stores the open EchoDialogs '''
         self.__last_info_text = None
         self.__use_sim_time = False
         self.__current_user = nm.settings().host_user(self.mastername)
@@ -434,8 +429,9 @@ class MasterViewProxy(QWidget):
         and the node are different) will be not determine by discovering. Thus this
         information must be obtain from other MasterInfo object and stored while
         updating.
-        @param master_info: the mater information object
-        @type master_info: U{master_discovery_fkie.msg.MasterInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
+
+        :param master_info: the mater information object
+        :type master_info: :class:`master_discovery_fkie.msg.MasterInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>
         '''
         nmd_uri = get_nmd_url(self.masteruri)
         self._launcher_threaded.update_info(nmd_uri, self.masteruri)
@@ -519,8 +515,8 @@ class MasterViewProxy(QWidget):
     def set_duplicate_nodes(self, running_nodes):
         '''
         Marks all nodes, which are not running and in a given list as a duplicates nodes.
-        @param running_nodes: The list with names of running nodes
-        @type running_nodes: C{[str]}
+
+        :param list(str) running_nodes: The list with names of running nodes
         '''
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = running_nodes
@@ -530,8 +526,9 @@ class MasterViewProxy(QWidget):
         '''
         Returns the list with all running nodes, which are registered by this ROS
         master. Also the nodes, which are physically running on remote hosts.
-        @return: The list with names of running nodes
-        @rtype: C{[str]}
+
+        :return: The list with names of running nodes
+        :rtype: list(str)
         '''
         if self.master_info is not None and self.master_info.getNodeEndsWith('master_sync'):
             return self.master_info.node_names
@@ -556,8 +553,9 @@ class MasterViewProxy(QWidget):
     def _update_running_nodes_in_model(self, master_info):
         '''
         Creates the dictionary with ExtendedNodeInfo objects and updates the nodes view.
+
         :param master_info: the mater information object
-        :type master_info: U{master_discovery_fkie.msg.MasterInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>}
+        :type master_info: :class:`master_discovery_fkie.msg.MasterInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>
         '''
         if master_info is not None:
             self.node_tree_model.update_model_data(master_info.nodes)
@@ -566,9 +564,8 @@ class MasterViewProxy(QWidget):
     def getNode(self, node_name):
         '''
         :param str node_name: The name of the node.
-        :type node_name: str
         :return: The list the nodes with given name.
-        :rtype: [str]
+        :rtype: list(str)
         '''
         return self.node_tree_model.get_tree_node("%s" % node_name, self.masteruri)
 
@@ -613,7 +610,8 @@ class MasterViewProxy(QWidget):
     def launchfiles(self):
         '''
         Returns the copy of the dictionary with loaded launch files on this host
-        :rtype: {str(file) : LaunchConfig}
+
+        :rtype: dict(str(file) : LaunchConfig)
         '''
         result = dict()
         for (c, cfg) in self.__configs.items():
@@ -627,7 +625,7 @@ class MasterViewProxy(QWidget):
         Loads the launch file. If this file is already loaded, it will be reloaded.
         After successful load the node view will be updated.
         :param launchfile: the launch file path
-        :type launchfile: str or tuple of launchfile and dictionary with args
+        :type launchfile: str or tuple(launchfile, dictionary with args)
         '''
         lfile = launchfile
         args = {}
@@ -803,6 +801,7 @@ class MasterViewProxy(QWidget):
         '''
         Update the current robot icon. If the icon was changed a `robot_icon_updated`
         signal will be emitted.
+
         :return: the path to the current robot icon
         :rtype: str
         '''
@@ -823,10 +822,10 @@ class MasterViewProxy(QWidget):
     def appendConfigToModel(self, launchfile, rosconfig):
         '''
         Update the node view
-        @param launchfile: the launch file path
-        @type launchfile: C{str}
-        @param rosconfig: the configuration
-        @type rosconfig: L{LaunchConfig}
+
+        :param str launchfile: the launch file path
+        :param rosconfig: the configuration
+        :type rosconfig: :class:`node_manager_fkie.launch_config.LaunchConfig`
         '''
         hosts = dict()  # dict(addr : dict(node : [config]) )
         addr = nm.nameres().address(self.masteruri)
@@ -849,6 +848,7 @@ class MasterViewProxy(QWidget):
     def remove_cfg_from_model(self, launchfile):
         '''
         Update the node view after removed configuration.
+
         :param str launchfile: the grpc path of the launch file
         '''
         self.remove_config_signal.emit(launchfile)
@@ -858,9 +858,10 @@ class MasterViewProxy(QWidget):
     def on_launch_description_retrieved(self, url, launch_descriptions):
         '''
         Handles the new list with nodes from default configuration service.
+
         :param str url: the URI of the node manager daemon
-        :param launch_descriptions: a list with node_manager_daemon_fkie.launch_description.LaunchDescription
-        :type launch_descriptions: [node_manager_daemon_fkie.launch_description.LaunchDescription]
+        :param launch_descriptions: a list with configuration description.
+        :type launch_descriptions: list(:class:`node_manager_daemon_fkie.launch_description.LaunchDescription`)
         '''
         if self._first_launch:
             self._first_launch = False
@@ -955,6 +956,7 @@ class MasterViewProxy(QWidget):
     def on_launch_description_err(self, url, error):
         '''
         Handles the error messages from launch updater.
+
         :param str url: the URI of the node manager daemon
         :param Exception error: on occurred exception
         '''
@@ -985,15 +987,17 @@ class MasterViewProxy(QWidget):
         Emits a Qt signal L{host_description_updated} to notify about a new host
         description and a Qt signal L{capabilities_update_signal} to notify about a capabilities
         update.
+
         :param str serveruri: the URI of the roslaunch server
         :param str pid: the process id of the roslaunch server
-        :param [str] nodes: list with nodes handled by the roslaunch server
+        :param list(str) nodes: list with nodes handled by the roslaunch server
         '''
         self.__launch_servers[serveruri] = (pid, nodes)
 
     def on_launch_server_err(self, serveruri, msg):
         '''
         Handles the error messages from launch server hanlder.
+
         :param str serveruri: the URI of the launch server
         :param str msg: the error message
         '''
@@ -1029,8 +1033,9 @@ class MasterViewProxy(QWidget):
         '''
         Depending of the state of the node, it will be run or the screen output will
         be open.
+
         :param index: The index of the activated node
-        :type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
+        :type index: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         '''
         selectedNodes = []
         if index.column() == 0:
@@ -1063,7 +1068,7 @@ class MasterViewProxy(QWidget):
     def on_topic_activated(self, index):
         '''
         :param index: The index of the activated topic
-        :type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
+        :type index: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         '''
         self.on_topic_echo_clicked()
 
@@ -1074,7 +1079,7 @@ class MasterViewProxy(QWidget):
     def on_service_activated(self, index):
         '''
         :param index: The index of the activated service
-        :type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
+        :type index: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         '''
         self.on_service_call_clicked()
 
@@ -1648,8 +1653,9 @@ class MasterViewProxy(QWidget):
     def start_nodes(self, nodes, force=False, force_host=None, use_adv_cfg=False, check_nodelets=True):
         '''
         Internal method to start a list with nodes
+
         :param nodes: the list with nodes to start
-        :type nodes: [L{NodeItem}]
+        :type nodes: list(:class:`node_manager_fkie.node_tree_model.NodeItem`)
         :param bool force: force the start of the node, also if it is already started.
         :param str force_host: force the start of the node at specified host.
         '''
@@ -1783,8 +1789,9 @@ class MasterViewProxy(QWidget):
     def start_nodes_by_name(self, nodes, cfg, force=False, check_nodelets=True):
         '''
         Start nodes given in a list by their names.
+
         :param nodes: a list with full node names
-        :type nodes: [str]
+        :type nodes: list(str)
         '''
         result = []
         config = cfg
@@ -1807,10 +1814,11 @@ class MasterViewProxy(QWidget):
     def start_nodes_after_load_cfg(self, cfg_name, nodes, force=False):
         '''
         Start nodes after the given configuration is loaded and applied to the model.
+
         :param cfg_name: the name of the cnofiguration
         :type cfg_name: str
         :param nodes: the list of node names
-        :type nodes: list of strings
+        :type nodes: list(str)
         '''
         if cfg_name not in self._start_nodes_after_load_cfg:
             self._start_nodes_after_load_cfg[cfg_name] = set(nodes)
@@ -1947,8 +1955,9 @@ class MasterViewProxy(QWidget):
     def stop_nodes(self, nodes, force=False):
         '''
         Internal method to stop a list with nodes
+
         :param nodes: the list with nodes to stop
-        :type nodes: [U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}]
+        :type nodes: list(:class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>)
         '''
         # put into the queue and start the que handling
         for node in nodes:
@@ -1961,8 +1970,9 @@ class MasterViewProxy(QWidget):
     def stop_nodes_by_name(self, nodes, force=False, ignore=[]):
         '''
         Stop nodes given in a list by their names.
+
         :param nodes: a list with full node names
-        :type nodes: [str]
+        :type nodes: list(str)
         '''
         result = []
         if self.master_info is not None:
@@ -2096,8 +2106,9 @@ class MasterViewProxy(QWidget):
         tries to get the host from the launch configuration. If the configuration
         contains no machine assignment for this node the host of the ROS master URI
         will be used.
+
         :param node:
-        :type node: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+        :type node: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
         if node.uri is not None:
             return get_hostname(node.uri)
@@ -2119,8 +2130,9 @@ class MasterViewProxy(QWidget):
         If the node is running the grpc url of the masteruri of the node will be returned. Otherwise
         tries to get the grpc from the launch configuration. Or the ROS master URI
         will be used.
+
         :param node:
-        :type node: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+        :type node: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
         if node.masteruri is not None:
             return get_nmd_url(node.masteruri)
@@ -2443,13 +2455,6 @@ class MasterViewProxy(QWidget):
         else:  # create a new topic
             # fill the input fields
             # determine the list all available message types
-#             root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
-#             packages = {}
-#             for p in root_paths:
-#                 # TODO, get packages from nmd
-#                 ret = get_packages(p)
-#                 packages = dict(ret.items() + packages.items())
-#             for (p, direc) in packages.items():
             msg_types = []
             for ppath, pname in nm.nmd().get_packages(get_nmd_url(self.masteruri)).items():
                 import rosmsg
@@ -2457,7 +2462,6 @@ class MasterViewProxy(QWidget):
                     msg_types.append("%s/%s" % (pname, f))
             msg_types.sort()
             fields = {'Type': ('string', msg_types), 'Name': ('string', [''])}
-
             # create a dialog
             dia = ParameterDialog(fields, parent=self)
             dia.setWindowTitle('Publish to topic')
@@ -2868,7 +2872,7 @@ class MasterViewProxy(QWidget):
         :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
         :param str msg: The message of the result.
         :param params: The list the parameter names.
-        :type params: [str]
+        :type params: list(str)
         '''
         if code == 1:
             params.sort()
@@ -2880,7 +2884,7 @@ class MasterViewProxy(QWidget):
         :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
         :param str msg: The message of the result.
         :param params: The dictionary the parameter names and request result.
-        :type params: {paramName : (code, statusMessage, parameterValue)}
+        :type params: dict(paramName : (code, statusMessage, parameterValue))
         '''
         if code == 1:
             result = {}
@@ -2901,7 +2905,7 @@ class MasterViewProxy(QWidget):
         :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
         :param str msg: The message of the result.
         :param params: The dictionary the parameter names and request result.
-        :type params: {paramName : (code, statusMessage, parameterValue)[
+        :type params: dict(paramName : (code, statusMessage, parameterValue))
         '''
         errmsg = ''
         if code == 1:
@@ -2921,7 +2925,7 @@ class MasterViewProxy(QWidget):
         :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
         :param str msg: The message of the result.
         :param params: The dictionary the parameter names and request result.
-        :type params: {paramName : (code, statusMessage, parameterValue)}
+        :type params: dict(paramName : (code, statusMessage, parameterValue))
         '''
         robot_icon_found = False
         if code == 1:
@@ -2955,8 +2959,9 @@ class MasterViewProxy(QWidget):
         '''
         Requests the ROS master URI from the ROS master through the RPC interface and
         returns it. The 'materuri' attribute will be set to the requested value.
-        @return: ROS master URI
-        @rtype: C{str} or C{None}
+
+        :return: ROS master URI
+        :rtype: str or None
         '''
         if not hasattr(self, '_nm_materuri') or self._nm_materuri is None:
             masteruri = masteruri_from_ros()
@@ -3037,8 +3042,8 @@ class MasterViewProxy(QWidget):
     def select_host_block(self, index):
         '''
         Selects all nodes of a host with given index
-        @param index: the index of the host in the tree model
-        @type index: C{int}
+
+        :param int index: the index of the host in the tree model
         '''
         root = self.masterTab.nodeTreeView.model().index(index, 0)
         if not root.isValid():

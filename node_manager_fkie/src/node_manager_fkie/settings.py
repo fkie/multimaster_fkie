@@ -41,6 +41,9 @@ from node_manager_fkie.common import get_ros_home, utf8
 
 
 class LoggingConfig(object):
+    '''
+    Holds the settings for changed log level while start a node.
+    '''
     LOGLEVEL = 'DEFAULT'
     LOGLEVEL_ROSCPP = 'INFO'
     LOGLEVEL_SUPERDEBUG = 'WARN'
@@ -53,6 +56,11 @@ class LoggingConfig(object):
         self.console_format = self.CONSOLE_FORMAT
 
     def get_attributes(self):
+        '''
+        Returns a list with all possible attributes, e.g.: loglevel, console_format
+
+        :rtype: [str]
+        '''
         return ['loglevel',
                 'loglevel_roscpp',
                 'loglevel_superdebug',
@@ -60,9 +68,17 @@ class LoggingConfig(object):
                 ]
 
     def is_default(self, attribute):
+        '''
+        Checks for an attribute :meth:`get_attributes` however it was changed.
+        '''
         return getattr(self, attribute) == getattr(self, attribute.upper())
 
     def get_alternatives(self, attribute):
+        '''
+        Retruns a list with all possible values for an attribute :meth:`get_attributes`.
+
+        :rtype: [str]
+        '''
         result = []
         if attribute == 'console_format':
             result = [self.CONSOLE_FORMAT,
@@ -82,6 +98,7 @@ class LoggingConfig(object):
 class Settings(object):
 
     USER_DEFAULT = 'robot'
+    ''':ivar USER_DEFAULT: default user, if no one is set for specific master. Defaul: robot'''
     # set the cwd to the package of the node_manager_fkie to support the images
     # in HTML descriptions of the robots and capabilities
     PKG_NAME = 'node_manager_fkie'
@@ -94,17 +111,14 @@ class Settings(object):
         print("PACKAGE_DIR: %s" % PACKAGE_DIR)
     ROBOTS_DIR = os.path.join(PACKAGE_DIR, 'images')
     CFG_PATH = os.path.join('.node_manager', os.sep)
-    '''@ivar: configuration path to store the history.'''
+    ''':ivar CFG_PATH: configuration path to store the history.'''
     HELP_FILE = os.path.join(PACKAGE_DIR, 'README.rst')
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
     LOG_PATH = screen.LOG_PATH
 
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
     STARTER_SCRIPT = 'rosrun node_manager_fkie remote_nm.py'
-    RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
-    '''
-  the script used on remote hosts to start new ROS nodes
-  '''
+    ''':ivar STARTER_SCRIPT: the script used on remote hosts to start new ROS nodes.'''
 
     LAUNCH_HISTORY_FILE = 'launch.history'
     LAUNCH_HISTORY_LENGTH = 5
@@ -179,7 +193,6 @@ class Settings(object):
         self._current_dialog_path = self.CURRENT_DIALOG_PATH
         self._log_viewer = self.LOG_VIEWER
         self._start_remote_script = self.STARTER_SCRIPT
-        self._respawn_script = self.RESPAWN_SCRIPT
         self._launch_view_file_ext = self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))
         self._store_geometry = self.str2bool(settings.value('store_geometry', self.STORE_GEOMETRY))
         self._movable_dock_widgets = self.str2bool(settings.value('movable_dock_widgets', self.MOVABLE_DOCK_WIDGETS))
@@ -312,14 +325,6 @@ class Settings(object):
     @start_remote_script.setter
     def start_remote_script(self, script):
         self._start_remote_script = script
-
-    @property
-    def respawn_script(self):
-        return self._respawn_script
-
-    @respawn_script.setter
-    def respawn_script(self, script):
-        self._respawn_script = script
 
     @property
     def launch_view_file_ext(self):
@@ -515,8 +520,9 @@ class Settings(object):
     def launch_history(self):
         '''
         Read the history of the recently loaded files from the file stored in ROS_HOME path.
-        @return: the list with file names
-        @rtype: C{[str]}
+
+        :return: the list with file names
+        :rtype: list(str)
         '''
         if self._launch_history is not None:
             return self._launch_history
@@ -538,10 +544,9 @@ class Settings(object):
     def launch_history_add(self, path, replace=None):
         '''
         Adds a path to the list of recently loaded files.
-        :param path: the path with the file name
-        :type path: str
-        :param replace: the path to replace, e.g. rename
-        :type replace: str
+
+        :param str path: the path with the file name
+        :param str replace: the path to replace, e.g. rename
         '''
         to_remove = replace
         if replace is None:
@@ -560,8 +565,8 @@ class Settings(object):
     def launch_history_remove(self, path):
         '''
         Removes a path from the list of recently loaded files.
-        :param path: the path with the file name
-        :type path: str
+
+        :param list(str) path: the path with the file name
         '''
         try:
             self._launch_history.remove(path)
@@ -572,8 +577,8 @@ class Settings(object):
     def _launch_history_save(self, paths):
         '''
         Saves the list of recently loaded files to history. The existing history will be replaced!
-        :param paths: the list with filenames
-        :type paths: C{[str]}
+
+        :param list(str) paths: the list with filenames
         '''
         history_file = self.qsettings(self.LAUNCH_HISTORY_FILE)
         history_file.beginWriteArray("launch_history")
@@ -604,12 +609,11 @@ class Settings(object):
     def terminal_cmd(self, cmd, title, noclose=False):
         '''
         Creates a command string to run with a terminal prefix
-        @param cmd: the list with a command and args
-        @type cmd: [str,..]
-        @param title: the title of the terminal
-        @type title: str
-        @return: command with a terminal prefix
-        @rtype:  str
+
+        :param list(str) cmd: the list with a command and args
+        :param str title: the title of the terminal
+        :return: command with a terminal prefix
+        :rtype: str
         '''
         noclose_str = '-hold'
         if self._terminal_emulator is None:

@@ -55,10 +55,10 @@ class CellItem(QStandardItem):
     def __init__(self, name, item=None, parent=None):
         '''
         Initialize the CellItem object with given values.
+
         :param name: the name of the group
-        :param parent: the parent item. In most cases this is the HostItem. The
-        variable is used to determine the different columns of the NodeItem.
-        :type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
+        :param parent: the parent item. In most cases this is the HostItem. The variable is used to determine the different columns of the NodeItem.
+        :type parent: :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>
         '''
         QStandardItem.__init__(self)
         self.parent_item = parent
@@ -69,6 +69,7 @@ class CellItem(QStandardItem):
     def name(self):
         '''
         The name of this group.
+
         :rtype: str
         '''
         return self._name
@@ -86,10 +87,10 @@ class GroupItem(QStandardItem):
     def __init__(self, name, parent=None, has_remote_launched_nodes=False):
         '''
         Initialize the GroupItem object with given values.
+
         :param str name: the name of the group
-        :param parent: the parent item. In most cases this is the HostItem. The
-        variable is used to determine the different columns of the NodeItem.
-        :type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
+        :param parent: the parent item. In most cases this is the HostItem. The variable is used to determine the different columns of the NodeItem.
+        :type parent: :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>
         '''
         QStandardItem.__init__(self, name if name.rfind('@') > 0 else '{' + name + '}')
         self.parent_item = parent
@@ -101,14 +102,15 @@ class GroupItem(QStandardItem):
         self._has_remote_launched_nodes = has_remote_launched_nodes
         self._remote_launched_nodes_updated = False
         '''
-     :ivar: dict(config : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
-    '''
+        :ivar: dict(config : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
+        '''
         self._re_cap_nodes = dict()
 
     @property
     def name(self):
         '''
         The name of this group.
+
         :rtype: str
         '''
         return self._name
@@ -117,6 +119,7 @@ class GroupItem(QStandardItem):
     def name(self, new_name):
         '''
         Set the new name of this group and updates the displayed name of the item.
+
         :param str new_name: The new name of the group. Used also to identify the group.
         '''
         self._name = new_name
@@ -125,6 +128,7 @@ class GroupItem(QStandardItem):
     def is_in_cap_group(self, nodename, config, ns, groupname):
         '''
         Returns `True` if the group contains the node.
+
         :param str nodename: the name of the node to test
         :param str config: the configuration name
         :param str ns: namespace
@@ -156,10 +160,11 @@ class GroupItem(QStandardItem):
         '''
         Add new capabilities. Based on this capabilities the node are grouped. The
         view will be updated.
+
         :param str config: The name of the configuration containing this new capabilities.
         :param str masteruri: The masteruri is used only used, if new nodes are created.
         :param capabilities: The capabilities, which defines groups and containing nodes.
-        :type capabilities: {namespace: {group: {'type': str, 'images': [str], 'description': str, 'nodes': [str]}}}
+        :type capabilities: dict(namespace: dict(group: dict('type': str, 'images': list(str), 'description': str, 'nodes': list(str))))
         '''
         self._capcabilities[config] = capabilities
         self._create_cap_nodes_pattern(config, capabilities)
@@ -210,8 +215,9 @@ class GroupItem(QStandardItem):
     def rem_capablities(self, config):
         '''
         Removes internal entry of the capability, so the new nodes are not grouped.
-        To update view L{NodeTreeModel.remove_config()} and L{GroupItem.clearup()}
+        To update view :meth:`NodeTreeModel.remove_config` and :meth:`GroupItem.clearup`
         must be called.
+
         :param str config: The name of the configuration containing this new capabilities.
         '''
         try:
@@ -225,9 +231,10 @@ class GroupItem(QStandardItem):
     def get_capability_groups(self, node_name):
         '''
         Returns the names of groups, which contains the given node.
+
         :param str node_name: The name of the node
         :return: The name of the configuration containing this new capabilities.
-        :rtype: {config : [str]}
+        :rtype: dict(config : list(str))
         '''
         result = dict()  # dict(config : [group names])
         try:
@@ -254,10 +261,11 @@ class GroupItem(QStandardItem):
         '''
         Since the same node can be included by different groups, this method searches
         for all nodes with given name and returns these items.
+
         :param str node_name: The name of the node
         :param bool recursive: Searches in (sub) groups
         :return: The list with node items.
-        :rtype: [U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]
+        :rtype: list(:class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>)
         '''
         result = []
         for i in range(self.rowCount()):
@@ -272,9 +280,10 @@ class GroupItem(QStandardItem):
     def get_node_items(self, recursive=True):
         '''
         Returns all nodes in this group and subgroups.
+
         :param bool recursive: returns the nodes of the subgroups
         :return: The list with node items.
-        :rtype: [U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]
+        :rtype: list(:class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>)
         '''
         result = []
         for i in range(self.rowCount()):
@@ -289,8 +298,9 @@ class GroupItem(QStandardItem):
     def get_group_items(self):
         '''
         Returns all group items this group
+
         :return: The list with group items.
-        :rtype: [L{GroupItem}]
+        :rtype: list(:class:`GroupItem`)
         '''
         result = []
         for i in range(self.rowCount()):
@@ -305,9 +315,10 @@ class GroupItem(QStandardItem):
         Returns a GroupItem with given name. If no group with this name exists, a
         new one will be created.
         Assumption: No groups in group!!
+
         :param str group_name: the name of the group
         :return: The group with given name
-        :rtype: L{GroupItem}
+        :rtype: :class:`GroupItem`
         '''
         for i in range(self.rowCount()):
             item = self.child(i)
@@ -333,8 +344,9 @@ class GroupItem(QStandardItem):
     def add_node(self, node, cfg=''):
         '''
         Adds a new node with given name.
+
         :param node: the NodeInfo of the node to create
-        :type node: L{NodeInfo}
+        :type node: :class:`NodeInfo`
         :param str cfg: The configuration, which describes the node
         '''
         groups = self.get_capability_groups(node.name)
@@ -365,9 +377,8 @@ class GroupItem(QStandardItem):
     def clearup(self, fixed_node_names=None):
         '''
         Removes not running and not configured nodes.
-        :param fixed_node_names: If the list is not None, the node not in the list are
-        set to not running!
-        :type fixed_node_names: [str]
+
+        :param list(str) fixed_node_names: If the list is not None, the node not in the list are set to not running!
         '''
         # first clear sub groups
         groups = self.get_group_items()
@@ -420,8 +431,9 @@ class GroupItem(QStandardItem):
     def update_running_state(self, nodes):
         '''
         Updates the running state of the nodes given in a dictionary.
+
         :param nodes: A dictionary with node names and their running state described by L{NodeInfo}.
-        :type nodes: {str: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}}
+        :type nodes: dict(str: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>)
         '''
         for (name, node) in nodes.items():
             # get the node items
@@ -441,9 +453,10 @@ class GroupItem(QStandardItem):
         '''
         Returns the names of all running nodes. A running node is defined by his
         PID.
-        :see: U{master_dicovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+
+        :see: :class:`master_dicovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         :return: A list with node names
-        :rtype: [str]
+        :rtype: list(str)
         '''
         result = []
         for i in range(self.rowCount()):
@@ -458,8 +471,9 @@ class GroupItem(QStandardItem):
         '''
         While a synchronization same node on different hosts have the same name, the
         nodes with the same on other host are marked.
+
         :param running_nodes: The dictionary with names of running nodes and their masteruri
-        :type running_nodes: {str: str}
+        :type running_nodes: dict(str: str)
         :param bool is_sync_running: If the master_sync is running, the nodes are marked
           as ghost nodes. So they are handled as running nodes, but has not run
           informations. This nodes are running on remote host, but are not
@@ -541,9 +555,10 @@ class GroupItem(QStandardItem):
 
     def update_tooltip(self):
         '''
-        Creates a tooltip description based on text set by L{update_description()}
+        Creates a tooltip description based on text set by :meth:`update_description`
         and all childs of this host with valid sensor description. The result is
         returned as a HTML part.
+
         :return: the tooltip description coded as a HTML part
         :rtype: str
         '''
@@ -576,10 +591,11 @@ class GroupItem(QStandardItem):
 
     def update_description(self, descr_type, descr_name, descr):
         '''
-        Sets the description of the robot. To update the tooltip of the host item use L{update_tooltip()}.
+        Sets the description of the robot. To update the tooltip of the host item use :meth:`update_tooltip`.
+
         :param str descr_type: the type of the robot
         :param str descr_name: the name of the robot
-        :param str descr: the description of the robot as a U{http://docutils.sourceforge.net/rst.html|reStructuredText}
+        :param str descr: the description of the robot as a reStructuredText<http://docutils.sourceforge.net/rst.html>
         '''
         self.descr_type = descr_type
         self.descr_name = descr_name
@@ -683,6 +699,7 @@ class HostItem(GroupItem):
     def __init__(self, masteruri, address, local, parent=None):
         '''
         Initialize the HostItem object with given values.
+
         :param str masteruri: URI of the ROS master assigned to the host
         :param str address: the address of the host
         :param bool local: is this host the localhost where the node_manager is running.
@@ -740,6 +757,7 @@ class HostItem(GroupItem):
     def create_host_description(self, masteruri, address):
         '''
         Returns the name generated from masteruri and address
+
         :param masteruri: URI of the ROS master assigned to the host
         :param str address: the address of the host
         '''
@@ -763,9 +781,10 @@ class HostItem(GroupItem):
 
     def update_tooltip(self):
         '''
-        Creates a tooltip description based on text set by L{update_description()}
+        Creates a tooltip description based on text set by :meth:`update_description`
         and all childs of this host with valid sensor description. The result is
         returned as a HTML part.
+
         :return: the tooltip description coded as a HTML part
         :rtype: str
         '''
@@ -852,8 +871,8 @@ class HostItem(GroupItem):
 class NodeItem(QStandardItem):
     '''
     The NodeItem stores the information about the node using the ExtendedNodeInfo
-    class and represents it in a U{QTreeView<https://srinikom.github.io/pyside-docs/PySide/QtGui/QTreeView.html>} using the
-    U{QStandardItemModel<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItemModel.html>}
+    class and represents it in a :class:`QTreeView`<https://srinikom.github.io/pyside-docs/PySide/QtGui/QTreeView.html> using the
+    :class:`QStandardItemModel` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItemModel.html>
     '''
 
     ITEM_TYPE = QStandardItem.UserType + 35
@@ -870,8 +889,9 @@ class NodeItem(QStandardItem):
     def __init__(self, node_info):
         '''
         Initialize the NodeItem instance.
+
         :param node_info: the node information
-        :type node_info: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+        :type node_info: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
         QStandardItem.__init__(self, node_info.name)
         self.parent_item = None
@@ -927,7 +947,8 @@ class NodeItem(QStandardItem):
     def node_info(self):
         '''
         Returns the NodeInfo instance of this node.
-        :rtype: U{master_discovery_fkie.NodeInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>}
+
+        :rtype: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
         return self._node_info
 
@@ -976,8 +997,9 @@ class NodeItem(QStandardItem):
     @property
     def has_running(self):
         '''
-        Returns C{True}, if there are exists other nodes with the same name. This
+        Returns `True`, if there are exists other nodes with the same name. This
         variable must be set manually!
+
         :rtype: bool
         '''
         return self._has_running
@@ -998,8 +1020,9 @@ class NodeItem(QStandardItem):
     @property
     def is_ghost(self):
         '''
-        Returns C{True}, if there are exists other runnig nodes with the same name. This
+        Returns `True`, if there are exists other runnig nodes with the same name. This
         variable must be set manually!
+
         :rtype: bool
         '''
         return self._is_ghost
@@ -1148,13 +1171,15 @@ class NodeItem(QStandardItem):
     def cfgs(self):
         '''
         Returns the list with all launch configurations assigned to this item.
-        :rtype: [str]
+
+        :rtype: list(str)
         '''
         return self._cfgs
 
     def add_config(self, cfg):
         '''
         Add the given configurations to the node.
+
         :param str cfg: the loaded configuration, which contains this node.
         '''
         if cfg == '':
@@ -1166,6 +1191,7 @@ class NodeItem(QStandardItem):
     def rem_config(self, cfg):
         '''
         Remove the given configurations from the node.
+
         :param str cfg: the loaded configuration, which contains this node.
         '''
         result = False
@@ -1187,10 +1213,11 @@ class NodeItem(QStandardItem):
         '''
         Creates a new node row and returns it as a list with items. This list is
         used for the visualization of node data as a table row.
+
         :param str name: the node name
         :param str masteruri: the URI or the ROS master assigned to this node.
-        :return: the list for the representation as a row
-        :rtype: C{[L{NodeItem}, U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}(Cofigurations), U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}(Node URI)]}
+        :return: the list for the representation as a row list(node name, configuration)
+        :rtype: list(:class:`NodeItem`, :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>)
         '''
         items = []
         item = NodeItem(NodeInfo(name, masteruri))
@@ -1284,8 +1311,7 @@ class NodeTreeModel(QStandardItemModel):
 #            ('URI', -1)]
 
     hostInserted = Signal(HostItem)
-    '''@ivar: the Qt signal, which is emitted, if a new host was inserted.
-  Parameter: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>} of the inserted host item'''
+    ''':ivar HostItem hostInserted: the Qt signal, which is emitted, if a new host was inserted. Parameter: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html> of the inserted host item'''
 
     def __init__(self, host_address, masteruri, parent=None):
         '''
@@ -1336,10 +1362,11 @@ class NodeTreeModel(QStandardItemModel):
         '''
         Searches for the host item in the model. If no item is found a new one will
         created and inserted in sorted order.
+
         :param str masteruri: ROS master URI
         :param str address: the address of the host
         :return: the item associated with the given master
-        :rtype: L{HostItem}
+        :rtype: :class:`HostItem`
         '''
         if masteruri is None:
             return None
@@ -1368,8 +1395,9 @@ class NodeTreeModel(QStandardItemModel):
     def update_model_data(self, nodes):
         '''
         Updates the model data.
+
         :param nodes: a dictionary with name and info objects of the nodes.
-        :type nodes: {str: L{NodeInfo}}
+        :type nodes: dict(str: :class:`NodeInfo`)
         '''
         # separate into different hosts
         hosts = dict()
@@ -1411,11 +1439,12 @@ class NodeTreeModel(QStandardItemModel):
     def _on_param_values(self, masteruri, code, msg, params):
         '''
         Updates the capability groups of nodes from ROS parameter server.
+
         :param str masteruri: The URI of the ROS parameter server
         :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
         :param str msg: The message of the result.
-        :param params: The dictionary the parameter names and request result.
-        :type params: {paramName : (code, statusMessage, parameterValue))}
+        :param params: The dictionary of parameter names and request result as tuple(code, statusMessage, parameterValue)
+        :type params: dict(str : (int, str, str)))
         '''
         host = nm.nameres().address(masteruri)
         if host is None:
@@ -1489,6 +1518,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         Sets the default capabilities description, which is assigned to each new
         host.
+
         :param capabilities: the structure for capabilities
         :type capabilities: {namespace: {group: {'type': str, 'description': str, 'nodes': [str]}}}
         '''
@@ -1497,6 +1527,7 @@ class NodeTreeModel(QStandardItemModel):
     def add_capabilities(self, masteruri, host_address, cfg, capabilities):
         '''
         Adds groups to the model
+
         :param str masteruri: ROS master URI
         :param str host_address: the address the host
         :param str cfg: the configuration name (launch file name)
@@ -1513,6 +1544,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         Adds nodes to the model. If the node is already in the model, only his
         configuration list will be extended.
+
         :param str masteruri: ROS master URI
         :param str host_address: the address the host
         :param nodes: a dictionary with node names and their configurations
@@ -1557,6 +1589,7 @@ class NodeTreeModel(QStandardItemModel):
         Removes nodes from the model. If node is running or containing in other
         launch or default configurations , only his configuration list will be
         reduced.
+
         :param str cfg: the name of the confugration to close
         '''
         for i in reversed(range(self.invisibleRootItem().rowCount())):
@@ -1588,9 +1621,10 @@ class NodeTreeModel(QStandardItemModel):
         '''
         Since the same node can be included by different groups, this method searches
         for all nodes with given name and returns these items.
+
         :param str node_name: The name of the node
         :return: The list with node items.
-        :rtype: [U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]
+        :rtype: list(:class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>)
         '''
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
@@ -1609,7 +1643,8 @@ class NodeTreeModel(QStandardItemModel):
     def get_nodes_running(self):
         '''
         Returns a list with all known running nodes.
-        :rtype: [str]
+
+        :rtype: list(str)
         '''
         running_nodes = list()
         # # determine all running nodes
@@ -1626,6 +1661,7 @@ class NodeTreeModel(QStandardItemModel):
         nodes with same name running on other hosts and loaded by a configuration.
         The nodes loaded by a configuration will be inform about a currently running
         nodes, so a warning can be displayed!
+
         :param running_nodes: The dictionary with names of running nodes and their masteruri
         :type running_nodes: {str: str}
         :param bool is_sync_running: If the master_sync is running, the nodes are marked
@@ -1641,11 +1677,12 @@ class NodeTreeModel(QStandardItemModel):
     def update_host_description(self, masteruri, host, descr_type, descr_name, descr):
         '''
         Updates the description of a host.
+
         :param str masteruri: ROS master URI of the host to update
         :param str host: host to update
         :param str descr_type: the type of the robot
         :param str descr_name: the name of the robot
-        :param str descr: the description of the robot as a U{http://docutils.sourceforge.net/rst.html|reStructuredText}
+        :param str descr: the description of the robot as a reStructuredText<http://docutils.sourceforge.net/rst.html>
         '''
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):

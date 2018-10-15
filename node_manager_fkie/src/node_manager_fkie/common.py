@@ -1,7 +1,5 @@
 import os
 import rospy
-from node_manager_daemon_fkie.host import get_hostname, get_port
-from node_manager_daemon_fkie.url import get_nmd_url
 
 import node_manager_fkie as nm
 
@@ -18,6 +16,9 @@ PACKAGE_CACHE = {}
 
 
 def utf8(s, errors='replace'):
+    '''
+    Converts string to unicode.
+    '''
     if isinstance(s, (str, buffer)):
         return unicode(s, "utf-8", errors=errors)
     elif not isinstance(s, unicode):
@@ -28,8 +29,9 @@ def utf8(s, errors='replace'):
 def get_ros_home():
     '''
     Returns the ROS HOME depending on ROS distribution API.
-    @return: ROS HOME path
-    @rtype: C{str}
+
+    :return: ROS HOME path
+    :rtype: str
     '''
     try:
         import rospkg.distro
@@ -46,6 +48,9 @@ def get_ros_home():
 
 
 def get_rosparam(param, masteruri):
+    '''
+    Get parameter using :class:`rospy.msproxy.MasterProxy`
+    '''
     if masteruri:
         try:
             master = rospy.msproxy.MasterProxy(masteruri)
@@ -55,6 +60,9 @@ def get_rosparam(param, masteruri):
 
 
 def delete_rosparam(param, masteruri):
+    '''
+    Delete parameter using :class:`rospy.msproxy.MasterProxy`
+    '''
     if masteruri:
         try:
             master = rospy.msproxy.MasterProxy(masteruri)
@@ -66,6 +74,8 @@ def delete_rosparam(param, masteruri):
 def to_url(path):
     '''
     Searches the package name for given path and create an URL starting with pkg://
+
+    :see: uses :meth:`package_name`
     '''
     result = path
     pkg, pth = package_name(os.path.dirname(path))
@@ -78,6 +88,7 @@ def package_name(path):
     '''
     Returns for given directory a tuple of package name and package path or None values.
     The results are cached!
+
     :rtype: tuple(name, path)
     '''
     return (nm.nmd().package_name(path), path)

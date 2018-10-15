@@ -68,7 +68,8 @@ __date__ = "2018-10-10"  # git log -1 --date=iso
 HOSTS_CACHE = dict()
 '''
 the cache directory to store the results of tests for local hosts.
-:see: L{is_local()}
+
+:see: :meth:`is_local`
 '''
 
 _LOCK = threading.RLock()
@@ -87,7 +88,7 @@ _QAPP = None
 def settings():
     '''
     :return: The global settings
-    :rtype: L{Settings}
+    :rtype: :class:`node_manager_fkie.settings.Settings`
     '''
     return _SETTINGS
 
@@ -95,7 +96,7 @@ def settings():
 def nmd():
     '''
     :return: Node manager daemon client
-    :rtype: L{NmdClient}
+    :rtype: :class:`node_manager_fkie.settings.NmdClient`
     '''
     return _NMD_CLIENT
 
@@ -103,7 +104,7 @@ def nmd():
 def ssh():
     '''
     :return: The SSH handler to handle the SSH connections
-    :rtype: L{SSHhandler}
+    :rtype: :class:`node_manager_fkie.settings.SSHhandler`
     '''
     return _SSH_HANDLER
 
@@ -111,26 +112,24 @@ def ssh():
 def screen():
     '''
     :return: The screen handler to the screens.
-    :rtype: L{ScreenHandler}
-    :see: U{http://linuxwiki.de/screen}
+    :rtype: :class:`node_manager_fkie.ScreenHandler`
+    :see: http://linuxwiki.de/screen
     '''
     return _SCREEN_HANDLER
 
 
 def starter():
     '''
-    @return: The start handler to handle the start of new ROS nodes on local or
-    remote machines.
-    @rtype: L{StartHandler}
+    :return: The start handler to handle the start of new ROS nodes on local or remote machines.
+    :rtype: :class:`node_manager_fkie.settings.StartHandler`
     '''
     return _START_HANDLER
 
 
 def nameres():
     '''
-    :return: The name resolution object translate the the name to the host or
-    ROS master URI.
-    :rtype: L{NameResolution}
+    :return: The name resolution object translate the the name to the host or ROS master URI.
+    :rtype: :class:`node_manager_fkie.settings.NameResolution`
     '''
     return _NAME_RESOLUTION
 
@@ -138,7 +137,7 @@ def nameres():
 def history():
     '''
     :return: The history of entered parameter.
-    :rtype: L{History}
+    :rtype: :class:`node_manager_fkie.settings.History`
     '''
     return _HISTORY
 
@@ -147,7 +146,8 @@ def get_ros_hostname(url):
     '''
     Returns the host name used in a url, if it is a name. If it is an IP an
     empty string will be returned.
-    :return: host or '' if url is an IP or invalid
+
+    :return: host or empty string if url is an IP or invalid
     :rtype:  str
     '''
     return NameResolution.get_ros_hostname(url)
@@ -156,8 +156,9 @@ def get_ros_hostname(url):
 def is_local(hostname, wait=False):
     '''
     Test whether the given host name is the name of the local host or not.
+
     :param str hostname: the name or IP of the host
-    :return: C{True} if the hostname is local or None
+    :return: True if the hostname is local or None
     :rtype: bool
     :raise Exception: on errors while resolving host
     '''
@@ -232,6 +233,7 @@ def finish(*arg):
 def set_terminal_name(name):
     '''
     Change the terminal name.
+
     :param str name: New name of the terminal
     '''
     sys.stdout.write("\x1b]2;%s\x07" % name)
@@ -240,7 +242,8 @@ def set_terminal_name(name):
 def set_process_name(name):
     '''
     Change the process name.
-    :param str name: New process name
+
+    :param str name: name new process name
     '''
     try:
         from ctypes import cdll, byref, create_string_buffer
@@ -342,8 +345,8 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
 def main(name):
     '''
     Start the NodeManager or EchoDialog.
-    :param name: the name propagated to the rospy.init_node()
-    :type name: str
+
+    :param str name: the name propagated to the :meth:`rospy.init_node`
     '''
     try:
         from python_qt_binding.QtGui import QApplication

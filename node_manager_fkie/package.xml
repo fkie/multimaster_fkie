@@ -14,6 +14,7 @@
   
   <buildtool_depend>catkin</buildtool_depend>
   
+  <build_depend>python-catkin-pkg</build_depend>
   <build_depend>multimaster_msgs_fkie</build_depend>
   <build_depend>master_discovery_fkie</build_depend>
   <build_depend>node_manager_daemon_fkie</build_depend>
