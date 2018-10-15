@@ -51,8 +51,8 @@ from .url import get_nmd_url, get_nmd_port
 def set_terminal_name(name):
     '''
     Change the terminal name.
-    @param name: New name of the terminal
-    @type name:  C{str}
+
+    :param str name: New name of the terminal
     '''
     sys.stdout.write("".join(["\x1b]2;", name, "\x07"]))
 
@@ -60,8 +60,8 @@ def set_terminal_name(name):
 def set_process_name(name):
     '''
     Change the process name.
-    @param name: New process name
-    @type name:  C{str}
+
+    :param str name: New process name
     '''
     try:
         from ctypes import cdll, byref, create_string_buffer

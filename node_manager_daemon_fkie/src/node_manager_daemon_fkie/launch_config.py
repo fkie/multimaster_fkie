@@ -57,6 +57,7 @@ class LaunchConfig(object):
         '''
         Creates the LaunchConfig object. The launch file will be not loaded on
         creation, first on request of roscfg value.
+
         :param str launch_file: The absolute or relative path with the launch file.
                                 By using relative path a package must be valid for
                                 remote launches.
@@ -66,7 +67,7 @@ class LaunchConfig(object):
         :type package: str or None
         :param str masteruri: The URL of the ROS master.
         :param argv: the list the arguments needed for loading the given launch file
-        :type argv: [str]
+        :type argv: list(str)
         :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
         self.__launchfile = launch_file
@@ -99,9 +100,10 @@ class LaunchConfig(object):
     def roscfg(self):
         '''
         Holds a loaded launch configuration. It raises a LaunchConfigException on load error.
+
         :return: a previously loaded ROS configuration
-        :rtype: :any:`roslaunch.ROSLaunchConfig <http://docs.ros.org/kinetic/api/roslaunch/html/>` or None
-        :any: `load()`
+        :rtype: :meth:`roslaunch.ROSLaunchConfig` <http://docs.ros.org/kinetic/api/roslaunch/html/> or None
+        :any: :meth:`load`
         '''
         if self.__roscfg is not None:
             return self.__roscfg
@@ -115,6 +117,7 @@ class LaunchConfig(object):
     def filename(self):
         '''
         Returns an existing path with file name or an empty string.
+
         :rtype: str
         '''
         if os.path.isfile(self.__launchfile):
@@ -130,6 +133,7 @@ class LaunchConfig(object):
     def launchname(self):
         '''
         Returns the name of the launch file with extension, e.g. 'test.launch'
+
         :rtype: str
         '''
         return os.path.basename(self.__launchfile)
@@ -147,12 +151,12 @@ class LaunchConfig(object):
         '''
         Searches in the given text for key indicates the including of a file and
         return their index.
-        @param text:
-        @type text: C{str}
-        @param regexp_list:
-        @type regexp_list: C{[U{QRegExp<https://srinikom.github.io/pyside-docs/PySide/QtCore/QRegExp.html>},..]}
-        @return: the index of the including key or -1
-        @rtype: C{int}
+
+        :param str text:
+        :param regexp_list:
+        :type regexp_list: list(:class:`QRegExp` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QRegExp.html>})
+        :return: the index of the including key or -1
+        :rtype: int
         '''
         for pattern in regexp_list:
             index = pattern.indexIn(text)
@@ -163,10 +167,10 @@ class LaunchConfig(object):
     def load(self, argv):
         '''
         :param argv: a list with argv parameter needed to load the launch file.
-                     The name and value are separated by C{:=}
-        :type argv: [str]
+                     The name and value are separated by `:=`
+        :type argv: list(str)
         :return: True, if the launch file was loaded and argv, used while launch
-        :rtype: tuple(boolean, [])
+        :rtype: tuple(bool, [])
         :raise LaunchConfigException: on load errors
         '''
         try:
@@ -224,7 +228,7 @@ class LaunchConfig(object):
         '''
         :return: a list with args being used in the roslaunch file. Only arg tags that are a direct child of <launch> will
                  be returned
-        :rtype: [str]
+        :rtype: list(str)
         :raise roslaunch.XmlParseException: on parse errors
         '''
         self._argv_values = dict()
@@ -256,6 +260,7 @@ class LaunchConfig(object):
     def _decode(self, val):
         '''
         Replaces the '\\n' by LF (Line Feed) and decode the string entry to unicode.
+
         :param str val: the string coding as system default
         :return: the decoded string
         :rtype: unicode or original on error
@@ -271,6 +276,7 @@ class LaunchConfig(object):
         '''
         Parses the launch file for `robots` parameter to get the description of the
         robot.
+
         :return: the robot description stored in the configuration
         :rtype: dict(robot:dict('type' :str, 'name': str, 'images' : [str], 'description': str))
         '''
@@ -292,6 +298,7 @@ class LaunchConfig(object):
         '''
         Parses the launch file for `capabilities` and `capability_group` parameter
         and creates  dictionary for grouping the nodes.
+
         :return: the capabilities description stored in this configuration
         :rtype: dict(machine : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
         '''
@@ -370,9 +377,10 @@ class LaunchConfig(object):
     def get_node(self, name, masteruri='', host=''):
         '''
         Returns a configuration node for a given node name.
+
         :param str name: the name of the node.
         :return: the configuration node stored in this configuration
-        :rtype: U{roslaunch.Node<http://docs.ros.org/kinetic/api/roslaunch/html/>} or C{None}
+        :rtype: :class:`roslaunch.Node` <http://docs.ros.org/kinetic/api/roslaunch/html/> or None
         '''
         nodename = os.path.basename(name)
         namespace = os.path.dirname(name).strip(roslib.names.SEP)

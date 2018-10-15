@@ -109,6 +109,7 @@ def get_packages(path):
 def package_name(path):
     '''
     The results are cached!
+
     :return: Returns for given directory a tuple of package name and package path.
     :rtype: tuple(str, str) or tuple(None, None)
     '''
@@ -159,10 +160,11 @@ def get_pkg_path(package_name):
 def interpret_path(path, pwd='.'):
     '''
     Tries to determine the path of included file. The statement of $(find 'package') will be resolved.
+
     :param str path: the sting which contains the included path
     :param str pwd: current working path
     :return: `$(find 'package')` will be resolved. The prefixes `file://`, `package://` or `pkg://` are also resolved.
-        Otherwise the parameter itself normalized by :py:func:`os.path.normpath` will be returned.
+             Otherwise the parameter itself normalized by :py:func:`os.path.normpath` will be returned.
     :rtype: str
     '''
     result = path.strip()
@@ -192,6 +194,7 @@ def included_files(string,
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
+
     :param str string: Path to an exists file or test with included file.
     :param bool recursive: parse also found included files (Default: True)
     :param bool unique: returns the same files once (Default: False)
