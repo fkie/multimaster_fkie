@@ -119,20 +119,23 @@ def package_name(path):
         if dir_path in PACKAGE_CACHE:
             return PACKAGE_CACHE[dir_path]
         package = os.path.basename(dir_path)
-        fileList = os.listdir(dir_path)
-        for f in fileList:
-            if f == MANIFEST_FILE:
-                PACKAGE_CACHE[dir_path] = (package, dir_path)
-                return (package, dir_path)
-            if CATKIN_SUPPORTED and f == PACKAGE_FILE:
-                try:
-                    pkg = parse_package(os.path.join(dir_path, f))
-                    PACKAGE_CACHE[dir_path] = (pkg.name, dir_path)
-                    return (pkg.name, dir_path)
-                except Exception:
-                    return (None, None)
-        PACKAGE_CACHE[dir_path] = package_name(os.path.dirname(dir_path))
-        return PACKAGE_CACHE[dir_path]
+        try:
+            fileList = os.listdir(dir_path)
+            for f in fileList:
+                if f == MANIFEST_FILE:
+                    PACKAGE_CACHE[dir_path] = (package, dir_path)
+                    return (package, dir_path)
+                if CATKIN_SUPPORTED and f == PACKAGE_FILE:
+                    try:
+                        pkg = parse_package(os.path.join(dir_path, f))
+                        PACKAGE_CACHE[dir_path] = (pkg.name, dir_path)
+                        return (pkg.name, dir_path)
+                    except Exception:
+                        return (None, None)
+            PACKAGE_CACHE[dir_path] = package_name(os.path.dirname(dir_path))
+            return PACKAGE_CACHE[dir_path]
+        except OSError:
+            return (None, None)
     return (None, None)
 
 

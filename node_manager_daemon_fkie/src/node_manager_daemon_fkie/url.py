@@ -48,6 +48,8 @@ def get_nmd_url(uri='', prefix='grpc://'):
         muri = masteruri_from_master()
     o = urlparse(muri)
     port = o.port
+    if o.scheme not in ['http', 'grpc']:
+        raise ValueError("uri parameter does not contain a scheme of ['http', ''grpc']: %s" % uri)
     if o.scheme == 'http':
         port += NMD_SERVER_PORT_OFFSET
     return "%s%s:%d" % (prefix, o.hostname, port)

@@ -164,9 +164,11 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         os.remove(path)
                         os.rename("%s.tmp" % path, path)
                         result.ack.mtime = os.path.getmtime(path)
-                result.status.code = OK
+                        result.status.code = OK
                 count += 1
                 yield result
+                if result.status.code != OK:
+                    break
             if count == 0:
                 result.status.code = ERROR
                 result.status.error_msg = utf8("No iterating objects found")

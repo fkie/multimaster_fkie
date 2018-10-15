@@ -44,6 +44,9 @@ import launch_stub as lstub
 
 
 class GrpcClient:
+    '''
+    This class was created only as a client example.
+    '''
 
     def __init__(self):
         self.url = None

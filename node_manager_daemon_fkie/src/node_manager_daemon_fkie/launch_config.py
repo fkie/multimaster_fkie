@@ -40,6 +40,7 @@ import roslib
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_master
+from .host import get_hostname
 from .common import interpret_path, package_name, utf8
 
 
@@ -81,14 +82,10 @@ class LaunchConfig(object):
         self.__launch_id = '%.9f' % time.time()
         self._robot_description = None
         self._capabilities = None
-        self.host = host if masteruri else host.get_hostname(self.__masteruri)
-        # TODO: nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, [self.__launchFile])
+        self.host = host if host else get_hostname(self.__masteruri)
 
-    def __del__(self):
-        # Delete to avoid segfault if the LaunchConfig class is destroyed recently
-        # after creation and xmlrpclib.ServerProxy process a method call.
-        # TODO: nm.filewatcher().rem_launch(self.__masteruri, self.__launchFile, self.__launch_id)
-        pass
+#     def __del__(self):
+#         pass
 
     @property
     def masteruri(self):

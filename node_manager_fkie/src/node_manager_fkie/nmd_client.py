@@ -65,6 +65,9 @@ class LaunchArgsSelectionRequest(Exception):
 
 
 class ThreadManager(QObject):
+    '''
+    Class to manage threads with request to remote grpc-server. This can avoid multiple same requests.
+    '''
 
     def __init__(self):
         self._threads = {}
@@ -80,6 +83,13 @@ class ThreadManager(QObject):
         return False
 
     def start_thread(self, thread_id, target, args=()):
+        '''
+        Starts a new thread to execute a callable object given by target.
+        Avoids the start of new thread if one with same thread_id currently active.
+        :param str thread_id: thread identification string determine by caller.
+        :param object target: callable object to be invoked by start of new thread
+        :param tule args: the argument tuple for the target invocation. Defaults to ().
+        '''
         if not self.has_thread(thread_id):
             thread = threading.Thread(target=target, args=args)
             thread.setDaemon(True)
@@ -89,6 +99,11 @@ class ThreadManager(QObject):
         return False
 
     def finished(self, thread_id):
+        '''
+        Removes a thread with given thread_id from the managed list.
+        :param str thread_id: thread identification string used while start_thread().
+        :raise KeyError: if thread_id does not exists.
+        '''
         del self._threads[thread_id]
 
 
@@ -128,8 +143,6 @@ class NmdClient(QObject):
 
     def __init__(self):
         QObject.__init__(self)
-#        self.url = None
-#        self.grpc_server = None
         self._threads = ThreadManager()
         self._channels = {}
         self._cache_file_content = {}
@@ -386,6 +399,11 @@ class NmdClient(QObject):
         return result
 
     def load_launch(self, grpc_path, masteruri='', host='', package='', launch='', args={}):
+        '''
+        Loads given file on remote grpc-server.
+        :return: Path of loaded file
+        :rtype: str
+        '''
         url, path = grpc_split_url(grpc_path)
         lm = self.get_launch_manager(url)
         myargs = args
@@ -524,22 +542,28 @@ class NmdClient(QObject):
             raise err
 
     def get_all_screens(self, grpc_url='grpc://localhost:12321'):
-        rospy.loginfo("get all screens from %s" % (grpc_url))
+        rospy.logdebug("get all screens from %s" % (grpc_url))
         url, _ = grpc_split_url(grpc_url)
         sm = self.get_screen_manager(url)
         return sm.all_screens()
 
     def get_screens(self, grpc_url='grpc://localhost:12321', node=''):
-        rospy.loginfo("get screen from %s for %s" % (grpc_url, node))
+        rospy.logdebug("get screen from %s for %s" % (grpc_url, node))
         url, _ = grpc_split_url(grpc_url)
         sm = self.get_screen_manager(url)
         return sm.screens(node)
 
     def multiple_screens_threaded(self, grpc_url='grpc://localhost:12321'):
+        '''
+        The existence of multiple screens for one node can lead to failures.
+        This method starts a thread to request all nodes with multiple screens.
+        On finish this method emit a qt-signal of type NmdClient.multiple_screens.
+        :param str grpc_url: the url for grpc-server
+        '''
         self._threads.start_thread("mst_%s" % grpc_url, target=self._multiple_screens, args=(grpc_url,))
 
     def _multiple_screens(self, grpc_url='grpc://localhost:12321'):
-        rospy.loginfo("get multiple screens from %s" % (grpc_url))
+        rospy.logdebug("get multiple screens from %s" % (grpc_url))
         url, _ = grpc_split_url(grpc_url)
         sm = self.get_screen_manager(url)
         result = sm.multiple_screens()

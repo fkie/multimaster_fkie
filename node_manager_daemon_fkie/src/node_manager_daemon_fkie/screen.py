@@ -52,6 +52,8 @@ def create_session_name(node=''):
     :return: name for the screen session.
     :rtype: str
     '''
+    if node is None:
+        return ''
     result = rospy.names.ns_join('/', node).replace(SLASH_SEP, '%s%s' % (SLASH_SEP, SLASH_SEP))
     result = result.replace('/', SLASH_SEP)
     return result
@@ -68,6 +70,7 @@ def session_name2node_name(session):
     node_name = node_name.replace(SLASH_SEP, '/')
     node_name = node_name.replace('//', SLASH_SEP)
     return node_name
+
 
 def split_session_name(session):
     '''
