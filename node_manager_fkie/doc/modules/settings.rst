@@ -7,3 +7,4 @@ This module contains all sessings for Node Manager.
    :members:
    :undoc-members:
    :show-inheritance:
+   :special-members: __init__

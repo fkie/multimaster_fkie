@@ -5,7 +5,7 @@
      configured ROS nodes on different hosts. For discovering 
      the running ROS master master_discovery node will be used.
   </description>
-  <version>0.8.2</version>
+  <version>1.0.0</version>
   <license>BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</license>
   <author>Alexander Tiderko</author>
   <author>Timo Roehling</author>
@@ -24,7 +24,6 @@
   <run_depend>master_discovery_fkie</run_depend>
   <run_depend>master_sync_fkie</run_depend>
   <run_depend>node_manager_daemon_fkie</run_depend>
-  <run_depend>default_cfg_fkie</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>roslib</run_depend>
   <run_depend>rosmsg</run_depend>

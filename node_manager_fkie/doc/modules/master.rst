@@ -7,6 +7,7 @@ Visualization of all stuff of one ROS-Master.
    :members:
    :undoc-members:
    :show-inheritance:
+   :special-members: __init__
 
 `Node Tree Modes` --- Module
 ==============================
@@ -17,4 +18,4 @@ Model for visualization of ROS-nodes.
    :members:
    :undoc-members:
    :show-inheritance:
-
+   :special-members: __init__

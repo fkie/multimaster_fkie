@@ -39,4 +39,3 @@ TODO
 
 
 .. _master_discovery: http://www.ros.org/wiki/master_discovery_fkie
-.. _default_cfg: http://www.ros.org/wiki/default_cfg_fkie

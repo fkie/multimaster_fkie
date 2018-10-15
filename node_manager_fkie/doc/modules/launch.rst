@@ -7,3 +7,4 @@ Data management useg in :class:`launch_list_widget.LaunchFilesWidget` to visuali
    :members:
    :undoc-members:
    :show-inheritance:
+   :special-members: __init__
