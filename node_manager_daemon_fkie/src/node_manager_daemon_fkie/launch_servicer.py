@@ -48,7 +48,6 @@ from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 import exceptions
 import launcher
-#from docutils.parsers.rst.directives import path
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -63,8 +62,15 @@ IS_RUNNING = True
 
 
 class CfgId(object):
+    '''
+    Identification object for a loaded launch file. You can load the same launch file for different ROS-Master!
+    '''
 
     def __init__(self, path, masteruri=''):
+        '''
+        :param str path: absolute path of the launch file.
+        :param str masteruri: ROS-Masteruri if empty the masteruri will be determine by :meth:`master_discovery_fkie.common.masteruri_from_master`
+        '''
         self.path = path
         self.masteruri = masteruri
         self._local = False
@@ -91,6 +97,11 @@ class CfgId(object):
         return not(self == other)
 
     def equal_masteruri(self, masteruri):
+        '''
+        Compares the ROS-Masteruri of this instance with other ROS-Masteruri.
+
+        :param str masteruri: ROS Masteruri
+        '''
         if not masteruri:
             if self._local:
                 return True
@@ -100,6 +111,9 @@ class CfgId(object):
 
 
 class LaunchServicer(lgrpc.LaunchServiceServicer):
+    '''
+    Handles GRPC-requests defined in `launch.proto`.
+    '''
 
     def __init__(self):
         rospy.loginfo("Create launch manger servicer")
@@ -118,10 +132,23 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 self._peers[context.peer()] = context
 
     def stop(self):
+        '''
+        Cancel the autostart of the nodes.
+        '''
         global IS_RUNNING
         IS_RUNNING = False
 
     def load_launch_file(self, path, autostart=False):
+        '''
+        Load launch file and start all included nodes regarding the autostart parameter:
+
+        - <param name="autostart/exclude" value="false" />
+        - <param name="autostart/delay" value="5.0" />
+        - <param name="autostart/required/publisher" value="topic_name" />
+
+        :param str path: the absolute path of the launch file
+        :param bool autostart: True to start all nodes after the launch file was loaded.
+        '''
         launch_config = LaunchConfig(path)
         loaded, res_argv = launch_config.load([])
         if loaded:
@@ -144,16 +171,40 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     # skip autostart
                     rospy.logdebug("%s is in exclude list, skip autostart", node_fullname)
                     continue
-                startcfg = launcher.create_start_config(node_fullname, cfg, '', masteruri='', loglevel='', reload_global_param=False)
-                start_delay = self._get_start_delay(cfg, node_fullname)
-                if start_delay > 0:
-                    # start timer for delayed start
-                    start_timer = threading.Timer(start_delay, launcher.run_node, args=(startcfg,))
-                    start_timer.start()
-                else:
-                    launcher.run_node(startcfg)
+                self._autostart_node(node_fullname, cfg)
             except Exception as err:
                 rospy.logwarn("Error while start %s: %s", node_fullname, err)
+
+    def _autostart_node(self, node_name, cfg):
+        global IS_RUNNING
+        if not IS_RUNNING:
+            return
+        start_required = self._get_start_required(cfg, node_name)
+        start_now = False
+        if start_required:
+            import rosgraph
+            # get published topics from ROS master
+            master = rosgraph.masterapi.Master(cfg.masteruri)
+            for topic, _datatype in master.getPublishedTopics(''):
+                if start_required == topic:
+                    start_now = True
+                    break
+            if not start_now:
+                # Start the timer for waiting for the topic
+                start_timer = threading.Timer(3.0, self._autostart_node, args=(node_name, cfg))
+                start_timer.start()
+        else:
+            start_now = True
+        if start_now:
+            startcfg = launcher.create_start_config(node_name, cfg, '', masteruri='', loglevel='', reload_global_param=False)
+            start_delay = self._get_start_delay(cfg, node_name)
+            if start_delay > 0:
+                # start timer for delayed start
+                start_timer = threading.Timer(start_delay, launcher.run_node, args=(startcfg,))
+                start_timer.setDaemon(True)
+                start_timer.start()
+            else:
+                launcher.run_node(startcfg)
 
     def _get_start_exclude(self, cfg, node):
         param_name = rospy.names.ns_join(node, 'autostart/exclude')
@@ -170,6 +221,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         except Exception:
             pass
         return 0.
+
+    def _get_start_required(self, cfg, node):
+        param_name = rospy.names.ns_join(node, 'autostart/required/publisher')
+        topic = ''
+        try:
+            topic = cfg.roscfg.params[param_name].value
+            if topic:
+                import rosgraph
+                if rosgraph.names.is_private(topic):
+                    rospy.logwarn('Private for autostart required topic `%s` is ignored!' % topic)
+                    topic = ''
+                elif not rosgraph.names.is_global(topic):
+                    topic = rospy.names.ns_join(rosgraph.names.namespace(node), topic)
+        except Exception:
+            pass
+        return topic
 
     def GetLoadedFiles(self, request, context):
         # self._register_callback(context)
@@ -371,7 +438,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                                     cap.type = descr_dict['type']
                                     cap.images.extend(descr_dict['images'])
                                     cap.description = descr_dict['description']
-#                                    print("    >", descr_dict['nodes'])
                                     cap.nodes.extend(descr_dict['nodes'])
                                     caps.append(cap)
                         rd.capabilities.extend(caps)
