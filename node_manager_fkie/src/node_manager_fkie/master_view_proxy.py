@@ -140,6 +140,7 @@ class MasterViewProxy(QWidget):
         self.__master_info = None
         self.__force_update = False
         self.__configs = dict()  # file name (str): LaunchConfig
+        self._loaded_args = dict()
 #        self.__config_mtimes = dict()  # file name (str): mtime(float)
 #        self.__config_includes = dict()  # file name (str): dict(included file(str): mtime(float)))
         self.__expanded_items = dict()  # [file name] : list of expanded nodes
@@ -650,15 +651,17 @@ class MasterViewProxy(QWidget):
             rospy.loginfo("LOAD launch: %s" % launchfile)
         # load launch configuration
         try:
+            args = {}
             changed_nodes = []
             if launchfile in self.__configs:
                 _launch_file, changed_nodes = nm.nmd().reload_launch(launchfile, masteruri=self.masteruri)
             else:
                 # nm.nmd().load_launch(launchfile, argv_forced)  CREATE DICT
-                _launch_file = nm.nmd().load_launch(launchfile, masteruri=self.masteruri, args=args_forced)
+                _launch_file, args = nm.nmd().load_launch(launchfile, masteruri=self.masteruri, args=args_forced)
             # do not load if the loadings process was canceled
             if self._progress_queue_prio.has_id(pqid):
-                cfg = LaunchConfig(launchfile)
+                cfg = LaunchConfig(launchfile, args=args)
+                self._loaded_args[launchfile] = args
                 self.loaded_config.emit(cfg, changed_nodes)
             self._launcher_threaded.update_info(launchfile)
         except nm.LaunchArgsSelectionRequest as lasr:
@@ -890,7 +893,10 @@ class MasterViewProxy(QWidget):
             # add the new config
             print "add MASTER", ld.masteruri, masteruri, ld.path, self.__configs
             if ld.path not in self.__configs:
-                self.__configs[ld.path] = LaunchConfig(ld.path)
+                args = {}
+                if ld.path in self._loaded_args:
+                    args = self._loaded_args[ld.path]
+                self.__configs[ld.path] = LaunchConfig(ld.path, args=args)
                 nm.nmd().get_mtimes_threaded(ld.path)
             new_configs.append(ld.path)
             self.__configs[ld.path].nodes = ld.nodes
@@ -939,6 +945,9 @@ class MasterViewProxy(QWidget):
                     for nn in nlet_nodes:
                         nn.nodelet_mngr = mngr
             self._nodelets[ld.path] = ld.nodelets
+            if ld.path in self._start_nodes_after_load_cfg:
+                self.start_nodes_by_name(self._start_nodes_after_load_cfg[ld.path], ld.path, True)
+                del self._start_nodes_after_load_cfg[ld.path]
         removed_configs = set(self.__configs.keys()) - set(new_configs)
         for cfg in removed_configs:
             if isinstance(cfg, tuple):

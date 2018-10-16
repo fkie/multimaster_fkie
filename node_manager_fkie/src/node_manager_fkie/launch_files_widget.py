@@ -143,11 +143,13 @@ class LaunchFilesWidget(QDockWidget):
                 lfile = self.launchlist_model.expand_item(item.path, item.id)
                 # self.ui_search_line.setText('')
                 if lfile is not None:
+                    print "lfile", lfile
                     self.ui_search_line.set_process_active(False)
                     if item.is_launch_file():
                         nm.settings().launch_history_add(item.path)
                         self.load_signal.emit(item.path, {}, None)
                     elif item.is_profile_file():
+                        print "IS PROFILE"
                         nm.settings().launch_history_add(item.path)
                         self.load_profile_signal.emit(item.path)
                     elif item.is_config_file():
@@ -196,11 +198,10 @@ class LaunchFilesWidget(QDockWidget):
         Tries to load the launch file, if one was activated.
         '''
         if path is not None:
-            if os.path.isfile(path):
-                if path.endswith('.launch'):
-                    self.load_signal.emit(path, args, masteruri)
-                elif path.endswith('.nmprofile'):
-                    self.load_profile_signal.emit(path)
+            if path.endswith('.launch'):
+                self.load_signal.emit(path, args, masteruri)
+            elif path.endswith('.nmprofile'):
+                self.load_profile_signal.emit(path)
 
     def on_ui_file_view_selection_changed(self, selected, deselected):
         '''

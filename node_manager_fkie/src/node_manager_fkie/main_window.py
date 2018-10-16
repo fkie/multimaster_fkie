@@ -67,7 +67,6 @@ from .network_discovery_dialog import NetworkDiscoveryDialog
 from .parameter_dialog import ParameterDialog
 from .profile_widget import ProfileWidget
 from .progress_queue import ProgressQueue  # , ProgressThread
-from .screen_handler import ScreenHandler
 from .select_dialog import SelectDialog
 from .settings_widget import SettingsWidget
 from .sync_dialog import SyncDialog
@@ -1620,23 +1619,6 @@ class MainWindow(QMainWindow):
         else:
             MessageBox.information(self, "Load of launch file", "Select a master first!",)
 
-    def on_load_launch_as_default_bypkg(self, pkg, launch_file, master_proxy, args=[], host=None):
-        argv = list(args)
-        argv.append('_package:=%s' % pkg)
-        argv.append('_launch_file:="%s"' % launch_file)
-        hostname = host if host else nm.nameres().address(master_proxy.masteruri)
-        name_file_prefix = launch_file.replace('.launch', '').replace(' ', '_')
-        node_name = roslib.names.SEP.join(['%s' % nm.nameres().masteruri2name(master_proxy.masteruri),
-                                           name_file_prefix,
-                                           'default_cfg'])
-        self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
-                                                  'start default config %s' % hostname,
-                                                  nm.starter().runNodeWithoutConfig,
-                                                  ('%s' % hostname, 'default_cfg_fkie', 'default_cfg',
-                                                   node_name, argv, master_proxy.masteruri, True, False,
-                                                   master_proxy.current_user))
-        self.launch_dock.progress_queue.start()
-
     def on_launch_edit(self, grpc_path, search_text='', trynr=1):
         '''
         Opens the given path in an editor. If file is already open, select the editor.
@@ -2035,7 +2017,7 @@ class MainWindow(QMainWindow):
 
     def _on_robot_icon_changed(self, masteruri, path):
         '''
-        One of the robot icons was chagned. Update the icon.
+        One of the robot icons was changed. Update the icon.
         '''
         master = self.getMaster(masteruri, False)
         if master:

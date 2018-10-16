@@ -398,7 +398,12 @@ def main(name):
         else:
             _MAIN_FORM.show()
         exit_code = -1
-        rospy.on_shutdown(finish)
-        exit_code = _QAPP.exec_()
-        nmd().stop()
+        try:
+            rospy.on_shutdown(finish)
+            exit_code = _QAPP.exec_()
+            nmd().stop()
+        except Exception:
+            if not rospy.is_shutdown():
+                import traceback
+                print traceback.format_exc()
     return exit_code

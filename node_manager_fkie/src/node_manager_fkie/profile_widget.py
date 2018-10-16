@@ -33,16 +33,17 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QTimer
 try:
     from python_qt_binding.QtGui import QDockWidget, QFileDialog
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QFileDialog
 import os
 import roslib
 import rospy
 import uuid
-from master_discovery_fkie.common import get_hostname, resolve_url
+from master_discovery_fkie.common import get_hostname
+from node_manager_daemon_fkie.url import get_nmd_url, grpc_join, grpc_split_url
 
 import node_manager_fkie as nm
-from .common import get_rosparam, delete_rosparam, package_name, to_url, utf8
+from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg, utf8
 from .detailed_msg_box import MessageBox
 
 
@@ -53,7 +54,10 @@ class ProfileWidget(QDockWidget):
 
     def __init__(self, main_window, parent=None):
         '''
-        Creates the window, connects the signals and init the class.
+        Creates the window, connects the signals and initialize the class.
+
+        :param main_window: the node manager main windows object to get all current stuff
+        :type main_window: :class:`node_manager_fkie.main_window.MainWindow`
         '''
         QDockWidget.__init__(self, parent)
         # load the UI file
@@ -64,6 +68,12 @@ class ProfileWidget(QDockWidget):
         self._current_profile = dict()
 
     def get_profile_file(self):
+        '''
+        Opens file manager dialog to save to select a new file for node manager profile.
+
+        :return: path to profile file
+        :rtype: str
+        '''
         # save the profile
         (path, _) = QFileDialog.getSaveFileName(self,
                                                 "New profile file",
@@ -74,7 +84,9 @@ class ProfileWidget(QDockWidget):
                 path = "%s.nmprofile" % path
             nm.settings().current_dialog_path = os.path.dirname(path)
             try:
-                (pkg, _) = package_name(os.path.dirname(path))  # _:=pkg_path
+                # we need a grpc url for local node manager daemon
+                nmd_url = get_nmd_url()
+                (pkg, _) = package_name(grpc_join(nmd_url, os.path.dirname(path)))  # _:=pkg_path
                 if pkg is None:
                     ret = MessageBox.warning(self, "New File Error",
                                              'The new file is not in a ROS package', buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -90,10 +102,9 @@ class ProfileWidget(QDockWidget):
     def on_save_profile(self, masteruri='', path=None):
         '''
         Saves the current environment to a node manager profile.
-        :param path: the pach the file to save
-        :type path: str
-        :param masteruri: If not empty, save the profile only for given master
-        :type masteruri: str
+
+        :param str masteruri: If not empty, save the profile only for given master
+        :param str path: the path of file to save. If None :meth:`get_profile_file` is called to get a path.
         '''
         try:
             if path is None:
@@ -110,6 +121,7 @@ class ProfileWidget(QDockWidget):
                     md_param = {}
                     ms_param = {}
                     zc_param = {}
+                    nmd_param = {}
                     smuri = muri
                     addr = nm.nameres().address(smuri)
                     hostname = get_hostname(smuri)
@@ -123,13 +135,8 @@ class ProfileWidget(QDockWidget):
                         node_items = master.getNode(node_name)
                         for node in node_items:
                             if node.is_running() and node.launched_cfg is not None:  # node.has_launch_cfgs(node.cfgs):
-                                cfg = node.launched_cfg
-                                if isinstance(node.launched_cfg, (str, unicode)):
-                                    # it is default config
-                                    cfg = node.launched_cfg.replace("/%s" % hostname, '/$LOCAL$').rstrip('/run')
-                                else:
-                                    # it is a loaded launch file, get the filename
-                                    cfg = to_url(node.launched_cfg.Filename)
+                                # it is a loaded launch file, get the filename
+                                cfg = to_pkg(node.launched_cfg)
                                 if cfg not in configs:
                                     configs[cfg] = {'nodes': []}
                                 configs[cfg]['nodes'].append(node_name)
@@ -139,23 +146,15 @@ class ProfileWidget(QDockWidget):
                                 ms_param = get_rosparam('master_sync', muri)
                             elif node_name.endswith('zeroconf'):
                                 zc_param = get_rosparam('zeroconf', muri)
-                            elif node_name.endswith('default_cfg'):
-                                # store parameter for default configuration
-                                nn = node_name.replace("/%s" % hostname, '/$LOCAL$')
-                                if nn not in configs:
-                                    configs[nn] = {'nodes': []}
-                                configs[nn]['params'] = get_rosparam(node_name, muri)
-                                configs[nn]['default'] = True
+                            elif node_name.endswith('node_manager_daemon'):
+                                nmd_param = get_rosparam('node_manager_daemon', muri)
                     # store arguments for launchfiles
                     for a, b in master.launchfiles.items():
-                        resolved_a = to_url(a)
+                        resolved_a = to_pkg(a)
                         if resolved_a not in configs:
-                            if resolved_a.endswith('default_cfg/run'):
-                                pass
-                            else:
-                                configs[resolved_a] = {}
-                                configs[resolved_a]['default'] = False
-                        configs[resolved_a]['argv'] = b.argv
+                            configs[resolved_a] = {}
+                            configs[resolved_a]['default'] = False
+                        configs[resolved_a]['args'] = b.args
                     # fill the configuration content for yaml as dictionary
                     content[smuri] = {'mastername': mastername,
                                       'address': addr,
@@ -166,6 +165,8 @@ class ProfileWidget(QDockWidget):
                         content[smuri]['master_sync'] = ms_param
                     if zc_param:
                         content[smuri]['zeroconf'] = zc_param
+                    if nmd_param:
+                        content[smuri]['node_manager_daemon'] = nmd_param
             text = yaml.dump(content, default_flow_style=False)
             with open(path, 'w+') as f:
                 f.write(text)
@@ -176,12 +177,13 @@ class ProfileWidget(QDockWidget):
                                'Error while save profile',
                                utf8(e))
 
-    def on_load_profile_file(self, path):
+    def on_load_profile_file(self, grpc_url):
         '''
         Load the profile file.
-        :param path: the path of the profile file.
-        :type path: str
+
+        :param str grpc_url: the path of the profile file.
         '''
+        _url, path = grpc_split_url(grpc_url)
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
@@ -216,44 +218,29 @@ class ProfileWidget(QDockWidget):
                         if 'zeroconf' in master_dict:
                             self._start_node_from_profile(master, hostname, 'master_discovery_fkie', 'zeroconf', usr, cfg=master_dict['zeroconf'])
                             self._current_profile[rmuri].add('/zeroconf')
+                        if 'node_manager_daemon' in master_dict:
+                            self._start_node_from_profile(master, hostname, 'node_manager_daemon_fkie', 'node_manager_daemon', usr, cfg=master_dict['node_manager_daemon'])
+                            self._current_profile[rmuri].add('/node_manager_daemon')
                         try:
                             do_start = []
-                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '*default_cfg', '/zeroconf'}
+                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '*default_cfg', '/zeroconf', '/node_manager_daemon'}
                             configs = master_dict['configs']
                             conf_set = set()
                             for cfg_name, cmdict in configs.items():
                                 cfg_name = cfg_name.replace('$LOCAL$', local_hostname)
                                 if cfg_name.startswith("pkg://"):
-                                    cfg_name = os.path.abspath(resolve_url(cfg_name))
+                                    cfg_name = resolve_pkg(cfg_name, get_nmd_url(rmuri))
                                 conf_set.add(cfg_name)
                                 reload_launch = True
-                                argv = []
-                                is_default = False
-                                if 'default' in cmdict:
-                                    if cmdict['default']:
-                                        # it is a default configuration, test for load or not
-                                        is_default = True
-                                        if 'argv_used' in cmdict['params']:
-                                            argv = cmdict['params']['argv_used']
-                                        if cfg_name in master.default_cfgs:
-                                            reload_launch = False
-                                            if argv:
-                                                params = get_rosparam(cfg_name, rmuri)
-                                                if 'argv_used' in params:
-                                                    reload_launch = set(params['argv_used']) != set(argv)
-                                        if reload_launch:
-                                            self._main_window.on_load_launch_as_default_bypkg(cmdict['params']['package'], cmdict['params']['launch_file'], master, argv, local_hostname)
-                                        else:
-                                            do_not_stop.add(cfg_name)
-                                elif 'argv' in cmdict:
-                                    if 'argv' in cmdict:
-                                        argv = cmdict['argv']
+                                args = {}
+                                if 'args' in cmdict:
+                                    if 'args' in cmdict:
+                                        args = cmdict['args']
                                     # do we need to load to load/reload launch file
                                     if cfg_name in master.launchfiles:
-                                        reload_launch = set(master.launchfiles[cfg_name].argv) != set(argv)
+                                        reload_launch = set(master.launchfiles[cfg_name].args.itervalues()) != set(args.itervalues())
                                 if reload_launch:
-                                    print "UUUUUUU", argv
-                                    self._main_window.launch_dock.load_file(cfg_name, argv, master.masteruri)
+                                    self._main_window.launch_dock.load_file(cfg_name, args, master.masteruri)
                                 if 'nodes' in cmdict:
                                     self._current_profile[rmuri].update(cmdict['nodes'])
                                     force_start = True
@@ -272,7 +259,7 @@ class ProfileWidget(QDockWidget):
                                 if nodes:
                                     hasstart = True
                                 if reload_launch:
-                                    master.start_nodes_after_load_cfg(cfg.rstrip('/run'), list(nodes), force_start)
+                                    master.start_nodes_after_load_cfg(cfg, list(nodes), force_start)
                                 else:
                                     master.start_nodes_by_name(list(nodes), cfg, force_start)
                         except Exception as ml:

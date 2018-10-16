@@ -1,6 +1,7 @@
 import os
 import rospy
 
+from node_manager_daemon_fkie.url import grpc_split_url
 import node_manager_fkie as nm
 
 MANIFEST_FILE = 'manifest.xml'
@@ -71,7 +72,7 @@ def delete_rosparam(param, masteruri):
             pass
 
 
-def to_url(path):
+def to_pkg(path):
     '''
     Searches the package name for given path and create an URL starting with pkg://
 
@@ -84,6 +85,23 @@ def to_url(path):
     return result
 
 
+def resolve_pkg(pkg, grpc_url):
+    '''
+    splits pkg url (pkg://package/launch) into package and launch file part and replace package by path.
+
+    :rtype: str
+    '''
+    if pkg.startswith('pkg://'):
+        url = pkg.replace('pkg://', '')
+        splits = url.split(os.path.sep, 1)
+        if len(splits) == 2:
+            packages = nm.nmd().get_packages(grpc_url)
+            for path, pkgname in packages.items():
+                if pkgname == splits[0]:
+                    return os.path.join(path, splits[1])
+    raise Exception('invalid package url to split: %s' % pkg)
+
+
 def package_name(path):
     '''
     Returns for given directory a tuple of package name and package path or None values.
@@ -91,7 +109,7 @@ def package_name(path):
 
     :rtype: tuple(name, path)
     '''
-    return (nm.nmd().package_name(path), path)
+    return nm.nmd().package_name(path)
 
 
 def is_package(file_list):

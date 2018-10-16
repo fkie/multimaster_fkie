@@ -89,7 +89,7 @@ class PathItem(QStandardItem):
 #        self._url = url
 #        self.url_parse_result = urlparse(url)
         self._path = path
-        self.id = self._identify_path_on_ext(path) if path_id == self.FILE else path_id
+        self.id = self._identify_path_on_ext(path) if path_id in [self.FILE] else path_id
         self._isnew = isnew
         pathname = name
         if pathname == 'src':
@@ -301,7 +301,7 @@ class PathItem(QStandardItem):
         :return: True if it is a node_manager profile file
         :rtype: bool
         '''
-        return self.path is not None and self.id in [self.PROFILE, self.RECENT_PROFILE] and self.path.endswith('.nmprofile')
+        return self.path is not None and self.id in [self.PROFILE, self.RECENT_PROFILE, self.RECENT_FILE] and self.path.endswith('.nmprofile')
 
     def __eq__(self, item):
         '''

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFile, QRegExp, Qt, Signal
+from python_qt_binding.QtCore import QRegExp, Qt, Signal
 from python_qt_binding.QtGui import QFont, QTextCursor
 import os
 import re
@@ -40,14 +40,13 @@ from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 import node_manager_fkie as nm
 
-from .parser_functions import interpret_path
 from .xml_highlighter import XmlHighlighter
 from .yaml_highlighter import YamlHighlighter
 
 
 try:
     from python_qt_binding.QtGui import QApplication, QMenu, QTextEdit
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QMenu, QTextEdit
 
 
