@@ -48,6 +48,7 @@ class SupervisedPopen():
         '''
         For arguments see https://docs.python.org/2/library/subprocess.html
         Additional arguments:
+
         :param str object_id: the identification string of this object and title of the
         error message dialog
         :param str description: the description string used as additional information

@@ -16,3 +16,9 @@ Node Manager Daemon Common
 .. toctree::
   modules/settings
 
+`Screen`
+==========
+
+.. toctree::
+  modules/screen
+

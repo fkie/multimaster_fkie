@@ -82,6 +82,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         respawn_params = _get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launchcfg.roscfg.params)
         result.respawn_max = respawn_params['max']
         result.respawn_min_runtime = respawn_params['min_runtime']
+        result.respawn_delay = respawn_params['delay']
     # set log level
     result.loglevel = loglevel
     result.logformat = logformat
@@ -117,12 +118,13 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
 
 def run_node(startcfg):
     '''
-    Start a node local or on specified host using a ``StartConfig``
-    :param startcfg: start configuration e.g. returned by ``create_start_config()``
-    :type startcfg: node_manager_daemon_fkie.startcfg.StartConfig
+    Start a node local or on specified host using a :class:`.startcfg.StartConfig`
+
+    :param startcfg: start configuration e.g. returned by :meth:`create_start_config`
+    :type startcfg: :class:`node_manager_daemon_fkie.startcfg.StartConfig`
     :raise exceptions.StartException: on errors
     :raise exceptions.BinarySelectionRequest: on multiple binaries
-    :ref: ``node_manager_fkie.host.is_local()``
+    :see: :meth:`node_manager_fkie.host.is_local`
     '''
     hostname = host.get_hostname(startcfg.host)
     nodename = roslib.names.ns_join(startcfg.namespace, startcfg.name)
@@ -183,7 +185,6 @@ def run_node(startcfg):
         if masteruri is None:
             masteruri = masteruri_from_ros()
         if masteruri is not None:
-#             _prepare_ros_master(masteruri)
             new_env['ROS_MASTER_URI'] = masteruri
             ros_hostname = host.get_ros_hostname(masteruri)
             if ros_hostname:
@@ -215,15 +216,20 @@ def _rosconsole_cfg_file(package, loglevel='INFO'):
 
 
 def _get_respawn_params(node, params):
-    result = {'max': 0, 'min_runtime': 0}
+    result = {'max': 0, 'min_runtime': 0, 'delay': 0}
     respawn_max = rospy.names.ns_join(node, 'respawn/max')
     respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
+    respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
     try:
         result['max'] = int(params[respawn_max].value)
     except Exception:
         pass
     try:
         result['min_runtime'] = int(params[respawn_min_runtime].value)
+    except Exception:
+        pass
+    try:
+        result['delay'] = int(params[respawn_delay].value)
     except Exception:
         pass
     return result
@@ -308,6 +314,7 @@ def _resolve_abs_paths(value, host):
     '''
     Replaces the local absolute path by remote absolute path. Only valid ROS
     package paths are resolved.
+
     :return: value, is absolute path, remote package found (ignore it on local host or if is not absolute path!), package name (if absolute path and remote package NOT found)
     '''
     if isinstance(value, types.StringTypes) and value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
@@ -339,10 +346,11 @@ def get_global_params(roscfg):
     '''
     Return the parameter of the configuration file, which are not associated with
     any nodes in the configuration.
+
     :param roscfg: the launch configuration
     :type roscfg: roslaunch.ROSLaunchConfig<http://docs.ros.org/kinetic/api/roslaunch/html/>
-    :return: the list with names of the global parameter
-    :rtype: dict(param:value, ...)
+    :return: the dictionary with names of the global parameter and their values
+    :rtype: dict(str: value type)
     '''
     result = dict()
     nodes = []

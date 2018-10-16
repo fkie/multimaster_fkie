@@ -38,7 +38,6 @@ import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
 from .common import utf8
 from .launch_description import LaunchDescription, RobotDescription, Capability
-# from .startcfg import StartConfig
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -148,7 +147,7 @@ class LaunchStub(object):
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
         :return: Returns a list of included files.
-        :rtype: [str]
+        :rtype: list(str)
         '''
         reply = self._get_included_files(path=root, recursive=recursive, unique=True, include_pattern=include_pattern)
         result = set()
@@ -163,7 +162,7 @@ class LaunchStub(object):
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
         :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: [(int, str, bool, [])]
+        :rtype: list(tuple(int, str, bool, []))
         '''
         reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_pattern=include_pattern)
         result = []
@@ -198,7 +197,7 @@ class LaunchStub(object):
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
         :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: [(int, str, bool, [])]
+        :rtype: list(tuple(int, str, bool, []))
         '''
         reply = self._get_included_files(path=text, recursive=False, unique=False, include_pattern=include_pattern)
         result = []
@@ -213,6 +212,7 @@ class LaunchStub(object):
     def start_node(self, name, opt_binary='', opt_launch='', loglevel='', logformat='', masteruri='', reload_global_param=False):
         '''
         Start node.
+
         :param str name: full name of the ros node exists in the launch file.
         :param str opt_binary: the full path of the binary. Used in case of multiple binaries in the same package.
         :param str opt_launch: full name of the launch file to use. Used in case the node with same name exists in more then one loaded launch file.
@@ -237,6 +237,7 @@ class LaunchStub(object):
     def start_standalone_node(self, startcfg):
         '''
         Start a node on remote launch manager using a ``StartConfig``
+
         :param startcfg: start configuration
         :type startcfg: node_manager_daemon_fkie.startcfg.StartConfig
         :raise exceptions.StartException: on errors

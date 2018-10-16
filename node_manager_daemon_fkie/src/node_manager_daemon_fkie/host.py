@@ -40,7 +40,7 @@ import rospy
 
 
 HOSTS_CACHE = dict()
-''' the cache directory to store the results of tests for local hosts. :ref: `is_local()` '''
+''' :var HOSTS_CACHE: the cache directory to store the results of tests for local hosts. :meth:`is_local` '''
 
 _LOCK = threading.RLock()
 
@@ -48,6 +48,7 @@ _LOCK = threading.RLock()
 def get_hostname(url):
     '''
     Extracts the hostname from given url.
+
     :param str url: the url to parse
     :return: the hostname or `None`, if the url is `None` or `invalid`
     :rtype: str
@@ -70,6 +71,7 @@ def get_hostname(url):
 def get_port(url):
     '''
     Extracts the port from given url.
+
     :param str url: the url to parse
     :return: the port or `None`, if the url is `None` or `invalid`
     :rtype: int
@@ -95,6 +97,7 @@ def get_ros_hostname(url):
     '''
     Returns the host name used in a url, if it is a name. If it is an IP an
     empty string will be returned.
+
     :return: host or '' if url is an IP or invalid
     :rtype:  str
     '''
@@ -116,6 +119,7 @@ def get_ros_hostname(url):
 def is_local(hostname, wait=True):
     '''
     Test whether the given host name is the name of the local host or not.
+
     :param str hostname: the name or IP of the host
     :return: `True` if the hostname is local or None
     :rtype: bool

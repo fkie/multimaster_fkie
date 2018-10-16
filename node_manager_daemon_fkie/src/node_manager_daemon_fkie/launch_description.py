@@ -36,6 +36,7 @@ class LaunchDescription:
     def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[], nodelets={}):
         '''
         Description of the robot configured by this launch file.
+
          :param str path: path of the launch file.
          :param str masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
              the nodes are started on the host specified by hostname of the masteruri.
@@ -68,6 +69,7 @@ class RobotDescription:
     def __init__(self, machine='', robot_name='', robot_type='', robot_images=[], robot_descr='', capabilities=[]):
         '''
         Description of the robot configured by this launch file.
+
          :param str machine: the address of the host.
          :param str robot_name: robot name.
          :param str robot_type: type of the robot.
@@ -98,6 +100,7 @@ class Capability:
     def __init__(self, name='', namespace='', cap_type='', images=[], description='', nodes=[]):
         '''
         Capabilities defined in launch file.
+
         :param str namespace: the ROS namespace of the capability.
         :param str name: the name of the capability.
         :param str type: the type of the capability.
