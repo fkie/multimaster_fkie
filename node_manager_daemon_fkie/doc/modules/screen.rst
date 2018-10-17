@@ -1,5 +1,5 @@
 `screen_servicer`
-===============
+=================
 
 Servicer handles the file functionality of GRPC Server defined in `protos/screen.proto`.
 
@@ -10,7 +10,7 @@ Servicer handles the file functionality of GRPC Server defined in `protos/screen
    :special-members: __init__
 
 `screen_stub`
-===========
+=============
 
 Helper class for client to call the GRPC-methods of `ScreenServicer`.
 
