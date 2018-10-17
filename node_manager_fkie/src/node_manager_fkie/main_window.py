@@ -50,7 +50,7 @@ import xmlrpclib
 from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
 from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie import screen
-from node_manager_daemon_fkie.url import get_nmd_url
+from node_manager_daemon_fkie import url as nmdurl
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
@@ -1661,7 +1661,7 @@ class MainWindow(QMainWindow):
         '''
         # use node manager daemon
         if files:
-            nmd_url = get_nmd_url()
+            nmd_url = nmdurl.nmduri()
             if self.currentMaster is not None:
                 nmd_url = get_hostname(self.currentMaster.masteruri)
             params = {'master': ('string', self.currentMaster.masteruri),
@@ -1678,7 +1678,7 @@ class MainWindow(QMainWindow):
                     nmd_url = params['master']
                     recursive = params['recursive']
                     for path in files:
-                        nmd_url = get_nmd_url(nmd_url)
+                        nmd_url = nmdurl.nmduri(nmd_url)
                         rospy.loginfo("TRANSFER to %s: %s" % (nmd_url, path))
                         self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
                                                                   'transfer files to %s' % nmd_url,
@@ -1772,7 +1772,7 @@ class MainWindow(QMainWindow):
             files = self.currentMaster.get_files_for_change_check()
             if files:
                 nm.nmd().check_for_changed_files_threaded(files)
-                nm.nmd().multiple_screens_threaded(get_nmd_url(self.currentMaster.masteruri))
+                nm.nmd().multiple_screens_threaded(nmdurl.nmduri(self.currentMaster.masteruri))
         QMainWindow.changeEvent(self, event)
         self._check_for_changed_binaries()
 

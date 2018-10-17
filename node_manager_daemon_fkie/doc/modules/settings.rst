@@ -1,5 +1,5 @@
-`Settings` --- Module
-=====================
+`settings`
+==========
 
 This module contains all settings for Node Manager Daemon.
 

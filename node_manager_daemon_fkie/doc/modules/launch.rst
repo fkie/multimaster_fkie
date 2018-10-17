@@ -1,5 +1,5 @@
-`Launch Config` -- Module
-=========================
+`launch_config`
+===============
 
 Launch configuration is the class to load the ROS-Launch while starting nodes.
 
@@ -9,19 +9,8 @@ Launch configuration is the class to load the ROS-Launch while starting nodes.
    :show-inheritance:
    :special-members: __init__
 
-`Launcher` -- Module
+`launch_description`
 ====================
-
-Methods to extract all important values and launch a node in a screen.
-
-.. automodule:: node_manager_daemon_fkie.launcher
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :special-members: __init__
-
-`Launch Description` -- Module
-==============================
 
 Class definition for reporting the description of nodes to Node Manager.
 
@@ -31,10 +20,10 @@ Class definition for reporting the description of nodes to Node Manager.
    :show-inheritance:
    :special-members: __init__
 
-`Launch Servicer` -- Module
-===========================
+`launch_servicer`
+=================
 
-Handles the launch file functionality through the GRPC Server.
+Handles the launch file functionality of GRPC Server defined in `protos/launch.proto`.
 
 .. automodule:: node_manager_daemon_fkie.launch_servicer
    :members:
@@ -42,8 +31,8 @@ Handles the launch file functionality through the GRPC Server.
    :show-inheritance:
    :special-members: __init__
 
-`Launch Stub` -- Module
-=======================
+`launch_stub`
+=============
 
 Helper class for client to call the GRPC-methods of `LaunchServicer`.
 
@@ -53,8 +42,19 @@ Helper class for client to call the GRPC-methods of `LaunchServicer`.
    :show-inheritance:
    :special-members: __init__
 
-`Startcfg` -- Module
-=======================
+`launcher`
+==========
+
+Methods to extract all important values and launch a node in a screen.
+
+.. automodule:: node_manager_daemon_fkie.launcher
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+
+`startcfg`
+==========
 
 Helper class with all parameter to launch a node. All parameter a public and are set by caller instance.
 
@@ -63,3 +63,15 @@ Helper class with all parameter to launch a node. All parameter a public and are
    :undoc-members:
    :show-inheritance:
    :special-members: __init__
+
+`supervised_popen`
+==================
+
+Helper class waits for process, which starts nodes in a screen to avoid 'defunct' processes.
+
+.. automodule:: node_manager_daemon_fkie.supervised_popen
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+

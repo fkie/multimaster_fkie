@@ -48,7 +48,7 @@ from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_daemon_fkie.common import interpret_path, utf8
 from node_manager_daemon_fkie.host import get_hostname
-from node_manager_daemon_fkie.url import get_nmd_url, grpc_split_url, grpc_join, get_masteruri_from_nmd
+from node_manager_daemon_fkie import url as nmdurl
 from .launcher_threaded import LauncherThreaded
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
@@ -434,9 +434,9 @@ class MasterViewProxy(QWidget):
         :param master_info: the mater information object
         :type master_info: :class:`master_discovery_fkie.msg.MasterInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>
         '''
-        nmd_uri = get_nmd_url(self.masteruri)
+        nmd_uri = nmdurl.nmduri(self.masteruri)
         self._launcher_threaded.update_info(nmd_uri, self.masteruri)
-        nmd_uri_local = get_nmd_url()
+        nmd_uri_local = nmdurl.nmduri()
         if nmd_uri_local != nmd_uri:
             self._launcher_threaded.update_info(nmd_uri_local, masteruri_from_ros())
         try:
@@ -869,7 +869,7 @@ class MasterViewProxy(QWidget):
         if self._first_launch:
             self._first_launch = False
             if self.default_load_launch:
-                lfile = grpc_join(get_nmd_url(self.masteruri), self.default_load_launch)
+                lfile = nmdurl.join(nmdurl.nmduri(self.masteruri), self.default_load_launch)
                 if os.path.isdir(self.default_load_launch):
                     self.main_window.launch_dock.launchlist_model.set_path(lfile)
                 elif os.path.isfile(self.default_load_launch):
@@ -2127,7 +2127,7 @@ class MasterViewProxy(QWidget):
             if isinstance(c, (str, unicode)):
                 launch_config = self.__configs[c]
                 if node.name in launch_config.nodes:
-                    url, _path = grpc_split_url(c, with_scheme=True)
+                    url, _path = nmdurl.split(c, with_scheme=True)
                     return get_hostname(url)
 #                 if item is not None and item.machine_name and not item.machine_name == 'localhost':
 #                     return launch_config.Roscfg.machines[item.machine_name].address
@@ -2144,16 +2144,16 @@ class MasterViewProxy(QWidget):
         :type node: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
         if node.masteruri is not None:
-            return get_nmd_url(node.masteruri)
+            return nmdurl.nmduri(node.masteruri)
         # try to get it from the configuration,
         # TODO: get it from node manager daemon?
         for c in node.cfgs:
             if isinstance(c, (str, unicode)):
                 launch_config = self.__configs[c]
                 if node.name in launch_config.nodes:
-                    url, _path = grpc_split_url(c, with_scheme=True)
+                    url, _path = nmdurl.split(c, with_scheme=True)
                     return url
-        return get_nmd_url(self.masteruri)
+        return nmdurl.nmduri(self.masteruri)
 
     def on_io_clicked(self):
         '''
@@ -2224,7 +2224,7 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            grpc_url = get_nmd_url(self.masteruri)
+            grpc_url = nmdurl.nmduri(self.masteruri)
             sel_screen = []
             try:
                 screens = nm.nmd().get_all_screens(grpc_url)
@@ -2248,7 +2248,7 @@ class MasterViewProxy(QWidget):
             self.setCursor(cursor)
 
     def on_multiple_screens(self, grpc_url, screens):
-        muri = get_masteruri_from_nmd(grpc_url)
+        muri = nmdurl.masteruri(grpc_url)
         self.node_tree_model.clear_multiple_screens(muri)
         for node, screens in screens.items():
             nodes = self.node_tree_model.get_tree_node(node, muri)
@@ -2465,7 +2465,7 @@ class MasterViewProxy(QWidget):
             # fill the input fields
             # determine the list all available message types
             msg_types = []
-            for ppath, pname in nm.nmd().get_packages(get_nmd_url(self.masteruri)).items():
+            for ppath, pname in nm.nmd().get_packages(nmdurl.nmduri(self.masteruri)).items():
                 import rosmsg
                 for f in rosmsg._list_types('%s/msg' % ppath, 'msg', rosmsg.MODE_MSG):
                     msg_types.append("%s/%s" % (pname, f))

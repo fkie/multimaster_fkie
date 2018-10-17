@@ -4,6 +4,12 @@ Node Manager Daemon Common
 .. toctree::
   modules/common
 
+`File`
+======
+
+.. toctree::
+  modules/file
+
 `Launch`
 ========
 

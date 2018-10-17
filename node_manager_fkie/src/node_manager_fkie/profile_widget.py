@@ -40,7 +40,7 @@ import roslib
 import rospy
 import uuid
 from master_discovery_fkie.common import get_hostname
-from node_manager_daemon_fkie.url import get_nmd_url, grpc_join, grpc_split_url
+from node_manager_daemon_fkie import url as nmdurl
 
 import node_manager_fkie as nm
 from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg, utf8
@@ -85,8 +85,8 @@ class ProfileWidget(QDockWidget):
             nm.settings().current_dialog_path = os.path.dirname(path)
             try:
                 # we need a grpc url for local node manager daemon
-                nmd_url = get_nmd_url()
-                (pkg, _) = package_name(grpc_join(nmd_url, os.path.dirname(path)))  # _:=pkg_path
+                nmd_url = nmdurl.nmduri()
+                (pkg, _) = package_name(nmdurl.join(nmd_url, os.path.dirname(path)))  # _:=pkg_path
                 if pkg is None:
                     ret = MessageBox.warning(self, "New File Error",
                                              'The new file is not in a ROS package', buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -183,7 +183,7 @@ class ProfileWidget(QDockWidget):
 
         :param str grpc_url: the path of the profile file.
         '''
-        _url, path = grpc_split_url(grpc_url)
+        _url, path = nmdurl.split(grpc_url)
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
@@ -229,7 +229,7 @@ class ProfileWidget(QDockWidget):
                             for cfg_name, cmdict in configs.items():
                                 cfg_name = cfg_name.replace('$LOCAL$', local_hostname)
                                 if cfg_name.startswith("pkg://"):
-                                    cfg_name = resolve_pkg(cfg_name, get_nmd_url(rmuri))
+                                    cfg_name = resolve_pkg(cfg_name, nmdurl.nmduri(rmuri))
                                 conf_set.add(cfg_name)
                                 reload_launch = True
                                 args = {}

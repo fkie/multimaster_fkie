@@ -42,7 +42,7 @@ import xmlrpclib
 
 from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
 from node_manager_daemon_fkie import screen
-from node_manager_daemon_fkie.url import get_nmd_url
+from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.name_resolution import NameResolution
 from node_manager_fkie.supervised_popen import SupervisedPopen
@@ -135,7 +135,7 @@ class StartHandler(object):
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
             if use_nmd:
-                nm.nmd().start_standalone_node(get_nmd_url(), package, binary, name, namespace, args, new_env, masteruri)
+                nm.nmd().start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri)
             else:
                 SupervisedPopen(shlex.split(cmd_str), env=new_env, object_id="Run without config", description="Run without config [%s]%s" % (utf8(package), utf8(binary)))
         else:

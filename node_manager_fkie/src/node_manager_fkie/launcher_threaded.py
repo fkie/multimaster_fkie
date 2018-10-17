@@ -35,7 +35,7 @@ import threading
 import time
 
 import node_manager_fkie as nm
-from node_manager_daemon_fkie.url import grpc_join, grpc_url_from_path
+from node_manager_daemon_fkie import url as nmdurl
 
 
 class LauncherThreaded(QObject):
@@ -79,7 +79,7 @@ class LauncherThreaded(QObject):
         :param float delay_exec: delayd the execution
         '''
         with self._lock:
-            clean_url = grpc_url_from_path(url)
+            clean_url = nmdurl.nmduri_from_path(url)
             if clean_url not in self.__get_info_threads:
                 upthread = GetInfoThread(clean_url, masteruri, delay_exec)
                 upthread.update_signal.connect(self._on_info)
@@ -129,7 +129,7 @@ class GetInfoThread(QObject, threading.Thread):
                     time.sleep(self._delay_exec)
                 launch_descriptions = nm.nmd().get_nodes(self._url, masteruri=self._masteruri)
                 for ld in launch_descriptions:
-                    ld.path = grpc_join(self._url, ld.path)
+                    ld.path = nmdurl.join(self._url, ld.path)
                 self.update_signal.emit(self._url, launch_descriptions)
             except Exception as err:
                 # import traceback

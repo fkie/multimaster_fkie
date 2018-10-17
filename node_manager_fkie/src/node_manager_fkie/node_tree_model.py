@@ -39,7 +39,7 @@ import traceback
 
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_daemon_fkie.url import equal_uri
+from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import utf8
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
@@ -845,9 +845,9 @@ class HostItem(GroupItem):
             rospy.logwarn("compare HostItem with unicode depricated")
             return False
         elif isinstance(item, tuple):
-            return equal_uri(self.masteruri, item[0]) and self.host == item[1]
+            return nmdurl.equal_uri(self.masteruri, item[0]) and self.host == item[1]
         elif isinstance(item, HostItem):
-            return equal_uri(self.masteruri, item.masteruri) and self.host == item.host
+            return nmdurl.equal_uri(self.masteruri, item.masteruri) and self.host == item.host
         return False
 
     def __gt__(self, item):
@@ -1374,7 +1374,7 @@ class NodeTreeModel(QStandardItemModel):
         host = (masteruri, resaddr)
         # [address] + nm.nameres().resolve_cached(address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
-                 equal_uri(self._local_masteruri, masteruri))
+                 nmdurl.equal_uri(self._local_masteruri, masteruri))
         # find the host item by address
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
@@ -1628,7 +1628,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host is not None and (masteruri is None or equal_uri(host.masteruri, masteruri)):
+            if host is not None and (masteruri is None or nmdurl.equal_uri(host.masteruri, masteruri)):
                 res = host.get_node_items_by_name(node_name)
                 if res:
                     return res
@@ -1637,7 +1637,7 @@ class NodeTreeModel(QStandardItemModel):
     def clear_multiple_screens(self, masteruri):
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host is not None and (masteruri is None or equal_uri(host.masteruri, masteruri)):
+            if host is not None and (masteruri is None or nmdurl.equal_uri(host.masteruri, masteruri)):
                 host.clear_multiple_screens()
 
     def get_nodes_running(self):

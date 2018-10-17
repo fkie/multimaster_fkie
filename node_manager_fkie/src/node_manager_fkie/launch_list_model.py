@@ -42,8 +42,7 @@ import node_manager_fkie as nm
 
 from master_discovery_fkie.common import masteruri_from_master
 from node_manager_daemon_fkie.host import get_hostname
-from node_manager_daemon_fkie.url import equal_uri, get_masteruri_from_nmd, get_nmd_url
-from node_manager_daemon_fkie.url import grpc_join, grpc_split_url, grpc_create_url
+from node_manager_daemon_fkie import url as nmdurl
 from node_manager_daemon_fkie.file_item import FileItem
 
 from .common import package_name, utf8
@@ -101,7 +100,7 @@ class PathItem(QStandardItem):
         if self.id == self.RECENT_FILE or self.id == self.RECENT_PROFILE:
             pname = package_name(path)[0]
             if pname is None:
-                pname, _ = grpc_split_url(path, with_scheme=True)
+                pname, _ = nmdurl.split(path, with_scheme=True)
             self.package_name = pname
         self._update_icon()
 
@@ -352,7 +351,7 @@ class LaunchListModel(QStandardItemModel):
         self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
         self.items = []
         self._roots = {}
-        self._current_path = get_nmd_url()
+        self._current_path = nmdurl.nmduri()
         self._current_master = masteruri_from_master()
         self._current_master_name = ''
         self.ros_root_paths = {}  # {url: [root pasth(str)]}
@@ -379,7 +378,7 @@ class LaunchListModel(QStandardItemModel):
         Current URL of the node manager daemon.
         :rtype: str
         '''
-        netloc, _ = grpc_split_url(self._current_path, with_scheme=True)
+        netloc, _ = nmdurl.split(self._current_path, with_scheme=True)
         return netloc
 
     @property
@@ -401,10 +400,10 @@ class LaunchListModel(QStandardItemModel):
         return self._is_root(self._current_path)
 
     def _is_root(self, grpc_path):
-        return grpc_path == get_nmd_url()
+        return grpc_path == nmdurl.nmduri()
 
     def _is_ros_root(self, grpc_path):
-        url, path = grpc_split_url(grpc_path, with_scheme=True)
+        url, path = nmdurl.split(grpc_path, with_scheme=True)
         if url in self.ros_root_paths and path in self.ros_root_paths[url]:
             return True
         return False
@@ -414,18 +413,18 @@ class LaunchListModel(QStandardItemModel):
         self._current_master_name = mastername
         if self._is_root(self._current_path):
             nm.nmd().list_path_threaded(self._current_path)
-            if equal_uri(self._current_path, masteruri_from_master()):
-                self._add_path(get_nmd_url(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
+            if nmdurl.equal_uri(self._current_path, masteruri_from_master()):
+                self._add_path(nmdurl.nmduri(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
 
     def is_current_nmd(self, url):
-        return equal_uri(get_masteruri_from_nmd(url), get_masteruri_from_nmd(self._current_path))
+        return nmdurl.equal_uri(nmdurl.masteruri(url), nmdurl.masteruri(self._current_path))
 
     def _add_history(self):
         for hitem in nm.settings().launch_history:
             if not hitem.startswith(os.path.sep):
-                hitem_uri, _ = grpc_split_url(hitem, with_scheme=True)
-                current_uri = get_nmd_url(self._current_path)
-                if equal_uri(hitem_uri, current_uri):
+                hitem_uri, _ = nmdurl.split(hitem, with_scheme=True)
+                current_uri = nmdurl.nmduri(self._current_path)
+                if nmdurl.equal_uri(hitem_uri, current_uri):
                     self._add_path(hitem, PathItem.RECENT_FILE, 0, 0, os.path.basename(hitem))
 
     def _on_new_packages(self, grpc_url):
@@ -449,7 +448,7 @@ class LaunchListModel(QStandardItemModel):
             if isroot and path_item.type in [FileItem.DIR, FileItem.PACKAGE]:
                 self.ros_root_paths[url].append(path_item.path)
             item = os.path.normpath(os.path.join(path, path_item.path))
-            gpath = grpc_create_url(url, item)
+            gpath = nmdurl.join(url, item)
             path_id = PathItem.NOT_FOUND
             if FileItem.FILE == path_item.type:
                 _, ext = os.path.splitext(path_item.path)
@@ -464,11 +463,11 @@ class LaunchListModel(QStandardItemModel):
             if path_id != PathItem.NOT_FOUND and not os.path.basename(path_item.path).startswith('.'):
                 # TODO: create filter for files
                 result_list.append((gpath, path_id, path_item.mtime, path_item.size, os.path.basename(path_item.path)))
-        root_path = grpc_create_url(url, path)
+        root_path = nmdurl.join(url, path)
         self._set_new_list(root_path, result_list)
         isroot = self._is_root(self._current_path)
-        if isroot and not equal_uri(self._current_master, masteruri_from_master()):
-            self._add_path(get_nmd_url(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
+        if isroot and not nmdurl.equal_uri(self._current_master, masteruri_from_master()):
+            self._add_path(nmdurl.nmduri(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
         self.pathlist_handled.emit(root_path)
 
     def _nmd_error(self, method, url, path, error):
@@ -485,7 +484,7 @@ class LaunchListModel(QStandardItemModel):
         path_item = PathItem.create_row_items(utf8(error), PathItem.NOTHING, 0, 0, utf8("%s, please start node manager daemon" % detail_msg))
         root.appendRow(path_item)
         self.pyqt_workaround[path_item[0].name] = path_item[0]
-        self.error_on_path.emit(grpc_create_url(url, path), error)
+        self.error_on_path.emit(nmdurl.join(url, path), error)
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%              Overloaded methods                    %%%%%%%%
@@ -564,17 +563,17 @@ class LaunchListModel(QStandardItemModel):
             if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
                 self._current_path = os.path.dirname(path)
             else:
-                self._current_path = get_nmd_url()
+                self._current_path = nmdurl.nmduri()
         else:
             if path_id in [PathItem.ROOT]:
-                surl, spath = grpc_split_url(path, with_scheme=True)
+                surl, spath = nmdurl.split(path, with_scheme=True)
                 if self._is_root(path) or spath in ['', os.path.sep]:
-                    self._current_path = get_nmd_url()
+                    self._current_path = nmdurl.nmduri()
                 elif self._is_ros_root(path):
                     self._current_path = surl
                 else:
                     dir_path = os.path.dirname(spath)
-                    self._current_path = grpc_join(surl, dir_path)
+                    self._current_path = nmdurl.join(surl, dir_path)
             elif self._current_path != path:
                 self._current_path = path
         self._add_path(self._current_path, PathItem.ROOT, 0, 0, 'loading...')
@@ -599,7 +598,7 @@ class LaunchListModel(QStandardItemModel):
         # TODO
         toset = path
         if not path.startswith('grpc://'):
-            toset = grpc_create_url(self.current_grpc, path)
+            toset = nmdurl.join(self.current_grpc, path)
         self.expand_item(toset, path_id)
 
     def show_packages(self, pattern):
@@ -672,7 +671,7 @@ class LaunchListModel(QStandardItemModel):
             new_name = 'new_%d.launch' % cc
         # add sorted a new entry
         try:
-            path_item = PathItem.create_row_items(grpc_join(self._current_path, new_name), PathItem.LAUNCH_FILE, 0, 0, new_name, isnew=True)
+            path_item = PathItem.create_row_items(nmdurl.join(self._current_path, new_name), PathItem.LAUNCH_FILE, 0, 0, new_name, isnew=True)
             if root.rowCount() > 1:
                 root.insertRow(1, path_item)
             else:
@@ -707,7 +706,7 @@ class LaunchListModel(QStandardItemModel):
         :type items: list(tuple(item, path, id))
         '''
         # add new items
-        _, path = grpc_split_url(root_path)
+        _, path = nmdurl.split(root_path)
         self._current_path = root_path
         if not self._is_root(root_path):
             self._add_path(root_path, PathItem.ROOT, 0, 0, '')

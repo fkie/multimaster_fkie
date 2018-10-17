@@ -47,7 +47,7 @@ import rospy
 import threading
 
 from node_manager_daemon_fkie.host import get_hostname
-from node_manager_daemon_fkie.url import get_masteruri_from_nmd, grpc_join
+from node_manager_daemon_fkie import url as nmdurl
 import node_manager_fkie as nm
 from .common import utf8
 from .detailed_msg_box import MessageBox
@@ -124,7 +124,7 @@ class LaunchFilesWidget(QDockWidget):
         self.launchlist_model.set_current_master(masteruri, mastername)
         self._masteruri2name[masteruri.rstrip(os.path.sep)] = mastername
         try:
-            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[get_masteruri_from_nmd(self.launchlist_model.current_path)], self._default_color.rgb()))
+            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[nmdurl.masteruri(self.launchlist_model.current_path)], self._default_color.rgb()))
             self._new_color(color)
         except Exception as _:
             pass
@@ -166,7 +166,7 @@ class LaunchFilesWidget(QDockWidget):
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
         try:
-            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[get_masteruri_from_nmd(self.launchlist_model.current_path)], self._default_color.rgb()))
+            color = QColor.fromRgb(nm.settings().host_color(self._masteruri2name[nmdurl.masteruri(self.launchlist_model.current_path)], self._default_color.rgb()))
             self._new_color(color)
         except Exception as _:
             pass
@@ -219,7 +219,7 @@ class LaunchFilesWidget(QDockWidget):
     def set_package_filter(self, text):
         if text:
             if text.startswith(os.path.sep):
-                self._current_search = grpc_join(self.launchlist_model.current_grpc, text)
+                self._current_search = nmdurl.join(self.launchlist_model.current_grpc, text)
                 self.launchlist_model.set_path(text)
             else:
                 # search for a package

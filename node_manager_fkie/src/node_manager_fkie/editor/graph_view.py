@@ -37,7 +37,6 @@ import os
 import threading
 import rospy
 
-from node_manager_daemon_fkie.url import grpc_split_url, grpc_create_url
 import node_manager_fkie as nm
 from node_manager_fkie.common import package_name
 from node_manager_fkie.html_delegate import HTMLDelegate

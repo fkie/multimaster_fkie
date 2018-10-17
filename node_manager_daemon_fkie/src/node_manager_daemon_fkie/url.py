@@ -36,13 +36,29 @@ from master_discovery_fkie.common import masteruri_from_master
 
 
 NMD_SERVER_PORT_OFFSET = 1010
+''':var NMD_SERVER_PORT_OFFSET: offset to the ROS-Master port.'''
 
 
 def equal_uri(url1, url2):
+    '''
+    Removes to string after remove last slash character.
+    '''
     return url1.rstrip(os.path.sep) == url2.rstrip(os.path.sep)
 
 
-def get_nmd_url(uri='', prefix='grpc://'):
+def nmduri(uri='', prefix='grpc://'):
+    '''
+    Determine for given url a GRPC-URI with `grpc://` scheme. If the
+    given URI is a ROS-Master URI the method calculate new port by adding
+    :ref:`NMD_SERVER_PORT_OFFSET`. If the given URI is empty we try to determine
+    the ROS-Master URI from environment or from ROS-Master.
+
+    :param str uri: empty or ROS-Master uri
+    :param str prefix: the scheme can be replaced
+    :return: URI with `grpc`-scheme.
+    :rtype: str
+    :raise ValueError: if uri is not empty and contains no scheme ('http', 'grpc')
+    '''
     muri = uri
     if not muri:
         muri = masteruri_from_master(True)
@@ -55,7 +71,16 @@ def get_nmd_url(uri='', prefix='grpc://'):
     return "%s%s:%d" % (prefix, o.hostname, port)
 
 
-def get_masteruri_from_nmd(grpc_path):
+def masteruri(grpc_path):
+    '''
+    Determine ROS-MAster uri from GRPC-uri by replacing the scheme and reducing the
+    port by :ref:`NMD_SERVER_PORT_OFFSET`.
+
+    :param str grpc_path: an URI with `grpc://` scheme.
+    :return: ROS-Master URI
+    :rtype: str
+    :raise ValueError: if uri is not empty and does not start with 'grpc://'.
+    '''
     if not grpc_path:
         return masteruri_from_master(True)
     if not grpc_path.startswith('grpc://'):
@@ -67,7 +92,10 @@ def get_masteruri_from_nmd(grpc_path):
     return "http://%s:%d" % (o.hostname, port)
 
 
-def get_nmd_port(uri=''):
+def nmdport(uri=''):
+    '''
+    Determine the port for GPRC-server from given URI. If empty try to get the ROS-Master URI.
+    '''
     muri = uri
     if not muri:
         muri = masteruri_from_master(True)
@@ -78,36 +106,53 @@ def get_nmd_port(uri=''):
     return port
 
 
-def grpc_create_url(masteruri, path):
-    if path.startswith(os.path.sep) or not path:
-        return "%s%s" % (get_nmd_url(masteruri), path)
-    return "%s%s%s" % (get_nmd_url(masteruri), os.path.sep, path)
+def nmduri_from_path(grpc_path):
+    '''
+    Splits the GRPC-URI with scheme into URI and file path.
+
+    :param str grpc_path: GRPC-URI with file path.
+    :return: GRPC_URI without file path
+    :rtype: str
+    :raise ValueError: if grpc_path is empty or does not start with `grpc://`
+    '''
+    url, _path = split(grpc_path, with_scheme=True)
+    return url
 
 
-def grpc_url_from_path(grpc_path):
-    url = grpc_path
-    if not grpc_path:
-        url = grpc_create_url('', '')
-    if url and not url.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
-    url_parse_result = urlparse(url)
-    return 'grpc://%s' % (url_parse_result.netloc)
+def join(uri, path):
+    '''
+    Creates GRPC-URL with file path from given URI and path.
+    If given URI is ROS-Master URI it will be converted to GRPC-URL by :meth:`nmduri`
 
-
-def grpc_join(url, path):
+    :param str masteruri: ROS-Master URI
+    :param str path: file path
+    :return: GRPC-path
+    :rtype: str
+    '''
     if not path.startswith('grpc://'):
-        if not url.startswith('grpc://'):
-            return grpc_create_url(url, path)
-        if path.startswith(os.path.sep):
-            return '%s%s' % (url, path)
-        return '%s%s%s' % (url, os.path.sep, path)
+        if not uri.startswith('grpc://'):
+            if path.startswith(os.path.sep) or not path:
+                return "%s%s" % (nmduri(uri), path)
+            return "%s%s%s" % (nmduri(uri), os.path.sep, path)
+        elif path.startswith(os.path.sep) or not path:
+            return '%s%s' % (uri, path)
+        return '%s%s%s' % (uri, os.path.sep, path)
     return path
 
+# grpc_split_url
+def split(grpc_path, with_scheme=False):
+    '''
+    Splits the GRPC-URI with scheme into URI and file path.
 
-def grpc_split_url(grpc_path, with_scheme=False):
+    :param str grpc_path: GRPC-URI with file path.
+    :param bool with_scheme: if True the GRPC-URI contains also the `grpc://` scheme.
+    :return: GRPC_URI without file path
+    :rtype: str
+    :raise ValueError: if grpc_path is empty or does not start with `grpc://`
+    '''
     url = grpc_path
     if not grpc_path:
-        url = get_nmd_url()
+        url = nmduri()
     if url and not url.startswith('grpc://'):
         raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
     url_parse_result = urlparse(url)

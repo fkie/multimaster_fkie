@@ -36,7 +36,7 @@ import os
 
 import rospy
 
-from node_manager_daemon_fkie.url import grpc_url_from_path
+from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.run_dialog import PackageDialog
 import node_manager_fkie as nm
@@ -485,7 +485,7 @@ class Editor(QMainWindow):
 
     def _on_new_packages(self, url):
         try:
-            if grpc_url_from_path(url) == grpc_url_from_path(self.tabWidget.currentWidget().filename):
+            if nmdurl.nmduri_from_path(url) == nmdurl.nmduri_from_path(self.tabWidget.currentWidget().filename):
                 print "NEW PACAKGES, rebuild graph"
                 if self.graph_view.has_none_packages:
                     self.graph_view.clear_cache()
