@@ -18,8 +18,8 @@ ROS_NODE = 'script_runner'
 def set_terminal_name(name):
     '''
     Change the terminal name.
-    @param name: New name of the terminal
-    @type name:  C{str}
+
+    :param str name: New name of the terminal
     '''
     sys.stdout.write("\x1b]2;%s\x07" % name)
 
@@ -27,8 +27,8 @@ def set_terminal_name(name):
 def set_process_name(name):
     '''
     Change the process name.
-    @param name: New process name
-    @type name:  C{str}
+
+    :param str name: New process name
     '''
     try:
         from ctypes import cdll, byref, create_string_buffer
@@ -52,12 +52,11 @@ class SupervisedPopen(object):
         '''
         For arguments see https://docs.python.org/2/library/subprocess.html
         Additional arguments:
-        :param object_id: the identification string of this object and title of the
+
+        :param str object_id: the identification string of this object and title of the
         error message dialog
-        :type object_id: str
-        :param description: the description string used as addiotional information
+        :param str description: the description string used as addiotional information
         in dialog if an error was occured
-        :type description: str
         '''
         try:
             self._args = args
@@ -99,8 +98,7 @@ class RunThread(threading.Thread):
 
     def __init__(self, script):
         '''
-        @param masteruri: the URI of the remote ROS master
-        @type masteruri: C{str}
+        :param str masteruri: the URI of the remote ROS master
         '''
         threading.Thread.__init__(self)
         self._script = script

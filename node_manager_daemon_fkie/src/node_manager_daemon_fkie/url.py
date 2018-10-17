@@ -45,7 +45,7 @@ def equal_uri(url1, url2):
 def get_nmd_url(uri='', prefix='grpc://'):
     muri = uri
     if not muri:
-        muri = masteruri_from_master()
+        muri = masteruri_from_master(True)
     o = urlparse(muri)
     port = o.port
     if o.scheme not in ['http', 'grpc']:
@@ -57,7 +57,7 @@ def get_nmd_url(uri='', prefix='grpc://'):
 
 def get_masteruri_from_nmd(grpc_path):
     if not grpc_path:
-        return masteruri_from_master()
+        return masteruri_from_master(True)
     if not grpc_path.startswith('grpc://'):
         raise ValueError("Invalid grpc path to get masteruri: %s; `grpc` scheme missed!" % grpc_path)
     o = urlparse(grpc_path)
@@ -70,7 +70,7 @@ def get_masteruri_from_nmd(grpc_path):
 def get_nmd_port(uri=''):
     muri = uri
     if not muri:
-        muri = masteruri_from_master()
+        muri = masteruri_from_master(True)
     o = urlparse(muri)
     port = o.port
     if o.scheme == 'http':

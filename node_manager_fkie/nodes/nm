@@ -1,4 +1,0 @@
-#!/usr/bin/env python
-
-import node_manager_fkie
-node_manager_fkie.main("node_manager")

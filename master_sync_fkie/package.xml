@@ -1,11 +1,12 @@
-<package>
+<?xml version="1.0"?>
+<package format="2">
   <name>master_sync_fkie</name>
   <description>
      Synchronize the local ROS master to the remote masters 
      discovered by master_discovery_fkie node. The registration
      of topics and services is only perform by local ROS master.
   </description>
-  <version>0.8.2</version>
+  <version>1.0.0</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
@@ -13,14 +14,16 @@
   
   <buildtool_depend>catkin</buildtool_depend>
   
-  <build_depend>multimaster_msgs_fkie</build_depend>
   <build_depend>master_discovery_fkie</build_depend>
+  <build_depend>multimaster_msgs_fkie</build_depend>
+  <build_export_depend>master_discovery_fkie</build_export_depend>
+  <build_export_depend>multimaster_msgs_fkie</build_export_depend>
 
-  <run_depend>rospy</run_depend>
-  <run_depend>roslib</run_depend>
-  <run_depend>rosgraph</run_depend>
-  <run_depend>multimaster_msgs_fkie</run_depend>
-  <run_depend>master_discovery_fkie</run_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>roslib</exec_depend>
+  <exec_depend>rosgraph</exec_depend>
+  <exec_depend>multimaster_msgs_fkie</exec_depend>
+  <exec_depend>master_discovery_fkie</exec_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />

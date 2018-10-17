@@ -69,6 +69,7 @@ def get_hostname(url):
 def get_port(url):
     '''
     Extracts the port from given url.
+
     :param str url: the url to parse
     :return: the port or `None`, if the url is `None` or `invalid`
     :rtype: int
@@ -94,6 +95,7 @@ def subdomain(hostname):
 def masteruri_from_ros():
     '''
     Returns the master URI depending on ROS distribution API.
+
     :return: ROS master URI
     :rtype: str
     :see: rosgraph.rosenv.get_master_uri() (fuerte)
@@ -107,7 +109,7 @@ def masteruri_from_ros():
         else:
             import rosgraph
             return rosgraph.rosenv.get_master_uri()
-    except:
+    except Exception:
         return os.environ['ROS_MASTER_URI']
 
 
@@ -115,6 +117,7 @@ def masteruri_from_master(from_env_on_error=False):
     '''
     Requests the ROS master URI from the ROS master through the RPC interface and
     returns it. The 'materuri' attribute will be set to the requested value.
+
     :return: ROS master URI
     :rtype: str or None
     '''
@@ -143,6 +146,7 @@ def resolve_url(interface_url, pwd='.'):
     subdirectory, you can replace the subdirectory by `///`.
 
     E.g.: `package://master_discovery_fkie///master_discovery.launch`
+
     :raise ValueError: on invalid URL or not existent file
     :return: the file path
     '''

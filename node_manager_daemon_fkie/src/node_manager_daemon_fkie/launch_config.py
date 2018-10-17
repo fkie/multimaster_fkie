@@ -72,7 +72,7 @@ class LaunchConfig(object):
         '''
         self.__launchfile = launch_file
         self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
-        self.__masteruri = masteruri if masteruri else masteruri_from_master()
+        self.__masteruri = masteruri if masteruri else masteruri_from_master(True)
         self.__roscfg = None
         self.argv = argv
         if self.argv is None:

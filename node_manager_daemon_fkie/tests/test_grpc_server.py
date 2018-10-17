@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2012, Fraunhofer FKIE/US, Alexander Tiderko
@@ -33,6 +34,7 @@
 import math
 import os
 import unittest
+import rospy
 import time
 
 from node_manager_daemon_fkie.common import interpret_path
@@ -216,5 +218,8 @@ class TestGrpcServer(unittest.TestCase):
         self.ls.start_node('/example/gps')
 
 if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun(PKG, os.path.basename(__file__), TestGrpcServer)
+    import rostest
+    rospy.init_node("test_grpc_server")
+    rostest.rosrun(PKG, os.path.basename(__file__), TestGrpcServer)
+#     import rosunit
+#     rosunit.unitrun(PKG, os.path.basename(__file__), TestGrpcServer)

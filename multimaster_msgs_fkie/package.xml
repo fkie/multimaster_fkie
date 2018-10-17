@@ -1,9 +1,10 @@
-<package>
+<?xml version="1.0"?>
+<package format="2">
   <name>multimaster_msgs_fkie</name>
   <description>
      The messages required by multimaster packages.
   </description>
-  <version>0.8.2</version>
+  <version>1.0.0</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
@@ -13,8 +14,9 @@
   
   <build_depend>message_generation</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_export_depend>std_msgs</build_export_depend>
 
-  <run_depend>message_runtime</run_depend>
-  <run_depend>std_msgs</run_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
 
 </package>

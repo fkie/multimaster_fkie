@@ -52,8 +52,9 @@ class StartException(Exception):
 def get_ros_home():
     '''
     Returns the ROS HOME depending on ROS distribution API.
-    @return: ROS HOME path
-    @rtype: C{str}
+
+    :return: ROS HOME path
+    :rtype: str
     '''
     try:
         import rospkg.distro
@@ -74,8 +75,8 @@ def get_ros_hostname(url):
     Returns the host name used in a url, if it is a name. If it is an IP an
     empty string will be returned.
 
-    @return: host or '' if url is an IP or invalid
-    @rtype:  C{str}
+    :return: host or '' if url is an IP or invalid
+    :rtype:  str
     '''
     hostname = get_hostname(url)
     if hostname is not None:
@@ -104,11 +105,11 @@ class StartHandler(object):
     def is_local(cls, hostname, wait=False):
         '''
         Test whether the given host name is the name of the local host or not.
-        @param hostname: the name or IP of the host
-        @type hostname: C{str}
-        @return: C{True} if the hostname is local or None
-        @rtype: C{bool}
-        @raise Exception: on errors while resolving host
+
+        :param str hostname: the name or IP of the host
+        :return: True if the hostname is local or None
+        :rtype: bool
+        :raise Exception: on errors while resolving host
         '''
         if (hostname is None):
             return True

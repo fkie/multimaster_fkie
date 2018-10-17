@@ -48,6 +48,7 @@ class TestUrlLib(unittest.TestCase):
 
     def setUp(self):
         self.test_include_file = "%s/resources/include_dummy.launch" % os.getcwd()
+        self.master_port = host.get_port(masteruri_from_master(True))
 
     def tearDown(self):
         pass
@@ -57,7 +58,7 @@ class TestUrlLib(unittest.TestCase):
         grpc_exp = 'grpc://localhost:12321'
         grpc_url = url.get_nmd_url(masteruri)
         self.assertEqual(grpc_exp, grpc_url, "wrong grpc url from default masteruri, expected: %s, got: %s" % (grpc_exp, grpc_url))
-        grpc_exp = 'grpc://%s:12321' % host.get_hostname(masteruri_from_master())
+        grpc_exp = 'grpc://%s:%d' % (host.get_hostname(masteruri_from_master(True)), self.master_port + url.NMD_SERVER_PORT_OFFSET)
         grpc_url = url.get_nmd_url('')
         self.assertEqual(grpc_exp, grpc_url, "wrong grpc url from requested masteruri, expected: %s, got: %s" % (grpc_exp, grpc_url))
 
@@ -67,7 +68,7 @@ class TestUrlLib(unittest.TestCase):
         muri_res = url.get_masteruri_from_nmd(grpc_url)
         self.assertEqual(muri_exp, muri_res, "wrong masteruri from default grpc url, expected: %s, got: %s" % (muri_exp, muri_res))
         grpc_url = ''
-        muri_exp = masteruri_from_master()
+        muri_exp = masteruri_from_master(True)
         muri_res = url.get_masteruri_from_nmd(grpc_url)
         self.assertEqual(muri_exp, muri_res, "wrong masteruri from empty grpc url, expected: %s, got: %s" % (muri_exp, muri_res))
         grpc_url = 'localhost:1232'
@@ -84,7 +85,7 @@ class TestUrlLib(unittest.TestCase):
         port_res = url.get_nmd_port(grpc_url)
         self.assertEqual(port_exp, port_res, "wrong port from default grpc url, expected: %s, got: %s" % (port_exp, port_res))
         grpc_url = ''
-        port_exp = 12321
+        port_exp = self.master_port + url.NMD_SERVER_PORT_OFFSET
         port_res = url.get_nmd_port(grpc_url)
         self.assertEqual(port_exp, port_res, "wrong port from empty grpc url, expected: %s, got: %s" % (port_exp, port_res))
         grpc_url = 'http://localhost:11311'
@@ -148,17 +149,17 @@ class TestUrlLib(unittest.TestCase):
         self.assertEqual(uri_exp, uri_res, "wrong url after split default grpc path, expected: %s, got: %s" % (uri_exp, uri_res))
         self.assertEqual(path_exp, path_res, "wrong path after split default grpc path, expected: %s, got: %s" % (path_exp, path_res))
         grpc_url = ''
-        uri_exp, path_exp = '%s:12321' % host.get_hostname(masteruri_from_master()), '' 
+        uri_exp, path_exp = '%s:%d' % (host.get_hostname(masteruri_from_master(True)), self.master_port + url.NMD_SERVER_PORT_OFFSET), '' 
         uri_res, path_res = url.grpc_split_url(grpc_url)
         self.assertEqual(uri_exp, uri_res, "wrong url after split empty grpc path, expected: %s, got: %s" % (uri_exp, uri_res))
         self.assertEqual(path_exp, path_res, "wrong path after split empty grpc path, expected: %s, got: %s" % (path_exp, path_res))
         grpc_url = 'grpc://localhost:12321/test/path.launch'
-        uri_exp, path_exp = 'localhost:12321', '/test/path.launch' 
+        uri_exp, path_exp = 'grpc://localhost:12321', '/test/path.launch' 
         uri_res, path_res = url.grpc_split_url(grpc_url, True)
         self.assertEqual(uri_exp, uri_res, "wrong url after split default grpc path with request also a scheme, expected: %s, got: %s" % (uri_exp, uri_res))
         self.assertEqual(path_exp, path_res, "wrong path after split default grpc path, expected: %s, got: %s" % (path_exp, path_res))
 
 if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun(PKG, os.path.basename(__file__), TestUrlLib)
+     import rosunit
+     rosunit.unitrun(PKG, os.path.basename(__file__), TestUrlLib)
 

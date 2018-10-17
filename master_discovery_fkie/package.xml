@@ -1,4 +1,5 @@
-<package>
+<?xml version="1.0"?>
+<package format="2">
   <name>master_discovery_fkie</name>
   <description>
      Discover the running ROS Masters in local network. The 
@@ -7,7 +8,7 @@
      The alternative is to use a zeroconf/avahi daemon to register the ROS 
      master as service and discover other ROS masters.
   </description>
-  <version>0.8.2</version>
+  <version>1.0.0</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
@@ -15,16 +16,18 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>std_srvs</build_depend>
-  <run_depend>std_srvs</run_depend>
   <build_depend>multimaster_msgs_fkie</build_depend>
-  <run_depend>multimaster_msgs_fkie</run_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_export_depend>multimaster_msgs_fkie</build_export_depend>
+  <build_export_depend>std_srvs</build_export_depend>
+  <exec_depend>multimaster_msgs_fkie</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
 
-  <run_depend>rospy</run_depend>
-  <run_depend>roslib</run_depend>
-  <run_depend>rosgraph</run_depend>
-  <run_depend>python-avahi</run_depend>
-  <run_depend>avahi-daemon</run_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>roslib</exec_depend>
+  <exec_depend>rosgraph</exec_depend>
+  <exec_depend>python-avahi</exec_depend>
+  <exec_depend>avahi-daemon</exec_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />

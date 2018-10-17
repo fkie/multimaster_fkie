@@ -1,27 +1,38 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(node_manager_fkie)
-find_package(catkin REQUIRED COMPONENTS diagnostic_msgs multimaster_msgs_fkie master_discovery_fkie node_manager_daemon_fkie diagnostic_msgs)
+find_package(catkin REQUIRED COMPONENTS
+    diagnostic_msgs
+    master_discovery_fkie
+    multimaster_msgs_fkie
+    node_manager_daemon_fkie
+)
 
 catkin_python_setup()
-catkin_package(CATKIN_DEPENDS diagnostic_msgs multimaster_msgs_fkie master_discovery_fkie node_manager_daemon_fkie diagnostic_msgs)
+catkin_package(
+#    CATKIN_DEPENDS
+#        diagnostic_msgs
+#        master_discovery_fkie
+#        multimaster_msgs_fkie
+#        node_manager_daemon_fkie
+)
 
 install(
     PROGRAMS 
-        nodes/node_manager
         nodes/dynamic_reconfigure
+        nodes/node_manager
         nodes/script_runner.py
+        scripts/reduced_nm.py
         scripts/remote_nm.py
         scripts/respawn
-        scripts/reduced_nm.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+)
 
 install(
     DIRECTORY
         images
         rqt_icons
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-    )
+)
 
 install(
    FILES
@@ -33,23 +44,23 @@ install(
 
 install(
    FILES
-        src/node_manager_fkie/EchoDialog.ui
-        src/node_manager_fkie/GUI.qrc
-        src/node_manager_fkie/LaunchFilesDockWidget.ui
-        src/node_manager_fkie/LogDockWidget.ui
-        src/node_manager_fkie/MainWindow.ui
-        src/node_manager_fkie/MasterTab.ui
-        src/node_manager_fkie/MessageFrame.ui
-        src/node_manager_fkie/PasswordInput.ui
-        src/node_manager_fkie/ProfileWidget.ui
-        src/node_manager_fkie/SettingsDockWidget.ui
-        src/node_manager_fkie/TimeInput.ui
+        src/${PROJECT_NAME}/EchoDialog.ui
+        src/${PROJECT_NAME}/GUI.qrc
+        src/${PROJECT_NAME}/LaunchFilesDockWidget.ui
+        src/${PROJECT_NAME}/LogDockWidget.ui
+        src/${PROJECT_NAME}/MainWindow.ui
+        src/${PROJECT_NAME}/MasterTab.ui
+        src/${PROJECT_NAME}/MessageFrame.ui
+        src/${PROJECT_NAME}/PasswordInput.ui
+        src/${PROJECT_NAME}/ProfileWidget.ui
+        src/${PROJECT_NAME}/SettingsDockWidget.ui
+        src/${PROJECT_NAME}/TimeInput.ui
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
 
 install(
    FILES
-        src/node_manager_fkie/editor/GraphDockWidget.ui
+        src/${PROJECT_NAME}/editor/GraphDockWidget.ui
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
 )
 
