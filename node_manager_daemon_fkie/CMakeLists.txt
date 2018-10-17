@@ -27,6 +27,11 @@ install(
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+install(
+    DIRECTORY
+    launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 ## Add folders to be run by python nosetests
 if (CATKIN_ENABLE_TESTING)
   add_subdirectory(tests)

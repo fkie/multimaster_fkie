@@ -41,7 +41,6 @@ install(
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-
 install(
    FILES
         src/${PROJECT_NAME}/EchoDialog.ui
@@ -64,3 +63,8 @@ install(
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
 )
 
+install(
+    DIRECTORY
+    launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
