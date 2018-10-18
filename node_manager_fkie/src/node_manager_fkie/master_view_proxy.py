@@ -680,7 +680,8 @@ class MasterViewProxy(QWidget):
             restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self)
             if ok:
                 self.stop_nodes_by_name(restart)
-                self.start_nodes_by_name(restart, filename, True)
+                self.start_nodes_after_load_cfg(filename, restart, force=True)
+                # self.start_nodes_by_name(restart, filename, force=True)
         if filename in self.__configs:
             # store expanded items
             self.__expanded_items[filename] = self._get_expanded_groups()
