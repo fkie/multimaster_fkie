@@ -181,10 +181,10 @@ class NmdClient(QObject):
             pass
 
     def package_name(self, grpc_path):
-        url, _path = nmdurl.split(grpc_path, with_scheme=True)
+        uri, _path = nmdurl.split(grpc_path, with_scheme=True)
         path = grpc_path
         try:
-            pl = self._cache_packages[url]
+            pl = self._cache_packages[uri]
             while path and path != os.path.sep:
                 if path in pl:
                     return pl[path], path
@@ -201,32 +201,32 @@ class NmdClient(QObject):
             return {}
         return self._cache_packages
 
-    def get_file_manager(self, url='localhost:12321'):
-        channel = remote.get_insecure_channel(url)
+    def get_file_manager(self, uri='localhost:12321'):
+        channel = remote.get_insecure_channel(uri)
         if channel is not None:
             return fstub.FileStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % url)
+        raise Exception("Node manager daemon '%s' not reachable" % uri)
 
-    def get_launch_manager(self, url='localhost:12321'):
-        channel = remote.get_insecure_channel(url)
+    def get_launch_manager(self, uri='localhost:12321'):
+        channel = remote.get_insecure_channel(uri)
         if channel is not None:
             return lstub.LaunchStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % url)
+        raise Exception("Node manager daemon '%s' not reachable" % uri)
 
-    def get_screen_manager(self, url='localhost:12321'):
-        channel = remote.get_insecure_channel(url)
+    def get_screen_manager(self, uri='localhost:12321'):
+        channel = remote.get_insecure_channel(uri)
         if channel is not None:
             return sstub.ScreenStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % url)
+        raise Exception("Node manager daemon '%s' not reachable" % uri)
 
     def list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
         self._threads.start_thread("lpt_%s" % grpc_path, target=self._list_path_threaded, args=(grpc_path, clear_cache))
 
     def _list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
         rospy.logdebug("list path thread: %s" % grpc_path)
-        url, path = nmdurl.split(grpc_path)
-        rospy.logdebug("list path: %s, '%s'" % (url, path))
-        fm = self.get_file_manager(url)
+        uri, path = nmdurl.split(grpc_path)
+        rospy.logdebug("list path: %s, '%s'" % (uri, path))
+        fm = self.get_file_manager(uri)
         result = None
         try:
             if not clear_cache:
@@ -236,38 +236,38 @@ class NmdClient(QObject):
         except KeyError:
             try:
                 result = fm.list_path(path)
-                if url not in self._cache_packages:
+                if uri not in self._cache_packages:
                     self.list_packages_threaded(grpc_path, clear_cache)
             except Exception as e:
-                remote.remove_insecure_channel(url)
-                self.error.emit("list_path", "grpc://%s" % url, path, e)
+                remote.remove_insecure_channel(uri)
+                self.error.emit("list_path", "grpc://%s" % uri, path, e)
                 # rospy.logwarn("LIST PATH: %s" % e)
         if result is not None:
             self._cache_path[grpc_path] = result
-            self.listed_path.emit("grpc://%s" % url, path, result)
+            self.listed_path.emit("grpc://%s" % uri, path, result)
         if hasattr(self, '_threads'):
             self._threads.finished("lpt_%s" % grpc_path)
 
     def check_for_changed_files_threaded(self, grpc_path_dict):
         dests = {}
         for grpc_path, mtime in grpc_path_dict.items():
-            url, path = nmdurl.split(grpc_path, with_scheme=True)
-            if url not in dests:
-                dests[url] = {}
-            dests[url][path] = mtime
-        for url, paths in dests.items():
-            self._threads.start_thread("cft_%s" % url, target=self._check_for_changed_files_threaded, args=(url, paths))
+            uri, path = nmdurl.split(grpc_path, with_scheme=True)
+            if uri not in dests:
+                dests[uri] = {}
+            dests[uri][path] = mtime
+        for uri, paths in dests.items():
+            self._threads.start_thread("cft_%s" % uri, target=self._check_for_changed_files_threaded, args=(uri, paths))
 
     def _check_for_changed_files_threaded(self, grpc_url, path_dict):
         rospy.logdebug("check_for_changed_files_threaded: with %d files on %s" % (len(path_dict), grpc_url))
-        url, _path = nmdurl.split(grpc_url, with_scheme=False)
-        fm = self.get_file_manager(url)
+        uri, _path = nmdurl.split(grpc_url, with_scheme=False)
+        fm = self.get_file_manager(uri)
         try:
             response = fm.changed_files(path_dict)
             for item in response:
                 self.changed_file.emit(nmdurl.join(grpc_url, item.path), item.mtime)
         except Exception as e:
-            self.error.emit("changed_files", "grpc://%s" % url, "", e)
+            self.error.emit("changed_files", "grpc://%s" % uri, "", e)
             # rospy.logwarn("check_for_changed_files_threaded: %s" % e)
         url, _path = nmdurl.split(grpc_url, with_scheme=True)
         if hasattr(self, '_threads'):
@@ -281,16 +281,16 @@ class NmdClient(QObject):
             result = self._cache_file_content[grpc_path]
         except KeyError:
             rospy.logdebug("get file content for %s:" % grpc_path)
-            url, path = nmdurl.split(grpc_path)
-            fm = self.get_file_manager(url)
+            uri, path = nmdurl.split(grpc_path)
+            fm = self.get_file_manager(uri)
             result = fm.get_file_content(path)
             self._cache_file_content[grpc_path] = result
         return result
 
     def save_file(self, grpc_path, content, mtime):
         rospy.logdebug("save_file_content: %s" % grpc_path)
-        url, path = nmdurl.split(grpc_path)
-        fm = self.get_file_manager(url)
+        uri, path = nmdurl.split(grpc_path)
+        fm = self.get_file_manager(uri)
         result = fm.save_file_content(path, content, mtime)
         for ack in result:
             if ack.path == path and ack.mtime != 0:
@@ -299,23 +299,23 @@ class NmdClient(QObject):
         return 0
 
     def rename(self, grpc_path_old='grpc://localhost:12321', grpc_path_new='grpc://localhost:12321'):
-        url, old = nmdurl.split(grpc_path_old)
+        uri, old = nmdurl.split(grpc_path_old)
         _, new = nmdurl.split(grpc_path_new)
-        rospy.logdebug("rename path on %s" % url)
-        fm = self.get_file_manager(url)
+        rospy.logdebug("rename path on %s" % uri)
+        fm = self.get_file_manager(uri)
         return fm.rename(old, new)
 
     def copy(self, grpc_path='grpc://localhost:12321', grpc_dest='grpc://localhost:12321'):
-        url, path = nmdurl.split(grpc_path)
-        url_dest, _ = nmdurl.split(grpc_dest)
-        rospy.logdebug("copy '%s' to '%s'" % (grpc_path, url_dest))
-        fm = self.get_file_manager(url)
-        fm.copy(path, url_dest)
+        uri, path = nmdurl.split(grpc_path)
+        uri_dest, _ = nmdurl.split(grpc_dest)
+        rospy.logdebug("copy '%s' to '%s'" % (grpc_path, uri_dest))
+        fm = self.get_file_manager(uri)
+        fm.copy(path, uri_dest)
 
     def get_package_binaries(self, pkgname, grpc_url='grpc://localhost:12321'):
-        url, _path = nmdurl.split(grpc_url)
-        rospy.logdebug("get_package_binaries for '%s' from '%s'" % (pkgname, url))
-        fm = self.get_file_manager(url)
+        uri, _path = nmdurl.split(grpc_url)
+        rospy.logdebug("get_package_binaries for '%s' from '%s'" % (pkgname, uri))
+        fm = self.get_file_manager(uri)
         response = fm.get_package_binaries(pkgname)
         url, _ = nmdurl.split(grpc_url, with_scheme=True)
         result = {}
@@ -342,8 +342,8 @@ class NmdClient(QObject):
             result = self._cache_file_unique_includes[grpc_path]
         except KeyError:
             rospy.logdebug("get_included_files_set for %s:" % grpc_path)
-            url, path = nmdurl.split(grpc_path, with_scheme=False)
-            lm = self.get_launch_manager(url)
+            uri, path = nmdurl.split(grpc_path, with_scheme=False)
+            lm = self.get_launch_manager(uri)
             url, path = nmdurl.split(grpc_path, with_scheme=True)
             reply = lm.get_included_files_set(path, recursive, include_pattern)
             for fname in reply:
@@ -371,8 +371,8 @@ class NmdClient(QObject):
         try:
             result = self._cache_file_includes[grpc_path]
         except KeyError:
-            url, path = nmdurl.split(grpc_path)
-            lm = self.get_launch_manager(url)
+            uri, path = nmdurl.split(grpc_path)
+            lm = self.get_launch_manager(uri)
             rospy.logdebug("get_included_files for %s:" % grpc_path)
             reply = lm.get_included_files(path, recursive, include_pattern)
             url, _ = nmdurl.split(grpc_path, with_scheme=True)
@@ -389,8 +389,8 @@ class NmdClient(QObject):
         :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
         :rtype: [(int, str, bool, [])]
         '''
-        url, _ = nmdurl.split(grpc_url_or_path)
-        lm = self.get_launch_manager(url)
+        uri, _ = nmdurl.split(grpc_url_or_path)
+        lm = self.get_launch_manager(uri)
         rospy.logdebug("get_included_path in text %s:" % text)
         reply = lm.get_included_path(text, include_pattern)
         url, _ = nmdurl.split(grpc_url_or_path, with_scheme=True)
@@ -403,8 +403,8 @@ class NmdClient(QObject):
         :return: Path of loaded file
         :rtype: str
         '''
-        url, path = nmdurl.split(grpc_path)
-        lm = self.get_launch_manager(url)
+        uri, path = nmdurl.split(grpc_path)
+        lm = self.get_launch_manager(uri)
         myargs = args
         request_args = True
         nexttry = True
@@ -442,8 +442,8 @@ class NmdClient(QObject):
 
     def reload_launch(self, grpc_path, masteruri=''):
         rospy.logdebug("reload launch %s" % grpc_path)
-        url, path = nmdurl.split(grpc_path)
-        lm = self.get_launch_manager(url)
+        uri, path = nmdurl.split(grpc_path)
+        lm = self.get_launch_manager(uri)
         launch_file = ''
         launch_files, changed_nodes = lm.reload_launch(path, masteruri=masteruri)
         if launch_files:
@@ -452,8 +452,8 @@ class NmdClient(QObject):
 
     def unload_launch(self, grpc_path, masteruri=''):
         rospy.logdebug("unload launch %s" % grpc_path)
-        url, path = nmdurl.split(grpc_path)
-        lm = self.get_launch_manager(url)
+        uri, path = nmdurl.split(grpc_path)
+        lm = self.get_launch_manager(uri)
         launch_file = lm.unload_launch(path, masteruri)
         return launch_file
 
@@ -461,10 +461,10 @@ class NmdClient(QObject):
         self._threads.start_thread("gmt_%s" % grpc_path, target=self._get_mtimes_threaded, args=(grpc_path,))
 
     def _get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
-        url, path = nmdurl.split(grpc_path)
-        rospy.logdebug("get nodes from %s" % url)
+        uri, path = nmdurl.split(grpc_path)
+        rospy.logdebug("get nodes from %s" % uri)
         try:
-            lm = self.get_launch_manager(url)
+            lm = self.get_launch_manager(uri)
             rpath, mtime, included_files = lm.get_mtimes(path)
             url, _ = nmdurl.split(grpc_path, with_scheme=True)
             self.mtimes.emit(nmdurl.join(url, rpath), mtime, {nmdurl.join(url, pobj.path): pobj.mtime for pobj in included_files})
@@ -474,9 +474,9 @@ class NmdClient(QObject):
             self._threads.finished("gmt_%s" % grpc_path)
 
     def get_nodes(self, grpc_path='grpc://localhost:12321', masteruri=''):
-        url, _ = nmdurl.split(grpc_path)
-        rospy.logdebug("get nodes from %s" % url)
-        lm = self.get_launch_manager(url)
+        uri, _ = nmdurl.split(grpc_path)
+        rospy.logdebug("get nodes from %s" % uri)
+        lm = self.get_launch_manager(uri)
         launch_descriptions = lm.get_nodes(True, masteruri=masteruri)
         return launch_descriptions
 
@@ -484,8 +484,8 @@ class NmdClient(QObject):
         self._threads.start_thread("gmt_%s_%d" % (grpc_url_or_path, clear_ros_cache), target=self._list_packages, args=(grpc_url_or_path, clear_ros_cache))
 
     def _list_packages(self, grpc_url_or_path='grpc://localhost:12321', clear_ros_cache=False):
-        url, path = nmdurl.split(grpc_url_or_path)
-        grpc_url = "grpc://%s" % url
+        uri, path = nmdurl.split(grpc_url_or_path)
+        grpc_url = "grpc://%s" % uri
         result = {}
         try:
             if not clear_ros_cache:
@@ -494,7 +494,7 @@ class NmdClient(QObject):
                 self._cache_packages['']  # only to cause an exception
         except KeyError:
             rospy.logdebug("get packages %s" % grpc_url)
-            fm = self.get_file_manager(url)
+            fm = self.get_file_manager(uri)
             try:
                 result = fm.list_packages(clear_ros_cache)
                 fixed_result = {nmdurl.join(grpc_url, path): name for path, name in result.items()}
@@ -502,25 +502,25 @@ class NmdClient(QObject):
                 self.packages.emit(grpc_url, fixed_result)
                 self.packages_available.emit(grpc_url)
             except Exception as err:
-                remote.remove_insecure_channel(url)
-                self.error.emit("_list_packages", "grpc://%s" % url, path, err)
+                remote.remove_insecure_channel(uri)
+                self.error.emit("_list_packages", "grpc://%s" % uri, path, err)
         if hasattr(self, '_threads'):
             self._threads.finished("gmt_%s_%d" % (grpc_url_or_path, clear_ros_cache))
 
     def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
         rospy.loginfo("start node: %s with %s" % (name, grpc_path))
-        url, _ = nmdurl.split(grpc_path)
-        lm = self.get_launch_manager(url)
+        uri, _ = nmdurl.split(grpc_path)
+        lm = self.get_launch_manager(uri)
         try:
             return lm.start_node(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
         except Exception as err:
-            remote.remove_insecure_channel(url)
+            remote.remove_insecure_channel(uri)
             raise err
 
     def start_standalone_node(self, grpc_url, package, binary, name, ns, args=[], env={}, masteruri=None):
         rospy.loginfo("start standalone node: %s on %s" % (name, grpc_url))
-        url, _ = nmdurl.split(grpc_url)
-        lm = self.get_launch_manager(url)
+        uri, _ = nmdurl.split(grpc_url)
+        lm = self.get_launch_manager(uri)
         try:
             startcfg = StartConfig(package, binary)
             startcfg.name = name
@@ -543,19 +543,19 @@ class NmdClient(QObject):
             startcfg.respawn_min_runtime = 0
             return lm.start_standalone_node(startcfg)
         except Exception as err:
-            remote.remove_insecure_channel(url)
+            remote.remove_insecure_channel(uri)
             raise err
 
     def get_all_screens(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get all screens from %s" % (grpc_url))
-        url, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(url)
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_screen_manager(uri)
         return sm.all_screens()
 
     def get_screens(self, grpc_url='grpc://localhost:12321', node=''):
         rospy.logdebug("get screen from %s for %s" % (grpc_url, node))
-        url, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(url)
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_screen_manager(uri)
         return sm.screens(node)
 
     def multiple_screens_threaded(self, grpc_url='grpc://localhost:12321'):
@@ -570,8 +570,8 @@ class NmdClient(QObject):
     def _multiple_screens(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get multiple screens from %s" % (grpc_url))
         try:
-            url, _ = nmdurl.split(grpc_url)
-            sm = self.get_screen_manager(url)
+            uri, _ = nmdurl.split(grpc_url)
+            sm = self.get_screen_manager(uri)
             result = sm.multiple_screens()
             self.multiple_screens.emit(grpc_url, result)
         except Exception:
