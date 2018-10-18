@@ -37,6 +37,7 @@ import rospy
 import node_manager_daemon_fkie.generated.file_pb2_grpc as fms_grpc
 import node_manager_daemon_fkie.generated.file_pb2 as fms
 from .common import is_package, get_pkg_path, package_name, utf8
+import file_item
 import remote
 import settings
 
@@ -131,7 +132,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                             dest_size = chunk.file.size
                         else:
                             result.status.code = CHANGED_FILE
-                            result.status.error_code = CHANGED_FILE
+                            result.status.error_code = file_item.EFILE_CHANGED
                             result.status.error_msg = utf8("file was changed in meantime")
                             result.status.error_file = utf8(path)
                     elif chunk.overwrite or chunk.file.mtime == 0:
@@ -145,7 +146,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         dest_size = chunk.file.size
                     else:
                         result.status.code = REMOVED_FILE
-                        result.status.error_code = REMOVED_FILE
+                        result.status.error_code = file_item.EFILE_REMOVED
                         result.status.error_msg = utf8("file was removed in meantime")
                         result.status.error_file = utf8(path)
                     first = False
@@ -231,8 +232,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     content = outfile.read()
                     # get channel to the remote grpc server
                     # TODO: get secure channel, if available
-                    dest_url = request.url
-                    channel = remote.get_insecure_channel(dest_url)
+                    dest_uri = request.uri
+                    channel = remote.get_insecure_channel(dest_uri)
                     if channel is not None:
                         # save file on remote server
                         fs = fms_grpc.FileServiceStub(channel)
@@ -248,7 +249,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                                 return result
                     else:
                         result.code = ERROR
-                        result.error_msg = utf8("can not establish insecure channel to '%s'" % dest_url)
+                        result.error_msg = utf8("can not establish insecure channel to '%s'" % dest_uri)
                         result.error_file = utf8(request.path)
             else:
                 result.code = ERROR

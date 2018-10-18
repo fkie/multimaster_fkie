@@ -88,12 +88,12 @@ message SaveFileContentReply {
 
 /** The message to transfer file to another grpc server.
  * :param path: the path of the file.
- * :param url: the url of the another server
+ * :param uri: the uri of the another server
  * :param overwrite: force replace of existing file with new content or creat a new file
  */
 message CopyToRequest {
 	string path = 1;
-	string url = 2;
+	string uri = 2;
 	bool overwrite = 3;
 }
 

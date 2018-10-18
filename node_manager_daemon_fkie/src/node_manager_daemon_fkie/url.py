@@ -74,7 +74,7 @@ def nmduri(uri='', prefix='grpc://'):
 def masteruri(grpc_path):
     '''
     Determine ROS-Master uri from gRPC-URI by replacing the scheme and reducing the
-    port by :ref:`NMD_SERVER_PORT_OFFSET`.
+    port by :const:`NMD_SERVER_PORT_OFFSET`.
 
     :param str grpc_path: an URI with `grpc://` scheme.
     :return: ROS-Master URI

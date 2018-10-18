@@ -34,7 +34,7 @@ from __future__ import print_function
 import settings
 import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
 import node_manager_daemon_fkie.generated.file_pb2 as fmsg
-from .file_item import FileItem
+import file_item
 
 OK = fmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = fmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -47,21 +47,35 @@ REMOVED_FILE = fmsg.ReturnStatus.StatusType.Value('REMOVED_FILE')
 class FileStub(object):
 
     FILE_CHUNK_SIZE = 1024
+    ''':ivar FileStub.FILE_CHUNK_SIZE: while save on remote server the file will be split into chunks of this size.'''
 
     def __init__(self, channel):
         self.fm_stub = fgrpc.FileServiceStub(channel)
         self._running = True
 
     def stop(self):
+        '''
+        Set not running flag and all communication loops should cancel.
+        '''
         self._running = False
 
     def list_path(self, path):
+        '''
+        Request content of path from remote gRPC-server.
+
+        :param str path: a directory
+        :retrun: a list of directories and files represented by `FileItem`.
+        :rtype: list(:class:`file_item.FileItem`)
+        :raise OSError:
+        :raise IOError:
+        :raise Exception:
+        '''
         result = []
 #        response = self.fm_stub.ListPath(fmsg.ListPathRequest(path=path), timeout=settings.GRPC_TIMEOUT, metadata=[('authorization', 'user:robot')])
         response = self.fm_stub.ListPath(fmsg.ListPathRequest(path=path))
         if response.status.code == OK:
             for p in response.items:
-                item = FileItem(p.path, p.type, p.size, p.mtime)
+                item = file_item.FileItem(p.path, p.type, p.size, p.mtime)
                 result.append(item)
         elif response.status.code == OS_ERROR:
             raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
@@ -72,6 +86,14 @@ class FileStub(object):
         return result
 
     def list_packages(self, clear_ros_cache=False):
+        '''
+        Requests all known packages from gRPC-server.
+
+        :param bool clear_ros_cache: clear ROS cache before list the packages.
+        :return: a dictionary of path to package and package name.
+        :rype: dict(str: str)
+        :raise Exception:
+        '''
         result = {}
         response = self.fm_stub.ListPackages(fmsg.ListPackagesRequest(clear_ros_cache=clear_ros_cache))
         if response.status.code == OK:
@@ -82,6 +104,16 @@ class FileStub(object):
         return result
 
     def get_file_content(self, path):
+        '''
+        Requests the content of the file.
+
+        :path str path: the path to the file.
+        :retrun: the size, last modification time and the content of the file.
+        :rtype: tuple(int, float, str)
+        :raise OSError:
+        :raise IOError:
+        :raise Exception:
+        '''
         response_stream = self.fm_stub.GetFileContent(fmsg.ListPathRequest(path=path))
         file_size = None
         file_mtime = None
@@ -123,6 +155,18 @@ class FileStub(object):
             yield msg
 
     def save_file_content(self, path, content, mtime, package=''):
+        '''
+        Save the file to gRPC-server.
+
+        :param str path: path where to save the content.
+        :paran str content: the content of the file.
+        :param float mtime: last modification time. Set to zero to replace or create a new file without exception.
+        :raise OSError:
+        :raise IOError: if file was changed or removed in the meantime and
+            `mtime` parameter is not zero. Sets the `errno` of the exception
+            to :const:`node_manager_daemon_fkie.file_item.EFILE_CHANGED`, :const:`node_manager_daemon_fkie.file_item.EFILE_REMOVED`.
+        :raise Exception:
+        '''
         result = []
         response_stream = self.fm_stub.SaveFileContent(self._gen_save_content_list(path, content, mtime, package), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
@@ -136,11 +180,19 @@ class FileStub(object):
                 raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
         return result
 
-    def copy(self, path, dest_url, overwrite=True):
-        print("cp", path, dest_url)
-        result = self.fm_stub.CopyFileTo(fmsg.CopyToRequest(path=path, url=dest_url, overwrite=overwrite), timeout=settings.GRPC_TIMEOUT)
+    def copy(self, path, dest_uri, overwrite=True):
+        '''
+        Copy given file to an other remote gRPC-server.
+
+        :param str path: path of the file to copy.
+        :param str dest_uri: URI of destination gRPC-server. The URI should not contain any scheme. (example: hostname:port)
+        :param bool overwrite: True to replace or create a file without exception.
+        :raise OSError:
+        :raise IOError:
+        :raise Exception:
+        '''
+        result = self.fm_stub.CopyFileTo(fmsg.CopyToRequest(path=path, uri=dest_uri, overwrite=overwrite), timeout=settings.GRPC_TIMEOUT)
         if result.code == OK:
-            print("COPY RESULT CODE OK")
             pass
         elif result.code == OS_ERROR:
             raise OSError(result.error_code, result.error_msg, result.error_file)
@@ -150,6 +202,15 @@ class FileStub(object):
             raise Exception("%s file: %s" % (result.error_msg, result.error_file))
 
     def rename(self, old, new):
+        '''
+        Rename path.
+
+        :param str old: existing path
+        :param str new: new path
+        :raise OSError:
+        :raise IOError:
+        :raise Exception:
+        '''
         response = self.fm_stub.Rename(fmsg.RenameRequest(old=old, new=new), timeout=settings.GRPC_TIMEOUT)
         if response.code == OK:
             pass
@@ -161,6 +222,14 @@ class FileStub(object):
             raise Exception("%s %s" % (response.error_msg, response.error_file))
 
     def changed_files(self, files):
+        '''
+        Request to test files for last modification time.
+
+        :param files: dictionary with files and their last known modification time.
+        See results of :meth:`node_manager_daemon_fkie.launch_stub.LaunchStub.get_mtimes`,
+        :meth:`node_manager_daemon_fkie.launch_stub.LaunchStub.load_launch`.
+        :type files: dict(str: float)
+        '''
         request = fmsg.PathList()
         pathlist = []
         for path, mtime in files.items():
@@ -170,6 +239,13 @@ class FileStub(object):
         return response.items
 
     def get_package_binaries(self, pkgname):
+        '''
+        Request for given package a list with all known binaries.
+
+        :param str pkgname: the name of a package
+        :return: the list with file items
+        :rtype: :class:`file_pb2.PathObj`
+        '''
         request = fmsg.PackageObj(name=pkgname)
         response = self.fm_stub.GetPackageBinaries(request, timeout=settings.GRPC_TIMEOUT)
         return response.items

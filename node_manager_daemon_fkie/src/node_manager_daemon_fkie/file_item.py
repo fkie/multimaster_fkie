@@ -30,6 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+EFILE_CHANGED = 125
+''':var EFILE_CHANGED: file changed in meantime.'''
+EFILE_REMOVED = 126
+''':var EFILE_REMOVED: file removed in meantime.'''
+
 
 class FileItem(object):
     FILE = 0

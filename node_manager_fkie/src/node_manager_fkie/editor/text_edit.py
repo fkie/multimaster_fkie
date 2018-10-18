@@ -36,6 +36,7 @@ import os
 import re
 import rospy
 
+from node_manager_daemon_fkie import file_item
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 import node_manager_fkie as nm
@@ -159,7 +160,7 @@ class TextEdit(QTextEdit):
                         return True, True, "%s" % e
                 return True, False, ''
             except IOError as ioe:
-                if ioe.errno in [4, 5]:
+                if ioe.errno in [file_item.EFILE_CHANGED, file_item.EFILE_REMOVED]:
                     result = MessageBox.question(self, "Changed file", "%s\n%s" % (utf8(ioe), "Save anyway?"), buttons=MessageBox.Yes | MessageBox.No)
                     if result == MessageBox.Yes:
                         return self.save(force=True)
