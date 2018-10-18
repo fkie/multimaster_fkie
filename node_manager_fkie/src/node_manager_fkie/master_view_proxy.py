@@ -322,6 +322,7 @@ class MasterViewProxy(QWidget):
 
         self.loaded_config.connect(self._apply_launch_config)
         nm.nmd().mtimes.connect(self._apply_mtimes)
+        nm.nmd().changed_binaries.connect(self._apply_changed_binaries)
 
         # set the shortcuts
         self._shortcut1 = QShortcut(QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -695,6 +696,29 @@ class MasterViewProxy(QWidget):
             cfg.mtime = mtime
             cfg.includes = includes
 
+    def _apply_changed_binaries(self, launchfile, nodes):
+        muri = nmdurl.masteruri(launchfile)
+        if nmdurl.equal_uri(muri, self.masteruri):
+            for node in nodes:
+                tnodes = self.node_tree_model.get_tree_node(node, self.masteruri)
+                for tnode in tnodes:
+                    # ask for each node separately
+                    self.question_restart_changed_binary(tnode)
+
+    def perform_master_checks(self):
+        grpc_url = nmdurl.nmduri(self.masteruri)
+        lfiles = {}
+        for path, cfg in self.__configs.items():
+            if cfg.mtime > 0:
+                lfiles[path] = cfg.mtime
+                lfiles.update(cfg.includes)
+        if lfiles:
+            nm.nmd().check_for_changed_files_threaded(lfiles)
+            nm.nmd().multiple_screens_threaded(grpc_url)
+        nodes = self.get_nodes_runningIfLocal(True)
+        if nodes:
+            nm.nmd().get_changed_binaries_threaded(grpc_url, nodes.keys())
+
     def get_files_for_change_check(self):
         result = {}
         for path, cfg in self.__configs.items():
@@ -727,6 +751,9 @@ class MasterViewProxy(QWidget):
             self.on_node_selection_changed(None, None, True)
         except Exception:
             pass
+
+    def question_restart_changed_binary(self, changed):
+        self.message_frame.show_question(MessageFrame.TYPE_BINARY, 'Binary changed of node:<br>%s<br>restart node?' % (HTMLDelegate.toHTML(changed.name)), MessageData(changed))
 
     def question_reload_changed_file(self, changed, affected):
         changed_res = "%s[%s]" % (os.path.basename(changed), utf8(package_name(os.path.dirname(changed))[0]))
@@ -3041,6 +3068,16 @@ class MasterViewProxy(QWidget):
             except Exception as err:
                 rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
                 MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+        elif questionid == MessageFrame.TYPE_BINARY:
+            try:
+                self.stop_nodes_by_name(data.data.name)
+                if data.data.next_start_cfg:
+                    self.start_node(data.data, force=True, config=data.data.next_start_cfg)
+                else:
+                    self.start_nodes([data.data], force=True)
+            except Exception as err:
+                rospy.logwarn("Error while restart nodes %s: %s" % (data.data, utf8(err)))
+                MessageBox.warning(self, "Restart nodes", data.data, '%s' % utf8(err))
 
     def _on_info_ok(self, questionid, data):
         pass

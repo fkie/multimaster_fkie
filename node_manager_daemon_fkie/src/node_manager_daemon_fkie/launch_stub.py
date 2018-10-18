@@ -100,6 +100,18 @@ class LaunchStub(object):
         response = self.lm_stub.GetMtime(request, timeout=settings.GRPC_TIMEOUT)
         return response.path, response.mtime, response.included_files
 
+    def get_changed_binaries(self, nodes):
+        '''
+        :param nodes: list with ROS-node names to check for changed binaries.
+        :type nodes: list(str)
+        :return: List with ROS-node names of changed binaries since last start.
+        :rtype: list(str)
+        '''
+        request = lmsg.Nodes()
+        request.names.extend(nodes)
+        response = self.lm_stub.GetChangedBinaries(request, timeout=settings.GRPC_TIMEOUT)
+        return [node for node in response.names]
+
     def unload_launch(self, path, masteruri=''):
         '''
         '''

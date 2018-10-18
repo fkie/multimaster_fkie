@@ -59,6 +59,11 @@ class LaunchServiceStub(object):
         request_serializer=launch__pb2.LaunchFile.SerializeToString,
         response_deserializer=launch__pb2.MtimeReply.FromString,
         )
+    self.GetChangedBinaries = channel.unary_unary(
+        '/fkie_node_manager_daemon.launch.LaunchService/GetChangedBinaries',
+        request_serializer=launch__pb2.Nodes.SerializeToString,
+        response_deserializer=launch__pb2.Nodes.FromString,
+        )
 
 
 class LaunchServiceServicer(object):
@@ -122,8 +127,15 @@ class LaunchServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def GetMtime(self, request, context):
-    """	rpc GetChangedBinaries (Empty) returns (Empty);
-    """
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def GetChangedBinaries(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -175,6 +187,11 @@ def add_LaunchServiceServicer_to_server(servicer, server):
           servicer.GetMtime,
           request_deserializer=launch__pb2.LaunchFile.FromString,
           response_serializer=launch__pb2.MtimeReply.SerializeToString,
+      ),
+      'GetChangedBinaries': grpc.unary_unary_rpc_method_handler(
+          servicer.GetChangedBinaries,
+          request_deserializer=launch__pb2.Nodes.FromString,
+          response_serializer=launch__pb2.Nodes.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

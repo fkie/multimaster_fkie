@@ -130,7 +130,7 @@ class MessageFrame(QFrame):
                        4: QPixmap(":/icons/default_cfg.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        5: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        6: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       7: QPixmap(":/icons/crystal_clear_question.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       7: QPixmap(":/icons/crystal_clear_binary.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        9: QPixmap(":/icons/crystal_clear_run_zeroconf.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
@@ -159,9 +159,9 @@ class MessageFrame(QFrame):
             return
         try:
             # is it in the list for not ask again?
-            if self._do_not_ask[questionid]:
+            if self._do_not_ask[questionid] == 1:
                 self.accept_signal.emit(questionid, data)
-            else:
+            elif self._do_not_ask[questionid] == 0:
                 self.cancel_signal.emit(questionid, data)
             return
         except Exception:
@@ -189,7 +189,7 @@ class MessageFrame(QFrame):
     def is_do_not_ask(self, questionid):
         try:
             # is it in the list for not ask again?
-            return self._do_not_ask[questionid]
+            return self._do_not_ask[questionid] in [0, 1]
         except Exception:
             return False
 
@@ -233,6 +233,12 @@ class MessageFrame(QFrame):
     def _on_question_ok(self):
         self._new_request = False
         self.frameui.setVisible(False)
+        try:
+            # set action for do not ask again
+            if self._do_not_ask[self.questionid] == 2:
+                self._do_not_ask[self.questionid] = 1
+        except Exception:
+            pass
         self.accept_signal.emit(self.questionid, self.data)
         self.questionid = 0
         self._update_list_label([])
@@ -242,6 +248,12 @@ class MessageFrame(QFrame):
     def _on_question_cancel(self):
         self._new_request = False
         self.frameui.setVisible(False)
+        try:
+            # set action for do not ask again
+            if self._do_not_ask[self.questionid] == 2:
+                self._do_not_ask[self.questionid] = 0
+        except Exception:
+            pass
         self.cancel_signal.emit(self.questionid, self.data)
         self.questionid = 0
         self._update_list_label([])
@@ -285,7 +297,7 @@ class MessageFrame(QFrame):
             self.frameui.questionCancelButton.setVisible(not state)
             nm.settings().show_noscreen_error = not state
         else:
-            self._do_not_ask[self.questionid] = state
+            self._do_not_ask[self.questionid] = 2
 
     def _clear_scroll_area(self):
         child = self.frameui.scrollAreaLayout.takeAt(0)

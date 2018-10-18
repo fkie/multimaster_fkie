@@ -580,3 +580,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 mtime = os.path.getmtime(incf)
             result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
         return result
+
+    def GetChangedBinaries(self, request, context):
+        result = lmsg.Nodes()
+        changed = launcher.changed_binaries([node for node in request.names])
+        result.names.extend(changed)
+        return result

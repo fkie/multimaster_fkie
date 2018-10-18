@@ -31,3 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 GRPC_TIMEOUT = 5.0
+''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
+
+RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
+''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''

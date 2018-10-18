@@ -114,31 +114,35 @@ class NmdClient(QObject):
     '''
     listed_path = Signal(str, str, list)
     '''
-    :ivar: listed_path is a signal, which is emitted, if path is listed successful {url, path, list with paths}.
+    :ivar str,str,list listed_path: listed_path is a signal, which is emitted, if path is listed successful {url, path, list with paths}.
     '''
     error = Signal(str, str, str, Exception)
     '''
-    :ivar: error is a signal, which is emitted on errors {method, url, path, Exception}.
+    :ivar  str,str,str,Exception error: error is a signal, which is emitted on errors {method, url, path, Exception}.
     '''
     changed_file = Signal(str, float)
     '''
-    :ivar: this signal is emitted after test request for file changes {grpc_path, mtime}.
+    :ivar str,float changed_file: this signal is emitted after test request for file changes {grpc_path, mtime}.
     '''
     packages = Signal(str, dict)
     '''
-    :ivar: this signal is emitted on new list with packages  {grpc_url, dict(grpc_path, name)}.
+    :ivar str,dict packages: this signal is emitted on new list with packages  {grpc_url, dict(grpc_path, name)}.
     '''
     packages_available = Signal(str)
     '''
-    :ivar: this signal is emitted on new list with packages  {grpc_url}.
+    :ivar str packages_available: this signal is emitted on new list with packages  {grpc_url}.
     '''
     mtimes = Signal(str, float, dict)
     '''
-    :ivar: this signal is emitted on new mtimes for requested files {grpc_url, mtime, {grpc_path: mtime}}.
+    :ivar str,float,dict mtimes: this signal is emitted on new mtimes for requested files {grpc_url, mtime, {grpc_path: mtime}}.
+    '''
+    changed_binaries = Signal(str, list)
+    '''
+    :ivar str,list changed_binaries: this signal is emitted on result of change binaries request {grpc_url, [node names]}.
     '''
     multiple_screens = Signal(str, dict)
     '''
-    :ivar: this signal is emitted if new multiple screen are detected {grpc_url, {node_name: [screen_session]}}.
+    :ivar str,dict multiple_screens: this signal is emitted if new multiple screen are detected {grpc_url, {node_name: [screen_session]}}.
     '''
 
     def __init__(self):
@@ -400,6 +404,7 @@ class NmdClient(QObject):
     def load_launch(self, grpc_path, masteruri='', host='', package='', launch='', args={}):
         '''
         Loads given file on remote grpc-server.
+
         :return: Path of loaded file
         :rtype: str
         '''
@@ -462,7 +467,7 @@ class NmdClient(QObject):
 
     def _get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
         uri, path = nmdurl.split(grpc_path)
-        rospy.logdebug("get nodes from %s" % uri)
+        rospy.logdebug("get mtimes from %s" % uri)
         try:
             lm = self.get_launch_manager(uri)
             rpath, mtime, included_files = lm.get_mtimes(path)
@@ -472,6 +477,22 @@ class NmdClient(QObject):
             pass
         if hasattr(self, '_threads'):
             self._threads.finished("gmt_%s" % grpc_path)
+
+    def get_changed_binaries_threaded(self, grpc_url='grpc://localhost:12321', nodes=[]):
+        self._threads.start_thread("gcbt_%s" % grpc_url, target=self._get_changed_binaries_threaded, args=(grpc_url, nodes))
+
+    def _get_changed_binaries_threaded(self, grpc_url='grpc://localhost:12321', nodes=[]):
+        uri, _path = nmdurl.split(grpc_url)
+        rospy.logdebug("get changed binaries from %s" % uri)
+        try:
+            lm = self.get_launch_manager(uri)
+            nodes = lm.get_changed_binaries(nodes)
+            self.changed_binaries.emit(grpc_url, nodes)
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
+        if hasattr(self, '_threads'):
+            self._threads.finished("gcbt_%s" % grpc_url)
 
     def get_nodes(self, grpc_path='grpc://localhost:12321', masteruri=''):
         uri, _ = nmdurl.split(grpc_path)
@@ -563,6 +584,7 @@ class NmdClient(QObject):
         The existence of multiple screens for one node can lead to failures.
         This method starts a thread to request all nodes with multiple screens.
         On finish this method emit a qt-signal of type NmdClient.multiple_screens.
+
         :param str grpc_url: the url for grpc-server
         '''
         self._threads.start_thread("mst_%s" % grpc_url, target=self._multiple_screens, args=(grpc_url,))

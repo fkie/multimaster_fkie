@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
         self._changed_binaries = dict()
         self._syncs_to_start = []  # hostnames
         self._accept_next_update = False
+        self._last_window_state = False
         # self.setAttribute(Qt.WA_AlwaysShowToolTips, True)
         # setup main window frame
         self.setObjectName('MainWindow')
@@ -217,9 +218,6 @@ class MainWindow(QMainWindow):
         self.masters = dict()  # masteruri : MasterViewProxy
         self.currentMaster = None  # MasterViewProxy
         self._close_on_exit = True
-
-        # nm.filewatcher().binary_changed.connect(self.on_binaryfile_changed)
-        self.__in_question = set()
 
         ############################################################################
         self.capabilitiesTable = CapabilityTable(self.capabilities_tab)
@@ -1032,6 +1030,7 @@ class MainWindow(QMainWindow):
                 check_ts = self.currentMaster.master_info.check_ts
                 self.currentMaster.master_info.timestamp = self.currentMaster.master_info.timestamp - 1.0
                 self.currentMaster.master_info.check_ts = check_ts
+                self.currentMaster.perform_master_checks()
             if self.currentMaster.master_state is not None:
                 self._update_handler.requestMasterInfo(self.currentMaster.master_state.uri, self.currentMaster.master_state.monitoruri)
             self.currentMaster.force_next_update()
@@ -1711,70 +1710,21 @@ class MainWindow(QMainWindow):
 # Change file detection
 # ======================================================================================================================
 
-    def on_binaryfile_changed(self, changed, affected):
-        '''
-        Signal hander to handle the changes started binaries.
-        @param changed: the changed file
-        @type changed: str
-        @param affected: list of tuples(node name, masteruri, launchfile), which are
-                         affected by file change
-        @type affected: list
-        '''
-        if self.isActiveWindow():
-            self._changed_binaries[changed] = affected
-            self._check_for_changed_binaries()
-        else:
-            self._changed_binaries[changed] = affected
-
-    def _check_for_changed_binaries(self):
-        '''
-        Check the dictinary with changed binaries and notify the masters about changes.
-        '''
-        # TODO
-        new_affected = list()
-        for _, affected in self._changed_binaries.items():  # :=changed
-            for (nname, muri, lfile) in affected:
-                if not (nname, muri, lfile) in self.__in_question:
-                    self.__in_question.add((nname, muri, lfile))
-                    new_affected.append((nname, muri, lfile))
-        # if there are no question to restart the nodes -> ask
-        if new_affected:
-            choices = dict()
-            for (nname, muri, lfile) in new_affected:
-                master = self.getMaster(muri)
-                if master is not None and master.online:
-                    master_nodes = master.getNode(nname)
-                    if master_nodes and master_nodes[0].is_running():
-                        choices[nname] = (master, lfile)
-                    else:
-                        # nm.filewatcher().rem_binary(nname)
-                        pass
-            if choices:
-                nodes, _ = SelectDialog.getValue('Restart nodes?',
-                                                 '<b>%s</b> was changed.<br>Select affected nodes to restart:' % ', '.join([os.path.basename(f) for f in self._changed_binaries.keys()]), choices.keys(),
-                                                 False, True,
-                                                 '',
-                                                 self)
-                for (nname, muri, lfile) in new_affected:
-                    self.__in_question.remove((nname, muri, lfile))
-                for nname in nodes:
-                    choices[nname][0].stop_nodes_by_name([nname])
-                for nname in nodes:
-                    choices[nname][0].start_nodes_by_name([nname], choices[nname][1], True)
-        self._changed_binaries.clear()
-
     def changeEvent(self, event):
         '''
-        Check for changed files, if the main gui is activated.
         '''
-        if hasattr(self, 'currentMaster') and self.currentMaster is not None:
-            # check for file changes
-            files = self.currentMaster.get_files_for_change_check()
-            if files:
-                nm.nmd().check_for_changed_files_threaded(files)
-                nm.nmd().multiple_screens_threaded(nmdurl.nmduri(self.currentMaster.masteruri))
         QMainWindow.changeEvent(self, event)
-        self._check_for_changed_binaries()
+
+    def enterEvent(self, event):
+        '''
+        Check for changed files, if the main gui was entered.
+        '''
+        if self.isActiveWindow() and self.isActiveWindow() != self._last_window_state:
+            if hasattr(self, 'currentMaster') and self.currentMaster is not None:
+                # perform checks for changed files of multiple screens
+                self.currentMaster.perform_master_checks()
+        self._last_window_state = self.isActiveWindow()
+        QMainWindow.enterEvent(self, event)
 
 # ======================================================================================================================
 # Capabilities handling

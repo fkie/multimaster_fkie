@@ -74,8 +74,9 @@ class PathItem(QStandardItem):
         '''
         Initialize the PathItem object with given values. The name of the item is the base name of the path.
         Examples of paths:
-            grpc://localhost:12311:                 -> name: @localhost
-            grpc://localhost:12311:/absolute/path   -> name: path
+
+        - grpc://localhost:12311:                 -> name: @localhost
+        - grpc://localhost:12311:/absolute/path   -> name: path
 
         :param str url: the url of node manager daemon
         :param str path: file path

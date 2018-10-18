@@ -41,6 +41,7 @@ import roslaunch
 
 import exceptions
 import screen
+import settings
 import host
 from master_discovery_fkie.common import masteruri_from_ros
 from .launch_stub import LaunchStub
@@ -49,7 +50,8 @@ from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 import remote
 
-RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
+STARTED_BINARIES = dict()
+''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
 
 
 def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel='', logformat='', reload_global_param=False):
@@ -157,6 +159,11 @@ def run_node(startcfg):
                 raise exceptions.BinarySelectionRequest(cmd, err)
             else:
                 cmd_type = cmd[0]
+        try:
+            global STARTED_BINARIES
+            STARTED_BINARIES[nodename] = (cmd_type, os.path.getmtime(cmd_type))
+        except Exception:
+            pass
         cwd = get_cwd(startcfg.cwd, cmd_type)
         # set environment
         new_env = dict(os.environ)
@@ -176,7 +183,7 @@ def run_node(startcfg):
                 new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
             if respawn_params['min_runtime'] > 0:
                 new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
-            cmd_type = "%s %s %s" % (RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
+            cmd_type = "%s %s %s" % (settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
         cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname), cmd_type, ' '.join(args)))
@@ -203,6 +210,31 @@ def run_node(startcfg):
             raise exceptions.StartException("Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))
         lm = LaunchStub(channel)
         lm.start_standalone_node(startcfg)
+
+
+def changed_binaries(nodes):
+    '''
+    Checks for each ROS-node however the binary used for the start was changed.
+
+    :param nodes: list of ROS-node names to check
+    :type nodes: list(str)
+    :return: list with ROS-nodes with changed binary
+    :rtype: list(str)
+    '''
+    result = []
+    global STARTED_BINARIES
+    print "STARTED_BINARIES", STARTED_BINARIES
+    for nodename in nodes:
+        try:
+            binary, mtime = STARTED_BINARIES[nodename]
+            print "binar", binary, mtime , os.path.getmtime(binary)
+            if mtime != os.path.getmtime(binary):
+                result.append(nodename)
+        except Exception:
+            print "for ", nodename
+            import traceback
+            print traceback.format_exc()
+    return result
 
 
 def _rosconsole_cfg_file(package, loglevel='INFO'):

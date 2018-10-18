@@ -226,8 +226,8 @@ class FileStub(object):
         Request to test files for last modification time.
 
         :param files: dictionary with files and their last known modification time.
-        See results of :meth:`node_manager_daemon_fkie.launch_stub.LaunchStub.get_mtimes`,
-        :meth:`node_manager_daemon_fkie.launch_stub.LaunchStub.load_launch`.
+            See results of :meth:`node_manager_daemon_fkie.launch_stub.LaunchStub.get_mtimes`,
+            :meth:`node_manager_daemon_fkie.launch_stub.LaunchStub.load_launch`.
         :type files: dict(str: float)
         '''
         request = fmsg.PathList()
