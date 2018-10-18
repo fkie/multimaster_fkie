@@ -754,7 +754,7 @@ class EchoDialog(QDialog):
                         slot_name = f
                         if isinstance(cval, (list, tuple)):
                             slot_name = "%s[%d]" % (f, len(cval))
-                        slots.append(p % (slot_name, self.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
+                        slots.append(p % (utf8(slot_name), self.strify_message(utf8(cval), ni, time_offset, current_time, field_filter, fixed_numeric_width)))
                 vals = '\n'.join(slots)
             if indent:
                 return '\n' + vals
