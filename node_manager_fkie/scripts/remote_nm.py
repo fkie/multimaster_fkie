@@ -10,7 +10,7 @@ import roslib
 import rospy
 
 from node_manager_daemon_fkie import screen
-from node_manager_daemon_fkie.launcher import RESPAWN_SCRIPT
+from node_manager_daemon_fkie.settings import RESPAWN_SCRIPT
 try:
     import node_manager_fkie as nm
 except:
