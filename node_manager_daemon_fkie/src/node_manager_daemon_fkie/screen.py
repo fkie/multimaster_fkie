@@ -185,8 +185,8 @@ def get_cfgfile(session=None, node=None):
     if session is not None:
         return "%s%s.conf" % (LOG_PATH, session)
     elif node is not None:
-        return "%s%s.log" % (LOG_PATH, create_session_name(node))
-    return "%s%s.log" % (LOG_PATH, 'unknown')
+        return "%s%s.conf" % (LOG_PATH, create_session_name(node))
+    return "%s%s.conf" % (LOG_PATH, 'unknown')
 
 
 def get_pidfile(session=None, node=None):
