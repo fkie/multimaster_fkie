@@ -35,6 +35,7 @@ import grpc
 import rospy
 import time
 
+from .common import interpret_path
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .screen_servicer import ScreenServicer
@@ -83,4 +84,4 @@ class GrpcServer:
         self.server.stop(3)
 
     def load_launch_file(self, path, autostart=False):
-        self.launch_servicer.load_launch_file(path, autostart)
+        self.launch_servicer.load_launch_file(interpret_path(path), autostart)
