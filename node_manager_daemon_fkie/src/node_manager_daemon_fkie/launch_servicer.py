@@ -307,8 +307,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug("..load complete!")
         except Exception as e:
-            err_text = "%s loading failed!" % os.path.basename(launchfile)
-            err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
+            err_text = "%s loading failed!" % launchfile
+            err_details = "%s: %s" % (err_text, utf8(e))
             rospy.logwarn("Loading launch file: %s", err_details)
             result.status.code = ERROR
             result.status.error_msg = utf8(err_details)
@@ -360,7 +360,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
             except Exception as e:
                 err_text = "%s loading failed!" % request.path
-                err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
+                err_details = "%s: %s" % (err_text, utf8(e))
                 rospy.logwarn("Loading launch file: %s", err_details)
                 result.status.code = ERROR
                 result.status.error_msg = utf8(err_details)
@@ -380,7 +380,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.code = OK
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
-                err_details = "%s\n\n%s: %s" % (err_text, e.__class__.__name__, utf8(e))
+                err_details = "%s: %s" % (err_text, utf8(e))
                 rospy.logwarn("Unloading launch file: %s", err_details)
                 result.status.code = ERROR
                 result.status.error_msg = utf8(err_details)

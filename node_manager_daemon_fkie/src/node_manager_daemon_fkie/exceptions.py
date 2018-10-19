@@ -41,8 +41,11 @@ class ListSelectionRequest(Exception):
         self.choices = choices
         self.error = error
 
-    def __str__(self):
+    def __repr__(self):
         return "%s <choices=%s>::%s" % (self.__class__, utf8(self.choices), repr(self.error))
+
+    def __str__(self):
+        return self.error
 
 
 class BinarySelectionRequest(ListSelectionRequest):
@@ -68,8 +71,11 @@ class AlreadyOpenException(Exception):
         self.path = path
         self.error = error
 
-    def __str__(self):
+    def __repr__(self):
         return "%s <path=%s>::%s" % (self.__class__, utf8(self.path), repr(self.error))
+
+    def __str__(self):
+        return self.error
 
 
 class ResourceNotFound(AlreadyOpenException):
@@ -83,5 +89,8 @@ class RemoteException(Exception):
         self.code = code
         self.error = error
 
-    def __str__(self):
+    def __repr__(self):
         return "%s <code=%s>::%s" % (self.__class__, self.code, repr(self.error))
+
+    def __str__(self):
+        return self.error

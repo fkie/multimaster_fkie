@@ -670,9 +670,8 @@ class MasterViewProxy(QWidget):
         except Exception as e:
             print traceback.format_exc()
             err_text = '%s loading failed!' % os.path.basename(launchfile)
-            err_details = '%s\n\n%s: %s' % (err_text, e.__class__.__name__, utf8(e))
-            rospy.logwarn("Loading launch file: %s", err_details)
-            raise DetailedError("Loading launch file", err_text, err_details)
+            rospy.logwarn("Loading launch file: %s", utf8(e))
+            raise DetailedError("Loading launch file", err_text, utf8(e))
 
     def _apply_launch_config(self, launchcfg, changed_nodes):
         filename = launchcfg.launchfile
