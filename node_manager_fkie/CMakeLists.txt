@@ -54,3 +54,24 @@ install(
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
 )
 
+# On Ubuntu, create and install a desktop launcher for node_manager.
+if (${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+    # Define where to create the launcher file.
+    set(NODE_MANAGER_LAUNCHER ${CMAKE_CURRENT_BINARY_DIR}/node_manager.desktop)
+    
+    # Create the launcher file.
+    file(WRITE ${NODE_MANAGER_LAUNCHER} 
+        "[Desktop Entry]
+Name=node_manager
+Comment=GUI for managing running and configured ROS nodes on different hosts
+Exec=/bin/sh -c \". ${CMAKE_INSTALL_PREFIX}/setup.sh; ${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION}/node_manager\"
+Icon=${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/rqt_icons/crystal_clear_prop_run.png
+Terminal=false
+Type=Application
+Categories=Utility;Development;"
+    )
+
+    # Install the launcher file.
+    install(CODE "set(NODE_MANAGER_LAUNCHER \"${NODE_MANAGER_LAUNCHER}\")")
+    install(SCRIPT InstallLauncher.cmake)
+endif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
