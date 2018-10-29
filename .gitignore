@@ -23,3 +23,4 @@ lib*.so
 lib*.so.*
 */doc/html/
 */doc/manifest.yaml
+generated/
