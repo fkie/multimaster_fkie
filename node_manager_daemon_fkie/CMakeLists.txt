@@ -11,11 +11,16 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 catkin_package(
+#  CFG_EXTRAS
 #  INCLUDE_DIRS include
 #  LIBRARIES node_manager_daemon_fkie
 #  CATKIN_DEPENDS roslaunch rospy
 #  DEPENDS system_lib
 )
+
+# generate code for gRPC protocols
+include(cmake/grpc_protoc.cmake)
+generate_grpc()
 
 #############
 ## Install ##
