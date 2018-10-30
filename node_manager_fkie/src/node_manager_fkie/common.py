@@ -48,6 +48,47 @@ def get_ros_home():
         return rosenv.get_ros_home()
 
 
+def lnamespace(name):
+    '''
+    Splits the given name into first part of the namespace and the rest. The rest
+    contains no leading slash. The leading slash is own first part.
+
+    :param str name: the name of the node or namespace.
+    :return: A tuple of the first part of the namespace and the rest.
+    :rtype: tuple(str, str)
+    '''
+    ns_list = name.split(rospy.names.SEP)
+    if not ns_list[0]:
+        return rospy.names.SEP, name.lstrip(rospy.names.SEP)
+    if len(ns_list) == 1:
+        return ns_list[0], ''
+    return ns_list[0], name.replace('%s%s' % (ns_list[0], rospy.names.SEP), '')
+
+
+def namespace(name):
+    '''
+    :param str name: the name of the node or namespace.
+    :return: The namespace of given name. The last character is always a slash.
+    :rtype: str
+    '''
+    result = os.path.dirname(name)
+    if not result.endswith(rospy.names.SEP):
+        result += rospy.names.SEP
+    return result
+
+
+def normns(name):
+    '''
+    Replaces double slashes by one slash.
+
+    :param str name: the name of the node or namespace.
+    :rtype: str
+    '''
+    sep = rospy.names.SEP
+    result = name.replace('%s%s' % (sep, sep), sep)
+    return result
+
+
 def get_rosparam(param, masteruri):
     '''
     Get parameter using :class:`rospy.msproxy.MasterProxy`

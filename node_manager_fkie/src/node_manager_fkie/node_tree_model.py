@@ -40,7 +40,7 @@ import traceback
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_daemon_fkie import url as nmdurl
-from node_manager_fkie.common import utf8
+from node_manager_fkie.common import lnamespace, namespace, normns, utf8
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
 import node_manager_fkie as nm
@@ -84,15 +84,22 @@ class GroupItem(QStandardItem):
     '''
     ITEM_TYPE = Qt.UserRole + 25
 
-    def __init__(self, name, parent=None, has_remote_launched_nodes=False):
+    def __init__(self, name, parent=None, has_remote_launched_nodes=False, is_group=False):
         '''
         Initialize the GroupItem object with given values.
 
         :param str name: the name of the group
         :param parent: the parent item. In most cases this is the HostItem. The variable is used to determine the different columns of the NodeItem.
         :type parent: :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>
+        :param bool is_group: True if this is a capability group. In other case it is a namespace group.
         '''
-        QStandardItem.__init__(self, name if name.rfind('@') > 0 else '{' + name + '}')
+        dname = name
+        if dname.rfind('@') <= 0:
+            if is_group:
+                dname = '{' + dname + '}'
+            else:
+                dname = dname + '/'
+        QStandardItem.__init__(self, dname)
         self.parent_item = parent
         self._name = name
         self.setIcon(QIcon(':/icons/state_off.png'))
@@ -105,6 +112,9 @@ class GroupItem(QStandardItem):
         :ivar: dict(config : dict(namespace: dict(group:dict('type' : str, 'images' : [str], 'description' : str, 'nodes' : [str]))))
         '''
         self._re_cap_nodes = dict()
+        self._is_group = is_group
+        self._state = NodeItem.STATE_OFF
+        self.diagnostic_array = []
 
     @property
     def name(self):
@@ -123,7 +133,44 @@ class GroupItem(QStandardItem):
         :param str new_name: The new name of the group. Used also to identify the group.
         '''
         self._name = new_name
-        self.setText('{' + self._name + '}')
+        if self._is_group:
+            self.setText('{' + self._name + '}')
+        else:
+            self.setText(self._name + '/')
+
+    @property
+    def state(self):
+        '''
+        The state of this group.
+
+        :rtype: int
+        '''
+        return self._state
+
+    def get_namespace(self):
+        name = self._name
+        if type(self) == HostItem:
+            name = rospy.names.SEP
+        elif type(self) == GroupItem:
+            name = namespace(name)
+        result = name
+        if self.parent_item is not None:
+            result = normns(self.parent_item.get_namespace() + result)
+        return result
+
+    def count_nodes(self):
+        '''
+        :retrun: Returns count of nodes inside this group.
+        :rtype: int
+        '''
+        result = 0
+        for i in range(self.rowCount()):
+            item = self.child(i)
+            if isinstance(item, GroupItem):
+                result += item.count_nodes()
+            elif isinstance(item, NodeItem):
+                result += 1
+        return result
 
     def is_in_cap_group(self, nodename, config, ns, groupname):
         '''
@@ -295,50 +342,44 @@ class GroupItem(QStandardItem):
                 result.append(item)
         return result
 
-    def get_group_items(self):
-        '''
-        Returns all group items this group
-
-        :return: The list with group items.
-        :rtype: list(:class:`GroupItem`)
-        '''
-        result = []
-        for i in range(self.rowCount()):
-            item = self.child(i)
-            if isinstance(item, GroupItem):
-                result.append(item)
-                result[len(result):] = item.get_group_items()
-        return result
-
-    def get_group_item(self, group_name):
+    def get_group_item(self, group_name, is_group=True):
         '''
         Returns a GroupItem with given name. If no group with this name exists, a
-        new one will be created.
-        Assumption: No groups in group!!
+        new one will be created. The given name will be split by slashes if exists
+        and subgroups are created.
 
         :param str group_name: the name of the group
         :return: The group with given name
         :rtype: :class:`GroupItem`
         '''
+        lns, rns = lnamespace(group_name)
+        if lns == rospy.names.SEP and type(self) == HostItem:
+            lns, rns = lnamespace(rns)
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, GroupItem):
-                if item == group_name:
+                if item == lns:
+                    if rns:
+                        return item.get_group_item(rns, is_group)
                     return item
-                elif item > group_name:
+                elif item > lns:
                     items = []
-                    newItem = GroupItem(group_name, self)
+                    newItem = GroupItem(lns, self, is_group=(is_group and not rns))
                     items.append(newItem)
                     cfgitem = CellItem(group_name, newItem)
                     items.append(cfgitem)
                     self.insertRow(i, items)
+                    if rns:
+                        return newItem.get_group_item(rns, is_group)
                     return newItem
         items = []
-        newItem = GroupItem(group_name, self)
+        newItem = GroupItem(group_name, self, is_group=(is_group and not rns))
         items.append(newItem)
         cfgitem = CellItem(group_name, newItem)
         items.append(cfgitem)
         self.appendRow(items)
+        if rns:
+            return newItem.get_group_item(rns, is_group)
         return newItem
 
     def add_node(self, node, cfg=''):
@@ -354,7 +395,7 @@ class GroupItem(QStandardItem):
             for _, group_list in groups.items():
                 for group_name in group_list:
                     # insert in the group
-                    groupItem = self.get_group_item(group_name)
+                    groupItem = self.get_group_item(group_name, True)
                     groupItem.add_node(node, cfg)
         else:
             # insert in order
@@ -363,6 +404,7 @@ class GroupItem(QStandardItem):
             new_item_row[0].node_info = node
             if cfg or cfg == '':
                 new_item_row[0].add_config(cfg)
+            self.updateIcon()
 
     def _add_row_sorted(self, row):
         for i in range(self.rowCount()):
@@ -374,16 +416,28 @@ class GroupItem(QStandardItem):
         self.appendRow(row)
         row[0].parent_item = self
 
+
+    def get_group_items(self):
+        '''
+        Returns all group items this group
+
+        :return: The list with group items.
+        :rtype: list(:class:`GroupItem`)
+        '''
+        result = []
+        for i in range(self.rowCount()):
+            item = self.child(i)
+            if isinstance(item, GroupItem):
+                result.append(item)
+                result[len(result):] = item.get_group_items()
+        return result
+
     def clearup(self, fixed_node_names=None):
         '''
         Removes not running and not configured nodes.
 
         :param list(str) fixed_node_names: If the list is not None, the node not in the list are set to not running!
         '''
-        # first clear sub groups
-        groups = self.get_group_items()
-        for group in groups:
-            group.clearup(fixed_node_names)
         removed = False
         # move running nodes without configuration to the upper layer, remove not running and duplicate nodes
         for i in reversed(range(self.rowCount())):
@@ -401,7 +455,7 @@ class GroupItem(QStandardItem):
                     has_std_cfg = item.has_std_cfg()
                     if item.state == NodeItem.STATE_RUN and not (has_launches or has_defaults or has_std_cfg):
                         # if it is in a group, is running, but has no configuration, move it to the host
-                        if self.parent_item is not None and isinstance(self.parent_item, HostItem):
+                        if self.parent_item is not None and type(self.parent_item) == HostItem:
                             items_in_host = self.parent_item.get_node_items_by_name(item.name, True)
                             if len(items_in_host) == 1:
                                 row = self.takeRow(i)
@@ -410,6 +464,8 @@ class GroupItem(QStandardItem):
                                 # remove item
                                 removed = True
                                 self.removeRow(i)
+            elif type(item) == GroupItem:
+                item.clearup(fixed_node_names)
         if removed:
             self.updateIcon()
 
@@ -504,7 +560,7 @@ class GroupItem(QStandardItem):
         diag_level = 0
         for i in range(self.rowCount()):
             item = self.child(i)
-            if isinstance(item, NodeItem):
+            if isinstance(item, (GroupItem, NodeItem)):
                 if item.state == NodeItem.STATE_WARNING:
                     self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
                     return
@@ -517,29 +573,40 @@ class GroupItem(QStandardItem):
                             diag_level = item.diagnostic_array[-1].level
                         elif item.diagnostic_array[-1].level == 2:
                             diag_level = 2
+                        self.diagnostic_array = item.diagnostic_array
                 elif item.state == NodeItem.STATE_GHOST:
                     has_ghosts = True
                 elif item.state == NodeItem.STATE_DUPLICATE:
                     has_duplicate = True
+                elif item.state == NodeItem.STATE_PARTS:
+                    has_running = True
+                    has_off = True
         diag_icon = None
         if diag_level > 0:
             diag_icon = NodeItem._diagnostic_level2icon(diag_level)
         if has_duplicate:
+            self._state = NodeItem.STATE_DUPLICATE
             self.setIcon(QIcon(':/icons/imacadam_stop.png'))
         elif has_ghosts:
+            self._state = NodeItem.STATE_GHOST
             self.setIcon(QIcon(':/icons/state_ghost.png'))
         elif has_running and has_off:
             if diag_icon is not None:
                 self.setIcon(diag_icon)
             else:
+                self._state = NodeItem.STATE_PARTS
                 self.setIcon(QIcon(':/icons/state_part.png'))
         elif not has_running:
+            self._state = NodeItem.STATE_OFF
             self.setIcon(QIcon(':/icons/state_off.png'))
         elif not has_off and has_running:
             if diag_icon is not None:
                 self.setIcon(diag_icon)
             else:
+                self._state = NodeItem.STATE_RUN
                 self.setIcon(QIcon(':/icons/state_run.png'))
+        if self.parent_item is not None:
+            self.parent_item.updateIcon()
 
     def _create_html_list(self, title, items):
         result = ''
@@ -644,13 +711,17 @@ class GroupItem(QStandardItem):
 
     def get_configs(self):
         '''
-        Returns count for launch configurations.
+        Returns the set for launch configurations.
+
+        :rtype: set(str)
         '''
         cfgs = []
         for j in range(self.rowCount()):
-            if self.child(j).cfgs:
+            if isinstance(self.child(j), GroupItem):
+                cfgs[len(cfgs):] = self.child(j).get_configs()
+            elif self.child(j).cfgs:
                 cfgs[len(cfgs):] = self.child(j).cfgs
-        return len(set(cfgs))
+        return set(cfgs)
 
     def get_count_mscreens(self):
         '''
@@ -658,7 +729,9 @@ class GroupItem(QStandardItem):
         '''
         result = 0
         for j in range(self.rowCount()):
-            if self.child(j).has_multiple_screens:
+            if isinstance(self.child(j), GroupItem):
+                result += self.child(j).get_count_mscreens()
+            elif self.child(j).has_multiple_screens:
                 result += 1
         return result
 
@@ -885,6 +958,7 @@ class NodeItem(QStandardItem):
     STATE_WARNING = 2
     STATE_GHOST = 3
     STATE_DUPLICATE = 4
+    STATE_PARTS = 5
 
     def __init__(self, node_info):
         '''
@@ -894,7 +968,7 @@ class NodeItem(QStandardItem):
         :type node_info: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
         QStandardItem.__init__(self, node_info.name)
-        self.parent_item = None
+        self._parent_item = None
         self._node_info = node_info.copy()
 #    self.ICONS = {'empty' : QIcon(),
 #                  'run'    : QIcon(':/icons/state_run.png'),
@@ -944,6 +1018,17 @@ class NodeItem(QStandardItem):
         return self._node_info.services
 
     @property
+    def parent_item(self):
+        return self._parent_item
+
+    @parent_item.setter
+    def parent_item(self, parent_item):
+        if parent_item is None:
+            self.setText(self._node_info.name)
+        else:
+            self.setText(self._node_info.name.replace(parent_item.get_namespace(), ''))
+
+    @property
     def node_info(self):
         '''
         Returns the NodeInfo instance of this node.
@@ -983,7 +1068,7 @@ class NodeItem(QStandardItem):
             self.has_screen = True
             self.update_dispayed_name()
 #      self.update_displayed_url()
-            if self.parent_item is not None and not isinstance(self.parent_item, HostItem):
+            if self.parent_item is not None:
                 self.parent_item.updateIcon()
 
     @property

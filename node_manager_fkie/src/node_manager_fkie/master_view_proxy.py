@@ -3348,11 +3348,12 @@ class IconsDelegate(QItemDelegate):
                     tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
                 item.setToolTip(tooltip)
             elif isinstance(item.item, GroupItem):
-                lcfgs = item.item.get_configs()
+                lcfgs = len(item.item.get_configs())
                 rect = self.calcDecorationRect(option.rect)
                 painter.drawImage(rect, self.IMAGES['group'])
-                if item.item.rowCount() > 1:
-                    painter.drawText(rect, Qt.AlignCenter, str(item.item.rowCount()))
+                count_nodes = item.item.count_nodes()
+                if count_nodes > 1:
+                    painter.drawText(rect, Qt.AlignCenter, str(count_nodes))
                 if lcfgs > 0:
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['launchfile'])
