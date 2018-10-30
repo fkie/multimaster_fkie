@@ -1713,17 +1713,17 @@ class MainWindow(QMainWindow):
     def changeEvent(self, event):
         '''
         '''
+        if self.isActiveWindow() and self.isActiveWindow() != self._last_window_state:
+            if hasattr(self, 'currentMaster') and self.currentMaster is not None:
+                # perform checks for changed files of multiple screens
+                self.currentMaster.perform_master_checks()
+        self._last_window_state = self.isActiveWindow()
         QMainWindow.changeEvent(self, event)
 
     def enterEvent(self, event):
         '''
         Check for changed files, if the main gui was entered.
         '''
-        if self.isActiveWindow() and self.isActiveWindow() != self._last_window_state:
-            if hasattr(self, 'currentMaster') and self.currentMaster is not None:
-                # perform checks for changed files of multiple screens
-                self.currentMaster.perform_master_checks()
-        self._last_window_state = self.isActiveWindow()
         QMainWindow.enterEvent(self, event)
 
 # ======================================================================================================================
