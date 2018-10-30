@@ -115,6 +115,7 @@ class GroupItem(QStandardItem):
         self._is_group = is_group
         self._state = NodeItem.STATE_OFF
         self.diagnostic_array = []
+        self.is_system_group = name == 'SYSTEM'
 
     @property
     def name(self):
@@ -147,16 +148,24 @@ class GroupItem(QStandardItem):
         '''
         return self._state
 
+    @property
+    def is_group(self):
+        return self._is_group
+
+    @property
+    def cfgs(self):
+        return self.get_configs()
+
     def get_namespace(self):
         name = self._name
         if type(self) == HostItem:
             name = rospy.names.SEP
-        elif type(self) == GroupItem:
-            name = namespace(name)
+        elif type(self) == GroupItem and self._is_group:
+            name = namespace(self._name)
         result = name
         if self.parent_item is not None:
-            result = normns(self.parent_item.get_namespace() + result)
-        return result
+            result = self.parent_item.get_namespace() + rospy.names.SEP + result
+        return normns(result)
 
     def count_nodes(self):
         '''
@@ -415,22 +424,6 @@ class GroupItem(QStandardItem):
                 return
         self.appendRow(row)
         row[0].parent_item = self
-
-
-    def get_group_items(self):
-        '''
-        Returns all group items this group
-
-        :return: The list with group items.
-        :rtype: list(:class:`GroupItem`)
-        '''
-        result = []
-        for i in range(self.rowCount()):
-            item = self.child(i)
-            if isinstance(item, GroupItem):
-                result.append(item)
-                result[len(result):] = item.get_group_items()
-        return result
 
     def clearup(self, fixed_node_names=None):
         '''
@@ -753,6 +746,10 @@ class GroupItem(QStandardItem):
         Compares the name of the group.
         '''
         if isinstance(item, str) or isinstance(item, unicode):
+            # put the group with SYSTEM nodes at the end
+            if self.is_system_group:
+                if self.name.lower() != item.lower():
+                    return True
             return self.name.lower() > item.lower()
         elif not (item is None):
             return self.name.lower() > item.name.lower()
@@ -1026,7 +1023,7 @@ class NodeItem(QStandardItem):
         if parent_item is None:
             self.setText(self._node_info.name)
         else:
-            self.setText(self._node_info.name.replace(parent_item.get_namespace(), ''))
+            self.setText(self._node_info.name.replace(parent_item.get_namespace(), '', 1))
 
     @property
     def node_info(self):
