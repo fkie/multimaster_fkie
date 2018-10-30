@@ -373,7 +373,7 @@ class GroupItem(QStandardItem):
                         return newItem.get_group_item(rns, is_group)
                     return newItem
         items = []
-        newItem = GroupItem(group_name, self, is_group=(is_group and not rns))
+        newItem = GroupItem(lns, self, is_group=(is_group and not rns))
         items.append(newItem)
         cfgitem = CellItem(group_name, newItem)
         items.append(cfgitem)
