@@ -750,8 +750,16 @@ class GroupItem(QStandardItem):
             if self.is_system_group:
                 if self.name.lower() != item.lower():
                     return True
+            elif item.lower() == 'system':
+                return False
             return self.name.lower() > item.lower()
         elif not (item is None):
+            # put the group with SYSTEM nodes at the end
+            if item.is_system_group:
+                if self.name.lower() != item.lower():
+                    return True
+            elif self.is_syste_group:
+                return False
             return self.name.lower() > item.name.lower()
         return False
 
