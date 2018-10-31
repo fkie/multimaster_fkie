@@ -174,6 +174,8 @@ class LaunchConfig(object):
         :raise LaunchConfigException: on load errors
         '''
         try:
+            self._capabilities = None
+            self._robot_description = None
             roscfg = roslaunch.ROSLaunchConfig()
             loader = roslaunch.XmlLoader()
             self.argv = self.resolve_args(argv)
