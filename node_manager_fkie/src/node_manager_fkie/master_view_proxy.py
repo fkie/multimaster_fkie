@@ -3453,11 +3453,14 @@ class IconsDelegate(QItemDelegate):
                 else:
                     item.setToolTip("")
             elif isinstance(item.item, GroupItem):
-                lcfgs, dcfgs = item.item.get_configs()
+                llcfgs, ddcfgs = item.item.get_configs()
+                lcfgs = len(llcfgs)
+                dcfgs = len(ddcfgs)
                 rect = self.calcDecorationRect(option.rect)
                 painter.drawImage(rect, self.IMAGES['group'])
-                if item.item.rowCount() > 1:
-                    painter.drawText(rect, Qt.AlignCenter, str(item.item.rowCount()))
+                count_nodes = item.item.count_nodes()
+                if count_nodes > 1:
+                    painter.drawText(rect, Qt.AlignCenter, str(count_nodes))
                 if lcfgs > 0:
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['launchfile'])

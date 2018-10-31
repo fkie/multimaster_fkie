@@ -60,6 +60,28 @@ def masteruri_from_ros():
         return os.environ['ROS_MASTER_URI']
 
 
+def lnamespace(name):
+    ns_list = name.split(rospy.names.SEP)
+    if not ns_list[0]:
+        return rospy.names.SEP, name.lstrip(rospy.names.SEP)
+    if len(ns_list) == 1:
+        return ns_list[0], ''
+    return ns_list[0], name.replace('%s%s' % (ns_list[0], rospy.names.SEP), '')
+
+
+def namespace(name):
+    result = os.path.dirname(name)
+    if not result.endswith(rospy.names.SEP):
+        result += rospy.names.SEP
+    return result
+
+
+def normns(name):
+    sep = rospy.names.SEP
+    result = name.replace('%s%s' % (sep, sep), sep)
+    return result
+
+
 def get_rosparam(param, masteruri):
     if masteruri:
         try:
