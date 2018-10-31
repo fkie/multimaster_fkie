@@ -618,7 +618,7 @@ class ArrayBox(MainBox):
                 print traceback.format_exc(1)
             self.count_label.setText(utf8(self._dynamic_items_count))
 
-    def createFieldFromValue(self, value):
+    def createFieldFromValue(self, value, clear_origin_value=False):
         self.setUpdatesEnabled(False)
         try:
             if isinstance(value, list):
