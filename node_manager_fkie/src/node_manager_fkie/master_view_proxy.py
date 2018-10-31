@@ -915,10 +915,9 @@ class MasterViewProxy(QWidget):
         for ld in launch_descriptions:
             # TODO: check masteruri and host
             if ld.masteruri != masteruri:
-                print "skip MASTER", ld.masteruri, masteruri, ld.path, self.__configs
+                rospy.logdebug("skip apply config %s from %s to %s with configs %s ", ld.path, ld.masteruri, masteruri, self.__configs)
                 continue
             # add the new config
-            print "add MASTER", ld.masteruri, masteruri, ld.path, self.__configs
             if ld.path not in self.__configs:
                 args = {}
                 if ld.path in self._loaded_args:
