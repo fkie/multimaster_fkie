@@ -74,6 +74,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         rospy.loginfo("SCREEN prefix removed before start!")
         prefix = ''
     result.prefix = prefix
+    result.env = {key: value for key, value in n.env_args}
     # set remapings
     result.remaps = {remap[0]: remap[1] for remap in n.remap_args}
     # set respawn parameter
@@ -167,6 +168,8 @@ def run_node(startcfg):
         cwd = get_cwd(startcfg.cwd, cmd_type)
         # set environment
         new_env = dict(os.environ)
+        # add environment from launch
+        new_env.extend(startcfg.env)
         if startcfg.namespace:
             new_env['ROS_NAMESPACE'] = startcfg.namespace
         # set logging
