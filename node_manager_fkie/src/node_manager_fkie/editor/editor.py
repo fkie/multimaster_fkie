@@ -272,6 +272,10 @@ class Editor(QMainWindow):
                 self.graphButton.setChecked(not self.graphButton.isChecked())
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W:
             self.on_close_tab(self.tabWidget.currentIndex())
+        elif event.modifiers() in [Qt.ControlModifier, Qt.AltModifier] and event.key() == Qt.Key_Up:
+            self.on_upperButton_clicked()
+        elif event.modifiers() in [Qt.ControlModifier, Qt.AltModifier] and event.key() == Qt.Key_Down:
+            self.on_downButton_clicked()
         else:
             event.accept()
             QMainWindow.keyPressEvent(self, event)
@@ -503,6 +507,13 @@ class Editor(QMainWindow):
         '''
         if self.tabWidget.currentIndex() != 0:
             self.graph_view.find_parent_file()
+
+    def on_downButton_clicked(self):
+        '''
+        Select editor right from current.
+        '''
+        if self.tabWidget.currentIndex() < self.tabWidget.count():
+            self.tabWidget.setCurrentIndex(self.tabWidget.currentIndex() + 1)
 
     def on_saveButton_clicked(self):
         '''
