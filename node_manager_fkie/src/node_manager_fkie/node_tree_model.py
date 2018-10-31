@@ -383,9 +383,11 @@ class GroupItem(QStandardItem):
         :return: The group with given name
         :rtype: :class:`GroupItem`
         '''
-        lns, rns = lnamespace(group_name)
-        if lns == rospy.names.SEP and type(self) == HostItem:
-            lns, rns = lnamespace(rns)
+        lns, rns = group_name, ''
+        if nm.settings().group_nodes_by_namespace:
+            lns, rns = lnamespace(group_name)
+            if lns == rospy.names.SEP and type(self) == HostItem:
+                lns, rns = lnamespace(rns)
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):

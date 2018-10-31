@@ -151,6 +151,7 @@ class Settings(object):
     SHOW_DOMAIN_SUFFIX = False
 
     TRANSPOSE_PUB_SUB_DESCR = True
+    GROUP_BY_NAMESPACE = True
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -213,6 +214,7 @@ class Settings(object):
         self._show_noscreen_error = self.str2bool(settings.value('show_noscreen_error', self.SHOW_NOSCREEN_ERROR))
         self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
+        self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
         settings.beginGroup('host_colors')
         self._host_colors = dict()
         for k in settings.childKeys():
@@ -495,6 +497,18 @@ class Settings(object):
             self._transpose_pub_sub_descr = val
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('transpose_pub_sub_descr', self._transpose_pub_sub_descr)
+
+    @property
+    def group_nodes_by_namespace(self):
+        return self._group_nodes_by_namespace
+
+    @group_nodes_by_namespace.setter
+    def group_nodes_by_namespace(self, value):
+        val = self.str2bool(value)
+        if self._group_nodes_by_namespace != val:
+            self._group_nodes_by_namespace = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('group_nodes_by_namespace', self._group_nodes_by_namespace)
 
     def host_color(self, host, default_color):
         if self.colorize_hosts:

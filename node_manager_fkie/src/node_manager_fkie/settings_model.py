@@ -157,7 +157,7 @@ class SettingsValueItem(QStandardItem):
             if hasattr(self._settings, self._attrname):
                 setattr(self._settings, self._attrname, value)
                 if self._need_restart:
-                    MessageBox.information(None, "restart Node Manager", "This parameter change is only valid after restart!")
+                    MessageBox.information(None, "restart Node Manager", "This parameter change needs restart Node Manager!")
         return QStandardItem.setData(self, value, role)
 
 
