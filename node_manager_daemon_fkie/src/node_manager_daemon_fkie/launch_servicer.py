@@ -582,7 +582,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def GetChangedBinaries(self, request, context):
-        result = lmsg.Nodes()
+        result = lmsg.MtimeNodes()
         changed = launcher.changed_binaries([node for node in request.names])
-        result.names.extend(changed)
+        nodes = []
+        for name, mtime in changed:
+            node = lmsg.MtimeNode(name=name, mtime=mtime)
+            nodes.append(node)
+        result.nodes.extend(nodes)
         return result

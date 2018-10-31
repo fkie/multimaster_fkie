@@ -170,6 +170,7 @@ class MasterViewProxy(QWidget):
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
         self._first_launch = True
+        self._changed_binaries = dict()
         self.default_load_launch = ''
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -695,11 +696,19 @@ class MasterViewProxy(QWidget):
     def _apply_changed_binaries(self, launchfile, nodes):
         muri = nmdurl.masteruri(launchfile)
         if nmdurl.equal_uri(muri, self.masteruri):
-            for node in nodes:
-                tnodes = self.node_tree_model.get_tree_node(node, self.masteruri)
-                for tnode in tnodes:
-                    # ask for each node separately
-                    self.question_restart_changed_binary(tnode)
+            for nodename, mtime in nodes.items():
+                tnodes = self.node_tree_model.get_tree_node(nodename, self.masteruri)
+                doask = False
+                try:
+                    if self._changed_binaries[nodename] < mtime:
+                        doask = True
+                except KeyError:
+                    doask = True
+                if doask:
+                    for tnode in tnodes:
+                        # ask for each node separately
+                        self._changed_binaries[nodename] = mtime
+                        self.question_restart_changed_binary(tnode)
 
     def perform_master_checks(self):
         grpc_url = nmdurl.nmduri(self.masteruri)
@@ -3078,6 +3087,10 @@ class MasterViewProxy(QWidget):
                     self.start_node(data.data, force=True, config=data.data.next_start_cfg)
                 else:
                     self.start_nodes([data.data], force=True)
+                try:
+                    del self._changed_binaries[data.data.name]
+                except KeyError:
+                    pass
             except Exception as err:
                 rospy.logwarn("Error while restart nodes %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Restart nodes", data.data, '%s' % utf8(err))

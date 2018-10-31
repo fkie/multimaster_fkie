@@ -223,13 +223,14 @@ def changed_binaries(nodes):
     '''
     result = []
     global STARTED_BINARIES
-    print "STARTED_BINARIES", STARTED_BINARIES
     for nodename in nodes:
         try:
             binary, mtime = STARTED_BINARIES[nodename]
-            print "binar", binary, mtime , os.path.getmtime(binary)
-            if mtime != os.path.getmtime(binary):
-                result.append(nodename)
+            new_mtime = os.path.getmtime(binary)
+            if mtime != new_mtime:
+                result.append((nodename, new_mtime))
+        except KeyError:
+            pass
         except Exception:
             print "for ", nodename
             import traceback
@@ -240,7 +241,6 @@ def changed_binaries(nodes):
 def _rosconsole_cfg_file(package, loglevel='INFO'):
     result = os.path.join(screen.LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
-        print("save logcfg to ", result)
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')
         cfg_file.write('log4j.logger.ros.roscpp.superdebug=WARN\n')

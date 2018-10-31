@@ -124,7 +124,6 @@ class MainWindow(QMainWindow):
                         }  # (masnter name : (QIcon, path))
         self.__current_icon = None
         self.__current_master_label_name = None
-        self._changed_binaries = dict()
         self._syncs_to_start = []  # hostnames
         self._accept_next_update = False
         self._last_window_state = False

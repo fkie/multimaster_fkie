@@ -44,7 +44,7 @@ service LaunchService {
 	rpc StartStandaloneNode (StartConfig) returns (StartNodeReply);
 	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
 	rpc GetMtime (LaunchFile) returns (MtimeReply);
-	rpc GetChangedBinaries (Nodes) returns (Nodes);
+	rpc GetChangedBinaries (Nodes) returns (MtimeNodes);
 }
 
 message Empty {
@@ -212,6 +212,18 @@ message Nodelets {
 message Nodes {
 	repeated string names = 1;
 }
+
+/** List with ROS-node names. */
+message MtimeNode {
+	string name = 1;
+	double mtime = 2;
+}
+
+/** List with ROS-node names. */
+message MtimeNodes {
+	repeated MtimeNode nodes = 1;
+}
+
 
 /** Starts a ROS node without configurations. All parameter are set by this request.
  *

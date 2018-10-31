@@ -136,9 +136,9 @@ class NmdClient(QObject):
     '''
     :ivar str,float,dict mtimes: this signal is emitted on new mtimes for requested files {grpc_url, mtime, {grpc_path: mtime}}.
     '''
-    changed_binaries = Signal(str, list)
+    changed_binaries = Signal(str, dict)
     '''
-    :ivar str,list changed_binaries: this signal is emitted on result of change binaries request {grpc_url, [node names]}.
+    :ivar str,dict changed_binaries: this signal is emitted on result of change binaries request {grpc_url, {node names: mtime}}.
     '''
     multiple_screens = Signal(str, dict)
     '''

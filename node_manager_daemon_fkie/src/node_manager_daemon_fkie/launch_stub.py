@@ -104,13 +104,13 @@ class LaunchStub(object):
         '''
         :param nodes: list with ROS-node names to check for changed binaries.
         :type nodes: list(str)
-        :return: List with ROS-node names of changed binaries since last start.
-        :rtype: list(str)
+        :return: Dictionary with ROS-node names of changed binaries since last start and their last modification time.
+        :rtype: dict(str: float)
         '''
         request = lmsg.Nodes()
         request.names.extend(nodes)
         response = self.lm_stub.GetChangedBinaries(request, timeout=settings.GRPC_TIMEOUT)
-        return [node for node in response.names]
+        return {node.name: node.mtime for node in response.nodes}
 
     def unload_launch(self, path, masteruri=''):
         '''
