@@ -113,6 +113,9 @@ class ParameterDescription(object):
     def origin_value(self):
         return self._value_org
 
+    def clear_origin_value(self):
+        self._value_org = None
+
     def changed(self):
         return utf8(self.origin_value()) != utf8(self._value)
 
@@ -370,15 +373,15 @@ class MainBox(QWidget):
 #    vis = self.param_widget.isVisible()
 #    self.hide_button.setText('-' if vis else '+')
 
-    def createFieldFromValue(self, value):
+    def createFieldFromValue(self, value, clear_origin_value=False):
         self.setUpdatesEnabled(False)
         try:
             if isinstance(value, (dict, list)):
-                self._createFieldFromDict(value)
+                self._createFieldFromDict(value, clear_origin_value=clear_origin_value)
         finally:
             self.setUpdatesEnabled(True)
 
-    def _createFieldFromDict(self, value, layout=None):
+    def _createFieldFromDict(self, value, layout=None, clear_origin_value=False):
         if layout is None:
             layout = self.param_widget.layout()
         # sort the items: 1. header, 2. all premitives (sorted), 3. list, dict (sorted)
@@ -401,10 +404,12 @@ class MainBox(QWidget):
             if field is None:
                 param_desc = ParameterDescription(name, _type, val)
                 field = param_desc.createTypedWidget(self)
+                if clear_origin_value:
+                    param_desc.clear_origin_value()
                 param_desc.setWidget(field)
                 self.params.append(param_desc)
                 if isinstance(field, (GroupBox, ArrayBox)):
-                    field.createFieldFromValue(val)
+                    field.createFieldFromValue(val, clear_origin_value)
                     layout.addRow(field)
                 else:
                     label_name = name if _type == 'string' else ''.join([name, ' (', _type, ')'])
@@ -414,7 +419,7 @@ class MainBox(QWidget):
                     layout.addRow(label, field)
             else:
                 if isinstance(field, (GroupBox, ArrayBox)):
-                    field.createFieldFromValue(val)
+                    field.createFieldFromValue(val, clear_origin_value)
                 else:
                     raise Exception(''.join(["Parameter with name '", name, "' already exists!"]))
 
@@ -613,7 +618,7 @@ class ArrayBox(MainBox):
                 print traceback.format_exc(1)
             self.count_label.setText(utf8(self._dynamic_items_count))
 
-    def createFieldFromValue(self, value):
+    def createFieldFromValue(self, value, clear_origin_value=False):
         self.setUpdatesEnabled(False)
         try:
             if isinstance(value, list):
@@ -1080,7 +1085,7 @@ class MasterParameterDialog(ParameterDialog):
                             MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e))
                     else:
                         value = params['value']
-                    self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)})
+                    self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)}, new_param=True)
                 else:
                     MessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!')
             except ValueError, e:
@@ -1105,7 +1110,7 @@ class MasterParameterDialog(ParameterDialog):
         else:
             self.setText(msg)
 
-    def _on_param_values(self, masteruri, code, msg, params):
+    def _on_param_values(self, masteruri, code, msg, params, new_param=False):
         '''
         @param masteruri: The URI of the ROS parameter server
         @type masteruri: C{str}
@@ -1156,7 +1161,7 @@ class MasterParameterDialog(ParameterDialog):
                 else:
                     dia_params[param_name] = (type_str, [value])
             try:
-                self.content.createFieldFromValue(dia_params)
+                self.content.createFieldFromValue(dia_params, clear_origin_value=new_param)
                 self.setInfoActive(False)
             except Exception, e:
                 import traceback
