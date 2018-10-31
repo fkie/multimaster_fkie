@@ -96,6 +96,10 @@ class MessageQueue(object):
                 return (qid, text, data)
         return (0, '', None)
 
+    def remove(self, questionid, text=None):
+        if questionid in self._queue.keys():
+            del self._queue[questionid][:]
+
 
 class MessageFrame(QFrame):
 
@@ -194,6 +198,8 @@ class MessageFrame(QFrame):
             return False
 
     def hide_question(self, questionids):
+        for qid in questionids:
+            self._queue.remove(qid)
         if self.questionid in questionids:
             self._new_request = False
             self.frameui.setVisible(False)

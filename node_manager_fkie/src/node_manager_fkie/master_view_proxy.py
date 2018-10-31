@@ -464,6 +464,8 @@ class MasterViewProxy(QWidget):
                         self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
                     else:
                         self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
+            else:
+                self.message_frame.hide_question([MessageFrame.TYPE_NMD])
             try:
                 if (master_info.masteruri == self.masteruri):
                     self.update_system_parameter()
