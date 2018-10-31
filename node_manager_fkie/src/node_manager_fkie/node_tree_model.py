@@ -161,7 +161,7 @@ class GroupItem(QStandardItem):
             name = namespace(self._name)
         result = name
         if self.parent_item is not None:
-            result = self.parent_item.get_namespace() + rospy.names.SEP + result
+            result = normns(self.parent_item.get_namespace() + rospy.names.SEP) + normns(result + rospy.names.SEP)
         return normns(result)
 
     def count_nodes(self):
@@ -240,13 +240,7 @@ class GroupItem(QStandardItem):
                     if descr['images']:
                         groupItem.descr_images = list(descr['images'])
                     # move the nodes from host to the group
-                    for i in reversed(range(self.rowCount())):
-                        item = self.child(i)
-                        if isinstance(item, NodeItem) and self.is_in_cap_group(item.name, config, ns, group):
-                            row = self.takeRow(i)
-                            groupItem._addRow_sorted(row)
-                            group_changed = True
-
+                    group_changed = self.move_nodes2group(groupItem, config, ns, group, self)
                     # create new or update existing items in the group
                     for node_name in nodes:
                         # do not add nodes with * in the name
@@ -267,6 +261,34 @@ class GroupItem(QStandardItem):
                     if group_changed:
                         groupItem.updateDisplayedConfig()
                         groupItem.updateIcon()
+
+    def move_nodes2group(self, group_item, config, ns, groupname, host_item):
+        '''
+        Returns `True` if the group was changed by adding a new node.
+
+        @param GroupItem group_item: item to parse the children for nodes.
+        @param str config: the configuration name
+        @param str ns: namespace
+        @param str groupname: the group name
+        @param HostItem host_item: the host item contain the capability groups
+        @return: `True`, if the group was changed by adding a new node.
+        @rtype: bool
+        '''
+        self_changed = False
+        group_changed = False
+        for i in reversed(range(self.rowCount())):
+            item = self.child(i)
+            if isinstance(item, NodeItem):
+                if host_item.is_in_cap_group(item.name, config, ns, groupname):
+                    row = self.takeRow(i)
+                    group_item._addRow_sorted(row)
+                    group_changed = True
+            elif isinstance(item, GroupItem) and not item.is_group:
+                group_changed = item.move_nodes2group(group_item, config, ns, groupname, host_item)
+        if self_changed:
+            self.update_displayed_config()
+            self.updateIcon()
+        return group_changed
 
     def remCapablities(self, config):
         '''
@@ -359,6 +381,8 @@ class GroupItem(QStandardItem):
         lns, rns = lnamespace(group_name)
         if lns == rospy.names.SEP and type(self) == HostItem:
             lns, rns = lnamespace(rns)
+        if lns == rospy.names.SEP:
+            return self
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, GroupItem):
@@ -402,13 +426,17 @@ class GroupItem(QStandardItem):
                     groupItem = self.getGroupItem(group_name, True)
                     groupItem.addNode(node, cfg)
         else:
+            group_item = self
+            if type(group_item) == HostItem:
+                # insert in the group
+                group_item = self.getGroupItem(namespace(node.name), False)
             # insert in order
             new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
-            self._addRow_sorted(new_item_row)
+            group_item._addRow_sorted(new_item_row)
             new_item_row[0].node_info = node
             if cfg or cfg == '':
                 new_item_row[0].addConfig(cfg)
-            self.updateIcon()
+            group_item.updateIcon()
 
     def _addRow_sorted(self, row):
         for i in range(self.rowCount()):
