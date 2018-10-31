@@ -165,6 +165,7 @@ class MasterViewProxy(QWidget):
         self._on_stop_kill_roscore = False
         self._on_stop_poweroff = False
         self._start_nodes_after_load_cfg = dict()
+        self._cfg_changed_nodes = dict()
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
@@ -675,13 +676,9 @@ class MasterViewProxy(QWidget):
 
     def _apply_launch_config(self, launchcfg, changed_nodes):
         filename = launchcfg.launchfile
-        # restart nodes
+        # store changed nodes for restart
         if changed_nodes:
-            restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self)
-            if ok:
-                self.stop_nodes_by_name(restart)
-                self.start_nodes_after_load_cfg(filename, restart, force=True)
-                # self.start_nodes_by_name(restart, filename, force=True)
+            self._cfg_changed_nodes[filename] = changed_nodes
         if filename in self.__configs:
             # store expanded items
             self.__expanded_items[filename] = self._get_expanded_groups()
@@ -987,6 +984,14 @@ class MasterViewProxy(QWidget):
                 print ("skip remove config", url, cfg)
                 pass
         self.updateButtons()
+        for cfg in new_configs:
+            if cfg in self._cfg_changed_nodes:
+                changed_nodes = self._cfg_changed_nodes[cfg]
+                del self._cfg_changed_nodes[cfg]
+                restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self)
+                if ok:
+                    self.stop_nodes_by_name(restart)
+                    self.start_nodes_by_name(restart, cfg, force=True)
 
     def on_launch_description_err(self, url, error):
         '''
