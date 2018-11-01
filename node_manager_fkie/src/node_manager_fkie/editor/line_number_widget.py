@@ -75,7 +75,8 @@ class LineNumberWidget(QFrame):
                     painter.setPen(Qt.black)
                 # Draw the line number right justified at the y position of the
                 # line. 3 is the magic padding number. drawText(x, y, text)
-                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3, round(position.y()) - contents_y + font_metrics.ascent() + self.edit.document().documentMargin(), str(line_count))
+                midh = abs(font_metrics.height() - font_metrics.ascent()) / 2
+                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3, round(position.y()) - contents_y + font_metrics.ascent() - midh + self.edit.document().documentMargin(), str(line_count))
                 if bold:
                     font = painter.font()
                     font.setBold(False)
@@ -99,6 +100,7 @@ class LineNumberWidget(QFrame):
 
         hbox = QHBoxLayout(self)
         hbox.setSpacing(0)
+        hbox.setContentsMargins(0, 0, 0, 0)
         # hbox.setMargin(0) # removed: it is not supported by Qt5
         hbox.addWidget(self.number_bar)
         hbox.addWidget(self.edit)
