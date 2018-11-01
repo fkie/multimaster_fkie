@@ -736,10 +736,16 @@ class LaunchListModel(QStandardItemModel):
                 path_item = PathItem.create_row_items(path, path_id, mtime, size, name)
                 for i in range(root.rowCount()):
                     curr_item = root.child(i)
-                    launch_file_cmp = path_id in [PathItem.RECENT_FILE, PathItem.LAUNCH_FILE, PathItem.RECENT_PROFILE, PathItem.PROFILE] and curr_item.name < path_item[0].name and curr_item.id not in [PathItem.ROOT]
-                    launch_id_cmp = (curr_item.id > path_id and curr_item.id > PathItem.LAUNCH_FILE)
-                    launch_name_cmp = (curr_item.id == path_id and path_item[0].name < curr_item.name)
-                    if launch_file_cmp or launch_id_cmp or launch_name_cmp:
+                    insert_item = False
+                    print "add", path_item[0].name, path_item[0].id
+                    if curr_item.id not in [PathItem.ROOT]:
+                        if curr_item.id == path_item[0].id or path_item[0].id in [PathItem.RECENT_FILE, PathItem.LAUNCH_FILE, PathItem.RECENT_PROFILE, PathItem.PROFILE]:
+                            if path_item[0].name < curr_item.name:
+                                insert_item = True
+                        elif curr_item.id > path_item[0].id:
+                            if curr_item.id > PathItem.LAUNCH_FILE:
+                                insert_item = True
+                    if insert_item:
                         root.insertRow(i, path_item)
                         self.pyqt_workaround[path_item[0].name] = path_item[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
                         return True
