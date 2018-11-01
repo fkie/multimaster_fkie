@@ -737,7 +737,6 @@ class LaunchListModel(QStandardItemModel):
                 for i in range(root.rowCount()):
                     curr_item = root.child(i)
                     insert_item = False
-                    print "add", path_item[0].name, path_item[0].id
                     if curr_item.id not in [PathItem.ROOT]:
                         if curr_item.id == path_item[0].id or path_item[0].id in [PathItem.RECENT_FILE, PathItem.LAUNCH_FILE, PathItem.RECENT_PROFILE, PathItem.PROFILE]:
                             if path_item[0].name < curr_item.name:

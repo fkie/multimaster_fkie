@@ -46,9 +46,12 @@ class HTMLDelegate(QStyledItemDelegate):
     '''
     A class to display the HTML text in QTreeView.
     '''
-    def __init__(self, parent=None, check_for_ros_names=True):
+    def __init__(self, parent=None, check_for_ros_names=True, dec_ascent=False):
         QStyledItemDelegate.__init__(self, parent)
         self._check_for_ros_names = check_for_ros_names
+        self._cached_size = None
+        self._red_ascent = 4 if not dec_ascent else 2
+        self._dec_ascent = dec_ascent
 
     def paint(self, painter, option, index):
         '''
@@ -77,7 +80,8 @@ class HTMLDelegate(QStyledItemDelegate):
             textRect.setWidth(options.rect.width())
             textRect.setHeight(options.rect.height())
         painter.save()
-        painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - 3))
+        red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2
+        painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - red))
         painter.setClipRect(textRect.translated(-textRect.topLeft()))
         doc.documentLayout().draw(painter, ctx)
 
@@ -88,14 +92,17 @@ class HTMLDelegate(QStyledItemDelegate):
         Determines and returns the size of the text after the format.
         @see: U{http://www.pyside.org/docs/pyside/PySide/QtGui/QAbstractItemDelegate.html#PySide.QtGui.QAbstractItemDelegate}
         '''
+        if self._cached_size is not None:
+            return self._cached_size
         options = QStyleOptionViewItem(option)
         self.initStyleOption(options, index)
-
         doc = QTextDocument()
         doc.setHtml(options.text)
         doc.setTextWidth(options.rect.width())
         metric = QFontMetrics(doc.defaultFont())
-        return QSize(doc.idealWidth(), metric.height() + 4)
+        self._red_ascent = abs(metric.height() - metric.ascent())
+        self._cached_size = QSize(doc.idealWidth(), metric.height() + self._red_ascent)
+        return self._cached_size
 
     @classmethod
     def toHTML(cls, text, check_for_ros_names=True):

@@ -205,7 +205,7 @@ class MasterViewProxy(QWidget):
         self.node_tree_model.hostInserted.connect(self.on_host_inserted)
         for i, (_, width) in enumerate(NodeTreeModel.header):  # _:=name
             self.masterTab.nodeTreeView.setColumnWidth(i, width)
-        self.nodeNameDelegate = HTMLDelegate()
+        self.nodeNameDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
         self.node_delegate = IconsDelegate()
         self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
@@ -226,8 +226,8 @@ class MasterViewProxy(QWidget):
 #    self.masterTab.topicsView.setModel(self.topic_model)
         for i, (_, width) in enumerate(TopicModel.header):  # _:=name
             self.masterTab.topicsView.setColumnWidth(i, width)
-        self.topicNameDelegate = HTMLDelegate()
-        self.topicTypeDelegate = HTMLDelegate()
+        self.topicNameDelegate = HTMLDelegate(dec_ascent=True)
+        self.topicTypeDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
         self.masterTab.topicsView.setItemDelegateForColumn(3, self.topicTypeDelegate)
         sm = self.masterTab.topicsView.selectionModel()
@@ -243,8 +243,8 @@ class MasterViewProxy(QWidget):
         self.masterTab.servicesView.setModel(self.service_proxyModel)
         for i, (_, width) in enumerate(ServiceModel.header):  # _:=name
             self.masterTab.servicesView.setColumnWidth(i, width)
-        self.serviceNameDelegate = HTMLDelegate()
-        self.serviceTypeDelegate = HTMLDelegate()
+        self.serviceNameDelegate = HTMLDelegate(dec_ascent=True)
+        self.serviceTypeDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.servicesView.setItemDelegateForColumn(0, self.serviceNameDelegate)
         self.masterTab.servicesView.setItemDelegateForColumn(1, self.serviceTypeDelegate)
         sm = self.masterTab.servicesView.selectionModel()
@@ -261,7 +261,7 @@ class MasterViewProxy(QWidget):
         self.masterTab.parameterView.setModel(self.parameter_proxyModel)
         for i, (_, width) in enumerate(ParameterModel.header):  # _:=name
             self.masterTab.parameterView.setColumnWidth(i, width)
-        self.parameterNameDelegate = HTMLDelegate()
+        self.parameterNameDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.parameterView.setItemDelegateForColumn(0, self.parameterNameDelegate)
         sm = self.masterTab.parameterView.selectionModel()
         sm.selectionChanged.connect(self.on_parameter_selection_changed)
