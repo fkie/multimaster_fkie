@@ -274,8 +274,18 @@ class FileServicer(fms_grpc.FileServiceServicer):
         if not request.path:
             # list ROS root items
             for p in os.getenv('ROS_PACKAGE_PATH').split(':'):
-                path = os.path.normpath(p)
-                path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=PATH_DIR, ))
+                try:
+                    path = os.path.normpath(p)
+                    fileList = os.listdir(path)
+                    file_type = None
+                    if is_package(fileList):
+                        file_type = PATH_PACKAGE
+                    else:
+                        file_type = PATH_DIR
+                    self.DIR_CACHE[path] = file_type
+                    path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                except Exception as _:
+                    pass
         else:
             try:
                 # list the path
