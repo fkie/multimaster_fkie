@@ -151,7 +151,9 @@ class GroupItem(QStandardItem):
 
     @property
     def cfgs(self):
-        return self.get_configs()
+        lc, dc = self.get_configs()
+        lc[len(lc):] = dc
+        return lc
 
     def get_namespace(self):
         name = self._name
