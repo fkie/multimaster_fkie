@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test launch file to check namespace-based grouping in node_manager -->
+<launch>
+    <group ns="ground_robot">
+        <group ns="lidar">
+            <node name="velodyne_driver" pkg="tf" type="static_transform_publisher"/>
+        </group>
+
+        <group ns="vision">
+            <node name="rgb_rectifier" pkg="tf" type="static_transform_publisher"/>
+            <node name="nir_rectifier" pkg="tf" type="static_transform_publisher"/>
+            <node name="camera_back_driver" pkg="tf" type="static_transform_publisher"/>
+        </group>
+    </group>
+
+    <group ns="aerial_robot">
+        <node name="flight_controller" pkg="tf" type="static_transform_publisher"/>
+        
+        <group ns="vision">
+            <node name="camera_1" pkg="tf" type="static_transform_publisher"/>
+            <node name="camera_2" pkg="tf" type="static_transform_publisher"/>
+        </group>
+    </group>
+</launch>
