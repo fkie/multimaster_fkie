@@ -212,7 +212,7 @@ def included_files(string,
     pwd = '.'
     content = string
     # read file content if file exists
-    if os.path.exists(string):
+    if os.path.exists(string) and not os.path.isdir(string):
         pwd = os.path.dirname(string)
         with open(string, 'r') as f:
             content = f.read()
