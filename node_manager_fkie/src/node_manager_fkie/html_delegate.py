@@ -80,7 +80,7 @@ class HTMLDelegate(QStyledItemDelegate):
             textRect.setWidth(options.rect.width())
             textRect.setHeight(options.rect.height())
         painter.save()
-        red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2
+        red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2 + 1
         painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - red))
         painter.setClipRect(textRect.translated(-textRect.topLeft()))
         doc.documentLayout().draw(painter, ctx)
