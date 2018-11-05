@@ -537,6 +537,8 @@ class LaunchListModel(QStandardItemModel):
         Reloads the current path.
         '''
         self.expand_item(self._current_path, PathItem.FOLDER, clear_cache)
+        if clear_cache:
+            nm.nmd().clear_package_cache(self.current_grpc)
 
     def expand_item(self, path, path_id, clear_cache=False):
         '''

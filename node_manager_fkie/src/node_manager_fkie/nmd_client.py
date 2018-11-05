@@ -205,6 +205,15 @@ class NmdClient(QObject):
             return {}
         return self._cache_packages
 
+    def clear_package_cache(self, url):
+        if url:
+            grpc_url = nmdurl.nmduri(url)
+            try:
+                del self._cache_packages[grpc_url]
+                rospy.logdebug("Packages cache removed for", grpc_url)
+            except KeyError:
+                pass
+
     def get_file_manager(self, uri='localhost:12321'):
         channel = remote.get_insecure_channel(uri)
         if channel is not None:
