@@ -241,13 +241,16 @@ def included_files(string,
                                 recursive_list = res_list
                             else:
                                 result += res_list
+                    elif os.path.isdir(file_name):
+                        file_name = ''
                 except Exception as e:
                     rospy.logwarn(utf8(e))
-                if not unique:
-                    # transform found position to line number
-                    result.append((content.count("\n", 0, groups.start()) + 1, file_name, recursive_list))
-                else:
-                    result.append(file_name)
+                if file_name:
+                    if not unique:
+                        # transform found position to line number
+                        result.append((content.count("\n", 0, groups.start()) + 1, file_name, recursive_list))
+                    else:
+                        result.append(file_name)
                 continue
     if unique:
         return set(result)
