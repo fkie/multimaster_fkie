@@ -143,13 +143,11 @@ class LaunchFilesWidget(QDockWidget):
                 lfile = self.launchlist_model.expand_item(item.path, item.id)
                 # self.ui_search_line.setText('')
                 if lfile is not None:
-                    print "lfile", lfile
                     self.ui_search_line.set_process_active(False)
                     if item.is_launch_file():
                         nm.settings().launch_history_add(item.path)
                         self.load_signal.emit(item.path, {}, None)
                     elif item.is_profile_file():
-                        print "IS PROFILE"
                         nm.settings().launch_history_add(item.path)
                         self.load_profile_signal.emit(item.path)
                     elif item.is_config_file():
@@ -183,7 +181,6 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_button_new.setEnabled(not self.launchlist_model.is_in_root)
 
     def on_error_on_path(self, gpath):
-        print "ERROR on_error_on_path", gpath, "c:", self.launchlist_model.current_path
         if gpath == self._current_search or gpath == self.launchlist_model.current_path:
             self.ui_search_line.set_process_active(False)
         if self.launchlist_model.is_in_root:

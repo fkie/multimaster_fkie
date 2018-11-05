@@ -427,7 +427,7 @@ class NmdClient(QObject):
         args_res = {}
         while nexttry:
             try:
-                rospy.loginfo("load launch file %s:" % (grpc_path))
+                rospy.logdebug("load launch file on gRPC server: %s" % (grpc_path))
                 launch_files, args_res = lm.load_launch(package, launch, path=path, args=myargs, request_args=request_args, masteruri=masteruri, host=host)
                 if launch_files:
                     launch_file = launch_files[0]
@@ -451,7 +451,7 @@ class NmdClient(QObject):
                 nexttry = False
                 ok = True
                 launch_file = aoe.path
-        rospy.loginfo("  %s: %s" % ('OK' if ok else "ERR", launch_file))
+        rospy.logdebug("  load launch file result - %s: %s" % ('OK' if ok else "ERR", launch_file))
         return launch_file, args_res
 
     def reload_launch(self, grpc_path, masteruri=''):

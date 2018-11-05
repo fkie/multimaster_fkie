@@ -992,7 +992,6 @@ class MasterViewProxy(QWidget):
                 self.remove_cfg_from_model(cfg)
                 del self.__configs[cfg]
             else:
-                print ("skip remove config", url, cfg)
                 pass
         self.updateButtons()
         for cfg in new_configs:
