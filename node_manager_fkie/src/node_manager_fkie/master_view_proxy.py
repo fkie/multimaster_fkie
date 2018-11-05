@@ -458,13 +458,13 @@ class MasterViewProxy(QWidget):
                 return
             nmd_node = master_info.getNode('/node_manager_daemon')
             if nmd_node is None or nmd_node.pid is None:
-                if time.time() - self.__last_question_start_nmd > 3.:
+                if time.time() - self.__last_question_start_nmd > 1.:
                     self.__last_question_start_nmd = time.time()
                     if not self.is_local:
                         self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
                     else:
                         self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
-            else:
+            elif master_info.masteruri == self.masteruri:
                 self.message_frame.hide_question([MessageFrame.TYPE_NMD])
             try:
                 if (master_info.masteruri == self.masteruri):
