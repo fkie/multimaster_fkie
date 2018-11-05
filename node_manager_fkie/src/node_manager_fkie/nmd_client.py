@@ -210,7 +210,7 @@ class NmdClient(QObject):
             grpc_url = nmdurl.nmduri(url)
             try:
                 del self._cache_packages[grpc_url]
-                rospy.logdebug("Packages cache removed for", grpc_url)
+                rospy.logdebug("cache for packages from '%s' removed", grpc_url)
             except KeyError:
                 pass
 
