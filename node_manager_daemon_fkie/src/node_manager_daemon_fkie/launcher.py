@@ -169,7 +169,7 @@ def run_node(startcfg):
         # set environment
         new_env = dict(os.environ)
         # add environment from launch
-        new_env.extend(startcfg.env)
+        new_env.update(startcfg.env)
         if startcfg.namespace:
             new_env['ROS_NAMESPACE'] = startcfg.namespace
         # set logging
