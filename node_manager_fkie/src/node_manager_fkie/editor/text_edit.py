@@ -387,7 +387,7 @@ class TextEdit(QTextEdit):
                             last_pos = res.rfind("- ->")
                             if last_pos > -1:
                                 res = "%s-->" % res[0:last_pos]
-                        cursor.insertText(res.replace("--", "- - "))
+                        cursor.insertText(res.replace("- - ", "--"))
                 else:  # other comments
                     hash_re = re.compile(r"# ?")
                     if do_comment:
