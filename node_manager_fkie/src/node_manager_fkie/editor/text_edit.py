@@ -394,7 +394,7 @@ class TextEdit(QTextEdit):
                     xmlre_end = re.compile(r" ?-->")
                     cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
                     if do_comment:
-                        cursor.insertText("<!-- %s -->" % cursor.selectedText().replace("--", "- -"))
+                        cursor.insertText("<!-- %s -->" % cursor.selectedText().replace("--", "- - "))
                     else:
                         res = cursor.selectedText()
                         mstart = xmlre_start.search(res)
@@ -407,7 +407,7 @@ class TextEdit(QTextEdit):
                             last_pos = res.rfind("- ->")
                             if last_pos > -1:
                                 res = "%s-->" % res[0:last_pos]
-                        cursor.insertText(res)
+                        cursor.insertText(res.replace("- - ", "--"))
                 else:  # other comments
                     hash_re = re.compile(r"# ?")
                     if do_comment:
