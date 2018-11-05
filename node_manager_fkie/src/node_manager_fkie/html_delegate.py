@@ -46,12 +46,13 @@ class HTMLDelegate(QStyledItemDelegate):
     '''
     A class to display the HTML text in QTreeView.
     '''
-    def __init__(self, parent=None, check_for_ros_names=True, dec_ascent=False):
+    def __init__(self, parent=None, check_for_ros_names=True, dec_ascent=False, is_node=False):
         QStyledItemDelegate.__init__(self, parent)
         self._check_for_ros_names = check_for_ros_names
         self._cached_size = None
         self._red_ascent = 4 if not dec_ascent else 2
         self._dec_ascent = dec_ascent
+        self._is_node = is_node
 
     def paint(self, painter, option, index):
         '''
@@ -64,7 +65,7 @@ class HTMLDelegate(QStyledItemDelegate):
         style = QApplication.style() if options.widget is None else options.widget.style()
 
         doc = QTextDocument()
-        doc.setHtml(self.toHTML(options.text, self._check_for_ros_names))
+        doc.setHtml(self.toHTML(options.text, self._check_for_ros_names, self._is_node))
 
         options.text = ''
         style.drawControl(QStyle.CE_ItemViewItem, options, painter)
@@ -105,13 +106,12 @@ class HTMLDelegate(QStyledItemDelegate):
         return self._cached_size
 
     @classmethod
-    def toHTML(cls, text, check_for_ros_names=True):
+    def toHTML(cls, text, check_for_ros_names=True, is_node=False):
         '''
         Creates a HTML representation of the given text. It could be a node, topic service or group name.
-        @param text: a name with ROS representation
-        @type text: C{str}
-        @return: the HTML representation of the given name
-        @rtype: C{str}
+        :param str text: a name with ROS representation
+        :return: the HTML representation of the given name
+        :rtype: str
         '''
         if text.rfind('@') > 0:  # handle host names
             name, sep, host = text.rpartition('@')
@@ -127,7 +127,9 @@ class HTMLDelegate(QStyledItemDelegate):
             if sep:
                 result = '<b>{</b><span style="color:gray;">%s%s</span><b>%s}</b>' % (ns, sep, name)
             else:
-                result = '<b>{%s}</b>' % (name)
+                result = '<span style="color:gray;">{%s}</span>' % (name)
+#                result = '<b>{</b><span style="color:gray;">%s</span><b>}</b>' % (name)
+#                result = '<b>{%s}</b>' % (name)
         elif text.find('[') > -1:
             start_idx = text.find('[')
             end_idx = text.find(']', start_idx)
@@ -151,6 +153,8 @@ class HTMLDelegate(QStyledItemDelegate):
             result = ''
             if sep:
                 result = '<span style="color:gray;">%s%s</span><b>%s</b>' % (ns, sep, name)
+            elif is_node:
+                result = '<b>%s</b>' % name
             else:
                 result = name
         return result
