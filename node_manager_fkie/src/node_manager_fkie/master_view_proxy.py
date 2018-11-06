@@ -444,8 +444,9 @@ class MasterViewProxy(QWidget):
             self._launcher_threaded.update_info(nmd_uri_local, masteruri_from_ros())
         try:
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
+            my_masterinfo = master_info.masteruri == self.masteruri
             if self.__master_info is None:
-                if (master_info.masteruri == self.masteruri):
+                if my_masterinfo:
                     self.__master_info = master_info
                     update_result[0].update(self.__master_info.node_names)
                     update_result[3].update(self.__master_info.topic_names)
@@ -456,18 +457,19 @@ class MasterViewProxy(QWidget):
             # we receive the master info from remove nodes first -> skip
             if self.__master_info is None:
                 return
-            nmd_node = master_info.getNode('/node_manager_daemon')
-            if nmd_node is None or nmd_node.pid is None:
-                if time.time() - self.__last_question_start_nmd > 1.:
-                    self.__last_question_start_nmd = time.time()
-                    if not self.is_local:
-                        self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
-                    else:
-                        self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
-            elif master_info.masteruri == self.masteruri:
-                self.message_frame.hide_question([MessageFrame.TYPE_NMD])
+            if my_masterinfo:
+                nmd_node = master_info.getNode('/node_manager_daemon')
+                if nmd_node is None or nmd_node.pid is None:
+                    if time.time() - self.__last_question_start_nmd > 1.:
+                        self.__last_question_start_nmd = time.time()
+                        if not self.is_local:
+                            self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
+                        else:
+                            self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
+                else:
+                    self.message_frame.hide_question([MessageFrame.TYPE_NMD])
             try:
-                if (master_info.masteruri == self.masteruri):
+                if my_masterinfo:
                     self.update_system_parameter()
                     self.online = True
                 # request the info of new remote nodes
