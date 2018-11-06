@@ -181,4 +181,4 @@ class ScreenHandler(object):
                     else:
                         nm.ssh().ssh_exec(host, [screen.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, cls.kill_screens, (node, host, auto_ok_request))
+            raise nm.InteractionNeededError(e, cls.kill_screens, (grpc_url, host, auto_ok_request))
