@@ -22,7 +22,7 @@
     <param name="timeout_factor" value="10" />
     <!-- remove an offline host after this time in [sec] (Default: 300 sec). -->
     <param name="remove_after" value="300" />
-    <!-- send an update request, if after this time no hearbeats are received [sec] (Default: 60 sec). -->
+    <!-- send an update request, if after this time no heartbeats are received [sec] (Default: 60 sec). -->
     <param name="active_request_after" value="60" />
     <!-- in some network environments does multicast not work properly. In this
       case you can specify robots where a master discovery is running. These

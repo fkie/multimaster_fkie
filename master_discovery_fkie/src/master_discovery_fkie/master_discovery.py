@@ -219,7 +219,7 @@ class DiscoveredMaster(object):
 
     def remove_heartbeats(self, timestamp):
         '''
-        Removes all hearbeat measurements, which are older as the given timestamp.
+        Removes all heartbeat measurements, which are older as the given timestamp.
 
         :param timestamp: heartbeats older this timestamp will be removed.
 
@@ -398,14 +398,14 @@ class Discoverer(object):
     '''
     The class to publish the current state of the ROS master.
 
-    Discovering is done by hearbeats:
+    Discovering is done by heartbeats:
       Each master discovery node sends to a multicast group periodically messages
       with current state. If the frequency is less than 0.3 the detected changes
       on ROS master are published immediately.
       The current state is described by timestamp of last change. The frequency of
       heartbeats can be changed by `~heartbeat_hz` parameter.
 
-      If hearbeats are disabled (`~heartbeat_hz` is zero) each master discovery
+      If heartbeats are disabled (`~heartbeat_hz` is zero) each master discovery
       node sends on start three notification messages and requests.
 
       If for a host no more heartbeat are received while `ACTIVE_REQUEST_AFTER (60 sec)`
@@ -434,7 +434,7 @@ class Discoverer(object):
       ::
 
         one character 'R'
-        unsigned char: version of the hearbeat message
+        unsigned char: version of the heartbeat message
         unsigned char: rate of the heartbeat message in HZ*10. Maximal rate: 25.5 Hz -> value 255
         int: secs of the ROS Master state
         int: nsecs of the ROS Master state
@@ -476,7 +476,7 @@ class Discoverer(object):
     ''' remove an offline host after this time in [sec] (Default: 300 sec). '''
 
     ACTIVE_REQUEST_AFTER = 60
-    ''' send an update request, if after this time no hearbeats are received [sec] (Default: 60 sec). '''
+    ''' send an update request, if after this time no heartbeats are received [sec] (Default: 60 sec). '''
 
     INIT_NOTIFICATION_COUNT = 3
     ''' the count of heartbeats and update request to send at the start (Default: 3 sec).
@@ -963,7 +963,7 @@ class Discoverer(object):
     @classmethod
     def msg2masterState(cls, msg, address):
         '''
-        :return: parses the hearbeat message and return a tuple of
+        :return: parses the heartbeat message and return a tuple of
                 version and values corresponding with current version of message.
                 :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`
 
