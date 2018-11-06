@@ -117,7 +117,7 @@ class HTMLDelegate(QStyledItemDelegate):
             name, sep, host = text.rpartition('@')
             result = ''
             if sep:
-                result = '%s<span style="color:gray;">%s%s</span>' % (name, sep, host)
+                result = '%s<span style="color:#3c3c3c;">%s%s</span>' % (name, sep, host)
             else:
                 result = text
         elif text.find('{') > -1:  # handle group names
@@ -125,9 +125,9 @@ class HTMLDelegate(QStyledItemDelegate):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<b>{</b><span style="color:gray;">%s%s</span><b>%s}</b>' % (ns, sep, name)
+                result = '{<span style="color:#3c3c3c;">%s%s</span>%s}' % (ns, sep, name)
             else:
-                result = '<span style="color:gray;">{%s}</span>' % (name)
+                result = '<span style="color:#3c3c3c;">{%s}</span>' % (name)
 #                result = '<b>{</b><span style="color:gray;">%s</span><b>}</b>' % (name)
 #                result = '<b>{%s}</b>' % (name)
         elif text.find('[') > -1:
@@ -152,7 +152,7 @@ class HTMLDelegate(QStyledItemDelegate):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<span style="color:gray;">%s%s</span><b>%s</b>' % (ns, sep, name)
+                result = '<span style="color:#3c3c3c;">%s%s</span><b>%s</b>' % (ns, sep, name)
             elif is_node:
                 result = '<b>%s</b>' % name
             else:
