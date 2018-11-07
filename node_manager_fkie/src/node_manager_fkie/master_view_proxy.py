@@ -215,7 +215,7 @@ class MasterViewProxy(QWidget):
         self.node_tree_model.hostInserted.connect(self.on_host_inserted)
         for i, (_, width) in enumerate(NodeTreeModel.header):  # _:=name
             self.masterTab.nodeTreeView.setColumnWidth(i, width)
-        self.nodeNameDelegate = HTMLDelegate()
+        self.nodeNameDelegate = HTMLDelegate(check_for_ros_names=False, is_node=True)
         self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
         self.node_delegate = IconsDelegate()
         self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)

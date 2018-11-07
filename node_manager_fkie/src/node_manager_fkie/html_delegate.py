@@ -46,6 +46,13 @@ class HTMLDelegate(QStyledItemDelegate):
     '''
     A class to display the HTML text in QTreeView.
     '''
+    def __init__(self, parent=None, check_for_ros_names=True, dec_ascent=False, is_node=False):
+        QStyledItemDelegate.__init__(self, parent)
+        self._check_for_ros_names = check_for_ros_names
+        self._cached_size = None
+        self._red_ascent = 4 if not dec_ascent else 2
+        self._dec_ascent = dec_ascent
+        self._is_node = is_node
 
     def paint(self, painter, option, index):
         '''
@@ -58,8 +65,7 @@ class HTMLDelegate(QStyledItemDelegate):
         style = QApplication.style() if options.widget is None else options.widget.style()
 
         doc = QTextDocument()
-        doc.setHtml(self.toHTML(options.text))
-        # doc.setTextWidth(option.rect.width())
+        doc.setHtml(self.toHTML(options.text, self._check_for_ros_names, self._is_node))
 
         options.text = ''
         style.drawControl(QStyle.CE_ItemViewItem, options, painter)
@@ -71,8 +77,12 @@ class HTMLDelegate(QStyledItemDelegate):
         #  ctx.palette.setColor(QPalette::Text, optionV4.palette.color(QPalette::Active, QPalette::HighlightedText));
 
         textRect = style.subElementRect(QStyle.SE_ItemViewItemText, options, options.widget)
+        if textRect.width() < 10:
+            textRect.setWidth(options.rect.width())
+            textRect.setHeight(options.rect.height())
         painter.save()
-        painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - 3))
+        red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2 + 1
+        painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - red))
         painter.setClipRect(textRect.translated(-textRect.topLeft()))
         doc.documentLayout().draw(painter, ctx)
 
@@ -83,29 +93,31 @@ class HTMLDelegate(QStyledItemDelegate):
         Determines and returns the size of the text after the format.
         @see: U{http://www.pyside.org/docs/pyside/PySide/QtGui/QAbstractItemDelegate.html#PySide.QtGui.QAbstractItemDelegate}
         '''
+        if self._cached_size is not None:
+            return self._cached_size
         options = QStyleOptionViewItem(option)
         self.initStyleOption(options, index)
-
         doc = QTextDocument()
         doc.setHtml(options.text)
         doc.setTextWidth(options.rect.width())
         metric = QFontMetrics(doc.defaultFont())
-        return QSize(doc.idealWidth(), metric.height() + 4)
+        self._red_ascent = abs(metric.height() - metric.ascent())
+        self._cached_size = QSize(doc.idealWidth(), metric.height() + self._red_ascent)
+        return self._cached_size
 
     @classmethod
-    def toHTML(cls, text):
+    def toHTML(cls, text, check_for_ros_names=True, is_node=False):
         '''
         Creates a HTML representation of the given text. It could be a node, topic service or group name.
-        @param text: a name with ROS representation
-        @type text: C{str}
-        @return: the HTML representation of the given name
-        @rtype: C{str}
+        :param str text: a name with ROS representation
+        :return: the HTML representation of the given name
+        :rtype: str
         '''
         if text.rfind('@') > 0:  # handle host names
             name, sep, host = text.rpartition('@')
             result = ''
             if sep:
-                result = '%s<span style="color:gray;">%s%s</span>' % (name, sep, host)
+                result = '%s<span style="color:#3c3c3c;">%s%s</span>' % (name, sep, host)
             else:
                 result = text
         elif text.find('{') > -1:  # handle group names
@@ -113,9 +125,11 @@ class HTMLDelegate(QStyledItemDelegate):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<b>{</b><span style="color:gray;">%s%s</span><b>%s}</b>' % (ns, sep, name)
+                result = '{<span style="color:#3c3c3c;">%s%s</span>%s}' % (ns, sep, name)
             else:
-                result = '<b>{%s}</b>' % (name)
+                result = '<span style="color:#3c3c3c;">{%s}</span>' % (name)
+#                result = '<b>{</b><span style="color:gray;">%s</span><b>}</b>' % (name)
+#                result = '<b>{%s}</b>' % (name)
         elif text.find('[') > -1:
             start_idx = text.find('[')
             end_idx = text.find(']', start_idx)
@@ -123,11 +137,11 @@ class HTMLDelegate(QStyledItemDelegate):
             last_part = ""
             if end_idx + 1 < len(text):
                 last_part = text[end_idx + 1:]
-            if nr_idx > -1:
+            if nr_idx > -1 and nr_idx < start_idx:
                 result = '%s<b>%s</b><span style="color:gray;">%s</span><b>%s</b>' % (text[0:nr_idx + 1], text[nr_idx + 1:start_idx], text[start_idx:end_idx + 1], last_part)
             else:
                 result = '<b>%s</b><span style="color:gray;">%s</span><b>%s</b>' % (text[0:start_idx], text[start_idx:end_idx + 1], last_part)
-        elif not is_legal_name(text):  # handle all invalid names (used space in the name)
+        elif check_for_ros_names and not is_legal_name(text):  # handle all invalid names (used space in the name)
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
@@ -138,7 +152,9 @@ class HTMLDelegate(QStyledItemDelegate):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<span style="color:gray;">%s%s</span><b>%s</b>' % (ns, sep, name)
+                result = '<span style="color:#3c3c3c;">%s%s</span><b>%s</b>' % (ns, sep, name)
+            elif is_node:
+                result = '<b>%s</b>' % name
             else:
                 result = name
         return result
