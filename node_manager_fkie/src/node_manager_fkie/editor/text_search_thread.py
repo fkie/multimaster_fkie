@@ -110,8 +110,11 @@ class TextSearchThread(QObject, threading.Thread):
         try:
             result = self._path_text[path]
         except KeyError:
-            _, _, data = nm.nmd().get_file_content(path)
-            result = utf8(data)
+            try:
+                _, _, data = nm.nmd().get_file_content(path)
+                result = utf8(data)
+            except Exception as err:
+                rospy.logwarn("can't get content: %s" % (utf8(err)))
         return result
 
     def _strip_text(self, data, pos):
