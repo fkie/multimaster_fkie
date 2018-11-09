@@ -370,13 +370,14 @@ class GroupItem(QStandardItem):
                 result.append(item)
         return result
 
-    def getGroupItem(self, group_name, is_group=True):
+    def getGroupItem(self, group_name, is_group=True, nocreate=False):
         '''
         Returns a GroupItem with given name. If no group with this name exists, a
         new one will be created.
         Assumption: No groups in group!!
         @param group_name: the name of the group
         @type group_name: C{str}
+        @param nocreate: avoid creation of new group if not exists. (Default: False)
         @return: The group with given name
         @rtype: L{GroupItem}
         '''
@@ -392,7 +393,7 @@ class GroupItem(QStandardItem):
                     if rns:
                         return item.getGroupItem(rns, is_group)
                     return item
-                elif item > lns:
+                elif item > lns and not nocreate:
                     items = []
                     newItem = GroupItem(lns, self, is_group=(is_group and not rns))
                     items.append(newItem)
@@ -402,6 +403,8 @@ class GroupItem(QStandardItem):
                     if rns:
                         return newItem.getGroupItem(rns, is_group)
                     return newItem
+        if nocreate:
+            return None
         items = []
         newItem = GroupItem(lns, self, is_group=(is_group and not rns))
         items.append(newItem)
@@ -457,6 +460,14 @@ class GroupItem(QStandardItem):
         set to not running!
         @type fixed_node_names: C{[str]}
         '''
+        self._clearup(fixed_node_names)
+        self._clearup_reinsert()
+        self._clearup_riseup()
+
+    def _clearup(self, fixed_node_names=None):
+        '''
+        Removes not running and not configured nodes.
+        '''
         removed = False
         # move running nodes without configuration to the upper layer, remove not running and duplicate nodes
         for i in reversed(range(self.rowCount())):
@@ -483,17 +494,53 @@ class GroupItem(QStandardItem):
                                 # remove item
                                 removed = True
                                 self.removeRow(i)
-            elif type(item) == GroupItem:
-                item.clearUp(fixed_node_names)
-        if removed:
+            else:  # if type(item) == GroupItem:
+                removed = item._clearup(fixed_node_names) or removed
+        if self.rowCount() == 0 and self.parent_item is not None:
+            self.parent_item._remove_group(self.name)
+        elif removed:
             self.updateIcon()
+        return removed
 
-        # remove empty groups
+    def _clearup_reinsert(self):
+        inserted = False
         for i in reversed(range(self.rowCount())):
             item = self.child(i)
-            if isinstance(item, GroupItem):
-                if item.rowCount() == 0:
-                    self.removeRow(i)
+            if isinstance(item, NodeItem):
+                if item.with_namespace:
+                        group_item = self.getGroupItem(namespace(item.name), False, nocreate=True)
+                        if group_item is not None:
+                            inserted = True
+                            row = self.takeRow(i)
+                            group_item._addRow_sorted(row)
+                            group_item.updateIcon()
+            else:
+                inserted = item._clearup_reinsert() or inserted
+        return inserted
+
+    def _clearup_riseup(self):
+        changed = False
+        for i in reversed(range(self.rowCount())):
+            item = self.child(i)
+            if isinstance(item, NodeItem):
+                # remove group if only one node is inside
+                if self.rowCount() == 1:
+                    if not self.is_group and not isinstance(self, HostItem):
+                        changed = True
+                        row = self.takeRow(i)
+                        if self.parent_item is not None:
+                            self.parent_item._addRow_sorted(row)
+                            self.parent_item._remove_group(self.name)
+                            self.parent_item._clearup_riseup()
+            else:
+                changed = item._clearup_riseup() or changed
+        return changed
+
+    def _remove_group(self, name):
+        for i in reversed(range(self.rowCount())):
+            item = self.child(i)
+            if type(item) == GroupItem and item.rowCount() == 0:
+                self.removeRow(i)
 
     def reset_remote_launched_nodes(self):
         self._remote_launched_nodes_updated = False
@@ -1018,6 +1065,7 @@ class NodeItem(QStandardItem):
         self.nodelet_mngr = ''
         self.nodelets = []
         self.has_screen = True
+        self._with_namespace = rospy.names.SEP in node_info.name
 
     @property
     def state(self):
@@ -1026,6 +1074,10 @@ class NodeItem(QStandardItem):
     @property
     def name(self):
         return self._node_info.name
+
+    @name.setter
+    def name(self, new_name):
+        self.setText(new_name)
 
     @property
     def masteruri(self):
@@ -1049,11 +1101,14 @@ class NodeItem(QStandardItem):
 
     @parent_item.setter
     def parent_item(self, parent_item):
+        self._parent_item = parent_item
         if parent_item is None:
             self.setText(self._node_info.name)
+            self._with_namespace = rospy.names.SEP in self._node_info.name
         else:
-            self.setText(self._node_info.name.replace(parent_item.get_namespace(), '', 1))
-        self._parent_item = parent_item
+            new_name = self._node_info.name.replace(parent_item.get_namespace(), '', 1)
+            self.setText(new_name)
+            self._with_namespace = rospy.names.SEP in new_name
 
     @property
     def node_info(self):
@@ -1149,6 +1204,15 @@ class NodeItem(QStandardItem):
                 self.updateDispayedName()
             if self.parent_item is not None and not isinstance(self.parent_item, HostItem):
                 self.parent_item.updateIcon()
+
+    @property
+    def with_namespace(self):
+        '''
+        Returns `True` if the node name contains a '/' in his name
+
+        :rtype: bool
+        '''
+        return self._with_namespace
 
     def append_diagnostic_status(self, diagnostic_status):
         self.diagnostic_array.append(diagnostic_status)
@@ -1702,6 +1766,7 @@ class NodeTreeModel(QStandardItemModel):
             # update the changed groups
             for g in groups:
                 g.updateDisplayedConfig()
+            hostItem.clearUp()
         self.removeEmptyHosts()
         # update the duplicate state
 #    self.markNodesAsDuplicateOf(self.getRunningNodes())
