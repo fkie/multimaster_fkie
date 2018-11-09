@@ -62,9 +62,9 @@ from .parameter_handler import ParameterHandler
 from .parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
 from .progress_queue import ProgressQueue  # , InteractionNeededError, ProgressThread
 from .select_dialog import SelectDialog
-from .service_list_model import ServiceModel, ServiceItem
+from .service_list_model import ServiceModel, ServiceItem, ServiceGroupItem
 from .supervised_popen import SupervisedPopen
-from .topic_list_model import TopicModel, TopicItem
+from .topic_list_model import TopicModel, TopicItem, TopicGroupItem
 import node_manager_fkie as nm
 try:
     from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
@@ -224,10 +224,12 @@ class MasterViewProxy(QWidget):
         self.topic_proxyModel = TopicsSortFilterProxyModel(self)
         self.topic_proxyModel.setSourceModel(self.topic_model)
         self.masterTab.topicsView.setModel(self.topic_proxyModel)
+        self.masterTab.topicsView.expandAll()
+        self.masterTab.topicsView.sortByColumn(0, Qt.AscendingOrder)
 #    self.masterTab.topicsView.setModel(self.topic_model)
         for i, (_, width) in enumerate(TopicModel.header):  # _:=name
             self.masterTab.topicsView.setColumnWidth(i, width)
-        self.topicNameDelegate = HTMLDelegate(dec_ascent=True)
+        self.topicNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True)
         self.topicTypeDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
         self.masterTab.topicsView.setItemDelegateForColumn(3, self.topicTypeDelegate)
@@ -242,9 +244,11 @@ class MasterViewProxy(QWidget):
         self.service_proxyModel = ServicesSortFilterProxyModel(self)
         self.service_proxyModel.setSourceModel(self.service_model)
         self.masterTab.servicesView.setModel(self.service_proxyModel)
+        self.masterTab.servicesView.expandAll()
+        self.masterTab.servicesView.sortByColumn(0, Qt.AscendingOrder)
         for i, (_, width) in enumerate(ServiceModel.header):  # _:=name
             self.masterTab.servicesView.setColumnWidth(i, width)
-        self.serviceNameDelegate = HTMLDelegate(dec_ascent=True)
+        self.serviceNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True)
         self.serviceTypeDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.servicesView.setItemDelegateForColumn(0, self.serviceNameDelegate)
         self.masterTab.servicesView.setItemDelegateForColumn(1, self.serviceTypeDelegate)
@@ -1613,8 +1617,12 @@ class MasterViewProxy(QWidget):
         for index in indexes:
             model_index = self.topic_proxyModel.mapToSource(index)
             item = self.topic_model.itemFromIndex(model_index)
-            if item is not None and isinstance(item, TopicItem):
-                result.append(item.topic)
+            if item is not None:
+                if isinstance(item, TopicItem):
+                    result.append(item.topic)
+                elif isinstance(item, TopicGroupItem):
+                    for titem in item.get_topic_items():
+                        result.append(titem.topic)
         return result
 
     def servicesFromIndexes(self, indexes):
@@ -1622,8 +1630,12 @@ class MasterViewProxy(QWidget):
         for index in indexes:
             model_index = self.service_proxyModel.mapToSource(index)
             item = self.service_model.itemFromIndex(model_index)
-            if item is not None and isinstance(item, ServiceItem):
-                result.append(item.service)
+            if item is not None:
+                if isinstance(item, ServiceItem):
+                    result.append(item.service)
+                elif isinstance(item, ServiceGroupItem):
+                    for sitem in item.get_service_items():
+                        result.append(sitem.service)
         return result
 
     def parameterFromIndexes(self, indexes):
@@ -3280,10 +3292,22 @@ class TopicsSortFilterProxyModel(QSortFilterProxyModel):
         Perform filtering on columns 0 and 3 (Name, Type)
         '''
         index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
-        index3 = self.sourceModel().index(sourceRow, 3, sourceParent)
         regex = self.filterRegExp()
-        return (regex.indexIn(self.sourceModel().data(index0, TopicItem.NAME_ROLE)) != -1 or
-                regex.indexIn(self.sourceModel().data(index3)) != -1)
+        item = self.sourceModel().itemFromIndex(index0)
+        if type(item) == TopicItem:
+            return (regex.indexIn(item.topic.name) != -1 or regex.indexIn(item.topic_type_str) != -1)
+        elif type(item) == TopicGroupItem:
+            if regex.indexIn(item.name) != -1:
+                return True
+            grp_res = True
+            sitems = item.get_topic_items()
+            for sitem in sitems:
+                res = (regex.indexIn(sitem.topic.name) != -1 or regex.indexIn(sitem.topic_type_str) != -1)
+                if res:
+                    return True
+                grp_res = res
+            return grp_res
+        return True
 
 
 class ServicesSortFilterProxyModel(QSortFilterProxyModel):
@@ -3293,10 +3317,22 @@ class ServicesSortFilterProxyModel(QSortFilterProxyModel):
         Perform filtering on columns 0 and 1 (Name, Type)
         '''
         index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
-#    index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
         regex = self.filterRegExp()
-        return (regex.indexIn(self.sourceModel().data(index0, ServiceItem.NAME_ROLE)) != -1 or
-                regex.indexIn(self.sourceModel().data(index0, ServiceItem.TYPE_ROLE)) != -1)
+        item = self.sourceModel().itemFromIndex(index0)
+        if type(item) == ServiceItem:
+            return (regex.indexIn(item.service.name) != -1 or regex.indexIn(item.service_type_str) != -1)
+        elif type(item) == ServiceGroupItem:
+            if regex.indexIn(item.name) != -1:
+                return True
+            grp_res = True
+            sitems = item.get_service_items()
+            for sitem in sitems:
+                res = (regex.indexIn(sitem.service.name) != -1 or regex.indexIn(sitem.service_type_str) != -1)
+                if res:
+                    return True
+                grp_res = res
+            return grp_res
+        return True
 
 
 class ParameterSortFilterProxyModel(QSortFilterProxyModel):
