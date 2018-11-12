@@ -105,11 +105,6 @@ class TextEdit(QTextEdit):
         self.path = '.'
         # enables drop events
         self.setAcceptDrops(True)
-        if filename.endswith('.launch'):
-            self.hl = XmlHighlighter(self.document())
-            self.cursorPositionChanged.connect(self._document_position_changed)
-        else:
-            self.hl = YamlHighlighter(self.document())
         # variables for threaded search
         self._search_thread = None
         self._stop = False
@@ -117,6 +112,11 @@ class TextEdit(QTextEdit):
             self.setText(unicode("", "utf-8"))
             _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
             self.setText(unicode(file_content, "utf-8"))
+        if filename.endswith('.launch'):
+            self.hl = XmlHighlighter(self.document())
+            self.cursorPositionChanged.connect(self._document_position_changed)
+        else:
+            self.hl = YamlHighlighter(self.document())
 
     def _document_position_changed(self):
         if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:

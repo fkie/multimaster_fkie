@@ -190,6 +190,7 @@ class XmlHighlighter(QSyntaxHighlighter):
         # part to select an XML block
         self._tag_hl_range = []  # list with puples (start, length)
         self._tag_hl_last = set()  # set with blocks of last highlighted tags
+        self._color_hl_tag = QColor(255, 128, 0)
 
     def _create_regexp(self, pattern=''):
         _regexp = QRegExp()
@@ -218,6 +219,8 @@ class XmlHighlighter(QSyntaxHighlighter):
                     frmt = QTextCharFormat(form)
                     if not self._end_tag_found:
                         frmt.setForeground(Qt.red)
+                    else:
+                        frmt.setForeground(self._color_hl_tag)
                     frmt.setFontWeight(QFont.Bold)
                 self.setFormat(index, length, frmt)
                 index = pattern.indexIn(text, index + length)
