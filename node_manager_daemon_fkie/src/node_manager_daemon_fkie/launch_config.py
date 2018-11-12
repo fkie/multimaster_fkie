@@ -181,6 +181,8 @@ class LaunchConfig(object):
             self.argv = self.resolve_args(argv)
             loader.load(self.filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
+            if 'arg' in loader.root_context.resolve_dict:
+                self.argv = ['%s:=%s' % (key, val) for key, val in loader.root_context.resolve_dict['arg'].items()]
             # TODO: nm.filewatcher().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, self.included_files(self.Filename))
             # TODO: files = self.included_files(self.filename, unique=True)
             # TODO: nm.file_watcher_param().add_launch(self.__masteruri, self.__launchFile, self.__launch_id, files)

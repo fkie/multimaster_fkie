@@ -92,12 +92,20 @@ class TextSearchThread(QObject, threading.Thread):
         data = self._get_text(path)
         pos = data.find(search_text)
         slen = len(search_text)
+        found = False
         while pos != -1 and self._isrunning:
+            found = True
             if self._isrunning:
                 self.search_result_signal.emit(search_text, True, path, pos, data.count('\n', 0, pos) + 1, self._strip_text(data, pos))
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:
+            if not found:
+                # try to replace the arguments and search again
+                args = nm.nmd().launch_args(path)
+                for arg_key, args_val in args.items():
+                    if search_text.startswith('name="%s' % args_val):
+                        self.search(search_text.replace(args_val, '$(arg %s)' % arg_key), path, False)
             if recursive:
                 inc_files = nm.nmd().get_included_files_set(path, False)
                 for incf in inc_files:

@@ -91,6 +91,15 @@ class LaunchStub(object):
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
         return response.path, response.changed_nodes
 
+    def get_loaded_files(self):
+        request = lmsg.Empty()
+        response = self.lm_stub.GetLoadedFiles(request, timeout=settings.GRPC_TIMEOUT)
+        result = []
+        for loaded_file in response:
+            args = {arg.name: arg.value for arg in loaded_file.args}
+            result.append((loaded_file.package, loaded_file.path, args, loaded_file.masteruri, loaded_file.host))
+        return result
+
     def get_mtimes(self, path):
         '''
         :return: tuple with launch file, modification time and dictionary of included files and their modification times.
@@ -122,7 +131,7 @@ class LaunchStub(object):
                 raise exceptions.ResourceNotFound(path, response.status.error_msg)
             else:
                 raise exceptions.RemoteException(response.status.code, response.status.error_msg)
-        return response.path
+        return response.path[0]
 
     def get_nodes(self, request_description=False, masteruri=''):
         result = []

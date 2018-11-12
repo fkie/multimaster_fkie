@@ -148,12 +148,14 @@ class NmdClient(QObject):
     def __init__(self):
         QObject.__init__(self)
         self._threads = ThreadManager()
+        self._args_lock = threading.RLock()
         self._channels = {}
         self._cache_file_content = {}
         self._cache_file_includes = {}
         self._cache_file_unique_includes = {}
         self._cache_path = {}
         self._cache_packages = {}
+        self._launch_args = {}
 
     def stop(self):
         print("clear grpc channels...")
@@ -165,6 +167,8 @@ class NmdClient(QObject):
         self._cache_file_unique_includes.clear()
         self._cache_path.clear()
         self._cache_packages.clear()
+        with self._args_lock:
+            self._launch_args.clear()
 
     def _delete_cache_for(self, grpc_path):
         try:
@@ -183,6 +187,12 @@ class NmdClient(QObject):
             del self._cache_path[grpc_path]
         except Exception:
             pass
+
+    def launch_args(self, grpc_path):
+        with self._args_lock:
+            if grpc_path in self._launch_args:
+                return self._launch_args[grpc_path]
+        return {}
 
     def package_name(self, grpc_path):
         uri, _path = nmdurl.split(grpc_path, with_scheme=True)
@@ -251,6 +261,7 @@ class NmdClient(QObject):
                 result = fm.list_path(path)
                 if uri not in self._cache_packages:
                     self.list_packages_threaded(grpc_path, clear_cache)
+                    self.get_loaded_files_threaded(grpc_path)
             except Exception as e:
                 remote.remove_insecure_channel(uri)
                 self.error.emit("list_path", "grpc://%s" % uri, path, e)
@@ -428,9 +439,7 @@ class NmdClient(QObject):
         while nexttry:
             try:
                 rospy.logdebug("load launch file on gRPC server: %s" % (grpc_path))
-                launch_files, args_res = lm.load_launch(package, launch, path=path, args=myargs, request_args=request_args, masteruri=masteruri, host=host)
-                if launch_files:
-                    launch_file = launch_files[0]
+                launch_file, args_res = lm.load_launch(package, launch, path=path, args=myargs, request_args=request_args, masteruri=masteruri, host=host)
                 nexttry = False
                 ok = True
             except exceptions.LaunchSelectionRequest as lsr:
@@ -451,7 +460,10 @@ class NmdClient(QObject):
                 nexttry = False
                 ok = True
                 launch_file = aoe.path
+        launch_file = nmdurl.join("grpc://%s" % uri, launch_file)
         rospy.logdebug("  load launch file result - %s: %s" % ('OK' if ok else "ERR", launch_file))
+        with self._args_lock:
+            self._launch_args[launch_file] = args_res
         return launch_file, args_res
 
     def reload_launch(self, grpc_path, masteruri=''):
@@ -469,7 +481,29 @@ class NmdClient(QObject):
         uri, path = nmdurl.split(grpc_path)
         lm = self.get_launch_manager(uri)
         launch_file = lm.unload_launch(path, masteruri)
+        with self._args_lock:
+            if launch_file in self._launch_args:
+                del self._launch_args[launch_file]
         return launch_file
+
+    def get_loaded_files_threaded(self, grpc_path='grpc://localhost:12321'):
+        self._threads.start_thread("glft_%s" % grpc_path, target=self._get_loaded_files_threaded, args=(grpc_path,))
+
+    def _get_loaded_files_threaded(self, grpc_path='grpc://localhost:12321'):
+        uri, path = nmdurl.split(grpc_path)
+        rospy.logdebug("get loaded_files from %s" % uri)
+        try:
+            lm = self.get_launch_manager(uri)
+            result = lm.get_loaded_files()
+            url, _ = nmdurl.split(grpc_path, with_scheme=True)
+            for _package, path, args, _masteruri, _host in result:
+                with self._args_lock:
+                    self._launch_args[nmdurl.join(url, path)] = args
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
+        if hasattr(self, '_threads'):
+            self._threads.finished("glft_%s" % grpc_path)
 
     def get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
         self._threads.start_thread("gmt_%s" % grpc_path, target=self._get_mtimes_threaded, args=(grpc_path,))
