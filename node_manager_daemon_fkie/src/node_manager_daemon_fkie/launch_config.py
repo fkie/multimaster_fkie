@@ -180,7 +180,7 @@ class LaunchConfig(object):
             roscfg = roslaunch.ROSLaunchConfig()
             loader = roslaunch.XmlLoader()
             self.argv = self.resolve_args(argv)
-            loader.load(self.filename, roscfg, verbose=False, argv=self.argv if self.__roscfg is None else [])
+            loader.load(self.filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
             if 'arg' in loader.root_context.resolve_dict:
                 self.resolve_dict = loader.root_context.resolve_dict['arg']
