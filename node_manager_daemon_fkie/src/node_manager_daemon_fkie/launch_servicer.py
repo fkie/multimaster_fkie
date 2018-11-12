@@ -242,7 +242,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         # self._register_callback(context)
         for _cfgid, lf in self._loaded_files.iteritems():
             reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, masteruri=lf.masteruri, host=lf.host)
-            reply.args.extend(lmsg.Argument(name=name, value=value) for name, value in lf.argv2dict(lf.argv).items())
+            reply.args.extend(lmsg.Argument(name=name, value=value) for name, value in lf.resolve_dict.items())
             yield reply
 
     def LoadLaunch(self, request, context):
@@ -303,7 +303,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]
             _loaded, res_argv = launch_config.load(argv)
             # parse result args for reply
-            result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.argv2dict(res_argv).items()])
+            result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug("..load complete!")
         except Exception as e:
@@ -359,6 +359,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             result.changed_nodes.append(n)
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
             except Exception as e:
+                import traceback
+                print traceback.format_exc()
                 err_text = "%s loading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
                 rospy.logwarn("Loading launch file: %s", err_details)
