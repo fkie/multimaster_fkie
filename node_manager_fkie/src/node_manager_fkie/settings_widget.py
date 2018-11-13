@@ -207,6 +207,12 @@ class SettingsWidget(QDockWidget):
                                               'value_default': nm.settings().SHOW_NOSCREEN_ERROR,
                                               'tooltip': "Shows an error if requested screen for a node is not available.</p>"
                                               },),
+                    'Ask for reload launch:': ({'value': nm.settings().ask_reload_launch,
+                                                'settings': nm.settings(),
+                                                'attrname': 'ask_reload_launch',
+                                                'value_default': nm.settings().ASK_RELOAD_LAUNCH,
+                                                'tooltip': "On change asks for reload launch file.</p>"
+                                                },),
                     'Show domain suffix:': ({'value': nm.settings().show_domain_suffix,
                                              'settings': nm.settings(),
                                              'attrname': 'show_domain_suffix',

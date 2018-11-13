@@ -147,6 +147,7 @@ class Settings(object):
     COLORIZE_HOSTS = True
     CHECK_FOR_NODELETS_AT_START = True
     SHOW_NOSCREEN_ERROR = True
+    ASK_RELOAD_LAUNCH = True
 
     SHOW_DOMAIN_SUFFIX = False
 
@@ -212,6 +213,7 @@ class Settings(object):
         self._colorize_hosts = self.str2bool(settings.value('colorize_hosts', self.COLORIZE_HOSTS))
         self._check_for_nodelets_at_start = self.str2bool(settings.value('check_for_nodelets_at_start', self.CHECK_FOR_NODELETS_AT_START))
         self._show_noscreen_error = self.str2bool(settings.value('show_noscreen_error', self.SHOW_NOSCREEN_ERROR))
+        self._ask_reload_launch = self.str2bool(settings.value('ask_reload_launch', self.ASK_RELOAD_LAUNCH))
         self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
@@ -473,6 +475,18 @@ class Settings(object):
             self._show_noscreen_error = val
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('show_noscreen_error', self._show_noscreen_error)
+
+    @property
+    def ask_reload_launch(self):
+        return self._ask_reload_launch
+
+    @ask_reload_launch.setter
+    def ask_reload_launch(self, value):
+        val = self.str2bool(value)
+        if self._ask_reload_launch != val:
+            self._ask_reload_launch = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('ask_reload_launch', self._ask_reload_launch)
 
     @property
     def show_domain_suffix(self):
