@@ -9,6 +9,7 @@ import time
 import roslib
 import rospy
 
+from master_discovery_fkie.common import masteruri_from_ros
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie.settings import RESPAWN_SCRIPT
 try:
@@ -149,7 +150,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     Runs a ROS node. Starts a roscore if needed.
     '''
     if not masteruri:
-        masteruri = nm.masteruri_from_ros()
+        masteruri = masteruri_from_ros()
     # start roscore, if needed
     nm.StartHandler._prepareROSMaster(masteruri)
     # start node
