@@ -32,6 +32,7 @@
 
 import shlex
 
+import grpc
 import rospy
 
 from supervised_popen import SupervisedPopen
@@ -95,8 +96,8 @@ class ScreenHandler(object):
             rospy.loginfo("Open screen terminal: %s", cmd)
             SupervisedPopen(shlex.split(cmd), object_id=title_opt, description="Open screen terminal: %s" % title_opt)
         else:
-            ps = nm.ssh().ssh_x11_exec(host, [screen.SCREEN, '-x', screen_name], title_opt, user)
-            rospy.loginfo("Open remote screen terminal: %s", ps)
+            rospy.loginfo("Open remote screen terminal for %s to %s" % (nodename, host))
+            _ps = nm.ssh().ssh_x11_exec(host, [screen.SCREEN, '-x', screen_name], title_opt, user)
 
     @classmethod
     def open_screen(cls, node, grpc_url, auto_item_request=False, user=None, pw=None, items=[]):
@@ -118,7 +119,12 @@ class ScreenHandler(object):
                     cls.open_screen_terminal(host, item, node, user)
             else:
                 # get the available screens
-                screens = nm.nmd().get_screens(grpc_url, node)
+                screens = {}
+                try:
+                    screens = nm.nmd().get_screens(grpc_url, node)
+                except grpc.RpcError as e:
+                    rospy.logwarn("can not connect to node manager daemon, detect screens using ssh...")
+                    screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
                 if len(screens) == 1:
                     cls.open_screen_terminal(host, screens.keys()[0], node, user)
                 else:
@@ -143,9 +149,9 @@ class ScreenHandler(object):
                         raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, (node, host, user))
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, host, auto_item_request))
+            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request))
         except ScreenSelectionRequest as e:
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, host, auto_item_request, user, pw))
+            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, user, pw))
 
     @classmethod
     def kill_screens(cls, node, grpc_url, auto_ok_request=True, user=None, pw=None):
@@ -173,7 +179,7 @@ class ScreenHandler(object):
                         if pid:
                             try:
                                 nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
-                            except:
+                            except Exception:
                                 import traceback
                                 rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(pid), utf8(host), traceback.format_exc(1))
                     if nm.is_local(host):
@@ -182,3 +188,34 @@ class ScreenHandler(object):
                         nm.ssh().ssh_exec(host, [screen.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
         except nm.AuthenticationRequest as e:
             raise nm.InteractionNeededError(e, cls.kill_screens, (node, grpc_url, auto_ok_request))
+
+# #############################################################################
+#         for backward compatibility
+# #############################################################################
+
+    @classmethod
+    def _bc_get_active_screens(cls, host, nodename='', auto_pw_request=True, user=None, pwd=None):
+        '''
+        Returns the list with all compatible screen names. If the session is set to
+        an empty string all screens will be returned.
+
+        :param str host: the host name or IP to search for the screen session.
+        :param str nodename: the name of the node
+        :return: dictionary of screen name and corresponding ROS node name
+        :rtype: {str: str}
+        :raise Exception: on errors while resolving host
+        :see: node_manager_fkie.is_local()
+        '''
+        output = None
+        result = {}
+        if not nm.is_local(host):
+            _, stdout, _, _ = nm.ssh().ssh_exec(host, [screen.SCREEN, ' -ls'], user, pwd, auto_pw_request, close_stdin=True, close_stderr=True)
+            output = stdout.read()
+            stdout.close()
+        if output:
+            splits = output.split()
+            session = utf8(nodename).replace('/', '_') if nodename is not None else ''
+            for i in splits:
+                if i.count('.') > 0 and i.endswith(session) and i.find('._') >= 0:
+                    result[i] = nodename
+        return result
