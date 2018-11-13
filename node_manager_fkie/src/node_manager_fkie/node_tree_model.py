@@ -546,7 +546,7 @@ class GroupItem(QStandardItem):
     def _remove_group(self, name):
         for i in reversed(range(self.rowCount())):
             item = self.child(i)
-            if type(item) == GroupItem and item.rowCount() == 0:
+            if type(item) == GroupItem and item == name and item.rowCount() == 0:
                 self.removeRow(i)
 
     def reset_remote_launched_nodes(self):
