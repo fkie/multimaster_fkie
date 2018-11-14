@@ -285,7 +285,7 @@ class TopicGroupItem(QStandardItem):
         elif name != rospy.names.SEP:
             dname = '%s/' % name
         else:
-            dname = 'topics@master'
+            dname = 'topics@master/'
         QStandardItem.__init__(self, dname)
         self.parent_item = parent
         self._name = name
@@ -412,12 +412,9 @@ class TopicGroupItem(QStandardItem):
         :return: The group with given name of None if `nocreate` is True and group not exists.
         :rtype: :class:`TopicGroupItem`
         '''
-        lns, rns = group_name, ''
-        if nm.settings().group_nodes_by_namespace:
-            lns, rns = lnamespace(group_name)
-            if lns == rospy.names.SEP:
-                lns, rns = lnamespace(rns)
-                lns = '/%s' % lns
+        lns, rns = lnamespace(group_name)
+        if lns == rospy.names.SEP:
+            lns, rns = lnamespace(rns)
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):
@@ -526,7 +523,7 @@ class TopicGroupItem(QStandardItem):
     def _remove_group(self, name):
         for i in reversed(range(self.rowCount())):
             item = self.child(i)
-            if type(item) == TopicGroupItem and item.rowCount() == 0:
+            if type(item) == TopicGroupItem and item == name and item.rowCount() == 0:
                 self.removeRow(i)
 
     def remove_node(self, name):
@@ -656,7 +653,7 @@ class TopicModel(QStandardItemModel):
         except Exception:
             pass
         if match:
-            root = self.invisibleRootItem()
+            root = self.get_root_group()
             for i in range(root.rowCount()):
                 item = root.child(i)
                 if type(item) == TopicGroupItem:
