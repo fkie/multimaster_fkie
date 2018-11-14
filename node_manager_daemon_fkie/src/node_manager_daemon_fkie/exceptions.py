@@ -94,3 +94,20 @@ class RemoteException(Exception):
 
     def __str__(self):
         return self.error
+
+
+class ConnectionException(Exception):
+
+    def __init__(self, startcfg, error):
+        Exception.__init__(self)
+        self.startcfg = startcfg
+        self.nodename = ''
+        if startcfg is not None:
+            self.nodename = startcfg.fullname
+        self.error = error
+
+    def __repr__(self):
+        return "%s %s::%s" % (self.__class__, self.fullname, repr(self.error))
+
+    def __str__(self):
+        return self.error

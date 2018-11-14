@@ -47,7 +47,7 @@ import xmlrpclib
 from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_daemon_fkie.common import interpret_path, utf8
-from node_manager_daemon_fkie.host import get_hostname
+from node_manager_daemon_fkie.host import get_hostname, get_port
 from node_manager_daemon_fkie import url as nmdurl
 from .launcher_threaded import LauncherThreaded
 from .common import package_name
@@ -170,6 +170,7 @@ class MasterViewProxy(QWidget):
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
         self._first_launch = True
+        self._has_nmd = False
         self._changed_binaries = dict()
         self.default_load_launch = ''
 #         self.default_cfg_handler = DefaultConfigHandler()
@@ -442,11 +443,6 @@ class MasterViewProxy(QWidget):
         :param master_info: the mater information object
         :type master_info: :class:`master_discovery_fkie.msg.MasterInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#module-master_discovery_fkie.master_info>
         '''
-        nmd_uri = nmdurl.nmduri(self.masteruri)
-        self._launcher_threaded.update_info(nmd_uri, self.masteruri)
-        nmd_uri_local = nmdurl.nmduri()
-        if nmd_uri_local != nmd_uri:
-            self._launcher_threaded.update_info(nmd_uri_local, masteruri_from_ros())
         try:
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
             my_masterinfo = master_info.masteruri == self.masteruri
@@ -465,6 +461,7 @@ class MasterViewProxy(QWidget):
             if my_masterinfo:
                 nmd_node = master_info.getNode('/node_manager_daemon')
                 if nmd_node is None or nmd_node.pid is None:
+                    self._has_nmd = False
                     if time.time() - self.__last_question_start_nmd > 1.:
                         self.__last_question_start_nmd = time.time()
                         if not self.is_local:
@@ -473,6 +470,7 @@ class MasterViewProxy(QWidget):
                             self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
                 else:
                     self.message_frame.hide_question([MessageFrame.TYPE_NMD])
+                    self._has_nmd = True
             try:
                 if my_masterinfo:
                     self.update_system_parameter()
@@ -507,6 +505,13 @@ class MasterViewProxy(QWidget):
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
         except Exception:
             print traceback.format_exc(1)
+        nmd_uri = nmdurl.nmduri(self.masteruri)
+        if self._has_nmd:
+            # only try to get updates from daemon if it is running
+            self._launcher_threaded.update_info(nmd_uri, self.masteruri)
+        nmd_uri_local = nmdurl.nmduri()
+        if nmd_uri_local != nmd_uri:
+            self._launcher_threaded.update_info(nmd_uri_local, masteruri_from_ros())
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
@@ -726,12 +731,14 @@ class MasterViewProxy(QWidget):
             if cfg.mtime > 0:
                 lfiles[path] = cfg.mtime
                 lfiles.update(cfg.includes)
-        if lfiles:
-            nm.nmd().check_for_changed_files_threaded(lfiles)
-            nm.nmd().multiple_screens_threaded(grpc_url)
-        nodes = self.get_nodes_runningIfLocal(True)
-        if nodes:
-            nm.nmd().get_changed_binaries_threaded(grpc_url, nodes.keys())
+        if self._has_nmd:
+            # do not connect to the node manager daemon until it is not in the nodes list (not started)
+            if lfiles:
+                nm.nmd().check_for_changed_files_threaded(lfiles)
+                nm.nmd().multiple_screens_threaded(grpc_url)
+            nodes = self.get_nodes_runningIfLocal(True)
+            if nodes:
+                nm.nmd().get_changed_binaries_threaded(grpc_url, nodes.keys())
 
     def get_files_for_change_check(self):
         result = {}
@@ -1366,7 +1373,7 @@ class MasterViewProxy(QWidget):
                     text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'
                 else:
                     text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
-                    text += '<a href="unregister-node://%s">unregister</a></dt>' % node.name
+                text += ' <a href="unregister-node://%s">unregister</a></dt>' % node.name
             if node.diagnostic_array and node.diagnostic_array[-1].level > 0:
                 diag_status = node.diagnostic_array[-1]
                 level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
@@ -1699,8 +1706,13 @@ class MasterViewProxy(QWidget):
                         logformat = logging.console_format
                     if not logging.is_default('loglevel'):
                         loglevel = logging.loglevel
-                _result = nm.nmd().start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
-                                              loglevel=loglevel, logformat=logformat)
+                if self._has_nmd:
+                    _result = nm.nmd().start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
+                                                  loglevel=loglevel, logformat=logformat)
+                else:
+                    rospy.logwarn("no running daemon found, start '%s' via SSH" % node.name)
+                    nm.starter().bc_run_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
+                                             loglevel=loglevel, logformat=logformat)
             except socket.error as se:
                 rospy.logwarn("Error while start '%s': %s\n\n Start canceled!", node.name, utf8(se))
                 raise DetailedError("Start error",
@@ -2177,6 +2189,10 @@ class MasterViewProxy(QWidget):
         '''
         if node.uri is not None:
             return get_hostname(node.uri)
+        # get hostname from host item where the node is located
+        host = node.host
+        if host:
+            return host
         # try to get it from the configuration,
         # TODO: get it from node manager daemon?
         for c in node.cfgs:
@@ -2199,6 +2215,10 @@ class MasterViewProxy(QWidget):
         :param node:
         :type node: :class:`master_discovery_fkie.NodeInfo` <http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.NodeInfo>
         '''
+        # get hostname from host item where the node is located
+        host = node.host
+        if host:
+            return nmdurl.nmduri('http://%s:%d' % (host, get_port(self.masteruri)))
         if node.masteruri is not None:
             return nmdurl.nmduri(node.masteruri)
         # try to get it from the configuration,

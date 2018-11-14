@@ -83,7 +83,7 @@ class SSHhandler(object):
         '''
         try:
             del SSHhandler.SSH_SESSIONS[host]
-        except:
+        except Exception:
             pass
 
     def close(self):
@@ -116,7 +116,7 @@ class SSHhandler(object):
                     sftp = ssh.open_sftp()
                     try:
                         sftp.mkdir(os.path.dirname(remote_file))
-                    except:
+                    except Exception:
                         pass
                     sftp.put(local_file, remote_file)
                     rospy.loginfo("SSH COPY %s -> %s@%s:%s", local_file, ssh._transport.get_username(), host, remote_file)
@@ -199,7 +199,7 @@ class SSHhandler(object):
                     cmd_str = utf8(' '.join([ssh_str, ' '.join(cmd)]))
                 rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
                 return SupervisedPopen(shlex.split(cmd_str), object_id=utf8(title), description="REMOTE x11 execute on %s: %s" % (host, cmd_str))
-            except:
+            except Exception:
                 raise
 
     def _getSSH(self, host, user, pw=None, do_connect=True, auto_pw_request=False):
@@ -224,10 +224,9 @@ class SSHhandler(object):
                 try:
                     session.connect(host, username=user, password=pw, timeout=3, compress=True)
                     self.SSH_AUTH[host] = user
-                except Exception, e:
+                except Exception as e:
                     if utf8(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
                         if auto_pw_request:
-                            # 'print "REQUEST PW-AUTO"
                             res, user, pw = self._requestPW(user, host)
                             if not res:
                                 return None
@@ -251,7 +250,7 @@ class SSHhandler(object):
         from python_qt_binding import loadUi
         try:
             from python_qt_binding.QtGui import QDialog
-        except:
+        except Exception:
             from python_qt_binding.QtWidgets import QDialog
         result = False
         pw = None

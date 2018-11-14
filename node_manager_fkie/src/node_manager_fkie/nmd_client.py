@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
+import grpc
 import os
 from python_qt_binding.QtCore import QObject, Signal
 import rospy
@@ -577,8 +578,11 @@ class NmdClient(QObject):
         lm = self.get_launch_manager(uri)
         try:
             return lm.start_node(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
-        except Exception as err:
+        except grpc.RpcError as gerr:
+            print("remove connection", uri)
             remote.remove_insecure_channel(uri)
+            raise gerr
+        except Exception as err:
             raise err
 
     def start_standalone_node(self, grpc_url, package, binary, name, ns, args=[], env={}, masteruri=None):
@@ -608,6 +612,15 @@ class NmdClient(QObject):
             return lm.start_standalone_node(startcfg)
         except Exception as err:
             remote.remove_insecure_channel(uri)
+            raise err
+
+    def get_start_cfg(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
+        rospy.logdebug("get start configuration for '%s' from %s" % (name, grpc_path))
+        uri, _ = nmdurl.split(grpc_path)
+        lm = self.get_launch_manager(uri)
+        try:
+            return lm.get_start_cfg(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
+        except Exception as err:
             raise err
 
     def get_all_screens(self, grpc_url='grpc://localhost:12321'):

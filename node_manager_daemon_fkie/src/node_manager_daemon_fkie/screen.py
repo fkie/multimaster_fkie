@@ -204,7 +204,14 @@ def get_pidfile(session=None, node=None):
     return "%s%s.pid" % (LOG_PATH, 'unknown')
 
 
-def get_cmd(node):
+def _append_env(cfgfile, arg, env):
+    if arg in env:
+        value = env[arg]
+        if value:
+            cfgfile.write('setenv %s %s\n' % (arg, value))
+
+
+def get_cmd(node, env=[], keys=[]):
     '''
     Generates a screen configuration file and return the command prefix to start the given node
     in a screen terminal.
@@ -223,11 +230,19 @@ def get_cmd(node):
     f.write("logfile %s\n" % get_logfile(node=node))
     f.write("logfile flush 0\n")
     f.write("defscrollback 10000\n")
-    ld_library_path = os.getenv('LD_LIBRARY_PATH', '')
-    if ld_library_path:
-        f.write('setenv LD_LIBRARY_PATH %s\n' % ld_library_path)
-    ros_etc_dir = os.getenv('ROS_ETC_DIR', '')
-    if ros_etc_dir:
-        f.write('setenv ROS_ETC_DIR %s\n' % ros_etc_dir)
+    use_env = env if env else os.environ
+    addkeys = list(keys)
+    addkeys.append('LD_LIBRARY_PATH')
+    addkeys.append('ROS_ETC_DIR')
+    addkeys.append('ROS_MASTER_URI')
+    addkeys.append('ROS_HOSTNAME')
+    addkeys.append('ROS_NAMESPACE')
+    addkeys.append('ROSCONSOLE_FORMAT')
+    addkeys.append('ROSCONSOLE_CONFIG_FILE')
+    addkeys.append('RESPAWN_DELAY')
+    addkeys.append('RESPAWN_MAX')
+    addkeys.append('RESPAWN_MIN_RUNTIME')
+    for key in keys:
+        _append_env(f, key, use_env)
     f.close()
     return "%s -c %s -L -dmS %s" % (SCREEN, filename, create_session_name(node=node))

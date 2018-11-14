@@ -31,6 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
+from .common import utf8
+
+
 class StartConfig():
 
     def __init__(self, package, binary):
@@ -55,3 +59,66 @@ class StartConfig():
         self.respawn_delay = 30
         self.respawn_max = 0
         self.respawn_min_runtime = 0
+
+    def to_msg(self):
+        msg = lmsg.StartConfig(package=self.package, binary=self.binary)
+        self.fill_msg(msg)
+        return msg
+
+    def fill_msg(self, msg):
+        msg.package = self.package
+        msg.binary = self.binary
+        if self.binary_path:
+            msg.binary_path = self.binary_path
+        if self.name:
+            msg.name = self.name
+        if self.namespace:
+            msg.namespace = self.namespace
+        if self.fullname:
+            msg.fullname = self.fullname
+        if self.prefix:
+            msg.prefix = self.prefix
+        if self.cwd:
+            msg.cwd = self.cwd
+        if self.env:
+            msg.env.extend([lmsg.Argument(name=name, value=value) for name, value in self.env.items()])
+        if self.remaps:
+            msg.remaps.extend([lmsg.Remapping(from_name=name, to_name=value) for name, value in self.remaps.items()])
+        if self.params:
+            msg.params.extend([lmsg.Argument(name=name, value=utf8(value)) for name, value in self.params.items()])
+        if self.clear_params:
+            msg.clear_params.extend(self.clear_params)
+        if self.args:
+            msg.args.extend(self.args)
+        if self.masteruri:
+            msg.masteruri = self.masteruri
+        if self.host:
+            msg.host = self.host
+        msg.loglevel = self.loglevel
+        msg.respawn = self.respawn
+        msg.respawn_delay = self.respawn_delay
+        msg.respawn_max = self.respawn_max
+        msg.respawn_min_runtime = self.respawn_min_runtime
+
+    @classmethod
+    def from_msg(cls, msg):
+        startcfg = StartConfig(msg.package, msg.binary)
+        startcfg.binary_path = msg.binary_path
+        startcfg.name = msg.name
+        startcfg.namespace = msg.namespace
+        startcfg.fullname = msg.fullname
+        startcfg.prefix = msg.prefix
+        startcfg.cwd = msg.cwd
+        startcfg.env = {env.name: env.value for env in msg.env}
+        startcfg.remaps = {remap.from_name: remap.to_name for remap in msg.remaps}
+        startcfg.params = {param.name: utf8(param.value) for param in msg.params}
+        startcfg.clear_params = list(msg.clear_params)
+        startcfg.args = list(msg.args)
+        startcfg.masteruri = msg.masteruri
+        startcfg.host = msg.host
+        startcfg.loglevel = msg.loglevel
+        startcfg.respawn = msg.respawn
+        startcfg.respawn_delay = msg.respawn_delay
+        startcfg.respawn_max = msg.respawn_max
+        startcfg.respawn_min_runtime = msg.respawn_min_runtime
+        return startcfg

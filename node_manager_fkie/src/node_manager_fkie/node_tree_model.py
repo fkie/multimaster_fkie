@@ -1229,6 +1229,16 @@ class NodeItem(QStandardItem):
         '''
         return self._with_namespace
 
+    @property
+    def host(self):
+        pitem = self.parent_item
+        while pitem is not None:
+            if type(pitem) == HostItem:
+                return pitem.host
+            else:
+                pitem = pitem.parent_item
+        return None
+
     def append_diagnostic_status(self, diagnostic_status):
         self.diagnostic_array.append(diagnostic_status)
         self.update_dispayed_name()

@@ -41,6 +41,9 @@ import types
 import xmlrpclib
 
 from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
+from node_manager_daemon_fkie.common import get_cwd
+from node_manager_daemon_fkie.startcfg import StartConfig
+from node_manager_daemon_fkie import launcher
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import package_name, utf8
@@ -125,19 +128,23 @@ class StartHandler(object):
                     cmd_type = cmd[0]
                 cmd_str = utf8(' '.join([screen.get_cmd(fullname), cmd_type, ' '.join(args2)]))
             rospy.loginfo("Run without config: %s", fullname if use_nmd else cmd_str)
-            new_env = dict(os.environ)
+            new_env = {}  # dict(os.environ)
             if namespace:
                 new_env['ROS_NAMESPACE'] = namespace
             if masteruri is not None:
                 cls._prepareROSMaster(masteruri)
                 new_env['ROS_MASTER_URI'] = masteruri
-                ros_hostname = NameResolution.get_ros_hostname(masteruri)
-                if ros_hostname:
-                    new_env['ROS_HOSTNAME'] = ros_hostname
+                if 'ROS_HOSTNAME' in os.environ:
+                    # set ROS_HOSTNAME only if node_manager has also one
+                    ros_hostname = NameResolution.get_ros_hostname(masteruri)
+                    if ros_hostname:
+                        new_env['ROS_HOSTNAME'] = ros_hostname
             if use_nmd:
                 nm.nmd().start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri)
             else:
-                SupervisedPopen(shlex.split(cmd_str), env=new_env, object_id="Run without config", description="Run without config [%s]%s" % (utf8(package), utf8(binary)))
+                local_env = dict(os.environ)
+                local_env.update(new_env)
+                SupervisedPopen(shlex.split(cmd_str), env=local_env, object_id="Run without config", description="Run without config [%s]%s" % (utf8(package), utf8(binary)))
         else:
             # run on a remote machine
             startcmd = [nm.settings().start_remote_script,
@@ -575,3 +582,185 @@ class StartHandler(object):
         else:
             _ps = nm.ssh().ssh_x11_exec(host, [cmd, ';echo "";echo "this terminal will be closed in 10 sec...";sleep 10'], title_opt, user)
         return False
+
+    @classmethod
+    def bc_run_node(cls, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat='', auto_pw_request=False, user=None, pw=None):
+        '''
+        Start the node with given name from the given configuration.
+
+        :param runcfg: the configuration containing the start parameter
+        :type runcfg: AdvRunCfg
+        :raise StartException: if the screen is not available on host.
+        :raise Exception: on errors while resolving host
+        :see: node_manager_fkie.is_local()
+        '''
+        startcfg = nm.nmd().get_start_cfg(name, grpc_path, masteruri, reload_global_param=reload_global_param, loglevel=loglevel, logformat=logformat)
+        new_env = dict(startcfg.env)
+        # set logging options
+        if startcfg.namespace:
+            new_env['ROS_NAMESPACE'] = startcfg.namespace
+        # set logging
+        if startcfg.logformat:
+            new_env['ROSCONSOLE_FORMAT'] = '%s' % startcfg.logformat
+#         if startcfg.loglevel:
+#             new_env['ROSCONSOLE_CONFIG_FILE'] = launcher._rosconsole_cfg_file(startcfg.package, startcfg.loglevel)
+        args = []
+        # set name and namespace of the node
+        if startcfg.name:
+            args.append("__name:=%s" % startcfg.name)
+        if startcfg.namespace:
+            args.append("__ns:=%s" % startcfg.namespace)
+        # add remap arguments
+        for key, val in startcfg.remaps.items():
+            args.append("%s:=%s" % (key, val))
+        # handle respawn
+        if startcfg.respawn:
+            if startcfg.respawn_delay > 0:
+                new_env['RESPAWN_DELAY'] = '%d' % startcfg.respawn_delay
+            respawn_params = launcher._get_respawn_params(startcfg.fullname, startcfg.params)
+            if respawn_params['max'] > 0:
+                new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
+            if respawn_params['min_runtime'] > 0:
+                new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
+        if startcfg.cwd:
+            cwd = get_cwd(startcfg.cwd, startcfg.binary_path)
+            if cwd:
+                args.append('__cwd:=%s' % cwd)
+        # check for masteruri
+        masteruri = startcfg.masteruri
+        if masteruri is None:
+            masteruri = masteruri_from_ros()
+        if masteruri is not None:
+            new_env['ROS_MASTER_URI'] = masteruri
+            if 'ROS_HOSTNAME' in os.environ:
+                # set only ROS_HOSTNAME if node manager have also one
+                ros_hostname = NameResolution.get_ros_hostname(masteruri)
+                if ros_hostname:
+                    new_env['ROS_HOSTNAME'] = ros_hostname
+            # load params to ROS master
+            launcher._load_parameters(masteruri, startcfg.params, startcfg.clear_params, False)
+
+        abs_paths = list()  # tuples of (parameter name, old value, new value)
+        not_found_packages = list()  # package names
+#         # set the global parameter
+#         if runcfg.masteruri is not None and runcfg.masteruri not in runcfg.roslaunch_config.global_param_done:
+#             global_node_names = cls.getGlobalParams(runcfg.roslaunch_config.Roscfg)
+#             rospy.loginfo("Register global parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in global_node_names.values()))
+#             abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(runcfg.masteruri, global_node_names, [], runcfg.user, runcfg.pw, runcfg.auto_pw_request)
+#             runcfg.roslaunch_config.global_param_done.append(runcfg.masteruri)
+#
+#         # add params
+#         if runcfg.masteruri is not None:
+#             nodens = ''.join([n.namespace, n.name, rospy.names.SEP])
+#             params = dict()
+#             for param, value in runcfg.roslaunch_config.Roscfg.params.items():
+#                 if param.startswith(nodens):
+#                     params[param] = value
+#             clear_params = []
+#             for cparam in runcfg.roslaunch_config.Roscfg.clear_params:
+#                 if cparam.startswith(nodens):
+#                     clear_params.append(cparam)
+#             rospy.loginfo("Delete parameter:\n  %s", '\n  '.join(clear_params))
+#             rospy.loginfo("Register parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in params.values()))
+#             abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(runcfg.masteruri, params, clear_params, runcfg.user, runcfg.pw, runcfg.auto_pw_request)
+        if not nm.is_local(startcfg.host, wait=True):
+            # start remote
+            if not startcfg.package:
+                raise StartException("Can't run remote without a valid package name!")
+            # setup environment
+            env_command = ''
+            if new_env:
+                try:
+                    for k, v in new_env.items():
+                        v_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(v, startcfg.host, auto_pw_request, user, pw)
+                        new_env[k] = v_value
+                        if is_abs_path:
+                            abs_paths.append(('ENV', "%s=%s" % (k, v), "%s=%s" % (k, v_value)))
+                            if not found and package:
+                                not_found_packages.append(package)
+                    env_command = "env " + ' '.join(["%s=\'%s\'" % (k, v) for (k, v) in new_env.items()])
+                except nm.AuthenticationRequest as e:
+                    raise nm.InteractionNeededError(e, cls.bc_run_node, (name, grpc_path, masteruri, reload_global_param, loglevel, logformat, auto_pw_request))
+
+            startcmd = [env_command, nm.settings().start_remote_script,
+                        '--package', utf8(startcfg.package),
+                        '--node_type', utf8(startcfg.binary),
+                        '--node_name', utf8(startcfg.fullname),
+                        '--node_respawn true' if startcfg.respawn else '']
+            if startcfg.masteruri is not None:
+                startcmd.append('--masteruri')
+                startcmd.append(startcfg.masteruri)
+            if startcfg.prefix:
+                startcmd[len(startcmd):] = ['--prefix', startcfg.prefix]
+            if startcfg.loglevel:
+                startcmd.append('--loglevel')
+                startcmd.append(startcfg.loglevel)
+
+            # rename the absolute paths in the args of the node
+            node_args = []
+            error = ''
+            output = ''
+            try:
+                for a in startcfg.args:
+                    a_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(a, startcfg.host, auto_pw_request, user, pw)
+                    node_args.append(a_value)
+                    if is_abs_path:
+                        abs_paths.append(('ARGS', a, a_value))
+                        if not found and package:
+                            not_found_packages.append(package)
+
+                startcmd[len(startcmd):] = node_args
+                startcmd[len(startcmd):] = args
+                rospy.loginfo("Run remote on %s: %s", startcfg.host, utf8(' '.join(startcmd)))
+                _, stdout, stderr, ok = nm.ssh().ssh_exec(startcfg.host, startcmd, user, pw, auto_pw_request, close_stdin=True)
+                output = stdout.read()
+                error = stderr.read()
+                stdout.close()
+                stderr.close()
+            except nm.AuthenticationRequest as e:
+                raise nm.InteractionNeededError(e, cls.bc_run_node, (name, grpc_path, masteruri, reload_global_param, loglevel, logformat, auto_pw_request))
+
+            if ok:
+                if error:
+                    rospy.logwarn("ERROR while start '%s': %s", startcfg.fullname, error)
+                    raise StartException(utf8(''.join(['The host "', startcfg.host, '" reports:\n', error])))
+                if output:
+                    rospy.logdebug("STDOUT while start '%s': %s", startcfg.fullname, output)
+            # inform about absolute paths in parameter value
+            if len(abs_paths) > 0:
+                rospy.loginfo("Absolute paths found while start:\n%s", utf8('\n'.join([''.join([p, '\n  OLD: ', ov, '\n  NEW: ', nv]) for p, ov, nv in abs_paths])))
+
+            if len(not_found_packages) > 0:
+                packages = '\n'.join(not_found_packages)
+                raise StartException(utf8('\n'.join(['Some absolute paths are not renamed because following packages are not found on remote host:', packages])))
+
+    @classmethod
+    def _bc_resolve_abs_paths(cls, value, host, auto_pw_request, user, pw):
+        '''
+        Replaces the local absolute path by remote absolute path. Only valid ROS
+        package paths are resolved.
+
+        :return: value, is absolute path, remote package found (ignore it on local host or if is not absolute path!), package name (if absolute path and remote package NOT found)
+        '''
+        if isinstance(value, types.StringTypes) and value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
+            if nm.is_local(host):
+                return value, True, True, ''
+            else:
+                path = os.path.dirname(value) if os.path.isfile(value) else value
+                package, package_path = package_name(path)
+                if package:
+                    _, stdout, _, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
+                    output = stdout.read()
+                    stdout.close()
+                    if ok:
+                        if output:
+                            value.replace(package_path, output)
+                            return value.replace(package_path, output.strip()), True, True, package
+                        else:
+                            # package on remote host not found!
+                            # TODO add error message
+                            #      error = stderr.read()
+                            pass
+                return value, True, False, ''
+        else:
+            return value, False, False, ''

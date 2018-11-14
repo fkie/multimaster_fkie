@@ -48,6 +48,7 @@ from .launch_stub import LaunchStub
 from .common import get_cwd, utf8
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
+from .host import get_hostname
 import remote
 
 STARTED_BINARIES = dict()
@@ -92,6 +93,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     # set masteruri and host config
     result.masteruri = masteruri if masteruri or masteruri is None else None
     result.host = launchcfg.host
+    if result.host is None and result.masteruri is not None:
+        result.host = get_hostname(masteruri)
     # set args
     result.args = n.args.split()
     # set cwd unchanged, it will be resolved on host
@@ -110,7 +113,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
     for pname, param in launchcfg.roscfg.params.items():
         if pname.startswith(nodens):
-            result.params[pname] = param
+            result.params[pname] = param.value
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
@@ -189,21 +192,22 @@ def run_node(startcfg):
             cmd_type = "%s %s %s" % (settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
-        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname), cmd_type, ' '.join(args)))
         # check for masteruri
         masteruri = startcfg.masteruri
         if masteruri is None:
             masteruri = masteruri_from_ros()
         if masteruri is not None:
             new_env['ROS_MASTER_URI'] = masteruri
-            ros_hostname = host.get_ros_hostname(masteruri)
-            if ros_hostname:
-                new_env['ROS_HOSTNAME'] = ros_hostname
+            if startcfg.host:
+                new_env['ROS_HOSTNAME'] = startcfg.host
+            elif 'ROS_HOSTNAME' in os.environ:
+                new_env['ROS_HOSTNAME'] = host.get_ros_hostname(masteruri)
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params, False)
         # start
-        rospy.loginfo("run node '%s'" % (nodename))
-        rospy.logdebug("run node: %s", cmd_str)
+        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args)))
+        rospy.loginfo("run node '%s' with masteruri: %s" % (nodename, masteruri))
+        rospy.logdebug("run node: %s (env: %s)", cmd_str, new_env)
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
         rospy.loginfo("remote run node '%s' at '%s'" % (nodename, startcfg.host))
@@ -298,18 +302,18 @@ def _load_parameters(masteruri, params, clear_params, replace_abs=False):
         socket.setdefaulttimeout(6 + len(params))
         param_server_multi = xmlrpclib.MultiCall(param_server)
         address = host.get_hostname(masteruri)
-        for p in params.itervalues():
-            value = p.value
+        for pkey, pval in params.items():
+            value = pval
             if replace_abs:
                 # suppressing this as it causes too much spam
-                value, is_abs_path, found, package = _resolve_abs_paths(p.value, address)
+                value, is_abs_path, found, package = _resolve_abs_paths(pval, address)
                 if is_abs_path:
-                    abs_paths.append((p.key, p.value, value))
+                    abs_paths.append((pkey, pval, value))
                     if not found and package:
                         not_found_packages.append(package)
             # add parameter to the multicall
-            param_server_multi.setParam(rospy.get_name(), p.key, value)
-            test_ret = _test_value(p.key, value)
+            param_server_multi.setParam(rospy.get_name(), pkey, value)
+            test_ret = _test_value(pkey, value)
             if test_ret:
                 param_errors.extend(test_ret)
         r = param_server_multi()
@@ -398,5 +402,5 @@ def get_global_params(roscfg):
                 nodesparam = True
                 break
         if not nodesparam:
-            result[name] = param
+            result[name] = param.value
     return result

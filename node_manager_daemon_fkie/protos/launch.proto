@@ -45,6 +45,7 @@ service LaunchService {
 	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
 	rpc GetMtime (LaunchFile) returns (MtimeReply);
 	rpc GetChangedBinaries (Nodes) returns (MtimeNodes);
+	rpc GetStartCfg (Node) returns (StartCfgReply);
 }
 
 message Empty {
@@ -243,12 +244,13 @@ message StartConfig {
 	repeated string clear_params = 12;
 	repeated string args = 13;
 	string masteruri = 14;
-	string loglevel = 15;  // FATAL, ERROR, WARN, INFO, DEBUG
-	string logformat = 16;
-	bool respawn = 17;
-	double respawn_delay = 18;
-	sint32 respawn_max = 19;
-	double respawn_min_runtime = 20;
+	string host = 15;
+	string loglevel = 16;  // FATAL, ERROR, WARN, INFO, DEBUG
+	string logformat = 17;
+	bool respawn = 18;
+	double respawn_delay = 19;
+	sint32 respawn_max = 20;
+	double respawn_min_runtime = 21;
 }
 
 message Remapping {
@@ -266,6 +268,18 @@ message StartNodeReply {
 	string name = 2;
 	repeated string path = 3;
 	repeated string launch = 4;
+}
+
+/** The response message with status of create configuration status
+ * :param status: the status of the create process.
+ * :param launch: a list with names launch files, only if MULTIPLE_LAUNCHES is returned.
+ * :param startcfg: Returns the start configuration.
+ */
+message StartCfgReply {
+	ReturnStatus status = 1;
+	string name = 2;
+	repeated string launch = 3;
+	StartConfig startcfg = 4;
 }
 
 /** Requests included files for given path.
@@ -295,6 +309,7 @@ message ReturnStatus {
 		PARAMS_REQUIRED = 5;
 		FILE_NOT_FOUND = 6;
 		NODE_NOT_FOUND = 7;
+		CONNECTION_ERROR = 8;
 	}
 	sint32 code = 1;
 	string error_msg = 3;

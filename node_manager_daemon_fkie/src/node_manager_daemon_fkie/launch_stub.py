@@ -36,8 +36,8 @@ import exceptions
 import settings
 import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
 import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
-from .common import utf8
 from .launch_description import LaunchDescription, RobotDescription, Capability
+from .startcfg import StartConfig
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -47,6 +47,7 @@ MULTIPLE_LAUNCHES = lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES')
 PARAMS_REQUIRED = lmsg.ReturnStatus.StatusType.Value('PARAMS_REQUIRED')
 FILE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND')
 NODE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('NODE_NOT_FOUND')
+CONNECTION_ERROR = lmsg.ReturnStatus.StatusType.Value('CONNECTION_ERROR')
 
 
 class LaunchStub(object):
@@ -254,6 +255,8 @@ class LaunchStub(object):
                 raise exceptions.BinarySelectionRequest(response.path, response.status.error_msg)
             elif response.status.code == MULTIPLE_LAUNCHES:
                 raise exceptions.LaunchSelectionRequest(response.launch, response.status.error_msg)
+            elif response.status.code == CONNECTION_ERROR:
+                raise exceptions.ConnectionException(response.startcfg, response.status.error_msg)
 
     def start_standalone_node(self, startcfg):
         '''
@@ -264,38 +267,7 @@ class LaunchStub(object):
         :raise exceptions.StartException: on errors
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         '''
-        request = lmsg.StartConfig(package=startcfg.package, binary=startcfg.binary)
-        if startcfg.binary_path:
-            request.binary_path = startcfg.binary_path
-        if startcfg.name:
-            request.name = startcfg.name
-        if startcfg.namespace:
-            request.namespace = startcfg.namespace
-        if startcfg.fullname:
-            request.fullname = startcfg.fullname
-        if startcfg.prefix:
-            request.prefix = startcfg.prefix
-        if startcfg.cwd:
-            request.cwd = startcfg.cwd
-        if startcfg.env:
-            request.env.extend([lmsg.Argument(name=name, value=value) for name, value in startcfg.env.items()])
-        if startcfg.remaps:
-            request.remaps.extend([lmsg.Remapping(from_name=name, to_name=value) for name, value in startcfg.remaps.items()])
-        if startcfg.params:
-            for name, value in startcfg.params.items():
-                print("PARAMS", name, value, type(name), type(value))
-            request.params.extend([lmsg.Argument(name=name, value=utf8(value)) for name, value in startcfg.params.items()])
-        if startcfg.clear_params:
-            request.clear_params.extend(startcfg.clear_params)
-        if startcfg.args:
-            request.args.extend(startcfg.args)
-        if startcfg.masteruri:
-            request.masteruri = startcfg.masteruri
-        request.loglevel = startcfg.loglevel
-        request.respawn = startcfg.respawn
-        request.respawn_delay = startcfg.respawn_delay
-        request.respawn_max = startcfg.respawn_max
-        request.respawn_min_runtime = startcfg.respawn_min_runtime
+        request = startcfg.to_msg()
         response = self.lm_stub.StartStandaloneNode(request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code == 0:
             pass
@@ -305,3 +277,29 @@ class LaunchStub(object):
             raise exceptions.StartException("Can't find %s in %s" % (startcfg.binary, startcfg.package))
         elif response.status.code == ERROR:
             raise exceptions.StartException(response.status.error_msg)
+
+    def get_start_cfg(self, name, opt_launch='', loglevel='', logformat='', masteruri='', reload_global_param=False):
+        '''
+        Returns start configuration for a node.
+
+        :param str name: full name of the ros node exists in the launch file.
+        :param str opt_binary: the full path of the binary. Used in case of multiple binaries in the same package.
+        :param str opt_launch: full name of the launch file to use. Used in case the node with same name exists in more then one loaded launch file.
+        :param str loglevel: log level
+        :raise exceptions.StartException: on start errors
+        :raise exceptions.BinarySelectionRequest: on multiple binaries
+        :raise exceptions.LaunchSelectionRequest: on multiple launch files
+        '''
+        response = self.lm_stub.GetStartCfg(lmsg.Node(name=name, opt_binary='', opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param), timeout=settings.GRPC_TIMEOUT)
+        startcfg = None
+        if response.status.code == 0:
+            startcfg = StartConfig.from_msg(response.startcfg)
+        elif response.status.code == ERROR:
+            raise exceptions.StartException(response.status.error_msg)
+        elif response.status.code == NODE_NOT_FOUND:
+            raise exceptions.StartException(response.status.error_msg)
+        elif response.status.code == MULTIPLE_LAUNCHES:
+            raise exceptions.LaunchSelectionRequest(response.launch, response.status.error_msg)
+        elif response.status.code == CONNECTION_ERROR:
+            raise exceptions.ConnectionException(response.startcfg, response.status.error_msg)
+        return startcfg

@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import grpc
 import os
 import re
 import rospy
@@ -57,6 +58,7 @@ MULTIPLE_LAUNCHES = lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES')
 PARAMS_REQUIRED = lmsg.ReturnStatus.StatusType.Value('PARAMS_REQUIRED')
 FILE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND')
 NODE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('NODE_NOT_FOUND')
+CONNECTION_ERROR = lmsg.ReturnStatus.StatusType.Value('CONNECTION_ERROR')
 
 IS_RUNNING = True
 
@@ -301,7 +303,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             rospy.logdebug("..load aborted, PARAMS_REQUIRED")
                             return result
             argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]
-            _loaded, res_argv = launch_config.load(argv)
+            _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
             result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
@@ -501,7 +503,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     result.status.error_msg = "multiple binaries found for node '%s'" % request.name
                     result.launch.extend(bsr.choices)
                     yield result
-            except Exception:
+                except grpc.RpcError as conerr:
+                    result.status.code = CONNECTION_ERROR
+                    result.status.error_msg = utf8(conerr)
+                    yield result
+            except Exception as _errr:
                 import traceback
                 result = lmsg.StartNodeReply(name=request.name)
                 result.status.code = ERROR
@@ -509,26 +515,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 yield result
 
     def StartStandaloneNode(self, request, context):
+        result = lmsg.StartNodeReply(name=request.name)
         try:
-            result = lmsg.StartNodeReply(name=request.name)
-            startcfg = StartConfig(request.package, request.binary)
-            startcfg.binary_path = request.binary_path
-            startcfg.name = request.name
-            startcfg.namespace = request.namespace
-            startcfg.fullname = request.fullname
-            startcfg.prefix = request.prefix
-            startcfg.cwd = request.cwd
-            startcfg.env = {env.name: env.value for env in request.env}
-            startcfg.remaps = {remap.from_name: remap.to_name for remap in request.remaps}
-            startcfg.params = {param.name: utf8(param.value) for param in request.params}
-            startcfg.clear_params = list(request.clear_params)
-            startcfg.args = list(request.args)
-            startcfg.masteruri = request.masteruri
-            startcfg.loglevel = request.loglevel
-            startcfg.respawn = request.respawn
-            startcfg.respawn_delay = request.respawn_delay
-            startcfg.respawn_max = request.respawn_max
-            startcfg.respawn_min_runtime = request.respawn_min_runtime
+            startcfg = StartConfig.from_msg(request)
             try:
                 launcher.run_node(startcfg)
                 result.status.code = OK
@@ -536,14 +525,15 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.code = MULTIPLE_BINARIES
                 result.status.error_msg = "multiple binaries found for node '%s'" % request.name
                 result.launch.extend(bsr.choices)
-                return result
-            return result
+        except grpc.RpcError as conerr:
+            result.status.code = CONNECTION_ERROR
+            result.status.error_msg = utf8(conerr)
         except Exception:
             import traceback
             result = lmsg.StartNodeReply(name=request.name)
             result.status.code = ERROR
             result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
-            return result
+        return result
 
     def GetIncludedFiles(self, request, context):
         pattern = INCLUDE_PATTERN
@@ -591,4 +581,34 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             node = lmsg.MtimeNode(name=name, mtime=mtime)
             nodes.append(node)
         result.nodes.extend(nodes)
+        return result
+
+    def GetStartCfg(self, request, context):
+        result = lmsg.StartCfgReply(name=request.name)
+        launch_configs = []
+        if request.opt_launch:
+            cfgid = CfgId(request.opt_launch, request.masteruri)
+            if cfgid in self._loaded_files:
+                launch_configs.append(self._loaded_files[cfgid])
+        if not launch_configs:
+            # get launch configurations with given node
+            launch_configs = []
+            for cfgid, launchcfg in self._loaded_files.items():
+                if cfgid.equal_masteruri(request.masteruri):
+                    n = launchcfg.get_node(request.name)
+                    if n is not None:
+                        launch_configs.append(launchcfg)
+        if not launch_configs:
+            result.status.code = NODE_NOT_FOUND
+            result.status.error_msg = "Node '%s' not found" % request.name
+            return result
+        if len(launch_configs) > 1:
+            result.status.code = MULTIPLE_LAUNCHES
+            result.status.error_msg = "Node '%s' found in multiple launch files" % request.name
+            result.launch.extend([lcfg.filename for lcfg in launch_configs])
+            return result
+        result.launch.append(launch_configs[0].filename)
+        startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param)
+        startcfg.fill_msg(result.startcfg)
+        result.status.code = OK
         return result
