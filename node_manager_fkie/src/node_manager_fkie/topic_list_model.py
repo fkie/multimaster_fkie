@@ -284,6 +284,8 @@ class TopicGroupItem(QStandardItem):
             dname = '{%s}' % name
         elif name != rospy.names.SEP:
             dname = '%s/' % name
+        else:
+            dname = 'topics@master'
         QStandardItem.__init__(self, dname)
         self.parent_item = parent
         self._name = name
@@ -415,6 +417,7 @@ class TopicGroupItem(QStandardItem):
             lns, rns = lnamespace(group_name)
             if lns == rospy.names.SEP:
                 lns, rns = lnamespace(rns)
+                lns = '/%s' % lns
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):
