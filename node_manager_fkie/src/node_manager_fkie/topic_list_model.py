@@ -372,7 +372,7 @@ class TopicGroupItem(QStandardItem):
             item = self.child(i)
             if isinstance(item, TopicGroupItem):
                 if recursive:
-                    result[len(result):] = item.get_node_items()
+                    result[len(result):] = item.get_topic_items()
             elif isinstance(item, TopicItem):
                 result.append(item)
         return result
