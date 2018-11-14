@@ -417,7 +417,6 @@ class CapabilityTable(QTableWidget):
         robot_index = self._robotHeader.index(masteruri)
         robot_name = description.robot_name if description.robot_name else nm.nameres().mastername(masteruri)
         # append a new robot
-        new_robot = False
         descr_utf8 = utf8(description.robot_descr.replace("\\n ", "\n"))
         if robot_index == -1:
             robot_index = self._robotHeader.insertSortedItem(masteruri, robot_name)
@@ -429,7 +428,6 @@ class CapabilityTable(QTableWidget):
             item.setSizeHint(QSize(96, 96))
             self.setHorizontalHeaderItem(robot_index, item)
             self.horizontalHeaderItem(robot_index).setText(robot_name)
-            new_robot = True
         else:
             # update
             self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
@@ -439,7 +437,7 @@ class CapabilityTable(QTableWidget):
             cname = utf8(c.name)
             cdescription = utf8(c.description.replace("\\n ", "\n"))
             cap_index = self._capabilityHeader.index(cname)
-            if cap_index == -1 or new_robot:
+            if cap_index == -1 or self.cellWidget(cap_index, robot_index) is None:
                 if cap_index == -1:
                     # append a new capability
                     cap_index = self._capabilityHeader.insertSortedItem(cname, cname)
