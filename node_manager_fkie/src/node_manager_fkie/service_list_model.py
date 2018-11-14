@@ -232,7 +232,7 @@ class ServiceGroupItem(QStandardItem):
         :type parent: :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>
         :param bool is_group: True if this is a capability group. In other case it is a namespace group.
         '''
-        dname = name
+        dname = 'services@master/'
         if is_group:
             dname = '{%s}' % name
         elif name != rospy.names.SEP:
@@ -472,7 +472,7 @@ class ServiceGroupItem(QStandardItem):
     def _remove_group(self, name):
         for i in reversed(range(self.rowCount())):
             item = self.child(i)
-            if type(item) == ServiceGroupItem and item.rowCount() == 0:
+            if type(item) == ServiceGroupItem and item == name and item.rowCount() == 0:
                 self.removeRow(i)
 
     def remove_node(self, name):
@@ -595,7 +595,7 @@ class ServiceModel(QStandardItemModel):
         except Exception:
             pass
         if match:
-            root = self.invisibleRootItem()
+            root = self.get_root_group()
             for i in range(root.rowCount()):
                 item = root.child(i)
                 if type(item) == ServiceGroupItem:
