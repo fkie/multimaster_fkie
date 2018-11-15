@@ -196,10 +196,9 @@ def run_node(startcfg):
             masteruri = masteruri_from_ros()
         if masteruri is not None:
             new_env['ROS_MASTER_URI'] = masteruri
-            if startcfg.host:
-                new_env['ROS_HOSTNAME'] = startcfg.host
-            elif 'ROS_HOSTNAME' in os.environ:
-                new_env['ROS_HOSTNAME'] = host.get_ros_hostname(masteruri)
+            ros_hostname = host.get_ros_hostname(masteruri)
+            if ros_hostname:
+                new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params, False)
         # start

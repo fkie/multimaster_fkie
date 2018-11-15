@@ -256,7 +256,7 @@ class LaunchStub(object):
             elif response.status.code == MULTIPLE_LAUNCHES:
                 raise exceptions.LaunchSelectionRequest(response.launch, response.status.error_msg)
             elif response.status.code == CONNECTION_ERROR:
-                raise exceptions.ConnectionException(response.startcfg, response.status.error_msg)
+                raise exceptions.ConnectionException(response.name, response.status.error_msg)
 
     def start_standalone_node(self, startcfg):
         '''
@@ -301,5 +301,5 @@ class LaunchStub(object):
         elif response.status.code == MULTIPLE_LAUNCHES:
             raise exceptions.LaunchSelectionRequest(response.launch, response.status.error_msg)
         elif response.status.code == CONNECTION_ERROR:
-            raise exceptions.ConnectionException(response.startcfg, response.status.error_msg)
+            raise exceptions.ConnectionException(response.name, response.status.error_msg)
         return startcfg

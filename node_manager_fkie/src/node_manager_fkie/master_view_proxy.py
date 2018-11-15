@@ -674,7 +674,8 @@ class MasterViewProxy(QWidget):
                 _launch_file, changed_nodes = nm.nmd().reload_launch(launchfile, masteruri=self.masteruri)
             else:
                 # nm.nmd().load_launch(launchfile, argv_forced)  CREATE DICT
-                _launch_file, args = nm.nmd().load_launch(launchfile, masteruri=self.masteruri, args=args_forced)
+                on_host, _ = nmdurl.split(nmdurl.nmduri(self.masteruri))
+                _launch_file, args = nm.nmd().load_launch(launchfile, masteruri=self.masteruri, host=on_host, args=args_forced)
             # do not load if the loadings process was canceled
             if self._progress_queue_prio.has_id(pqid):
                 cfg = LaunchConfig(launchfile, args=args)
