@@ -209,6 +209,8 @@ def _append_env(cfgfile, arg, env):
         value = env[arg]
         if value:
             cfgfile.write('setenv %s %s\n' % (arg, value))
+            return True
+    return False
 
 
 def get_cmd(node, env=[], keys=[]):
@@ -230,7 +232,6 @@ def get_cmd(node, env=[], keys=[]):
     f.write("logfile %s\n" % get_logfile(node=node))
     f.write("logfile flush 0\n")
     f.write("defscrollback 10000\n")
-    use_env = env if env else os.environ
     addkeys = list(keys)
     addkeys.append('LD_LIBRARY_PATH')
     addkeys.append('ROS_ETC_DIR')
@@ -243,6 +244,7 @@ def get_cmd(node, env=[], keys=[]):
     addkeys.append('RESPAWN_MAX')
     addkeys.append('RESPAWN_MIN_RUNTIME')
     for key in keys:
-        _append_env(f, key, use_env)
+        if not _append_env(f, key, env):
+            _append_env(f, key, os.environ):
     f.close()
     return "%s -c %s -L -dmS %s" % (SCREEN, filename, create_session_name(node=node))
