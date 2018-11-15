@@ -81,7 +81,7 @@ class HTMLDelegate(QStyledItemDelegate):
             textRect.setWidth(options.rect.width())
             textRect.setHeight(options.rect.height())
         painter.save()
-        red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2 + 1
+        red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2
         painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - red))
         painter.setClipRect(textRect.translated(-textRect.topLeft()))
         doc.documentLayout().draw(painter, ctx)
@@ -101,7 +101,7 @@ class HTMLDelegate(QStyledItemDelegate):
         doc.setHtml(options.text)
         doc.setTextWidth(options.rect.width())
         metric = QFontMetrics(doc.defaultFont())
-        self._red_ascent = abs(metric.height() - metric.ascent())
+        self._red_ascent = abs(metric.height() - metric.ascent()) + 1
         self._cached_size = QSize(doc.idealWidth(), metric.height() + self._red_ascent)
         return self._cached_size
 
