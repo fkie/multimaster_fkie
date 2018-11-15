@@ -1167,6 +1167,9 @@ class NodeItem(QStandardItem):
 
     @property
     def uri(self):
+        if self._node_info.uri is not None:
+            if self._node_info.uri == 'None':
+                self._node_info.uri = None
         return self._node_info.uri
 
     @property

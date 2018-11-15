@@ -83,7 +83,7 @@ class LaunchConfig(object):
         self.__launch_id = '%.9f' % time.time()
         self._robot_description = None
         self._capabilities = None
-        self.host = host if host else get_hostname(self.__masteruri)
+        self.host = host if host else None
         self.resolve_dict = {}
 
 #     def __del__(self):

@@ -93,8 +93,6 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     # set masteruri and host config
     result.masteruri = masteruri if masteruri or masteruri is None else None
     result.host = launchcfg.host
-    if result.host is None and result.masteruri is not None:
-        result.host = get_hostname(masteruri)
     # set args
     result.args = n.args.split()
     # set cwd unchanged, it will be resolved on host
