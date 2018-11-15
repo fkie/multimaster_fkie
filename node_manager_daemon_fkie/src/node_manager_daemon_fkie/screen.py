@@ -243,7 +243,7 @@ def get_cmd(node, env=[], keys=[]):
     addkeys.append('RESPAWN_DELAY')
     addkeys.append('RESPAWN_MAX')
     addkeys.append('RESPAWN_MIN_RUNTIME')
-    for key in keys:
+    for key in addkeys:
         if not _append_env(f, key, env):
             _append_env(f, key, os.environ)
     f.close()
