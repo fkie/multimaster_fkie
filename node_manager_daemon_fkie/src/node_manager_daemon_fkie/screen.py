@@ -245,6 +245,6 @@ def get_cmd(node, env=[], keys=[]):
     addkeys.append('RESPAWN_MIN_RUNTIME')
     for key in keys:
         if not _append_env(f, key, env):
-            _append_env(f, key, os.environ):
+            _append_env(f, key, os.environ)
     f.close()
     return "%s -c %s -L -dmS %s" % (SCREEN, filename, create_session_name(node=node))
