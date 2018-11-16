@@ -11,5 +11,5 @@ env:
 install:
   - git clone https://github.com/ros-industrial/industrial_ci.git .ci_config
 script:
-  - .ci_config/travis.sh
+  - .ci_config/travis.sh WRITABLE_SOURCE=true
 
