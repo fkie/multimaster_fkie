@@ -516,7 +516,7 @@ class GroupItem(QStandardItem):
             if isinstance(item, NodeItem):
                 if item.with_namespace:
                         group_item = self.get_group_item(namespace(item.name), False, nocreate=True)
-                        if group_item is not None:
+                        if group_item is not None and group_item != self:
                             inserted = True
                             row = self.takeRow(i)
                             group_item._add_row_sorted(row)
