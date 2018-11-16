@@ -18,9 +18,7 @@
   <exec_depend>rospy</exec_depend>
 
   <depend>screen</depend>
-  <!-- depend>python-grpcio</depend>
-  <depend>python-protobuf</depend
-  <depend>grpc-tools<depend-->
+  <depend>python-grpc-tools</depend>
 
   <test_depend>rostest</test_depend>
 
