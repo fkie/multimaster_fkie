@@ -37,6 +37,7 @@ import rospy
 import node_manager_daemon_fkie.generated.file_pb2_grpc as fms_grpc
 import node_manager_daemon_fkie.generated.file_pb2 as fms
 from .common import is_package, get_pkg_path, package_name, utf8
+import url as nmdurl
 import file_item
 import remote
 import settings
@@ -223,16 +224,19 @@ class FileServicer(fms_grpc.FileServiceServicer):
         result = fms.ReturnStatus()
         try:
             path = request.path
+            dest_uri, _dest_path = nmdurl.split(request.uri)
             # get package from path
-            pname, ppath = package_name(path)
+            dpath = path
+            if os.path.basename(path) == os.path.basename(_dest_path):
+                dpath = _dest_path
+            pname, ppath = package_name(dpath)
             if pname is not None:
-                prest = path.replace(ppath, '')
+                prest = dpath.replace(ppath, '')
                 with open(path, 'r') as outfile:
                     mtime = 0.0 if request.overwrite else os.path.getmtime(path)
                     content = outfile.read()
                     # get channel to the remote grpc server
                     # TODO: get secure channel, if available
-                    dest_uri = request.uri
                     channel = remote.get_insecure_channel(dest_uri)
                     if channel is not None:
                         # save file on remote server

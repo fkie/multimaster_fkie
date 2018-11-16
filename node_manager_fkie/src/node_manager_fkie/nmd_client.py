@@ -336,9 +336,9 @@ class NmdClient(QObject):
     def copy(self, grpc_path='grpc://localhost:12321', grpc_dest='grpc://localhost:12321'):
         uri, path = nmdurl.split(grpc_path)
         uri_dest, _ = nmdurl.split(grpc_dest)
-        rospy.logdebug("copy '%s' to '%s'" % (grpc_path, uri_dest))
+        rospy.logdebug("copy '%s' to '%s'" % (grpc_path, grpc_dest))
         fm = self.get_file_manager(uri)
-        fm.copy(path, uri_dest)
+        fm.copy(path, grpc_dest)
 
     def get_package_binaries(self, pkgname, grpc_url='grpc://localhost:12321'):
         uri, _path = nmdurl.split(grpc_url)

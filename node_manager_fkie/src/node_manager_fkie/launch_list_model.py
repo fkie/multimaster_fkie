@@ -554,15 +554,15 @@ class LaunchListModel(QStandardItemModel):
         '''
         if path_id in [PathItem.NOTHING]:
             return None
-        has_ctrl_mod = Qt.ControlModifier & QApplication.keyboardModifiers()
+        has_alt_mod = Qt.AltModifier & QApplication.keyboardModifiers()
         if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
-            if not has_ctrl_mod:
+            if not has_alt_mod:
                 return path
         root = self.invisibleRootItem()
         while root.rowCount():
             root.removeRow(0)
         self.pyqt_workaround.clear()
-        if has_ctrl_mod:
+        if has_alt_mod:
             if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
                 self._current_path = os.path.dirname(path)
             else:
@@ -622,25 +622,21 @@ class LaunchListModel(QStandardItemModel):
             import traceback
             print traceback.format_exc(2)
 
-#     def paste_from_clipboard(self):
-#         '''
-#         Copy the file or folder to new position...
-#         '''
-#         #TODO paste_from_clipboard
-#         if QApplication.clipboard().mimeData().hasText() and self._current_path:
-#             text = QApplication.clipboard().mimeData().text()
-#             if text.startswith('file://'):
-#                 path = text.replace('file://', '')
-#                 basename = os.path.basename(text)
-#                 ok = True
-#                 if os.path.exists(os.path.join(self._current_path, basename)):
-#                     basename, ok = QInputDialog.getText(None, 'File exists', 'New name (or override):', QLineEdit.Normal, basename)
-#                 if ok and basename:
-#                     if os.path.isdir(path):
-#                         shutil.copytree(path, os.path.join(self._current_path, basename))
-#                     elif os.path.isfile(path):
-#                         shutil.copy2(path, os.path.join(self._current_path, basename))
-#                     self.reloadcurrent_path()
+    def paste_from_clipboard(self):
+         '''
+         Copy the file or folder to new position...
+         '''
+         if QApplication.clipboard().mimeData().hasText() and self._current_path:
+             text = QApplication.clipboard().mimeData().text()
+             if self.current_path and text.startswith('grpc://'):
+                 basename = os.path.basename(text)
+                 dest_path = os.path.join(self._current_path, basename)
+                 try:
+                     nm.nmd().copy(text, dest_path)
+                     self.reload_current_path(clear_cache=True)
+                 except Exception:
+                     import traceback
+                     print traceback.format_exc()
 
     def copy_to_clipboard(self, indexes):
         '''
