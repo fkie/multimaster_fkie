@@ -40,6 +40,7 @@ import sys
 import threading
 
 from master_discovery_fkie.common import get_hostname
+from node_manager_daemon_fkie import host as nmdhost
 from .common import get_ros_home
 from .history import History
 from .name_resolution import NameResolution
@@ -140,17 +141,6 @@ def history():
     :rtype: :class:`node_manager_fkie.settings.History`
     '''
     return _HISTORY
-
-
-def get_ros_hostname(url):
-    '''
-    Returns the host name used in a url, if it is a name. If it is an IP an
-    empty string will be returned.
-
-    :return: host or empty string if url is an IP or invalid
-    :rtype:  str
-    '''
-    return NameResolution.get_ros_hostname(url)
 
 
 def is_local(hostname, wait=False):
@@ -362,7 +352,7 @@ def main(name):
     parsed_args = parser.parse_args(args[1:])
     if parsed_args.muri:
         masteruri = parsed_args.muri[0]
-        hostname = NameResolution.get_ros_hostname(masteruri)
+        hostname = nmdhost.get_ros_hostname(masteruri)
         os.environ['ROS_MASTER_URI'] = masteruri
         if hostname:
             os.environ['ROS_HOSTNAME'] = hostname

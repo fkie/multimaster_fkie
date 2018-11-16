@@ -10,6 +10,7 @@ import roslib
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros
+from node_manager_daemon_fkie import host as nmdhost
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie.settings import RESPAWN_SCRIPT
 try:
@@ -180,7 +181,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     # set the masteruri to launch with other one master
     new_env = dict(os.environ)
     new_env['ROS_MASTER_URI'] = masteruri
-    ros_hostname = nm.get_ros_hostname(masteruri)
+    ros_hostname = nmdhost.get_ros_hostname(masteruri)
     if ros_hostname:
         new_env['ROS_HOSTNAME'] = ros_hostname
     if loglevel:

@@ -42,6 +42,7 @@ import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.common import get_hostname, get_port
+from node_manager_daemon_fkie import host as nmdhost
 from node_manager_daemon_fkie import screen
 
 
@@ -68,29 +69,6 @@ def get_ros_home():
     except:
         from roslib import rosenv
         return rosenv.get_ros_home()
-
-
-def get_ros_hostname(url):
-    '''
-    Returns the host name used in a url, if it is a name. If it is an IP an
-    empty string will be returned.
-
-    :return: host or '' if url is an IP or invalid
-    :rtype:  str
-    '''
-    hostname = get_hostname(url)
-    if hostname is not None:
-        if hostname != 'localhost':
-            if '.' not in hostname and ':' not in hostname:
-                # ROS resolves the 'localhost' to local hostname
-                local_hostname = 'localhost'
-                try:
-                    local_hostname = socket.gethostname()
-                except:
-                    pass
-                if hostname != local_hostname:
-                    return hostname
-    return ''
 
 
 class Settings(object):
@@ -158,7 +136,7 @@ class StartHandler(object):
                 master_port = get_port(masteruri)
                 new_env = dict(os.environ)
                 new_env['ROS_MASTER_URI'] = masteruri
-                ros_hostname = get_ros_hostname(masteruri)
+                ros_hostname = nmdhost.get_ros_hostname(masteruri)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
                 cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)

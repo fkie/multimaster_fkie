@@ -42,13 +42,11 @@ import xmlrpclib
 
 from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
 from node_manager_daemon_fkie.common import get_cwd
-from node_manager_daemon_fkie.startcfg import StartConfig
 from node_manager_daemon_fkie import host as nmdhost
 from node_manager_daemon_fkie import launcher
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import package_name, utf8
-from node_manager_fkie.name_resolution import NameResolution
 from node_manager_fkie.supervised_popen import SupervisedPopen
 
 import node_manager_fkie as nm
@@ -202,7 +200,7 @@ class StartHandler(object):
                 master_port = get_port(masteruri)
                 new_env = dict(os.environ)
                 new_env['ROS_MASTER_URI'] = masteruri
-                ros_hostname = NameResolution.get_ros_hostname(masteruri)
+                ros_hostname = nmdhost.get_ros_hostname(masteruri)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
                 cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)
@@ -635,7 +633,7 @@ class StartHandler(object):
             new_env['ROS_MASTER_URI'] = masteruri
             if 'ROS_HOSTNAME' in os.environ:
                 # set only ROS_HOSTNAME if node manager have also one
-                ros_hostname = NameResolution.get_ros_hostname(masteruri)
+                ros_hostname = nmdhost.get_ros_hostname(masteruri, startcfg.host)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
