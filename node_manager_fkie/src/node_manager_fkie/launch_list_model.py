@@ -247,6 +247,7 @@ class PathItem(QStandardItem):
                         self._isnew = False
                     else:
                         nm.nmd().rename(self.path, new_path)
+                        self.reload_current_path(clear_cache=True)
                     # check for new file extension
                     if new_id != self.id:
                         self.id = new_id
