@@ -43,6 +43,7 @@ import xmlrpclib
 from master_discovery_fkie.common import get_hostname, get_port, masteruri_from_ros
 from node_manager_daemon_fkie.common import get_cwd
 from node_manager_daemon_fkie.startcfg import StartConfig
+from node_manager_daemon_fkie import host as nmdhost
 from node_manager_daemon_fkie import launcher
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie import url as nmdurl
@@ -136,11 +137,11 @@ class StartHandler(object):
                 new_env['ROS_MASTER_URI'] = masteruri
                 if 'ROS_HOSTNAME' in os.environ:
                     # set ROS_HOSTNAME only if node_manager has also one
-                    ros_hostname = NameResolution.get_ros_hostname(masteruri)
+                    ros_hostname = nmdhost.get_ros_hostname(masteruri, host)
                     if ros_hostname:
                         new_env['ROS_HOSTNAME'] = ros_hostname
             if use_nmd:
-                nm.nmd().start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri)
+                nm.nmd().start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri, host)
             else:
                 local_env = dict(os.environ)
                 local_env.update(new_env)

@@ -93,7 +93,7 @@ def get_port(url):
         return result
 
 
-def get_ros_hostname(url):
+def get_ros_hostname(url, host=None):
     '''
     Returns the host name used in a url, if it is a name. If it is an IP an
     empty string will be returned.
@@ -103,7 +103,7 @@ def get_ros_hostname(url):
     '''
     hostname = get_hostname(url)
     if hostname is not None:
-        if hostname != 'localhost':
+        if 'localhost' not in [hostname, host]:
             if '.' not in hostname and ':' not in hostname:
                 local_hostname = 'localhost'
                 try:
@@ -111,7 +111,7 @@ def get_ros_hostname(url):
                     local_hostname = socket.gethostname()
                 except Exception:
                     pass
-                if hostname != local_hostname:
+                if local_hostname not in [hostname, host]:
                     return hostname
     return ''
 

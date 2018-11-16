@@ -585,7 +585,7 @@ class NmdClient(QObject):
         except Exception as err:
             raise err
 
-    def start_standalone_node(self, grpc_url, package, binary, name, ns, args=[], env={}, masteruri=None):
+    def start_standalone_node(self, grpc_url, package, binary, name, ns, args=[], env={}, masteruri=None, host=None):
         rospy.loginfo("start standalone node: %s on %s" % (name, grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         lm = self.get_launch_manager(uri)
@@ -602,7 +602,7 @@ class NmdClient(QObject):
             startcfg.clear_params = []
             startcfg.args = args
             startcfg.masteruri = masteruri
-            startcfg.host = None
+            startcfg.host = host
             startcfg.loglevel = ''
             startcfg.logformat = ''
             startcfg.respawn = False
