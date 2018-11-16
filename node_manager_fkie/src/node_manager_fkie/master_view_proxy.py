@@ -48,6 +48,7 @@ from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_daemon_fkie.common import interpret_path, utf8
 from node_manager_daemon_fkie.host import get_hostname, get_port
+from node_manager_daemon_fkie import exceptions
 from node_manager_daemon_fkie import url as nmdurl
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
@@ -2496,6 +2497,9 @@ class MasterViewProxy(QWidget):
         try:
             self.remove_cfg_from_model(cfg)
             nm.nmd().unload_launch(cfg, self.masteruri)
+            del self.__configs[cfg]
+            nm.nmd().get_nodes_threaded(cfg)
+        except exceptions.ResourceNotFound:
             del self.__configs[cfg]
             nm.nmd().get_nodes_threaded(cfg)
         except Exception:
