@@ -49,7 +49,6 @@ from master_discovery_fkie.master_info import NodeInfo
 from node_manager_daemon_fkie.common import interpret_path, utf8
 from node_manager_daemon_fkie.host import get_hostname, get_port
 from node_manager_daemon_fkie import url as nmdurl
-from .launcher_threaded import LauncherThreaded
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
@@ -177,10 +176,6 @@ class MasterViewProxy(QWidget):
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
 #         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
 #         self.default_cfg_handler.err_signal.connect(self.on_default_cfg_err)
-
-        self._launcher_threaded = LauncherThreaded()
-        self._launcher_threaded.update_signal.connect(self.on_launch_description_retrieved)
-        self._launcher_threaded.err_signal.connect(self.on_launch_description_err)
 
         self.__launch_servers = {}  # uri : (pid, nodes)
         self.launch_server_handler = LaunchServerHandler()
@@ -331,6 +326,7 @@ class MasterViewProxy(QWidget):
         self.loaded_config.connect(self._apply_launch_config)
         nm.nmd().mtimes.connect(self._apply_mtimes)
         nm.nmd().changed_binaries.connect(self._apply_changed_binaries)
+        nm.nmd().launch_nodes.connect(self.on_launch_description_retrieved)
 
         # set the shortcuts
         self._shortcut1 = QShortcut(QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -508,10 +504,10 @@ class MasterViewProxy(QWidget):
         nmd_uri = nmdurl.nmduri(self.masteruri)
         if self._has_nmd:
             # only try to get updates from daemon if it is running
-            self._launcher_threaded.update_info(nmd_uri, self.masteruri)
-        nmd_uri_local = nmdurl.nmduri()
-        if nmd_uri_local != nmd_uri:
-            self._launcher_threaded.update_info(nmd_uri_local, masteruri_from_ros())
+            nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
+#        nmd_uri_local = nmdurl.nmduri()
+#         if nmd_uri_local != nmd_uri:
+#             nm.nmd().get_nodes_threaded(nmd_uri_local, masteruri_from_ros())
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
@@ -681,7 +677,7 @@ class MasterViewProxy(QWidget):
                 cfg = LaunchConfig(launchfile, args=args)
                 self._loaded_args[launchfile] = args
                 self.loaded_config.emit(cfg, changed_nodes)
-            self._launcher_threaded.update_info(launchfile)
+            nm.nmd().get_nodes_threaded(launchfile)
         except nm.LaunchArgsSelectionRequest as lasr:
             raise nm.InteractionNeededError(lasr, self._load_launchfile, (launchfile,))
         except Exception as e:
@@ -938,7 +934,7 @@ class MasterViewProxy(QWidget):
         for ld in launch_descriptions:
             # TODO: check masteruri and host
             if ld.masteruri != masteruri:
-                rospy.logdebug("skip apply config %s from %s to %s with configs %s ", ld.path, ld.masteruri, masteruri, self.__configs)
+                # rospy.logdebug("skip apply config %s from %s to %s with configs %s ", ld.path, ld.masteruri, masteruri, self.__configs)
                 continue
             # add the new config
             if ld.path not in self.__configs:
@@ -1017,15 +1013,6 @@ class MasterViewProxy(QWidget):
                 if ok:
                     self.stop_nodes_by_name(restart)
                     self.start_nodes_by_name(restart, cfg, force=True)
-
-    def on_launch_description_err(self, url, error):
-        '''
-        Handles the error messages from launch updater.
-
-        :param str url: the URI of the node manager daemon
-        :param Exception error: on occurred exception
-        '''
-        rospy.logwarn("Error while get launch configuration from %s: %s" % (url, utf8(error)))
 
     @property
     def launch_servers(self):
@@ -2510,7 +2497,7 @@ class MasterViewProxy(QWidget):
             self.remove_cfg_from_model(cfg)
             nm.nmd().unload_launch(cfg, self.masteruri)
             del self.__configs[cfg]
-            self._launcher_threaded.update_info(cfg)
+            nm.nmd().get_nodes_threaded(cfg)
         except Exception:
             rospy.logwarn(traceback.format_exc())
 

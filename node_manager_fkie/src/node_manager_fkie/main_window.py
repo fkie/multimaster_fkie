@@ -345,6 +345,8 @@ class MainWindow(QMainWindow):
         self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+R", "restart selected nodes")), self)
         self._shortcut_restart_nodes.activated.connect(self._restart_nodes)
 
+        nm.nmd().error.connect(self.on_nmd_err)
+
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
         docks = [self.launch_dock, self.descriptionDock, self.helpDock, self.networkDock]
@@ -1979,3 +1981,14 @@ class MainWindow(QMainWindow):
                     self.diagnostics_signal.emit(diagnostic)
         except Exception as err:
             rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
+
+    def on_nmd_err(self, method, url, path, error):
+        '''
+        Handles the error messages from node_manager_daemon.
+
+        :param str method: name of the method caused this error.
+        :param str url: the URI of the node manager daemon.
+        :param Exception error: on occurred exception.
+        '''
+        if method == '_get_nodes':
+            rospy.logwarn("Error while get launch configuration from %s: %s" % (url, utf8(error)))
