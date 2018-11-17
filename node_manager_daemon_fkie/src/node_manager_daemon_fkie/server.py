@@ -40,9 +40,9 @@ from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .screen_servicer import ScreenServicer
 
-import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
-import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
-import node_manager_daemon_fkie.generated.screen_pb2_grpc as sgrpc
+import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
+import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
+import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
 
 
 class GrpcServer:

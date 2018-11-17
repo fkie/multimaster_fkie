@@ -34,8 +34,8 @@ import os
 import rospy
 
 
-import node_manager_daemon_fkie.generated.file_pb2_grpc as fms_grpc
-import node_manager_daemon_fkie.generated.file_pb2 as fms
+import multimaster_msgs_fkie.grpc.file_pb2_grpc as fms_grpc
+import multimaster_msgs_fkie.grpc.file_pb2 as fms
 from .common import is_package, get_pkg_path, package_name, utf8
 import url as nmdurl
 import file_item

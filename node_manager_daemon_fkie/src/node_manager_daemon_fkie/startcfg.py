@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
+import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 from .common import utf8
 
 

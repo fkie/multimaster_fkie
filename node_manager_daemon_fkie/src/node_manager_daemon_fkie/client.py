@@ -36,7 +36,7 @@ import grpc
 import rospy
 
 import exceptions
-# import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
+# import node_manager_daemon_fkie.file_pb2_grpc as fgrpc
 import remote
 # from .file_client_servicer import FileClientServicer
 import file_stub as fstub

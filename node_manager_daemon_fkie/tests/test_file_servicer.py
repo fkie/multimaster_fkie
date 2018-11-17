@@ -36,7 +36,7 @@ import unittest
 import time
 from grpc.beta._metadata import beta
 
-import node_manager_daemon_fkie.generated.file_pb2 as fmsg
+import multimaster_msgs_fkie.grpc.file_pb2 as fmsg
 from node_manager_daemon_fkie.file_servicer import FileServicer
 
 PKG = 'node_manager_daemon_fkie'

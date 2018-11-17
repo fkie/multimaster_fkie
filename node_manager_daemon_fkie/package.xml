@@ -14,11 +14,11 @@
   <build_depend>roslaunch</build_depend>
   <build_depend>rospy</build_depend>
   <exec_depend>master_discovery_fkie</exec_depend>
+  <exec_depend>multimaster_msgs_fkie</exec_depend>
   <exec_depend>roslaunch</exec_depend>
   <exec_depend>rospy</exec_depend>
 
   <depend>screen</depend>
-  <depend>python-grpc-tools</depend>
 
   <test_depend>rostest</test_depend>
 

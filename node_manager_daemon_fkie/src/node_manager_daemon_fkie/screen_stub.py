@@ -33,8 +33,8 @@
 from __future__ import print_function
 
 import settings
-import node_manager_daemon_fkie.generated.screen_pb2_grpc as sgrpc
-import node_manager_daemon_fkie.generated.screen_pb2 as smsg
+import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
+import multimaster_msgs_fkie.grpc.screen_pb2 as smsg
 
 
 class ScreenStub(object):

@@ -36,3 +36,19 @@ add_service_files(
 generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
+
+# generate code for gRPC protocols
+include(cmake/grpc_protoc.cmake)
+generate_grpc()
+
+install(
+    DIRECTORY
+    ${GRPC_GENERATED_SRC_DIR}
+    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
+install(
+    DIRECTORY
+    protos
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
