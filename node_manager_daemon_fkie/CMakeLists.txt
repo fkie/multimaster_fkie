@@ -37,6 +37,19 @@ install(
     launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+install(
+    DIRECTORY
+    ${GRPC_GENERATED_SRC_DIR}
+    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
+install(
+    DIRECTORY
+    protos
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
 ## Add folders to be run by python nosetests
 if (CATKIN_ENABLE_TESTING)
   add_subdirectory(tests)
