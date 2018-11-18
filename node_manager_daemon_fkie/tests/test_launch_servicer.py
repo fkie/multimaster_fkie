@@ -126,10 +126,6 @@ class TestLaunchServicer(unittest.TestCase):
         self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND'), 
                          "wrong status code if package not exists, result: %d, expected: %d, reported error: %s" 
                          % (response.status.code, lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND'), response.status.error_msg))
-        response = ls.LoadLaunch(lmsg.LoadLaunchRequest(package='node_manager_daemon_fkie', launch='include_dummy.launch', path='', request_args=request_args), DummyContext())
-        self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('ERROR'), 
-                         "wrong status code on errors while load, result: %d, expected: %d, reported error: %s" 
-                         % (response.status.code, lmsg.ReturnStatus.StatusType.Value('ERROR'), response.status.error_msg))
         response = ls.LoadLaunch(lmsg.LoadLaunchRequest(package='node_manager_daemon_fkie', launch='description_example.launch', path=path, request_args=request_args), DummyContext())
         self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES'), 
                          "wrong status code for multiple launch files, result: %d, expected: %d, reported error: %s" 
