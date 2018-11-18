@@ -162,8 +162,8 @@ class TestGrpcServer(unittest.TestCase):
             request_args = False
             args = psr.choices
         except Exception as err:
-            pass
-            # self.fail("`load_launch` raises wrong Exception on args requests, got: %s, expected: `exceptions.ParamSelectionReques`: %s" % (type(err), err))
+            import traceback
+            self.fail("`load_launch` raises wrong Exception on args requests, got: %s, expected: `exceptions.ParamSelectionReques`: %s" % (type(err), traceback.format_exc()))
         request_args = False
         try:
             launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
@@ -181,7 +181,47 @@ class TestGrpcServer(unittest.TestCase):
             self.ls.unload_launch(launch_file)
 
     def test_get_nodes(self):
-        self.test_load_launch(unload=False)
+#        self.test_load_launch(unload=False)
+        args = {}
+        path = ''
+        request_args = True
+        nexttry = True
+        ok = False
+        launch_file = ''
+        package = 'node_manager_daemon_fkie'
+        launch = 'description_example.launch'
+        try:
+            launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
+            self.fail("`load_launch` did not raises `exceptions.LaunchSelectionRequest` on multiple launch files")
+        except exceptions.LaunchSelectionRequest as lsr:
+            path = lsr.choices[-1]
+        except Exception as err:
+            self.fail("`load_launch` raises wrong Exception on multiple launch files, got: %s, expected: `exceptions.LaunchSelectionRequest`: %s" % (type(err), err))
+        try:
+            launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
+            self.fail("`load_launch` did not raises `exceptions.ParamSelectionRequest` on args requests")
+        except exceptions.AlreadyOpenException as aoe:
+            # it is already open from other tests
+            return
+        except exceptions.ParamSelectionRequest as psr:
+            request_args = False
+            args = psr.choices
+        except Exception as err:
+            import traceback
+            self.fail("`load_launch` raises wrong Exception on args requests, got: %s, expected: `exceptions.ParamSelectionReques`: %s" % (type(err), traceback.format_exc()))
+        request_args = False
+        try:
+            launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
+        except Exception as err:
+            self.fail("`load_launch` raises unexpected exception, got: %s, expected: no error" % type(err))
+        try:
+            launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
+            self.fail("`load_launch` did not raises `exceptions.AlreadyOpenException` on load an already loaded file")
+        except exceptions.AlreadyOpenException as aoe:
+            request_args = False
+            args = psr.choices
+        except Exception as err:
+            self.fail("`load_launch` raises wrong Exception on second reload, got: %s, expected: `exceptions.AlreadyOpenException`: %s" % (type(err), err))
         result = self.ls.get_nodes()
         self.assertEqual(len(result), 1, "wrong count of descriptions in get_nodes, got: %d, expected: %d" % (len(result), 1))
         self.assertEqual(len(result[0].nodes), 15, "wrong count of nodes in get_nodes, got: %d, expected: %d" % (len(result[0].nodes), 15))
