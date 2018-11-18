@@ -3,7 +3,6 @@ services:
 language: generic
 env:
   matrix:
-    - ROS_DISTRO="indigo" ROS_REPO="ros"
     - ROS_DISTRO="kinetic" ROS_REPO="ros-shadow-fixed"
     - ROS_DISTRO="kinetic" ROS_REPO="ros"
     - ROS_DISTRO="melodic" ROS_REPO="ros-shadow-fixed"
