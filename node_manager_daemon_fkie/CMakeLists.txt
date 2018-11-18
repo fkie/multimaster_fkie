@@ -41,6 +41,12 @@ install(
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/tests
 )
 
+install(
+    PROGRAMS
+        tests/test_grpc_server.py
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/tests
+)
+
 ## Add folders to be run by python nosetests
 if (CATKIN_ENABLE_TESTING)
   add_subdirectory(tests)

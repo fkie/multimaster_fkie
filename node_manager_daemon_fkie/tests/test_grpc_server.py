@@ -136,7 +136,7 @@ class TestGrpcServer(unittest.TestCase):
         self.assertEqual(file_list[1][0], 9, "Wrong line number of second included file, expected: %d, got: %d" % (file_list[1][0], 9))
         self.assertEqual(file_list[2][0], 10, "Wrong line number of third included file, expected: %d, got: %d" % (file_list[2][0], 10))
 
-    def test_load_launch(self):
+    def test_load_launch(self, unload=True):
         args = {}
         path = ''
         request_args = True
@@ -176,9 +176,11 @@ class TestGrpcServer(unittest.TestCase):
             args = psr.choices
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on second reload, got: %s, expected: `exceptions.AlreadyOpenException`: %s" % (type(err), err))
+        if unload:
+            self.ls.unload_launch(launch_file)
 
     def test_get_nodes(self):
-        self.test_load_launch()
+        self.test_load_launch(unload=False)
         result = self.ls.get_nodes()
         self.assertEqual(len(result), 1, "wrong count of descriptions in get_nodes, got: %d, expected: %d" % (len(result), 1))
         self.assertEqual(len(result[0].nodes), 15, "wrong count of nodes in get_nodes, got: %d, expected: %d" % (len(result[0].nodes), 15))
@@ -215,7 +217,7 @@ class TestGrpcServer(unittest.TestCase):
             self.fail("After `rename` the target file does not exists")
 
     def test_run_node(self):
-        self.test_load_launch()
+        self.test_load_launch(unload=False)
         self.ls.start_node('/example/gps')
 
 if __name__ == '__main__':
