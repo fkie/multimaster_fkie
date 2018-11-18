@@ -34,8 +34,8 @@ from __future__ import print_function
 
 import exceptions
 import settings
-import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
-import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
+import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
+import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 from .launch_description import LaunchDescription, RobotDescription, Capability
 from .startcfg import StartConfig
 

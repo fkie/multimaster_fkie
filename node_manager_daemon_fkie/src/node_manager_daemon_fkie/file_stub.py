@@ -32,8 +32,8 @@
 
 from __future__ import print_function
 import settings
-import node_manager_daemon_fkie.generated.file_pb2_grpc as fgrpc
-import node_manager_daemon_fkie.generated.file_pb2 as fmsg
+import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
+import multimaster_msgs_fkie.grpc.file_pb2 as fmsg
 import file_item
 
 OK = fmsg.ReturnStatus.StatusType.Value('OK')

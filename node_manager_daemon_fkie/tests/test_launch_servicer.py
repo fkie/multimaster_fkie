@@ -37,7 +37,7 @@ import time
 from grpc.beta._metadata import beta
 
 from node_manager_daemon_fkie.common import interpret_path
-import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
+import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 from node_manager_daemon_fkie.launch_servicer import LaunchServicer
 from node_manager_daemon_fkie.launch_description import RobotDescription, Capability
 

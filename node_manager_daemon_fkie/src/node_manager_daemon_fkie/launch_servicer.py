@@ -40,8 +40,8 @@ import rospkg
 import threading
 
 from master_discovery_fkie.common import masteruri_from_master
-import node_manager_daemon_fkie.generated.launch_pb2_grpc as lgrpc
-import node_manager_daemon_fkie.generated.launch_pb2 as lmsg
+import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
+import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 
 import url
 from .common import INCLUDE_PATTERN, included_files, utf8

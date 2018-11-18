@@ -18,10 +18,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-# generate code for gRPC protocols
-include(cmake/grpc_protoc.cmake)
-generate_grpc()
-
 #############
 ## Install ##
 #############
@@ -37,6 +33,14 @@ install(
     launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+install(
+    DIRECTORY
+    tests/resources
+    tests/resources_alt
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/tests
+)
+
 ## Add folders to be run by python nosetests
 if (CATKIN_ENABLE_TESTING)
   add_subdirectory(tests)
