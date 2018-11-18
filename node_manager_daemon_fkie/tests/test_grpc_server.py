@@ -149,7 +149,7 @@ class TestGrpcServer(unittest.TestCase):
             launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
             self.fail("`load_launch` did not raises `exceptions.LaunchSelectionRequest` on multiple launch files")
         except exceptions.LaunchSelectionRequest as lsr:
-            path = lsr.choices[-1]
+            path = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/description_example.launch")
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on multiple launch files, got: %s, expected: `exceptions.LaunchSelectionRequest`: %s" % (type(err), err))
         try:
