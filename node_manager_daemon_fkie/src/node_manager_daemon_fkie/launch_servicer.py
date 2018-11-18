@@ -291,17 +291,17 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             # test for required args
             provided_args = ["%s" % arg.name for arg in request.args]
             launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host)
+            # get the list with needed launch args
+            req_args = launch_config.get_args()
             if request.request_args:
-                # get the list with needed launch args
-                req_args = launch_config.get_args()
                 if req_args:
                     arg_dict = launch_config.argv2dict(req_args)
                     for arg, value in arg_dict.items():
                         if arg not in provided_args:
                             result.args.extend([lmsg.Argument(name=arg, value=value) for arg, value in arg_dict.items()])
-                            result.status.code = PARAMS_REQUIRED
-                            rospy.logdebug("..load aborted, PARAMS_REQUIRED")
-                            return result
+                result.status.code = PARAMS_REQUIRED
+                rospy.logdebug("..load aborted, PARAMS_REQUIRED")
+                return result
             argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
