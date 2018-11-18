@@ -37,6 +37,7 @@ import time
 from grpc.beta._metadata import beta
 
 import multimaster_msgs_fkie.grpc.file_pb2 as fmsg
+from node_manager_daemon_fkie.common import interpret_path
 from node_manager_daemon_fkie.file_servicer import FileServicer
 
 PKG = 'node_manager_daemon_fkie'
@@ -80,10 +81,11 @@ class TestFileServiceServicer(unittest.TestCase):
 
     def setUp(self):
         self.current_pose = 0
-        self.test_get_content_path = "%s/tmp_get_content_test.txt" % os.getcwd()
-        self.test_save_content_path = "%s/tmp_save_content_test.txt" % os.getcwd()
-        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % os.getcwd()
-        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % os.getcwd()
+        path = interpret_path("$(find node_manager_daemon_fkie)/../../../build")
+        self.test_get_content_path = "%s/tmp_get_content_test.txt" % path
+        self.test_save_content_path = "%s/tmp_save_content_test.txt" % path
+        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % path
+        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % path
 
     def tearDown(self):
         try:
@@ -203,11 +205,15 @@ class TestFileServiceServicer(unittest.TestCase):
         content.file.path = '/content_test.txt'
         content.file.mtime = 0;
         save_response = fs.SaveFileContent([content], DummyContext()).next()
+        if save_response.status.code == fmsg.ReturnStatus.StatusType.Value('OK'):
+            # test in industrial ci, use source folder
+            content.file.path = interpret_path("$(find node_manager_daemon_fkie)/") + content.file.path
+            save_response = fs.SaveFileContent([content], DummyContext()).next()
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), "save in root folder returns a wrong result: %d, expected: %d" % (save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR')))
         # save file in more chunks
         test_data = ["First line.\n", "Second line.\n", "Third line.\n"]
         for resp in fs.SaveFileContent(self._read_from_list(test_data, self.test_save_content_path), DummyContext()):
-            self.assertEqual(resp.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten")
+            self.assertEqual(resp.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten, result code: %d" % resp.status.code)
             self.assertEqual(resp.ack.size, self.current_pose, "incorrect transferred file size: %d, expected: %d" % (resp.ack.size, self.current_pose))
         with open(self.test_save_content_path, 'r') as outfile:
             self.assertEqual(str(test_data), str(outfile.readlines()), "wrong content in file")

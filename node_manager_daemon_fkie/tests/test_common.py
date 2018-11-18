@@ -45,8 +45,11 @@ class TestCommonLib(unittest.TestCase):
     '''
 
     def setUp(self):
-        # self.test_include_file = "%s/resources/include_dummy.launch" % os.getcwd()
-        self.test_include_file = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
+        self.nm_path = interpret_path("$(find node_manager_daemon_fkie)/")
+        self.res_dir = 'resources'
+        if os.path.exists(os.path.join(self.nm_path, 'tests')):
+            self.res_dir = 'tests/resources'
+        self.test_include_file = "%s/%s/include_dummy.launch" % (self.nm_path, self.res_dir)
 
     def tearDown(self):
         pass
@@ -66,12 +69,12 @@ class TestCommonLib(unittest.TestCase):
         self.assertEqual(test_path, result_path, "wrong get_cwd from empty type, expected: %s, got: %s" % (test_path, result_path))
 
     def test_package_name(self):
-        pkg = package_name(os.getcwd())
+        pkg = package_name(self.nm_path)
         self.assertEqual('node_manager_daemon_fkie', pkg[0], "wrong package name, expected: %s, got: %s" % ('node_manager_daemon_fkie', pkg[0]))
-        pkg_dir = os.path.dirname(os.getcwd())
+        pkg_dir = self.nm_path
         self.assertEqual(pkg_dir, pkg[1], "wrong package path, expected: %s, got: %s" % (pkg_dir, pkg[1]))
         # test cache
-        pkg = package_name(os.getcwd())
+        pkg = package_name(self.nm_path)
         self.assertEqual('node_manager_daemon_fkie', pkg[0], "wrong package name from cache, expected: %s, got: %s" % ('node_manager_daemon_fkie', pkg[0]))
         self.assertEqual(pkg_dir, pkg[1], "wrong package path from cache, expected: %s, got: %s" % (pkg_dir, pkg[1]))
         # test invalid path
@@ -80,27 +83,27 @@ class TestCommonLib(unittest.TestCase):
         self.assertEqual(None, pkg[1], "wrong package name, expected: %s, got: %s" % (None, pkg[1]))
 
     def test_interpret_path(self):
-        return  # TODO: set install path
-        text_path = "$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch"
+        text_path = "$(find node_manager_daemon_fkie)/%s/include_dummy.launch" % self.res_dir
         path = interpret_path(text_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted path, expected: %s, got: %s" % (self.test_include_file, path))
         text_path = "resources/include_dummy.launch"
-        path = interpret_path(text_path, os.getcwd())
-        self.assertEqual(self.test_include_file, path, "wrong interpreted relative path, expected: %s, got: %s" % (self.test_include_file, path))
-        text_path = "pkg://node_manager_daemon_fkie/tests/resources/include_dummy.launch"
-        path = interpret_path(text_path, os.getcwd())
+        path = interpret_path(text_path, self.nm_path)
+        exp_path = os.path.join(self.nm_path, text_path)
+        self.assertEqual(exp_path, path, "wrong interpreted relative path, expected: %s, got: %s" % (exp_path, path))
+        text_path = "pkg://node_manager_daemon_fkie/%s/include_dummy.launch" % self.res_dir
+        path = interpret_path(text_path, self.nm_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted pkg:// path, expected: %s, got: %s" % (self.test_include_file, path))
-        text_path = "package://node_manager_daemon_fkie/tests/resources/include_dummy.launch"
-        path = interpret_path(text_path, os.getcwd())
+        text_path = "package://node_manager_daemon_fkie/%s/include_dummy.launch" % self.res_dir
+        path = interpret_path(text_path, self.nm_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted package:// path, expected: %s, got: %s" % (self.test_include_file, path))
-        text_path = "file://resources/include_dummy.launch"
-        path = interpret_path(text_path, os.getcwd())
+        text_path = "file://tests/resources/include_dummy.launch"
+        path = interpret_path(text_path, self.nm_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted file:// path, expected: %s, got: %s" % (self.test_include_file, path))
         text_path = "pkg://node_manager_daemon_fkie///include_dummy.launch"
-        path = interpret_path(text_path, os.getcwd())
+        path = interpret_path(text_path, self.nm_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted path with replace the subdirectory by `///`, expected: %s, got: %s" % (self.test_include_file, path))
         
-        text_path = "$(find invalid_name)/tests/resources/include_dummy.launch"
+        text_path = "$(find invalid_name)/%s/include_dummy.launch" % self.res_dir
         self.assertRaises(rospkg.ResourceNotFound, interpret_path, text_path, "No rospkg.ResourceNotFound raises on invalid pacakge name")
 
     def test_include_files(self):

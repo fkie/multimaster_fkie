@@ -67,10 +67,11 @@ class TestGrpcServer(unittest.TestCase):
         channel = remote.get_insecure_channel(url)
         self.fs = fstub.FileStub(channel)
         self.ls = lstub.LaunchStub(channel)
-        self.test_include_file = "%s/resources/include_dummy.launch" % os.getcwd()
-        self.test_save_file = "%s/tmp_save_dummy.launch" % os.getcwd()
-        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % os.getcwd()
-        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % os.getcwd()
+        self.test_include_file = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
+        path = interpret_path("$(find node_manager_daemon_fkie)/../../../build")
+        self.test_save_file = "%s/tmp_save_dummy.launch" % path
+        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % path
+        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % path
 
     def tearDown(self):
         try:
