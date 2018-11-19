@@ -1068,6 +1068,10 @@ class MainWindow(QMainWindow):
     def on_rqt_plugin_start(self, name, plugin):
         if self.currentMaster is not None:
             try:
+                if name == 'Terminal':
+                    host = get_hostname(self.currentMaster.master_state.uri)
+                    nm.starter().open_terminal(host)
+                    return
                 args = []
                 package = 'rqt_gui'
                 binary = 'rqt_gui'

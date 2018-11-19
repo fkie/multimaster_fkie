@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import Signal
+from python_qt_binding.QtGui import QKeySequence
 try:
     from python_qt_binding.QtGui import QAction, QMenu
 except Exception:
@@ -99,6 +100,12 @@ class MenuRqt(QMenu):
                                       'that is connected to the selected master</p>"',
                                       triggered=self.on_start_rqt_clicked)
             self.addAction(self.action_rqt)
+            self.action_terminal = QAction(QIcon(":/icons/crystal_clear_show_io.png"),
+                                           "&Terminal", self,
+                                           statusTip='"<p>Start terminal on selected host</p>"',
+                                           triggered=self.on_start_terminal)
+            self.action_terminal.setShortcut(QKeySequence("Ctrl+T"))
+            self.addAction(self.action_terminal)
             menu_button.setMenu(self)
         except Exception as e:
             print '%s' % e
@@ -125,3 +132,6 @@ class MenuRqt(QMenu):
 
     def on_start_rqt_clicked(self):
         self.start_rqt_plugin_signal.emit('Rqt GUI', '')
+
+    def on_start_terminal(self):
+        self.start_rqt_plugin_signal.emit('Terminal', '')
