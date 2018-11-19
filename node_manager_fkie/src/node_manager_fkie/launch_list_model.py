@@ -430,8 +430,7 @@ class LaunchListModel(QStandardItemModel):
                     self._add_path(hitem, PathItem.RECENT_FILE, 0, 0, os.path.basename(hitem))
 
     def _on_new_packages(self, grpc_url):
-        if not self._current_path:
-            self.reload_current_path()
+        self.reload_current_path()
 
     def _listed_path(self, url, path, result):
         if not self.is_current_nmd(url):
@@ -624,20 +623,20 @@ class LaunchListModel(QStandardItemModel):
             print traceback.format_exc(2)
 
     def paste_from_clipboard(self):
-         '''
-         Copy the file or folder to new position...
-         '''
-         if QApplication.clipboard().mimeData().hasText() and self._current_path:
-             text = QApplication.clipboard().mimeData().text()
-             if self.current_path and text.startswith('grpc://'):
-                 basename = os.path.basename(text)
-                 dest_path = os.path.join(self._current_path, basename)
-                 try:
-                     nm.nmd().copy(text, dest_path)
-                     self.reload_current_path(clear_cache=True)
-                 except Exception:
-                     import traceback
-                     print traceback.format_exc()
+        '''
+        Copy the file or folder to new position...
+        '''
+        if QApplication.clipboard().mimeData().hasText() and self._current_path:
+            text = QApplication.clipboard().mimeData().text()
+            if self.current_path and text.startswith('grpc://'):
+                basename = os.path.basename(text)
+                dest_path = os.path.join(self._current_path, basename)
+                try:
+                    nm.nmd().copy(text, dest_path)
+                    self.reload_current_path(clear_cache=True)
+                except Exception:
+                    import traceback
+                    print traceback.format_exc()
 
     def copy_to_clipboard(self, indexes):
         '''
