@@ -2443,8 +2443,11 @@ class MasterViewProxy(QWidget):
         choices = dict()
 
         for grpc_path, _ in self.__configs.items():
-            package = utf8(package_name(grpc_path)[0])
-            choices['%s [%s]' % (os.path.basename(grpc_path), package)] = grpc_path
+            try:
+                package = utf8(package_name(grpc_path)[0])
+                choices['%s [%s]' % (os.path.basename(grpc_path), package)] = grpc_path
+            except ValueError as val_err:
+                rospy.logwarn(val_err)
         cfg_items = choices.keys()
         cfg_items.sort()
         res = SelectDialog.getValue('Close/Stop/Shutdown', '',
