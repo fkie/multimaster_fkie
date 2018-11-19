@@ -165,6 +165,7 @@ class Settings(object):
         '''
         self._terminal_emulator = None
         self._terminal_command_arg = 'e'
+        self._noclose_str = '-hold'
         self._masteruri = masteruri_from_ros()
         self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
         # loads the current configuration path. If the path was changed, a redirection
@@ -643,7 +644,6 @@ class Settings(object):
         :return: command with a terminal prefix
         :rtype: str
         '''
-        noclose_str = '-hold'
         if self._terminal_emulator is None:
             self._terminal_emulator = ""
             for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']:
@@ -654,19 +654,19 @@ class Settings(object):
                     else:
                         self._terminal_command_arg = 'e'
                     if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'gnome-terminal.wrapper']:
-                        noclose_str = '--profile hold'
+                        self._noclose_str = '--profile hold'
                         if noclose:
                             rospy.loginfo("If your terminal close after the execution, you can change this behavior in "
                                           "profiles. You can also create a profile with name 'hold'. This profile will "
                                           "be then load by node_manager.")
                     elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal']:
-                        noclose_str = ''
+                        self._noclose_str = ''
                     self._terminal_emulator = t
                     break
         if self._terminal_emulator == "":
             raise Exception("No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
-        noclose_str = noclose_str if noclose else ""
-        return '%s -T "%s" %s -%s %s' % (self._terminal_emulator, title, noclose_str, self._terminal_command_arg, ' '.join(cmd))
+        self._noclose_str = self._noclose_str if noclose else ""
+        return '%s -T "%s" %s -%s %s' % (self._terminal_emulator, title, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
         from python_qt_binding.QtCore import QSettings
