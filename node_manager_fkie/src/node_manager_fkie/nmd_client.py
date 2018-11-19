@@ -560,7 +560,7 @@ class NmdClient(QObject):
             clean_url = nmdurl.nmduri_from_path(grpc_path)
             for ld in launch_descriptions:
                 ld.path = nmdurl.join(clean_url, ld.path)
-                self.launch_nodes.emit(clean_url, launch_descriptions)
+            self.launch_nodes.emit(clean_url, launch_descriptions)
         except Exception as err:
             remote.remove_insecure_channel(uri)
             self.error.emit("_get_nodes", grpc_path, masteruri, err)

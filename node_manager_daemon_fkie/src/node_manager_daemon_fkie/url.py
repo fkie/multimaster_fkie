@@ -139,7 +139,7 @@ def join(uri, path):
         return '%s%s%s' % (uri, os.path.sep, path)
     return path
 
-# grpc_split_url
+
 def split(grpc_path, with_scheme=False):
     '''
     Splits the gRPC-URI with scheme into URI and file path.
