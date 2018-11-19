@@ -1310,7 +1310,7 @@ class MasterViewProxy(QWidget):
         # add node description for one selected node
         if len(selectedHosts) != 1 and len(selectedNodes) == 1 and len(selectedGroups) == 0:
             node = selectedNodes[0]
-            text = self.get_node_description(node_name, node)
+            text = '<div>%s</div>' % self.get_node_description(node_name, node)
             name = node.name
         if (self._is_current_tab_name('tabNodes') and self.__last_info_text != text) or force_emit:
             self.__last_info_text = text

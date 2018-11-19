@@ -127,6 +127,8 @@ class MainWindow(QMainWindow):
         self._syncs_to_start = []  # hostnames
         self._accept_next_update = False
         self._last_window_state = False
+        self._description_history = []
+        self._description_accept = ''
         # self.setAttribute(Qt.WA_AlwaysShowToolTips, True)
         # setup main window frame
         self.setObjectName('MainWindow')
@@ -1742,23 +1744,39 @@ class MainWindow(QMainWindow):
             master.stop_nodes_by_name(nodes)
 
     def on_description_update(self, title, text, force=False):
-        same_title = self.descriptionDock.windowTitle() == title
+        # ignore updates if we are currently browse in text dialog
+        if self._description_accept:
+            if self._description_accept != title:
+                if not force:
+                    return
+                else:
+                    self._description_accept = ''
+        wtitle = self.descriptionDock.windowTitle().replace('&', '')
+        same_title = wtitle == title
         valid_sender = self.sender() == self.currentMaster or not isinstance(self.sender(), MasterViewProxy)
         no_focus = not self.descriptionTextEdit.hasFocus()
         if (valid_sender) and (same_title or no_focus or self._accept_next_update):
             self._accept_next_update = False
+            # _description_accept is set to True on click on link of {node, topic, service}
+            if self._description_accept:
+                self._description_history.append((wtitle, self.descriptionTextEdit.toHtml()))
+            else:
+                del self._description_history[:]
+            # prepend 'back' link the text
+            if self._description_history:
+                # text = '<a href="back://" title="back"><img src=":icons/back.png" alt="back"></a><br>%s' % text
+                text = '<a href="back://" title="back">back</a>%s' % text
             self.descriptionDock.setWindowTitle(title)
             self.descriptionTextEdit.setText(text)
             if text and force:  # and not (self.launch_dock.hasFocus() or self.launch_dock.xmlFileView.hasFocus()):
                 self.descriptionDock.raise_()
-#      else:
-#        self.launch_dock.raise_()
 
     def on_description_update_cap(self, title, text):
         self.descriptionDock.setWindowTitle(title)
         self.descriptionTextEdit.setText(text)
 
     def on_description_anchorClicked(self, url):
+        self._description_accept = self.descriptionDock.windowTitle().replace('&', '')
         self._accept_next_update = True
         if url.toString().startswith('open-sync-dialog://'):
             self.on_sync_dialog_released(False, url.toString().replace('open-sync-dialog', 'http'), True)
@@ -1772,10 +1790,12 @@ class MainWindow(QMainWindow):
                 master.on_remove_all_launch_server()
         elif url.toString().startswith('node://'):
             if self.currentMaster is not None:
-                self.currentMaster.on_node_selection_changed(None, None, True, self._url_path(url))
+                self._description_accept = self._url_path(url)
+                self.currentMaster.on_node_selection_changed(None, None, True, self._description_accept)
         elif url.toString().startswith('topic://'):
             if self.currentMaster is not None:
-                self.currentMaster.on_topic_selection_changed(None, None, True, self._url_path(url))
+                self._description_accept = self._url_path(url)
+                self.currentMaster.on_topic_selection_changed(None, None, True, self._description_accept)
         elif url.toString().startswith('topicecho://'):
             if self.currentMaster is not None:
                 self.currentMaster.show_topic_output(self._url_path(url), False)
@@ -1796,7 +1816,8 @@ class MainWindow(QMainWindow):
                 self.currentMaster.on_topic_pub_stop_clicked(self._url_path(url))
         elif url.toString().startswith('service://'):
             if self.currentMaster is not None:
-                self.currentMaster.on_service_selection_changed(None, None, True, self._url_path(url))
+                self._description_accept = self._url_path(url)
+                self.currentMaster.on_service_selection_changed(None, None, True, self._description_accept)
         elif url.toString().startswith('servicecall://'):
             if self.currentMaster is not None:
                 self.currentMaster.service_call(self._url_path(url))
@@ -1835,6 +1856,14 @@ class MainWindow(QMainWindow):
             self.poweroff_host(self._url_host(url))
         elif url.toString().startswith('rosclean://'):
             self.rosclean(self._url_host(url))
+        elif url.toString().startswith('back://'):
+            if self._description_history:
+                # show last discription on click on back
+                title, text = self._description_history[-1]
+                self._description_accept = title
+                del self._description_history[-1]
+                self.descriptionDock.setWindowTitle(title)
+                self.descriptionTextEdit.setText(text)
         else:
             QDesktopServices.openUrl(url)
             self._accept_next_update = False
