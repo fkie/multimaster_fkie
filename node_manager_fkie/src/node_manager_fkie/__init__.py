@@ -391,7 +391,8 @@ def main(name):
         try:
             rospy.on_shutdown(finish)
             exit_code = _QAPP.exec_()
-            nmd().stop()
+            if nmd() is not None:
+                nmd().stop()
         except Exception:
             if not rospy.is_shutdown():
                 import traceback
