@@ -549,6 +549,8 @@ class TopicGroupItem(QStandardItem):
             if type(item) == TopicItem:
                 if item.topic.name in updated_topics:
                     item.update_view(topics[item.topic.name])
+            elif type(item) == TopicGroupItem:
+                item.update_topic_view(updated_topics, topics)
 
     def index_from_names(self, publisher, subscriber):
         '''
