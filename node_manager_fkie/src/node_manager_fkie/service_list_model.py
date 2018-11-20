@@ -675,13 +675,6 @@ class ServiceModel(QStandardItemModel):
         result = []
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
-            serviceItem = root.child(i)
-            if serviceItem.service.name in services:
-                result.append(self.index(i, 0))
-        return result
-        result = []
-        root = self.invisibleRootItem()
-        for i in range(root.rowCount()):
             item = root.child(i)
             if type(item) == ServiceGroupItem:
                 result[len(result):] = item.index_from_names(services)
