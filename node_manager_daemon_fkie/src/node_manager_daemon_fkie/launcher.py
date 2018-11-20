@@ -91,22 +91,28 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     result.loglevel = loglevel
     result.logformat = logformat
     # set masteruri and host config
-    result.masteruri = masteruri if masteruri or masteruri is None else None
-    result.host = launchcfg.host
+    if 'ROS_MASTER_URI' in result.env:
+        result.masteruri = result.env['ROS_MASTER_URI']
+        result.host = launchcfg.host
+        if not result.host and masteruri:
+            result.host = get_hostname(masteruri)
+    else:
+        result.masteruri = masteruri if masteruri or masteruri is None else None
+        result.host = launchcfg.host
     # set args
     result.args = n.args.split()
     # set cwd unchanged, it will be resolved on host
     result.cwd = n.cwd
     # add global parameter on start of first node of the launch
     if reload_global_param:
-        if masteruri in launchcfg.global_param_done:
-            launchcfg.global_param_done.remove(masteruri)
-    if masteruri not in launchcfg.global_param_done:
+        if result.masteruri in launchcfg.global_param_done:
+            launchcfg.global_param_done.remove(result.masteruri)
+    if result.masteruri not in launchcfg.global_param_done:
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
         rospy.loginfo("Register global parameter '%s'" % launchcfg.filename)
         rospy.logdebug("Register global parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in global_params.values()))
-        launchcfg.global_param_done.append(masteruri)
+        launchcfg.global_param_done.append(result.masteruri)
     # add params and clear_params
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
     for pname, param in launchcfg.roscfg.params.items():
@@ -195,8 +201,11 @@ def run_node(startcfg):
         if masteruri is None:
             masteruri = masteruri_from_ros()
         if masteruri is not None:
-            new_env['ROS_MASTER_URI'] = masteruri
-            ros_hostname = host.get_ros_hostname(masteruri, startcfg.host)
+	    if 'ROS_MASTER_URI' not in startcfg.env:
+                new_env['ROS_MASTER_URI'] = masteruri
+            # host in startcfg is a nmduri -> get host name
+            hname = get_hostname(startcfg.host)
+            ros_hostname = host.get_ros_hostname(masteruri, hname)
             if ros_hostname:
                 new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
