@@ -492,12 +492,14 @@ class ServiceGroupItem(QStandardItem):
                 self.parent_item._remove_group(self.name)
         return removed
 
-    def update_topic_view(self, updated_topics, topics):
+    def update_view(self, updated_srvs, services):
         for i in range(self.rowCount()):
             item = self.child(i)
             if type(item) == ServiceItem:
-                if item.topic.name in updated_topics:
-                    item.update_view(topics[item.topic.name])
+                if item.service.name in updated_srvs:
+                    item.update_view(services[item.service.name])
+            elif type(item) == ServiceGroupItem:
+                item.update_view(updated_srvs, services)
 
     def index_from_names(self, services):
         '''
@@ -643,7 +645,7 @@ class ServiceModel(QStandardItemModel):
         for i in reversed(range(root.rowCount())):
             item = root.child(i)
             if type(item) == ServiceGroupItem:
-                item.update_topic_view(updated_srvs, services)
+                item.update_view(updated_srvs, services)
         # last: add new services
         for name in added_srvs:
             try:
