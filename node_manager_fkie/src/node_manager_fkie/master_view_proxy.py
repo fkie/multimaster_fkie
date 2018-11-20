@@ -300,6 +300,7 @@ class MasterViewProxy(QWidget):
         self.masterTab.addParameterButton.clicked.connect(self.on_add_parameter_clicked)
         self.masterTab.deleteParameterButton.clicked.connect(self.on_delete_parameter_clicked)
         self.masterTab.saveParameterButton.clicked.connect(self.on_save_parameter_clicked)
+        self.masterTab.transferParameterButton.clicked.connect(self.on_transfer_parameter_clicked)
 
         # create a handler to request the parameter
         self.parameterHandler = ParameterHandler()
@@ -1562,6 +1563,7 @@ class MasterViewProxy(QWidget):
         selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
         self.masterTab.deleteParameterButton.setEnabled(len(selectedParameter) > 0)
         self.masterTab.saveParameterButton.setEnabled(len(selectedParameter) > 0)
+        self.masterTab.transferParameterButton.setEnabled(len(selectedParameter) > 0)
 
     def hostsFromIndexes(self, indexes, recursive=True):
         result = []
@@ -2893,6 +2895,34 @@ class MasterViewProxy(QWidget):
                     MessageBox.warning(self, "Save parameter Error",
                                        'Error while save parameter',
                                        utf8(e))
+
+    def on_transfer_parameter_clicked(self):
+        '''
+        Copy selected parameter to local ROS-Master.
+        '''
+        selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        if selectedParameter:
+            try:
+                params = {}
+                for (key, value) in selectedParameter:
+                    params[key] = value
+                if params:
+                    dia_params = {'master': ('string', masteruri_from_ros())}
+                    dia = ParameterDialog(dia_params)
+                    dia.setFilterVisible(False)
+                    dia.setWindowTitle('Copy parameter')
+                    dia.resize(350, 100)
+                    dia.setFocusField('master')
+                    if dia.exec_():
+                        dia_params = dia.getKeywords()
+                        url = dia_params['master']
+                        rospy.loginfo("Copy %d parameter to %s" % (len(params), url))
+                        self.parameterHandler.deliverParameter(url, params)
+                        self.parameterHandler.requestParameterList(url)
+            except Exception as e:
+                MessageBox.warning(self, "Copy parameter Error",
+                                   'Error while transfer parameter',
+                                   utf8(e))
 
     def _replaceDoubleSlash(self, liste):
         '''
