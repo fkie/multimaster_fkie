@@ -102,8 +102,16 @@ message FileObj {
 }
 
 message Argument {
+	enum ValueType {
+		STRING = 0;
+		INT32 = 1;
+		DOUBLE = 2;
+		BOOL = 3;
+		LIST = 4;
+	}
 	string name = 1;
 	string value = 2;
+	string value_type = 3;
 }
 
 message LaunchFile {

@@ -35,6 +35,13 @@ import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 from .common import utf8
 
 
+STRING = lmsg.Argument.ValueType.Value('STRING')
+INT32 = lmsg.Argument.ValueType.Value('INT32')
+DOUBLE = lmsg.Argument.ValueType.Value('DOUBLE')
+BOOL = lmsg.Argument.ValueType.Value('BOOL')
+LIST = lmsg.Argument.ValueType.Value('LIST')
+
+
 class StartConfig():
 
     def __init__(self, package, binary):
@@ -59,6 +66,39 @@ class StartConfig():
         self.respawn_delay = 30
         self.respawn_max = 0
         self.respawn_min_runtime = 0
+
+    def _msg_type(self, value):
+        valtype = type(value)
+        if valtype == int:
+            return INT32
+        if valtype == float:
+            return DOUBLE
+        if valtype == bool:
+            return BOOL
+        if valtype == list:
+            return LIST
+        return STRING
+
+    @classmethod
+    def _from_msg_type(cls, value, value_type):
+        if value_type == INT32:
+            return int(value)
+        if value_type == DOUBLE:
+            return float(value)
+        if value_type == BOOL:
+            return value.lower() in ("yes", "true", "t", "1")
+        if value_type == LIST:
+            lstr = value
+            try:
+                lstr = lstr.strip('[]')
+                lstr = lstr.replace('u"', '')
+                lstr = lstr.replace('"', '')
+                lstr = lstr.replace("'", '')
+                lstr = lstr.replace(",", ' ')
+                return [utf8(i).strip() for i in lstr.split(' ') if i]
+            except Exception:
+                return []
+        return value
 
     def to_msg(self):
         msg = lmsg.StartConfig(package=self.package, binary=self.binary)
@@ -85,7 +125,7 @@ class StartConfig():
         if self.remaps:
             msg.remaps.extend([lmsg.Remapping(from_name=name, to_name=value) for name, value in self.remaps.items()])
         if self.params:
-            msg.params.extend([lmsg.Argument(name=name, value=utf8(value)) for name, value in self.params.items()])
+            msg.params.extend([lmsg.Argument(name=name, value=utf8(value), value_type=self._msg_type(value)) for name, value in self.params.items()])
         if self.clear_params:
             msg.clear_params.extend(self.clear_params)
         if self.args:
@@ -111,7 +151,7 @@ class StartConfig():
         startcfg.cwd = msg.cwd
         startcfg.env = {env.name: env.value for env in msg.env}
         startcfg.remaps = {remap.from_name: remap.to_name for remap in msg.remaps}
-        startcfg.params = {param.name: utf8(param.value) for param in msg.params}
+        startcfg.params = {param.name: cls._from_msg_type(param.value, param.value_type) for param in msg.params}
         startcfg.clear_params = list(msg.clear_params)
         startcfg.args = list(msg.args)
         startcfg.masteruri = msg.masteruri
