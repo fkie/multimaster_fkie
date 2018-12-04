@@ -111,7 +111,7 @@ message Argument {
 	}
 	string name = 1;
 	string value = 2;
-	string value_type = 3;
+	int32 value_type = 3;
 }
 
 message LaunchFile {
