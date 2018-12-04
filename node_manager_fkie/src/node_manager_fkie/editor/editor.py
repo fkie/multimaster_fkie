@@ -583,6 +583,9 @@ class Editor(QMainWindow):
             cursor.setPosition(index, QTextCursor.MoveAnchor)
             cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, len(search_text))
             self.tabWidget.currentWidget().setTextCursor(cursor)
+            cursor_y = self.tabWidget.currentWidget().cursorRect().top()
+            vbar = self.tabWidget.currentWidget().verticalScrollBar()
+            vbar.setValue(vbar.value() + cursor_y * 0.8)
 
     def on_search_result_on_open(self, search_text, found, path, index):
         '''
