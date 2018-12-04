@@ -1635,7 +1635,7 @@ class MainWindow(QMainWindow):
         if grpc_path:
             if grpc_path in self.editor_dialogs:
                 try:
-                    self.editor_dialogs[grpc_path].on_load_request(grpc_path, search_text)
+                    self.editor_dialogs[grpc_path].on_load_request(grpc_path, search_text, only_launch=True)
                     # self.editor_dialogs[grpc_path].restore()
                     self.editor_dialogs[grpc_path].activateWindow()
                 except Exception:

@@ -155,7 +155,7 @@ class Editor(QMainWindow):
         # open the files
         for f in filenames:
             if f:
-                self.on_load_request(f, search_text)
+                self.on_load_request(f, search_text, only_launch=True)
 
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
@@ -313,7 +313,7 @@ class Editor(QMainWindow):
             settings.setValue("window_state", self.saveState())
             settings.endGroup()
 
-    def on_load_request(self, filename, search_text='', insert_index=-1, goto_line=-1):
+    def on_load_request(self, filename, search_text='', insert_index=-1, goto_line=-1, only_launch=False):
         '''
         Loads a file in a new tab or focus the tab, if the file is already open.
         :param str filename: the path to file
@@ -355,7 +355,7 @@ class Editor(QMainWindow):
                 except Exception:
                     pass
                 # TODO: put all text of all tabs into path_text
-                self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True)
+                self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True, only_launch=only_launch)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
                 self._search_thread.start()
             if goto_line != -1:
