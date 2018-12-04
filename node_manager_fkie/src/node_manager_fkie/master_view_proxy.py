@@ -2918,7 +2918,6 @@ class MasterViewProxy(QWidget):
                         url = dia_params['master']
                         rospy.loginfo("Copy %d parameter to %s" % (len(params), url))
                         self.parameterHandler.deliverParameter(url, params)
-                        self.parameterHandler.requestParameterList(url)
             except Exception as e:
                 MessageBox.warning(self, "Copy parameter Error",
                                    'Error while transfer parameter',
