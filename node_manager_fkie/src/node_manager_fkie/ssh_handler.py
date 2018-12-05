@@ -37,7 +37,7 @@ import threading
 
 import rospy
 
-from supervised_popen import SupervisedPopen
+from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 import node_manager_fkie as nm
 from node_manager_fkie.common import utf8
 

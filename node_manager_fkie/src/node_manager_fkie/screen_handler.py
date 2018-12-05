@@ -31,11 +31,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import shlex
+import subprocess
 
 import grpc
 import rospy
 
-from supervised_popen import SupervisedPopen
+from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie import screen
 import node_manager_fkie as nm
@@ -208,7 +209,11 @@ class ScreenHandler(object):
         '''
         output = None
         result = {}
-        if not nm.is_local(host):
+        if nm.is_local(host):
+            ps = SupervisedPopen(shlex.split('%s -ls' % screen.SCREEN), stdout=subprocess.PIPE)
+            output = ps.stdout.read()
+            ps.stdout.close()
+        else:
             _, stdout, _, _ = nm.ssh().ssh_exec(host, [screen.SCREEN, ' -ls'], user, pwd, auto_pw_request, close_stdin=True, close_stderr=True)
             output = stdout.read()
             stdout.close()
@@ -216,6 +221,7 @@ class ScreenHandler(object):
             splits = output.split()
             session = utf8(nodename).replace('/', '_') if nodename is not None else ''
             for i in splits:
-                if i.count('.') > 0 and i.endswith(session) and i.find('._') >= 0:
+                sname = i.replace('__', '_')
+                if sname.count('.') > 0 and sname.endswith(session) and sname.find('._') >= 0:
                     result[i] = nodename
         return result

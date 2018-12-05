@@ -45,10 +45,9 @@ from node_manager_daemon_fkie.common import get_cwd
 from node_manager_daemon_fkie import host as nmdhost
 from node_manager_daemon_fkie import launcher
 from node_manager_daemon_fkie import screen
-from node_manager_daemon_fkie import supervised_popen
 from node_manager_daemon_fkie import url as nmdurl
+from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 from node_manager_fkie.common import package_name, utf8
-from node_manager_fkie.supervised_popen import SupervisedPopen
 
 import node_manager_fkie as nm
 
@@ -311,10 +310,10 @@ class StartHandler(object):
     def open_terminal(self, host):
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd(['cd'], '')
-            supervised_popen.SupervisedPopen(shlex.split(cmd), object_id="Start local terminal", shell=True)
+            SupervisedPopen(shlex.split(cmd), object_id="Start local terminal", shell=True)
         else:
             cmd = nm.settings().terminal_cmd(["ssh -XC %s@%s" % (nm.settings().host_user(host), host)], '', noclose=True)
-            supervised_popen.SupervisedPopen(shlex.split(cmd), object_id="Start Terminal on %s" % host)
+            SupervisedPopen(shlex.split(cmd), object_id="Start Terminal on %s" % host)
 
     @classmethod
     def get_log_path(cls, host, nodes=[], auto_pw_request=False, user=None, pw=None):
