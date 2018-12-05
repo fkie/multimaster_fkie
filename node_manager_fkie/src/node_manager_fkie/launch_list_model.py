@@ -554,15 +554,15 @@ class LaunchListModel(QStandardItemModel):
         '''
         if path_id in [PathItem.NOTHING]:
             return None
-        has_alt_mod = Qt.AltModifier & QApplication.keyboardModifiers()
+        has_shift_mod = Qt.ShiftModifier & QApplication.keyboardModifiers()
         if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
-            if not has_alt_mod:
+            if not has_shift_mod:
                 return path
         root = self.invisibleRootItem()
         while root.rowCount():
             root.removeRow(0)
         self.pyqt_workaround.clear()
-        if has_alt_mod:
+        if has_shift_mod:
             if path_id in [PathItem.LAUNCH_FILE, PathItem.CFG_FILE, PathItem.PROFILE, PathItem.FILE, PathItem.RECENT_FILE, PathItem.LAUNCH_FILE]:
                 self._current_path = os.path.dirname(path)
             else:
