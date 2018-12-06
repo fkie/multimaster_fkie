@@ -375,34 +375,38 @@ class StartHandler(object):
         return False
 
     @classmethod
-    def deleteLog(cls, nodename, host, auto_pw_request=False, user=None, pw=None):
+    def delete_log(cls, nodename, grpc_uri, auto_pw_request=False, user=None, pw=None):
         '''
         Deletes the log file associated with the given node.
         :param  str nodename: the name of the node (with name space)
-        :param str host: the host name or ip where the log file are to delete
+        :param str grpc_uri: uri of the node manager daemon where to delete log
         :raise Exception: on errors while resolving host
         :see: L{node_manager_fkie.is_local()}
         '''
-        rospy.loginfo("delete log for '%s' on '%s'", utf8(nodename), utf8(host))
-        if nm.is_local(host):
-            screenLog = screen.get_logfile(node=nodename)
-            pidFile = screen.get_pidfile(node=nodename)
-            roslog = screen.get_ros_logfile(nodename)
-            if os.path.isfile(screenLog):
-                os.remove(screenLog)
-            if os.path.isfile(pidFile):
-                os.remove(pidFile)
-            if os.path.isfile(roslog):
-                os.remove(roslog)
-        else:
-            try:
-                # output ignored: output, error, ok
-                _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request, close_stdin=True, close_stdout=False, close_stderr=True)
-                if ok:
-                    stdout.readlines()
-                    stdout.close()
-            except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.deleteLog, (nodename, host, auto_pw_request))
+        try:
+            nm.nmd().delete_log(grpc_uri, [nodename])
+        except Exception as err:
+            rospy.logwarn("delete log using SSH because of error: %s" % utf8(err))
+            host = get_hostname(grpc_uri)
+            if nm.is_local(host):
+                screenLog = screen.get_logfile(node=nodename)
+                pidFile = screen.get_pidfile(node=nodename)
+                roslog = screen.get_ros_logfile(nodename)
+                if os.path.isfile(screenLog):
+                    os.remove(screenLog)
+                if os.path.isfile(pidFile):
+                    os.remove(pidFile)
+                if os.path.isfile(roslog):
+                    os.remove(roslog)
+            else:
+                try:
+                    # output ignored: output, error, ok
+                    _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request, close_stdin=True, close_stdout=False, close_stderr=True)
+                    if ok:
+                        stdout.readlines()
+                        stdout.close()
+                except nm.AuthenticationRequest as e:
+                    raise nm.InteractionNeededError(e, cls.delete_log, (nodename, host, auto_pw_request))
 
     def kill(self, host, pid, auto_pw_request=False, user=None, pw=None):
         '''
@@ -495,29 +499,33 @@ class StartHandler(object):
             cmd = ['sudo poweroff']
             _ = nm.ssh().ssh_x11_exec(host, cmd, 'Shutdown %s' % host, user)
 
-    def rosclean(self, host, auto_pw_request=False, user=None, pw=None):
+    def rosclean(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
         '''
         rosclean purge on given host.
-        :param str host: the name or address of the host, where rosclean is called.
+        :param str grpc_uri: the address of the node manager daemon where rosclean is called.
         :raise StartException: on error
         :raise Exception: on errors while resolving host
         :see: L{node_manager_fkie.is_local()}
         '''
         try:
-            self._rosclean_wo(host, auto_pw_request, user, pw)
+            self._rosclean_wo(grpc_uri, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.poweroff, (host, auto_pw_request))
+            raise nm.InteractionNeededError(e, self.poweroff, (grpc_uri, auto_pw_request))
 
-    def _rosclean_wo(self, host, auto_pw_request=False, user=None, pw=None):
-        if nm.is_local(host):
-            rospy.loginfo("rosclean purge on localhost!")
-            cmd = nm.settings().terminal_cmd(['rosclean purge -y'], "rosclean")
-            SupervisedPopen(shlex.split(cmd), object_id="rosclean", description="rosclean")
-        else:
-            rospy.loginfo("rosclean %s", host)
-            # kill on a remote machine
-            cmd = ['rosclean purge -y']
-            _ = nm.ssh().ssh_x11_exec(host, cmd, 'rosclean purge on %s' % host, user)
+    def _rosclean_wo(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
+        try:
+            nm.nmd().rosclean(grpc_uri)
+        except Exception as err:
+            host = get_hostname(grpc_uri)
+            if nm.is_local(host):
+                rospy.loginfo("rosclean purge on localhost!")
+                cmd = nm.settings().terminal_cmd(['rosclean purge -y'], "rosclean")
+                SupervisedPopen(shlex.split(cmd), object_id="rosclean", description="rosclean")
+            else:
+                rospy.logwarn("use SSH to run 'rosclean' because of error: %s" % utf8(err))
+                # kill on a remote machine
+                cmd = ['rosclean purge -y']
+                _ = nm.ssh().ssh_x11_exec(host, cmd, 'rosclean purge on %s' % host, user)
 
     @classmethod
     def transfer_file_nmd(cls, grpc_url, path, auto_pw_request=False, user=None, pw=None):

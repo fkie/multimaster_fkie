@@ -39,6 +39,8 @@ service ScreenService {
 	rpc GetScreens (Screen) returns (Screens);
 	rpc GetAllScreens (Empty) returns (Screens);
 	rpc GetMultipleScreens (Empty) returns (Screens);
+	rpc RosClean (Empty) returns (Empty);
+	rpc DeleteLog (Nodes) returns (Empty);
 }
 
 message Empty {
@@ -56,4 +58,11 @@ message Screens {
 message Screen {
 	string name = 1;
 	string node = 2;
+}
+
+/** Node names
+ * :param nodes: list with names of the ROS nodes.
+ */
+message Nodes {
+	repeated string nodes = 1;
 }

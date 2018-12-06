@@ -2373,8 +2373,8 @@ class MasterViewProxy(QWidget):
         for node in selectedNodes:
             self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                 "delete Log of '%s'" % node.name,
-                                                nm.starter().deleteLog,
-                                                (node.name, self.getHostFromNode(node), False, self.current_user))
+                                                nm.starter().delete_log,
+                                                (node.name, self._grpc_from_node(node), False, self.current_user))
         self._start_queue(self._progress_queue_prio)
 
     def on_dynamic_config_clicked(self):

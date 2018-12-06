@@ -682,3 +682,15 @@ class NmdClient(QObject):
             pass
         if hasattr(self, '_threads'):
             self._threads.finished("mst_%s" % grpc_url)
+
+    def rosclean(self, grpc_url='grpc://localhost:12321'):
+        rospy.logdebug("rosclean purge -y on %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_screen_manager(uri)
+        return sm.rosclean()
+
+    def delete_log(self, grpc_url='grpc://localhost:12321', nodes=[]):
+        rospy.logdebug("delete logs on %s for %s" % (grpc_url, nodes))
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_screen_manager(uri)
+        return sm.delete_log(nodes)

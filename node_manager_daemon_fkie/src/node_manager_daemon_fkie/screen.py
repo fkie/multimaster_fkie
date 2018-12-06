@@ -31,6 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+from rosclean import rosclean_main
 import rospy
 import subprocess
 from .supervised_popen import SupervisedPopen
@@ -248,3 +249,22 @@ def get_cmd(node, env=[], keys=[]):
             _append_env(f, key, os.environ)
     f.close()
     return "%s -c %s -L -dmS %s" % (SCREEN, filename, create_session_name(node=node))
+
+
+def rosclean():
+    rosclean_main(['rosclean', 'purge', '-y'])
+
+
+def delete_log(nodename):
+    screen_log = get_logfile(node=nodename)
+    screen_conf = get_cfgfile(node=nodename)
+    pid_file = get_pidfile(node=nodename)
+    roslog = get_ros_logfile(nodename)
+    if os.path.isfile(screen_log):
+        os.remove(screen_log)
+    if os.path.isfile(screen_conf):
+        os.remove(screen_conf)
+    if os.path.isfile(pid_file):
+        os.remove(pid_file)
+    if os.path.isfile(roslog):
+        os.remove(roslog)

@@ -1581,23 +1581,25 @@ class MainWindow(QMainWindow):
                                'Error while poweroff %s' % host,
                                '%s' % utf8(e))
 
-    def rosclean(self, host):
+    def rosclean(self, masteruri):
         try:
+            host = get_hostname(masteruri)
+            nuri = nmdurl.nmduri(masteruri)
             ret = MessageBox.warning(self, "ROS Node Manager",
                                      "Do you really want delete all logs on `%s`?" % host,
                                      buttons=MessageBox.Ok | MessageBox.Cancel)
             if ret == MessageBox.Cancel:
                 return
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                           'rosclean `%s`' % host,
+                                           'rosclean `%s`' % nuri,
                                            nm.starter().rosclean,
-                                           ('%s' % host,))
+                                           ('%s' % nuri,))
             self._progress_queue.start()
             self.launch_dock.raise_()
         except (Exception, nm.StartException), e:
-            rospy.logwarn("Error while rosclean %s: %s", host, utf8(e))
+            rospy.logwarn("Error while rosclean %s: %s", masteruri, utf8(e))
             MessageBox.warning(self, "Run error",
-                               'Error while rosclean %s' % host,
+                               'Error while rosclean %s' % masteruri,
                                '%s' % utf8(e))
 
 # ======================================================================================================================
@@ -1859,7 +1861,7 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('poweroff://'):
             self.poweroff_host(self._url_host(url))
         elif url.toString().startswith('rosclean://'):
-            self.rosclean(self._url_host(url))
+            self.rosclean(url.toString().replace('rosclean', 'http'))
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back

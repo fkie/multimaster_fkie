@@ -61,6 +61,9 @@ class TestScreen(unittest.TestCase):
         _pid, name = screen.split_session_name('123._test_node')
         self.assertEqual(name, '_test_node', "wrong screen session name after split from `123._test_node`, got: %s, expected: %s" % (name, '_test_node'))
 
+    def test_rosclean(self):
+        screen.rosclean()
+
 
 if __name__ == '__main__':
     import rosunit

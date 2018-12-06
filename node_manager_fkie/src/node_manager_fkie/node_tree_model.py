@@ -972,7 +972,7 @@ class HostItem(GroupItem):
         tooltip += '<p>'
         tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (utf8(self.masteruri).replace('http://', ''))
         tooltip += '<p>'
-        tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.hostname, self.hostname)
+        tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.masteruri.replace('http://', ''), self.hostname)
         tooltip += '<p>'
         tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
         tooltip += '<p>'

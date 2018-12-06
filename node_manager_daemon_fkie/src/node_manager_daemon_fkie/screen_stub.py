@@ -73,3 +73,20 @@ class ScreenStub(object):
                 result[screen.node] = []
             result[screen.node].append(screen.name)
         return result
+
+    def rosclean(self):
+        '''
+        Call rosclean purge -y.
+        '''
+        request = smsg.Empty()
+        _empty_response = self.sm_stub.RosClean(request, timeout=settings.GRPC_TIMEOUT)
+
+    def delete_log(self, nodes):
+        '''
+        Removes log files for given nodes.
+        :param [str] nodes: a list with names of nodes to remove log files
+        '''
+        request = smsg.Nodes()
+        for node in nodes:
+            request.nodes.append(node)
+        _empty_response = self.sm_stub.DeleteLog(request, timeout=settings.GRPC_TIMEOUT)

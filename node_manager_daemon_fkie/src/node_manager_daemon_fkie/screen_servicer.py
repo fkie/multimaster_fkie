@@ -33,8 +33,8 @@
 import rospy
 import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
 import multimaster_msgs_fkie.grpc.screen_pb2 as smsg
+import os
 import screen
-
 
 
 class ScreenServicer(sgrpc.ScreenServiceServicer):
@@ -80,4 +80,15 @@ class ScreenServicer(sgrpc.ScreenServiceServicer):
                 added_node_names.append(node_name)
         # TODO currently we add only one session name. Add all!
         reply.screens.extend(screen_objs)
+        return reply
+
+    def RosClean(self, request, context):
+        screen.rosclean()
+        reply = smsg.Empty()
+        return reply
+
+    def DeleteLog(self, request, context):
+        for nodename in request.nodes:
+            screen.delete_log(nodename)
+        reply = smsg.Empty()
         return reply
