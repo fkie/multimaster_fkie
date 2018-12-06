@@ -226,6 +226,14 @@ class SettingsWidget(QDockWidget):
                                                         'value_default': nm.settings().TRANSPOSE_PUB_SUB_DESCR,
                                                         'tooltip': "<p>Transpose publisher/subscriber in description dock.</p>"
                                                         },),
+                    'Timeout close dialog:': ({'value': nm.settings().timeout_close_dialog,
+                                               'settings': nm.settings(),
+                                               'attrname': 'timeout_close_dialog',
+                                               'value_default': nm.settings().TIMEOUT_CLOSE_DIALOG,
+                                               'value_step': 1.,
+                                               'tooltip': "<p>Timeout in seconds to close dialog while closing Node Manager."
+                                               " 0 disables autoclose functionality.</p>"
+                                               },),
                     'Group nodes by namespace:': ({'value': nm.settings().group_nodes_by_namespace,
                                                    'settings': nm.settings(),
                                                    'attrname': 'group_nodes_by_namespace',
