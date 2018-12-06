@@ -416,7 +416,6 @@ class TopicGroupItem(QStandardItem):
             lns, rns = lnamespace(group_name)
             if lns == rospy.names.SEP:
                 lns, rns = lnamespace(rns)
-        print "lns, rns", lns, rns
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):
