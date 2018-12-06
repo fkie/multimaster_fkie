@@ -361,9 +361,11 @@ class ServiceGroupItem(QStandardItem):
         :return: The group with given name of None if `nocreate` is True and group not exists.
         :rtype: :class:`ServiceGroupItem`
         '''
-        lns, rns = lnamespace(group_name)
-        if lns == rospy.names.SEP:
-            lns, rns = lnamespace(rns)
+        lns, rns = group_name, ''
+        if nm.settings().group_nodes_by_namespace:
+            lns, rns = lnamespace(group_name)
+            if lns == rospy.names.SEP:
+                lns, rns = lnamespace(rns)
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):
@@ -395,10 +397,11 @@ class ServiceGroupItem(QStandardItem):
         :type service: :class:`TopicInfo`
         '''
         group_item = self
-        ns = namespace(service.name)
-        if ns != rospy.names.SEP:
-            # insert in the group
-            group_item = self.get_group_item(ns, False)
+        if nm.settings().group_nodes_by_namespace:
+            ns = namespace(service.name)
+            if ns != rospy.names.SEP:
+                # insert in the group
+                group_item = self.get_group_item(ns, False)
         # append new topic row
         new_item_row = ServiceItem.create_item_list(service, self)
         group_item._add_row(new_item_row)

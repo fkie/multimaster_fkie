@@ -381,9 +381,11 @@ class GroupItem(QStandardItem):
         @return: The group with given name
         @rtype: L{GroupItem}
         '''
-        lns, rns = lnamespace(group_name)
-        if lns == rospy.names.SEP and type(self) == HostItem:
-            lns, rns = lnamespace(rns)
+        lns, rns = group_name, ''
+        if nm.settings().group_nodes_by_namespace:
+            lns, rns = lnamespace(group_name)
+            if lns == rospy.names.SEP and type(self) == HostItem:
+                lns, rns = lnamespace(rns)
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):
@@ -432,9 +434,10 @@ class GroupItem(QStandardItem):
                     groupItem.addNode(node, cfg)
         else:
             group_item = self
-            if type(group_item) == HostItem:
-                # insert in the group
-                group_item = self.getGroupItem(namespace(node.name), False)
+            if nm.settings().group_nodes_by_namespace:
+                if type(group_item) == HostItem:
+                    # insert in the group
+                    group_item = self.getGroupItem(namespace(node.name), False)
             # insert in order
             new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
             group_item._addRow_sorted(new_item_row)

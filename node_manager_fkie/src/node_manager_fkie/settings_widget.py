@@ -227,7 +227,14 @@ class SettingsWidget(QDockWidget):
                                                'value_step': 1.,
                                                'tooltip': "<p>Timeout in seconds to close dialog while closing Node Manager."
                                                " 0 disables autoclose functionality.</p>"
-                                               },)
+                                               },),
+                    'Group nodes by namespace:': ({'value': nm.settings().group_nodes_by_namespace,
+                                                   'settings': nm.settings(),
+                                                   'attrname': 'group_nodes_by_namespace',
+                                                   'value_default': nm.settings().GROUP_BY_NAMESPACE,
+                                                   'tooltip': "<p>Split namespace of the node by / and create groups for each name part.</p>",
+                                                   'need_restart': True
+                                                   },)
                     }
         self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)

@@ -38,7 +38,6 @@ from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 from detailed_msg_box import MessageBox
 from master_discovery_fkie.master_info import TopicInfo
 
-from node_manager_fkie.common import utf8
 from node_manager_fkie.common import lnamespace, namespace, normns, utf8
 import node_manager_fkie as nm
 
@@ -412,9 +411,12 @@ class TopicGroupItem(QStandardItem):
         :return: The group with given name of None if `nocreate` is True and group not exists.
         :rtype: :class:`TopicGroupItem`
         '''
-        lns, rns = lnamespace(group_name)
-        if lns == rospy.names.SEP:
-            lns, rns = lnamespace(rns)
+        lns, rns = group_name, ''
+        if nm.settings().group_nodes_by_namespace:
+            lns, rns = lnamespace(group_name)
+            if lns == rospy.names.SEP:
+                lns, rns = lnamespace(rns)
+        print "lns, rns", lns, rns
         if lns == rospy.names.SEP:
             return self
         for i in range(self.rowCount()):
@@ -446,10 +448,11 @@ class TopicGroupItem(QStandardItem):
         :type topic: :class:`TopicInfo`
         '''
         group_item = self
-        ns = namespace(topic.name)
-        if ns != rospy.names.SEP:
-            # insert in the group
-            group_item = self.get_group_item(ns, False)
+        if nm.settings().group_nodes_by_namespace:
+            ns = namespace(topic.name)
+            if ns != rospy.names.SEP:
+                # insert in the group
+                group_item = self.get_group_item(ns, False)
         # append new topic row
         new_item_row = TopicItem.create_item_list(topic, self)
         group_item._add_row(new_item_row)

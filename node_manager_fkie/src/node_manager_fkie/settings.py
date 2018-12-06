@@ -136,6 +136,7 @@ class Settings(object):
 
     TRANSPOSE_PUB_SUB_DESCR = True
     TIMEOUT_CLOSE_DIALOG = 5.0
+    GROUP_BY_NAMESPACE = True
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -200,6 +201,7 @@ class Settings(object):
         self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         self._timeout_close_dialog = float(settings.value('timeout_close_dialog', self.TIMEOUT_CLOSE_DIALOG))
+        self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
         settings.beginGroup('host_colors')
         self._host_colors = dict()
         for k in settings.childKeys():
@@ -502,6 +504,18 @@ class Settings(object):
             self._timeout_close_dialog = v
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('timeout_close_dialog', self._timeout_close_dialog)
+
+    @property
+    def group_nodes_by_namespace(self):
+        return self._group_nodes_by_namespace
+
+    @group_nodes_by_namespace.setter
+    def group_nodes_by_namespace(self, value):
+        val = self.str2bool(value)
+        if self._group_nodes_by_namespace != val:
+            self._group_nodes_by_namespace = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('group_nodes_by_namespace', self._group_nodes_by_namespace)
 
     def host_color(self, host, default_color):
         if self.colorize_hosts:
