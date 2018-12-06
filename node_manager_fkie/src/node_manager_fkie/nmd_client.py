@@ -544,8 +544,13 @@ class NmdClient(QObject):
         uri, _ = nmdurl.split(grpc_path)
         rospy.logdebug("get nodes from %s" % uri)
         lm = self.get_launch_manager(uri)
-        launch_descriptions = lm.get_nodes(True, masteruri=masteruri)
-        return launch_descriptions
+        try:
+            launch_descriptions = lm.get_nodes(True, masteruri=masteruri)
+            return launch_descriptions
+        except grpc.RpcError as gerr:
+            rospy.logdebug("remove connection", uri)
+            remote.remove_insecure_channel(uri)
+            raise gerr
 
     def get_nodes_threaded(self, grpc_path='grpc://localhost:12321', masteruri=''):
         self._threads.start_thread("gn_%s_%s" % (grpc_path, masteruri), target=self._get_nodes_threaded, args=(grpc_path, masteruri))
@@ -561,7 +566,6 @@ class NmdClient(QObject):
                 ld.path = nmdurl.join(clean_url, ld.path)
             self.launch_nodes.emit(clean_url, launch_descriptions)
         except Exception as err:
-            remote.remove_insecure_channel(uri)
             self.error.emit("_get_nodes", grpc_path, masteruri, err)
         if hasattr(self, '_threads'):
             self._threads.finished("gn_%s_%s" % (grpc_path, masteruri))
@@ -600,7 +604,7 @@ class NmdClient(QObject):
         try:
             return lm.start_node(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
         except grpc.RpcError as gerr:
-            print("remove connection", uri)
+            rospy.logdebug("remove connection", uri)
             remote.remove_insecure_channel(uri)
             raise gerr
         except Exception as err:
@@ -631,7 +635,8 @@ class NmdClient(QObject):
             startcfg.respawn_max = 0
             startcfg.respawn_min_runtime = 0
             return lm.start_standalone_node(startcfg)
-        except Exception as err:
+        except grpc.RpcError as err:
+            rospy.logdebug("remove connection", uri)
             remote.remove_insecure_channel(uri)
             raise err
 
