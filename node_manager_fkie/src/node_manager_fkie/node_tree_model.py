@@ -1385,7 +1385,7 @@ class NodeItem(QStandardItem):
         '''
         if cfg == '':
             self._std_config = cfg
-        elif cfg and cfg not in self._cfgs:
+        if cfg and cfg not in self._cfgs:
             self._cfgs.append(cfg)
             self.update_displayed_config()
 
@@ -1759,16 +1759,7 @@ class NodeTreeModel(QStandardItemModel):
                 for item in items:
                     if item.parent_item is not None:
                         groups.add(item.parent_item)
-                        # only added the config to the node, if the node is in the same group
-                        if isinstance(item.parent_item, HostItem):
-                            item.add_config(cfg)
-                        elif hostItem.is_in_cap_group(item.name, cfg, rospy.names.namespace(item.name).rstrip(rospy.names.SEP), item.parent_item.name):
-                            item.add_config(cfg)
-                        # test for default group
-                        elif hostItem.is_in_cap_group(item.name, '', '', item.parent_item.name):
-                            item.add_config(cfg)
-                    else:
-                        item.add_config(cfg)
+                    item.add_config(cfg)
                 if not items:
                     # create the new node
                     node_info = NodeInfo(name, masteruri)
@@ -1892,4 +1883,3 @@ class NodeTreeModel(QStandardItemModel):
                 h = root.child(i)
                 h.update_description(descr_type, descr_name, descr)
                 return h.update_tooltip()
-

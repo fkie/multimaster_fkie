@@ -201,7 +201,7 @@ def run_node(startcfg):
         if masteruri is None:
             masteruri = masteruri_from_ros()
         if masteruri is not None:
-	    if 'ROS_MASTER_URI' not in startcfg.env:
+            if 'ROS_MASTER_URI' not in startcfg.env:
                 new_env['ROS_MASTER_URI'] = masteruri
             # host in startcfg is a nmduri -> get host name
             hname = get_hostname(startcfg.host)
