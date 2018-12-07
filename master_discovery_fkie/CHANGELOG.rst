@@ -2,6 +2,11 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.3 (2018-12-07)
+------------------
+* Fixed typo hearbeat[s] to heartbeat[s] pull request `#87 <https://github.com/fkie/multimaster_fkie/issues/87>`_ from Paulls20/master
+* Contributors: Alexander Tiderko, Paul.Varghese
+
 0.8.2 (2018-08-10)
 ------------------
 
