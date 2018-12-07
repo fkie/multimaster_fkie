@@ -860,7 +860,7 @@ class Discoverer(Zeroconf):
                 # sets a new timestamp in zeroconf
                 rpcuri = self.masterInfo.getTXTValue('rpcuri', '')
                 masteruri = self.masterInfo.getTXTValue('master_uri', '')
-                self.masterInfo.txt = ["timestamp=%.9f" % self.master_monitor.getCurrentState().timestamp, "master_uri=%s" % masteruri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
+                self.masterInfo.txt = ["timestamp=%.9f" % self.master_monitor.getCurrentState().timestamp_local, "master_uri=%s" % masteruri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
                 self.updateService(self.masterInfo.txt)
             return self.masterInfo
         except:
