@@ -45,7 +45,7 @@ import settings
 import host
 from master_discovery_fkie.common import masteruri_from_ros
 from .launch_stub import LaunchStub
-from .common import get_cwd, utf8
+from .common import get_cwd, package_name, interpret_path, utf8
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 from .host import get_hostname
@@ -110,8 +110,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     if result.masteruri not in launchcfg.global_param_done:
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
-        rospy.loginfo("Register global parameter '%s'" % launchcfg.filename)
-        rospy.logdebug("Register global parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in global_params.values()))
+        rospy.loginfo("add global parameter for '%s'" % launchcfg.filename)
+        rospy.logdebug("add global parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in global_params.values()))
         launchcfg.global_param_done.append(result.masteruri)
     # add params and clear_params
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
@@ -121,8 +121,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
-        rospy.logdebug("Delete parameter:\n  %s", '\n  '.join(result.clear_params))
-        rospy.logdebug("Register parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in result.params.values()))
+        rospy.logdebug("set delete parameter:\n  %s", '\n  '.join(result.clear_params))
+        rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in result.params.values()))
     return result
 
 
@@ -140,7 +140,14 @@ def run_node(startcfg):
     nodename = roslib.names.ns_join(startcfg.namespace, startcfg.name)
     if not startcfg.host or host.is_local(hostname, wait=True):
         # run on local host
-        args = list(startcfg.args)
+        # interpret arguments with path elements
+        args = []
+        for arg in startcfg.args:
+            new_arg = arg
+            if arg.startswith('pkg://'):
+                new_arg = interpret_path(arg)
+                rospy.logdebug("interpret arg '%s' to '%s'" % (arg, new_arg))
+            args.append(new_arg)
         # set name and namespace of the node
         if startcfg.name:
             args.append("__name:=%s" % startcfg.name)
@@ -209,7 +216,7 @@ def run_node(startcfg):
             if ros_hostname:
                 new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
-            _load_parameters(masteruri, startcfg.params, startcfg.clear_params, False)
+            _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
         cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args)))
         rospy.loginfo("run node '%s' with masteruri: %s" % (nodename, masteruri))
@@ -217,6 +224,8 @@ def run_node(startcfg):
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
         rospy.loginfo("remote run node '%s' at '%s'" % (nodename, startcfg.host))
+        startcfg.params.update(_params_to_package_path(startcfg.params))
+        startcfg.args = _args_to_package_path(startcfg.args)
         # run on a remote machine
         channel = remote.get_insecure_channel(startcfg.host)
         if channel is None:
@@ -280,7 +289,7 @@ def _get_respawn_params(node, params):
     return result
 
 
-def _load_parameters(masteruri, params, clear_params, replace_abs=False):
+def _load_parameters(masteruri, params, clear_params):
     """
     Load parameters onto the parameter server
     """
@@ -307,16 +316,12 @@ def _load_parameters(masteruri, params, clear_params, replace_abs=False):
         # multi-call objects are not reusable
         socket.setdefaulttimeout(6 + len(params))
         param_server_multi = xmlrpclib.MultiCall(param_server)
-        address = host.get_hostname(masteruri)
         for pkey, pval in params.items():
             value = pval
-            if replace_abs:
-                # suppressing this as it causes too much spam
-                value, is_abs_path, found, package = _resolve_abs_paths(pval, address)
-                if is_abs_path:
-                    abs_paths.append((pkey, pval, value))
-                    if not found and package:
-                        not_found_packages.append(package)
+            # resolve path elements
+            if value.startswith('$'):
+                value = interpret_path(value)
+                rospy.logdebug("interpret parameter '%s' to '%s'" % (value, pval))
             # add parameter to the multicall
             param_server_multi.setParam(rospy.get_name(), pkey, value)
             test_ret = _test_value(pkey, value)
@@ -355,36 +360,32 @@ def _test_value(key, value):
     return result
 
 
-def _resolve_abs_paths(value, host):
-    '''
-    Replaces the local absolute path by remote absolute path. Only valid ROS
-    package paths are resolved.
+def _abs_to_package_path(path):
+    result = path
+    pname, ppath = package_name(path)
+    if pname is not None:
+        result = path.replace(ppath, 'pkg://%s' % pname)
+        rospy.logdebug("replace abs path '%s' by '%s'" % (path, result))
+    return result
 
-    :return: value, is absolute path, remote package found (ignore it on local host or if is not absolute path!), package name (if absolute path and remote package NOT found)
-    '''
-    if isinstance(value, types.StringTypes) and value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
-        if host.is_local(host):
-            return value, True, True, ''
-        else:
-            pass
-#            path = os.path.dirname(value) if os.path.isfile(value) else value
-#            package, package_path = package_name(path)
-#             if package:
-#                 _, stdout, _, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
-#                 output = stdout.read()
-#                 stdout.close()
-#                 if ok:
-#                     if output:
-#                         value.replace(package_path, output)
-#                         return value.replace(package_path, output.strip()), True, True, package
-#                     else:
-#                         # package on remote host not found!
-#                         # TODO add error message
-#                         #      error = stderr.read()
-#                         pass
-            return value, True, False, ''
-    else:
-        return value, False, False, ''
+
+def _params_to_package_path(params):
+    result = {}
+    for name, value in params.items():
+        if isinstance(value, types.StringTypes):
+            if value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
+                result[name] = _abs_to_package_path(value)
+    return result
+
+
+def _args_to_package_path(args):
+    result = []
+    for arg in args:
+        new_arg = arg
+        if arg.startswith('/') and (os.path.isfile(arg) or os.path.isdir(arg)):
+            new_arg = _abs_to_package_path(arg)
+        result.append(new_arg)
+    return result
 
 
 def get_global_params(roscfg):
