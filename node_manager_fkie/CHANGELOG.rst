@@ -2,6 +2,9 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.4 (2018-12-08)
+------------------
+
 0.8.3 (2018-12-07)
 ------------------
 * node_manager_fkie: added: Augment CMake script to install node_manager launcher on Ubuntu. pull request `#82 <https://github.com/fkie/multimaster_fkie/issues/82>`_ from acschaefer/master

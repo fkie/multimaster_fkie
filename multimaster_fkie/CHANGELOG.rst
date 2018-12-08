@@ -2,6 +2,12 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.4 (2018-12-08)
+------------------
+* master_discovery_fkie: fix zeroconf to avoid request loop in master_sync
+  see issue `#90 <https://github.com/fkie/multimaster_fkie/issues/90>`_
+* Contributors: Alexander Tiderko
+
 0.8.3 (2018-12-07)
 ------------------
 * node_manager_fkie: added: Augment CMake script to install node_manager launcher on Ubuntu. pull request `#82 <https://github.com/fkie/multimaster_fkie/issues/82>`_ from acschaefer/master
