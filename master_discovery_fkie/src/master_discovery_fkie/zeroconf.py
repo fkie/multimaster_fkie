@@ -79,6 +79,12 @@ class MasterInfo(object):
     def getRosTimestamp(self):
         return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp'))
 
+    def getRosTimestampLocal(self):
+        try:
+            return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp_local'))
+        except:
+            return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp'))
+
     @staticmethod
     def timestampToRosTime(timestamp):
         '''
@@ -546,7 +552,7 @@ class MasterList(object):
                                                     ROSMaster(str(m.name),
                                                               m.getMasterUri(),
                                                               m.getRosTimestamp(),
-                                                              m.getRosTimestamp(),
+                                                              m.getRosTimestampLocal(),
                                                               state,
                                                               m.getTXTValue('zname', ''),
                                                               m.getTXTValue('rpcuri', ''))))
@@ -594,7 +600,7 @@ class MasterList(object):
                                                             ROSMaster(str(master_info.name),
                                                                       master_info.getMasterUri(),
                                                                       master_info.getRosTimestamp(),
-                                                                      master_info.getRosTimestamp(),
+                                                                      master_info.getRosTimestampLocal(),
                                                                       True,
                                                                       master_info.getTXTValue('zname', ''),
                                                                       master_info.getTXTValue('rpcuri', ''))))
@@ -608,7 +614,7 @@ class MasterList(object):
                                                         ROSMaster(str(master_info.name),
                                                                   master_info.getMasterUri(),
                                                                   master_info.getRosTimestamp(),
-                                                                  master_info.getRosTimestamp(),
+                                                                  master_info.getRosTimestampLocal(),
                                                                   True,
                                                                   master_info.getTXTValue('zname', ''),
                                                                   master_info.getTXTValue('rpcuri', ''))))
@@ -645,7 +651,7 @@ class MasterList(object):
                                                     ROSMaster(str(r.name),
                                                               r.getMasterUri(),
                                                               r.getRosTimestamp(),
-                                                              r.getRosTimestamp(),
+                                                              r.getRosTimestampLocal(),
                                                               False,
                                                               r.getTXTValue('zname', ''),
                                                               r.getTXTValue('rpcuri', ''))))
@@ -695,7 +701,7 @@ class MasterList(object):
                                                     ROSMaster(str(master.name),
                                                               master.getMasterUri(),
                                                               master.getRosTimestamp(),
-                                                              master.getRosTimestamp(),
+                                                              master.getRosTimestampLocal(),
                                                               False,
                                                               master.getTXTValue('zname', ''),
                                                               master.getTXTValue('rpcuri', ''))))
@@ -716,7 +722,7 @@ class MasterList(object):
                 masters.append(ROSMaster(str(master.name),
                                          master.getMasterUri(),
                                          master.getRosTimestamp(),
-                                         master.getRosTimestamp(),
+                                         master.getRosTimestampLocal(),
                                          master.online,
                                          master.getTXTValue('zname', ''),
                                          master.getTXTValue('rpcuri', '')))
@@ -766,7 +772,7 @@ class Discoverer(Zeroconf):
         if (masterhost in ['localhost', '127.0.0.1']):
             sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % masterhost)
         rpcuri = ''.join(['http://', socket.gethostname(), ':', str(monitor_port), '/'])
-        txtArray = ["timestamp=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
+        txtArray = ["timestamp=%s" % str(0), "timestamp_local=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
         Zeroconf.__init__(self, name, '_ros-master._tcp', masterhost, masterport, domain, txtArray)
         # the list with all ROS master neighbors with theirs SyncThread's and all Polling threads
@@ -860,7 +866,7 @@ class Discoverer(Zeroconf):
                 # sets a new timestamp in zeroconf
                 rpcuri = self.masterInfo.getTXTValue('rpcuri', '')
                 masteruri = self.masterInfo.getTXTValue('master_uri', '')
-                self.masterInfo.txt = ["timestamp=%.9f" % self.master_monitor.getCurrentState().timestamp, "master_uri=%s" % masteruri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
+                self.masterInfo.txt = ["timestamp=%.9f" % self.master_monitor.getCurrentState().timestamp, "timestamp_local=%.9f" % self.master_monitor.getCurrentState().timestamp_local, "master_uri=%s" % masteruri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
                 self.updateService(self.masterInfo.txt)
             return self.masterInfo
         except:
