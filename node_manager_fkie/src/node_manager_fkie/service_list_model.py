@@ -55,13 +55,14 @@ class ServiceItem(QStandardItem):
     def __init__(self, service, parent=None):
         '''
         Initialize the service item.
-        @param service: the service object to view
-        @type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
+
+        :param service: the service object to view
+        :type service: master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>
         '''
         QStandardItem.__init__(self, service.name)
         self._parent_item = parent
         self.service = service
-        '''@ivar: service info as U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}.'''
+        ''':ivar self.service: service info as :ref:`master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>`.'''
         self._with_namespace = rospy.names.SEP in service.name
 
     @property
@@ -118,7 +119,7 @@ class ServiceItem(QStandardItem):
         Updates the view of the service on changes.
 
         :param parent: the item containing this item
-        :type parent: U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}
+        :type parent: :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>
         '''
         if self.parent_item is not None:
             # update type view
@@ -138,7 +139,7 @@ class ServiceItem(QStandardItem):
         :param service: the service data
         :type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
         :return: the list for the representation as a row
-        :rtype: C{[L{ServiceItem} or U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
+        :rtype: [:class:`ServiceItem` or :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>]
         '''
         items = []
         item = ServiceItem(service, parent=root)
@@ -154,10 +155,11 @@ class ServiceItem(QStandardItem):
     def updateTypeView(cls, service, item):
         '''
         Updates the representation of the column contains the type of the service.
-        @param service: the service data
-        @type service: U{master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>}
-        @param item: corresponding item in the model
-        @type item: L{ServiceItem}
+
+        :param service: the service data
+        :type service: master_discovery_fkie.ServiceInfo<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#master_discovery_fkie.master_info.ServiceInfo>
+        :param item: corresponding item in the model
+        :type item: :class:`ServiceItem`
         '''
         try:
             if service.isLocal and service.type:
@@ -338,7 +340,7 @@ class ServiceGroupItem(QStandardItem):
 
         :param str name: the group name
         :return: the list for the representation as a row
-        :rtype: C{[L{ServiceGroupItem} or U{QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}, ...]}
+        :rtype: [:class:`ServiceGroupItem` or :class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]
         '''
         items = []
         item = ServiceGroupItem(name, parent, is_group)

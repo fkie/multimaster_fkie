@@ -159,7 +159,7 @@ class FileStub(object):
         Save the file to gRPC-server.
 
         :param str path: path where to save the content.
-        :paran str content: the content of the file.
+        :param str content: the content of the file.
         :param float mtime: last modification time. Set to zero to replace or create a new file without exception.
         :raise OSError:
         :raise IOError: if file was changed or removed in the meantime and

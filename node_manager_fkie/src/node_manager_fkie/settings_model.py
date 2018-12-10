@@ -51,9 +51,10 @@ class SettingsNameItem(QStandardItem):
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
-        @param role: the art of the data
-        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+
+        :param role: the art of the data
+        :type role: QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
         '''
         if role == Qt.DisplayRole:
             # return the displayed item name
@@ -136,9 +137,10 @@ class SettingsValueItem(QStandardItem):
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
-        @param role: the art of the data
-        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+
+        :param role: the art of the data
+        :type role: QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
         '''
         if role == Qt.DisplayRole:
             # return the displayed item name
@@ -175,9 +177,10 @@ class SettingsGroupItem(QStandardItem):
     def data(self, role):
         '''
         The view asks us for all sorts of information about our data...
-        @param role: the art of the data
-        @type role: U{QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+
+        :type role: QtCore.Qt.DisplayRole<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
         '''
         if role == Qt.DisplayRole:
             # return the displayed item name
@@ -193,9 +196,9 @@ class SettingsGroupItem(QStandardItem):
         '''
         Creates the list of the items . This list is used for the
         visualization of settings group data as a table row.
-        @param name: the group name
-        @type name: C{str}
-        @rtype: C{[L{SettingsGroupItem} and U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
+
+        :param str name: the group name
+        :rtype: [SettingsGroupItem and QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>]
         '''
         items = []
         item = SettingsGroupItem(name)
@@ -213,7 +216,8 @@ class SettingsGroupItem(QStandardItem):
         Creates the list of the items . This list is used for the
         visualization of settings group data as a table row.
         For paramters see `SettingsValueItem()`
-        @rtype: C{[L{SettingsGroupItem} and U{QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>}]}
+
+        :rtype: [SettingsGroupItem and QtGui.QStandardItem<https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>]
         '''
         items = []
         item = SettingsNameItem(name, tooltip)
@@ -246,11 +250,11 @@ class SettingsModel(QStandardItemModel):
 
     def flags(self, index):
         '''
-        @param index: parent of the list
-        @type index: U{QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>}
-        @return: Flag or the requested item
-        @rtype: U{QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>}
-        @see: U{http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html}
+        :param index: parent of the list
+        :type index: QtCore.QModelIndex<https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
+        :return: Flag or the requested item
+        :rtype: QtCore.Qt.ItemFlag<https://srinikom.github.io/pyside-docs/PySide/QtCore/Qt.html>
+        :see: http://www.pyside.org/docs/pyside-1.0.1/PySide/QtCore/Qt.html
         '''
         if not index.isValid():
             return Qt.NoItemFlags
@@ -260,7 +264,7 @@ class SettingsModel(QStandardItemModel):
             if item.type() in [SettingsValueItem.ITEM_TYPE]:
                 result = result | Qt.ItemIsEditable
             return result
-        except:
+        except Exception:
             import traceback
             print traceback.format_exc(1)
             return Qt.ItemIsEnabled | Qt.ItemIsSelectable
@@ -272,8 +276,9 @@ class SettingsModel(QStandardItemModel):
     def init_settings(self, settings):
         '''
         Updates the model data.
-        @param settings: a dictionary with settings name and values.
-        @type settings: C{dict(str: parameter of L{SettingsGroupItem.getSettingsItemList()}, ...)}
+
+        :param settings: a dictionary with settings name and values.
+        :type settings: dict(str: parameter of SettingsGroupItem.getSettingsItemList())
         '''
         # remove all current items
         root = self.invisibleRootItem()
@@ -284,7 +289,7 @@ class SettingsModel(QStandardItemModel):
         try:
             for name, value in settings.items():
                 self._add_item(root, name, value)
-        except:
+        except Exception:
             import traceback
             print traceback.format_exc(1)
 
@@ -315,5 +320,5 @@ class SettingsModel(QStandardItemModel):
     def _get_settings_param(self, entry, param, default=None):
         try:
             return entry[0][param]
-        except:
+        except Exception:
             return default

@@ -84,6 +84,7 @@ class StartHandler(object):
     def runNodeWithoutConfig(cls, host, package, binary, name, args=[], masteruri=None, use_nmd=True, auto_pw_request=False, user=None, pw=None):
         '''
         Start a node with using a launch configuration.
+
         :param str hosturi: the host or ip to run the node
         :param str package: the ROS package containing the binary
         :param str binary: the binary of the node to execute
@@ -93,7 +94,7 @@ class StartHandler(object):
         :param bool use_nmd: start the node using node manager daemon
         :param bool auto_pw_request: opens question dialog directly, use True only if the method is called from the main GUI thread
         :raise Exception: on errors while resolving host
-        :see: L{node_manager_fkie.is_local()}
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         # create the name with namespace
         args2 = list(args)
@@ -250,7 +251,7 @@ class StartHandler(object):
         :return: the tuple of request and response.
         :rtype: (request object, response object)
         :raise StartException: on error
-        :see: U{rospy.SerivceProxy<http://docs.ros.org/kinetic/api/rospy/html/rospy.impl.tcpros_service.ServiceProxy-class.html>}
+        :see: rospy.SerivceProxy<http://docs.ros.org/kinetic/api/rospy/html/rospy.impl.tcpros_service.ServiceProxy-class.html>
         '''
         service = str(service)
         rospy.loginfo("Call service %s[%s]: %s, %s", utf8(service), utf8(service_uri), utf8(service_type), utf8(service_args))
@@ -342,12 +343,13 @@ class StartHandler(object):
     def openLog(cls, nodename, host, user=None, only_screen=False):
         '''
         Opens the log file associated with the given node in a new terminal.
+
         :param str nodename: the name of the node (with name space)
         :param str host: the host name or ip where the log file are
         :return: True, if a log file was found
         :rtype: bool
         :raise Exception: on errors while resolving host
-        :see: L{node_manager_fkie.is_local()}
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         rospy.loginfo("show log for '%s' on '%s'", utf8(nodename), utf8(host))
         title_opt = 'LOG %s on %s' % (nodename, host)
@@ -378,10 +380,11 @@ class StartHandler(object):
     def delete_log(cls, nodename, grpc_uri, auto_pw_request=False, user=None, pw=None):
         '''
         Deletes the log file associated with the given node.
+
         :param  str nodename: the name of the node (with name space)
         :param str grpc_uri: uri of the node manager daemon where to delete log
         :raise Exception: on errors while resolving host
-        :see: L{node_manager_fkie.is_local()}
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         try:
             nm.nmd().delete_log(grpc_uri, [nodename])
@@ -411,11 +414,12 @@ class StartHandler(object):
     def kill(self, host, pid, auto_pw_request=False, user=None, pw=None):
         '''
         Kills the process with given process id on given host.
+
         :param str host: the name or address of the host, where the process must be killed.
         :param int pid: the process id
         :raise StartException: on error
         :raise Exception: on errors while resolving host
-        :see: L{node_manager_fkie.is_local()}
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         try:
             self._kill_wo(host, pid, auto_pw_request, user, pw)
@@ -445,10 +449,11 @@ class StartHandler(object):
     def killall_roscore(self, host, auto_pw_request=False, user=None, pw=None):
         '''
         Kills all roscore processes on given host.
+
         :param str host: the name or address of the host, where the process must be killed.
         :raise StartException: on error
         :raise Exception: on errors while resolving host
-        :see: L{node_manager_fkie.is_local()}
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         try:
             self._killall_roscore_wo(host, auto_pw_request, user, pw)
@@ -477,11 +482,11 @@ class StartHandler(object):
     def poweroff(self, host, auto_pw_request=False, user=None, pw=None):
         '''
         poweroff given host.
-        @param host: the name or address of the host, where the process must be killed.
-        @type host: C{str}
-        @raise StartException: on error
-        @raise Exception: on errors while resolving host
-        @see: L{node_manager_fkie.is_local()}
+
+        :param str host: the name or address of the host, where the process must be killed.
+        :raise StartException: on error
+        :raise Exception: on errors while resolving host
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         try:
             self._poweroff_wo(host, auto_pw_request, user, pw)
@@ -531,6 +536,9 @@ class StartHandler(object):
     def transfer_file_nmd(cls, grpc_url, path, auto_pw_request=False, user=None, pw=None):
         '''
         Copies the given file to the remote host. Uses caching of remote paths.
+
+        :param str grpc_url: destination grpc server
+        :param str path: file to transfer
         '''
         nm.nmd().copy(path, grpc_url)
 
@@ -580,12 +588,13 @@ class StartHandler(object):
     def ntpdate(cls, host, cmd, user=None, pw=None):
         '''
         Opens the log file associated with the given node in a new terminal.
+
         :param str host: the host name or ip where the log file are
         :param str cmd: command to set the time
         :return: True, if a log file was found
         :rtype: bool
         :raise Exception: on errors while resolving host
-        :see: L{node_manager_fkie.is_local()}
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         mesg = "synchronize time on '%s' using '%s'" % (utf8(host), cmd)
         rospy.loginfo(mesg)
@@ -607,7 +616,7 @@ class StartHandler(object):
         :type runcfg: AdvRunCfg
         :raise StartException: if the screen is not available on host.
         :raise Exception: on errors while resolving host
-        :see: node_manager_fkie.is_local()
+        :see: :meth:`node_manager_fkie.is_local()`
         '''
         startcfg = nm.nmd().get_start_cfg(name, grpc_path, masteruri, reload_global_param=reload_global_param, loglevel=loglevel, logformat=logformat)
         new_env = dict(startcfg.env)
