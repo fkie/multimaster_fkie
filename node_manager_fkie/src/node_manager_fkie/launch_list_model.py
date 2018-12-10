@@ -204,7 +204,7 @@ class PathItem(QStandardItem):
             # return the tooltip of the item
             result = "%s" % self.path
             if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
-                result = "%s\nPress 'Delete' to remove the entry from the history list" % self.path
+                result = "%s\nPress 'Delete' to remove the entry from the history list\nShift+'double click' goes to the file location" % self.path
             return result
         elif role == Qt.EditRole:
             return "%s" % self.name
