@@ -8,6 +8,7 @@ catkin_python_setup()
 install(
     PROGRAMS
         nodes/master_sync
+        nodes/param_sync.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
