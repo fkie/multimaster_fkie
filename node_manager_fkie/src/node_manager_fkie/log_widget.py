@@ -34,10 +34,17 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Signal
 try:
     from python_qt_binding.QtGui import QDockWidget
-except:
+except ImportError:
     from python_qt_binding.QtWidgets import QDockWidget
 import os
+import rospy
+import sys
+try:
+    from roscpp.srv import GetLoggers, SetLoggerLevel, SetLoggerLevelRequest
+except ImportError as err:
+    print >> sys.stderr, "Cannot import GetLoggers service definition: %s" % err
 
+from node_manager_daemon_fkie.common import utf8
 from .rosout_listener import RosoutListener
 
 
@@ -60,6 +67,7 @@ class LogWidget(QDockWidget):
         Creates the window, connects the signals and init the class.
         '''
         QDockWidget.__init__(self, parent)
+        self._log_debug_count = 0
         self._log_info_count = 0
         self._log_warn_count = 0
         self._log_err_count = 0
@@ -74,22 +82,60 @@ class LogWidget(QDockWidget):
         self.closeButton.clicked.connect(self.hide)
         # initialize the listener to the rosout topic
         self._rosout_listener = RosoutListener()
+        self._rosout_listener.rosdebug_signal.connect(self._on_roslog_debug)
         self._rosout_listener.rosinfo_signal.connect(self._on_roslog_info)
         self._rosout_listener.roswarn_signal.connect(self._on_roslog_warn)
         self._rosout_listener.roserr_signal.connect(self._on_roslog_err)
         self._rosout_listener.rosfatal_signal.connect(self._on_roslog_fatal)
         self._rosout_listener.registerByROS()
+        self._enable_info_on_start = False
+        if self._enable_info_on_start:
+            try:
+                service_name = "%s/get_loggers" % rospy.get_name()
+                log_level_srvs = rospy.ServiceProxy(service_name, GetLoggers)
+                resp = log_level_srvs()
+                for logger in resp.loggers:
+                    if logger.name == 'rosout':
+                        if logger.level == 'DEBUG':
+                            self.checkBox_debug.setChecked(True)
+                            self.checkBox_info.setChecked(True)
+                        elif logger.level == 'INFO':
+                            self.checkBox_info.setChecked(True)
+                        break
+            except rospy.ServiceException, e:
+                err_msg = "Service call '%s' failed: %s" % (service_name, utf8(e))
+                rospy.logwarn(err_msg)
+        self.checkBox_debug.stateChanged.connect(self._on_checkbox_debug_state_changed)
+
+    def _on_checkbox_debug_state_changed(self, state):
+        try:
+            service_name = "%s/set_logger_level" % rospy.get_name()
+            log_level_srvs = rospy.ServiceProxy(service_name, SetLoggerLevel)
+            msg = SetLoggerLevelRequest()
+            msg.logger = 'rosout'
+            msg.level = 'DEBUG' if state else 'INFO'
+            _resp = log_level_srvs(msg)
+        except rospy.ServiceException, e:
+            err_msg = "Service call '%s' failed: %s" % (service_name, utf8(e))
+            rospy.logwarn(err_msg)
 
     def count(self):
         '''
         Returns the count all current viewed log messages.
         '''
-        return self._log_info_count + self._log_warn_count + self._log_err_count + self._log_fatal_count
+        return self._log_debug_count + self._log_info_count + self._log_warn_count + self._log_err_count + self._log_fatal_count
+
+    def count_warn(self):
+        '''
+        Returns the count all current warning log messages.
+        '''
+        return self._log_warn_count + self._log_err_count + self._log_fatal_count
 
     def clear(self):
         '''
         Removes all log messages and emit the `cleared_signal`.
         '''
+        self._log_debug_count = 0
         self._log_info_count = 0
         self._log_warn_count = 0
         self._log_err_count = 0
@@ -105,44 +151,55 @@ class LogWidget(QDockWidget):
         '''
         self._rosout_listener.stop()
 
-    def _on_roslog_info(self, msg):
-        # self._log_info_count += 1
-        if self.checkBox_info.isChecked():
-            text = ('<pre style="padding:10px;"><dt><font color="#000000">'
-                    '<b>[INFO]</b> %s (%s:%s:%s):'
-                    '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                                  msg.file, msg.function, msg.line,
-                                                  msg.msg))
+    def _on_roslog_debug(self, msg):
+        if self.checkBox_debug.isChecked():
+            self._log_debug_count += 1
+            text = ('<pre style="padding:10px;"><dt><font color="#5EA02E">'
+                    '<b>[DEBUG]</b> %s (%s:%s:%s):\t'
+                    '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                              msg.file, msg.function, msg.line,
+                                              msg.msg))
             self.textBrowser.append(text)
-        # self._update_info_label()
+            self._update_info_label()
+
+    def _on_roslog_info(self, msg):
+        if self.checkBox_info.isChecked():
+            self._log_info_count += 1
+            text = ('<pre style="padding:10px;"><dt><font color="#000000">'
+                    '<b>[INFO]</b> %s (%s:%s:%s): '
+                    '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                              msg.file, msg.function, msg.line,
+                                              msg.msg))
+            self.textBrowser.append(text)
+            self._update_info_label()
 
     def _on_roslog_warn(self, msg):
         self._log_warn_count += 1
         text = ('<pre style="padding:10px;"><dt><font color="#FE9A2E">'
-                '<b>[WARN]</b> %s (%s:%s:%s):'
-                '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                              msg.file, msg.function, msg.line,
-                                              msg.msg))
+                '<b>[WARN]</b> %s (%s:%s:%s): '
+                '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
         self.textBrowser.append(text)
         self._update_info_label()
 
     def _on_roslog_err(self, msg):
         self._log_err_count += 1
         text = ('<pre style="padding:10px;"><dt><font color="#DF0101">'
-                '<b>[ERROR]</b> %s (%s:%s:%s):'
-                '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                              msg.file, msg.function, msg.line,
-                                              msg.msg))
+                '<b>[ERROR]</b> %s (%s:%s:%s): '
+                '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
         self.textBrowser.append(text)
         self._update_info_label()
 
     def _on_roslog_fatal(self, msg):
         self._log_fatal_count += 1
         text = ('<pre style="padding:10px;"><dt><font color="#610B0B">'
-                '<b>[FATAL]</b> %s (%s:%s:%s):'
-                '<br>%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                              msg.file, msg.function, msg.line,
-                                              msg.msg))
+                '<b>[FATAL]</b> %s (%s:%s:%s): '
+                '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                          msg.file, msg.function, msg.line,
+                                          msg.msg))
         self.textBrowser.append(text)
         self._update_info_label()
 
@@ -152,6 +209,8 @@ class LogWidget(QDockWidget):
 
     def _update_info_label(self):
         info_text = ''
+        if self._log_debug_count > 0:
+            info_text = '%s DEBUG: %d   ' % (info_text, self._log_debug_count)
         if self._log_info_count > 0:
             info_text = '%s INFO: %d   ' % (info_text, self._log_info_count)
         if self._log_warn_count > 0:

@@ -1295,12 +1295,12 @@ class MainWindow(QMainWindow):
         self.masternameLabel.setEnabled(online)
         self.masterInfoFrame.setEnabled((timestamp is not None))
         # update warning symbol / text
-        if not self.log_dock.isVisible() and self.log_dock.count():
+        if not self.log_dock.isVisible() and self.log_dock.count_warn():
             if self.logButton.text():
                 self.logButton.setIcon(self.__icons['log_warning'][0])
                 self.logButton.setText('')
             else:
-                self.logButton.setText('%d' % self.log_dock.count())
+                self.logButton.setText('%d' % self.log_dock.count_warn())
                 self.logButton.setIcon(self.__icons['empty'][0])
 
     def timestampStr(self, timestamp):
