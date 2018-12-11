@@ -930,6 +930,7 @@ class MainWindow(QMainWindow):
         params = {'Host': ('string', 'localhost'),
                   'Show master discovery log': ('bool', True),
                   'Show master sync log': ('bool', False),
+                  'Show daemon log': ('bool', False),
                   'Username': ('string', user_list),
                   'Only screen log': ('bool', True),
                   # 'Optional Parameter': ('list', params_optional)
@@ -945,6 +946,7 @@ class MainWindow(QMainWindow):
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 log_master_discovery = params['Show master discovery log']
                 log_master_sync = params['Show master sync log']
+                log_nm_daemon = params['Show daemon log']
                 username = params['Username']
                 screen_only = params['Only screen log']
                 for hostname in hostnames:
@@ -962,6 +964,11 @@ class MainWindow(QMainWindow):
                                                            '%s: show log of master sync' % hostname,
                                                            nm.starter().openLog,
                                                            ('/master_sync', hostname, usr, screen_only))
+                        if log_nm_daemon:
+                            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                           '%s: show log of nm daemon' % hostname,
+                                                           nm.starter().openLog,
+                                                           ('/node_manager_daemon', hostname, usr, screen_only))
                     except (Exception, nm.StartException) as err:
                         import traceback
                         print traceback.format_exc(1)
@@ -1140,12 +1147,14 @@ class MainWindow(QMainWindow):
             if self._sync_dialog.exec_():
                 try:
                     host = get_hostname(master.masteruri)
-                    if self._sync_dialog.interface_filename is not None:
+                    if self._sync_dialog.interface_filename is not None and not nm.is_local(host):
+                        nmd_uri = nmdurl.nmduri(master.masteruri)
+                        sync_file = nmdurl.join(nmdurl.nmduri(), self._sync_dialog.interface_filename)
                         # copy the interface file to remote machine
                         self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
-                                                            'Transfer sync interface %s' % host,
-                                                            nm.starter().transfer_files,
-                                                            ("%s" % host, self._sync_dialog.interface_filename, False, master.current_user))
+                                                            'Transfer sync interface to %s' % nmd_uri,
+                                                            nm.starter().transfer_file_nmd,
+                                                            ("%s" % nmd_uri, sync_file, False, master.current_user))
                     self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                         'Start sync on %s' % host,
                                                         nm.starter().runNodeWithoutConfig,
