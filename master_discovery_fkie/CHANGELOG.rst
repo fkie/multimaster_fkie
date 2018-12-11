@@ -2,6 +2,9 @@
 Changelog for package master_discovery_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2018-12-11)
+------------------
+
 0.8.4 (2018-12-08)
 ------------------
 * master_discovery_fkie: fix zeroconf to avoid request loop in master_sync

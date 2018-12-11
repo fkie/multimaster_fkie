@@ -2,6 +2,13 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2018-12-11)
+------------------
+* node_manager_fkie: removed install author warning
+* node_manager_fkie: fixed navigation in topic and service view
+  do not open echo/call dialog on activate namespace group
+* Contributors: Alexander Tiderko
+
 0.8.4 (2018-12-08)
 ------------------
 

@@ -2,6 +2,14 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2018-12-11)
+------------------
+* master_sync_fkie: added a simple node to sync parameter
+  Original code from
+  https://github.com/jhu-lcsr-forks/multimaster_fkie/tree/param-sync
+  adapted to change only local ROS Parameter Server
+* Contributors: Alexander Tiderko
+
 0.8.4 (2018-12-08)
 ------------------
 

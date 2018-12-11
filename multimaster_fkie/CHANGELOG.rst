@@ -2,6 +2,17 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.5 (2018-12-11)
+------------------
+* node_manager_fkie: removed install author warning
+* node_manager_fkie: fixed navigation in topic and service view
+  do not open echo/call dialog on activate namespace group
+* master_sync_fkie: added a simple node to sync parameter
+  Original code from
+  https://github.com/jhu-lcsr-forks/multimaster_fkie/tree/param-sync
+  adapted to change only local ROS Parameter Server
+* Contributors: Alexander Tiderko
+
 0.8.4 (2018-12-08)
 ------------------
 * master_discovery_fkie: fix zeroconf to avoid request loop in master_sync
