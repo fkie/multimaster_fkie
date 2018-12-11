@@ -2737,7 +2737,6 @@ class MasterViewProxy(QWidget):
         '''
         calls a service.
         '''
-        print "servicves", services
         selected_services = services
         if not selected_services:
             selected_services = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
