@@ -445,10 +445,11 @@ class TopicGroupItem(QStandardItem):
         :type topic: :class:`TopicInfo`
         '''
         group_item = self
-        ns = namespace(topic.name)
-        if ns != rospy.names.SEP:
-            # insert in the group
-            group_item = self.get_group_item(ns, False)
+        if nm.settings().group_nodes_by_namespace:
+            ns = namespace(topic.name)
+            if ns != rospy.names.SEP:
+                # insert in the group
+                group_item = self.get_group_item(ns, False)
         # append new topic row
         new_item_row = TopicItem.create_item_list(topic, self)
         group_item._add_row(new_item_row)
