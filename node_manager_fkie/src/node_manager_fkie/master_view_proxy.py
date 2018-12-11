@@ -3128,12 +3128,12 @@ class MasterViewProxy(QWidget):
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
         elif questionid == MessageFrame.TYPE_TRANSFER:
             try:
-                host = '%s' % get_hostname(self.masteruri)
+                nmd_uri = nmdurl.nmduri(self.masteruri)
                 username = self.current_user
                 self.main_window.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                                      'transfer %s to %s' % (host, data.data),
-                                                                      nm.starter().transfer_files,
-                                                                      (host, data.data, False, username))
+                                                                      'transfer %s to %s' % (data.data, nmd_uri),
+                                                                      nm.starter().transfer_file_nmd,
+                                                                      (nmd_uri, data.data, False, username))
                 self.main_window.launch_dock.progress_queue.start()
             except Exception as err:
                 rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))

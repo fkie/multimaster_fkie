@@ -540,7 +540,13 @@ class StartHandler(object):
         :param str grpc_url: destination grpc server
         :param str path: file to transfer
         '''
-        nm.nmd().copy(path, grpc_url)
+        try:
+            nm.nmd().copy(path, grpc_url)
+        except Exception as err:
+            host = get_hostname(grpc_url)
+            _uri, path = nmdurl.split(path)
+            rospy.logwarn("use SSH to transfer file '%s' to '%s', because of error: %s" % (path, host, utf8(err)))
+            cls.transfer_files(host, path, auto_pw_request, user, pw)
 
     @classmethod
     def transfer_files(cls, host, path, auto_pw_request=False, user=None, pw=None):
