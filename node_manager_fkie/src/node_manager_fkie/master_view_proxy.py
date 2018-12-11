@@ -1125,7 +1125,10 @@ class MasterViewProxy(QWidget):
         :param index: The index of the activated topic
         :type index: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         '''
-        self.on_topic_echo_clicked()
+        model_index = self.topic_proxyModel.mapToSource(index)
+        item = self.topic_model.itemFromIndex(model_index)
+        if isinstance(item, TopicItem):
+            self.on_topic_echo_clicked([item.topic])
 
     def on_topic_clicked(self, index):
         if time.time() - self.__last_selection > 1.:
@@ -1136,7 +1139,10 @@ class MasterViewProxy(QWidget):
         :param index: The index of the activated service
         :type index: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         '''
-        self.on_service_call_clicked()
+        model_index = self.service_proxyModel.mapToSource(index)
+        item = self.service_model.itemFromIndex(model_index)
+        if isinstance(item, ServiceItem):
+            self.on_service_call_clicked([item.service])
 
     def on_service_clicked(self, index):
         if time.time() - self.__last_selection > 1.:
@@ -1611,7 +1617,7 @@ class MasterViewProxy(QWidget):
                     result.append(item)
         return result
 
-    def topicsFromIndexes(self, indexes):
+    def topicsFromIndexes(self, indexes, recursive=True):
         result = []
         for index in indexes:
             model_index = self.topic_proxyModel.mapToSource(index)
@@ -1619,7 +1625,7 @@ class MasterViewProxy(QWidget):
             if item is not None:
                 if isinstance(item, TopicItem):
                     result.append(item.topic)
-                elif isinstance(item, TopicGroupItem):
+                elif recursive and isinstance(item, TopicGroupItem):
                     for titem in item.get_topic_items():
                         result.append(titem.topic)
         return result
@@ -2511,11 +2517,11 @@ class MasterViewProxy(QWidget):
         except Exception:
             rospy.logwarn(traceback.format_exc())
 
-    def on_topic_echo_clicked(self):
+    def on_topic_echo_clicked(self, topics=[]):
         '''
         Shows the output of the topic in a terminal.
         '''
-        self._show_topic_output(False)
+        self._show_topic_output(False, use_ssh=False, topics=topics)
 
     def on_topic_hz_clicked(self):
         '''
@@ -2677,17 +2683,19 @@ class MasterViewProxy(QWidget):
                         nodes2stop.append(n)
             self.stop_nodes_by_name(nodes2stop)
 
-    def _show_topic_output(self, show_hz_only, use_ssh=False):
+    def _show_topic_output(self, show_hz_only, use_ssh=False, topics=[]):
         '''
         Shows the output of the topic in a terminal.
         '''
-        selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+        selected_topics = topics
+        if not selected_topics:
+            selected_topics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
         ret = True
-        if len(selectedTopics) > 5:
-            ret = MessageBox.question(self, "Show echo", "You are going to open the echo of " + utf8(len(selectedTopics)) + " topics at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
+        if len(selected_topics) > 5:
+            ret = MessageBox.question(self, "Show echo", "You are going to open the echo of " + utf8(len(selected_topics)) + " topics at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
             ret = (ret == MessageBox.Ok)
         if ret:
-            for topic in selectedTopics:
+            for topic in selected_topics:
                 self._add_topic_output2queue(topic, show_hz_only, use_ssh)
 
     def show_topic_output(self, topic_name, show_hz_only, use_ssh=False):
@@ -2725,13 +2733,16 @@ class MasterViewProxy(QWidget):
         if topic_name in self.__echo_topics_dialogs:
             del self.__echo_topics_dialogs[topic_name]
 
-    def on_service_call_clicked(self):
+    def on_service_call_clicked(self, services=[]):
         '''
         calls a service.
         '''
-        selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+        print "servicves", services
+        selected_services = services
+        if not selected_services:
+            selected_services = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
         try:
-            for service in selectedServices:
+            for service in selected_services:
                 param = ServiceDialog(service, self)
                 param.show()
         except Exception, e:
