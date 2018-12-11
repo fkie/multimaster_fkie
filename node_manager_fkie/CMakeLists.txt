@@ -55,12 +55,17 @@ install(
 )
 
 # On Ubuntu, create and install a desktop launcher for node_manager.
-if (${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+find_program(DFI desktop-file-install)
+if (NOT DFI)
+   message(STATUS "Skip installing Unity desktop launcher: desktop-file-install not found!")
+endif()
+
+if ((${CMAKE_SYSTEM_NAME} STREQUAL Linux) AND (EXISTS ${DFI}))
     # Define where to create the launcher file.
     set(NODE_MANAGER_LAUNCHER ${CMAKE_CURRENT_BINARY_DIR}/node_manager.desktop)
-    
+
     # Create the launcher file.
-    file(WRITE ${NODE_MANAGER_LAUNCHER} 
+    file(WRITE ${NODE_MANAGER_LAUNCHER}
         "[Desktop Entry]
 Name=node_manager
 Comment=GUI for managing running and configured ROS nodes on different hosts
@@ -74,4 +79,4 @@ Categories=Utility;Development;"
     # Install the launcher file.
     install(CODE "set(NODE_MANAGER_LAUNCHER \"${NODE_MANAGER_LAUNCHER}\")")
     install(SCRIPT InstallLauncher.cmake)
-endif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+endif()

@@ -1,7 +1,7 @@
 # Install and register the given launcher file.
 message(STATUS "Installing Unity desktop launcher")
-execute_process(COMMAND 
-        desktop-file-install --dir=$ENV{HOME}/.local/share/applications ${NODE_MANAGER_LAUNCHER} 
+execute_process(COMMAND
+        desktop-file-install --dir=$ENV{HOME}/.local/share/applications ${NODE_MANAGER_LAUNCHER}
     RESULT_VARIABLE 
         LAUNCHER_INSTALLATION_RESULT
 )
