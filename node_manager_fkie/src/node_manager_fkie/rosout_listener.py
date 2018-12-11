@@ -41,6 +41,7 @@ class RosoutListener(QObject):
     A class to receive the ROS master state updates from a ROS topic. The topic
     will be determine using U{master_discovery_fkie.interface_finder.get_changes_topic()<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#interface-finder-module>}.
     '''
+    rosdebug_signal = Signal(Log)
     rosinfo_signal = Signal(Log)
     roswarn_signal = Signal(Log)
     roserr_signal = Signal(Log)
@@ -70,6 +71,8 @@ class RosoutListener(QObject):
         @type msg: U{rosgraph_msgs.Log<http://docs.ros.org/kinetic/api/rosgraph_msgs/html/msg/Log.html>}
         '''
         if msg.name == rospy.get_name():
+            if msg.level == Log.DEBUG:
+                self.rosdebug_signal.emit(msg)
             if msg.level == Log.INFO:
                 self.rosinfo_signal.emit(msg)
             elif msg.level == Log.WARN:
