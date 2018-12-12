@@ -104,12 +104,15 @@ def detect_version():
                 print >> sys.stderr, "version detection: no version tag in package.xml found!"
         else:
             print >> sys.stderr, "version detection: package.xml not found!"
-        if os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
-            os.chdir(settings().PACKAGE_DIR)
-            ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE)
-            output = ps.stdout.read()
-            __version__ = output.strip()
-    except roslib.packages.ROSPkgException as err:
+        try:
+            if os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
+                os.chdir(settings().PACKAGE_DIR)
+                ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE)
+                output = ps.stdout.read()
+                __version__ = output.strip()
+        except Exception:
+            pass
+    except Exception as err:
         print >> sys.stderr, "version detection: %s" % err
 
 
