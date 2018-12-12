@@ -1,6 +1,7 @@
 include(CMakeParseArguments)
 
 macro(generate_version)
+    find_program(GIT git)
     # install a file with version tag
     set(VERSION_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}")
     set(VERSION_FILES "")
