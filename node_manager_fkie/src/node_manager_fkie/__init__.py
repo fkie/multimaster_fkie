@@ -36,6 +36,7 @@ import os
 import roslib.network
 import rospy
 import socket
+import subprocess
 import sys
 import threading
 
@@ -58,8 +59,8 @@ PKG_NAME = 'node_manager_fkie'
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
 __license__ = "BSD"
-__version__ = "0.8.4"  # git describe --tags --dirty --always
-__date__ = "2018-12-08"  # git log -1 --date=iso
+__version__ = "unknown"  # git describe --tags --dirty --always
+__date__ = "unknown"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
@@ -222,6 +223,57 @@ def __is_local(hostname):
     return result
 
 
+def detect_version():
+    '''
+    Try to detect the current version from git, installed VERSION/DATE files or package.xml
+    '''
+    try:
+        global __version__
+        global __date__
+        pkg_path = roslib.packages.get_pkg_dir(PKG_NAME)
+        if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
+            try:
+                with open("%s/VERSION" % pkg_path) as f:
+                    version = f.read()
+                    __version__ = version.strip()
+                with open("%s/DATE" % pkg_path) as f:
+                    datetag = f.read().split()
+                    if datetag:
+                        __date__ = datetag[0]
+            except Exception as err:
+                print >> sys.stderr, "version detection error: %s" % err
+        elif os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
+            try:
+                os.chdir(settings().PACKAGE_DIR)
+                ps = subprocess.Popen(args=['git', 'describe', '--tags', '--dirty', '--always'], stdin=None, stdout=subprocess.PIPE, stderr=None)
+                output = ps.stdout.read()
+                ps.wait()
+                __version__ = output.strip()
+                ps = subprocess.Popen(args=['git', 'show', '-s', '--format=%ci'], stdin=None, stdout=subprocess.PIPE, stderr=None)
+                output = ps.stdout.read().split()
+                if output:
+                    __date__ = output[0]
+                ps.wait()
+            except Exception as err:
+                print >> sys.stderr, "version detection error: %s" % err
+        else:
+            import xml.dom
+            import xml.dom.minidom as dom
+            ppath = roslib.packages.find_resource(PKG_NAME, 'package.xml')
+            if ppath:
+                doc = dom.parse(ppath[0])
+                version_tags = doc.getElementsByTagName("version")
+                if version_tags:
+                    version = version_tags[0].firstChild.data
+                    __version__ = version
+                else:
+                    print >> sys.stderr, "version detection: no version tag in package.xml found!"
+            else:
+                print >> sys.stderr, "version detection: package.xml not found!"
+    except Exception as err:
+        print >> sys.stderr, "version detection error: %s" % err
+
+
 def finish(*arg):
     '''
     Callback called on exit of the ros node.
@@ -371,6 +423,7 @@ def main(name):
             sys.exit(-1)
 
     init_settings()
+    detect_version()
     parser = init_arg_parser()
     args = rospy.myargv(argv=sys.argv)
     parsed_args = parser.parse_args(args[1:])

@@ -948,12 +948,15 @@ class MainWindow(QMainWindow):
 # ======================================================================================================================
 
     def on_info_clicked(self):
-        text = ''.join(['<dl>'])
-        text = ''.join([text, '<dt><b>Maintainer</b>: ', 'Alexander Tiderko ', '<font color=gray>alexander.tiderko@gmail.com</font>', '</dt>'])
-        text = ''.join([text, '<dt><b>Author</b>: ', 'Alexander Tiderko, Timo Roehling', '</dt>'])
-        text = ''.join([text, '<dt><b>License</b>: ', 'BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License', '</dt>'])
-        text = ''.join([text, '</dl>'])
-        text = ''.join([text, '<dt><b>Version</b>: ', nm.__version__, ' (', nm.__date__, ')', '</dt>'])
+        text = '<dl>'
+        text = '%s<dt><b>Maintainer</b>: Alexander Tiderko <font color=gray>alexander.tiderko@gmail.com</font></dt>' % text
+        text = '%s<dt><b>Author</b>: Alexander Tiderko, Timo Roehling</dt>' % text
+        text = '%s<dt><b>License</b>: BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</dt>' % text
+        text = '%s</dl>' % text
+        if nm.__date__ == 'unknown':
+            text = '%s<dt><b>Version</b>: %s</dt>' % (text, nm.__version__)
+        else:
+            text = '%s<dt><b>Version</b>: %s (%s)</dt>' % (text, nm.__version__, nm.__date__)
         MessageBox.about(self, 'About Node Manager', text)
 
     def on_master_log_clicked(self):
