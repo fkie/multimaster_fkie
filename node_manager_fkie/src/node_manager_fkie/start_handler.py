@@ -668,7 +668,7 @@ class StartHandler(object):
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
-            launcher._load_parameters(masteruri, startcfg.params, startcfg.clear_params, False)
+            launcher._load_parameters(masteruri, startcfg.params, startcfg.clear_params)
 
         abs_paths = list()  # tuples of (parameter name, old value, new value)
         not_found_packages = list()  # package names
