@@ -91,9 +91,9 @@ _QAPP = None
 def detect_version():
     try:
         global __version__
-        pkg_path, _ = roslib.packages.get_dir_pkg(PKG_NAME)
+        pkg_path = roslib.packages.get_pkg_dir(PKG_NAME)
         if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
-            with open(os.path.isfile("%s/VERSION" % pkg_path)) as f:
+            with open("%s/VERSION" % pkg_path) as f:
                 version = f.read()
                 __version__ = version.strip()
         elif os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
