@@ -5,6 +5,12 @@ find_package(catkin REQUIRED COMPONENTS diagnostic_msgs master_discovery_fkie mu
 catkin_python_setup()
 catkin_package(CATKIN_DEPENDS diagnostic_msgs master_discovery_fkie multimaster_msgs_fkie)
 
+# generate code for gRPC protocols
+include(cmake/version.cmake)
+generate_version()
+include(cmake/build_launcher.cmake)
+build_launcher()
+
 install(
     PROGRAMS
         nodes/dynamic_reconfigure
@@ -54,56 +60,14 @@ install(
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
 )
 
-# On Ubuntu, create and install a desktop launcher for node_manager.
-find_program(DFI desktop-file-install)
-if (NOT DFI)
-   message(STATUS "Skip installing Unity desktop launcher: desktop-file-install not found!")
-endif()
+install(
+    FILES
+    ${VERSION_FILES}
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
-if ((${CMAKE_SYSTEM_NAME} STREQUAL Linux) AND (EXISTS ${DFI}))
-    # Define where to create the launcher file.
-    set(NODE_MANAGER_LAUNCHER ${CMAKE_CURRENT_BINARY_DIR}/node_manager.desktop)
-
-    # Create the launcher file.
-    file(WRITE ${NODE_MANAGER_LAUNCHER}
-        "[Desktop Entry]
-Name=node_manager
-Comment=GUI for managing running and configured ROS nodes on different hosts
-Exec=/bin/sh -c \". ${CMAKE_INSTALL_PREFIX}/setup.sh; ${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION}/node_manager\"
-Icon=${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/rqt_icons/crystal_clear_prop_run.png
-Terminal=false
-Type=Application
-Categories=Utility;Development;"
-    )
-
+if (EXISTS ${NODE_MANAGER_LAUNCHER})
     # Install the launcher file.
     install(CODE "set(NODE_MANAGER_LAUNCHER \"${NODE_MANAGER_LAUNCHER}\")")
-    install(SCRIPT InstallLauncher.cmake)
+    install(SCRIPT cmake/install_launcher.cmake)
 endif()
-
-# install a file with version tag
-find_program(GIT git)
-if (NOT GIT)
-   message(STATUS "skip install version tag: git not found!")
-endif()
-
-if ((EXISTS ${GIT}) AND (EXISTS ${CMAKE_INSTALL_PREFIX}))
-    # Define where to create the version file.
-    set(VERSION_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/VERSION")
-    execute_process (
-        COMMAND bash -c "${GIT} describe --tags --dirty --always"
-        OUTPUT_VARIABLE VERSION_TAG
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    # Create the version file.
-    file(WRITE ${VERSION_FILE} ${VERSION_TAG})
-    # Create the date file.
-    set(DATE_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/DATE")
-    execute_process (
-        COMMAND bash -c "${GIT} show -s --format=%ci"
-        OUTPUT_VARIABLE DATE_TAG
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    file(WRITE ${DATE_FILE} ${DATE_TAG})
-endif()
-
