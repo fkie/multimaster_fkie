@@ -89,6 +89,9 @@ _QAPP = None
 
 
 def detect_version():
+    '''
+    Try to detect the current version from git, installed VERSION/DATE files or package.xml
+    '''
     try:
         global __version__
         global __date__
