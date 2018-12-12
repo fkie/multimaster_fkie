@@ -91,27 +91,33 @@ _QAPP = None
 def detect_version():
     try:
         global __version__
-        import xml.dom
-        import xml.dom.minidom as dom
-        ppath = roslib.packages.find_resource(PKG_NAME, 'package.xml')
-        if ppath:
-            doc = dom.parse(ppath[0])
-            version_tags = doc.getElementsByTagName("version")
-            if version_tags:
-                version = version_tags[0].firstChild.data
-                __version__ = version
-            else:
-                print >> sys.stderr, "version detection: no version tag in package.xml found!"
-        else:
-            print >> sys.stderr, "version detection: package.xml not found!"
-        try:
-            if os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
+        pkg_path, _ = roslib.packages.get_dir_pkg(PKG_NAME)
+        if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
+            with open(os.path.isfile("%s/VERSION" % pkg_path)) as f:
+                version = f.read()
+                __version__ = version.strip()
+        elif os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
+            try:
                 os.chdir(settings().PACKAGE_DIR)
                 ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE)
                 output = ps.stdout.read()
                 __version__ = output.strip()
-        except Exception:
-            pass
+            except Exception:
+                pass
+        else:
+            import xml.dom
+            import xml.dom.minidom as dom
+            ppath = roslib.packages.find_resource(PKG_NAME, 'package.xml')
+            if ppath:
+                doc = dom.parse(ppath[0])
+                version_tags = doc.getElementsByTagName("version")
+                if version_tags:
+                    version = version_tags[0].firstChild.data
+                    __version__ = version
+                else:
+                    print >> sys.stderr, "version detection: no version tag in package.xml found!"
+            else:
+                print >> sys.stderr, "version detection: package.xml not found!"
     except Exception as err:
         print >> sys.stderr, "version detection: %s" % err
 

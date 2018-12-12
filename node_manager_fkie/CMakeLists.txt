@@ -68,3 +68,22 @@ install(
     launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+# install a file with version tag
+find_program(GIT git)
+if (NOT GIT)
+   message(STATUS "skip install version tag: git not found!")
+endif()
+
+if ((EXISTS ${GIT}) AND (EXISTS ${CMAKE_INSTALL_PREFIX}))
+    # Define where to create the launcher file.
+    set(VERSION_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/VERSION")
+    execute_process (
+        COMMAND bash -c "${GIT} describe --tags --dirty --always"
+        OUTPUT_VARIABLE VERSION_TAG
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    message(WARNING "VERS ${VERSION_FILE}, VT: ${VERSION_TAG}")
+    # Create the launcher file.
+    file(WRITE ${VERSION_FILE} ${VERSION_TAG})
+endif()
