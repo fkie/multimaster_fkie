@@ -61,7 +61,7 @@ __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
 __copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/CMS"
 __license__ = "BSD"
 __version__ = "unknown"  # git describe --tags --dirty --always
-# __date__ = "unknown"  # git log -1 --date=iso
+__date__ = "unknown"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
@@ -91,19 +91,31 @@ _QAPP = None
 def detect_version():
     try:
         global __version__
+        global __date__
         pkg_path = roslib.packages.get_pkg_dir(PKG_NAME)
         if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
-            with open("%s/VERSION" % pkg_path) as f:
-                version = f.read()
-                __version__ = version.strip()
+            try:
+                with open("%s/VERSION" % pkg_path) as f:
+                    version = f.read()
+                    __version__ = version.strip()
+                with open("%s/DATE" % pkg_path) as f:
+                    datetag = f.read().split()
+                    if datetag:
+                        __date__ = datetag[0]
+            except Exception as err:
+                print >> sys.stderr, "version detection error: %s" % err
         elif os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
             try:
                 os.chdir(settings().PACKAGE_DIR)
                 ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE)
                 output = ps.stdout.read()
                 __version__ = output.strip()
-            except Exception:
-                pass
+                ps = SupervisedPopen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE)
+                output = ps.stdout.read().split()
+                if output:
+                    __date__ = output[0]
+            except Exception as err:
+                print >> sys.stderr, "version detection error: %s" % err
         else:
             import xml.dom
             import xml.dom.minidom as dom
@@ -119,7 +131,7 @@ def detect_version():
             else:
                 print >> sys.stderr, "version detection: package.xml not found!"
     except Exception as err:
-        print >> sys.stderr, "version detection: %s" % err
+        print >> sys.stderr, "version detection error: %s" % err
 
 
 def settings():

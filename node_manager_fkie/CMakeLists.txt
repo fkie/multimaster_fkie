@@ -76,14 +76,21 @@ if (NOT GIT)
 endif()
 
 if ((EXISTS ${GIT}) AND (EXISTS ${CMAKE_INSTALL_PREFIX}))
-    # Define where to create the launcher file.
+    # Define where to create the version file.
     set(VERSION_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/VERSION")
     execute_process (
         COMMAND bash -c "${GIT} describe --tags --dirty --always"
         OUTPUT_VARIABLE VERSION_TAG
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    message(WARNING "VERS ${VERSION_FILE}, VT: ${VERSION_TAG}")
-    # Create the launcher file.
+    # Create the version file.
     file(WRITE ${VERSION_FILE} ${VERSION_TAG})
+    # Create the date file.
+    set(DATE_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/DATE")
+    execute_process (
+        COMMAND bash -c "${GIT} show -s --format=%ci"
+        OUTPUT_VARIABLE DATE_TAG
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    file(WRITE ${DATE_FILE} ${DATE_TAG})
 endif()
