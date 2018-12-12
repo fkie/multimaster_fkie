@@ -917,7 +917,7 @@ class MainWindow(QMainWindow):
         text = ''.join([text, '<dt><b>Author</b>: ', 'Alexander Tiderko, Timo Roehling', '</dt>'])
         text = ''.join([text, '<dt><b>License</b>: ', 'BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License', '</dt>'])
         text = ''.join([text, '</dl>'])
-        text = ''.join([text, '<dt><b>Version</b>: ', nm.__version__, ' (', nm.__date__, ')', '</dt>'])
+        text = ''.join([text, '<dt><b>Version</b>: ', nm.__version__, '</dt>'])
         MessageBox.about(self, 'About Node Manager', text)
 
     def on_master_log_clicked(self):

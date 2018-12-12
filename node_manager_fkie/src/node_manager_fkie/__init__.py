@@ -36,11 +36,13 @@ import os
 import roslib.network
 import rospy
 import socket
+import subprocess
 import sys
 import threading
 
 from master_discovery_fkie.common import get_hostname
 from node_manager_daemon_fkie import host as nmdhost
+from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 from .common import get_ros_home
 from .history import History
 from .name_resolution import NameResolution
@@ -56,10 +58,10 @@ from .start_handler import StartHandler, BinarySelectionRequest
 PKG_NAME = 'node_manager_fkie'
 
 __author__ = "Alexander Tiderko (Alexander.Tiderko@fkie.fraunhofer.de)"
-__copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/US"
+__copyright__ = "Copyright (c) 2012 Alexander Tiderko, Fraunhofer FKIE/CMS"
 __license__ = "BSD"
-__version__ = "1.0.0"  # git describe --tags --dirty --always
-__date__ = "2018-10-10"  # git log -1 --date=iso
+__version__ = "unknown"  # git describe --tags --dirty --always
+# __date__ = "unknown"  # git log -1 --date=iso
 
 # PYTHONVER = (2, 7, 1)
 # if sys.version_info < PYTHONVER:
@@ -84,6 +86,31 @@ _START_HANDLER = None
 _NAME_RESOLUTION = None
 _HISTORY = None
 _QAPP = None
+
+
+def detect_version():
+    try:
+        global __version__
+        import xml.dom
+        import xml.dom.minidom as dom
+        ppath = roslib.packages.find_resource(PKG_NAME, 'package.xml')
+        if ppath:
+            doc = dom.parse(ppath[0])
+            version_tags = doc.getElementsByTagName("version")
+            if version_tags:
+                version = version_tags[0].firstChild.data
+                __version__ = version
+            else:
+                print >> sys.stderr, "version detection: no version tag in package.xml found!"
+        else:
+            print >> sys.stderr, "version detection: package.xml not found!"
+        if os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
+            os.chdir(settings().PACKAGE_DIR)
+            ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE)
+            output = ps.stdout.read()
+            __version__ = output.strip()
+    except roslib.packages.ROSPkgException as err:
+        print >> sys.stderr, "version detection: %s" % err
 
 
 def settings():
@@ -276,6 +303,7 @@ def init_globals(masteruri):
 
 
 def init_arg_parser():
+    global __version__
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action="version", version="%s %s" % ("%(prog)s", __version__))
     parser.add_argument("-f", "--file", nargs=1, help="loads the given file as default on start")
@@ -314,12 +342,11 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
     # start ROS-Master, if not currently running
     StartHandler._prepareROSMaster(masteruri)
     # setup the loglevel
+    log_level = rospy.DEBUG
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "INFO"))
     except Exception as err:
         print("Error while set the log level: %s\n->INFO level will be used!" % err)
-        log_level = rospy.INFO
-    log_level = rospy.DEBUG
     rospy.init_node(prog_name, anonymous=False, log_level=log_level)
     set_terminal_name(prog_name)
     set_process_name(prog_name)
@@ -347,6 +374,7 @@ def main(name):
             print >> sys.stderr, "please install 'python_qt_binding' package!!"
             sys.exit(-1)
     init_settings()
+    detect_version()
     parser = init_arg_parser()
     args = rospy.myargv(argv=sys.argv)
     parsed_args = parser.parse_args(args[1:])

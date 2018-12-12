@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>node_manager_daemon_fkie</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <description>A daemon node to manage ROS launch files and launch nodes from loaded files.</description>
 
   <license>BSD</license>
