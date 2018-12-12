@@ -16,6 +16,10 @@ catkin_package(
 #        node_manager_daemon_fkie
 )
 
+# generate code for gRPC protocols
+include(cmake/version.cmake)
+generate_version()
+
 install(
     PROGRAMS 
         nodes/dynamic_reconfigure
@@ -69,28 +73,8 @@ install(
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-# install a file with version tag
-find_program(GIT git)
-if (NOT GIT)
-   message(STATUS "skip install version tag: git not found!")
-endif()
-
-if ((EXISTS ${GIT}) AND (EXISTS ${CMAKE_INSTALL_PREFIX}))
-    # Define where to create the version file.
-    set(VERSION_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/VERSION")
-    execute_process (
-        COMMAND bash -c "${GIT} describe --tags --dirty --always"
-        OUTPUT_VARIABLE VERSION_TAG
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    # Create the version file.
-    file(WRITE ${VERSION_FILE} ${VERSION_TAG})
-    # Create the date file.
-    set(DATE_FILE "${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/DATE")
-    execute_process (
-        COMMAND bash -c "${GIT} show -s --format=%ci"
-        OUTPUT_VARIABLE DATE_TAG
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    file(WRITE ${DATE_FILE} ${DATE_TAG})
-endif()
+install(
+    FILES
+    ${VERSION_FILES}
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
