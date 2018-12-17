@@ -2,6 +2,9 @@
 Changelog for package master_sync_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.6 (2018-12-17)
+------------------
+
 0.8.5 (2018-12-11)
 ------------------
 * master_sync_fkie: added a simple node to sync parameter

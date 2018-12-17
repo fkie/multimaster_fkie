@@ -2,6 +2,12 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.6 (2018-12-17)
+------------------
+* default_cfg_fkie: fixed changelog format
+* node_manager_fkie: added version detection
+* Contributors: Alexander Tiderko
+
 0.8.5 (2018-12-11)
 ------------------
 * node_manager_fkie: removed install author warning
