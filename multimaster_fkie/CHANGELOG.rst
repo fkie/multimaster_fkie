@@ -444,10 +444,9 @@ Changelog for package multimaster_fkie
 
 0.5.0 (2016-03-17)
 ------------------
-New Features:
+* New Features:
 * node_manager_fkie: the start with different ROS_MASTER_URI
-  sets now the ROS_HOSTNAME environment variable if a new masteruri was
-  selected to start node_manager or master_discovery
+  sets now the ROS_HOSTNAME environment variable if a new masteruri was selected to start node_manager or master_discovery
 * node_manager_fkie: added parameter to disable the highlighting of xml blocks
 * node_manager_fkie: added ROS-Launch tags to context menu in XML editor
 * node_manager_fkie: mark XML tag blocks

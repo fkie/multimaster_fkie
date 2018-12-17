@@ -375,10 +375,9 @@ Changelog for package node_manager_fkie
 
 0.5.0 (2016-03-17)
 ------------------
-New Features:
+* New Features:
 * node_manager_fkie: the start with different ROS_MASTER_URI
-  sets now the ROS_HOSTNAME environment variable if a new masteruri was
-  selected to start node_manager or master_discovery
+  sets now the ROS_HOSTNAME environment variable if a new masteruri was selected to start node_manager or master_discovery
 * node_manager_fkie: added parameter to disable the highlighting of xml blocks
 * node_manager_fkie: added ROS-Launch tags to context menu in XML editor
 * node_manager_fkie: mark XML tag blocks
@@ -390,7 +389,7 @@ New Features:
 * node_manager_fkie: allow to shutdown localhost
 * node_manager_fkie: shows 'advanced start' button also if the selected node laready runs
 
-Fixes:
+* Fixes:
 * node_manager_fkie: fixed print XML content in echo_dialog
 * node_manager_fkie: avoids the print of an error, while loads a wrongs file on start of the node_manager
 * node_manager_fkie: fixed check of running remote roscore
@@ -443,7 +442,7 @@ Fixes:
 * node_manager_fkie: skip commented nodes while open a configuration for a selected node
 * node_manager_fkie: fixed xml editor; some lines was hide
 * node_manager_fkie: added ctrl+shift+slash to shortcuts for un/comment text in editor
-  *some small changes in find dialog
+  * some small changes in find dialog
 * Contributors: Alexander Tiderko
 
 0.4.2 (2015-10-19)
