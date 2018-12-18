@@ -60,11 +60,13 @@ install(
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
 )
 
-install(
-    FILES
-        ${VERSION_FILES}
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+if (DEFINED VERSION_FILES)
+    install(
+        FILES
+            ${VERSION_FILES}
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    )
+endif()
 
 if (EXISTS ${NODE_MANAGER_LAUNCHER})
     # Install the launcher file.
