@@ -19,6 +19,8 @@ catkin_package(
 # generate code for gRPC protocols
 include(cmake/version.cmake)
 generate_version()
+include(cmake/build_launcher.cmake)
+build_launcher()
 
 install(
     PROGRAMS 
@@ -73,8 +75,17 @@ install(
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-install(
-    FILES
-    ${VERSION_FILES}
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+if (DEFINED VERSION_FILES)
+    message(WARNING "install version files")
+    install(
+        FILES
+            ${VERSION_FILES}
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    )
+endif()
+
+if (EXISTS ${NODE_MANAGER_LAUNCHER})
+    # Install the launcher file.
+    install(CODE "set(NODE_MANAGER_LAUNCHER \"${NODE_MANAGER_LAUNCHER}\")")
+    install(SCRIPT cmake/install_launcher.cmake)
+endif()

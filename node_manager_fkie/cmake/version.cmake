@@ -2,6 +2,10 @@ include(CMakeParseArguments)
 
 macro(generate_version)
     find_program(GIT git)
+    if (NOT GIT)
+        message(STATUS "git binary not found, VERSION and DATE files are not created")
+        return()
+    endif()
     # install a file with version tag
     set(VERSION_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}")
     set(VERSION_FILES "")
