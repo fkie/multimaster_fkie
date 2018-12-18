@@ -136,9 +136,9 @@ def run_node(startcfg):
     :raise exceptions.BinarySelectionRequest: on multiple binaries
     :see: :meth:`node_manager_fkie.host.is_local`
     '''
-    hostname = host.get_hostname(startcfg.host)
+    hostname = startcfg.hostname
     nodename = roslib.names.ns_join(startcfg.namespace, startcfg.name)
-    if not startcfg.host or host.is_local(hostname, wait=True):
+    if not hostname or host.is_local(hostname, wait=True):
         # run on local host
         # interpret arguments with path elements
         args = []
@@ -211,8 +211,7 @@ def run_node(startcfg):
             if 'ROS_MASTER_URI' not in startcfg.env:
                 new_env['ROS_MASTER_URI'] = masteruri
             # host in startcfg is a nmduri -> get host name
-            hname = get_hostname(startcfg.host)
-            ros_hostname = host.get_ros_hostname(masteruri, hname)
+            ros_hostname = host.get_ros_hostname(masteruri, hostname)
             if ros_hostname:
                 new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
@@ -223,11 +222,11 @@ def run_node(startcfg):
         rospy.logdebug("run node: %s (env: %s)", cmd_str, new_env)
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
-        rospy.loginfo("remote run node '%s' at '%s'" % (nodename, startcfg.host))
+        rospy.loginfo("remote run node '%s' at '%s'" % (nodename, startcfg.nmduri))
         startcfg.params.update(_params_to_package_path(startcfg.params))
         startcfg.args = _args_to_package_path(startcfg.args)
         # run on a remote machine
-        channel = remote.get_insecure_channel(startcfg.host)
+        channel = remote.get_insecure_channel(startcfg.nmduri)
         if channel is None:
             raise exceptions.StartException("Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))
         lm = LaunchStub(channel)

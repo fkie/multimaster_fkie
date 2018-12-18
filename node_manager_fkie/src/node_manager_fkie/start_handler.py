@@ -47,7 +47,7 @@ from node_manager_daemon_fkie import launcher
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
-from node_manager_fkie.common import package_name, utf8
+from node_manager_daemon_fkie.common import package_name, utf8
 
 import node_manager_fkie as nm
 
@@ -658,13 +658,14 @@ class StartHandler(object):
                 args.append('__cwd:=%s' % cwd)
         # check for masteruri
         masteruri = startcfg.masteruri
+        on_hostname = startcfg.hostname
         if masteruri is None:
             masteruri = masteruri_from_ros()
         if masteruri is not None:
             new_env['ROS_MASTER_URI'] = masteruri
             if 'ROS_HOSTNAME' in os.environ:
                 # set only ROS_HOSTNAME if node manager have also one
-                ros_hostname = nmdhost.get_ros_hostname(masteruri, startcfg.host)
+                ros_hostname = nmdhost.get_ros_hostname(masteruri, on_hostname)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
@@ -693,7 +694,7 @@ class StartHandler(object):
 #             rospy.loginfo("Delete parameter:\n  %s", '\n  '.join(clear_params))
 #             rospy.loginfo("Register parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in params.values()))
 #             abs_paths[len(abs_paths):], not_found_packages[len(not_found_packages):] = cls._load_parameters(runcfg.masteruri, params, clear_params, runcfg.user, runcfg.pw, runcfg.auto_pw_request)
-        if not nm.is_local(startcfg.host, wait=True):
+        if not nm.is_local(on_hostname, wait=True):
             # start remote
             if not startcfg.package:
                 raise StartException("Can't run remote without a valid package name!")
@@ -702,7 +703,7 @@ class StartHandler(object):
             if new_env:
                 try:
                     for k, v in new_env.items():
-                        v_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(v, startcfg.host, auto_pw_request, user, pw)
+                        v_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(v, on_hostname, auto_pw_request, user, pw)
                         new_env[k] = v_value
                         if is_abs_path:
                             abs_paths.append(('ENV', "%s=%s" % (k, v), "%s=%s" % (k, v_value)))
@@ -732,7 +733,7 @@ class StartHandler(object):
             output = ''
             try:
                 for a in startcfg.args:
-                    a_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(a, startcfg.host, auto_pw_request, user, pw)
+                    a_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(a, on_hostname, auto_pw_request, user, pw)
                     node_args.append(a_value)
                     if is_abs_path:
                         abs_paths.append(('ARGS', a, a_value))
@@ -741,8 +742,8 @@ class StartHandler(object):
 
                 startcmd[len(startcmd):] = node_args
                 startcmd[len(startcmd):] = args
-                rospy.loginfo("Run remote on %s: %s", startcfg.host, utf8(' '.join(startcmd)))
-                _, stdout, stderr, ok = nm.ssh().ssh_exec(startcfg.host, startcmd, user, pw, auto_pw_request, close_stdin=True)
+                rospy.loginfo("Run remote on %s: %s", on_hostname, utf8(' '.join(startcmd)))
+                _, stdout, stderr, ok = nm.ssh().ssh_exec(on_hostname, startcmd, user, pw, auto_pw_request, close_stdin=True)
                 output = stdout.read()
                 error = stderr.read()
                 stdout.close()
@@ -753,7 +754,7 @@ class StartHandler(object):
             if ok:
                 if error:
                     rospy.logwarn("ERROR while start '%s': %s", startcfg.fullname, error)
-                    raise StartException(utf8(''.join(['The host "', startcfg.host, '" reports:\n', error])))
+                    raise StartException(utf8(''.join(['The host "', on_hostname, '" reports:\n', error])))
                 if output:
                     rospy.logdebug("STDOUT while start '%s': %s", startcfg.fullname, output)
             # inform about absolute paths in parameter value

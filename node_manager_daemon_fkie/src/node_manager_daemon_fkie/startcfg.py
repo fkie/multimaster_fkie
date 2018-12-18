@@ -33,6 +33,8 @@
 
 import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 from .common import utf8
+from .host import get_hostname
+from .url import nmduri
 
 
 STRING = lmsg.Argument.ValueType.Value('STRING')
@@ -45,6 +47,9 @@ LIST = lmsg.Argument.ValueType.Value('LIST')
 class StartConfig():
 
     def __init__(self, package, binary):
+        '''
+        :param str host: master uri from host where to run the node. Masteruri is used for cases where NMD uri needed.
+        '''
         self.package = package
         self.binary = binary
         self.binary_path = ''
@@ -66,6 +71,24 @@ class StartConfig():
         self.respawn_delay = 30
         self.respawn_max = 0
         self.respawn_min_runtime = 0
+
+    @property
+    def hostname(self):
+        '''
+        :return: host name from host_masteruri if it is not None.
+        '''
+        if self.host:
+            return get_hostname(self.host)
+        return None
+
+    @property
+    def nmduri(self):
+        '''
+        :return: the nmd uri where to launch the node from host_masteruri if it is not None.
+        '''
+        if self.host:
+            return nmduri(self.host, prefix='')
+        return None
 
     def _msg_type(self, value):
         valtype = type(value)
