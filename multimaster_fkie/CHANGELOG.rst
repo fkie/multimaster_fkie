@@ -2,7 +2,7 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.8.6 (2018-12-17)
+0.8.7 (2018-12-18)
 ------------------
 * default_cfg_fkie: fixed changelog format
 * node_manager_fkie: added version detection
