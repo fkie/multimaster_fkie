@@ -62,9 +62,9 @@ class PathItem(QStandardItem):
     PROFILE = 5
     RECENT_PROFILE = 6
     RECENT_FILE = 7
-    FILE = 10
     LAUNCH_FILE = 11
     CFG_FILE = 12
+    FILE = 13
     PACKAGE = 20
     STACK = 21
     FOLDER = 22
@@ -736,7 +736,7 @@ class LaunchListModel(QStandardItemModel):
                     curr_item = root.child(i)
                     insert_item = False
                     if curr_item.id not in [PathItem.ROOT]:
-                        if curr_item.id == path_item[0].id or path_item[0].id in [PathItem.RECENT_FILE, PathItem.LAUNCH_FILE, PathItem.RECENT_PROFILE, PathItem.PROFILE]:
+                        if curr_item.id == path_item[0].id:
                             if path_item[0].name < curr_item.name:
                                 insert_item = True
                         elif curr_item.id > path_item[0].id:
