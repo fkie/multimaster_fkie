@@ -111,7 +111,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
         rospy.loginfo("add global parameter for '%s'" % launchcfg.filename)
-        rospy.logdebug("add global parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in global_params.values()))
+        rospy.logdebug("add global parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[:80], '...' if len(utf8(val)) > 80 else'') for key, val in global_params.items()))
         launchcfg.global_param_done.append(result.masteruri)
     # add params and clear_params
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
@@ -121,8 +121,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
-        rospy.logdebug("set delete parameter:\n  %s", '\n  '.join(result.clear_params))
-        rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s%s" % (utf8(v)[:80], '...' if len(utf8(v)) > 80 else'') for v in result.params.values()))
+    rospy.logdebug("set delete parameter:\n  %s", '\n  '.join(result.clear_params))
+    rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[:80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
     return result
 
 
