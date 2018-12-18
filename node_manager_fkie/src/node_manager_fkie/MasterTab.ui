@@ -67,7 +67,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="EnchancedLineEdit" name="nodeFilterInput">
+           <widget class="EnhancedLineEdit" name="nodeFilterInput">
             <property name="visible">
              <bool>true</bool>
             </property>
@@ -747,7 +747,7 @@ p, li { white-space: pre-wrap; }
            <number>0</number>
           </property>
           <item>
-           <widget class="EnchancedLineEdit" name="topicFilterInput">
+           <widget class="EnhancedLineEdit" name="topicFilterInput">
             <property name="placeholderText">
              <string>topics filter</string>
             </property>
@@ -1017,7 +1017,7 @@ p, li { white-space: pre-wrap; }
            <number>0</number>
           </property>
           <item>
-           <widget class="EnchancedLineEdit" name="serviceFilterInput">
+           <widget class="EnhancedLineEdit" name="serviceFilterInput">
             <property name="placeholderText">
              <string>services filter</string>
             </property>
@@ -1140,7 +1140,7 @@ p, li { white-space: pre-wrap; }
            <number>0</number>
           </property>
           <item>
-           <widget class="EnchancedLineEdit" name="parameterFilterInput">
+           <widget class="EnhancedLineEdit" name="parameterFilterInput">
             <property name="placeholderText">
              <string>parameter filter</string>
             </property>
@@ -1397,7 +1397,7 @@ p, li { white-space: pre-wrap; }
  </widget>
  <customwidgets>
   <customwidget>
-   <class>EnchancedLineEdit</class>
+   <class>EnhancedLineEdit</class>
    <extends>QLineEdit</extends>
    <header>node_manager_fkie/editor/line_edit</header>
   </customwidget>

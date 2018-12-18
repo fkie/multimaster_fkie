@@ -31,7 +31,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="EnchancedLineEdit" name="ui_search_line">
+        <widget class="EnhancedLineEdit" name="ui_search_line">
          <property name="placeholderText">
           <string>path or search</string>
          </property>
@@ -281,9 +281,9 @@ p, li { white-space: pre-wrap; }
  </widget>
  <customwidgets>
   <customwidget>
-   <class>EnchancedLineEdit</class>
+   <class>EnhancedLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>node_manager_fkie/launch_enchanced_line_edit</header>
+   <header>node_manager_fkie/launch_enhanced_line_edit</header>
   </customwidget>
  </customwidgets>
  <tabstops>

@@ -36,7 +36,7 @@ import rospy
 
 from node_manager_fkie.common import package_name
 
-from .line_edit import EnchancedLineEdit
+from .line_edit import EnhancedLineEdit
 from .text_search_thread import TextSearchThread
 
 
@@ -100,7 +100,7 @@ class TextSearchFrame(QDockWidget):
         find_hbox_layout = QHBoxLayout(find_frame)
         find_hbox_layout.setContentsMargins(0, 0, 0, 0)
         find_hbox_layout.setSpacing(1)
-        self.search_field = EnchancedLineEdit(find_frame)
+        self.search_field = EnhancedLineEdit(find_frame)
         self.search_field.setPlaceholderText('search text')
         self.search_field.textChanged.connect(self.on_search_text_changed)
         self.search_field.returnPressed.connect(self.on_search)
@@ -126,7 +126,7 @@ class TextSearchFrame(QDockWidget):
         rplc_hbox_layout = QHBoxLayout(rplc_frame)
         rplc_hbox_layout.setContentsMargins(0, 0, 0, 0)
         rplc_hbox_layout.setSpacing(1)
-        self.replace_field = EnchancedLineEdit(rplc_frame)
+        self.replace_field = EnhancedLineEdit(rplc_frame)
         self.replace_field.setPlaceholderText('replace text')
         self.replace_field.returnPressed.connect(self.on_replace)
         rplc_hbox_layout.addWidget(self.replace_field)

@@ -76,7 +76,6 @@ install(
 )
 
 if (DEFINED VERSION_FILES)
-    message(WARNING "install version files")
     install(
         FILES
             ${VERSION_FILES}

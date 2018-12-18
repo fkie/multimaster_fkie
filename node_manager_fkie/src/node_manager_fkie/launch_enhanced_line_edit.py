@@ -6,7 +6,7 @@ except:
     from python_qt_binding.QtWidgets import QLineEdit, QToolButton, QStyle
 
 
-class EnchancedLineEdit(QLineEdit):
+class EnhancedLineEdit(QLineEdit):
 
     stop_signal = Signal()
     ''' stop button was pressed '''

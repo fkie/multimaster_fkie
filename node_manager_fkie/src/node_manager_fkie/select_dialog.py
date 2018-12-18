@@ -42,7 +42,7 @@ import re
 
 import threading
 from node_manager_fkie.common import utf8
-from node_manager_fkie.editor.line_edit import EnchancedLineEdit
+from node_manager_fkie.editor.line_edit import EnhancedLineEdit
 
 
 class SelectDialog(QDialog):
@@ -70,7 +70,7 @@ class SelectDialog(QDialog):
         filterLayout = QHBoxLayout(self.filter_frame)
         filterLayout.setContentsMargins(1, 1, 1, 1)
         label = QLabel("Filter:", self.filter_frame)
-        self.filter_field = EnchancedLineEdit(self.filter_frame)
+        self.filter_field = EnhancedLineEdit(self.filter_frame)
         filterLayout.addWidget(label)
         filterLayout.addWidget(self.filter_field)
         self.filter_field.textChanged.connect(self._on_filter_changed)
