@@ -155,10 +155,10 @@ class LogWidget(QDockWidget):
         if self.checkBox_debug.isChecked():
             self._log_debug_count += 1
             text = ('<pre style="padding:10px;"><dt><font color="#5EA02E">'
-                    '<b>[DEBUG]</b> %s (%s:%s:%s):\t'
-                    '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                              msg.file, msg.function, msg.line,
-                                              msg.msg))
+                    '[DEBUG] %s (%s:%s:%s:%s):\t'
+                    '<b>%s</b></font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                                     msg.name, msg.file, msg.function, msg.line,
+                                                     msg.msg))
             self.textBrowser.append(text)
             self._update_info_label()
 
@@ -166,40 +166,40 @@ class LogWidget(QDockWidget):
         if self.checkBox_info.isChecked():
             self._log_info_count += 1
             text = ('<pre style="padding:10px;"><dt><font color="#000000">'
-                    '<b>[INFO]</b> %s (%s:%s:%s): '
-                    '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                              msg.file, msg.function, msg.line,
-                                              msg.msg))
+                    '[INFO] %s (%s:%s:%s:%s): '
+                    '<b>%s</b></font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                                     msg.name, msg.file, msg.function, msg.line,
+                                                     msg.msg))
             self.textBrowser.append(text)
             self._update_info_label()
 
     def _on_roslog_warn(self, msg):
         self._log_warn_count += 1
         text = ('<pre style="padding:10px;"><dt><font color="#FE9A2E">'
-                '<b>[WARN]</b> %s (%s:%s:%s): '
-                '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                          msg.file, msg.function, msg.line,
-                                          msg.msg))
+                '[WARN] %s (%s:%s:%s:%s): '
+                '<b>%s</b></font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                                 msg.name, msg.file, msg.function, msg.line,
+                                                 msg.msg))
         self.textBrowser.append(text)
         self._update_info_label()
 
     def _on_roslog_err(self, msg):
         self._log_err_count += 1
         text = ('<pre style="padding:10px;"><dt><font color="#DF0101">'
-                '<b>[ERROR]</b> %s (%s:%s:%s): '
-                '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                          msg.file, msg.function, msg.line,
-                                          msg.msg))
+                '[ERROR] %s (%s:%s:%s:%s): '
+                '<b>%s</b></font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                                 msg.name, msg.file, msg.function, msg.line,
+                                                 msg.msg))
         self.textBrowser.append(text)
         self._update_info_label()
 
     def _on_roslog_fatal(self, msg):
         self._log_fatal_count += 1
         text = ('<pre style="padding:10px;"><dt><font color="#610B0B">'
-                '<b>[FATAL]</b> %s (%s:%s:%s): '
-                '%s</font></dt></pre>' % (self._formated_ts(msg.header.stamp),
-                                          msg.file, msg.function, msg.line,
-                                          msg.msg))
+                '[FATAL] %s (%s:%s:%s:%s): '
+                '<b>%s</b></font></dt></pre>' % (self._formated_ts(msg.header.stamp),
+                                                 msg.name, msg.file, msg.function, msg.line,
+                                                 msg.msg))
         self.textBrowser.append(text)
         self._update_info_label()
 

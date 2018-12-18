@@ -70,7 +70,7 @@ class RosoutListener(QObject):
         @param msg: the received message
         @type msg: U{rosgraph_msgs.Log<http://docs.ros.org/kinetic/api/rosgraph_msgs/html/msg/Log.html>}
         '''
-        if msg.name == rospy.get_name():
+        if msg.name in [rospy.get_name(), '/node_manager_daemon', '/master_discovery', '/master_sync']:
             if msg.level == Log.DEBUG:
                 self.rosdebug_signal.emit(msg)
             if msg.level == Log.INFO:
