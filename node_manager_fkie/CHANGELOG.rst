@@ -2,6 +2,11 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.8 (2018-12-19)
+------------------
+* fixed install node_manager_fkie
+* Contributors: Alexander Tiderko
+
 0.8.7 (2018-12-18)
 ------------------
 * node_manager_fkie: added version detection
