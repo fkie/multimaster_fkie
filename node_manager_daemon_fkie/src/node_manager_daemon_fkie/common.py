@@ -181,10 +181,28 @@ def interpret_path(path, pwd='.'):
                     if len(paths) > 0:
                         # if more then one launch file is found, take the first one
                         return paths[0]
-                return os.path.normpath(os.path.join(pkg, path_suffix))
+                if path_suffix:
+                    return os.path.normpath(os.path.join(pkg, path_suffix))
+                else:
+                    return "%s%s" % (os.path.normpath(pkg), os.path.sep)
     if path.startswith('file://'):
         result = path[7:]
     return os.path.normpath(os.path.join(pwd, result))
+
+
+def replace_paths(text, pwd='.'):
+    '''
+    Like meth:interpret_path(), but replaces all matches in the text and retain other text.
+    '''
+    result = text
+    path_pattern = re.compile(r"(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+    for groups in path_pattern.finditer(text):
+        for index in range(groups.lastindex):
+            path = groups.groups()[index]
+            if path:
+                rpath = interpret_path(path, pwd)
+                result = result.replace(path, rpath)
+    return result
 
 
 def included_files(string,

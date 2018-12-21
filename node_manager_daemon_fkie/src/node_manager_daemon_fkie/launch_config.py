@@ -40,7 +40,7 @@ import roslib
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_master
-from .common import interpret_path, package_name, utf8
+from .common import package_name, utf8
 
 
 class LaunchConfigException(Exception):
@@ -292,7 +292,7 @@ class LaunchConfig(object):
                             rospy.logwarn("WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
-                                self._robot_description[entry[0]] = {'type': entry[1], 'name': entry[2], 'images': [interpret_path(path) for path in entry[3].split(',')], 'description': self._decode(entry[4])}
+                                self._robot_description[entry[0]] = {'type': entry[1], 'name': entry[2], 'images': entry[3].split(','), 'description': self._decode(entry[4])}
         return self._robot_description
 
     def get_capabilitie_desrc(self):
@@ -318,7 +318,7 @@ class LaunchConfig(object):
                             rospy.logwarn("WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
-                                capabilies_descr[entry[0]] = {'type': '%s' % entry[1], 'images': [interpret_path(path) for path in entry[2].split(',')], 'description': self._decode(entry[3])}
+                                capabilies_descr[entry[0]] = {'type': '%s' % entry[1], 'images': entry[2].split(','), 'description': self._decode(entry[3])}
             # get the capability nodes
             for item in self.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)

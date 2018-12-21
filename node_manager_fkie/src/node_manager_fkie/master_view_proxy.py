@@ -959,11 +959,12 @@ class MasterViewProxy(QWidget):
                     if c.namespace not in caps:
                         caps[c.namespace] = dict()
                     caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [interpret_path(i) for i in c.images], 'description': interpret_path(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
-                self.node_tree_model.add_capabilities(masteruri, host_addr, ld.path, caps)
-                # set host description
-                tooltip = self.node_tree_model.update_host_description(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), interpret_path(utf8(rd.robot_descr)))
-                self.host_description_updated.emit(masteruri, host_addr, tooltip)
-                self.capabilities_update_signal.emit(masteruri, host_addr, ld.path, ld.robot_descriptions)
+                if not rd.robot_name or utf8(rd.robot_name) == self.mastername:
+                    self.node_tree_model.add_capabilities(masteruri, host_addr, ld.path, caps)
+                    # set host description
+                    tooltip = self.node_tree_model.update_host_description(masteruri, host_addr, rd.robot_type, utf8(rd.robot_name), interpret_path(utf8(rd.robot_descr)))
+                    self.capabilities_update_signal.emit(masteruri, host_addr, ld.path, [rd])
+                    self.host_description_updated.emit(masteruri, host_addr, tooltip)
             # set the robot_icon
             if ld.path in self.__robot_icons:
                 self.__robot_icons.remove(ld.path)

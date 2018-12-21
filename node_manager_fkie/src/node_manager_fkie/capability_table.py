@@ -37,8 +37,8 @@ import rospy
 
 import node_manager_fkie as nm
 
-from node_manager_daemon_fkie.common import interpret_path
-from .common import utf8
+from node_manager_daemon_fkie.common import interpret_path, replace_paths, utf8
+from node_manager_daemon_fkie.host import get_hostname
 try:
     from python_qt_binding.QtGui import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
     from python_qt_binding.QtGui import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
@@ -137,10 +137,12 @@ class CapabilityHeader(QHeaderView):
             if cfg not in obj['cfgs']:
                 obj['cfgs'].append(cfg)
             obj['name'] = name
-            obj['displayed_name'] = displayed_name
-            obj['type'] = robot_type
-            obj['description'] = interpret_path(description)
-            del obj['images'][:]
+            if displayed_name:
+                obj['displayed_name'] = displayed_name
+                obj['type'] = robot_type
+                obj['description'] = replace_paths(description)
+                if images:
+                    del obj['images'][:]
             for image_path in images:
                 img = interpret_path(image_path)
                 if img and img[0] != os.path.sep:
@@ -164,7 +166,7 @@ class CapabilityHeader(QHeaderView):
             if not obj['type']:
                 obj['type'] = robot_type
             if not obj['description']:
-                obj['description'] = interpret_path(description)
+                obj['description'] = replace_paths(description)
             if not obj['images']:
                 for image_path in images:
                     img = interpret_path(image_path)
@@ -414,20 +416,19 @@ class CapabilityTable(QTableWidget):
         :type description: U{multimaster_msgs_fkie.srv.ListDescription<http://docs.ros.org/api/multimaster_msgs_fkie/html/srv/ListDescription.html>} Response
         '''
         # if it is a new masteruri add a new column
+        robot_name = description.robot_name
         robot_index = self._robotHeader.index(masteruri)
-        robot_name = description.robot_name if description.robot_name else nm.nameres().mastername(masteruri)
         # append a new robot
         descr_utf8 = utf8(description.robot_descr.replace("\\n ", "\n"))
         if robot_index == -1:
             robot_index = self._robotHeader.insertSortedItem(masteruri, robot_name)
             self.insertColumn(robot_index)
-#      robot_index = self.columnCount()-1
-#      self._robotHeader.insertItem(robot_index)
             self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
             item = QTableWidgetItem()
             item.setSizeHint(QSize(96, 96))
             self.setHorizontalHeaderItem(robot_index, item)
-            self.horizontalHeaderItem(robot_index).setText(robot_name)
+            if robot_name:
+                self.horizontalHeaderItem(robot_index).setText(robot_name)
         else:
             # update
             self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
