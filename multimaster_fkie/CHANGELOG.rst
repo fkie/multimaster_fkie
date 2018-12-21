@@ -2,6 +2,11 @@
 Changelog for package multimaster_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.9 (2018-12-21)
+------------------
+* fix install build
+* Contributors: Alexander Tiderko
+
 0.8.8 (2018-12-19)
 ------------------
 * fixed install node_manager_fkie
