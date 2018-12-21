@@ -49,7 +49,7 @@ class TestCommonLib(unittest.TestCase):
         self.res_dir = 'resources'
         if os.path.exists(os.path.join(self.nm_path, 'tests')):
             self.res_dir = 'tests/resources'
-        self.test_include_file = "%s/%s/include_dummy.launch" % (self.nm_path, self.res_dir)
+        self.test_include_file = "%s%s/include_dummy.launch" % (self.nm_path, self.res_dir)
 
     def tearDown(self):
         pass
