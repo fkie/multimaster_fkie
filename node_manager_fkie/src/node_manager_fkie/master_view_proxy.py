@@ -1719,7 +1719,11 @@ class MasterViewProxy(QWidget):
                 return False
             except nm.InteractionNeededError as _:
                 raise
-            except (Exception, nm.StartException) as e:
+            except (exceptions.StartException, nm.StartException) as e:
+                print type(e)
+                rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
+                raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
+            except Exception as e:
                 print type(e)
                 print traceback.format_exc(3)
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))

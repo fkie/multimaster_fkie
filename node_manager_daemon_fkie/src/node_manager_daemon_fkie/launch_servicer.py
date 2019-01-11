@@ -505,6 +505,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     result.status.code = CONNECTION_ERROR
                     result.status.error_msg = utf8(conerr)
                     yield result
+            except exceptions.ResourceNotFound as err_nf:
+                result = lmsg.StartNodeReply(name=request.name)
+                result.status.code = ERROR
+                result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(err_nf))
+                yield result
             except Exception as _errr:
                 import traceback
                 result = lmsg.StartNodeReply(name=request.name)

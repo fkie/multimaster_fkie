@@ -18,6 +18,7 @@
   <exec_depend>roslaunch</exec_depend>
   <exec_depend>rospy</exec_depend>
 
+  <depend>python-rospkg</depend>
   <depend>screen</depend>
 
   <test_depend>rostest</test_depend>

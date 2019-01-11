@@ -32,6 +32,7 @@
 
 import os
 import roslib
+import rospkg
 import rospy
 import shlex
 import socket
@@ -161,9 +162,10 @@ def run_node(startcfg):
         if not cmd_type:
             try:
                 cmd = roslib.packages.find_node(startcfg.package, startcfg.binary)
-            except roslib.packages.ROSPkgException as e:
+            except (roslib.packages.ROSPkgException, rospkg.ResourceNotFound) as e:
                 # multiple nodes, invalid package
-                raise exceptions.StartException(utf8(e))
+                rospy.logwarn("resource not found: %s" % utf8(e))
+                raise exceptions.ResourceNotFound(startcfg.package, "resource not found: %s" % utf8(e))
             if isinstance(cmd, types.StringTypes):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
