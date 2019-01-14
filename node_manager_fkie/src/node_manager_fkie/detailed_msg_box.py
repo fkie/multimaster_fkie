@@ -35,10 +35,10 @@ from python_qt_binding.QtGui import QPixmap
 
 try:
     from python_qt_binding.QtGui import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
-    from python_qt_binding.QtGui import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
+    from python_qt_binding.QtGui import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QStyleOption, QApplication
 except:
     from python_qt_binding.QtWidgets import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
-    from python_qt_binding.QtWidgets import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
+    from python_qt_binding.QtWidgets import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QStyleOption, QApplication
 
 
 IGNORED_ERRORS = []
@@ -101,16 +101,17 @@ class MessageBox(QDialog):
         self.horizontalLayout.setContentsMargins(1, 1, 1, 1)
         # create icon
         pixmap = None
+        style_option = QStyleOption()
         if icon == self.NoIcon:
             pass
         elif icon == self.Question:
-            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxQuestion)
+            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxQuestion, style_option)
         elif icon == self.Information:
-            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxInformation)
+            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxInformation, style_option)
         elif icon == self.Warning:
             pixmap = QPixmap(":icons/crystal_clear_warning_56.png")
         elif icon == self.Critical:
-            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxCritical)
+            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxCritical, style_option)
         spacerItem = QSpacerItem(10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.icon_label = QLabel()
