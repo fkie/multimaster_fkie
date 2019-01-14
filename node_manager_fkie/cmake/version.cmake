@@ -4,6 +4,8 @@ macro(generate_version)
     find_program(GIT git)
     if (NOT GIT)
         message(STATUS "git binary not found, VERSION and DATE files are not created")
+    elseif (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+        message(STATUS "no .git repository found, VERSION and DATE files are not created")
     else(GIT)
         # install a file with version tag
         set(VERSION_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}")
