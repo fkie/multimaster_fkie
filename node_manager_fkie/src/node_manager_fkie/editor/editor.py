@@ -362,6 +362,7 @@ class Editor(QMainWindow):
                 self._goto(goto_line, True)
             self.upperButton.setEnabled(self.tabWidget.count() > 1)
         except Exception as err:
+            self.tabWidget.setUpdatesEnabled(True)
             import traceback
             msg = "Error while open %s: %s" % (filename, traceback.format_exc(1))
             rospy.logwarn(msg)

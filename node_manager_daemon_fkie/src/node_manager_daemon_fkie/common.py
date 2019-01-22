@@ -218,9 +218,9 @@ def included_files(string,
     :param bool unique: returns the same files once (Default: False)
     :param include_pattern: the list with patterns to find include files.
     :type include_pattern: [str]
-    :return: Returns a set of included file is `unique` is True,
-        otherwise a list of tuples with line number, path of included file and a recursive list of tuples with included files.
-    :rtype: set() or [(int, str, [])]
+    :return: Returns a list of tuples with given file, line number, path of included file and a recursive list of tuples with included files.
+             if `unique` is True the line number is zero
+    :rtype: [(str, int, str, [])]
     '''
     re_filelist = EMPTY_PATTERN
     if include_pattern:
@@ -253,12 +253,14 @@ def included_files(string,
                     if recursive and os.path.isfile(file_name):
                         ext = os.path.splitext(file_name)
                         if ext[1] in SEARCH_IN_EXT:
-                            res_list = included_files(file_name, recursive, unique, include_pattern)
-                            if not unique:
-                                # if not unique the result build a tree with all included files
-                                recursive_list = res_list
-                            else:
-                                result += res_list
+                            for res_item in included_files(file_name, recursive, unique, include_pattern):
+                                if not unique:
+                                    # if not unique the result build a tree with all included files
+                                    recursive_list.append(res_item)
+                                else:
+                                    if res_item not in result:
+                                        result.append(res_item)
+                                        yield res_item
                     elif os.path.isdir(file_name):
                         file_name = ''
                 except Exception as e:
@@ -266,10 +268,10 @@ def included_files(string,
                 if file_name:
                     if not unique:
                         # transform found position to line number
-                        result.append((content.count("\n", 0, groups.start()) + 1, file_name, recursive_list))
+                        yield (string, content.count("\n", 0, groups.start()) + 1, file_name, recursive_list)
                     else:
-                        result.append(file_name)
+                        if file_name not in result:
+                            result_tuple = (string, 0, file_name, [])
+                            result.append(result_tuple)
+                            yield result_tuple
                 continue
-    if unique:
-        return set(result)
-    return result

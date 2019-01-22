@@ -542,23 +542,20 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         pattern = INCLUDE_PATTERN
         if request.pattern:
             pattern = request.pattern
-        inc_files = included_files(request.path, request.recursive, request.unique, pattern)
         # create a stack to reply the include tree as a list
         queue = []
-        if isinstance(inc_files, set):
-            queue = [(request.path, 0, path, []) for path in list(inc_files)]
-        else:
-            queue = [(request.path, linenr, path, file_list) for linenr, path, file_list in reversed(inc_files)]
-        while queue:
-            node = queue.pop()
-            reply = lmsg.IncludedFilesReply()
-            reply.root_path = node[0]
-            reply.linenr = node[1]
-            reply.path = node[2]
-            reply.exists = os.path.exists(reply.path)
-            yield reply
-            for linenr, path, file_list in node[3]:
-                queue.append(((node[2], linenr, path, file_list)))
+        for inc_file in included_files(request.path, request.recursive, request.unique, pattern):
+            queue.append(inc_file)
+            while queue:
+                node = queue.pop()
+                reply = lmsg.IncludedFilesReply()
+                reply.root_path = node[0]
+                reply.linenr = node[1]
+                reply.path = node[2]
+                reply.exists = os.path.exists(reply.path)
+                yield reply
+                for root_path, linenr, path, file_list in node[3]:
+                    queue.append(((root_path, linenr, path, file_list)))
 
     def GetMtime(self, request, context):
         result = lmsg.MtimeReply()

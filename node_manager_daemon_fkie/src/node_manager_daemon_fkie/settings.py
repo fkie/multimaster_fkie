@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-GRPC_TIMEOUT = 15.0
+GRPC_TIMEOUT = 5.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
 
 RESPAWN_SCRIPT = 'rosrun node_manager_fkie respawn'
