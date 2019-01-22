@@ -232,23 +232,26 @@ class TextEdit(QTextEdit):
         '''
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
-            inc_files = nm.nmd().get_included_path(self.filename, text=cursor.block().text())
-            if inc_files:
-                try:
-                    _, path, exists, _ = inc_files[0]
-                    if exists:
-                        event.setAccepted(True)
-                        self.load_request_signal.emit(path)
-
-                    else:
-                        # create a new file, if it does not exists
-                        result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
-                        if result == MessageBox.Yes:
-                            nm.nmd().save_file(path, '<launch>\n\n</launch>', 0)
+            try:
+                inc_files = nm.nmd().get_included_path(self.filename, text=cursor.block().text())
+                if inc_files:
+                    try:
+                        _, path, exists, _ = inc_files[0]
+                        if exists:
                             event.setAccepted(True)
                             self.load_request_signal.emit(path)
-                except Exception, e:
-                    MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
+
+                        else:
+                            # create a new file, if it does not exists
+                            result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
+                            if result == MessageBox.Yes:
+                                nm.nmd().save_file(path, '<launch>\n\n</launch>', 0)
+                                event.setAccepted(True)
+                                self.load_request_signal.emit(path)
+                    except Exception, e:
+                        MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
+            except Exception as err:
+                MessageBox.critical(self, "Error", "Error while request included file %s" % inc_files[0], detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
