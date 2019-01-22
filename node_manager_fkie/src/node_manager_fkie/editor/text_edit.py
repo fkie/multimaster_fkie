@@ -251,7 +251,7 @@ class TextEdit(QTextEdit):
                     except Exception, e:
                         MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
             except Exception as err:
-                MessageBox.critical(self, "Error", "Error while request included file %s" % inc_files[0], detailed_text=utf8(err))
+                MessageBox.critical(self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
