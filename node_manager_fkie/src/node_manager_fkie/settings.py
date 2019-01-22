@@ -37,6 +37,7 @@ import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros
 from node_manager_daemon_fkie import screen
+from node_manager_daemon_fkie import settings as nmd_settings
 from node_manager_fkie.common import get_ros_home, utf8
 
 
@@ -154,6 +155,7 @@ class Settings(object):
     TRANSPOSE_PUB_SUB_DESCR = True
     TIMEOUT_CLOSE_DIALOG = 5.0
     GROUP_BY_NAMESPACE = True
+    TIMEOUT_GRPC = nmd_settings.GRPC_TIMEOUT
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -220,6 +222,8 @@ class Settings(object):
         self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
         self._timeout_close_dialog = float(settings.value('timeout_close_dialog', self.TIMEOUT_CLOSE_DIALOG))
         self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
+        self._timeout_grpc = float(settings.value('timeout_grpc', self.TIMEOUT_GRPC))
+        nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
         settings.beginGroup('host_colors')
         self._host_colors = dict()
         for k in settings.childKeys():
@@ -526,6 +530,19 @@ class Settings(object):
             self._timeout_close_dialog = v
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('timeout_close_dialog', self._timeout_close_dialog)
+
+    @property
+    def timeout_grpc(self):
+        return self._timeout_grpc
+
+    @timeout_grpc.setter
+    def timeout_grpc(self, value):
+        v = float(value)
+        if self._timeout_grpc != v:
+            self._timeout_grpc = v
+            nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('timeout_grpc', self._timeout_grpc)
 
     @property
     def group_nodes_by_namespace(self):

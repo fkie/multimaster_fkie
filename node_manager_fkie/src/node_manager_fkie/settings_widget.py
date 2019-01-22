@@ -240,7 +240,14 @@ class SettingsWidget(QDockWidget):
                                                    'value_default': nm.settings().GROUP_BY_NAMESPACE,
                                                    'tooltip': "<p>Split namespace of the node by / and create groups for each name part.</p>",
                                                    'need_restart': True
-                                                   },)
+                                                   },),
+                    'Timeout for GRPC requests:': ({'value': nm.settings().timeout_grpc,
+                                                    'settings': nm.settings(),
+                                                    'attrname': 'timeout_grpc',
+                                                    'value_default': nm.settings().TIMEOUT_GRPC,
+                                                    'value_step': 15.,
+                                                    'tooltip': "<p>Timeout in seconds for GRPC requests to daemon.</p>"
+                                                    },)
                     }
         self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)
