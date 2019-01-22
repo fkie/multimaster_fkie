@@ -1374,6 +1374,8 @@ class MainWindow(QMainWindow):
         if item is not None:
             self._history_selected_robot = item.master.name
             self.setCurrentMaster(item.master.uri)
+            if not nm.nmd().get_packages(item.master.uri):
+                nm.nmd().list_packages_threaded(nmdurl.nmduri(item.master.uri))
             if self.currentMaster.master_info is not None and not self.restricted_to_one_master:
                 node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
                 self.syncButton.setEnabled(True)
