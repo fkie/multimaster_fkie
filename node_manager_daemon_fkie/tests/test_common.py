@@ -107,15 +107,14 @@ class TestCommonLib(unittest.TestCase):
         self.assertRaises(rospkg.ResourceNotFound, interpret_path, text_path, "No rospkg.ResourceNotFound raises on invalid pacakge name")
 
     def test_include_files(self):
-        file_list = included_files(self.test_include_file, unique=True)
+        file_list = [file_tuple for file_tuple in included_files(self.test_include_file, unique=True)]
         self.assertEqual(4, len(file_list), "Count of unique included files is wrong, expected: %d, got: %d" % (4, len(file_list)))
-        file_list = included_files(self.test_include_file, recursive=False, unique=True)
+        file_list = [file_tuple for file_tuple in included_files(self.test_include_file, recursive=False, unique=True)]
         self.assertEqual(3, len(file_list), "Count of unique included files while not recursive search is wrong, expected: %d, got: %d" % (3, len(file_list)))
-        file_list = included_files(self.test_include_file, unique=False)
-        self.assertEqual(6, len(file_list), "Count of included files is wrong, expected: %d, got: %d" % (6, len(file_list)))
-        self.assertEqual(6, file_list[0][0], "Wrong line number of first included file, expected: %d, got: %d" % (6, file_list[0][0]))
-        self.assertEqual(9, file_list[1][0], "Wrong line number of second included file, expected: %d, got: %d" % (9, file_list[0][0]))
-        self.assertEqual(1, len(file_list[0][2]), "Wrong count of recursive include in second included file, expected: %d, got: %d" % (1, len(file_list[0][2])))
+        file_list = [file_tuple for file_tuple in included_files(self.test_include_file, unique=False)]
+        self.assertEqual(10, len(file_list), "Count of included files is wrong, expected: %d, got: %d" % (10, len(file_list)))
+        self.assertEqual(6, file_list[0][1], "Wrong line number of first included file, expected: %d, got: %d" % (6, file_list[0][1]))
+        self.assertEqual(10, file_list[2][1], "Wrong line number of second included file, expected: %d, got: %d" % (10, file_list[2][1]))
 
 
 if __name__ == '__main__':

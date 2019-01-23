@@ -36,6 +36,7 @@ import re
 import rospy
 import roslib
 import rospkg
+from xml.dom import minidom
 
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
@@ -205,10 +206,81 @@ def replace_paths(text, pwd='.'):
     return result
 
 
+def replace_internal_args(content, resolve_args={}):
+    '''
+    Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
+    :return: True if something was replaced, new content and detected arguments
+    :rtype: (bool, str, {str: str})
+    '''
+    new_content = content
+    replaced = False
+    try:
+        resolve_args_intern = {}
+        for arg_key, args_val in resolve_args.items():
+            replaced = True
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+        xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
+        for node in xml_nodes:
+            for child in node.childNodes:
+                if child.localName == 'arg' and child.hasAttributes():
+                    aname = ''
+                    aval = ''
+                    for argi in range(child.attributes.length):
+                        arg_attr = child.attributes.item(argi)
+                        if arg_attr.localName == 'name':
+                            aname = arg_attr.value
+                        elif arg_attr.localName in ['value', 'default']:
+                            aval = arg_attr.value
+                    if aname:
+                        resolve_args_intern[aname] = aval
+        for arg_key, args_val in resolve_args_intern.items():
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+            replaced = True
+    except Exception as err:
+        print err
+        rospy.logdebug(utf8(err))
+    return replaced, new_content, resolve_args_intern
+
+
+def __get_include_args(content):
+    included_files = []
+    try:
+        xml_nodes = minidom.parseString(content).getElementsByTagName('include')
+        for node in xml_nodes:
+            if node.nodeType == node.ELEMENT_NODE and node.hasAttributes():
+                filename = ''
+                for ai in range(node.attributes.length):
+                    attr = node.attributes.item(ai)
+                    if attr.localName == 'file':
+                        filename = attr.value
+                inc_args = node.getElementsByTagName('arg')
+                resolved_inc_args = {}
+                for inc_arg in inc_args:
+                    if inc_arg.nodeType == node.ELEMENT_NODE and inc_arg.hasAttributes():
+                        aname = ''
+                        aval = ''
+                        for argi in range(inc_arg.attributes.length):
+                            arg_attr = inc_arg.attributes.item(argi)
+                            if arg_attr.localName == 'name':
+                                aname = arg_attr.value
+                            elif arg_attr.localName in ['value', 'default']:
+                                aval = arg_attr.value
+                        if aname:
+                            resolved_inc_args[aname] = aval
+                if filename:
+                    included_files.append((filename, resolved_inc_args))
+    except Exception as err:
+        print err
+        rospy.logdebug(utf8(err))
+    return included_files
+
+
 def included_files(string,
                    recursive=True,
                    unique=False,
-                   include_pattern=INCLUDE_PATTERN):
+                   include_pattern=INCLUDE_PATTERN,
+                   resolve_args={},
+                   unique_files=[]):
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
@@ -218,15 +290,16 @@ def included_files(string,
     :param bool unique: returns the same files once (Default: False)
     :param include_pattern: the list with patterns to find include files.
     :type include_pattern: [str]
-    :return: Returns a list of tuples with given file, line number, path of included file and a recursive list of tuples with included files.
+    :param resolve_args: dictionary with arguments to resolve arguments in path names
+    :type resolve_args: {str, str}
+    :return: Returns an iterator with tuple of given string, line number, path of included file and a dictionary with all defined arguments.
              if `unique` is True the line number is zero
-    :rtype: [(str, int, str, [])]
+    :rtype: iterator with (str, int, str, {str:str})
     '''
     re_filelist = EMPTY_PATTERN
     if include_pattern:
         # create regular expression from pattern
         re_filelist = re.compile(r"%s" % '|'.join(include_pattern))
-    result = []
     pwd = '.'
     content = string
     # read file content if file exists
@@ -241,37 +314,49 @@ def included_files(string,
                 count_nl = content[match.start():match.end()].count('\n')
                 content = content[:match.start()] + '\n' * count_nl + content[match.end():]
                 match = comment_pattern.search(content, match.start())
+    inc_files_forward_args = []
+    # replace the arguments and detect arguments for include-statements
+    if (string.endswith(".launch")):
+        _replaced, content, _resolve_args_intern = replace_internal_args(content)
+        inc_files_forward_args = __get_include_args(content)
+    my_unique_files = unique_files
+    if not unique_files:
+        my_unique_files = list()
     # search for include pattern in the content without comments
     for groups in re_filelist.finditer(content):
         for index in range(groups.lastindex):
-            file_name = groups.groups()[index]
-            if file_name:
-                recursive_list = []
+            filename = groups.groups()[index]
+            if filename:
                 try:
-                    file_name = interpret_path(file_name, pwd)
+                    forward_args = {}
+                    if inc_files_forward_args and inc_files_forward_args[0][0] == filename:
+                        forward_args = inc_files_forward_args[0][1]
+                        inc_files_forward_args.pop(0)
+                    resolve_args_all = dict(resolve_args)
+                    resolve_args_all.update(forward_args)
+                    try:
+                        # try to resolve path
+                        filename = interpret_path(filename, pwd)
+                    except Exception as err:
+                        rospy.logwarn(utf8(err))
+                    if os.path.isdir(filename):
+                        filename = ''
+                    if filename:
+                        publish = not unique or (unique and filename not in my_unique_files)
+                        if publish:
+                            my_unique_files.append(filename)
+                            # transform found position to line number
+                            position = content.count("\n", 0, groups.start()) + 1
+                            yield (string, position, filename, resolve_args_all)
                     # for recursive search
-                    if recursive and os.path.isfile(file_name):
-                        ext = os.path.splitext(file_name)
-                        if ext[1] in SEARCH_IN_EXT:
-                            for res_item in included_files(file_name, recursive, unique, include_pattern):
-                                if not unique:
-                                    # if not unique the result build a tree with all included files
-                                    recursive_list.append(res_item)
-                                else:
-                                    if res_item not in result:
-                                        result.append(res_item)
+                    if os.path.isfile(filename):
+                        if recursive:
+                            ext = os.path.splitext(filename)
+                            if ext[1] in SEARCH_IN_EXT:
+                                for res_item in included_files(filename, recursive, unique, include_pattern, resolve_args_all):
+                                    publish = not unique or (unique and res_item[2] not in my_unique_files)
+                                    if publish:
+                                        my_unique_files.append(res_item[2])
                                         yield res_item
-                    elif os.path.isdir(file_name):
-                        file_name = ''
                 except Exception as e:
                     rospy.logwarn(utf8(e))
-                if file_name:
-                    if not unique:
-                        # transform found position to line number
-                        yield (string, content.count("\n", 0, groups.start()) + 1, file_name, recursive_list)
-                    else:
-                        if file_name not in result:
-                            result_tuple = (string, 0, file_name, [])
-                            result.append(result_tuple)
-                            yield result_tuple
-                continue

@@ -183,49 +183,25 @@ class LaunchStub(object):
         :param bool recursive: True for recursive search
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
-        :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: list(tuple(int, str, bool, []))
+        :return: Returns an iterator for tuples with line number, path of included file, file exists or not and a dictionary with defined arguments.
+        :rtype: tuple(int, str, bool, {])
         '''
         reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_pattern=include_pattern)
-        result = []
-        queue = [(root, result)]
-        current_root = root
-        last_root = ''
         for response in reply:
-            if current_root == response.root_path:
-                last_root = response.path
-                queue[-1][1].append((response.linenr, response.path, response.exists, []))
-            elif last_root == response.root_path:
-                queue.append((last_root, queue[-1][1][-1][3]))
-                current_root = last_root
-                last_root = response.path
-                queue[-1][1].append((response.linenr, response.path, response.exists, []))
-            else:
-                last_item = queue.pop()
-                while last_item[0] != response.root_path and queue:
-                    last_item = queue.pop()
-                if last_item[0] == response.root_path:
-                    current_root = response.root_path
-                    queue.append(last_item)
-                    last_root = response.path
-                    queue[-1][1].append((response.linenr, response.path, response.exists, []))
-                else:
-                    raise Exception("wrong root item: %s" % response.root_path)
-        return result
+            args = {arg.name: arg.value for arg in response.include_args}
+            yield (response.root_path, response.linenr, response.path, response.exists, args)
 
     def get_included_path(self, text, include_pattern=[]):
         '''
         :param str text: text to search for included files
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
-        :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: list(tuple(int, str, bool, []))
+        :return: Returns an iterator for tuples with line number, path of included file, file exists or not and a dictionary with defined arguments.
+        :rtype: tuple(int, str, bool, {})
         '''
         reply = self._get_included_files(path=text, recursive=False, unique=False, include_pattern=include_pattern)
-        result = []
         for response in reply:
-            result.append((response.linenr, response.path, response.exists, []))
-        return result
+            yield (response.linenr, response.path, response.exists, {})
 
     def _gen_node_list(self, nodes):
         for name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param in nodes:

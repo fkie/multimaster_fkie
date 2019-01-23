@@ -240,7 +240,7 @@ class GraphThread(QObject, threading.Thread):
                     result = GRAPH_CACHE[path]
                 else:
                     filelist = nm.nmd().get_included_files(path, recursive=False)
-                    for line, fname, exists, _ in filelist:
+                    for line, fname, exists, _include_args in filelist:
                         result.append((line, fname, exists))
                     GRAPH_CACHE[path] = result
         return result

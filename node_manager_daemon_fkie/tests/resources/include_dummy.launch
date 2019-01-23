@@ -3,8 +3,9 @@
 	<!--
 	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch">
 	-->
-	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch"/>
-
+	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch">
+		<arg name="inc" value= "included2" />
+	</include>
 	<!--	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch"> -->
 	<include file="$(find node_manager_daemon_fkie)/tests/resources/included1.launch" />
 	<include file="$(find invalid_package)/tests/resources/included1.launch"/>

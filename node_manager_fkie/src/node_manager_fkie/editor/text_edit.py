@@ -234,13 +234,11 @@ class TextEdit(QTextEdit):
             cursor = self.cursorForPosition(event.pos())
             try:
                 inc_files = nm.nmd().get_included_path(self.filename, text=cursor.block().text())
-                if inc_files:
+                for _linenr, path, exists, _include_args in inc_files:
                     try:
-                        _, path, exists, _ = inc_files[0]
                         if exists:
                             event.setAccepted(True)
                             self.load_request_signal.emit(path)
-
                         else:
                             # create a new file, if it does not exists
                             result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
@@ -250,6 +248,7 @@ class TextEdit(QTextEdit):
                                 self.load_request_signal.emit(path)
                     except Exception, e:
                         MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
+                    break
             except Exception as err:
                 MessageBox.critical(self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)

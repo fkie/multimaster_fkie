@@ -304,6 +304,7 @@ message IncludedFilesReply {
 	string path = 2;
 	uint64 linenr = 3;
 	bool exists = 4;
+	repeated Argument include_args = 5;
 }
 
 /** The status message included in replies. */

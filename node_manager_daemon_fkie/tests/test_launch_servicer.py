@@ -104,14 +104,13 @@ class TestLaunchServicer(unittest.TestCase):
         self.assertEqual(len(file_list), 3, "Count of unique included files while not recursive search is wrong, got: %d, expected: %d" % (len(file_list), 3))
         response_stream = ls.GetIncludedFiles(lmsg.IncludedFilesRequest(path=path, recursive=False, unique=False, pattern=[]), DummyContext())
         file_list = [response for response in response_stream]
-        self.assertEqual(len(file_list), 6, "Count of not recursive, not unique included files is wrong, expected: %d, got: %d" % (len(file_list), 6))
+        self.assertEqual(len(file_list), 6, "Count of not recursive, not unique included files is wrong, expected: %d, got: %d" % (6, len(file_list)))
         response_stream = ls.GetIncludedFiles(lmsg.IncludedFilesRequest(path=path, recursive=True, unique=False, pattern=[]), DummyContext())
         file_list = [response for response in response_stream]
-        self.assertEqual(len(file_list), 10, "Count of included files is wrong, expected: %d, got: %d" % (len(file_list), 10))
-        self.assertEqual(file_list[0].linenr, 6, "Wrong line number of first included file, expected: %d, got: %d" % (file_list[0].linenr, 6))
-        self.assertEqual(file_list[1].root_path, file_list[0].path, "Wrong root path of second included file, expected: %s, got: %s" % (file_list[1].root_path, file_list[0].path))
-        self.assertEqual(file_list[1].linenr, 3, "Wrong line number of second included file, expected: %d, got: %d" % (file_list[1].linenr, 3))
-        self.assertEqual(file_list[2].linenr, 9, "Wrong line number of third included file, expected: %d, got: %d" % (file_list[2].linenr, 9))
+        self.assertEqual(len(file_list), 10, "Count of included files is wrong, got: %d, expected: %d" % (len(file_list), 10))
+        self.assertEqual(file_list[0].linenr, 6, "Wrong line number of first included file, got: %d, expected: %d" % (file_list[0].linenr, 6))
+        self.assertEqual(file_list[1].linenr, 4, "Wrong line number of second included file, got: %d, expected: %d" % (file_list[1].linenr, 4))
+        self.assertEqual(file_list[2].linenr, 10, "Wrong line number of third included file, got: %d, expected: %d" % (file_list[2].linenr, 10))
 
     def test_load_launch(self):
         ls = LaunchServicer()

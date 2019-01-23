@@ -368,7 +368,7 @@ class NmdClient(QObject):
         try:
             result = self._cache_file_unique_includes[grpc_path]
         except KeyError:
-            rospy.logdebug("get_included_files_set for %s:" % grpc_path)
+            rospy.logdebug("get_included_files_set for %s, recursive: %s" % (grpc_path, recursive))
             uri, path = nmdurl.split(grpc_path, with_scheme=False)
             lm = self.get_launch_manager(uri)
             url, path = nmdurl.split(grpc_path, with_scheme=True)
@@ -378,34 +378,35 @@ class NmdClient(QObject):
             self._cache_file_unique_includes[grpc_path] = result
         return result
 
-    def _append_grpc_prefix_to_include_files(self, url, included_files=[]):
-        result = []
-        for linenr, path, exists, file_list in included_files:
-            recursive_list = self._append_grpc_prefix_to_include_files(file_list)
-            result.append((linenr, nmdurl.join(url, path), exists, recursive_list))
-        return result
-
     def get_included_files(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[]):
         '''
         :param str grpc_path: the root path to search for included files
         :param bool recursive: True for recursive search
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
-        :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: [(int, str, bool, [])]
+        :return: Returns an iterator for tuple with root path, line number, path of included file, file exists or not and dictionary with defined arguments.
+        :rtype: iterator (str, int, str, bool, {str: str})
         '''
-        result = []
         try:
-            result = self._cache_file_includes[grpc_path]
+            for entry in self._cache_file_includes[grpc_path]:
+                yield entry
         except KeyError:
             uri, path = nmdurl.split(grpc_path)
             lm = self.get_launch_manager(uri)
-            rospy.logdebug("get_included_files for %s:" % grpc_path)
+            rospy.logdebug("get_included_files for %s, recursive: %s, pattern: %s" % (grpc_path, recursive, include_pattern))
             reply = lm.get_included_files(path, recursive, include_pattern)
             url, _ = nmdurl.split(grpc_path, with_scheme=True)
-            result = self._append_grpc_prefix_to_include_files(url, reply)
-            self._cache_file_includes[grpc_path] = result
-        return result
+            # initialize requested path in cache
+            if grpc_path not in self._cache_file_includes:
+                self._cache_file_includes[grpc_path] = []
+            for root_path, linenr, path, exists, include_args in reply:
+                entry = (linenr, nmdurl.join(url, path), exists, include_args)
+                root_url = nmdurl.join(url, root_path)
+                # initialize and add returned root path to cache
+                if root_url not in self._cache_file_includes:
+                    self._cache_file_includes[root_url] = []
+                self._cache_file_includes[root_url].append(entry)
+                yield entry
 
     def get_included_path(self, grpc_url_or_path='grpc://localhost:12321', text='', include_pattern=[]):
         '''
@@ -413,16 +414,16 @@ class NmdClient(QObject):
         :param str text: text where to search for included files
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
-        :return: Returns a list of tuples with line number, path of included file, file exists or not and a recursive list of tuples with included files.
-        :rtype: [(int, str, bool, [])]
+        :return: Returns an iterator for tuple with line number, path of included file, file exists or not and dictionary with defined arguments.
+        :rtype: iterator (int, str, bool, {str: str})
         '''
         uri, _ = nmdurl.split(grpc_url_or_path)
         lm = self.get_launch_manager(uri)
-        rospy.logdebug("get_included_path in text %s:" % text)
+        rospy.logdebug("get_included_path in text %s" % text)
         reply = lm.get_included_path(text, include_pattern)
         url, _ = nmdurl.split(grpc_url_or_path, with_scheme=True)
-        result = self._append_grpc_prefix_to_include_files(url, reply)
-        return result
+        for linenr, path, exists, include_args in reply:
+            yield (linenr, nmdurl.join(url, path), exists, include_args)
 
     def load_launch(self, grpc_path, masteruri='', host='', package='', launch='', args={}):
         '''
@@ -466,6 +467,7 @@ class NmdClient(QObject):
         launch_file = nmdurl.join("grpc://%s" % uri, launch_file)
         rospy.logdebug("  load launch file result - %s: %s" % ('OK' if ok else "ERR", launch_file))
         with self._args_lock:
+            rospy.logdebug("add args after load %s: %s" % (launch_file, args_res))
             self._launch_args[launch_file] = args_res
         return launch_file, args_res
 
@@ -486,6 +488,7 @@ class NmdClient(QObject):
         launch_file = lm.unload_launch(path, masteruri)
         with self._args_lock:
             if launch_file in self._launch_args:
+                rospy.logdebug("delete args after unload %s" % launch_file)
                 del self._launch_args[launch_file]
         return launch_file
 
@@ -501,7 +504,9 @@ class NmdClient(QObject):
             url, _ = nmdurl.split(grpc_path, with_scheme=True)
             for _package, path, args, _masteruri, _host in result:
                 with self._args_lock:
-                    self._launch_args[nmdurl.join(url, path)] = args
+                    gpath = nmdurl.join(url, path)
+                    rospy.logdebug("[thread] add args for %s: %s" % (gpath, args))
+                    self._launch_args[gpath] = args
         except Exception:
             import traceback
             print(traceback.format_exc())

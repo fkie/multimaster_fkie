@@ -542,35 +542,45 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         pattern = INCLUDE_PATTERN
         if request.pattern:
             pattern = request.pattern
+        # search for loaded file and get the arguments
+        resolve_args = {}
+        for cfgid, lcfg in self._loaded_files.items():
+            if cfgid.path == request.path:
+                resolve_args.update(lcfg.resolve_dict)
+                break
         # create a stack to reply the include tree as a list
         queue = []
-        for inc_file in included_files(request.path, request.recursive, request.unique, pattern):
-            queue.append(inc_file)
+        for inc_file_tuple in included_files(request.path, request.recursive, request.unique, pattern, resolve_args):
+            queue.append(inc_file_tuple)
             while queue:
-                node = queue.pop()
+                filename, lnr, path, args = queue.pop()
                 reply = lmsg.IncludedFilesReply()
-                reply.root_path = node[0]
-                reply.linenr = node[1]
-                reply.path = node[2]
+                reply.root_path = filename
+                reply.linenr = lnr
+                reply.path = path
                 reply.exists = os.path.exists(reply.path)
+                reply.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in args.items())
+                # return each file one by one
                 yield reply
-                for root_path, linenr, path, file_list in node[3]:
-                    queue.append(((root_path, linenr, path, file_list)))
 
     def GetMtime(self, request, context):
         result = lmsg.MtimeReply()
         result.path = request.path
+        already_in = []
         mtime = 0
         if os.path.exists(request.path):
             mtime = os.path.getmtime(request.path)
+            already_in.append(request.path)
         result.mtime = mtime
         # add mtimes for all included files
         inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
-        for incf in inc_files:
-            mtime = 0
-            if os.path.exists(incf):
-                mtime = os.path.getmtime(incf)
-            result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
+        for _root_path, _linenr, incf, _args in inc_files:
+            if incf not in already_in:
+                mtime = 0
+                if os.path.exists(incf):
+                    mtime = os.path.getmtime(incf)
+                result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
+                already_in.append(incf)
         return result
 
     def GetChangedBinaries(self, request, context):

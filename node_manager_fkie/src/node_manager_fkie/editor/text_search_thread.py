@@ -36,6 +36,7 @@ import threading
 
 import node_manager_fkie as nm
 
+from node_manager_daemon_fkie.common import replace_internal_args
 from node_manager_fkie.common import utf8
 
 
@@ -83,14 +84,16 @@ class TextSearchThread(QObject, threading.Thread):
             if self._isrunning:
                 self.search_result_signal.emit(self._search_text, False, '', -1, -1, '')
 
-    def search(self, search_text, path, recursive=False):
+    def search(self, search_text, path, recursive=False, args={}, content='', count=1):
         '''
         Searches for given text in this document and all included files.
         :param str search_text: text to find
         :return: the list with all files contain the text
         :rtype: [str, ...]
         '''
-        data = self._get_text(path)
+        data = content
+        if not data:
+            data = self._get_text(path)
         pos = data.find(search_text)
         slen = len(search_text)
         found = False
@@ -105,18 +108,31 @@ class TextSearchThread(QObject, threading.Thread):
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:
-            if not found:
-                # try to replace the arguments and search again
-                args = nm.nmd().launch_args(path)
-                for arg_key, args_val in args.items():
-                    if search_text.startswith('name="%s' % args_val):
-                        self.search(search_text.replace(args_val, '$(arg %s)' % arg_key), path, False)
+            # try to replace the arguments and search again
+            resolve_args = args
+            if not resolve_args:
+                resolve_args = nm.nmd().launch_args(path)
+            if not found and not content:
+                new_data = data
+                if search_text.startswith('name="'):
+                    replaced, new_data, _internal_args = replace_internal_args(data, resolve_args)
+                if replaced:
+                    self.search(search_text, path, False, resolve_args, new_data, count + 1)
             if recursive:
-                inc_files = nm.nmd().get_included_files_set(path, False)
-                for incf in inc_files:
+                # TODO: test search string for 'name=' and skip search in not launch files
+                queue = []
+                inc_files = nm.nmd().get_included_files(path, False)
+                # read first all included files in curret file
+                for _linenr, inc_path, exists, include_args in inc_files:
                     if not self._isrunning:
                         break
-                    self.search(search_text, incf, recursive)
+                    if exists:
+                        queue.append((search_text, inc_path, recursive, include_args))
+                # search in all files
+                for search_text, inc_path, recursive, include_args in queue:
+                    new_dict = dict(resolve_args)
+                    new_dict.update(include_args)
+                    self.search(search_text, inc_path, recursive, new_dict, '', count + 1)
 
     def _get_text(self, path):
         result = ''
