@@ -126,8 +126,6 @@ class StartHandler(object):
                     raise StartException('\n'.join(err))
                 else:
                     cmd_type = cmd[0]
-                cmd_str = utf8(' '.join([screen.get_cmd(fullname), cmd_type, ' '.join(args2)]))
-            rospy.loginfo("Run without config: %s", fullname if use_nmd else cmd_str)
             new_env = {}  # dict(os.environ)
             if namespace:
                 new_env['ROS_NAMESPACE'] = namespace
@@ -144,6 +142,8 @@ class StartHandler(object):
             else:
                 local_env = dict(os.environ)
                 local_env.update(new_env)
+                cmd_str = utf8(' '.join([screen.get_cmd(fullname, local_env), cmd_type, ' '.join(args2)]))
+                rospy.loginfo("Run without config: %s", fullname if use_nmd else cmd_str)
                 SupervisedPopen(shlex.split(cmd_str), env=local_env, object_id="Run without config", description="Run without config [%s]%s" % (utf8(package), utf8(binary)))
         else:
             # run on a remote machine
