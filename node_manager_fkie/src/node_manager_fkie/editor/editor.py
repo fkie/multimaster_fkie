@@ -146,6 +146,7 @@ class Editor(QMainWindow):
         self.graph_view = GraphViewWidget(self.tabWidget, self)
         self.graph_view.load_signal.connect(self.on_graph_load_file)
         self.graph_view.goto_signal.connect(self.on_graph_goto)
+        self.graph_view.updated_signal.connect(self.on_graph_updated)
         self.addDockWidget(Qt.RightDockWidgetArea, self.graph_view)
         self.readSettings()
         self.find_dialog.setVisible(False)
@@ -357,7 +358,8 @@ class Editor(QMainWindow):
                 # TODO: put all text of all tabs into path_text
                 self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True, only_launch=only_launch)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
-                self._search_thread.start()
+                if not self.graph_view.is_loading():
+                    self._search_thread.start()
             if goto_line != -1:
                 self._goto(goto_line, True)
             self.upperButton.setEnabled(self.tabWidget.count() > 1)
@@ -380,6 +382,13 @@ class Editor(QMainWindow):
         if path == self.tabWidget.currentWidget().filename:
             if linenr != -1:
                 self._goto(linenr, True)
+
+    def on_graph_updated(self):
+        if self._search_thread:
+            try:
+                self._search_thread.start()
+            except Exception:
+                pass
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():

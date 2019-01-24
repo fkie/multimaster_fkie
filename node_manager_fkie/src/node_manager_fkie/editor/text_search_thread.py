@@ -114,8 +114,9 @@ class TextSearchThread(QObject, threading.Thread):
                 resolve_args = nm.nmd().launch_args(path)
             if not found and not content:
                 new_data = data
-                if search_text.startswith('name="'):
-                    replaced, new_data, _internal_args = replace_internal_args(data, resolve_args)
+                replaced = False
+                if search_text.startswith('name="') and path.endswith('.launch'):
+                    replaced, new_data, _internal_args = replace_internal_args(data, resolve_args, path=path)
                 if replaced:
                     self.search(search_text, path, False, resolve_args, new_data, count + 1)
             if recursive:

@@ -63,6 +63,8 @@ class GraphViewWidget(QDockWidget):
     ''' :ivar: filename of file to load, True if insert after the current open tab'''
     goto_signal = Signal(str, int)
     ''' :ivar: filename, line to go'''
+    updated_signal = Signal()
+    ''' :ivar: graph was updated'''
     DATA_FILE = Qt.UserRole + 1
     DATA_LINE = Qt.UserRole + 2
     DATA_INC_FILE = Qt.UserRole + 3
@@ -90,6 +92,7 @@ class GraphViewWidget(QDockWidget):
         self._created_tree = False
         self.has_none_packages = True
         self._refill_tree([], [], False)
+        self._fill_graph_thread = None
 
     def clear_cache(self, path=None):
         with CHACHE_MUTEX:
@@ -115,6 +118,12 @@ class GraphViewWidget(QDockWidget):
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)
             self._fill_graph_thread.start()
+
+    def is_loading(self):
+        result = False
+        if self._fill_graph_thread:
+            result = self._fill_graph_thread.is_alive()
+        return result
 
     def find_parent_file(self):
         selected = self.graphTreeView.selectionModel().selectedIndexes()
@@ -173,6 +182,7 @@ class GraphViewWidget(QDockWidget):
             else:
                 self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
         self.graphTreeView.expandAll()
+        self.updated_signal.emit()
 
     def _append_items(self, item, deep):
         path = item.data(self.DATA_INC_FILE)

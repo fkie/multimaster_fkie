@@ -206,7 +206,7 @@ def replace_paths(text, pwd='.'):
     return result
 
 
-def replace_internal_args(content, resolve_args={}):
+def replace_internal_args(content, resolve_args={}, path=None):
     '''
     Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
     :return: True if something was replaced, new content and detected arguments
@@ -237,8 +237,8 @@ def replace_internal_args(content, resolve_args={}):
             new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
             replaced = True
     except Exception as err:
-        print err
-        rospy.logdebug(utf8(err))
+        print "%s in %s" % (utf8(err), path)
+        rospy.logdebug("%s in %s" % (utf8(err), path))
     return replaced, new_content, resolve_args_intern
 
 
@@ -317,7 +317,7 @@ def included_files(string,
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     if (string.endswith(".launch")):
-        _replaced, content, _resolve_args_intern = replace_internal_args(content)
+        _replaced, content, _resolve_args_intern = replace_internal_args(content, path=string)
         inc_files_forward_args = __get_include_args(content)
     my_unique_files = unique_files
     if not unique_files:
