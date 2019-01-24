@@ -135,6 +135,9 @@
                <property name="selectionMode">
                 <enum>QAbstractItemView::ExtendedSelection</enum>
                </property>
+               <property name="uniformRowHeights">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
@@ -776,6 +779,9 @@ p, li { white-space: pre-wrap; }
             <property name="selectionMode">
              <enum>QAbstractItemView::ExtendedSelection</enum>
             </property>
+            <property name="uniformRowHeights">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
@@ -1046,6 +1052,9 @@ p, li { white-space: pre-wrap; }
             <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
+            <property name="uniformRowHeights">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
@@ -1174,6 +1183,9 @@ p, li { white-space: pre-wrap; }
             </property>
             <property name="selectionMode">
              <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
+            <property name="uniformRowHeights">
+             <bool>true</bool>
             </property>
            </widget>
           </item>

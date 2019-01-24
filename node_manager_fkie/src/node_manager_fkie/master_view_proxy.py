@@ -2766,23 +2766,57 @@ class MasterViewProxy(QWidget):
                                    'Call service %s failed!' % service.name,
                                    '%s' % utf8(e))
 
+    def _restore_expand_state(self, tree_view, proxy_model):
+        '''
+        Expand the first item and all selected items.
+        '''
+        tree_view.collapseAll()
+        for selected in tree_view.selectionModel().selectedIndexes():
+            index = selected
+            while index is not None and index.isValid():
+                item = proxy_model.sourceModel().itemFromIndex(index)
+                if type(item) in [TopicGroupItem, ServiceGroupItem, GroupItem] and not tree_view.isExpanded(index):
+                    tree_view.setExpanded(index, True)
+                tree_view.setExpanded(index, True)
+                index = index.parent()
+        # expand the root item. NodesView has on sync also other hosts. In this case only local host will expanded.
+        for root_idx in range(proxy_model.sourceModel().rowCount()):
+            source_index = proxy_model.sourceModel().index(root_idx, 0)
+            item = proxy_model.sourceModel().itemFromIndex(source_index)
+            if type(item) in [HostItem] and not item._local:
+                continue
+            mapped_index = proxy_model.mapFromSource(source_index)
+            tree_view.setExpanded(mapped_index, True)
+
     def on_node_filter_changed(self, text):
         '''
         Filter the displayed nodes
         '''
         self.node_proxy_model.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
+        if text:
+            self.masterTab.nodeTreeView.expandAll()
+        else:
+            self._restore_expand_state(self.masterTab.nodeTreeView, self.node_proxy_model)
 
     def on_topic_filter_changed(self, text):
         '''
         Filter the displayed topics
         '''
         self.topic_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
+        if text:
+            self.masterTab.topicsView.expandAll()
+        else:
+            self._restore_expand_state(self.masterTab.topicsView, self.topic_proxyModel)
 
     def on_service_filter_changed(self, text):
         '''
         Filter the displayed services
         '''
         self.service_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
+        if text:
+            self.masterTab.servicesView.expandAll()
+        else:
+            self._restore_expand_state(self.masterTab.servicesView, self.service_proxyModel)
 
     def on_parameter_filter_changed(self, text):
         '''
@@ -3350,23 +3384,23 @@ class TopicsSortFilterProxyModel(QSortFilterProxyModel):
         '''
         Perform filtering on columns 0 and 3 (Name, Type)
         '''
+        result = True
         index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
         regex = self.filterRegExp()
         item = self.sourceModel().itemFromIndex(index0)
         if type(item) == TopicItem:
-            return (regex.indexIn(item.topic.name) != -1 or regex.indexIn(item.topic_type_str) != -1)
+            result = (regex.indexIn(item.topic.name) != -1 or regex.indexIn(item.topic_type_str) != -1)
         elif type(item) == TopicGroupItem:
+            result = True
             if regex.indexIn(item.name) != -1:
-                return True
-            grp_res = True
-            sitems = item.get_topic_items()
-            for sitem in sitems:
-                res = (regex.indexIn(sitem.topic.name) != -1 or regex.indexIn(sitem.topic_type_str) != -1)
-                if res:
-                    return True
-                grp_res = res
-            return grp_res
-        return True
+                result = True
+            else:
+                sitems = item.get_topic_items()
+                for sitem in sitems:
+                    result = (regex.indexIn(sitem.topic.name) != -1 or regex.indexIn(sitem.topic_type_str) != -1)
+                    if result:
+                        break
+        return result
 
 
 class ServicesSortFilterProxyModel(QSortFilterProxyModel):
