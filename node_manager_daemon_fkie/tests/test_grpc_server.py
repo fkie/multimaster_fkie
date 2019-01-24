@@ -103,8 +103,8 @@ class TestGrpcServer(unittest.TestCase):
 
     def test_get_file_content(self):
         file_size, file_mtime, file_content = self.fs.get_file_content(self.test_include_file)
-        self.assertEqual(file_size, 842, "wrong returned file size, got: %s, expected: %s" % (file_size, 842))
-        self.assertEqual(len(file_content), 842, "wrong size of the content, got: %s, expected: %s" % (len(file_content), 842))
+        self.assertEqual(file_size, 892, "wrong returned file size, got: %s, expected: %s" % (file_size, 892))
+        self.assertEqual(len(file_content), 892, "wrong size of the content, got: %s, expected: %s" % (len(file_content), 892))
         try:
             result = self.fs.get_file_content('xyz')
             self.fail("`get_file_content` did not raises `IOError` on not existing path `/xyz`")
@@ -113,28 +113,21 @@ class TestGrpcServer(unittest.TestCase):
         except Exception as err:
             self.fail("`get_file_content` raises wrong Exception on not existing path `/xyz`, got: %s, expected: `IOError`" % type(err))
 
-    def _count_all_includes(self, file_list):
-        result = len(file_list)
-        for linenr, path, exists, inc_files in file_list:
-            result += self._count_all_includes(inc_files)
-        return result
-
     def test_get_included_files(self):
         path = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
-        file_list = self.ls.get_included_files_set(path, recursive=True, include_pattern=[])
+        file_list = [file_tuple for file_tuple in self.ls.get_included_files_set(path, recursive=True, include_pattern=[])]
 #        for linenr, path, exists, file_list in inc_files:
         self.assertEqual(len(file_list), 4, "Count of unique included, recursive files is wrong, got: %d, expected: %d" % (len(file_list), 4))
-        file_list = self.ls.get_included_files_set(path, recursive=False, include_pattern=[])
+        file_list = [file_tuple for file_tuple in self.ls.get_included_files_set(path, recursive=False, include_pattern=[])]
         self.assertEqual(len(file_list), 3, "Count of unique included files while not recursive search is wrong, got: %d, expected: %d" % (len(file_list), 3))
-        file_list = self.ls.get_included_files(path, recursive=False, include_pattern=[])
-        self.assertEqual(len(file_list), 6, "Count of recursive, not unique included files is wrong, expected: %d, got: %d" % (len(file_list), 6))
-        file_list = self.ls.get_included_files(path, recursive=True, include_pattern=[])
-        self.assertEqual(len(file_list), 6, "Count of included files in root file is wrong, expected: %d, got: %d" % (len(file_list), 6))
-        self.assertEqual(self._count_all_includes(file_list), 10, "Count of recursive included files is wrong, expected: %d, got: %d" % (self._count_all_includes(file_list), 10))
-        self.assertEqual(file_list[0][0], 6, "Wrong line number of first included file, expected: %d, got: %d" % (file_list[0][0], 6))
+        file_list = [file_tuple for file_tuple in self.ls.get_included_files(path, recursive=False, include_pattern=[])]
+        self.assertEqual(len(file_list), 6, "Count of recursive, not unique included files is wrong, got: %d, expected: %d" % (len(file_list), 6))
+        file_list = [file_tuple for file_tuple in self.ls.get_included_files(path, recursive=True, include_pattern=[])]
+        self.assertEqual(len(file_list), 10, "Count of recursive included files is wrong, got: %d, expected: %d" % (len(file_list), 10))
+        self.assertEqual(file_list[0][1], 6, "Wrong line number of first included file, got: %d, expected: %d" % (file_list[0][1], 6))
         #self.assertEqual(file_list[0][1], file_list[0][3][0][1], "Wrong root path of second included file, expected: %s, got: %s" % (file_list[0][1], file_list[0][3][0][1]))
-        self.assertEqual(file_list[1][0], 9, "Wrong line number of second included file, expected: %d, got: %d" % (file_list[1][0], 9))
-        self.assertEqual(file_list[2][0], 10, "Wrong line number of third included file, expected: %d, got: %d" % (file_list[2][0], 10))
+        self.assertEqual(file_list[1][1], 4, "Wrong line number of second included file, got: %d, expected: %d" % (file_list[1][1], 4))
+        self.assertEqual(file_list[2][1], 10, "Wrong line number of third included file, got: %d, expected: %d" % (file_list[2][1], 10))
 
     def _test_load_launch(self, unload=True):
         args = {}
