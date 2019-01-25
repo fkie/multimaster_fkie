@@ -31,12 +31,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, Signal
+import re
 import rospy
 import threading
+from xml.dom import minidom
 
 import node_manager_fkie as nm
 
-from node_manager_daemon_fkie.common import replace_internal_args
 from node_manager_daemon_fkie import exceptions
 from node_manager_fkie.common import utf8
 
@@ -45,9 +46,9 @@ class TextSearchThread(QObject, threading.Thread):
     '''
     A thread to search recursive for a text in files.
     '''
-    search_result_signal = Signal(str, bool, str, int, int, str)
+    search_result_signal = Signal(str, bool, str, int, int, int, str)
     ''' :ivar: A signal emitted after search_threaded was started.
-        (search text, found or not, file, position in text, line number, line text)
+        (search text, found or not, file, first position in text, last position in text, line number, line text)
         for each result a signal will be emitted.
     '''
     warning_signal = Signal(str)
@@ -87,7 +88,7 @@ class TextSearchThread(QObject, threading.Thread):
             self.warning_signal.emit(traceback.print_exc())
         finally:
             if self._isrunning:
-                self.search_result_signal.emit(self._search_text, False, '', -1, -1, '')
+                self.search_result_signal.emit(self._search_text, False, '', -1, -1, -1, '')
 
     def search(self, search_text, path, recursive=False, args={}, content='', count=1):
         '''
@@ -111,27 +112,25 @@ class TextSearchThread(QObject, threading.Thread):
                 if self._only_launch:
                     doemit = path.endswith('.launch')
                 if doemit:
-                    self.search_result_signal.emit(search_text, True, path, pos, data.count('\n', 0, pos) + 1, self._strip_text(data, pos))
+                    self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, self._strip_text(data, pos))
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:
             search_for_node = search_text.startswith('name="')
-            # try to replace the arguments and search again
             resolve_args = args
             if not resolve_args:
                 resolve_args = nm.nmd().launch_args(path)
             if not found and not content:
-                new_data = data
-                replaced = False
                 if search_for_node and path.endswith('.launch'):
-                    replaced, new_data, _internal_args = replace_internal_args(data, resolve_args, path=path)
-                if replaced:
-                    self.search(search_text, path, False, resolve_args, new_data, count + 1)
+                    # not found: try to replace arguments
+                    search_for_name = search_text.replace('name="', '').replace('"', '')
+                    for aname, rname, span in self._next_node_name(data, resolve_args, path):
+                        if rname == search_for_name:
+                            self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
             if recursive:
-                # TODO: test search string for 'name=' and skip search in not launch files
                 queue = []
                 inc_files = nm.nmd().get_included_files(path, False)
-                # read first all included files in curret file
+                # read first all included files in current file
                 for _linenr, inc_path, exists, _size, include_args in inc_files:
                     if not self._isrunning:
                         return
@@ -141,8 +140,47 @@ class TextSearchThread(QObject, threading.Thread):
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(resolve_args)
                     new_dict.update(include_args)
+                    # test search string for 'name=' and skip search in not launch files
                     if not search_for_node or (search_for_node and inc_path.endswith('.launch')):
                         self.search(search_text, inc_path, recursive, new_dict, '', count + 1)
+
+    def _next_node_name(self, content, resolve_args={}, path=''):
+        '''
+        Load the content with xml parser, search for arg-nodes and replace the arguments in node-statements.
+        :return: True if something was replaced, node name, line number
+        :rtype: (bool, str, line number)
+        '''
+        new_content = content
+        resolve_args_intern = {}
+        try:
+            xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
+            for node in xml_nodes:
+                for child in node.childNodes:
+                    if child.localName == 'arg' and child.hasAttributes():
+                        aname = ''
+                        aval = ''
+                        for argi in range(child.attributes.length):
+                            arg_attr = child.attributes.item(argi)
+                            if arg_attr.localName == 'name':
+                                aname = arg_attr.value
+                            elif arg_attr.localName in ['value', 'default']:
+                                aval = arg_attr.value
+                        if aname:
+                            for arg_key, args_val in resolve_args.items():
+                                aval = aval.replace('$(arg %s)' % arg_key, args_val)
+                            resolve_args_intern[aname] = aval
+        except Exception as err:
+            rospy.logwarn("%s in %s" % (utf8(err), path))
+        re_nodes = re.compile(r"<node[\w\W\S\s]*?name=\"(?P<name>.*?)\"")
+        for groups in re_nodes.finditer(content):
+            aname = groups.group("name")
+            rname = aname
+            for arg_key, args_val in resolve_args.items():
+                rname = rname.replace('$(arg %s)' % arg_key, args_val)
+            for arg_key, args_val in resolve_args_intern.items():
+                rname = rname.replace('$(arg %s)' % arg_key, args_val)
+            if rname != aname:
+                yield aname, rname, groups.span("name")
 
     def _get_text(self, path):
         result = ''

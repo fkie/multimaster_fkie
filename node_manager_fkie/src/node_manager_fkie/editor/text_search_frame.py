@@ -52,9 +52,9 @@ class TextSearchFrame(QDockWidget):
     '''
     A frame to find text in the Editor.
     '''
-    search_result_signal = Signal(str, bool, str, int)
+    found_signal = Signal(str, bool, str, int, int, int, str)
     ''' @ivar: A signal emitted after search_threaded was started.
-        (search text, found or not, file, position in text)
+        (search text, found or not, file, first position in text, last position in text, linenr, line_text)
         for each result a signal will be emitted.
     '''
     replace_signal = Signal(str, str, int, str)
@@ -195,8 +195,8 @@ class TextSearchFrame(QDockWidget):
                 if self._search_result_index + 1 >= len(self.search_results):
                     self._search_result_index = -1
                 self._search_result_index += 1
-                (_id, search_text, found, path, index, _linenr, _line) = self.search_results[self._search_result_index]
-                self.search_result_signal.emit(search_text, found, path, index)
+                (_id, search_text, found, path, startpos, endpos, linenr, line) = self.search_results[self._search_result_index]
+                self.found_signal.emit(search_text, found, path, startpos, endpos, linenr, line)
                 self.replace_button.setEnabled(True)
         self._update_label()
 
@@ -210,8 +210,8 @@ class TextSearchFrame(QDockWidget):
             if self._search_result_index < 0:
                 self._search_result_index = len(self.search_results) - 1
             self._update_label()
-            (_id, search_text, found, path, index, _linenr, _line) = self.search_results[self._search_result_index]
-            self.search_result_signal.emit(search_text, found, path, index)
+            (_id, search_text, found, path, startpos, endpos, linenr, line) = self.search_results[self._search_result_index]
+            self.found_signal.emit(search_text, found, path, startpos, endpos, linenr, line)
             self.replace_button.setEnabled(True)
 
     def _check_position(self, forward=True):
@@ -244,22 +244,22 @@ class TextSearchFrame(QDockWidget):
                 return index
         return -1
 
-    def on_search_result(self, search_text, found, path, index, linenr, line):
+    def on_search_result(self, search_text, found, path, startpos, endpos, linenr, line):
         '''
         Slot to handle the signals for search result. This signals are forwarded used
-        search_result_signal.
+        found_signal.
         '''
         if found and search_text == self.current_search_text:
-            id_path = "%d|%s" % (index, path)
+            id_path = "%d|%s" % (startpos, path)
             self.search_results_fileset.add(path)
-            item = (search_text, found, path, index)
+            item = (search_text, found, path, startpos)
             if item not in self.search_results:
-                self.search_results.append((id_path, search_text, found, path, index, linenr, line))
+                self.search_results.append((id_path, search_text, found, path, startpos, endpos, linenr, line))
             if self._wait_for_result:
                 self._search_result_index += 1
-                if index >= self._tabwidget.currentWidget().textCursor().position() or self._tabwidget.currentWidget().filename != path:
+                if startpos >= self._tabwidget.currentWidget().textCursor().position() or self._tabwidget.currentWidget().filename != path:
                     self._wait_for_result = False
-                    self.search_result_signal.emit(search_text, found, path, index)
+                    self.found_signal.emit(search_text, found, path, startpos, endpos, linenr, line)
                     self.replace_button.setEnabled(True)
             pkg, _rpath = package_name(os.path.dirname(path))
             itemstr = '%s [%s]' % (os.path.basename(path), pkg)
@@ -322,11 +322,11 @@ class TextSearchFrame(QDockWidget):
             item_index = int(splits[0])
             item_path = splits[1]
             new_search_index = -1
-            for _id, search_text, found, path, index, _linenr, _line_text in self.search_results:
+            for _id, search_text, found, path, startpos, linenr, line_text in self.search_results:
                 new_search_index += 1
-                if item_path == path and item_index == index:
+                if item_path == path and item_index == startpos:
                     self._search_result_index = new_search_index
-                    self.search_result_signal.emit(search_text, found, path, index)
+                    self.found_signal.emit(search_text, found, path, startpos, linenr, line_text)
                     self._update_label()
 
     def on_search_text_changed(self, _text):

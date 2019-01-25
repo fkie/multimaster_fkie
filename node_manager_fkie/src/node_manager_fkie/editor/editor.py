@@ -139,7 +139,7 @@ class Editor(QMainWindow):
         self.setCentralWidget(self.main_widget)
 
         self.find_dialog = TextSearchFrame(self.tabWidget, self)
-        self.find_dialog.search_result_signal.connect(self.on_search_result)
+        self.find_dialog.found_signal.connect(self.on_search_result)
         self.find_dialog.replace_signal.connect(self.on_replace)
         self.addDockWidget(Qt.RightDockWidgetArea, self.find_dialog)
 
@@ -604,7 +604,7 @@ class Editor(QMainWindow):
     # SLOTS for search dialog
     ##############################################################################
 
-    def on_search_result(self, search_text, found, path, index):
+    def on_search_result(self, search_text, found, path, startpos, endpos, linenr=-1, line_text=''):
         '''
         A slot to handle a found text. It goes to the position in the text and select
         the searched text. On new file it will be open.
@@ -614,8 +614,10 @@ class Editor(QMainWindow):
         :type found: bool
         :param path: the path of the file the text was found
         :type path: str
-        :param index: the position in the text
-        :type index: int
+        :param startpos: the position in the text
+        :type startpos: int
+        :param endpos: the end position in the text
+        :type endpos: int
         '''
         if found:
             if self.tabWidget.currentWidget().filename != path:
@@ -623,14 +625,14 @@ class Editor(QMainWindow):
                 self.on_load_request(path)
                 focus_widget.setFocus()
             cursor = self.tabWidget.currentWidget().textCursor()
-            cursor.setPosition(index, QTextCursor.MoveAnchor)
-            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, len(search_text))
+            cursor.setPosition(startpos, QTextCursor.MoveAnchor)
+            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, endpos - startpos)
             self.tabWidget.currentWidget().setTextCursor(cursor)
             cursor_y = self.tabWidget.currentWidget().cursorRect().top()
             vbar = self.tabWidget.currentWidget().verticalScrollBar()
             vbar.setValue(vbar.value() + cursor_y * 0.8)
 
-    def on_search_result_on_open(self, search_text, found, path, index):
+    def on_search_result_on_open(self, search_text, found, path, startpos, endpos, linenr, line_text):
         '''
         Like on_search_result, but skips the text in comments.
         '''
@@ -640,13 +642,13 @@ class Editor(QMainWindow):
                 if focus_widget is not None:
                     focus_widget.setFocus()
                 self.on_load_request(path)
-            comment_start = self.tabWidget.currentWidget().document().find('<!--', index, QTextDocument.FindBackward)
+            comment_start = self.tabWidget.currentWidget().document().find('<!--', startpos, QTextDocument.FindBackward)
             if not comment_start.isNull():
                 comment_end = self.tabWidget.currentWidget().document().find('-->', comment_start)
-                if not comment_end.isNull() and comment_end.position() > index + len(search_text):
+                if not comment_end.isNull() and comment_end.position() > endpos:
                     # commented -> retrun
                     return
-        self.on_search_result(search_text, found, path, index)
+        self.on_search_result(search_text, found, path, startpos, endpos, linenr, line_text)
 
     def on_replace(self, search_text, path, index, replaced_text):
         '''

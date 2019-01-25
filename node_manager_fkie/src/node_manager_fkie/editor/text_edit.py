@@ -61,12 +61,6 @@ class TextEdit(QTextEdit):
     load_request_signal = Signal(str)
     ''' :ivar: A signal for request to open a configuration file'''
 
-    search_result_signal = Signal(str, bool, str, int)
-    ''' :ivar: A signal emitted after search_threaded was started.
-        (search text, found or not, file, position in text)
-        for each result a signal will be emitted.
-    '''
-
     SUBSTITUTION_ARGS = ['env', 'optenv', 'find', 'anon', 'arg']
     CONTEXT_FILE_EXT = ['.launch', '.test', '.xml']
     YAML_VALIDATION_FILES = ['.yaml', '.iface', '.sync']
