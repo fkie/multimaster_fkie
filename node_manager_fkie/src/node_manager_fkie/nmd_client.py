@@ -384,8 +384,8 @@ class NmdClient(QObject):
         :param bool recursive: True for recursive search
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
-        :return: Returns an iterator for tuple with root path, line number, path of included file, file exists or not and dictionary with defined arguments.
-        :rtype: iterator (str, int, str, bool, {str: str})
+        :return: Returns an iterator for tuple with root path, line number, path of included file, file exists or not, file size and dictionary with defined arguments.
+        :rtype: iterator (str, int, str, bool, int, {str: str})
         '''
         dorequest = False
         try:
@@ -404,9 +404,9 @@ class NmdClient(QObject):
                 # initialize requested path in cache
                 if grpc_path not in self._cache_file_includes:
                     self._cache_file_includes[grpc_path] = []
-                for root_path, linenr, path, exists, include_args in reply:
+                for root_path, linenr, path, exists, size, include_args in reply:
                     current_path = nmdurl.join(url, root_path)
-                    entry = (linenr, nmdurl.join(url, path), exists, include_args)
+                    entry = (linenr, nmdurl.join(url, path), exists, size, include_args)
                     # initialize and add returned root path to cache
                     if current_path not in self._cache_file_includes:
                         self._cache_file_includes[current_path] = []
@@ -425,16 +425,16 @@ class NmdClient(QObject):
         :param str text: text where to search for included files
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
-        :return: Returns an iterator for tuple with line number, path of included file, file exists or not and dictionary with defined arguments.
-        :rtype: iterator (int, str, bool, {str: str})
+        :return: Returns an iterator for tuple with line number, path of included file, file exists or not, file size and dictionary with defined arguments.
+        :rtype: iterator (int, str, bool, int, {str: str})
         '''
         uri, _ = nmdurl.split(grpc_url_or_path)
         lm = self.get_launch_manager(uri)
         rospy.logdebug("get_included_path in text %s" % text)
         reply = lm.get_included_path(text, include_pattern)
         url, _ = nmdurl.split(grpc_url_or_path, with_scheme=True)
-        for linenr, path, exists, include_args in reply:
-            yield (linenr, nmdurl.join(url, path), exists, include_args)
+        for linenr, path, exists, size, include_args in reply:
+            yield (linenr, nmdurl.join(url, path), exists, size, include_args)
 
     def load_launch(self, grpc_path, masteruri='', host='', package='', launch='', args={}):
         '''

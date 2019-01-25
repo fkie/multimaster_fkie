@@ -131,7 +131,7 @@ class TextSearchThread(QObject, threading.Thread):
                 queue = []
                 inc_files = nm.nmd().get_included_files(path, False)
                 # read first all included files in curret file
-                for _linenr, inc_path, exists, include_args in inc_files:
+                for _linenr, inc_path, exists, _size, include_args in inc_files:
                     if not self._isrunning:
                         return
                     if exists:

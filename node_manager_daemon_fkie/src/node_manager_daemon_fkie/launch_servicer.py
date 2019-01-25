@@ -559,6 +559,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 reply.linenr = lnr
                 reply.path = path
                 reply.exists = os.path.exists(reply.path)
+                if reply.exists:
+                    reply.size = os.path.getsize(reply.path)
                 reply.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in args.items())
                 # return each file one by one
                 yield reply

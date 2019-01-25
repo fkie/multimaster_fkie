@@ -41,14 +41,11 @@ from node_manager_daemon_fkie import exceptions
 import node_manager_fkie as nm
 from node_manager_fkie.common import package_name
 from node_manager_fkie.html_delegate import HTMLDelegate
-from node_manager_fkie.launch_config import LaunchConfig
 
 try:
-    from python_qt_binding.QtGui import QCheckBox, QFrame, QLabel, QTreeWidget, QTreeWidgetItem, QPushButton, QGroupBox, QDockWidget
-    from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy, QAbstractItemView, QItemSelectionModel
-except:
-    from python_qt_binding.QtWidgets import QCheckBox, QFrame, QLabel, QTreeWidget, QTreeWidgetItem, QPushButton, QGroupBox, QDockWidget
-    from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy, QAbstractItemView
+    from python_qt_binding.QtGui import QDockWidget, QAbstractItemView, QItemSelectionModel
+except Exception:
+    from python_qt_binding.QtWidgets import QDockWidget, QAbstractItemView
     from python_qt_binding.QtCore import QItemSelectionModel
 
 
@@ -70,6 +67,7 @@ class GraphViewWidget(QDockWidget):
     DATA_LINE = Qt.UserRole + 2
     DATA_INC_FILE = Qt.UserRole + 3
     DATA_LEVEL = Qt.UserRole + 4
+    DATA_SIZE = Qt.UserRole + 5
 
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "LaunchGraph", parent)
@@ -199,16 +197,24 @@ class GraphViewWidget(QDockWidget):
         if not path:
             path = item.data(self.DATA_FILE)
         if path in GRAPH_CACHE:
-            for inc_lnr, inc_path, _ in GRAPH_CACHE[path]:
+            for inc_lnr, inc_path, _, size in GRAPH_CACHE[path]:
                 pkg, _ = package_name(os.path.dirname(inc_path))
-                itemstr = '%s [%s]' % (os.path.basename(inc_path), pkg)
+                itemstr = '%s  %s  [%s]' % (os.path.basename(inc_path), self.sizeof_fmt(size), pkg)
                 inc_item = QStandardItem('%d: %s' % (inc_lnr, itemstr))
                 inc_item.setData(path, self.DATA_FILE)
                 inc_item.setData(inc_lnr, self.DATA_LINE)
                 inc_item.setData(inc_path, self.DATA_INC_FILE)
                 inc_item.setData(deep, self.DATA_LEVEL)
+                inc_item.setData(size, self.DATA_SIZE)
                 self._append_items(inc_item, deep + 1)
                 item.appendRow(inc_item)
+
+    def sizeof_fmt(self, num, suffix='B'):
+        for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+            if abs(num) < 1024.0:
+                return "%3.0f%s%s" % (num, unit, suffix)
+            num /= 1024.0
+        return "%.0%s%s" % (num, 'Yi', suffix)
 
 
 class GraphThread(QObject, threading.Thread):
@@ -267,16 +273,16 @@ class GraphThread(QObject, threading.Thread):
                     result = GRAPH_CACHE[path]
                 else:
                     filelist = nm.nmd().get_included_files(path, recursive=False)
-                    for line, fname, exists, _include_args in filelist:
-                        result.append((line, fname, exists))
+                    for line, fname, exists, size, _include_args in filelist:
+                        result.append((line, fname, exists, size))
                     GRAPH_CACHE[path] = result
         return result
 
     def _find_inc_file(self, filename, files, root_path):
         result = []
-        for line, fname, exists in files:
+        for line, fname, exists, size in files:
             if filename == fname:
-                result.append((line, root_path))
+                result.append((line, root_path, size))
             elif exists:
                 inc_files = self._get_includes(fname)
                 result += self._find_inc_file(filename, inc_files, fname)
