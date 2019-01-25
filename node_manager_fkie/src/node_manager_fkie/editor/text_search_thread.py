@@ -115,6 +115,7 @@ class TextSearchThread(QObject, threading.Thread):
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:
+            search_for_node = search_text.startswith('name="')
             # try to replace the arguments and search again
             resolve_args = args
             if not resolve_args:
@@ -122,7 +123,7 @@ class TextSearchThread(QObject, threading.Thread):
             if not found and not content:
                 new_data = data
                 replaced = False
-                if search_text.startswith('name="') and path.endswith('.launch'):
+                if search_for_node and path.endswith('.launch'):
                     replaced, new_data, _internal_args = replace_internal_args(data, resolve_args, path=path)
                 if replaced:
                     self.search(search_text, path, False, resolve_args, new_data, count + 1)
@@ -140,7 +141,8 @@ class TextSearchThread(QObject, threading.Thread):
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(resolve_args)
                     new_dict.update(include_args)
-                    self.search(search_text, inc_path, recursive, new_dict, '', count + 1)
+                    if not search_for_node or (search_for_node and inc_path.endswith('.launch')):
+                        self.search(search_text, inc_path, recursive, new_dict, '', count + 1)
 
     def _get_text(self, path):
         result = ''

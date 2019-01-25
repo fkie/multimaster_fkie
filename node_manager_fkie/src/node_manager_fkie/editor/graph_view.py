@@ -199,7 +199,7 @@ class GraphViewWidget(QDockWidget):
         if path in GRAPH_CACHE:
             for inc_lnr, inc_path, _, size in GRAPH_CACHE[path]:
                 pkg, _ = package_name(os.path.dirname(inc_path))
-                itemstr = '%s  %s  [%s]' % (os.path.basename(inc_path), self.sizeof_fmt(size), pkg)
+                itemstr = '%s  _%s_  [%s]' % (os.path.basename(inc_path), self.sizeof_fmt(size), pkg)
                 inc_item = QStandardItem('%d: %s' % (inc_lnr, itemstr))
                 inc_item.setData(path, self.DATA_FILE)
                 inc_item.setData(inc_lnr, self.DATA_LINE)
