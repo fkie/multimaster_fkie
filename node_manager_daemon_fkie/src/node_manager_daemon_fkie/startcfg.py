@@ -111,14 +111,8 @@ class StartConfig():
         if value_type == BOOL:
             return value.lower() in ("yes", "true", "t", "1")
         if value_type == LIST:
-            lstr = value
             try:
-                lstr = lstr.strip('[]')
-                lstr = lstr.replace('u"', '')
-                lstr = lstr.replace('"', '')
-                lstr = lstr.replace("'", '')
-                lstr = lstr.replace(",", ' ')
-                return [utf8(i).strip() for i in lstr.split(' ') if i]
+                return eval(value)
             except Exception:
                 return []
         return value
