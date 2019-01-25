@@ -387,26 +387,37 @@ class NmdClient(QObject):
         :return: Returns an iterator for tuple with root path, line number, path of included file, file exists or not and dictionary with defined arguments.
         :rtype: iterator (str, int, str, bool, {str: str})
         '''
+        dorequest = False
         try:
             for entry in self._cache_file_includes[grpc_path]:
                 yield entry
         except KeyError:
-            uri, path = nmdurl.split(grpc_path)
-            lm = self.get_launch_manager(uri)
-            rospy.logdebug("get_included_files for %s, recursive: %s, pattern: %s" % (grpc_path, recursive, include_pattern))
-            reply = lm.get_included_files(path, recursive, include_pattern)
-            url, _ = nmdurl.split(grpc_path, with_scheme=True)
-            # initialize requested path in cache
-            if grpc_path not in self._cache_file_includes:
-                self._cache_file_includes[grpc_path] = []
-            for root_path, linenr, path, exists, include_args in reply:
-                entry = (linenr, nmdurl.join(url, path), exists, include_args)
-                root_url = nmdurl.join(url, root_path)
-                # initialize and add returned root path to cache
-                if root_url not in self._cache_file_includes:
-                    self._cache_file_includes[root_url] = []
-                self._cache_file_includes[root_url].append(entry)
-                yield entry
+            dorequest = True
+        if dorequest:
+            current_path = grpc_path
+            try:
+                uri, path = nmdurl.split(current_path)
+                lm = self.get_launch_manager(uri)
+                rospy.logdebug("get_included_files for %s, recursive: %s, pattern: %s" % (grpc_path, recursive, include_pattern))
+                reply = lm.get_included_files(path, recursive, include_pattern)
+                url, _ = nmdurl.split(grpc_path, with_scheme=True)
+                # initialize requested path in cache
+                if grpc_path not in self._cache_file_includes:
+                    self._cache_file_includes[grpc_path] = []
+                for root_path, linenr, path, exists, include_args in reply:
+                    current_path = nmdurl.join(url, root_path)
+                    entry = (linenr, nmdurl.join(url, path), exists, include_args)
+                    # initialize and add returned root path to cache
+                    if current_path not in self._cache_file_includes:
+                        self._cache_file_includes[current_path] = []
+                    self._cache_file_includes[current_path].append(entry)
+                    yield entry
+            except grpc._channel._Rendezvous as grpc_error:
+                self._delete_cache_for(grpc_path)
+                self._delete_cache_for(current_path)
+                if grpc_error.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+                    raise exceptions.GrpcTimeout(grpc_path, grpc_error)
+                raise
 
     def get_included_path(self, grpc_url_or_path='grpc://localhost:12321', text='', include_pattern=[]):
         '''
@@ -464,6 +475,10 @@ class NmdClient(QObject):
                 nexttry = False
                 ok = True
                 launch_file = aoe.path
+            except grpc._channel._Rendezvous as grpc_error:
+                if grpc_error.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+                    raise exceptions.GrpcTimeout(grpc_path, grpc_error)
+                raise
         launch_file = nmdurl.join("grpc://%s" % uri, launch_file)
         rospy.logdebug("  load launch file result - %s: %s" % ('OK' if ok else "ERR", launch_file))
         with self._args_lock:
@@ -476,10 +491,15 @@ class NmdClient(QObject):
         uri, path = nmdurl.split(grpc_path)
         lm = self.get_launch_manager(uri)
         launch_file = ''
-        launch_files, changed_nodes = lm.reload_launch(path, masteruri=masteruri)
-        if launch_files:
-            launch_file = launch_files[0]
-        return launch_file, [node for node in changed_nodes]
+        try:
+            launch_files, changed_nodes = lm.reload_launch(path, masteruri=masteruri)
+            if launch_files:
+                launch_file = launch_files[0]
+            return launch_file, [node for node in changed_nodes]
+        except grpc._channel._Rendezvous as grpc_error:
+            if grpc_error.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+                raise exceptions.GrpcTimeout(grpc_path, grpc_error)
+            raise
 
     def unload_launch(self, grpc_path, masteruri=''):
         rospy.logdebug("unload launch %s" % grpc_path)

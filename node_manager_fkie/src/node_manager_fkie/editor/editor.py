@@ -146,7 +146,7 @@ class Editor(QMainWindow):
         self.graph_view = GraphViewWidget(self.tabWidget, self)
         self.graph_view.load_signal.connect(self.on_graph_load_file)
         self.graph_view.goto_signal.connect(self.on_graph_goto)
-        self.graph_view.updated_signal.connect(self.on_graph_updated)
+        self.graph_view.finished_signal.connect(self.on_graph_finished)
         self.addDockWidget(Qt.RightDockWidgetArea, self.graph_view)
         self.readSettings()
         self.find_dialog.setVisible(False)
@@ -383,7 +383,7 @@ class Editor(QMainWindow):
             if linenr != -1:
                 self._goto(linenr, True)
 
-    def on_graph_updated(self):
+    def on_graph_finished(self):
         if self._search_thread:
             try:
                 self._search_thread.start()

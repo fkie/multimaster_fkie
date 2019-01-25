@@ -37,6 +37,7 @@ import os
 import threading
 import rospy
 
+from node_manager_daemon_fkie import exceptions
 import node_manager_fkie as nm
 from node_manager_fkie.common import package_name
 from node_manager_fkie.html_delegate import HTMLDelegate
@@ -63,7 +64,7 @@ class GraphViewWidget(QDockWidget):
     ''' :ivar: filename of file to load, True if insert after the current open tab'''
     goto_signal = Signal(str, int)
     ''' :ivar: filename, line to go'''
-    updated_signal = Signal()
+    finished_signal = Signal()
     ''' :ivar: graph was updated'''
     DATA_FILE = Qt.UserRole + 1
     DATA_LINE = Qt.UserRole + 2
@@ -117,7 +118,15 @@ class GraphViewWidget(QDockWidget):
             self.setWindowTitle("Include Graph - loading...")
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)
+            self._fill_graph_thread.error.connect(self._on_load_error)
             self._fill_graph_thread.start()
+
+    def _on_load_error(self, msg):
+        self.setWindowTitle("Include Graph - %s" % os.path.basename(self._root_path))
+        if not self._created_tree:
+            inc_item = QStandardItem('%s' % msg)
+            self.graphTreeView.model().appendRow(inc_item)
+            self.finished_signal.emit()
 
     def is_loading(self):
         result = False
@@ -156,6 +165,7 @@ class GraphViewWidget(QDockWidget):
         if not self._created_tree and create_tree:
             with CHACHE_MUTEX:
                 has_none_packages = False
+                self.graphTreeView.model().clear()
                 if self._root_path in GRAPH_CACHE:
                     pkg, _ = package_name(os.path.dirname(self._root_path))
                     if pkg is None:
@@ -182,7 +192,7 @@ class GraphViewWidget(QDockWidget):
             else:
                 self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
         self.graphTreeView.expandAll()
-        self.updated_signal.emit()
+        self.finished_signal.emit()
 
     def _append_items(self, item, deep):
         path = item.data(self.DATA_INC_FILE)
@@ -210,6 +220,7 @@ class GraphThread(QObject, threading.Thread):
     :ivar: graph is a signal, which emit two list for files include the current path and a list with included files.
     Each entry is a tuple of the line number and path.
     '''
+    error = Signal(str)
 
     def __init__(self, current_path, root_path):
         '''
@@ -233,14 +244,20 @@ class GraphThread(QObject, threading.Thread):
             incs = self._get_includes(self.root_path)
             included_from = self._find_inc_file(self.current_path, incs, self.root_path)
             self.graph.emit(included_from, includes)
+        except exceptions.GrpcTimeout as tout:
+            rospy.logwarn("Build launch tree failed! Daemon not responded within %.2f seconds while"
+                          " get configuration file: %s\nYou can try to increase"
+                          " the timeout for GRPC requests in node manager settings." % (nm.settings().timeout_grpc, tout.remote))
+            self.error.emit('failed: timeout')
         except Exception:
             import traceback
             formatted_lines = traceback.format_exc(1).splitlines()
             print "Error while parse launch file for includes:\n\t%s" % traceback.format_exc()
             try:
-                rospy.logwarn("Error while parse launch file for includes:\n\t%s", formatted_lines[-1])
+                rospy.logwarn("Error while parse launch file for includes:\n\t%s", formatted_lines[-5])
             except Exception:
                 pass
+            self.error.emit('failed: %s' % formatted_lines[-1])
 
     def _get_includes(self, path):
         result = []

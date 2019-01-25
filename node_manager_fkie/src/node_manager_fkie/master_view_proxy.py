@@ -458,7 +458,7 @@ class MasterViewProxy(QWidget):
                 return
             if my_masterinfo:
                 nmd_node = master_info.getNode('/node_manager_daemon')
-                if nmd_node is None or nmd_node.pid is None:
+                if nmd_node is None:  # do not test for PID. It can be None if daemon is busy on load big launch files
                     self._has_nmd = False
                     if time.time() - self.__last_question_start_nmd > 1.:
                         self.__last_question_start_nmd = time.time()
@@ -682,6 +682,9 @@ class MasterViewProxy(QWidget):
             nm.nmd().get_nodes_threaded(launchfile)
         except nm.LaunchArgsSelectionRequest as lasr:
             raise nm.InteractionNeededError(lasr, self._load_launchfile, (launchfile,))
+        except exceptions.GrpcTimeout as tout:
+            raise DetailedError("Timeout", "Timeout while load %s" % tout.remote, "Daemon not responded within %.2f seconds while"
+                                "load launch file. You can try to increase the timeout for GRPC requests in node manager settings." % nm.settings().timeout_grpc)
         except Exception as e:
             print traceback.format_exc()
             err_text = '%s loading failed!' % os.path.basename(launchfile)

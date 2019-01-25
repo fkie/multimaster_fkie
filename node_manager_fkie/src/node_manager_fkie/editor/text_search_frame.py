@@ -234,7 +234,7 @@ class TextSearchFrame(QDockWidget):
                         self._search_result_index -= 1
                 else:
                     self._reset(True)
-        except:
+        except Exception:
             pass
 
     def _get_current_index_for_current_file(self):
@@ -277,7 +277,6 @@ class TextSearchFrame(QDockWidget):
                     list_item2.setText(0, sub_item_str)
                     list_item2.setWhatsThis(0, id_path)
                     top_item.addChild(list_item2)
-                #self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         self._update_label()
 
     def on_warning_result(self, text):
@@ -309,7 +308,7 @@ class TextSearchFrame(QDockWidget):
                     self.replace_signal.emit(search_text, path, index, rptxt)
                 else:
                     self.replace_button.setEnabled(False)
-            except:
+            except Exception:
                 import traceback
                 print traceback.format_exc()
                 pass

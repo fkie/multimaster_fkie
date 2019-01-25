@@ -37,6 +37,7 @@ import threading
 import node_manager_fkie as nm
 
 from node_manager_daemon_fkie.common import replace_internal_args
+from node_manager_daemon_fkie import exceptions
 from node_manager_fkie.common import utf8
 
 
@@ -75,6 +76,10 @@ class TextSearchThread(QObject, threading.Thread):
         '''
         try:
             self.search(self._search_text, self._path, self._recursive)
+        except exceptions.GrpcTimeout as tout:
+            self.warning_signal.emit("Search in launch failed! Daemon not responded within %.2f seconds while"
+                                     " get configuration file: %s\nYou can try to increase"
+                                     " the timeout for GRPC requests in node manager settings." % (nm.settings().timeout_grpc, tout.remote))
         except Exception:
             import traceback
             # formatted_lines = traceback.format_exc(1).splitlines()
@@ -91,6 +96,8 @@ class TextSearchThread(QObject, threading.Thread):
         :return: the list with all files contain the text
         :rtype: [str, ...]
         '''
+        if not self._isrunning:
+            return
         data = content
         if not data:
             data = self._get_text(path)
@@ -126,7 +133,7 @@ class TextSearchThread(QObject, threading.Thread):
                 # read first all included files in curret file
                 for _linenr, inc_path, exists, include_args in inc_files:
                     if not self._isrunning:
-                        break
+                        return
                     if exists:
                         queue.append((search_text, inc_path, recursive, include_args))
                 # search in all files
