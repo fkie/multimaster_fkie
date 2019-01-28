@@ -109,20 +109,6 @@ class GrpcClient:
         for ln, ph, ex, ifi in inc_files:
             self._print_inc_file(indent + 2, ln, ph, ex, ifi)
 
-    def test_get_included_files(self, path='', url='tiderko:12321'):
-        lm = self.get_launch_manager(url)
-        if lm is None:
-            return
-        try:
-            rospy.loginfo("get_included_files for %s:" % path)
-            inc_files = lm.get_included_path(path)
-            for linenr, path, exists, file_list in inc_files:
-                self._print_inc_file(2, linenr, path, exists, file_list)
-        except Exception as e:
-            rospy.logwarn("ERROR WHILE GET INCLUDE FILE: %s" % e)
-            import traceback
-            print(traceback.format_exc())
-
     def test_load_launch(self, package, launch, url='tiderko:12321'):
         lm = self.get_launch_manager(url)
         if lm is None:

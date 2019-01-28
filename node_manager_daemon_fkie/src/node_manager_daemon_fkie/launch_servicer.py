@@ -44,7 +44,7 @@ import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
 import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 
 import url
-from .common import INCLUDE_PATTERN, included_files, utf8
+from .common import INCLUDE_PATTERN, included_files, interpret_path, utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 import exceptions
@@ -59,6 +59,7 @@ PARAMS_REQUIRED = lmsg.ReturnStatus.StatusType.Value('PARAMS_REQUIRED')
 FILE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND')
 NODE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('NODE_NOT_FOUND')
 CONNECTION_ERROR = lmsg.ReturnStatus.StatusType.Value('CONNECTION_ERROR')
+PACKAGE_NOT_FOUND = lmsg.ReturnStatus.StatusType.Value('PACKAGE_NOT_FOUND')
 
 IS_RUNNING = True
 
@@ -563,6 +564,19 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     reply.size = os.path.getsize(reply.path)
                 reply.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in args.items())
                 # return each file one by one
+                yield reply
+
+    def InterpretPath(self, request, context):
+        for text in request.paths:
+            if text:
+                reply = lmsg.InterpredPath()
+                try:
+                    reply.path = interpret_path(text)
+                    reply.exists = os.path.exists(reply.path)
+                    reply.status.code = OK
+                except Exception as err:
+                    reply.status.code = PACKAGE_NOT_FOUND
+                    reply.status.error_msg = utf8(err)
                 yield reply
 
     def GetMtime(self, request, context):

@@ -43,6 +43,7 @@ service LaunchService {
 	rpc StartNode (stream Node) returns (stream StartNodeReply);
 	rpc StartStandaloneNode (StartConfig) returns (StartNodeReply);
 	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
+	rpc InterpretPath (InterpretPaths) returns (stream InterpredPath);
 	rpc GetMtime (LaunchFile) returns (MtimeReply);
 	rpc GetChangedBinaries (Nodes) returns (MtimeNodes);
 	rpc GetStartCfg (Node) returns (StartCfgReply);
@@ -233,6 +234,17 @@ message MtimeNodes {
 	repeated MtimeNode nodes = 1;
 }
 
+/** List of string to interpret */
+message InterpretPaths {
+	repeated string paths = 1;
+}
+
+/** Interpreted path result */
+message InterpredPath {
+	string path = 1;
+	bool exists = 2;
+	ReturnStatus status = 3;
+}
 
 /** Starts a ROS node without configurations. All parameter are set by this request.
  *
@@ -319,7 +331,8 @@ message ReturnStatus {
 		PARAMS_REQUIRED = 5;
 		FILE_NOT_FOUND = 6;
 		NODE_NOT_FOUND = 7;
-		CONNECTION_ERROR = 8;
+		PACKAGE_NOT_FOUND = 8;
+		CONNECTION_ERROR = 9;
 	}
 	sint32 code = 1;
 	string error_msg = 3;

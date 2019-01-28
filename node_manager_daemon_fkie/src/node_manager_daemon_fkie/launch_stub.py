@@ -191,17 +191,19 @@ class LaunchStub(object):
             args = {arg.name: arg.value for arg in response.include_args}
             yield (response.root_path, response.linenr, response.path, response.exists, response.size, args)
 
-    def get_included_path(self, text, include_pattern=[]):
+    def get_interpreted_path(self, paths):
         '''
         :param str text: text to search for included files
-        :param include_pattern: the list with regular expression patterns to find include files.
-        :type include_pattern: [str]
-        :return: Returns an iterator for tuples with line number, path of included file, file exists or not, file size and a dictionary with defined arguments.
-        :rtype: tuple(int, str, bool, int, {str: str})
+        :return: Returns an iterator for tuples with interpreted path and file exists or not
+        :rtype: tuple(str, bool)
         '''
-        reply = self._get_included_files(path=text, recursive=False, unique=False, include_pattern=include_pattern)
+        request = lmsg.InterpretPaths(paths=paths)
+        reply = self.lm_stub.InterpretPath(request, timeout=settings.GRPC_TIMEOUT)
         for response in reply:
-            yield (response.linenr, response.path, response.exists, response.size, {})
+            if response.status.code == OK:
+                yield (response.path, response.exists)
+            else:
+                raise exceptions.ResourceNotFound('', response.status.error_msg)
 
     def _gen_node_list(self, nodes):
         for name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param in nodes:

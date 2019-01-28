@@ -419,22 +419,20 @@ class NmdClient(QObject):
                     raise exceptions.GrpcTimeout(grpc_path, grpc_error)
                 raise
 
-    def get_included_path(self, grpc_url_or_path='grpc://localhost:12321', text='', include_pattern=[]):
+    def get_interpreted_path(self, grpc_url_or_path='grpc://localhost:12321', text=[]):
         '''
         :param str grpc_url_or_path: the url for node manager daemon
-        :param str text: text where to search for included files
-        :param include_pattern: the list with regular expression patterns to find include files.
-        :type include_pattern: [str]
-        :return: Returns an iterator for tuple with line number, path of included file, file exists or not, file size and dictionary with defined arguments.
-        :rtype: iterator (int, str, bool, int, {str: str})
+        :param [str] text: list of string with text to interpret to a path
+        :return: Returns an iterator for tuples with interpreted path and file exists or not
+        :rtype: tuple(str, bool)
         '''
         uri, _ = nmdurl.split(grpc_url_or_path)
         lm = self.get_launch_manager(uri)
-        rospy.logdebug("get_included_path in text %s" % text)
-        reply = lm.get_included_path(text, include_pattern)
+        rospy.logdebug("get_interpreted_path in text %s" % text)
+        reply = lm.get_interpreted_path(text)
         url, _ = nmdurl.split(grpc_url_or_path, with_scheme=True)
-        for linenr, path, exists, size, include_args in reply:
-            yield (linenr, nmdurl.join(url, path), exists, size, include_args)
+        for path, exists in reply:
+            yield (nmdurl.join(url, path), exists)
 
     def load_launch(self, grpc_path, masteruri='', host='', package='', launch='', args={}):
         '''

@@ -37,6 +37,7 @@ import re
 import rospy
 
 from node_manager_daemon_fkie import file_item
+from node_manager_daemon_fkie import exceptions
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 import node_manager_fkie as nm
@@ -227,22 +228,33 @@ class TextEdit(QTextEdit):
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
             try:
-                inc_files = nm.nmd().get_included_path(self.filename, text=cursor.block().text())
-                for _linenr, path, exists, _include_args in inc_files:
-                    try:
-                        if exists:
-                            event.setAccepted(True)
-                            self.load_request_signal.emit(path)
-                        else:
-                            # create a new file, if it does not exists
-                            result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
-                            if result == MessageBox.Yes:
-                                nm.nmd().save_file(path, '<launch>\n\n</launch>', 0)
-                                event.setAccepted(True)
-                                self.load_request_signal.emit(path)
-                    except Exception, e:
-                        MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
-                    break
+                value_pattern = re.compile(r"\"(?P<value>.*?)\"")
+                for groups in value_pattern.finditer(cursor.block().text()):
+                    aval = groups.group("value")
+                    aitems = aval.split("'")
+                    for search_for in aitems:
+                        if not search_for:
+                            continue
+                        try:
+                            inc_files = nm.nmd().get_interpreted_path(self.filename, text=[search_for])
+                            for path, exists in inc_files:
+                                try:
+                                    if exists:
+                                        event.setAccepted(True)
+                                        self.load_request_signal.emit(path)
+                                    else:
+                                        _filename, file_extension = os.path.splitext(path)
+                                        if file_extension in nm.settings().launch_view_file_ext:
+                                            # create a new file, if it does not exists
+                                            result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
+                                            if result == MessageBox.Yes:
+                                                nm.nmd().save_file(path, '<launch>\n\n</launch>', 0)
+                                                event.setAccepted(True)
+                                                self.load_request_signal.emit(path)
+                                except Exception, e:
+                                    MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
+                        except exceptions.ResourceNotFound as not_found:
+                            MessageBox.critical(self, "Error", "Resource not found %s" % search_for, detailed_text=utf8(not_found.error))
             except Exception as err:
                 MessageBox.critical(self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)

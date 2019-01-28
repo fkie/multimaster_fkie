@@ -106,6 +106,10 @@ class TestCommonLib(unittest.TestCase):
         text_path = "$(find invalid_name)/%s/include_dummy.launch" % self.res_dir
         self.assertRaises(rospkg.ResourceNotFound, interpret_path, text_path, "No rospkg.ResourceNotFound raises on invalid pacakge name")
 
+        text_path = "some other --args here '$(find node_manager_daemon_fkie)/%s/include_dummy.launch'" % self.res_dir
+        path = interpret_path(text_path)
+        self.assertEqual(self.test_include_file, path, "wrong interpreted path, expected: %s, got: %s" % (self.test_include_file, path))
+
     def test_include_files(self):
         file_list = [file_tuple for file_tuple in included_files(self.test_include_file, unique=True)]
         self.assertEqual(4, len(file_list), "Count of unique included files is wrong, expected: %d, got: %d" % (4, len(file_list)))

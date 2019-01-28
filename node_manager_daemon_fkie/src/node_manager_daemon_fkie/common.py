@@ -47,7 +47,7 @@ INCLUDE_PATTERN = ["\s*(\$\(find.*?)\"",
                    "binfile=\"(.*?)\"",
                    "\"\s*(pkg:\/\/.*?)\"",
                    "\"\s*(package:\/\/.*?)\""]
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml']
+SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
 try:
     from catkin_pkg.package import parse_package
@@ -176,7 +176,7 @@ def interpret_path(path, pwd='.'):
             pkg_name = groups.groups()[index]
             if pkg_name:
                 pkg = get_pkg_path(pkg_name)
-                path_suffix = path[groups.end():]
+                path_suffix = path[groups.end():].rstrip("'")
                 if path_suffix.startswith('/'):
                     paths = roslib.packages.find_resource(pkg_name, path_suffix.strip(os.path.sep))
                     if len(paths) > 0:
