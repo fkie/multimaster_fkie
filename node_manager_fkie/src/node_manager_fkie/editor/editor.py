@@ -36,6 +36,8 @@ import os
 
 import rospy
 
+
+from master_discovery_fkie.common import masteruri_from_ros
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import package_name, utf8
 from node_manager_fkie.run_dialog import PackageDialog
@@ -674,8 +676,8 @@ class Editor(QMainWindow):
         btn = QPushButton(parent)
         btn.setObjectName("tagButton")
         btn.setText(self._translate("Add &tag"))
-        btn.setShortcut("Ctrl+T")
-        btn.setToolTip('Adds a ROS launch tag to launch file (Ctrl+T)')
+        # btn.setShortcut("Ctrl+T")
+        btn.setToolTip('Adds a ROS launch tag to launch file')
         btn.setMenu(self._create_tag_menu(btn))
         btn.setFlat(True)
         return btn
@@ -749,14 +751,20 @@ class Editor(QMainWindow):
         self._insert_text('<group ns="namespace" clear_params="true|false">\n'
                           '</group>')
 
+    def _get_package_dialog(self):
+        muri = masteruri_from_ros()
+        if self.init_filenames:
+            muri = nmdurl.masteruri(self.init_filenames[0])
+        return PackageDialog(muri)
+
     def _on_add_node_tag(self):
-        dia = PackageDialog()
+        dia = self._get_package_dialog()
         if dia.exec_():
             self._insert_text('<node name="%s" pkg="%s" type="%s">\n'
                               '</node>' % (dia.binary, dia.package, dia.binary))
 
     def _on_add_node_tag_all(self):
-        dia = PackageDialog()
+        dia = self._get_package_dialog()
         if dia.exec_():
             self._insert_text('<node name="%s" pkg="%s" type="%s"\n'
                               '      args="arg1" machine="machine_name"\n'
@@ -805,13 +813,13 @@ class Editor(QMainWindow):
         self._insert_text('<arg name="foo" value="bar" />')
 
     def _on_add_test_tag(self):
-        dia = PackageDialog()
+        dia = self._get_package_dialog()
         if dia.exec_():
             self._insert_text('<test name="%s" pkg="%s" type="%s" test-name="test_%s">\n'
                               '</test>' % (dia.binary, dia.package, dia.binary, dia.binary))
 
     def _on_add_test_tag_all(self):
-        dia = PackageDialog()
+        dia = self._get_package_dialog()
         if dia.exec_():
             self._insert_text('<test name="%s" pkg="%s" type="%s" test-name="test_%s">\n'
                               '      args="arg1" time-limit="60.0"\n'
