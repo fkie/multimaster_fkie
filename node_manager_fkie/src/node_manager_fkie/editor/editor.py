@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QKeySequence, QTextCursor, QTextDocument
+from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal, QTimer
+from python_qt_binding.QtGui import QColor, QIcon, QKeySequence, QTextCursor, QTextDocument
 import os
 
 import rospy
@@ -52,11 +52,11 @@ from node_manager_fkie.detailed_msg_box import MessageBox
 
 try:
     from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QWidget, QMainWindow
-    from python_qt_binding.QtGui import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget
+    from python_qt_binding.QtGui import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget, QTextBrowser, QTextEdit
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QWidget, QMainWindow
-    from python_qt_binding.QtWidgets import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget
+    from python_qt_binding.QtWidgets import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget, QTextBrowser, QTextEdit
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
 
@@ -136,6 +136,8 @@ class Editor(QMainWindow):
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
 
         self.verticalLayout.addWidget(self.tabWidget)
+        self.log_bar = self._create_log_bar()
+        self.verticalLayout.addWidget(self.log_bar)
         self.buttons = self._create_buttons()
         self.verticalLayout.addWidget(self.buttons)
         self.setCentralWidget(self.main_widget)
@@ -149,6 +151,7 @@ class Editor(QMainWindow):
         self.graph_view.load_signal.connect(self.on_graph_load_file)
         self.graph_view.goto_signal.connect(self.on_graph_goto)
         self.graph_view.finished_signal.connect(self.on_graph_finished)
+        self.graph_view.info_signal.connect(self.on_graph_info)
         self.addDockWidget(Qt.RightDockWidgetArea, self.graph_view)
         self.readSettings()
         self.find_dialog.setVisible(False)
@@ -167,7 +170,7 @@ class Editor(QMainWindow):
         # create the buttons line
         self.buttons = QWidget(self)
         self.horizontalLayout = QHBoxLayout(self.buttons)
-        self.horizontalLayout.setContentsMargins(4, 0, 4, 0)
+        self.horizontalLayout.setContentsMargins(3, 0, 3, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         # add open upper launchfile button
         self.upperButton = QPushButton(self)
@@ -210,6 +213,13 @@ class Editor(QMainWindow):
         # add spacer
         spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
+        # add show log button
+        self.show_log_button = QPushButton("Log>>", self)
+        self.show_log_button.setObjectName("show_log_button")
+        self.show_log_button.clicked.connect(self.on_toggled_log)
+        self.show_log_button.setFlat(True)
+        self.show_log_button.setCheckable(True)
+        self.horizontalLayout.addWidget(self.show_log_button)
         # add graph button
         self.graphButton = QPushButton(self)
         self.graphButton.setObjectName("graphButton")
@@ -242,6 +252,34 @@ class Editor(QMainWindow):
         self.replaceButton.setCheckable(True)
         self.horizontalLayout.addWidget(self.replaceButton)
         return self.buttons
+
+    def _create_log_bar(self):
+        self.log_bar = QWidget(self)
+        self.horizontal_layout_log_bar = QHBoxLayout(self.log_bar)
+        self.horizontal_layout_log_bar.setContentsMargins(2, 0, 2, 0)
+        self.horizontal_layout_log_bar.setObjectName("horizontal_layout_log_bar")
+        # add info label
+        self.log_browser = QTextEdit()
+        self.log_browser.setObjectName("log_browser")
+        self.log_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.log_browser.setLineWrapMode(QTextEdit.NoWrap)
+        self.log_browser.setMaximumHeight(120)
+        color = QColor(255, 255, 235)
+        bg_style = "QTextEdit#log_browser { background-color: %s;}" % color.name()
+        self.log_bar.setStyleSheet("%s" % (bg_style))
+        self.horizontal_layout_log_bar.addWidget(self.log_browser)
+        # add hide button
+        self.clear_log_button = QPushButton("clear", self)
+        self.clear_log_button.setObjectName("clear_log_button")
+        self.clear_log_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
+        self.clear_log_button.clicked.connect(self.on_clear_log_button_clicked)
+        self.clear_log_button.setFlat(True)
+        self.horizontal_layout_log_bar.addWidget(self.clear_log_button)
+        self._timer_hide_log = QTimer(self)
+        self._timer_hide_log.setSingleShot(True)
+        self._timer_hide_log.setInterval(3000)
+        self._timer_hide_log.timeout.connect(self._timed_hide_log)
+        return self.log_bar
 
     def keyPressEvent(self, event):
         '''
@@ -360,7 +398,9 @@ class Editor(QMainWindow):
                 # TODO: put all text of all tabs into path_text
                 self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True, only_launch=only_launch)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
+                self._search_thread.warning_signal.connect(self.on_search_result_warning)
                 if not self.graph_view.is_loading():
+                    self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
                     self._search_thread.start()
             if goto_line != -1:
                 self._goto(goto_line, True)
@@ -386,11 +426,29 @@ class Editor(QMainWindow):
                 self._goto(linenr, True)
 
     def on_graph_finished(self):
+        self.on_graph_info("build tree: finished", False)
         if self._search_thread:
             try:
                 self._search_thread.start()
+                self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
             except Exception:
                 pass
+
+    def on_graph_info(self, msg, warning=False):
+        self._timer_hide_log.stop()
+        self._timer_hide_log.start()
+        text_color = "#000000"
+        if warning:
+            text_color = "#FE9A2E"
+        text = ('<pre style="padding:10px;"><dt><font color="%s">'
+                '%s</font></dt></pre>' % (text_color, msg))
+        self.log_browser.append(text)
+        self.log_bar.setVisible(True)
+        self.show_log_button.setChecked(True)
+
+    def _timed_hide_log(self):
+        self.log_bar.setVisible(False)
+        self.show_log_button.setChecked(False)
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():
@@ -502,7 +560,7 @@ class Editor(QMainWindow):
     def _on_new_packages(self, url):
         try:
             if nmdurl.nmduri_from_path(url) == nmdurl.nmduri_from_path(self.tabWidget.currentWidget().filename):
-                print "NEW PACAKGES, rebuild graph"
+                rospy.logdebug("packages updated, rebuild graph")
                 if self.graph_view.has_none_packages:
                     self.graph_view.clear_cache()
         except Exception:
@@ -512,6 +570,12 @@ class Editor(QMainWindow):
     ##############################################################################
     # HANDLER for buttons
     ##############################################################################
+
+    def on_clear_log_button_clicked(self):
+        self.log_browser.clear()
+        self.log_bar.setVisible(False)
+        self.show_log_button.setChecked(False)
+        self.tabWidget.currentWidget().setFocus()
 
     def on_upperButton_clicked(self):
         '''
@@ -537,13 +601,25 @@ class Editor(QMainWindow):
             MessageBox.critical(self, "Error", msg)
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), msg)
+            self.on_graph_info("saved failed %s: %s" % (self.tabWidget.currentWidget().filename, msg), True)
         elif saved:
+            self.on_graph_info("saved %s" % self.tabWidget.currentWidget().filename)
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
             self.graph_view.clear_cache(self.tabWidget.currentWidget().filename)
 
     def on_shortcut_find(self):
         pass
+
+    def on_toggled_log(self, value):
+        '''
+        Shows the log bar
+        '''
+        if value:
+            self.log_bar.setVisible(True)
+        else:
+            self.log_bar.setVisible(False)
+            self.tabWidget.currentWidget().setFocus()
 
     def on_toggled_graph(self, value):
         '''
@@ -639,6 +715,7 @@ class Editor(QMainWindow):
         Like on_search_result, but skips the text in comments.
         '''
         if found:
+            self.on_graph_info("search thread: found %s in '%s'" % (search_text, path))
             if self.tabWidget.currentWidget().filename != path:
                 focus_widget = QApplication.focusWidget()
                 if focus_widget is not None:
@@ -651,6 +728,9 @@ class Editor(QMainWindow):
                     # commented -> retrun
                     return
         self.on_search_result(search_text, found, path, startpos, endpos, linenr, line_text)
+
+    def on_search_result_warning(self, msg):
+        self.on_graph_info("search thread: %s" % (msg), True)
 
     def on_replace(self, search_text, path, index, replaced_text):
         '''

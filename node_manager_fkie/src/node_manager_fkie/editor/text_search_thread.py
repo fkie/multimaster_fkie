@@ -66,6 +66,7 @@ class TextSearchThread(QObject, threading.Thread):
         self._path_text = path_text
         self._recursive = recursive
         self._only_launch = only_launch
+        self._found = 0
         self._isrunning = True
         self.setDaemon(True)
 
@@ -112,6 +113,7 @@ class TextSearchThread(QObject, threading.Thread):
                 if self._only_launch:
                     doemit = path.endswith('.launch')
                 if doemit:
+                    self._found += 1
                     self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, self._strip_text(data, pos))
             pos += slen
             pos = data.find(search_text, pos)
@@ -126,6 +128,7 @@ class TextSearchThread(QObject, threading.Thread):
                     search_for_name = search_text.replace('name="', '').replace('"', '')
                     for aname, rname, span in self._next_node_name(data, resolve_args, path):
                         if rname == search_for_name:
+                            self._found += 1
                             self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
             if recursive:
                 queue = []
@@ -143,6 +146,8 @@ class TextSearchThread(QObject, threading.Thread):
                     # test search string for 'name=' and skip search in not launch files
                     if not search_for_node or (search_for_node and inc_path.endswith('.launch')):
                         self.search(search_text, inc_path, recursive, new_dict, '', count + 1)
+        if self._path == path and self._found == 0:
+            self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
 
     def _next_node_name(self, content, resolve_args={}, path=''):
         '''

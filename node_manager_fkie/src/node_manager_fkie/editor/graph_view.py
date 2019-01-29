@@ -63,6 +63,8 @@ class GraphViewWidget(QDockWidget):
     ''' :ivar: filename, line to go'''
     finished_signal = Signal()
     ''' :ivar: graph was updated'''
+    info_signal = Signal(str, bool)
+    ''' :ivar: emit information about current progress (message, warning or not)'''
     DATA_FILE = Qt.UserRole + 1
     DATA_LINE = Qt.UserRole + 2
     DATA_INC_FILE = Qt.UserRole + 3
@@ -117,6 +119,7 @@ class GraphViewWidget(QDockWidget):
             self._fill_graph_thread = GraphThread(current_path, root_path)
             self._fill_graph_thread.graph.connect(self._refill_tree)
             self._fill_graph_thread.error.connect(self._on_load_error)
+            self._fill_graph_thread.info_signal.connect(self._on_info)
             self._fill_graph_thread.start()
 
     def _on_load_error(self, msg):
@@ -125,6 +128,10 @@ class GraphViewWidget(QDockWidget):
             inc_item = QStandardItem('%s' % msg)
             self.graphTreeView.model().appendRow(inc_item)
             self.finished_signal.emit()
+            self.info_signal.emit("build tree failed: %s" % msg, True)
+
+    def _on_info(self, msg, warning):
+        self.info_signal.emit(msg, warning)
 
     def is_loading(self):
         result = False
@@ -209,7 +216,8 @@ class GraphViewWidget(QDockWidget):
                 self._append_items(inc_item, deep + 1)
                 item.appendRow(inc_item)
 
-    def sizeof_fmt(self, num, suffix='B'):
+    @classmethod
+    def sizeof_fmt(cls, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
             if abs(num) < 1024.0:
                 return "%3.0f%s%s" % (num, unit, suffix)
@@ -227,6 +235,9 @@ class GraphThread(QObject, threading.Thread):
     Each entry is a tuple of the line number and path.
     '''
     error = Signal(str)
+    info_signal = Signal(str, bool)
+    '''
+    :ivar: emit information about current progress (message, warning or not)'''
 
     def __init__(self, current_path, root_path):
         '''
@@ -245,6 +256,7 @@ class GraphThread(QObject, threading.Thread):
         '''
         '''
         try:
+            self.info_signal.emit("build tree: start for %s" % self.current_path, False)
             includes = self._get_includes(self.current_path)
             included_from = []
             incs = self._get_includes(self.root_path)
@@ -272,8 +284,11 @@ class GraphThread(QObject, threading.Thread):
                 if path in GRAPH_CACHE:
                     result = GRAPH_CACHE[path]
                 else:
+                    self.info_signal.emit("build tree: download and parse %s" % path, False)
                     filelist = nm.nmd().get_included_files(path, recursive=False)
                     for line, fname, exists, size, _include_args in filelist:
+                        if size > 1048576:
+                            self.info_signal.emit("build tree: large file %s, size %s" % (path, GraphViewWidget.sizeof_fmt(size)), True)
                         result.append((line, fname, exists, size))
                     GRAPH_CACHE[path] = result
         return result
@@ -286,4 +301,6 @@ class GraphThread(QObject, threading.Thread):
             elif exists:
                 inc_files = self._get_includes(fname)
                 result += self._find_inc_file(filename, inc_files, fname)
+            else:
+                self.info_signal.emit("build tree: skip parse %s, not exist" % fname, True)
         return result
