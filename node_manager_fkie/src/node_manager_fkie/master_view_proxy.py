@@ -1305,8 +1305,8 @@ class MasterViewProxy(QWidget):
             if restartable_nodes or killable_nodes or unregisterble_nodes:
                 text += '<b>Selected nodes:</b><br>'
             if restartable_nodes:
-                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes Ctrl+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
-                text += '&nbsp;<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
+                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes Ctrl+Shift+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
+                text += '&nbsp;<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes Ctrl+Shift+Alt+R"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
             if killable_nodes:
                 # text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
                 text += '&nbsp;<a href="kill-screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
@@ -1353,8 +1353,8 @@ class MasterViewProxy(QWidget):
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
             if launches or default_cfgs:
-                text += '<a href="restart-node://%s" title="Restart node"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
-                text += '&nbsp;<a href="restart-node-g://%s" title="Reload global parameter and restart node"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
+                text += '<a href="restart-node://%s" title="Restart node Ctrl+Shift+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
+                text += '&nbsp;<a href="restart-node-g://%s" title="Reload global parameter and restart node Ctrl+Shift+Alt+R"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
             # text += '&nbsp; <a href="kill-node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
             text += '&nbsp; <a href="kill-screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>' % node.name
             if launches:

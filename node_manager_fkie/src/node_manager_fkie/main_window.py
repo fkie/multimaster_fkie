@@ -344,8 +344,10 @@ class MainWindow(QMainWindow):
             self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
         # TODO: self.launch_dock.launchlist_model.reloadPackages()
         self._select_index = 0
-        self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+R", "restart selected nodes")), self)
+        self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+Shift+R", "restart selected nodes")), self)
         self._shortcut_restart_nodes.activated.connect(self._restart_nodes)
+        self._shortcut_restart_nodes_g = QShortcut(QKeySequence(self.tr("Ctrl+Shift+Alt+R", "restart selected nodes and reload global parameter")), self)
+        self._shortcut_restart_nodes_g.activated.connect(self._restart_nodes_g)
 
         nm.nmd().error.connect(self.on_nmd_err)
 
@@ -1905,6 +1907,10 @@ class MainWindow(QMainWindow):
     def _restart_nodes(self):
         if self.currentMaster is not None:
             self.currentMaster.on_force_start_nodes()
+
+    def _restart_nodes_g(self):
+        if self.currentMaster is not None:
+            self.currentMaster.on_force_start_nodes(True)
 
     def keyPressEvent(self, event):
         '''
