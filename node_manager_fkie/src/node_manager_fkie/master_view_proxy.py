@@ -1799,10 +1799,9 @@ class MasterViewProxy(QWidget):
                           'Format': ('string', nm.settings().logging.get_alternatives('console_format'))
                           }
             params = {'Logging': ('dict', log_params)}
-            dia = ParameterDialog(params)
+            dia = ParameterDialog(params, store_geometry="adv_cfg_dialog")
             dia.setFilterVisible(False)
             dia.setWindowTitle('Start with parameters')
-            dia.resize(480, 120)
             dia.setFocusField('Level')
             diag_canceled = not dia.exec_()
             if not diag_canceled:
@@ -1952,10 +1951,9 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.masterTab.startButton.setEnabled(False)
         params = {'Host': ('string', 'localhost')}
-        dia = ParameterDialog(params)
+        dia = ParameterDialog(params, store_geometry="start_node_at_host_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Start node on...')
-        dia.resize(350, 120)
         dia.setFocusField('host')
         if dia.exec_():
             try:
@@ -2449,7 +2447,7 @@ class MasterViewProxy(QWidget):
         for node in selectedNodes:
             # set the parameter in the ROS parameter server
             try:
-                inputDia = MasterParameterDialog(node.masteruri if node.masteruri is not None else self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self)
+                inputDia = MasterParameterDialog(node.masteruri if node.masteruri is not None else self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self, store_geometry="edit_param_dialog")
                 inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
                 if node.has_launch_cfgs(node.cfgs):
                     inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded as not 'default' and the parameter in the launch file will be reloaded on start of the ROS node.")
@@ -2569,10 +2567,9 @@ class MasterViewProxy(QWidget):
             msg_types.sort()
             fields = {'Type': ('string', msg_types), 'Name': ('string', [''])}
             # create a dialog
-            dia = ParameterDialog(fields, parent=self)
+            dia = ParameterDialog(fields, parent=self, store_geometry="topic_pub_dialog")
             dia.setWindowTitle('Publish to topic')
             dia.setFilterVisible(False)
-            dia.resize(300, 95)
             dia.setFocusField('Name')
             if dia.exec_():
                 params = dia.getKeywords()
@@ -2623,10 +2620,9 @@ class MasterViewProxy(QWidget):
                 rate_values = self.__republish_params[topic_name]['! Publish rate']
             args = ServiceDialog._params_from_slots(slots, types, default_topic_values)
             p = {'! Publish rate': ('string', rate_values), topic_type: ('dict', args)}
-            dia = ParameterDialog(p)
+            dia = ParameterDialog(p, store_geometry="start_publisher_dialog")
             dia.setWindowTitle(''.join(['Publish to ', topic_name]))
             dia.showLoadSaveButtons()
-            dia.resize(450, 300)
             dia.setFocusField('! Publish rate')
 
             if dia.exec_():
@@ -2852,10 +2848,9 @@ class MasterViewProxy(QWidget):
         if selectedParameter:
             ns = roslib.names.namespace(selectedParameter[0][0])
         fields = {'name': ('string', ns), 'type': ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
-        newparamDia = ParameterDialog(fields, parent=self)
+        newparamDia = ParameterDialog(fields, parent=self, store_geometry="add_parameter_dialog")
         newparamDia.setWindowTitle('Add new parameter')
         newparamDia.setFilterVisible(False)
-        newparamDia.resize(400, 120)
         newparamDia.accepted.connect(self._on_add_parameter_accepted)
         newparamDia.setFocusField('name')
         newparamDia.show()
@@ -2969,10 +2964,9 @@ class MasterViewProxy(QWidget):
                     params[key] = value
                 if params:
                     dia_params = {'master': ('string', masteruri_from_ros())}
-                    dia = ParameterDialog(dia_params)
+                    dia = ParameterDialog(dia_store_geometry="transfer_param_dialog")
                     dia.setFilterVisible(False)
                     dia.setWindowTitle('Copy parameter')
-                    dia.resize(350, 100)
                     dia.setFocusField('master')
                     if dia.exec_():
                         dia_params = dia.getKeywords()

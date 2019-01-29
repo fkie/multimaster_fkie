@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import Qt, Signal
+from python_qt_binding.QtCore import Qt, Signal, QPoint, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette
 from xmlrpclib import Binary
 import os
@@ -50,7 +50,7 @@ try:
     from python_qt_binding.QtGui import QApplication, QComboBox, QCheckBox, QLineEdit, QScrollArea, QWidget
     from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtGui import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QComboBox, QCheckBox, QLineEdit, QScrollArea, QWidget
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtWidgets import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
@@ -309,7 +309,7 @@ class ParameterDescription(object):
             for i in range(self.widget().count()):
                 try:
                     values.remove(self.widget().itemText(i))
-                except:
+                except Exception:
                     pass
             if self.widget().count() == 0:
                 values.insert(0, '')
@@ -613,7 +613,7 @@ class ArrayBox(MainBox):
                         self.params.remove(child.parameter_description)
                 item.widget().setParent(None)
                 del item
-            except:
+            except Exception:
                 import traceback
                 print traceback.format_exc(1)
             self.count_label.setText(utf8(self._dynamic_items_count))
@@ -682,7 +682,7 @@ class ParameterDialog(QDialog):
     This dialog creates an input mask for the given parameter and their types.
     '''
 
-    def __init__(self, params=dict(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, sidebar_var='', parent=None):
+    def __init__(self, params=dict(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, sidebar_var='', parent=None, store_geometry=''):
         '''
         Creates an input dialog.
         @param params: a dictionary with parameter names and (type, values).
@@ -763,7 +763,7 @@ class ParameterDialog(QDialog):
             self.horizontalLayout.addWidget(self.sidebar_frame)
             try:
                 self.sidebar_default_val = params[sidebar_var][1]
-            except:
+            except Exception:
                 self.sidebar_default_val = ''
             values.sort()
             for v in values:
@@ -779,7 +779,17 @@ class ParameterDialog(QDialog):
 
         if self.filter_frame.isVisible():
             self.filter_field.setFocus()
-        self.setMinimumSize(350, 200)
+        # restore from configuration file
+        self._geometry_name = store_geometry
+        if store_geometry and nm.settings().store_geometry:
+            settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+            self._history_selected_robot = settings.value("selected_robot", '')
+            settings.beginGroup(store_geometry)
+            self.resize(settings.value("size", QSize(600, 300)))
+            pos = settings.value("pos", QPoint(0, 0))
+            if pos.x() != 0 and pos.y() != 0:
+                self.move(pos)
+            settings.endGroup()
 
     def __del__(self):
         self.content.removeAllFields()
@@ -794,7 +804,7 @@ class ParameterDialog(QDialog):
                 field = self.content.getField(self.sidebar_frame.objectName())
                 if field is not None and field.currentText() == self.sidebar_default_val:
                     field.setEnabled(True if self._sidebar_selected == 0 else False)
-            except:
+            except Exception:
                 pass
 
     def showLoadSaveButtons(self):
@@ -965,14 +975,23 @@ class ParameterDialog(QDialog):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    def _store_geometry(self):
+        if self._geometry_name:
+            settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+            settings.beginGroup(self._geometry_name)
+            settings.setValue("size", self.size())
+            settings.setValue("pos", self.pos())
+            settings.endGroup()
 
     def accept(self):
+        self._store_geometry()
         self.setResult(QDialog.Accepted)
         self.accepted.emit()
         if self.isModal():
             self.hide()
 
     def reject(self):
+        self._store_geometry()
         self.setResult(QDialog.Rejected)
         self.rejected.emit()
         self.hide()

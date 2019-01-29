@@ -236,7 +236,7 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.LaunchArgsSelectionRequest):
             from node_manager_fkie.parameter_dialog import ParameterDialog
-            input_dia = ParameterDialog(req.request.args_dict)
+            input_dia = ParameterDialog(req.request.args_dict, store_geometry="launch_dialog")
             input_dia.setFilterVisible(False)
             input_dia.setWindowTitle('Enter the argv for %s' % req.request.launchfile)
             if input_dia.exec_():

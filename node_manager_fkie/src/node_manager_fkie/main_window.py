@@ -940,10 +940,9 @@ class MainWindow(QMainWindow):
                   'Only screen log': ('bool', True),
                   # 'Optional Parameter': ('list', params_optional)
                   }
-        dia = ParameterDialog(params, sidebar_var='Host')
+        dia = ParameterDialog(params, sidebar_var='Host', store_geometry="master_log_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Show log')
-        dia.resize(450, 150)
         dia.setFocusField('Host')
         if dia.exec_():
             try:
@@ -1476,10 +1475,9 @@ class MainWindow(QMainWindow):
                   'Start sync': ('bool', nm.settings().start_sync_with_discovery),
                   'Optional Parameter': ('list', params_optional)
                   }
-        dia = ParameterDialog(params, sidebar_var='Host')
+        dia = ParameterDialog(params, sidebar_var='Host', store_geometry="start_robot_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Start discovery')
-        dia.resize(450, 330)
         dia.setFocusField('Host')
         if dia.exec_():
             try:
@@ -1691,10 +1689,9 @@ class MainWindow(QMainWindow):
             params = {'master': ('string', self.currentMaster.masteruri),
                       'recursive': ('bool', 'False')
                       }
-            dia = ParameterDialog(params)
+            dia = ParameterDialog(params, store_geometry="launch_transfer_dialog")
             dia.setFilterVisible(False)
             dia.setWindowTitle('Transfer file')
-            dia.resize(350, 100)
             dia.setFocusField('master')
             if dia.exec_():
                 try:
