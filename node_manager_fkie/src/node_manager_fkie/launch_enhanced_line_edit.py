@@ -44,7 +44,7 @@ class EnhancedLineEdit(QLineEdit):
                             max(msz.height(), button_reload.sizeHint().height() + frameWidth * 2 + 2))
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
-        self._timer.setInterval(800)
+        self._timer.setInterval(500)
         self._timer.timeout.connect(self._emit_refresh_text)
 
     def resizeEvent(self, event):

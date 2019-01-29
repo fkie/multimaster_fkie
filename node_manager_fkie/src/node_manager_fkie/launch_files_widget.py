@@ -103,6 +103,7 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_search_line.refresh_signal.connect(self.set_package_filter)
         self.ui_search_line.stop_signal.connect(self.stop)
         # connect to the button signals
+        self.ui_button_reload.clicked.connect(self.on_reload_clicked)
         self.ui_button_edit.clicked.connect(self.on_edit_xml_clicked)
         self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
         self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
@@ -223,7 +224,13 @@ class LaunchFilesWidget(QDockWidget):
                 self.launchlist_model.show_packages(text)
                 self.ui_search_line.set_process_active(False)
         else:
-            self.launchlist_model.reload_current_path(clear_cache=True)
+            self.launchlist_model.reload_current_path()
+
+    def on_reload_clicked(self):
+        '''
+        Clear daemon's cache.
+        '''
+        self.launchlist_model.reload_current_path(clear_cache=True)
 
     def on_edit_xml_clicked(self):
         '''
