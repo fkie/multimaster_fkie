@@ -5,18 +5,16 @@ project(node_manager_daemon_fkie)
 # python -m grpc_tools.protoc -Iprotos --python_out=./src/node_manager_daemon_fkie/. --grpc_python_out=./src/node_manager_daemon_fkie/. protos/launch_manager_client.proto
 
 find_package(catkin REQUIRED COMPONENTS
+  multimaster_msgs_fkie
   roslaunch
   rospy
 )
 
 catkin_python_setup()
-catkin_package(
-#  CFG_EXTRAS
-#  INCLUDE_DIRS include
-#  LIBRARIES node_manager_daemon_fkie
-#  CATKIN_DEPENDS roslaunch rospy
-#  DEPENDS system_lib
-)
+catkin_package()
+# generate version files; cmake from multimaster_msgs
+generate_version(TARGETS version_TARGETS)
+
 
 #############
 ## Install ##
@@ -46,6 +44,15 @@ install(
         tests/test_grpc_server.py
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/tests
 )
+
+# install generated version files; cmake from multimaster_msgs
+if (DEFINED version_TARGETS)
+    install(
+        FILES
+            ${version_TARGETS}
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    )
+endif()
 
 ## Add folders to be run by python nosetests
 if (CATKIN_ENABLE_TESTING)

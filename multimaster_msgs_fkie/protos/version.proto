@@ -31,38 +31,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 syntax = "proto3";
-package multimaster_msgs_fkie.screen;
+package multimaster_msgs_fkie.version;
 
 
-/** The screen manager service definition. */
-service ScreenService {
-	rpc GetScreens (Screen) returns (Screens);
-	rpc GetAllScreens (Empty) returns (Screens);
-	rpc GetMultipleScreens (Empty) returns (Screens);
-	rpc RosClean (Empty) returns (Empty);
-	rpc DeleteLog (Nodes) returns (Empty);
+/** The version service definition. */
+service VersionService {
+	rpc GetVersion (Empty) returns (Version);
 }
 
 message Empty {
 }
 
-/** The list of screen with their name and corresponding node name. */
-message Screens {
-	repeated Screen screens = 1;
-}
-
-/** The description of the screen session.
- * :param name: the name of the screen.
- * :param node: the name of the ROS node.
- */
-message Screen {
-	string name = 1;
-	string node = 2;
-}
-
-/** Node names
- * :param nodes: list with names of the ROS nodes.
- */
-message Nodes {
-	repeated string nodes = 1;
+message Version {
+	string version = 1;
+	string date = 2;
 }

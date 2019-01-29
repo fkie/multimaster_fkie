@@ -31,7 +31,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 syntax = "proto3";
-package fkie_node_manager_daemon.launch;
+package multimaster_msgs_fkie.launch;
 
 // The launch manager service definition.
 service LaunchService {

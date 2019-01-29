@@ -50,6 +50,7 @@ from node_manager_daemon_fkie.common import interpret_path, utf8
 from node_manager_daemon_fkie.host import get_hostname, get_port
 from node_manager_daemon_fkie import exceptions
 from node_manager_daemon_fkie import url as nmdurl
+from node_manager_daemon_fkie.version import detect_version
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
@@ -173,6 +174,8 @@ class MasterViewProxy(QWidget):
         self._has_nmd = False
         self._changed_binaries = dict()
         self.default_load_launch = ''
+        self._nmd_version, self._nmd_date = detect_version('node_manager_daemon_fkie')
+
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
 #         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
@@ -329,6 +332,7 @@ class MasterViewProxy(QWidget):
         nm.nmd().mtimes.connect(self._apply_mtimes)
         nm.nmd().changed_binaries.connect(self._apply_changed_binaries)
         nm.nmd().launch_nodes.connect(self.on_launch_description_retrieved)
+        nm.nmd().version_signal.connect(self.on_nmd_version_retrieved)
 
         # set the shortcuts
         self._shortcut1 = QShortcut(QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -507,6 +511,7 @@ class MasterViewProxy(QWidget):
         if self._has_nmd:
             # only try to get updates from daemon if it is running
             nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
+            nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
 #        nmd_uri_local = nmdurl.nmduri()
 #         if nmd_uri_local != nmd_uri:
 #             nm.nmd().get_nodes_threaded(nmd_uri_local, masteruri_from_ros())
@@ -1020,6 +1025,11 @@ class MasterViewProxy(QWidget):
                     self.stop_nodes_by_name(restart)
                     self.start_nodes_by_name(restart, cfg, force=True)
 
+    def on_nmd_version_retrieved(self, nmd_url, version, date):
+        # rospy.logdebug("%s  %s  %s" % (version, date, nmd_url))
+        if version != self._nmd_version:
+            self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon has on %s different version '%s', own '%s'.\nShould it be started?" % (self.masteruri, version, self._nmd_version), MessageData(self.masteruri))
+
     @property
     def launch_servers(self):
         return self.__launch_servers
@@ -1295,7 +1305,7 @@ class MasterViewProxy(QWidget):
             if restartable_nodes or killable_nodes or unregisterble_nodes:
                 text += '<b>Selected nodes:</b><br>'
             if restartable_nodes:
-                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
+                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes Ctrl+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
                 text += '&nbsp;<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
             if killable_nodes:
                 # text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))

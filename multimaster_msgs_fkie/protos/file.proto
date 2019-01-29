@@ -31,7 +31,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 syntax = "proto3";
-package fkie_node_manager_daemon.file;
+package multimaster_msgs_fkie.file;
 
 
 /** The file manager service definition. */

@@ -36,13 +36,12 @@ import os
 import roslib.network
 import rospy
 import socket
-import subprocess
 import sys
 import threading
 
 from master_discovery_fkie.common import get_hostname
 from node_manager_daemon_fkie import host as nmdhost
-from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
+from node_manager_daemon_fkie.version import detect_version
 from .common import get_ros_home
 from .history import History
 from .name_resolution import NameResolution
@@ -86,55 +85,6 @@ _START_HANDLER = None
 _NAME_RESOLUTION = None
 _HISTORY = None
 _QAPP = None
-
-
-def detect_version():
-    '''
-    Try to detect the current version from git, installed VERSION/DATE files or package.xml
-    '''
-    try:
-        global __version__
-        global __date__
-        pkg_path = roslib.packages.get_pkg_dir(PKG_NAME)
-        if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
-            try:
-                with open("%s/VERSION" % pkg_path) as f:
-                    version = f.read()
-                    __version__ = version.strip()
-                with open("%s/DATE" % pkg_path) as f:
-                    datetag = f.read().split()
-                    if datetag:
-                        __date__ = datetag[0]
-            except Exception as err:
-                print >> sys.stderr, "version detection error: %s" % err
-        elif os.path.isdir("%s/../.git" % settings().PACKAGE_DIR):
-            try:
-                os.chdir(settings().PACKAGE_DIR)
-                ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always'], stdout=subprocess.PIPE)
-                output = ps.stdout.read()
-                __version__ = output.strip()
-                ps = SupervisedPopen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE)
-                output = ps.stdout.read().split()
-                if output:
-                    __date__ = output[0]
-            except Exception as err:
-                print >> sys.stderr, "version detection error: %s" % err
-        else:
-            import xml.dom
-            import xml.dom.minidom as dom
-            ppath = roslib.packages.find_resource(PKG_NAME, 'package.xml')
-            if ppath:
-                doc = dom.parse(ppath[0])
-                version_tags = doc.getElementsByTagName("version")
-                if version_tags:
-                    version = version_tags[0].firstChild.data
-                    __version__ = version
-                else:
-                    print >> sys.stderr, "version detection: no version tag in package.xml found!"
-            else:
-                print >> sys.stderr, "version detection: package.xml not found!"
-    except Exception as err:
-        print >> sys.stderr, "version detection error: %s" % err
 
 
 def settings():
@@ -398,7 +348,9 @@ def main(name):
             print >> sys.stderr, "please install 'python_qt_binding' package!!"
             sys.exit(-1)
     init_settings()
-    detect_version()
+    global __version__
+    global __date__
+    __version__, __date__ = detect_version(PKG_NAME)
     parser = init_arg_parser()
     args = rospy.myargv(argv=sys.argv)
     parsed_args = parser.parse_args(args[1:])

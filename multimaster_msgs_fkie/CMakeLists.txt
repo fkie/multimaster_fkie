@@ -35,7 +35,10 @@ add_service_files(
 
 generate_messages(DEPENDENCIES std_msgs)
 
-catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
+catkin_package(
+    CFG_EXTRAS version.cmake.in
+    CATKIN_DEPENDS message_runtime std_msgs
+)
 
 # generate code for gRPC protocols
 include(cmake/grpc_protoc.cmake)

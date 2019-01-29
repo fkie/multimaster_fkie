@@ -10,6 +10,7 @@
   <url>https://github.com/fkie/multimaster_fkie</url>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>multimaster_msgs_fkie</build_depend>
   <build_depend>python-catkin-pkg</build_depend>
   <build_depend>roslaunch</build_depend>
   <build_depend>rospy</build_depend>

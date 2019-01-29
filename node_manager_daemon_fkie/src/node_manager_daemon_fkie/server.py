@@ -39,10 +39,12 @@ from .common import interpret_path
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .screen_servicer import ScreenServicer
+from .version_servicer import VersionServicer
 
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
 import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
 import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
+import multimaster_msgs_fkie.grpc.version_pb2_grpc as vgrpc
 
 
 class GrpcServer:
@@ -76,6 +78,7 @@ class GrpcServer:
             fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
             lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
             sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(), self.server)
+            vgrpc.add_VersionServiceServicer_to_server(VersionServicer(), self.server)
             self.server.start()
             rospy.loginfo("Server at '%s' started!" % url)
 

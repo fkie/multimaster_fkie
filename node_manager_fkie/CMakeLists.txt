@@ -16,9 +16,10 @@ catkin_package(
 #        node_manager_daemon_fkie
 )
 
-# generate code for gRPC protocols
-include(cmake/version.cmake)
-generate_version()
+# generate version files; cmake from multimaster_msgs
+generate_version(TARGETS version_TARGETS)
+
+# generate launcher
 include(cmake/build_launcher.cmake)
 build_launcher()
 
@@ -75,15 +76,16 @@ install(
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-if (DEFINED VERSION_FILES)
+# install generated version files; cmake from multimaster_msgs
+if (DEFINED version_TARGETS)
     install(
         FILES
-            ${VERSION_FILES}
+            ${version_TARGETS}
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
 endif()
 
-if (EXISTS ${NODE_MANAGER_LAUNCHER})
+if (EXISTS "${NODE_MANAGER_LAUNCHER}")
     # Install the launcher file.
     install(CODE "set(NODE_MANAGER_LAUNCHER \"${NODE_MANAGER_LAUNCHER}\")")
     install(SCRIPT cmake/install_launcher.cmake)

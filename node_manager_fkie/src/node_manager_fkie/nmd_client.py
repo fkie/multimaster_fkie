@@ -44,6 +44,7 @@ import node_manager_daemon_fkie.remote as remote
 import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
 import node_manager_daemon_fkie.screen_stub as sstub
+import node_manager_daemon_fkie.version_stub as vstub
 from node_manager_daemon_fkie.startcfg import StartConfig
 from node_manager_daemon_fkie import url as nmdurl
 from .common import utf8
@@ -71,10 +72,11 @@ class ThreadManager(QObject):
     '''
 
     def __init__(self):
+        QObject.__init__(self)
         self._threads = {}
 
     def __del__(self):
-        self._threads.clear()
+        self.finished('')
 
     def has_thread(self, thread_id):
         try:
@@ -91,7 +93,7 @@ class ThreadManager(QObject):
         :param object target: callable object to be invoked by start of new thread
         :param tule args: the argument tuple for the target invocation. Defaults to ().
         '''
-        if not self.has_thread(thread_id):
+        if not rospy.is_shutdown() and not self.has_thread(thread_id):
             thread = threading.Thread(target=target, args=args)
             thread.setDaemon(True)
             self._threads[thread_id] = thread
@@ -105,7 +107,10 @@ class ThreadManager(QObject):
         :param str thread_id: thread identification string used while start_thread().
         :raise KeyError: if thread_id does not exists.
         '''
-        del self._threads[thread_id]
+        if thread_id:
+            del self._threads[thread_id]
+        else:
+            self._threads.clear()
 
 
 class NmdClient(QObject):
@@ -149,6 +154,10 @@ class NmdClient(QObject):
     '''
       :ivar str,list update_signal: is a signal, which is emitted, if a new list with launch files is retrieved. The signal has the URI of the node manager daemon and a list with node_manager_daemon_fkie.launch_description.LaunchDescription.
     '''
+    version_signal = Signal(str, str, str)
+    '''
+      :ivar str,str,str version_signal: signal emitted on new version {grpc_url, version, date}.
+    '''
 
     def __init__(self):
         QObject.__init__(self)
@@ -164,7 +173,7 @@ class NmdClient(QObject):
 
     def stop(self):
         print("clear grpc channels...")
-        del self._threads
+        self._threads.finished('')
         remote.clear_channels()
         print("clear grpc channels...ok")
         self._cache_file_content.clear()
@@ -245,6 +254,12 @@ class NmdClient(QObject):
         channel = remote.get_insecure_channel(uri)
         if channel is not None:
             return sstub.ScreenStub(channel)
+        raise Exception("Node manager daemon '%s' not reachable" % uri)
+
+    def get_version_manager(self, uri='localhost:12321'):
+        channel = remote.get_insecure_channel(uri)
+        if channel is not None:
+            return vstub.VersionStub(channel)
         raise Exception("Node manager daemon '%s' not reachable" % uri)
 
     def list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
@@ -717,3 +732,16 @@ class NmdClient(QObject):
         uri, _ = nmdurl.split(grpc_url)
         sm = self.get_screen_manager(uri)
         return sm.delete_log(nodes)
+
+    def get_version_threaded(self, grpc_url='grpc://localhost:12321'):
+        self._threads.start_thread("gvt_%s" % grpc_url, target=self.get_version, args=(grpc_url, True))
+
+    def get_version(self, grpc_url='grpc://localhost:12321', threaded=False):
+        rospy.logdebug("get version from %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        vm = self.get_version_manager(uri)
+        version, date = vm.get_version()
+        if threaded:
+            self.version_signal.emit(grpc_url, version, date)
+            self._threads.finished("gvt_%s" % grpc_url)
+        return version, date

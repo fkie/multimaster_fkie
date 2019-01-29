@@ -4,14 +4,14 @@ macro(generate_version)
     find_program(GIT git)
     if (NOT GIT)
         message(STATUS "git binary not found, VERSION and DATE files are not created")
-    elseif (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
-        message(STATUS "no .git repository found, VERSION and DATE files are not created")
+    elseif ( (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git) AND (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../.git))
+        message(STATUS "no .git repository found in ${CMAKE_CURRENT_SOURCE_DIR}, VERSION and DATE files are not created")
     else(GIT)
+        cmake_parse_arguments(arg "" "TARGETS" "" ${ARGN})
         # install a file with version tag
         set(VERSION_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}")
-        set(VERSION_FILES "")
         set(VERSION_FILE "${VERSION_DIR}/VERSION")
-        list(APPEND VERSION_FILES ${VERSION_FILE})
+        list(APPEND ${arg_TARGETS} ${VERSION_FILE})
         # generate target for version file
         add_custom_command(
             OUTPUT ${VERSION_FILE}
@@ -22,7 +22,7 @@ macro(generate_version)
         )
         # generate target for date file
         set(DATE_FILE "${VERSION_DIR}/DATE")
-        list(APPEND VERSION_FILES ${DATE_FILE})
+        list(APPEND ${arg_TARGETS} ${DATE_FILE})
         add_custom_command(
             OUTPUT ${DATE_FILE}
             COMMAND bash -c "${GIT} show -s --format=%ci > ${DATE_FILE}"
@@ -34,7 +34,7 @@ macro(generate_version)
         # create ALL target
         add_custom_target(
             TARGET ALL
-            DEPENDS ${VERSION_FILES}
+            DEPENDS ${${arg_TARGETS}}
             COMMENT "Generate version files"
         )
     endif()

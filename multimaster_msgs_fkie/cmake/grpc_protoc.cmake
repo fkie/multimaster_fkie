@@ -4,7 +4,7 @@ macro(generate_grpc)
     find_program(PYTHON python)
     set(GRPC_GENERATED_SRC_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/grpc")
     # set(GRPC_GENERATED_SRC_DIR "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}")
-    set(PROTO_FILES file launch screen)
+    set(PROTO_FILES file launch screen version)
     set(GRPC_GENERATED_SOURCES "")
     set(ABS_PROTO_PATH "${PROJECT_SOURCE_DIR}/protos")
     # command to create generated directory
