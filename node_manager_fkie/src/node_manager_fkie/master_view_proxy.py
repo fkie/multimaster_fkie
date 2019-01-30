@@ -454,7 +454,7 @@ class MasterViewProxy(QWidget):
         '''
         try:
             update_result = (set(), set(), set(), set(), set(), set(), set(), set(), set())
-            my_masterinfo = master_info.masteruri == self.masteruri
+            my_masterinfo = nmdurl.equal_uri(master_info.masteruri, self.masteruri)
             if self.__master_info is None:
                 if my_masterinfo:
                     self.__master_info = master_info
@@ -1033,18 +1033,34 @@ class MasterViewProxy(QWidget):
                     self.start_nodes_by_name(restart, cfg, force=True)
 
     def on_nmd_version_retrieved(self, nmd_url, version, date):
-        # rospy.logdebug("%s  %s  %s" % (version, date, nmd_url))
+        if not nmdurl.equal_uri(nmdurl.masteruri(nmd_url), self.masteruri):
+            return
+        if version != self._nmd_version:
+            res = self.set_diagnostic_warn('/node_manager_daemon', "node_manager_daemon has on<br>%s different version<br>'%s', own:<br>'%s'.<br>Please update and restart!" % (self.masteruri, version, self._nmd_version))
+            if not res:
+                self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon has on %s different version '%s', own '%s'.\nShould it be started?" % (self.masteruri, version, self._nmd_version), MessageData(self.masteruri))
+        else:
+            self.set_diagnostic_ok('/node_manager_daemon')
+
+    def set_diagnostic_warn(self, node_name, msg):
         if DIAGNOSTICS_AVAILABLE:
             diagnostic_status = DiagnosticStatus()
-            diagnostic_status.name = '/node_manager_daemon'
-            if version != self._nmd_version:
-                diagnostic_status.level = DiagnosticStatus.WARN
-                diagnostic_status.message = "node_manager_daemon has on<br>%s different version<br>'%s', own:<br>'%s'.<br>Please update and restart!" % (self.masteruri, version, self._nmd_version)
-            else:
-                diagnostic_status.level = DiagnosticStatus.OK
+            diagnostic_status.name = node_name
+            diagnostic_status.level = DiagnosticStatus.WARN
+            diagnostic_status.message = msg
             self.append_diagnostic(diagnostic_status)
-        elif version != self._nmd_version:
-            self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon has on %s different version '%s', own '%s'.\nShould it be started?" % (self.masteruri, version, self._nmd_version), MessageData(self.masteruri))
+            return True
+        return False
+
+    def set_diagnostic_ok(self, node_name):
+        if DIAGNOSTICS_AVAILABLE:
+            diagnostic_status = DiagnosticStatus()
+            diagnostic_status.name = node_name
+            diagnostic_status.level = DiagnosticStatus.OK
+            diagnostic_status.message = ''
+            self.append_diagnostic(diagnostic_status)
+            return True
+        return False
 
     @property
     def launch_servers(self):

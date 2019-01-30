@@ -54,7 +54,7 @@ class TestUrlLib(unittest.TestCase):
         pass
 
     def test_nmduri(self):
-        masteruri = 'http://localhost:11311'
+        masteruri = 'http://localhost:11311/'
         grpc_exp = 'grpc://localhost:12321'
         grpc_url = url.nmduri(masteruri)
         self.assertEqual(grpc_exp, grpc_url, "wrong grpc url from default masteruri, expected: %s, got: %s" % (grpc_exp, grpc_url))
@@ -64,7 +64,7 @@ class TestUrlLib(unittest.TestCase):
 
     def test_masteruri(self):
         grpc_url = 'grpc://localhost:12321'
-        muri_exp = 'http://localhost:11311'
+        muri_exp = 'http://localhost:11311/'
         muri_res = url.masteruri(grpc_url)
         self.assertEqual(muri_exp, muri_res, "wrong masteruri from default grpc url, expected: %s, got: %s" % (muri_exp, muri_res))
         grpc_url = ''

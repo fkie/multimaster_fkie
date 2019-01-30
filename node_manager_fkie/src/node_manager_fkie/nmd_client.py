@@ -716,8 +716,8 @@ class NmdClient(QObject):
             sm = self.get_screen_manager(uri)
             result = sm.multiple_screens()
             self.multiple_screens.emit(grpc_url, result)
-        except Exception:
-            pass
+        except Exception as e:
+            self.error.emit("get_multiple_screens", "grpc://%s" % uri, "", e)
         if hasattr(self, '_threads'):
             self._threads.finished("mst_%s" % grpc_url)
 
@@ -740,8 +740,11 @@ class NmdClient(QObject):
         rospy.logdebug("get version from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         vm = self.get_version_manager(uri)
-        version, date = vm.get_version()
-        if threaded:
-            self.version_signal.emit(grpc_url, version, date)
-            self._threads.finished("gvt_%s" % grpc_url)
-        return version, date
+        try:
+            version, date = vm.get_version()
+            if threaded:
+                self.version_signal.emit(grpc_url, version, date)
+                self._threads.finished("gvt_%s" % grpc_url)
+            return version, date
+        except Exception as e:
+            self.error.emit("get_version", "grpc://%s" % uri, "", e)

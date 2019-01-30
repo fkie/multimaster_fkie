@@ -39,6 +39,7 @@ from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
 from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
 from python_qt_binding.QtGui import QPalette, QColor
 import getpass
+import grpc
 import os
 import roslib
 import rospy
@@ -2044,3 +2045,10 @@ class MainWindow(QMainWindow):
         '''
         if method == '_get_nodes':
             rospy.logwarn("Error while get launch configuration from %s: %s" % (url, utf8(error)))
+            if hasattr(error, 'code'):
+                if error.code() == grpc.StatusCode.UNIMPLEMENTED:
+                    muri = nmdurl.masteruri(url)
+                    master = self.getMaster(muri, create_new=False)
+                    if master:
+                        self.master_model.add_master_error(nm.nameres().mastername(muri), 'node_manager_daemon has unimplemented methods! Please update!')
+                        master.set_diagnostic_warn('/node_manager_daemon', 'unimplemented methods detected! Please update!')

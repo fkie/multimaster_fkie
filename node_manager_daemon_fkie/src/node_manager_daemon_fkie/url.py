@@ -89,7 +89,7 @@ def masteruri(grpc_path):
     port = o.port
     if o.scheme == 'grpc':
         port -= NMD_SERVER_PORT_OFFSET
-    return "http://%s:%d" % (o.hostname, port)
+    return "http://%s:%d/" % (o.hostname, port)
 
 
 def nmdport(uri=''):

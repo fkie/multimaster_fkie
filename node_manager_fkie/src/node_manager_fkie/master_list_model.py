@@ -211,6 +211,11 @@ class MasterItem(QStandardItem):
         self._master_errors = error_list
         self.updateNameView(self.master, self.quality, self)
 
+    def add_master_error(self, msg):
+        if msg not in self._master_errors:
+            self._master_errors.append(msg)
+            self.updateNameView(self.master, self.quality, self)
+
     def updateTimeDiff(self, timediff):
         self._timediff = timediff
         self.updateNameView(self.master, self.quality, self)
@@ -500,6 +505,20 @@ class MasterModel(QStandardItemModel):
             masterItem = root.child(i, self.COL_NAME)
             if masterItem.master.name == master:
                 masterItem.updateMasterErrors(errors)
+                break
+
+    def add_master_error(self, master, msg):
+        '''
+        Add error to the error list.
+
+        :param str master: the ROS master to update
+        :param str msg: error message
+        '''
+        root = self.invisibleRootItem()
+        for i in reversed(range(root.rowCount())):
+            masterItem = root.child(i, self.COL_NAME)
+            if masterItem.master.name == master:
+                masterItem.add_master_error(msg)
                 break
 
     def updateTimeDiff(self, master, timediff):
