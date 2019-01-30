@@ -41,7 +41,6 @@ import roslib
 import rospy
 
 import remote
-from .client import GrpcClient
 from .server import GrpcServer
 from .common import interpret_path
 from .screen import test_screen
@@ -92,7 +91,6 @@ def start_server(node_name='node_manager_daemon'):
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % node_name, "INFO"))
     except Exception as e:
         print "Error while set the log level: %s\n->INFO level will be used!" % e
-    log_level = rospy.DEBUG
     rospy.init_node(node_name, log_level=log_level)
     set_terminal_name(node_name)
     set_process_name(node_name)
