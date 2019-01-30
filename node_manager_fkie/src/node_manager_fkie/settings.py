@@ -135,7 +135,7 @@ class Settings(object):
     TIMEOUT_UPDATES = 20
 
     SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
-    LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+    LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xacro']
 
     STORE_GEOMETRY = True
     MOVABLE_DOCK_WIDGETS = True
