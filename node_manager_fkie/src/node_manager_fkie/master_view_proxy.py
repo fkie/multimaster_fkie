@@ -80,6 +80,13 @@ try:
 except Exception:
     from python_qt_binding.QtCore import QItemSelection, QItemSelectionModel, QItemSelectionRange, QSortFilterProxyModel
 
+# from python_qt_binding import QtUiTools
+try:
+    from diagnostic_msgs.msg import DiagnosticStatus
+    DIAGNOSTICS_AVAILABLE = True
+except Exception:
+    DIAGNOSTICS_AVAILABLE = False
+
 
 class MasterViewProxy(QWidget):
     '''
@@ -1027,7 +1034,16 @@ class MasterViewProxy(QWidget):
 
     def on_nmd_version_retrieved(self, nmd_url, version, date):
         # rospy.logdebug("%s  %s  %s" % (version, date, nmd_url))
-        if version != self._nmd_version:
+        if DIAGNOSTICS_AVAILABLE:
+            diagnostic_status = DiagnosticStatus()
+            diagnostic_status.name = '/node_manager_daemon'
+            if version != self._nmd_version:
+                diagnostic_status.level = DiagnosticStatus.WARN
+                diagnostic_status.message = "node_manager_daemon has on<br>%s different version<br>'%s', own:<br>'%s'.<br>Please update and restart!" % (self.masteruri, version, self._nmd_version)
+            else:
+                diagnostic_status.level = DiagnosticStatus.OK
+            self.append_diagnostic(diagnostic_status)
+        elif version != self._nmd_version:
             self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon has on %s different version '%s', own '%s'.\nShould it be started?" % (self.masteruri, version, self._nmd_version), MessageData(self.masteruri))
 
     @property
