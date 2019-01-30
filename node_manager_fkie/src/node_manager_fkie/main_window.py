@@ -2043,12 +2043,14 @@ class MainWindow(QMainWindow):
         :param str url: the URI of the node manager daemon.
         :param Exception error: on occurred exception.
         '''
+        reason = method
         if method == '_get_nodes':
-            rospy.logwarn("Error while get launch configuration from %s: %s" % (url, utf8(error)))
-            if hasattr(error, 'code'):
-                if error.code() == grpc.StatusCode.UNIMPLEMENTED:
-                    muri = nmdurl.masteruri(url)
-                    master = self.getMaster(muri, create_new=False)
-                    if master:
-                        self.master_model.add_master_error(nm.nameres().mastername(muri), 'node_manager_daemon has unimplemented methods! Please update!')
-                        master.set_diagnostic_warn('/node_manager_daemon', 'unimplemented methods detected! Please update!')
+            reason = 'get launch configuration'
+        rospy.logwarn("Error while %s from %s: %s" % (reason, url, utf8(error)))
+        if hasattr(error, 'code'):
+            if error.code() == grpc.StatusCode.UNIMPLEMENTED:
+                muri = nmdurl.masteruri(url)
+                master = self.getMaster(muri, create_new=False)
+                if master:
+                    self.master_model.add_master_error(nm.nameres().mastername(muri), 'node_manager_daemon has unimplemented methods! Please update!')
+                    master.set_diagnostic_warn('/node_manager_daemon', 'unimplemented methods detected! Please update!')

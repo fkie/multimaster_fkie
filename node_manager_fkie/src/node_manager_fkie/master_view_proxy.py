@@ -509,19 +509,17 @@ class MasterViewProxy(QWidget):
                 # update the default configuration
                 # self.updateDefaultConfigs(self.__master_info)
             self.__force_update = False
+            if my_masterinfo:
+                nmd_uri = nmdurl.nmduri(self.masteruri)
+                if self._has_nmd:
+                    # only try to get updates from daemon if it is running
+                    nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
+                    nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
         except Exception:
             print traceback.format_exc(1)
-        nmd_uri = nmdurl.nmduri(self.masteruri)
-        if self._has_nmd:
-            # only try to get updates from daemon if it is running
-            nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
-            nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
-#        nmd_uri_local = nmdurl.nmduri()
-#         if nmd_uri_local != nmd_uri:
-#             nm.nmd().get_nodes_threaded(nmd_uri_local, masteruri_from_ros())
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
