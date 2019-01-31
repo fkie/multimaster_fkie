@@ -36,7 +36,7 @@ import rospy
 
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fms_grpc
 import multimaster_msgs_fkie.grpc.file_pb2 as fms
-from .common import is_package, get_pkg_path, package_name, utf8
+from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
 import url as nmdurl
 import file_item
 import remote
@@ -85,7 +85,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
         result = fms.GetFileContentReply()
         try:
             with open(request.path, 'r') as outfile:
-                result.file.path = request.path
+                result.file.path = interpret_path(request.path)
                 a = os.path.getmtime(request.path)
                 result.file.mtime = a
                 result.file.size = os.path.getsize(request.path)
