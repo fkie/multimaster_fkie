@@ -34,7 +34,7 @@ class NodeManager(Plugin):
             self._widget = MainWindow()
 #          self._widget.read_view_history()
         except Exception, e:
-            MessageBox.critical(self, "Node Manager", utf8(e))
+            MessageBox.critical(None, "Node Manager", utf8(e))
             raise
         # Get path to UI file which is a sibling of this file
         # in this example the .ui and .py file are in the same folder
