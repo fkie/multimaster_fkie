@@ -36,7 +36,7 @@ from datetime import datetime
 from multimaster_msgs_fkie.msg import MasterState
 from python_qt_binding import loadUi, QT_BINDING_VERSION
 from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
-from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
+from python_qt_binding.QtGui import QIcon, QKeySequence, QPixmap
 from python_qt_binding.QtGui import QPalette, QColor
 import getpass
 import grpc
@@ -1885,7 +1885,11 @@ class MainWindow(QMainWindow):
                 self.descriptionDock.setWindowTitle(title)
                 self.descriptionTextEdit.setText(text)
         else:
-            QDesktopServices.openUrl(url)
+            try:
+                from python_qt_binding.QtGui import QDesktopServices
+                QDesktopServices.openUrl(url)
+            except Exception as err:
+                rospy.logwarn("can't open url %s: %s" % (url, err))
             self._accept_next_update = False
 
     def _url_path(self, url):

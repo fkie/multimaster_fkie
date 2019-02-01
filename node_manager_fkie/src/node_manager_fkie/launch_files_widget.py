@@ -52,6 +52,7 @@ import node_manager_fkie as nm
 from .common import utf8
 from .detailed_msg_box import MessageBox
 from .html_delegate import HTMLDelegate
+from .launch_enhanced_line_edit import EnhancedLineEdit
 from .launch_list_model import LaunchListModel, PathItem
 from .progress_queue import ProgressQueue
 
@@ -79,7 +80,7 @@ class LaunchFilesWidget(QDockWidget):
         self.__current_path = os.path.expanduser('~')
         # load the UI file
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'LaunchFilesDockWidget.ui')
-        loadUi(ui_file, self)
+        loadUi(ui_file, self, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
         self._current_search = ''
         pal = self.palette()
         self._default_color = pal.color(QPalette.Window)

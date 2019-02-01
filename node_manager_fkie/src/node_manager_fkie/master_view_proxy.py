@@ -55,6 +55,7 @@ from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
+from .launch_enhanced_line_edit import EnhancedLineEdit
 from .launch_server_handler import LaunchServerHandler
 from .message_frame import MessageData, MessageFrame
 from .node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, CellItem
@@ -195,7 +196,7 @@ class MasterViewProxy(QWidget):
 
         self.masterTab = QWidget()
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MasterTab.ui')
-        loadUi(ui_file, self.masterTab)
+        loadUi(ui_file, self.masterTab, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
         tabLayout = QVBoxLayout(self)
         tabLayout.setContentsMargins(0, 0, 0, 0)
         tabLayout.addWidget(self.masterTab)
