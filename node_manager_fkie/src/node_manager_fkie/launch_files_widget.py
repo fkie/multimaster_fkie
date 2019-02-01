@@ -302,8 +302,11 @@ class LaunchFilesWidget(QDockWidget):
             if event == QKeySequence.Delete:
                 selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
                 for item in selected:
-                    nm.settings().launch_history_remove(item.path)
-                    self.launchlist_model.reload_current_path()
+                    if item in nm.settings().launch_history:
+                        nm.settings().launch_history_remove(item.path)
+                        self.launchlist_model.reload_current_path()
+                    else:
+                        rospy.logwarn("Delete files not implemented!")
             elif not key_mod and event.key() == Qt.Key_F4 and self.ui_button_edit.isEnabled():
                 # open selected launch file in xml editor by F4
                 self.on_edit_xml_clicked()
