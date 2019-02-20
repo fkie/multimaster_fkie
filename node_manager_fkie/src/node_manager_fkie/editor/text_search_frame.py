@@ -292,15 +292,16 @@ class TextSearchFrame(QDockWidget):
         '''
         if self.search_results:
             try:
-                _id, search_text, _found, path, index, _linenr, _line_text = self.search_results[self._search_result_index]
+                _id, search_text, _found, path, index, _endidx, _linenr, _line_text = self.search_results[self._search_result_index]
                 cursor = self._tabwidget.currentWidget().textCursor()
                 if cursor.selectedText() == search_text:
                     rptxt = self.replace_field.text()
                     for rindex in range(self._search_result_index + 1, len(self.search_results)):
-                        iid, st, _f, pa, idx, lnr, ltxt = self.search_results[rindex]
+                        iid, st, _f, pa, idx, endidx, lnr, ltxt = self.search_results[rindex]
                         if path == pa:
                             self.search_results.pop(rindex)
-                            self.search_results.insert(rindex, (iid, st, _f, pa, idx + len(rptxt) - len(st), lnr, ltxt))
+                            shift = len(rptxt) - len(st)
+                            self.search_results.insert(rindex, (iid, st, _f, pa, idx + shift, endidx + shift, lnr, ltxt))
                         else:
                             break
                     self._remove_search_result(self._search_result_index)
@@ -322,11 +323,11 @@ class TextSearchFrame(QDockWidget):
             item_index = int(splits[0])
             item_path = splits[1]
             new_search_index = -1
-            for _id, search_text, found, path, startpos, linenr, line_text in self.search_results:
+            for _id, search_text, found, path, startpos, endpos, linenr, line_text in self.search_results:
                 new_search_index += 1
                 if item_path == path and item_index == startpos:
                     self._search_result_index = new_search_index
-                    self.found_signal.emit(search_text, found, path, startpos, linenr, line_text)
+                    self.found_signal.emit(search_text, found, path, startpos, endpos, linenr, line_text)
                     self._update_label()
 
     def on_search_text_changed(self, _text):
@@ -407,7 +408,7 @@ class TextSearchFrame(QDockWidget):
 
     def _select_current_item_in_box(self, index):
         try:
-            (id_path, _search_text, _found, _path, index, _linenr, _line) = self.search_results[index]
+            (id_path, _search_text, _found, _path, index, _endidx, _linenr, _line) = self.search_results[index]
             for topidx in range(self.found_files_list.topLevelItemCount()):
                 topitem = self.found_files_list.topLevelItem(topidx)
                 for childdx in range(topitem.childCount()):
@@ -416,12 +417,12 @@ class TextSearchFrame(QDockWidget):
                         child.setSelected(True)
                     elif child.isSelected():
                         child.setSelected(False)
-        except:
+        except Exception:
             pass
 
     def _remove_search_result(self, index):
         try:
-            (id_path, _search_text, _found, path, index, _linenr, _line) = self.search_results.pop(index)
+            (id_path, _search_text, _found, path, index, _endidx, _linenr, _line) = self.search_results.pop(index)
             pkg, _rpath = package_name(os.path.dirname(path))
             itemstr = '%s [%s]' % (os.path.basename(path), pkg)
             found_items = self.found_files_list.findItems(itemstr, Qt.MatchExactly)
@@ -437,9 +438,9 @@ class TextSearchFrame(QDockWidget):
                     self.found_files_list.takeTopLevelItem(topidx)
                     break
             # create new set with files contain the search text
-            new_path_set = set(path for _id, _st, _fd, path, _idx, _lnr, _lntxt in self.search_results)
+            new_path_set = set(path for _id, _st, _fd, path, _idx, _endidx, _lnr, _lntxt in self.search_results)
             self.search_results_fileset = new_path_set
 #            self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
-        except:
+        except Exception:
             import traceback
             print traceback.format_exc()
