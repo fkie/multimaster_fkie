@@ -47,7 +47,7 @@ import node_manager_daemon_fkie.screen_stub as sstub
 import node_manager_daemon_fkie.version_stub as vstub
 from node_manager_daemon_fkie.startcfg import StartConfig
 from node_manager_daemon_fkie import url as nmdurl
-from .common import utf8
+from .common import utf8, sizeof_fmt
 
 
 class LaunchArgsSelectionRequest(Exception):
@@ -157,6 +157,10 @@ class NmdClient(QObject):
     version_signal = Signal(str, str, str)
     '''
       :ivar str,str,str version_signal: signal emitted on new version {grpc_url, version, date}.
+    '''
+    log_dir_size_signal = Signal(str, float)
+    '''
+      :ivar str,int log_dir_size_signal: signal emitted on log_dir size was {grpc_url, log_dir size}.
     '''
 
     def __init__(self):
@@ -726,6 +730,27 @@ class NmdClient(QObject):
         uri, _ = nmdurl.split(grpc_url)
         sm = self.get_screen_manager(uri)
         return sm.rosclean()
+
+    def log_dir_size_threaded(self, grpc_url='grpc://localhost:12321'):
+        '''
+        Determine the size of ROS log_dir.
+
+        :param str grpc_url: the url for grpc-server
+        '''
+        self._threads.start_thread("lds_%s" % grpc_url, target=self._log_dir_size, args=(grpc_url,))
+
+    def _log_dir_size(self, grpc_url='grpc://localhost:12321'):
+        rospy.logdebug("get log_dir size on %s" % (grpc_url))
+        try:
+            uri, _ = nmdurl.split(grpc_url)
+            sm = self.get_screen_manager(uri)
+            log_dir_size = sm.log_dir_size()
+            rospy.logdebug("log_dir size on %s: %s" % (grpc_url, sizeof_fmt(log_dir_size)))
+            self.log_dir_size_signal.emit(grpc_url, log_dir_size)
+        except Exception as e:
+            self.error.emit("log_dir_size", "grpc://%s" % uri, "", e)
+        if hasattr(self, '_threads'):
+            self._threads.finished("lds_%s" % grpc_url)
 
     def delete_log(self, grpc_url='grpc://localhost:12321', nodes=[]):
         rospy.logdebug("delete logs on %s for %s" % (grpc_url, nodes))

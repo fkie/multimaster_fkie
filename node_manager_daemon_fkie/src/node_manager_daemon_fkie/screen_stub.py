@@ -90,3 +90,11 @@ class ScreenStub(object):
         for node in nodes:
             request.nodes.append(node)
         _empty_response = self.sm_stub.DeleteLog(request, timeout=settings.GRPC_TIMEOUT)
+
+    def log_dir_size(self):
+        '''
+        Determine the size of the ROS log directory.
+        '''
+        request = smsg.Empty()
+        response = self.sm_stub.GetLogDiskSize(request, timeout=settings.GRPC_TIMEOUT)
+        return response.size

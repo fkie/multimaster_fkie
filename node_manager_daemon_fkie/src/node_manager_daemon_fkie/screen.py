@@ -30,9 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import os
-from rosclean import rosclean_main
+from rosclean import rosclean_main, get_disk_usage
 import rospy
+import rospkg
+
 import subprocess
 from .supervised_popen import SupervisedPopen
 
@@ -253,6 +257,16 @@ def get_cmd(node, env=[], keys=[]):
 
 def rosclean():
     rosclean_main(['rosclean', 'purge', '-y'])
+
+
+def log_dir_size():
+    try:
+        d = rospkg.get_log_dir()
+        disk_usage = get_disk_usage(d)
+        return disk_usage
+    except Exception as err:
+        print("ERROR, get_disk_usage:", err)
+    return -1
 
 
 def delete_log(nodename):

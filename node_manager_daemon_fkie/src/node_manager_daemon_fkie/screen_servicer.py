@@ -33,7 +33,6 @@
 import rospy
 import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
 import multimaster_msgs_fkie.grpc.screen_pb2 as smsg
-import os
 import screen
 
 
@@ -91,4 +90,9 @@ class ScreenServicer(sgrpc.ScreenServiceServicer):
         for nodename in request.nodes:
             screen.delete_log(nodename)
         reply = smsg.Empty()
+        return reply
+
+    def GetLogDiskSize(self, request, context):
+        reply = smsg.DirSize()
+        reply.size = screen.log_dir_size()
         return reply

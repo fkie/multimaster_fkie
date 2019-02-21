@@ -41,6 +41,7 @@ service ScreenService {
 	rpc GetMultipleScreens (Empty) returns (Screens);
 	rpc RosClean (Empty) returns (Empty);
 	rpc DeleteLog (Nodes) returns (Empty);
+	rpc GetLogDiskSize(Empty) returns (DirSize);
 }
 
 message Empty {
@@ -65,4 +66,11 @@ message Screen {
  */
 message Nodes {
 	repeated string nodes = 1;
+}
+
+/** Size of a directory.
+ * :param size: size in bytes.
+ */
+message DirSize {
+	int64 size = 1;
 }

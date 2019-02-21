@@ -44,14 +44,14 @@ import traceback
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import masteruri_from_ros
+from master_discovery_fkie.common import masteruri_from_ros, get_hostname
 from master_discovery_fkie.master_info import NodeInfo
 from node_manager_daemon_fkie.common import interpret_path, utf8
 from node_manager_daemon_fkie.host import get_hostname, get_port
 from node_manager_daemon_fkie import exceptions
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_daemon_fkie.version import detect_version
-from .common import package_name
+from .common import package_name, sizeof_fmt
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
@@ -183,6 +183,8 @@ class MasterViewProxy(QWidget):
         self._changed_binaries = dict()
         self.default_load_launch = ''
         self._nmd_version, self._nmd_date = detect_version('node_manager_daemon_fkie')
+        self._diag_nmd_version = None
+        self._diag_log_dir_size = None
 
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -341,6 +343,7 @@ class MasterViewProxy(QWidget):
         nm.nmd().changed_binaries.connect(self._apply_changed_binaries)
         nm.nmd().launch_nodes.connect(self.on_launch_description_retrieved)
         nm.nmd().version_signal.connect(self.on_nmd_version_retrieved)
+        nm.nmd().log_dir_size_signal.connect(self.on_log_dir_retrieved)
 
         # set the shortcuts
         self._shortcut1 = QShortcut(QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -516,6 +519,7 @@ class MasterViewProxy(QWidget):
                     # only try to get updates from daemon if it is running
                     nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
                     nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
+                    nm.nmd().log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
@@ -1034,11 +1038,28 @@ class MasterViewProxy(QWidget):
     def on_nmd_version_retrieved(self, nmd_url, version, date):
         if not nmdurl.equal_uri(nmdurl.masteruri(nmd_url), self.masteruri):
             return
-        if version != self._nmd_version:
-            res = self.set_diagnostic_warn('/node_manager_daemon', "node_manager_daemon has on<br>%s different version<br>'%s', own:<br>'%s'.<br>Please update and restart!" % (self.masteruri, version, self._nmd_version))
-            if not res:
-                self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon has on %s different version '%s', own '%s'.\nShould it be started?" % (self.masteruri, version, self._nmd_version), MessageData(self.masteruri))
-        else:
+        self._diag_nmd_version = version
+        self._check_diag_state_nmd()
+
+    def on_log_dir_retrieved(self, nmd_url, log_dir_size):
+        if not nmdurl.equal_uri(nmdurl.masteruri(nmd_url), self.masteruri):
+            return
+        self._diag_log_dir_size = log_dir_size
+        self._check_diag_state_nmd()
+
+    def _check_diag_state_nmd(self):
+        state_ok = True
+        if self._diag_nmd_version is not None:
+            if self._diag_nmd_version != self._nmd_version:
+                state_ok = False
+                res = self.set_diagnostic_warn('/node_manager_daemon', "node_manager_daemon has on<br>%s different version<br>'%s', own:<br>'%s'.<br>Please update and restart!" % (self.masteruri, self._diag_nmd_version, self._nmd_version))
+                if not res:
+                    self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon has on %s different version '%s', own '%s'.\nShould it be started?" % (self.masteruri, self._diag_nmd_version, self._nmd_version), MessageData(self.masteruri))
+        if self._diag_log_dir_size is not None:
+            if self._diag_log_dir_size > 1073741824:
+                state_ok = False
+                res = self.set_diagnostic_warn('/node_manager_daemon', "disk usage in log directory @%s is %s." % (get_hostname(self.masteruri), sizeof_fmt(self._diag_log_dir_size)))
+        if state_ok:
             self.set_diagnostic_ok('/node_manager_daemon')
 
     def set_diagnostic_warn(self, node_name, msg):

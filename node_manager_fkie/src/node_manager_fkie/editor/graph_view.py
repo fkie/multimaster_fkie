@@ -39,7 +39,7 @@ import rospy
 
 from node_manager_daemon_fkie import exceptions
 import node_manager_fkie as nm
-from node_manager_fkie.common import package_name
+from node_manager_fkie.common import package_name, sizeof_fmt
 from node_manager_fkie.html_delegate import HTMLDelegate
 
 try:
@@ -206,7 +206,7 @@ class GraphViewWidget(QDockWidget):
         if path in GRAPH_CACHE:
             for inc_lnr, inc_path, _, size in GRAPH_CACHE[path]:
                 pkg, _ = package_name(os.path.dirname(inc_path))
-                itemstr = '%s  _%s_  [%s]' % (os.path.basename(inc_path), self.sizeof_fmt(size), pkg)
+                itemstr = '%s  _%s_  [%s]' % (os.path.basename(inc_path), sizeof_fmt(size), pkg)
                 inc_item = QStandardItem('%d: %s' % (inc_lnr, itemstr))
                 inc_item.setData(path, self.DATA_FILE)
                 inc_item.setData(inc_lnr, self.DATA_LINE)
@@ -215,14 +215,6 @@ class GraphViewWidget(QDockWidget):
                 inc_item.setData(size, self.DATA_SIZE)
                 self._append_items(inc_item, deep + 1)
                 item.appendRow(inc_item)
-
-    @classmethod
-    def sizeof_fmt(cls, num, suffix='B'):
-        for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-            if abs(num) < 1024.0:
-                return "%3.0f%s%s" % (num, unit, suffix)
-            num /= 1024.0
-        return "%.0%s%s" % (num, 'Yi', suffix)
 
 
 class GraphThread(QObject, threading.Thread):
@@ -288,7 +280,7 @@ class GraphThread(QObject, threading.Thread):
                     filelist = nm.nmd().get_included_files(path, recursive=False)
                     for line, fname, exists, size, _include_args in filelist:
                         if size > 1048576:
-                            self.info_signal.emit("build tree: large file %s, size %s" % (path, GraphViewWidget.sizeof_fmt(size)), True)
+                            self.info_signal.emit("build tree: large file %s, size %s" % (path, sizeof_fmt(size)), True)
                         result.append((line, fname, exists, size))
                     GRAPH_CACHE[path] = result
         return result
