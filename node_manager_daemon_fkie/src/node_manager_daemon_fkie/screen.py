@@ -33,7 +33,7 @@
 from __future__ import print_function
 
 import os
-from rosclean import rosclean_main, get_disk_usage
+from rosclean import get_disk_usage
 import rospy
 import rospkg
 
@@ -256,17 +256,22 @@ def get_cmd(node, env=[], keys=[]):
 
 
 def rosclean():
-    rosclean_main(['rosclean', 'purge', '-y'])
+    '''
+    Removes the content of the log directory. We didn't use rosclean purge because it
+    removes the log-directory. This needs restart of ros nodes or recreate log directory
+    to get log again.
+    '''
+    d = rospkg.get_log_dir()
+    ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True)
+    output_err = ps.stderr.read()
+    if output_err:
+        raise Exception(output_err)
 
 
 def log_dir_size():
-    try:
-        d = rospkg.get_log_dir()
-        disk_usage = get_disk_usage(d)
-        return disk_usage
-    except Exception as err:
-        print("ERROR, get_disk_usage:", err)
-    return -1
+    d = rospkg.get_log_dir()
+    disk_usage = get_disk_usage(d)
+    return disk_usage
 
 
 def delete_log(nodename):

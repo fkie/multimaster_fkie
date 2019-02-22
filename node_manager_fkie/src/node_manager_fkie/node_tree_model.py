@@ -1246,12 +1246,15 @@ class NodeItem(QStandardItem):
         return None
 
     def append_diagnostic_status(self, diagnostic_status):
-        if self.diagnostic_array:
-            last_item = self.diagnostic_array[-1]
-            if last_item.level == diagnostic_status.level:
-                if last_item.message == diagnostic_status.message:
-                    return
-        self.diagnostic_array.append(diagnostic_status)
+        if diagnostic_status.level == 0:  # DiagnosticStatus.OK avoid include DiagnosticStatus
+            del self.diagnostic_array[:]
+        else:
+            if self.diagnostic_array:
+                last_item = self.diagnostic_array[-1]
+                if last_item.level == diagnostic_status.level:
+                    if last_item.message == diagnostic_status.message:
+                        return
+            self.diagnostic_array.append(diagnostic_status)
         self.update_dispayed_name()
         if self.parent_item is not None and not isinstance(self.parent_item, HostItem):
             self.parent_item.updateIcon()

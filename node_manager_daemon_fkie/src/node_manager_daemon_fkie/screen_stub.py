@@ -76,7 +76,7 @@ class ScreenStub(object):
 
     def rosclean(self):
         '''
-        Call rosclean purge -y.
+        Removes the content of the log directory.
         '''
         request = smsg.Empty()
         _empty_response = self.sm_stub.RosClean(request, timeout=settings.GRPC_TIMEOUT)

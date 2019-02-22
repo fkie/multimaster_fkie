@@ -1058,7 +1058,9 @@ class MasterViewProxy(QWidget):
         if self._diag_log_dir_size is not None:
             if self._diag_log_dir_size > 1073741824:
                 state_ok = False
-                res = self.set_diagnostic_warn('/node_manager_daemon', "disk usage in log directory @%s is %s." % (get_hostname(self.masteruri), sizeof_fmt(self._diag_log_dir_size)))
+                hostname = get_hostname(self.masteruri)
+                clean_cmd = '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.masteruri.replace('http://', ''), hostname)
+                res = self.set_diagnostic_warn('/node_manager_daemon', "disk usage in log directory @%s is %s. %s" % (get_hostname(self.masteruri), sizeof_fmt(self._diag_log_dir_size), clean_cmd))
         if state_ok:
             self.set_diagnostic_ok('/node_manager_daemon')
 
@@ -1436,17 +1438,21 @@ class MasterViewProxy(QWidget):
                 else:
                     text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
                 text += ' <a href="unregister-node://%s">unregister</a></dt>' % node.name
-            if node.diagnostic_array and node.diagnostic_array[-1].level > 0:
-                diag_status = node.diagnostic_array[-1]
-                level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
-                diag_color = '#FF6600'
-                if diag_status.level == 2:
-                    diag_color = '#CC0000'
-                elif diag_status.level == 3:
-                    diag_color = '#FFCC00'
-                elif diag_status.level > 3:
-                    diag_color = '#0000CC'
-                text += '<dt><font color="%s"><b>%s: %s</b></font></dt>' % (diag_color, level_str, node.diagnostic_array[-1].message)
+            added_diags = []
+            for diag_status in reversed(node.diagnostic_array):
+                if node.diagnostic_array:
+                    level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
+                    diag_color = '#FF6600'
+                    if diag_status.level == 2:
+                        diag_color = '#CC0000'
+                    elif diag_status.level == 3:
+                        diag_color = '#FFCC00'
+                    elif diag_status.level > 3:
+                        diag_color = '#0000CC'
+                    diag_msg = '<dt><font color="%s"><b>%s: %s</b></font></dt>' % (diag_color, level_str, diag_status.message)
+                    if diag_msg not in added_diags:
+                        text += diag_msg
+                        added_diags.append(diag_msg)
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
             text += '</dl>'
