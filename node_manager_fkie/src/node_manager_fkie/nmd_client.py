@@ -726,7 +726,7 @@ class NmdClient(QObject):
             self._threads.finished("mst_%s" % grpc_url)
 
     def rosclean(self, grpc_url='grpc://localhost:12321'):
-        rospy.logdebug("rosclean purge -y on %s" % (grpc_url))
+        rospy.logdebug("clear log directory on %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         sm = self.get_screen_manager(uri)
         return sm.rosclean()

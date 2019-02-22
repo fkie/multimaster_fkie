@@ -518,6 +518,7 @@ class MasterViewProxy(QWidget):
                 if self._has_nmd:
                     # only try to get updates from daemon if it is running
                     nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
+                    self.set_diagnostic_ok('/node_manager_daemon')
                     nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
                     nm.nmd().log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
 #      cputimes = os.times()
