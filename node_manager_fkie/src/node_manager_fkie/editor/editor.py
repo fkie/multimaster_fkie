@@ -788,8 +788,11 @@ class Editor(QMainWindow):
         add_env_tag_action = QAction("<env>", self, statusTip="", triggered=self._on_add_env_tag)
         tag_menu.addAction(add_env_tag_action)
         # param tag
+        add_param_clipboard_tag_action = QAction("<param value>", self, statusTip="add value from clipboard", triggered=self._on_add_param_clipboard_tag)
+        add_param_clipboard_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+p"))
+        tag_menu.addAction(add_param_clipboard_tag_action)
         add_param_tag_action = QAction("<param>", self, statusTip="", triggered=self._on_add_param_tag)
-        add_param_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+p"))
+        add_param_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+Alt+p"))
         tag_menu.addAction(add_param_tag_action)
         # param capability group tag
         add_param_cap_group_tag_action = QAction("<param capability group>", self, statusTip="", triggered=self._on_add_param_cap_group_tag)
@@ -819,17 +822,25 @@ class Editor(QMainWindow):
         tag_menu.addAction(add_test_tag_all_action)
         return tag_menu
 
-    def _insert_text(self, text):
+    def _insert_text(self, text, cursor_pose=None, selection_len=None):
         cursor = self.tabWidget.currentWidget().textCursor()
         if not cursor.isNull():
+            cursor.beginEditBlock()
             col = cursor.columnNumber()
             spaces = ''.join([' ' for _ in range(col)])
+            curr_cursor_pos = cursor.position()
             cursor.insertText(text.replace('\n', '\n%s' % spaces))
+            if cursor_pose is not None:
+                cursor.setPosition(curr_cursor_pos + cursor_pose, QTextCursor.MoveAnchor)
+                if selection_len is not None:
+                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, selection_len)
+            cursor.endEditBlock()
+            self.tabWidget.currentWidget().setTextCursor(cursor)
             self.tabWidget.currentWidget().setFocus(Qt.OtherFocusReason)
 
     def _on_add_group_tag(self):
         self._insert_text('<group ns="namespace" clear_params="true|false">\n'
-                          '</group>')
+                          '</group>', 11, 9)
 
     def _get_package_dialog(self):
         muri = masteruri_from_ros()
@@ -857,40 +868,43 @@ class Editor(QMainWindow):
     def _on_add_include_tag_all(self):
         self._insert_text('<include file="$(find pkg-name)/path/filename.xml"\n'
                           '         ns="foo" clear_params="true|false">\n'
-                          '</include>')
+                          '</include>', 22, 27)
 
     def _on_add_remap_tag(self):
-        self._insert_text('<remap from="original" to="new"/>')
+        self._insert_text('<remap from="original" to="new"/>', 13, 8)
 
     def _on_add_env_tag(self):
-        self._insert_text('<env name="variable" value="value"/>')
+        self._insert_text('<env name="variable" value="value"/>', 11, 8)
+
+    def _on_add_param_clipboard_tag(self):
+        self._insert_text('<param name="name" value="%s" />' % QApplication.clipboard().mimeData().text(), 13, 4)
 
     def _on_add_param_tag(self):
-        self._insert_text('<param name="ns_name" value="value" />')
+        self._insert_text('<param name="name" value="value" />', 13, 4)
 
     def _on_add_param_cap_group_tag(self):
-        self._insert_text('<param name="capability_group" value="demo" />')
+        self._insert_text('<param name="capability_group" value="demo" />', 38, 4)
 
     def _on_add_param_tag_all(self):
-        self._insert_text('<param name="ns_name" value="value"\n'
+        self._insert_text('<param name="name" value="value"\n'
                           '       type="str|int|double|bool"\n'
                           '       textfile="$(find pkg-name)/path/file.txt"\n'
                           '       binfile="$(find pkg-name)/path/file"\n'
                           '       command="$(find pkg-name)/exe \'$(find pkg-name)/arg.txt\'">\n'
-                          '</param>')
+                          '</param>', 13, 4)
 
     def _on_add_rosparam_tag_all(self):
-        self._insert_text('<rosparam param="param-name"\n'
+        self._insert_text('<rosparam param="name"\n'
                           '       file="$(find pkg-name)/path/foo.yaml"\n'
                           '       command="load|dump|delete"\n'
                           '       ns="namespace">\n'
-                          '</rosparam>')
+                          '</rosparam>', 17, 4)
 
     def _on_add_arg_tag_default(self):
-        self._insert_text('<arg name="foo" default="1" />')
+        self._insert_text('<arg name="foo" default="1" />', 11, 3)
 
     def _on_add_arg_tag_value(self):
-        self._insert_text('<arg name="foo" value="bar" />')
+        self._insert_text('<arg name="foo" value="bar" />', 11, 3)
 
     def _on_add_test_tag(self):
         dia = self._get_package_dialog()
