@@ -262,10 +262,11 @@ def rosclean():
     to get log again.
     '''
     d = rospkg.get_log_dir()
-    ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True)
-    output_err = ps.stderr.read()
-    if output_err:
-        raise Exception(output_err)
+    if d and d != os.path.sep:
+        ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True)
+        output_err = ps.stderr.read()
+        if output_err:
+            raise Exception(output_err)
 
 
 def log_dir_size():
