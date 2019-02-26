@@ -2,6 +2,13 @@
 Changelog for package node_manager_fkie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.10 (2019-02-26)
+-------------------
+* node_manager_fkie: exapand (nodes, topics, services) on filter
+* fixed build node_manager_fkie without .git repository issue `#91 <https://github.com/fkie/multimaster_fkie/issues/91>`_
+* node_manager_fkie: fixed crash on show critical message dialog
+* Contributors: Alexander Tiderko
+
 0.8.9 (2018-12-21)
 ------------------
 * fix install build
