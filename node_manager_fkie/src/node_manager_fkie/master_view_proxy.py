@@ -795,8 +795,10 @@ class MasterViewProxy(QWidget):
         self.message_frame.show_question(MessageFrame.TYPE_BINARY, 'Binary changed of node:<br>%s<br>restart node?' % (HTMLDelegate.toHTML(changed.name)), MessageData(changed))
 
     def question_reload_changed_file(self, changed, affected):
-        changed_res = "%s[%s]" % (os.path.basename(changed), utf8(package_name(os.path.dirname(changed))[0]))
-        self.message_frame.show_question(MessageFrame.TYPE_LAUNCH_FILE, 'Reload <b>%s</b>?<br>Changed files:' % os.path.basename(affected), MessageData(affected, [changed_res]))
+        _filename, file_extension = os.path.splitext(changed)
+        if file_extension in nm.settings().launch_view_file_ext:
+            changed_res = "%s[%s]" % (os.path.basename(changed), utf8(package_name(os.path.dirname(changed))[0]))
+            self.message_frame.show_question(MessageFrame.TYPE_LAUNCH_FILE, 'Reload <b>%s</b>?<br>Changed files:' % os.path.basename(affected), MessageData(affected, [changed_res]))
 
     def question_transfer_changed_file(self, changed, affected):
         self.message_frame.show_question(MessageFrame.TYPE_TRANSFER,
