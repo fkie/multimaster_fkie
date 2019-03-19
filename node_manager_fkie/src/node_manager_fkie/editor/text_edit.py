@@ -305,7 +305,7 @@ class TextEdit(QTextEdit):
                     ident = self.getIdentOfCurretLine()
                 QTextEdit.keyPressEvent(self, event)
                 if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
-                    self.indentCurrentLine(ident)
+                    self.indentCurrentLine(ident - self.getIdentOfCurretLine())
         else:
             event.accept()
             QTextEdit.keyPressEvent(self, event)
