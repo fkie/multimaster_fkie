@@ -1274,7 +1274,7 @@ class MasterViewProxy(QWidget):
                     if count is not None:
                         item = '<a href="topic://%s">%s</a>' % (i, item_name)
                         item += '   <a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a>' % (self.mastername, i)
-                        item = '<span style="color:gray;">_%d_/ </span>%s' % (count, item)
+                        item = '<span style="color:gray;">_%d_: </span>%s' % (count, item)
                     else:
                         item = '<a>%s</a>' % (item_name)
                         item = '<span style="color:red;">!sync </span>%s' % (item)
