@@ -255,7 +255,7 @@ class TextSearchThread(QObject, threading.Thread):
                 rname = aname
                 for arg_key, args_val in resolve_args.items():
                     rname = rname.replace('$(arg %s)' % arg_key, args_val)
-                if aname == node_name:
+                if rname == node_name:
                     yield aname, rname, groups.span("name")
 
     def _check_node_conditions(self, launch_node, node_name, node_idx, resolve_args, path):
