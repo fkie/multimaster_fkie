@@ -39,7 +39,7 @@ from xml.dom import minidom
 import node_manager_fkie as nm
 
 from node_manager_daemon_fkie import exceptions
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import replace_arg, utf8
 
 
 class TextSearchThread(QObject, threading.Thread):
@@ -77,7 +77,10 @@ class TextSearchThread(QObject, threading.Thread):
         '''
         '''
         try:
-            self.search(self._search_text, self._path, self._recursive)
+            if self._search_text.startswith('name="'):
+                self.search_for_node(self._search_text, self._path, self._recursive)
+            else:
+                self.search(self._search_text, self._path, self._recursive)
         except exceptions.GrpcTimeout as tout:
             self.warning_signal.emit("Search in launch failed! Daemon not responded within %.2f seconds while"
                                      " get configuration file: %s\nYou can try to increase"
@@ -91,7 +94,7 @@ class TextSearchThread(QObject, threading.Thread):
             if self._isrunning:
                 self.search_result_signal.emit(self._search_text, False, '', -1, -1, -1, '')
 
-    def search(self, search_text, path, recursive=False, args={}, content='', count=1):
+    def search(self, search_text, path, recursive=False, args={}, count=1):
         '''
         Searches for given text in this document and all included files.
         :param str search_text: text to find
@@ -100,36 +103,33 @@ class TextSearchThread(QObject, threading.Thread):
         '''
         if not self._isrunning:
             return
-        data = content
-        if not data:
-            data = self._get_text(path)
+        data = self._get_text(path)
         pos = data.find(search_text)
         slen = len(search_text)
-        found = False
         while pos != -1 and self._isrunning:
-            found = True
             if self._isrunning:
                 doemit = True
+                line = self._strip_text(data, pos)
                 if self._only_launch:
                     doemit = path.endswith('.launch')
+#                 if doemit:
+#                     # test for if statement
+#                     re_if = re.compile(r"if=\"\$\(arg.(?P<name>.*?)\)")
+#                     for ifarg in re_if.findall(line):
+#                         if ifarg in my_resolved_args and my_resolved_args[ifarg] in ['false', '0']:
+#                             doemit = False
+#                 if doemit:
+#                     # test for unless statement
+#                     re_if = re.compile(r"unless=\"\$\(arg.(?P<name>.*?)\)")
+#                     for ifarg in re_if.findall(line):
+#                         if ifarg in my_resolved_args and my_resolved_args[ifarg] in ['false', '0']:
+#                             doemit = False
                 if doemit:
                     self._found += 1
-                    self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, self._strip_text(data, pos))
+                    self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, line)
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:
-            search_for_node = search_text.startswith('name="')
-            resolve_args = args
-            if not resolve_args:
-                resolve_args = nm.nmd().launch_args(path)
-            if not found and not content:
-                if search_for_node and path.endswith('.launch'):
-                    # not found: try to replace arguments
-                    search_for_name = search_text.replace('name="', '').replace('"', '')
-                    for aname, rname, span in self._next_node_name(data, resolve_args, path):
-                        if rname == search_for_name:
-                            self._found += 1
-                            self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
             if recursive:
                 queue = []
                 inc_files = nm.nmd().get_included_files(path, False)
@@ -141,13 +141,101 @@ class TextSearchThread(QObject, threading.Thread):
                         queue.append((search_text, inc_path, recursive, include_args))
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
-                    new_dict = dict(resolve_args)
+                    new_dict = dict(args)
                     new_dict.update(include_args)
                     # test search string for 'name=' and skip search in not launch files
-                    if not search_for_node or (search_for_node and inc_path.endswith('.launch')):
-                        self.search(search_text, inc_path, recursive, new_dict, '', count + 1)
+                    if self._only_launch and inc_path.endswith('.launch'):
+                        self.search(search_text, inc_path, recursive, new_dict, count + 1)
         if self._path == path and self._found == 0:
             self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
+
+    def search_for_node(self, search_text, path, recursive=False, args={}, count=1):
+        '''
+        Searches for node in this document and all included files.
+        :param str search_text: node to find with 'name="' prefix
+        :return: the list with all files contain the text
+        :rtype: [str, ...]
+        '''
+        if path and not path.endswith('.launch'):
+            return
+        if not self._isrunning:
+            return
+        data = self._get_text(path)
+        launch_node = self._get_launch_element(data, path)
+        if launch_node is None:
+            # something goes wrong while parse XML content
+            # backup solution to search without resolve arguments
+            self.search(search_text, path, recursive, args, count)
+        else:
+            # read XML content and update the arguments
+            resolve_args = dict(args)
+            if not resolve_args:
+                resolve_args.update(nm.nmd().launch_args(path))
+            my_resolved_args = self._resolve_args(launch_node, resolve_args, path)
+            # replace arguments and search for node in data
+            search_for_name = search_text.replace('name="', '').replace('"', '')
+            for aname, rname, span in self._next_node_name(data, my_resolved_args, path):
+                if rname == search_for_name:
+                    # found, now test in XML for if and unless statements
+                    if self._check_node_conditions(launch_node, search_for_name, my_resolved_args, path):
+                        self._found += 1
+                        self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
+                    else:
+                        rospy.logwarn("%s in %s ignored because of conditions." % (search_text, path))
+            if self._isrunning and recursive:
+                queue = []
+                inc_files = nm.nmd().get_included_files(path, False)
+                # read first all included files in current file
+                for _linenr, inc_path, exists, _size, include_args in inc_files:
+                    if not self._isrunning:
+                        return
+                    if exists:
+                        queue.append((search_text, inc_path, recursive, include_args))
+                # search in all files
+                for search_text, inc_path, recursive, include_args in queue:
+                    new_dict = dict(my_resolved_args)
+                    new_dict.update(include_args)
+                    # skip search in not launch files
+                    if inc_path.endswith('.launch'):
+                        self.search_for_node(search_text, inc_path, recursive, new_dict, count + 1)
+        if self._path == path and self._found == 0:
+            self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
+
+    def _get_launch_element(self, content, path):
+        result = None
+        try:
+            xml_nodes = minidom.parseString(content).getElementsByTagName('launch')
+            if xml_nodes:
+                result = xml_nodes[-1]
+        except Exception as err:
+            rospy.logwarn("%s in %s" % (utf8(err), path))
+        return result
+
+    def _resolve_args(self, launch_node, resolve_args, path):
+        '''
+        Load the content with xml parser, search for arg-nodes.
+        :return: Dictionary with argument names and values
+        :rtype: {name: value}
+        '''
+        resolve_args_intern = dict(resolve_args)
+        try:
+            for child in launch_node.childNodes:
+                if child.localName == 'arg' and child.hasAttributes():
+                    aname = ''
+                    aval = ''
+                    for argi in range(child.attributes.length):
+                        arg_attr = child.attributes.item(argi)
+                        if arg_attr.localName == 'name':
+                            aname = arg_attr.value
+                        elif arg_attr.localName in ['value', 'default']:
+                            aval = arg_attr.value
+                    if aname and aname not in resolve_args_intern:
+                        for arg_key, args_val in resolve_args_intern.items():
+                            aval = aval.replace('$(arg %s)' % arg_key, args_val)
+                        resolve_args_intern[aname] = aval
+        except Exception as err:
+            rospy.logwarn("%s in %s" % (utf8(err), path))
+        return resolve_args_intern
 
     def _next_node_name(self, content, resolve_args={}, path=''):
         '''
@@ -155,37 +243,31 @@ class TextSearchThread(QObject, threading.Thread):
         :return: True if something was replaced, node name, line number
         :rtype: (bool, str, line number)
         '''
-        new_content = content
-        resolve_args_intern = {}
-        try:
-            xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
-            for node in xml_nodes:
-                for child in node.childNodes:
-                    if child.localName == 'arg' and child.hasAttributes():
-                        aname = ''
-                        aval = ''
-                        for argi in range(child.attributes.length):
-                            arg_attr = child.attributes.item(argi)
-                            if arg_attr.localName == 'name':
-                                aname = arg_attr.value
-                            elif arg_attr.localName in ['value', 'default']:
-                                aval = arg_attr.value
-                        if aname:
-                            for arg_key, args_val in resolve_args.items():
-                                aval = aval.replace('$(arg %s)' % arg_key, args_val)
-                            resolve_args_intern[aname] = aval
-        except Exception as err:
-            rospy.logwarn("%s in %s" % (utf8(err), path))
         re_nodes = re.compile(r"<node[\w\W\S\s]*?name=\"(?P<name>.*?)\"")
         for groups in re_nodes.finditer(content):
             aname = groups.group("name")
             rname = aname
             for arg_key, args_val in resolve_args.items():
                 rname = rname.replace('$(arg %s)' % arg_key, args_val)
-            for arg_key, args_val in resolve_args_intern.items():
-                rname = rname.replace('$(arg %s)' % arg_key, args_val)
             if rname != aname:
                 yield aname, rname, groups.span("name")
+
+    def _check_node_conditions(self, launch_node, node_name, resolve_args, path):
+        try:
+            nodes = launch_node.getElementsByTagName('node')
+            for node in nodes:
+                if node.getAttribute('name') == node_name:
+                    for attridx in range(node.attributes.length):
+                        attr = node.attributes.item(attridx)
+                        if attr.localName == 'if':
+                            val = replace_arg(attr.value, resolve_args)
+                            return val in ['true', '1']
+                        elif attr.localName == 'unless':
+                            val = replace_arg(attr.value, resolve_args)
+                            return val in ['false', '0']
+        except Exception as err:
+            rospy.logwarn("%s in %s" % (utf8(err), path))
+        return True
 
     def _get_text(self, path):
         result = ''
