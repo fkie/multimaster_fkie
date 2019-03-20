@@ -242,7 +242,16 @@ def replace_internal_args(content, resolve_args={}, path=None):
     return replaced, new_content, resolve_args_intern
 
 
-def __get_include_args(content):
+def replace_arg(self, value, resolve_args):
+    # test for if statement
+    re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
+    for arg in re_if.findall(value):
+        if arg in resolve_args:
+            return value.replace('$(arg %s)' % arg, resolve_args[arg])
+    return value
+
+
+def __get_include_args(content, resolve_args):
     included_files = []
     try:
         xml_nodes = minidom.parseString(content).getElementsByTagName('include')
@@ -259,13 +268,20 @@ def __get_include_args(content):
                     if inc_arg.nodeType == node.ELEMENT_NODE and inc_arg.hasAttributes():
                         aname = ''
                         aval = ''
+                        skip = False
                         for argi in range(inc_arg.attributes.length):
                             arg_attr = inc_arg.attributes.item(argi)
                             if arg_attr.localName == 'name':
                                 aname = arg_attr.value
                             elif arg_attr.localName in ['value', 'default']:
                                 aval = arg_attr.value
-                        if aname:
+                            elif arg_attr.localName == 'if':
+                                val = replace_arg(arg_attr.value, resolve_args)
+                                skip = val in ['false', '0']
+                            elif arg_attr.localName == 'unless':
+                                val = replace_arg(arg_attr.value, resolve_args)
+                                skip = val in ['true', '1']
+                        if aname and not skip:
                             resolved_inc_args[aname] = aval
                 if filename:
                     included_files.append((filename, resolved_inc_args))
@@ -318,7 +334,7 @@ def included_files(string,
     # replace the arguments and detect arguments for include-statements
     if (string.endswith(".launch")):
         _replaced, content, _resolve_args_intern = replace_internal_args(content, path=string)
-        inc_files_forward_args = __get_include_args(content)
+        inc_files_forward_args = __get_include_args(content, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
         my_unique_files = list()
