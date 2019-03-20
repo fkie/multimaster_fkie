@@ -169,6 +169,7 @@ class Settings(object):
         self._terminal_emulator = None
         self._terminal_command_arg = 'e'
         self._noclose_str = '-hold'
+        self._terminal_title = '--title'
         self._masteruri = masteruri_from_ros()
         self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
         # loads the current configuration path. If the path was changed, a redirection
@@ -692,12 +693,13 @@ class Settings(object):
                                           "be then load by node_manager.")
                     elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal']:
                         self._noclose_str = ''
+                        self._terminal_title = '-T'
                     self._terminal_emulator = t
                     break
         if self._terminal_emulator == "":
             raise Exception("No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
         self._noclose_str = self._noclose_str if noclose else ""
-        return '%s -T "%s" %s -%s %s' % (self._terminal_emulator, title, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
+        return '%s %s "%s" %s -%s %s' % (self._terminal_emulator, self._terminal_title, title, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
         from python_qt_binding.QtCore import QSettings
