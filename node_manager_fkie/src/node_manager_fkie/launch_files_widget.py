@@ -90,7 +90,7 @@ class LaunchFilesWidget(QDockWidget):
         self.launchlist_model = LaunchListModel(progress_queue=self.progress_queue, viewobj=self.ui_file_view)
         self.launchlist_proxy_model = QSortFilterProxyModel(self)
         self.launchlist_proxy_model.setSourceModel(self.launchlist_model)
-        self.name_delegate = HTMLDelegate(check_for_ros_names=False)
+        self.name_delegate = HTMLDelegate(check_for_ros_names=False, palette=self.palette())
         self.ui_file_view.setItemDelegateForColumn(0, self.name_delegate)
         self.ui_file_view.setModel(self.launchlist_proxy_model)
         self.ui_file_view.setAlternatingRowColors(True)

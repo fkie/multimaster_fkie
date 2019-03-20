@@ -216,7 +216,7 @@ class MasterViewProxy(QWidget):
         for i, (_, width) in enumerate(NodeTreeModel.header):  # _:=name
             self.masterTab.nodeTreeView.setColumnWidth(i, width)
         check_for_ros_names = not nm.settings().group_nodes_by_namespace
-        self.nodeNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True)
+        self.nodeNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
         self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
         self.node_delegate = IconsDelegate()
         self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
@@ -239,7 +239,7 @@ class MasterViewProxy(QWidget):
 #    self.masterTab.topicsView.setModel(self.topic_model)
         for i, (_, width) in enumerate(TopicModel.header):  # _:=name
             self.masterTab.topicsView.setColumnWidth(i, width)
-        self.topicNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True)
+        self.topicNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
         self.topicTypeDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
         self.masterTab.topicsView.setItemDelegateForColumn(3, self.topicTypeDelegate)
@@ -258,7 +258,7 @@ class MasterViewProxy(QWidget):
         self.masterTab.servicesView.sortByColumn(0, Qt.AscendingOrder)
         for i, (_, width) in enumerate(ServiceModel.header):  # _:=name
             self.masterTab.servicesView.setColumnWidth(i, width)
-        self.serviceNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True)
+        self.serviceNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
         self.serviceTypeDelegate = HTMLDelegate(dec_ascent=True)
         self.masterTab.servicesView.setItemDelegateForColumn(0, self.serviceNameDelegate)
         self.masterTab.servicesView.setItemDelegateForColumn(1, self.serviceTypeDelegate)
@@ -276,7 +276,7 @@ class MasterViewProxy(QWidget):
         self.masterTab.parameterView.setModel(self.parameter_proxyModel)
         for i, (_, width) in enumerate(ParameterModel.header):  # _:=name
             self.masterTab.parameterView.setColumnWidth(i, width)
-        self.parameterNameDelegate = HTMLDelegate(dec_ascent=True)
+        self.parameterNameDelegate = HTMLDelegate(dec_ascent=True, palette=self.palette())
         self.masterTab.parameterView.setItemDelegateForColumn(0, self.parameterNameDelegate)
         sm = self.masterTab.parameterView.selectionModel()
         sm.selectionChanged.connect(self.on_parameter_selection_changed)

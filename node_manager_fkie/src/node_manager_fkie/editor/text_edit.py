@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QFont, QTextCursor
+from python_qt_binding.QtGui import QColor, QFont, QTextCursor
 import os
 import re
 import rospy
@@ -84,6 +84,9 @@ class TextEdit(QTextEdit):
         self.setCursorWidth(2)
         self.setFontFamily("courier new")
         self.setProperty("backgroundVisible", True)
+        bg_style = "QTextEdit { background-color: #fffffc;}"
+        self.setStyleSheet("%s" % (bg_style))
+        self.setTextColor(QColor(0, 0, 0))
         self.regexp_list = [QRegExp("\\binclude\\b"), QRegExp("\\btextfile\\b"),
                             QRegExp("\\bfile\\b"), QRegExp("\\bvalue=.*pkg:\/\/\\b"),
                             QRegExp("\\bvalue=.*package:\/\/\\b"),

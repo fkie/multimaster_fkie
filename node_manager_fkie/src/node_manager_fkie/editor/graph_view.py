@@ -86,7 +86,7 @@ class GraphViewWidget(QDockWidget):
         self.graphTreeView.setModel(model)
         self.graphTreeView.setUniformRowHeights(True)
         self.graphTreeView.header().hide()
-        self.htmlDelegate = HTMLDelegate()
+        self.htmlDelegate = HTMLDelegate(palette=self.palette())
         self.graphTreeView.setItemDelegateForColumn(0, self.htmlDelegate)
         self.graphTreeView.activated.connect(self.on_activated)
         self.graphTreeView.clicked.connect(self.on_clicked)
