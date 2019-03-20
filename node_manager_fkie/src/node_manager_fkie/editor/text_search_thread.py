@@ -174,14 +174,15 @@ class TextSearchThread(QObject, threading.Thread):
             my_resolved_args = self._resolve_args(launch_node, resolve_args, path)
             # replace arguments and search for node in data
             search_for_name = search_text.replace('name="', '').replace('"', '')
-            for aname, rname, span in self._next_node_name(data, my_resolved_args, path):
-                if rname == search_for_name:
-                    # found, now test in XML for if and unless statements
-                    if self._check_node_conditions(launch_node, search_for_name, my_resolved_args, path):
-                        self._found += 1
-                        self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
-                    else:
-                        rospy.logwarn("%s in %s ignored because of conditions." % (search_text, path))
+            occur_idx = 0
+            for aname, _rname, span in self._next_node_name(data, search_for_name, my_resolved_args, path):
+                # found, now test in XML for if and unless statements
+                if self._check_node_conditions(launch_node, search_for_name, occur_idx, my_resolved_args, path):
+                    self._found += 1
+                    self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
+                else:
+                    self.warning_signal.emit("%s in %s ignored because of conditions." % (search_text, path))
+                occur_idx += 1
             if self._isrunning and recursive:
                 queue = []
                 inc_files = nm.nmd().get_included_files(path, False)
@@ -208,7 +209,9 @@ class TextSearchThread(QObject, threading.Thread):
             if xml_nodes:
                 result = xml_nodes[-1]
         except Exception as err:
-            rospy.logwarn("%s in %s" % (utf8(err), path))
+            msg = "%s in %s" % (utf8(err), path)
+            self.warning_signal.emit(msg)
+            rospy.logwarn(msg)
         return result
 
     def _resolve_args(self, launch_node, resolve_args, path):
@@ -237,7 +240,7 @@ class TextSearchThread(QObject, threading.Thread):
             rospy.logwarn("%s in %s" % (utf8(err), path))
         return resolve_args_intern
 
-    def _next_node_name(self, content, resolve_args={}, path=''):
+    def _next_node_name(self, content, node_name, resolve_args={}, path=''):
         '''
         Load the content with xml parser, search for arg-nodes and replace the arguments in node-statements.
         :return: True if something was replaced, node name, line number
@@ -246,25 +249,31 @@ class TextSearchThread(QObject, threading.Thread):
         re_nodes = re.compile(r"<node[\w\W\S\s]*?name=\"(?P<name>.*?)\"")
         for groups in re_nodes.finditer(content):
             aname = groups.group("name")
-            rname = aname
-            for arg_key, args_val in resolve_args.items():
-                rname = rname.replace('$(arg %s)' % arg_key, args_val)
-            if rname != aname:
-                yield aname, rname, groups.span("name")
+            if aname == node_name:
+                yield node_name, aname, groups.span("name")
+            else:
+                rname = aname
+                for arg_key, args_val in resolve_args.items():
+                    rname = rname.replace('$(arg %s)' % arg_key, args_val)
+                if aname == node_name:
+                    yield aname, rname, groups.span("name")
 
-    def _check_node_conditions(self, launch_node, node_name, resolve_args, path):
+    def _check_node_conditions(self, launch_node, node_name, node_idx, resolve_args, path):
         try:
+            idx = 0
             nodes = launch_node.getElementsByTagName('node')
             for node in nodes:
                 if node.getAttribute('name') == node_name:
-                    for attridx in range(node.attributes.length):
-                        attr = node.attributes.item(attridx)
-                        if attr.localName == 'if':
-                            val = replace_arg(attr.value, resolve_args)
-                            return val in ['true', '1']
-                        elif attr.localName == 'unless':
-                            val = replace_arg(attr.value, resolve_args)
-                            return val in ['false', '0']
+                    if idx == node_idx:
+                        for attridx in range(node.attributes.length):
+                            attr = node.attributes.item(attridx)
+                            if attr.localName == 'if':
+                                val = replace_arg(attr.value, resolve_args)
+                                return val in ['true', '1']
+                            elif attr.localName == 'unless':
+                                val = replace_arg(attr.value, resolve_args)
+                                return val in ['false', '0']
+                    idx += 1
         except Exception as err:
             rospy.logwarn("%s in %s" % (utf8(err), path))
         return True

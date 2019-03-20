@@ -242,7 +242,7 @@ def replace_internal_args(content, resolve_args={}, path=None):
     return replaced, new_content, resolve_args_intern
 
 
-def replace_arg(self, value, resolve_args):
+def replace_arg(value, resolve_args):
     # test for if statement
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
     for arg in re_if.findall(value):
