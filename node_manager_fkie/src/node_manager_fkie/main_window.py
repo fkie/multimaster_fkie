@@ -1279,13 +1279,13 @@ class MainWindow(QMainWindow):
         if self.__current_master_label_name != name:
             self.__current_master_label_name = name
             show_name = name if nm.settings().show_domain_suffix else subdomain(name)
-            self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s</span>' % show_name)
+            self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600; color:black">%s</span>' % show_name)
             color = QColor.fromRgb(nm.settings().host_color(self.__current_master_label_name, self._default_color.rgb()))
             self._new_color(color)
         ts = 'updated: %s' % utf8(timestamp) if timestamp is not None else ''
         if not nm.settings().autoupdate:
             ts = '%s<span style=" color:orange;"> AU off</span>' % ts
-        self.masterInfoLabel.setText('<span style=" font-size:8pt;">%s%s</span>' % (con_err, ts))
+        self.masterInfoLabel.setText('<span style=" font-size:8pt; color:black">%s%s</span>' % (con_err, ts))
 
         # load the robot image, if one exists
         if self.masternameLabel.isEnabled():
