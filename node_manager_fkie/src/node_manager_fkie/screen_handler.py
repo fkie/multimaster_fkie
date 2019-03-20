@@ -101,7 +101,7 @@ class ScreenHandler(object):
             _ps = nm.ssh().ssh_x11_exec(host, [screen.SCREEN, '-x', screen_name], title_opt, user)
 
     @classmethod
-    def open_screen(cls, node, grpc_url, auto_item_request=False, user=None, pw=None, items=[]):
+    def open_screen(cls, node, grpc_url, auto_item_request=False, user=None, pw=None, items=[], use_nmd=True):
         '''
         Searches for the screen associated with the given node and open the screen
         output in a new terminal.
@@ -122,7 +122,10 @@ class ScreenHandler(object):
                 # get the available screens
                 screens = {}
                 try:
-                    screens = nm.nmd().get_screens(grpc_url, node)
+                    if use_nmd:
+                        screens = nm.nmd().get_screens(grpc_url, node)
+                    else:
+                        screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
                 except grpc.RpcError as e:
                     rospy.logwarn("can not connect to node manager daemon, detect screens using ssh...")
                     screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)

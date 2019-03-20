@@ -2332,7 +2332,7 @@ class MasterViewProxy(QWidget):
                         queue.add2queue(utf8(uuid.uuid4()),
                                         'show IO of %s' % node.name,
                                         nm.screen().open_screen,
-                                        (node.name, self._grpc_from_node(node), False, self.current_user))
+                                        (node.name, self._grpc_from_node(node), False, self.current_user, None, [], self._has_nmd))
                     self._start_queue(queue)
             else:
                 self.on_show_all_screens()
