@@ -51,11 +51,11 @@ from .text_search_thread import TextSearchThread
 from node_manager_fkie.detailed_msg_box import MessageBox
 
 try:
-    from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QWidget, QMainWindow
+    from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QDockWidget, QWidget, QMainWindow
     from python_qt_binding.QtGui import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget, QTextBrowser, QTextEdit
     from python_qt_binding.QtGui import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 except Exception:
-    from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QWidget, QMainWindow
+    from python_qt_binding.QtWidgets import QApplication, QAction, QLineEdit, QDockWidget, QWidget, QMainWindow
     from python_qt_binding.QtWidgets import QDialog, QInputDialog, QLabel, QMenu, QPushButton, QTabWidget, QTextBrowser, QTextEdit
     from python_qt_binding.QtWidgets import QHBoxLayout, QVBoxLayout, QSpacerItem, QSplitter, QSizePolicy
 
@@ -136,8 +136,9 @@ class Editor(QMainWindow):
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
 
         self.verticalLayout.addWidget(self.tabWidget)
-        self.log_bar = self._create_log_bar()
-        self.verticalLayout.addWidget(self.log_bar)
+        self.log_dock = self._create_log_bar()
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
+        # self.verticalLayout.addWidget(self.log_bar)
         self.buttons = self._create_buttons()
         self.verticalLayout.addWidget(self.buttons)
         self.setCentralWidget(self.main_widget)
@@ -254,6 +255,9 @@ class Editor(QMainWindow):
         return self.buttons
 
     def _create_log_bar(self):
+        self.log_dock = QDockWidget(self)
+        self.log_dock.setObjectName('LogFrame')
+        self.log_dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self.log_bar = QWidget(self)
         self.horizontal_layout_log_bar = QHBoxLayout(self.log_bar)
         self.horizontal_layout_log_bar.setContentsMargins(2, 0, 2, 0)
@@ -261,9 +265,9 @@ class Editor(QMainWindow):
         # add info label
         self.log_browser = QTextEdit()
         self.log_browser.setObjectName("log_browser")
-        self.log_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.log_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.log_browser.setLineWrapMode(QTextEdit.NoWrap)
-        self.log_browser.setMaximumHeight(120)
+        # self.log_browser.setMaximumHeight(120)
         color = QColor(255, 255, 235)
         bg_style = "QTextEdit#log_browser { background-color: %s;}" % color.name()
         self.log_bar.setStyleSheet("%s" % (bg_style))
@@ -279,7 +283,8 @@ class Editor(QMainWindow):
         self._timer_hide_log.setSingleShot(True)
         self._timer_hide_log.setInterval(3000)
         self._timer_hide_log.timeout.connect(self._timed_hide_log)
-        return self.log_bar
+        self.log_dock.setWidget(self.log_bar)
+        return self.log_dock
 
     def keyPressEvent(self, event):
         '''
@@ -443,11 +448,12 @@ class Editor(QMainWindow):
         text = ('<pre style="padding:10px;"><dt><font color="%s">'
                 '%s</font></dt></pre>' % (text_color, msg))
         self.log_browser.append(text)
-        self.log_bar.setVisible(True)
-        self.show_log_button.setChecked(True)
+        if warning:
+            self.log_dock.setVisible(True)
+            self.show_log_button.setChecked(True)
 
     def _timed_hide_log(self):
-        self.log_bar.setVisible(False)
+        self.log_dock.setVisible(False)
         self.show_log_button.setChecked(False)
 
     def on_text_changed(self, value=""):
@@ -573,7 +579,7 @@ class Editor(QMainWindow):
 
     def on_clear_log_button_clicked(self):
         self.log_browser.clear()
-        self.log_bar.setVisible(False)
+        self.log_dock.setVisible(False)
         self.show_log_button.setChecked(False)
         self.tabWidget.currentWidget().setFocus()
 
@@ -616,9 +622,9 @@ class Editor(QMainWindow):
         Shows the log bar
         '''
         if value:
-            self.log_bar.setVisible(True)
+            self.log_dock.setVisible(True)
         else:
-            self.log_bar.setVisible(False)
+            self.log_dock.setVisible(False)
             self.tabWidget.currentWidget().setFocus()
 
     def on_toggled_graph(self, value):
