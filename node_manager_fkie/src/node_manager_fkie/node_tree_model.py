@@ -636,6 +636,9 @@ class GroupItem(QStandardItem):
             if isinstance(item, (GroupItem, NodeItem)):
                 if item.state == NodeItem.STATE_WARNING:
                     self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
+                    self._state = NodeItem.STATE_WARNING
+                    if self.parent_item is not None:
+                        self.parent_item.updateIcon()
                     return
                 elif item.state == NodeItem.STATE_OFF:
                     has_off = True
