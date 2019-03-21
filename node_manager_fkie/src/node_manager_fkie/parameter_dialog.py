@@ -1015,21 +1015,21 @@ class MasterParameterDialog(ParameterDialog):
     given namespace.
     '''
 
-    def __init__(self, masteruri, ns='/', parent=None):
+    def __init__(self, masteruri, ns='/', parent=None, store_geometry=''):
         '''
         @param masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
         @type masteruri: C{str}
         @param ns: namespace of the parameter retrieved from the ROS parameter server.
         @type ns: C{str}
         '''
-        ParameterDialog.__init__(self, dict(), parent=parent)
+        ParameterDialog.__init__(self, dict(), parent=parent, store_geometry=store_geometry)
         self.masteruri = masteruri
         self.ns = ns
         self.is_delivered = False
         self.is_send = False
         self.mIcon = QIcon(":/icons/default_cfg.png")
         self.setWindowIcon(self.mIcon)
-        self.resize(450, 300)
+        # self.resize(450, 300)
         self.add_new_button = QPushButton()
         self.add_new_button.setIcon(QIcon(':/icons/crystal_clear_add.png'))
         self.add_new_button.clicked.connect(self._on_add_parameter)
