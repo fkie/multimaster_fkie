@@ -58,7 +58,7 @@ from .launch_config import LaunchConfig  # , LaunchConfigException
 from .launch_enhanced_line_edit import EnhancedLineEdit
 from .launch_server_handler import LaunchServerHandler
 from .message_frame import MessageData, MessageFrame
-from .node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, CellItem
+from .node_tree_model import NodeTreeModel, NodeItem, GroupItem, HostItem, NodeInfoIconsDelegate
 from .parameter_dialog import ParameterDialog, MasterParameterDialog, ServiceDialog
 from .parameter_handler import ParameterHandler
 from .parameter_list_model import ParameterModel, ParameterNameItem, ParameterValueItem
@@ -218,7 +218,7 @@ class MasterViewProxy(QWidget):
         check_for_ros_names = not nm.settings().group_nodes_by_namespace
         self.nodeNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
         self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
-        self.node_delegate = IconsDelegate()
+        self.node_delegate = NodeInfoIconsDelegate()
         self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
         self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
         self.masterTab.nodeTreeView.expanded.connect(self.on_node_expanded)
@@ -3509,93 +3509,3 @@ class ParameterSortFilterProxyModel(QSortFilterProxyModel):
         regex = self.filterRegExp()
         return (regex.indexIn(self.sourceModel().data(index0, ParameterNameItem.NAME_ROLE)) != -1 or
                 regex.indexIn(self.sourceModel().data(index2, ParameterValueItem.VALUE_ROLE)) != -1)
-
-
-class IconsDelegate(QItemDelegate):
-
-    def __init__(self, parent=None, *args):
-        QItemDelegate.__init__(self, parent, *args)
-        self._idx_icon = 1
-        self.IMAGES = {'launchfile': QImage(':/icons/crystal_clear_launch_file.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'defaultcfg': QImage(":/icons/default_cfg.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'nodelet': QImage(":/icons/crystal_clear_nodelet.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'group': QImage(':/icons/crystal_clear_group.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(15, 15, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-                       }
-
-    def paint(self, painter, option, index):
-        painter.save()
-        self._idx_icon = 1
-        model_index = index.model().mapToSource(index)
-        item = model_index.model().itemFromIndex(model_index)
-        if isinstance(item, CellItem):
-            if isinstance(item.item, NodeItem):
-                tooltip = ''
-                if item.item.has_multiple_screens:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['mscreens'])
-                    tooltip += 'multiple screens'
-                if not item.item.has_screen:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['noscreen'])
-                    tooltip += 'no screen'
-                lcfgs = item.item.count_launch_cfgs()
-                if lcfgs > 0:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['launchfile'])
-                    if lcfgs > 1:
-                        painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
-#                 dcfgs = item.item.count_default_cfgs()
-#                 if dcfgs > 0:
-#                     rect = self.calcDecorationRect(option.rect)
-#                     painter.drawImage(rect, self.IMAGES['defaultcfg'])
-#                     if dcfgs > 1:
-#                         painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
-                if item.item.nodelets:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['nodelet_mngr'])
-                if item.item.nodelet_mngr:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['nodelet'])
-                if item.item.nodelets:
-                    tooltip += "%sThis is a nodelet manager" % '\n' if tooltip else ''
-                elif item.item.nodelet_mngr:
-                    tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
-                item.setToolTip(tooltip)
-            elif isinstance(item.item, GroupItem):
-                lcfgs = len(item.item.get_configs())
-                rect = self.calcDecorationRect(option.rect)
-                painter.drawImage(rect, self.IMAGES['group'])
-                count_nodes = item.item.count_nodes()
-                if count_nodes > 1:
-                    painter.drawText(rect, Qt.AlignCenter, str(count_nodes))
-                if lcfgs > 0:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['launchfile'])
-                    if lcfgs > 1:
-                        painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
-                mscrens = item.item.get_count_mscreens()
-                if mscrens > 0:
-                    rect = self.calcDecorationRect(option.rect)
-                    painter.drawImage(rect, self.IMAGES['mscreens'])
-                    if mscrens > 1:
-                        painter.drawText(rect, Qt.AlignCenter, str(mscrens))
-#                 if dcfgs > 0:
-#                     rect = self.calcDecorationRect(option.rect)
-#                     painter.drawImage(rect, self.IMAGES['defaultcfg'])
-#                     if dcfgs > 1:
-#                         painter.drawText(rect, Qt.AlignCenter, str(dcfgs))
-        painter.restore()
-
-    def calcDecorationRect(self, main_rect):
-        rect = QRect()
-        rect.setX(main_rect.x() + self._idx_icon)
-        rect.setY(main_rect.y() + 1)
-        rect.setWidth(15)
-        rect.setHeight(15)
-        self._idx_icon += 17
-        return rect

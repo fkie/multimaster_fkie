@@ -30,8 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QFile, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+from python_qt_binding.QtCore import QFile, QRect, Qt, Signal
+from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
+try:
+    from python_qt_binding.QtGui import QItemDelegate
+except Exception:
+    from python_qt_binding.QtWidgets import QItemDelegate
 import re
 import roslib
 import rospy
@@ -1897,3 +1901,101 @@ class NodeTreeModel(QStandardItemModel):
                 h = root.child(i)
                 h.update_description(descr_type, descr_name, descr)
                 return h.update_tooltip()
+
+
+# ###############################################################################
+# #############                NodeInfoIconsDelegate               ##############
+# ###############################################################################
+
+class NodeInfoIconsDelegate(QItemDelegate):
+    '''
+    Decorates the info column.
+    '''
+
+    def __init__(self, parent=None, *args):
+        QItemDelegate.__init__(self, parent, *args)
+        self._idx_icon = 1
+        self._hspacing = 2
+        self._vspacing = 2
+        self._icon_size = 0
+        self.IMAGES = {}
+
+    def _scale_icons(self, icon_size):
+        self._icon_size = icon_size
+        params = (self._icon_size, self._icon_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        self.IMAGES = {'launchfile': QImage(':/icons/crystal_clear_launch_file.png').scaled(*params),
+                       'defaultcfg': QImage(":/icons/default_cfg.png").scaled(*params),
+                       'nodelet': QImage(":/icons/crystal_clear_nodelet.png").scaled(*params),
+                       'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(*params),
+                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(*params),
+                       'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(*params),
+                       'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(*params),
+                       'group': QImage(':/icons/crystal_clear_group.png').scaled(*params),
+                       'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(*params)
+                       }
+
+    def paint(self, painter, option, index):
+        if option.rect.height() - self._vspacing * 2 != self._icon_size:
+            self._icon_size = option.rect.height() - self._vspacing * 2
+            self._scale_icons(self._icon_size)
+        painter.save()
+        self._idx_icon = 1
+        # we assume the model has an filter proxy installed
+        model_index = index.model().mapToSource(index)
+        item = model_index.model().itemFromIndex(model_index)
+        if isinstance(item, CellItem):
+            if isinstance(item.item, NodeItem):
+                tooltip = ''
+                if item.item.has_multiple_screens:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['mscreens'])
+                    tooltip += 'multiple screens'
+                if not item.item.has_screen:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['noscreen'])
+                    tooltip += 'no screen'
+                lcfgs = item.item.count_launch_cfgs()
+                if lcfgs > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['launchfile'])
+                    if lcfgs > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
+                if item.item.nodelets:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['nodelet_mngr'])
+                if item.item.nodelet_mngr:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['nodelet'])
+                if item.item.nodelets:
+                    tooltip += "%sThis is a nodelet manager" % '\n' if tooltip else ''
+                elif item.item.nodelet_mngr:
+                    tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
+                item.setToolTip(tooltip)
+            elif isinstance(item.item, GroupItem):
+                lcfgs = len(item.item.get_configs())
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['group'])
+                count_nodes = item.item.count_nodes()
+                if count_nodes > 1:
+                    painter.drawText(rect, Qt.AlignCenter, str(count_nodes))
+                if lcfgs > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['launchfile'])
+                    if lcfgs > 1:
+                        painter.drawText(rect, Qt.AlignCenter, str(lcfgs))
+                mscrens = item.item.get_count_mscreens()
+                if mscrens > 0:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['mscreens'])
+#                    if mscrens > 1:
+#                        painter.drawText(rect, Qt.AlignCenter, str(mscrens))
+        painter.restore()
+
+    def calcDecorationRect(self, main_rect, image=True):
+        rect = QRect()
+        rect.setX(main_rect.x() + self._idx_icon + self._hspacing)
+        rect.setY(main_rect.y() + self._vspacing)
+        rect.setWidth(self._icon_size if image else main_rect.width() - self._idx_icon)
+        rect.setHeight(self._icon_size)
+        self._idx_icon += self._icon_size + self._hspacing
+        return rect
