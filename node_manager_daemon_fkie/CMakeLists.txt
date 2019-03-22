@@ -5,6 +5,7 @@ project(node_manager_daemon_fkie)
 # python -m grpc_tools.protoc -Iprotos --python_out=./src/node_manager_daemon_fkie/. --grpc_python_out=./src/node_manager_daemon_fkie/. protos/launch_manager_client.proto
 
 find_package(catkin REQUIRED COMPONENTS
+  diagnostic_msgs
   multimaster_msgs_fkie
   roslaunch
   rospy

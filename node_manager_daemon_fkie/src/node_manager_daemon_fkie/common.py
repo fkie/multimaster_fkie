@@ -88,6 +88,14 @@ def get_cwd(cwd, binary=''):
     return result
 
 
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "%3.0f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.0%s%s" % (num, 'Yi', suffix)
+
+
 def get_packages(path):
     result = {}
     if os.path.isdir(path):

@@ -38,11 +38,13 @@ import time
 from .common import interpret_path
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
+from .monitor_servicer import MonitorServicer
 from .screen_servicer import ScreenServicer
 from .version_servicer import VersionServicer
 
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
 import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
+import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
 import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
 import multimaster_msgs_fkie.grpc.version_pb2_grpc as vgrpc
 
@@ -52,10 +54,12 @@ class GrpcServer:
     def __init__(self):
         self.server = None
         self.launch_servicer = LaunchServicer()
+        self.monitor_servicer = MonitorServicer()
 
     def __del__(self):
         self.server.stop(3)
         self.launch_servicer = None
+        self.monitor_servicer = None
 
     def start(self, url='[::]:12311'):
         rospy.loginfo("Start grpc server on %s" % url)
@@ -77,6 +81,7 @@ class GrpcServer:
         if insecure_port > 0:
             fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
             lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
+            mgrpc.add_MonitorServiceServicer_to_server(self.monitor_servicer, self.server)
             sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(), self.server)
             vgrpc.add_VersionServiceServicer_to_server(VersionServicer(), self.server)
             self.server.start()
@@ -84,6 +89,7 @@ class GrpcServer:
 
     def shutdown(self):
         self.launch_servicer.stop()
+        self.monitor_servicer.stop()
         self.server.stop(3)
 
     def load_launch_file(self, path, autostart=False):
