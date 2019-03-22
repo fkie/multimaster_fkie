@@ -44,14 +44,14 @@ import traceback
 import uuid
 import xmlrpclib
 
-from master_discovery_fkie.common import masteruri_from_ros, get_hostname
+from master_discovery_fkie.common import masteruri_from_ros
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_daemon_fkie.common import interpret_path, utf8
+from node_manager_daemon_fkie.common import interpret_path, sizeof_fmt, utf8
 from node_manager_daemon_fkie.host import get_hostname, get_port
 from node_manager_daemon_fkie import exceptions
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_daemon_fkie.version import detect_version
-from .common import package_name, sizeof_fmt
+from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
@@ -521,6 +521,9 @@ class MasterViewProxy(QWidget):
                     self.set_diagnostic_ok('/node_manager_daemon')
                     nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
                     nm.nmd().log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
+                    nm.nmd().get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+                    if not nm.is_local(self.mastername):
+                        nm.nmd().get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime

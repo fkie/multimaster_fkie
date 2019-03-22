@@ -37,17 +37,19 @@ from python_qt_binding.QtCore import QObject, Signal
 import rospy
 import threading
 
+from diagnostic_msgs.msg import DiagnosticArray
 # import node_manager_fkie as nm
 
 import node_manager_daemon_fkie.exceptions as exceptions
 import node_manager_daemon_fkie.remote as remote
 import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
+import node_manager_daemon_fkie.monitor_stub as mstub
 import node_manager_daemon_fkie.screen_stub as sstub
 import node_manager_daemon_fkie.version_stub as vstub
+from node_manager_daemon_fkie.common import sizeof_fmt, utf8
 from node_manager_daemon_fkie.startcfg import StartConfig
 from node_manager_daemon_fkie import url as nmdurl
-from .common import utf8, sizeof_fmt
 
 
 class LaunchArgsSelectionRequest(Exception):
@@ -162,6 +164,14 @@ class NmdClient(QObject):
     '''
       :ivar str,int log_dir_size_signal: signal emitted on log_dir size was {grpc_url, log_dir size}.
     '''
+    system_diagnostics_signal = Signal(DiagnosticArray, str)
+    '''
+      :ivar DiagnosticArray,str system_diagnostics_signal: signal emit system (nmd) diagnostic messages {DiagnosticArray, grpc_url}.
+    '''
+    remote_diagnostics_signal = Signal(DiagnosticArray, str)
+    '''
+      :ivar DiagnosticArray,str remote_diagnostics_signal: signal emit diagnostic messages from remote system {DiagnosticArray, grpc_url}.
+    '''
 
     def __init__(self):
         QObject.__init__(self)
@@ -264,6 +274,12 @@ class NmdClient(QObject):
         channel = remote.get_insecure_channel(uri)
         if channel is not None:
             return vstub.VersionStub(channel)
+        raise Exception("Node manager daemon '%s' not reachable" % uri)
+
+    def get_monitor_manager(self, uri='localhost:12321'):
+        channel = remote.get_insecure_channel(uri)
+        if channel is not None:
+            return mstub.MonitorStub(channel)
         raise Exception("Node manager daemon '%s' not reachable" % uri)
 
     def list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
@@ -773,3 +789,35 @@ class NmdClient(QObject):
             return version, date
         except Exception as e:
             self.error.emit("get_version", "grpc://%s" % uri, "", e)
+
+    def get_system_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):
+        self._threads.start_thread("gmsdt_%s" % grpc_url, target=self.get_system_diagnostics, args=(grpc_url, True))
+
+    def get_system_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
+        rospy.logdebug("get system diagnostics from %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        vm = self.get_monitor_manager(uri)
+        try:
+            diagnostic_array = vm.get_system_diagnostics()
+            if threaded:
+                self.system_diagnostics_signal.emit(diagnostic_array, grpc_url)
+                self._threads.finished("gmsdt_%s" % grpc_url)
+            return diagnostic_array
+        except Exception as e:
+            self.error.emit("get_system_diagnostics", "grpc://%s" % uri, "", e)
+
+    def get_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):
+        self._threads.start_thread("gmdt_%s" % grpc_url, target=self.get_diagnostics, args=(grpc_url, True))
+
+    def get_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
+        rospy.logdebug("get diagnostics from %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        vm = self.get_monitor_manager(uri)
+        try:
+            diagnostic_array = vm.get_diagnostics()
+            if threaded:
+                self.remote_diagnostics_signal.emit(diagnostic_array, grpc_url)
+                self._threads.finished("gmdt_%s" % grpc_url)
+            return diagnostic_array
+        except Exception as e:
+            self.error.emit("get_diagnostics", "grpc://%s" % uri, "", e)

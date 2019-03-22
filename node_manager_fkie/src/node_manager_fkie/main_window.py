@@ -61,7 +61,7 @@ from .discovery_listener import MasterListService, MasterStateTopic, MasterStati
 from .editor import Editor
 from .launch_files_widget import LaunchFilesWidget
 from .log_widget import LogWidget
-from .master_list_model import MasterModel
+from .master_list_model import MasterModel, MasterIconsDelegate
 from .master_view_proxy import MasterViewProxy
 from .menu_rqt import MenuRqt
 from .network_discovery_dialog import NetworkDiscoveryDialog
@@ -202,6 +202,8 @@ class MainWindow(QMainWindow):
         self.master_model = MasterModel(self.getMasteruri())
         self.master_model.sync_start.connect(self.on_sync_start)
         self.master_model.sync_stop.connect(self.on_sync_stop)
+        self.master_delegate = MasterIconsDelegate()
+        self.masterTableView.setItemDelegateForColumn(1, self.master_delegate)
         self.masterTableView.setModel(self.master_model)
         self.master_model.parent_view = self.masterTableView
 #    self.masterTableView.setAlternatingRowColors(True)
@@ -341,8 +343,10 @@ class MainWindow(QMainWindow):
 
         self._con_tries = dict()
         self._subscribe()
-        if DIAGNOSTICS_AVAILABLE:
-            self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+        self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+        nm.nmd().system_diagnostics_signal.connect(self._callback_system_diagnostics)
+        nm.nmd().remote_diagnostics_signal.connect(self._callback_diagnostics)
+
         # TODO: self.launch_dock.launchlist_model.reloadPackages()
         self._select_index = 0
         self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+Shift+R", "restart selected nodes")), self)
@@ -2031,11 +2035,19 @@ class MainWindow(QMainWindow):
         if master:
             self._assigne_icon(master.mastername, resolve_url(path))
 
-    def _callback_diagnostics(self, data):
+    def _callback_system_diagnostics(self, data, grpc_url=''):
+        try:
+            muri = nmdurl.masteruri(grpc_url)
+            master = self.getMaster(muri, create_new=False)
+            if master:
+                self.master_model.update_master_diagnostic(nm.nameres().mastername(muri), data)
+        except Exception as err:
+            rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
+
+    def _callback_diagnostics(self, data, grpc_url=''):
         try:
             for diagnostic in data.status:
-                if DIAGNOSTICS_AVAILABLE:
-                    self.diagnostics_signal.emit(diagnostic)
+                self.diagnostics_signal.emit(diagnostic)
         except Exception as err:
             rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
 

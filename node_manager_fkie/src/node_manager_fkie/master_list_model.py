@@ -30,12 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from python_qt_binding.QtCore import QObject, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
+from python_qt_binding.QtCore import QObject, QRect, Qt, Signal
+from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel, QTextOption
 try:
-    from python_qt_binding.QtGui import QPushButton
+    from python_qt_binding.QtGui import QItemDelegate, QPushButton, QStyle
 except Exception:
-    from python_qt_binding.QtWidgets import QPushButton
+    from python_qt_binding.QtWidgets import QItemDelegate, QPushButton, QStyle
 from socket import getaddrinfo, AF_INET6
 import threading
 
@@ -145,7 +145,7 @@ class MasterItem(QStandardItem):
 
     def __init__(self, master, local=False, quality=None, parent=None):
         self.name = ''.join([master.name, ' (localhost)']) if local else master.name
-        QStandardItem.__init__(self, self.name)
+        QStandardItem.__init__(self, '')  # self.name)
         self.parent_item = None
         self._master = master
         self.local = local
@@ -160,6 +160,7 @@ class MasterItem(QStandardItem):
                       'clock_warn': QIcon(':/icons/crystal_clear_xclock_fail.png')}
         self.master_ip = None
         self._master_errors = []
+        self._diagnostics = []
         self._timediff = 0
         self._threaded_get_ip()
         self.updateNameView(master, quality, self)
@@ -207,6 +208,14 @@ class MasterItem(QStandardItem):
             self.__quality = value
             self.updateMasterView(self.parent_item)
 
+    @property
+    def diagnostics(self):
+        return list(self._diagnostics)
+
+    @property
+    def master_errors(self):
+        return list(self._master_errors)
+
     def updateMasterErrors(self, error_list):
         self._master_errors = error_list
         self.updateNameView(self.master, self.quality, self)
@@ -215,6 +224,13 @@ class MasterItem(QStandardItem):
         if msg not in self._master_errors:
             self._master_errors.append(msg)
             self.updateNameView(self.master, self.quality, self)
+
+    def update_master_diagnostics(self, diagnostics):
+        del self._diagnostics[:]
+        for diagnostic in diagnostics.status:
+            if diagnostic.level > 0 and diagnostic.hardware_id == self._master.name:
+                self._diagnostics.append(diagnostic)
+        self.updateNameView(self.master, self.quality, self)
 
     def updateTimeDiff(self, timediff):
         self._timediff = timediff
@@ -243,6 +259,7 @@ class MasterItem(QStandardItem):
         @param item: corresponding item in the model
         @type item: L{TopicItem}
         '''
+        return
         tooltip = ''.join(['<html><body>'])
         tooltip = ''.join([tooltip, '<h4>', master.uri, '</h4>'])
         tooltip = ''.join([tooltip, '<dl>'])
@@ -260,7 +277,7 @@ class MasterItem(QStandardItem):
         # update the icon
         if master.online:
             timediff = abs(self._timediff) > nm.settings().max_timediff
-            if self._master_errors or self.master_ip is None or timediff:
+            if self._master_errors or self._diagnostics or self.master_ip is None or timediff:
                 item.setIcon(self.ICONS['warning'])
                 if timediff:
                     tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %.3f seconds!</font>' % self._timediff, '</h4>'])
@@ -271,6 +288,8 @@ class MasterItem(QStandardItem):
                     tooltip = ''.join([tooltip, '<h4>Errors reported by master_discovery:</h4>'])
                     for err in self._master_errors:
                         tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>' % err])
+                for diag in self._diagnostics:
+                    tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>' % diag.message])
             elif quality is not None and quality != -1.:
                 if quality > 30:
                     item.setIcon(self.ICONS['green'])
@@ -521,6 +540,14 @@ class MasterModel(QStandardItemModel):
                 masterItem.add_master_error(msg)
                 break
 
+    def update_master_diagnostic(self, master_name, diagnostics):
+        root = self.invisibleRootItem()
+        for i in reversed(range(root.rowCount())):
+            masterItem = root.child(i, self.COL_NAME)
+            if masterItem.master.name == master_name:
+                masterItem.update_master_diagnostics(diagnostics)
+                break
+
     def updateTimeDiff(self, master, timediff):
         '''
         Updates the time difference reported by master_discovery.
@@ -557,3 +584,124 @@ class MasterModel(QStandardItemModel):
             self.sync_start.emit(masteruri)
         else:
             self.sync_stop.emit(masteruri)
+
+
+class MasterIconsDelegate(QItemDelegate):
+
+    def __init__(self, parent=None, *args):
+        QItemDelegate.__init__(self, parent, *args)
+        self._idx_icon = 1
+        self._hspacing = 2
+        self._vspacing = 4
+        self._icon_size = 0
+        self.IMAGES = {}
+
+    def _scale_icons(self, icon_size):
+        self._icon_size = icon_size
+        params = (self._icon_size, self._icon_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        self.IMAGES = {'green': QImage(":/icons/stock_connect_green.png").scaled(*params),
+                       'yellow': QImage(":/icons/stock_connect_yellow.png").scaled(*params),
+                       'red': QImage(":/icons/stock_connect_red.png").scaled(*params),
+                       'grey': QImage(":/icons/stock_connect.png").scaled(*params),
+                       'disconnected': QImage(":/icons/stock_disconnect.png").scaled(*params),
+                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(*params),
+                       'clock_warn': QImage(':/icons/crystal_clear_xclock_fail.png').scaled(*params),
+                       'cpu_warn': QImage(':/icons/hight_load.png').scaled(*params),
+                       'cpu_temp_warn': QImage(':/icons/temperatur_warn.png').scaled(*params),
+                       'hdd_warn': QImage(':/icons/crystal_clear_hdd_warn.png').scaled(*params),
+                       'net_warn': QImage(':/icons/sekkyumu_net_warn.png').scaled(*params),
+                       'mem_warn': QImage(':/icons/mem_warn.png').scaled(*params)
+                       }
+
+    def paint(self, painter, option, index):
+        # update the icon size and resize images if needed
+        if option.rect.height() - self._vspacing * 2 != self._icon_size:
+            self._icon_size = option.rect.height() - self._vspacing * 2
+            self._scale_icons(self._icon_size)
+        painter.save()
+        self._idx_icon = 1
+        item = index.model().itemFromIndex(index)
+        if option.state & QStyle.State_Selected:
+            painter.fillRect(option.rect, option.palette.highlight())
+
+        if isinstance(item, MasterItem):
+            tooltip = '<html><body>'
+            tooltip = '%s\n<h4>%s</h4>' % (tooltip, item.master.uri)
+            tooltip = '%s\n<dt>IP: %s</dt>' % (tooltip, str(item.master_ip))
+            if item.master.online:
+                if item.quality is not None and item.quality != -1.:
+                    tooltip = '%s\n<dt>Quality: %.2f </dt>' % (tooltip, item.quality)
+                else:
+                    tooltip = '%s\n<dt>Quality: not available</dt>' % (tooltip)
+            else:
+                tooltip = '%s\n<dt>offline</dt>' % (tooltip)
+            # update warnings
+            if item.master.online:
+                master_errors = item.master_errors
+                if master_errors or item.master_ip is None:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['warning'])
+                    if item.master_ip is None:
+                        tooltip = '%s\n<h4><font color="#CC0000">Host not reachable by name! The ROS topics may not by connected!</font></h4>' % (tooltip)
+                    if master_errors:
+                        tooltip = '%s\n<h4>Errors reported by master_discovery:</h4>' % (tooltip)
+                        for err in master_errors:
+                            tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (tooltip, err)
+                else:
+                    rect = self.calcDecorationRect(option.rect)
+                    if item.quality is not None and item.quality != -1.:
+                        if item.quality > 30:
+                            painter.drawImage(rect, self.IMAGES['green'])
+                        elif item.quality > 5:
+                            painter.drawImage(rect, self.IMAGES['yellow'])
+                        else:
+                            painter.drawImage(rect, self.IMAGES['red'])
+                    else:
+                        painter.drawImage(rect, self.IMAGES['grey'])
+                # check for time difference
+                timediff = abs(item._timediff) > nm.settings().max_timediff
+                if timediff:
+                    tooltip = '%s\n<h4><font color="#CC0000">Time difference to the host is about %.3f seconds!</font></h4>' % (tooltip, item._timediff)
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['clock_warn'])
+            else:
+                rect = self.calcDecorationRect(option.rect)
+                painter.drawImage(rect, self.IMAGES['disconnected'])
+            # update diagnostic warnings
+            for diag in item.diagnostics:
+                if diag.level > 0:
+                    tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (tooltip, diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                    if 'Network Load' in diag.name:
+                        rect = self.calcDecorationRect(option.rect)
+                        painter.drawImage(rect, self.IMAGES['net_warn'])
+                    if 'CPU Load' in diag.name:
+                        rect = self.calcDecorationRect(option.rect)
+                        painter.drawImage(rect, self.IMAGES['cpu_warn'])
+                    if 'CPU Temperature' in diag.name:
+                        rect = self.calcDecorationRect(option.rect)
+                        painter.drawImage(rect, self.IMAGES['cpu_temp_warn'])
+                    if 'Memory Usage' in diag.name:
+                        rect = self.calcDecorationRect(option.rect)
+                        painter.drawImage(rect, self.IMAGES['mem_warn'])
+                    if 'HDD Usage' in diag.name:
+                        rect = self.calcDecorationRect(option.rect)
+                        painter.drawImage(rect, self.IMAGES['hdd_warn'])
+            # update description from robot description parameter
+            if item.descr:
+                tooltip = '%s\n%s' % (tooltip, item.descr)
+
+            # paint the name of the host
+            tooltip = '%s\n</body></html>' % (tooltip)
+            item.setToolTip(tooltip)
+            rect = self.calcDecorationRect(option.rect, image=False)
+            painter.drawText(rect, Qt.AlignVCenter, item.name)
+        painter.restore()
+
+    def calcDecorationRect(self, main_rect, image=True):
+        rect = QRect()
+        rect.setX(main_rect.x() + self._idx_icon + self._hspacing)
+        rect.setY(main_rect.y() + self._vspacing)
+        rect.setWidth(self._icon_size if image else main_rect.width() - self._idx_icon)
+        rect.setHeight(self._icon_size)
+        self._idx_icon += self._icon_size + self._hspacing
+        return rect

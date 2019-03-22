@@ -38,8 +38,9 @@ import threading
 import rospy
 
 from node_manager_daemon_fkie import exceptions
+from node_manager_daemon_fkie.common import sizeof_fmt
 import node_manager_fkie as nm
-from node_manager_fkie.common import package_name, sizeof_fmt
+from node_manager_fkie.common import package_name
 from node_manager_fkie.html_delegate import HTMLDelegate
 
 try:

@@ -155,11 +155,3 @@ def package_name(path):
 
 def is_package(file_list):
     return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))
-
-
-def sizeof_fmt(num, suffix='B'):
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-        if abs(num) < 1024.0:
-            return "%3.0f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.0%s%s" % (num, 'Yi', suffix)
