@@ -42,7 +42,7 @@ catkin_package(
 
 # generate code for gRPC protocols
 include(cmake/grpc_protoc.cmake)
-generate_grpc()
+generate_grpc(PROTO_FILES file launch monitor screen version)
 
 install(
     DIRECTORY
