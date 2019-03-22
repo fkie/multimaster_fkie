@@ -2339,16 +2339,17 @@ class MasterViewProxy(QWidget):
         finally:
             self.setCursor(cursor)
 
-    def _on_no_screen_error(self, node, host):
-        msg = nm.NoScreenOpenLogRequest(node, host).msg()
+    def _on_no_screen_error(self, nodename, host):
+        msg = nm.NoScreenOpenLogRequest(nodename, host).msg()
         rospy.logwarn("%s" % msg)
-        muri = nm.nameres().masterurisbyaddr(host)
-        if muri:
-            nodes = self.node_tree_model.get_tree_node(node, muri[0])
-            for node in nodes:
-                node.has_screen = False
+        muris = nm.nameres().masterurisbyaddr(host)
+        for muri in muris:
+            if muri == self.masteruri:
+                nodes = self.node_tree_model.get_tree_node(nodename, muri)
+                for node in nodes:
+                    node.has_screen = False
         if nm.settings().show_noscreen_error:
-            self.info_frame.show_info(MessageFrame.TYPE_NOSCREEN, 'No screens found! See log for details!<br>The following nodes are affected:', MessageData('', [node.name]))
+            self.info_frame.show_info(MessageFrame.TYPE_NOSCREEN, 'No screens found! See log for details!<br>The following nodes are affected:', MessageData('', [nodename]))
 
     def on_kill_screens(self):
         '''
