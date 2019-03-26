@@ -33,8 +33,9 @@
 import rospy
 import socket
 import threading
+import time
 
-from diagnostic_msgs.msg import DiagnosticArray
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from .cpu_load import CpuLoad
 from .cpu_temp import CpuTemp
 from .hdd_usage import HddUsage
@@ -42,12 +43,37 @@ from .mem_usage import MemUsage
 from .net_load import NetLoad
 
 
+class DiagnosticObj(DiagnosticStatus):
+
+    def __init__(self, msg=DiagnosticStatus(), timestamp=0):
+        self.msg = msg
+        self.timestamp = timestamp
+
+    def __eq__(self, item):
+        if isinstance(item, DiagnosticObj):
+            return self.msg.name == item.msg.name
+        if isinstance(item, DiagnosticStatus):
+            return self.msg.name == item.name
+
+    def __ne__(self, item):
+        return not (self == item)
+
+    def __gt__(self, item):
+        if isinstance(item, DiagnosticObj):
+            return self.msg.name > item.msg.name
+        if isinstance(item, DiagnosticStatus):
+            return self.msg.name > item.name
+
+
 class Service:
 
     def __init__(self):
         self._mutex = threading.RLock()
-        self._diagnostic_rosmsg = DiagnosticArray()
+        self._diagnostics = []  # DiagnosticObj
         self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+        self._param_sub_only_agg = rospy.get_param('~only_diagnostics_agg', False)
+        if not self._param_sub_only_agg:
+            self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
         hostname = socket.gethostname()
 
         self.sensors = []
@@ -59,12 +85,22 @@ class Service:
 
     def _callback_diagnostics(self, msg):
         # TODO: update diagnostics
-        self._diagnostic_rosmsg = msg
+        with self._mutex:
+            stamp = msg.header.stamp.to_sec()
+            for status in msg.status:
+                try:
+                    idx = self._diagnostics.index(status)
+                    diag_obj = self._diagnostics[idx]
+                    diag_obj.msg = status
+                    diag_obj.timestamp = stamp
+                except Exception:
+                    diag_obj = DiagnosticObj(status, stamp)
+                    self._diagnostics.append(diag_obj)
 
     def get_system_diagnostics(self, filter_level=0, filter_ts=0):
         result = DiagnosticArray()
         with self._mutex:
-            result.header.stamp = rospy.Time.now()
+            result.header.stamp = rospy.Time.from_sec(time.time())
             nowsec = result.header.stamp.secs
             for sensor in self.sensors:
                 diag_msg = sensor.last_state(nowsec, filter_level, filter_ts)
@@ -73,8 +109,14 @@ class Service:
         return result
 
     def get_diagnostics(self, filter_level=0, filter_ts=0):
-        # TODO:
-        return self._diagnostic_rosmsg
+        result = DiagnosticArray()
+        result.header.stamp = rospy.Time.from_sec(time.time())
+        with self._mutex:
+            for diag_obj in self._diagnostics:
+                if diag_obj.timestamp > filter_ts:
+                    if diag_obj.msg.level >= filter_level:
+                        result.status.append(diag_obj)
+        return result
 
     def stop(self):
         with self._mutex:

@@ -31,8 +31,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QRegExp, Qt, Signal, QRect
-from python_qt_binding.QtGui import QImage, QKeySequence  # , QBrush, QPen
+from python_qt_binding.QtCore import QRegExp, Qt, Signal
+from python_qt_binding.QtGui import QKeySequence  # , QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
 import os
@@ -70,10 +70,10 @@ from .topic_list_model import TopicModel, TopicItem, TopicGroupItem
 import node_manager_fkie as nm
 try:
     from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
-    from python_qt_binding.QtGui import QApplication, QVBoxLayout, QItemDelegate, QStyle
+    from python_qt_binding.QtGui import QApplication, QVBoxLayout
 except Exception:
     from python_qt_binding.QtWidgets import QAction, QFileDialog, QMenu, QShortcut, QWidget
-    from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QItemDelegate, QStyle
+    from python_qt_binding.QtWidgets import QApplication, QVBoxLayout
 
 
 try:
