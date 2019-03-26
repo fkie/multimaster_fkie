@@ -32,6 +32,7 @@
 
 import psutil
 import rospy
+import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from node_manager_daemon_fkie.common import sizeof_fmt
@@ -49,7 +50,7 @@ class HddUsage(SensorInterface):
         hdd = psutil.disk_usage(LOG_PATH)
         diag_level = 0
         diag_vals = []
-        diag_msg = 'disk size for %s' % LOG_PATH
+        diag_msg = 'Free disk space for %s: %s' % (LOG_PATH, sizeof_fmt(hdd.free))
         warn_level = self._hdd_usage_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9
@@ -65,7 +66,7 @@ class HddUsage(SensorInterface):
         # Update status
         with self.mutex:
             diag_vals.append(KeyValue(key='Update Status', value='OK'))
-            self._ts_last = rospy.get_time()
+            self._ts_last = time.time()
             self._stat_msg.level = diag_level
             self._stat_msg.values = diag_vals
             self._stat_msg.message = diag_msg

@@ -77,11 +77,11 @@ class Service:
         hostname = socket.gethostname()
 
         self.sensors = []
-        self.sensors.append(CpuLoad(hostname, 5.0, 0.9))
-        self.sensors.append(CpuTemp(hostname, 5.0, 85.0))
+        self.sensors.append(CpuLoad(hostname, 1.0, 0.9))
+        self.sensors.append(CpuTemp(hostname, 1.0, 85.0))
         self.sensors.append(HddUsage(hostname, 30.0, 100.0))
-        self.sensors.append(MemUsage(hostname, 5.0, 100.0))
-        self.sensors.append(NetLoad(hostname, 3.0, 0.9))
+        self.sensors.append(MemUsage(hostname, 1.0, 100.0))
+        self.sensors.append(NetLoad(hostname, 1.0, 0.9))
 
     def _callback_diagnostics(self, msg):
         # TODO: update diagnostics
@@ -100,8 +100,8 @@ class Service:
     def get_system_diagnostics(self, filter_level=0, filter_ts=0):
         result = DiagnosticArray()
         with self._mutex:
-            result.header.stamp = rospy.Time.from_sec(time.time())
-            nowsec = result.header.stamp.secs
+            nowsec = time.time()
+            result.header.stamp = rospy.Time.from_sec(nowsec)
             for sensor in self.sensors:
                 diag_msg = sensor.last_state(nowsec, filter_level, filter_ts)
                 if diag_msg is not None:
@@ -115,7 +115,7 @@ class Service:
             for diag_obj in self._diagnostics:
                 if diag_obj.timestamp > filter_ts:
                     if diag_obj.msg.level >= filter_level:
-                        result.status.append(diag_obj)
+                        result.status.append(diag_obj.msg)
         return result
 
     def stop(self):

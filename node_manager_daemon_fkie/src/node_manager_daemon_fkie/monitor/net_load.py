@@ -32,6 +32,7 @@
 
 import psutil
 import rospy
+import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from .sensor_interface import SensorInterface
@@ -50,7 +51,7 @@ class NetLoad(SensorInterface):
         diag_level = 0
         diag_vals = []
         diag_msg = ''
-        now = rospy.get_time()
+        now = time.time()
         warn_level = self._net_load_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9
@@ -69,8 +70,8 @@ class NetLoad(SensorInterface):
                 diag_vals.append(KeyValue(key='%s: bytes recv (total)' % net_if, value=net_values.bytes_recv))
                 diag_vals.append(KeyValue(key='%s: packets sent (total)' % net_if, value=net_values.packets_sent))
                 diag_vals.append(KeyValue(key='%s: packets recv (total)' % net_if, value=net_values.packets_recv))
-                diag_vals.append(KeyValue(key='%s: bytes sent (1/s)' % net_if, value=bytes_sent_1st))
-                diag_vals.append(KeyValue(key='%s: bytes recv (1/s)' % net_if, value=bytes_recv_1s))
+                diag_vals.append(KeyValue(key='%s: bytes sent (1/s)' % net_if, value='%.2f' % bytes_sent_1st))
+                diag_vals.append(KeyValue(key='%s: bytes recv (1/s)' % net_if, value='%.2f' % bytes_recv_1s))
                 percent_sent = (bytes_sent_1st / 1024 / 1024) / (net_if_stats.speed / 8)
                 diag_vals.append(KeyValue(key='%s: percent sent' % net_if, value='%.2f' % percent_sent))
                 percent_recv = (bytes_recv_1s / 1024 / 1024) / (net_if_stats.speed / 8)

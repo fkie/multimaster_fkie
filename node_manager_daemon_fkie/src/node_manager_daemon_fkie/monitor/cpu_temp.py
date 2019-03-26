@@ -32,6 +32,7 @@
 
 import psutil
 import rospy
+import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from node_manager_daemon_fkie.common import utf8
@@ -60,7 +61,7 @@ class CpuTemp(SensorInterface):
             # Update status
             with self.mutex:
                 diag_vals.append(KeyValue(key='Update Status', value='OK'))
-                self._ts_last = rospy.get_time()
+                self._ts_last = time.time()
                 self._stat_msg.level = diag_level
                 self._stat_msg.values = diag_vals
                 self._stat_msg.message = diag_msg

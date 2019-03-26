@@ -35,6 +35,7 @@ import rospy
 import threading
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
+from node_manager_daemon_fkie.common import formated_ts
 
 
 class SensorInterface(object):
@@ -81,9 +82,9 @@ class SensorInterface(object):
         return None
 
     def update_value_last_ts(self, msg, nowts, ts):
-        if msg.values and msg.values[-1].key == 'Time Since Last Update':
+        if msg.values and msg.values[-1].key == 'Time Last Update':
             del msg.values[-1]
-        msg.values.append(KeyValue(key='Time Since Last Update', value=nowts - ts))
+        msg.values.append(KeyValue(key='Time Last Update', value=formated_ts(ts, False)))
 
     def is_active(self):
         if rospy.is_shutdown():

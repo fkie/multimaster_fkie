@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from datetime import datetime
 import os
 import re
 
@@ -94,6 +95,16 @@ def sizeof_fmt(num, suffix='B'):
             return "%3.0f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.0%s%s" % (num, 'Yi', suffix)
+
+
+def formated_ts(stamp, with_nanosecs=True):
+    ts = stamp
+    if hasattr(stamp, 'secs'):
+        ts = stamp.secs + stamp.secs / 1000000000.
+    str_format = "%H:%M:%S (%d.%m.%Y)"
+    if with_nanosecs:
+        str_format = "%H:%M:%S.%f (%d.%m.%Y)"
+    return datetime.fromtimestamp(ts).strftime(str_format)
 
 
 def get_packages(path):
