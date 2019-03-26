@@ -65,7 +65,7 @@ class CpuTemperatur(SensorInterface):
                             max_temp = current
             if max_temp > diag_level:
                 diag_msg = 'CPU Temperature: %.2f degree (warn level >%.2f)' % (max_temp, self._cpu_temp_warn)
-            diag_vals.append(KeyValue(key='Max', value=max_temp))
+            diag_vals.append(KeyValue(key='Max [degree]', value=max_temp))
             # Update status
             with self.mutex:
                 self._ts_last = time.time()

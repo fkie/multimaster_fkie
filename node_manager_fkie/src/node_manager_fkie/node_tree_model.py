@@ -1029,10 +1029,18 @@ class HostItem(GroupItem):
                         if free is not None:
                             tooltip += '\n<dt>%s: %s (%s%%)</dt>' % ('Free', free, free_percent)
                         for key, value in others:
+                            key_fmt = key
                             val_fmt = value
                             if '[1s]' in key:
-                                val_fmt = sizeof_fmt(float(value))
-                            tooltip += '\n<dt>%s: %s</dt>' % (key, val_fmt)
+                                val_fmt = '%s/s' % sizeof_fmt(float(value))
+                                key_fmt = key_fmt.replace(' [1s]', '')
+                            elif '[%]' in key:
+                                val_fmt = '%s%%' % value
+                                key_fmt = key_fmt.replace(' [%]', '')
+                            elif '[degree]' in key:
+                                val_fmt = '%s&deg;' % value
+                                key_fmt = key_fmt.replace(' [degree]', '')
+                            tooltip += '\n<dt>%s: %s</dt>' % (key_fmt, val_fmt)
                     except Exception as err:
                         tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
                     tooltip += '<br>'

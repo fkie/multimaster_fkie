@@ -89,12 +89,12 @@ def get_cwd(cwd, binary=''):
     return result
 
 
-def sizeof_fmt(num, suffix=''):
-    for unit in ['', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return "%3.0f%s%s" % (num, unit, suffix)
         num /= 1024.0
-    return "%.0%s%s" % (num, 'YB', suffix)
+    return "%.0%s%s" % (num, 'YiB', suffix)
 
 
 def formated_ts(stamp, with_date=True, with_nanosecs=True):

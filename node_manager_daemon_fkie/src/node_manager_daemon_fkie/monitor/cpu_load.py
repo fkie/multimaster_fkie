@@ -63,7 +63,7 @@ class CpuLoad(SensorInterface):
                 count_warn_cpu += 1
             cpu_percent_total += cpu_percent
         diag_vals.append(KeyValue(key='Max [%]', value=cpu_max_percent))
-        diag_vals.append(KeyValue(key='Avg [%]', value='%.2f' % (cpu_percent / len(cpu_percents))))
+        diag_vals.append(KeyValue(key='Avg [%]', value='%.2f' % (cpu_percent_total / len(cpu_percents))))
         if count_warn_cpu > 1:
             diag_level = DiagnosticStatus.WARN
             diag_msg = 'CPU load of %d cores is >%.0f%%)' % (count_warn_cpu, self._cpu_load_warn * 100)
