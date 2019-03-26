@@ -82,9 +82,9 @@ class SensorInterface(object):
         return None
 
     def update_value_last_ts(self, msg, nowts, ts):
-        if msg.values and msg.values[-1].key == 'Time Last Update':
+        if msg.values and msg.values[-1].key == 'Timestamp':
             del msg.values[-1]
-        msg.values.append(KeyValue(key='Time Last Update', value=formated_ts(ts, False)))
+        msg.values.append(KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
 
     def is_active(self):
         if rospy.is_shutdown():

@@ -37,7 +37,7 @@ import time
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from .cpu_load import CpuLoad
-from .cpu_temp import CpuTemp
+from .cpu_temperatur import CpuTemperatur
 from .hdd_usage import HddUsage
 from .mem_usage import MemUsage
 from .net_load import NetLoad
@@ -78,7 +78,7 @@ class Service:
 
         self.sensors = []
         self.sensors.append(CpuLoad(hostname, 1.0, 0.9))
-        self.sensors.append(CpuTemp(hostname, 1.0, 85.0))
+        self.sensors.append(CpuTemperatur(hostname, 1.0, 85.0))
         self.sensors.append(HddUsage(hostname, 30.0, 100.0))
         self.sensors.append(MemUsage(hostname, 1.0, 100.0))
         self.sensors.append(NetLoad(hostname, 1.0, 0.9))

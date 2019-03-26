@@ -45,7 +45,6 @@ class CpuLoad(SensorInterface):
         SensorInterface.__init__(self, hostname, sensorname='CPU Load', interval=interval)
 
     def check_sensor(self):
-        cpu_percent_total = psutil.cpu_percent(interval=None)
         cpu_percents = psutil.cpu_percent(interval=None, percpu=True)
         diag_level = 0
         diag_vals = []
@@ -53,21 +52,24 @@ class CpuLoad(SensorInterface):
         warn_level = self._cpu_load_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9
-        diag_vals.append(KeyValue(key='CPU percent (total)', value=cpu_percent_total))
         count_warn_cpu = 0
+        cpu_max_percent = 0
+        cpu_percent_total = 0
         for cpu_idx in range(len(cpu_percents)):
-            diag_vals.append(KeyValue(key='CPU percent (%d)' % cpu_idx, value=cpu_percents[cpu_idx]))
+            cpu_percent = cpu_percents[cpu_idx]
+            if cpu_percent > cpu_max_percent:
+                cpu_max_percent = cpu_percent
             if cpu_percents[cpu_idx] / 100.0 >= warn_level:
                 count_warn_cpu += 1
+            cpu_percent_total += cpu_percent
+        diag_vals.append(KeyValue(key='Max [%]', value=cpu_max_percent))
+        diag_vals.append(KeyValue(key='Avg [%]', value='%.2f' % (cpu_percent / len(cpu_percents))))
         if count_warn_cpu > 1:
             diag_level = DiagnosticStatus.WARN
             diag_msg = 'CPU load of %d cores is >%.0f%%)' % (count_warn_cpu, self._cpu_load_warn * 100)
-        cpu_count = psutil.cpu_count(logical=True)
-        diag_vals.append(KeyValue(key='CPU count', value=cpu_count))
 
         # Update status
         with self.mutex:
-            diag_vals.append(KeyValue(key='Update Status', value='OK'))
             self._ts_last = time.time()
             self._stat_msg.level = diag_level
             self._stat_msg.values = diag_vals

@@ -43,6 +43,7 @@ import traceback
 
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
+from node_manager_daemon_fkie.common import sizeof_fmt
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import lnamespace, namespace, normns, utf8
 from node_manager_fkie.name_resolution import NameResolution
@@ -1005,15 +1006,36 @@ class HostItem(GroupItem):
             sysmon_str = 'Disable' if self.sysmon_state else 'Enable'
             tooltip += '<a href="sysmon-switch://%s">%s system monitor</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_str)
             tooltip += '<p>'
-            for diag in self._diagnostics:
-                if diag.level > 0:
-                    tooltip += '\n<dt><font color="#CC0000>%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
             if self._diagnostics:
                 tooltip += '<h3>System Monitoring:</h3<dl>'
                 for diag in self._diagnostics:
-                    tooltip += '\n<h5>%s:</h5>' % diag.name
-                    for val in diag.values:
-                        tooltip += '\n<dt>%s: %s</dt>' % (val.key, val.value)
+                    try:
+                        free = None
+                        free_percent = None
+                        stamp = None
+                        others = []
+                        for val in diag.values:
+                            if val.key == 'Free [%]':
+                                free_percent = float(val.value)
+                            elif val.key == 'Free':
+                                free = sizeof_fmt(float(val.value))
+                            elif val.key == 'Timestamp':
+                                stamp = val.value
+                            else:
+                                others.append((val.key, val.value))
+                        tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (diag.name, stamp)
+                        if diag.level > 0:
+                            tooltip += '\n<dt><font color="#CC0000">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                        if free is not None:
+                            tooltip += '\n<dt>%s: %s (%s%%)</dt>' % ('Free', free, free_percent)
+                        for key, value in others:
+                            val_fmt = value
+                            if '[1s]' in key:
+                                val_fmt = sizeof_fmt(float(value))
+                            tooltip += '\n<dt>%s: %s</dt>' % (key, val_fmt)
+                    except Exception as err:
+                        tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
+                    tooltip += '<br>'
                 tooltip += '</dl>'
 
         # get sensors

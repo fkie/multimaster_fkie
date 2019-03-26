@@ -42,6 +42,7 @@ class NetLoad(SensorInterface):
 
     def __init__(self, hostname='', interval=3.0, warn_level=0.9):
         self._net_load_warn = rospy.get_param('~net_load_warn', warn_level)
+        self._net_speed = rospy.get_param('~net_speed_mbit', 6)
         self._net_stat_last = {}  # {iface: (sent, recv)}
         SensorInterface.__init__(self, hostname, sensorname='Network Load', interval=interval)
 
@@ -62,33 +63,32 @@ class NetLoad(SensorInterface):
                 if net_if not in self._net_stat_last:
                     self._net_stat_last[net_if] = (0, 0)
                 duration = now - self._ts_last
-                bytes_sent_1st = (net_values.bytes_sent - self._net_stat_last[net_if][0]) / duration
+                bytes_sent_1s = (net_values.bytes_sent - self._net_stat_last[net_if][0]) / duration
                 bytes_recv_1s = (net_values.bytes_recv - self._net_stat_last[net_if][1]) / duration
                 # store current overall stats for next rate calculation
                 self._net_stat_last[net_if] = (net_values.bytes_sent, net_values.bytes_recv)
-                diag_vals.append(KeyValue(key='%s: bytes sent (total)' % net_if, value=net_values.bytes_sent))
-                diag_vals.append(KeyValue(key='%s: bytes recv (total)' % net_if, value=net_values.bytes_recv))
-                diag_vals.append(KeyValue(key='%s: packets sent (total)' % net_if, value=net_values.packets_sent))
-                diag_vals.append(KeyValue(key='%s: packets recv (total)' % net_if, value=net_values.packets_recv))
-                diag_vals.append(KeyValue(key='%s: bytes sent (1/s)' % net_if, value='%.2f' % bytes_sent_1st))
-                diag_vals.append(KeyValue(key='%s: bytes recv (1/s)' % net_if, value='%.2f' % bytes_recv_1s))
-                percent_sent = (bytes_sent_1st / 1024 / 1024) / (net_if_stats.speed / 8)
-                diag_vals.append(KeyValue(key='%s: percent sent' % net_if, value='%.2f' % percent_sent))
-                percent_recv = (bytes_recv_1s / 1024 / 1024) / (net_if_stats.speed / 8)
-                diag_vals.append(KeyValue(key='%s: percent recv' % net_if, value='%.2f' % percent_recv))
+                # diag_vals.append(KeyValue(key='%s: bytes sent (total)' % net_if, value=net_values.bytes_sent))
+                # diag_vals.append(KeyValue(key='%s: bytes recv (total)' % net_if, value=net_values.bytes_recv))
+                # diag_vals.append(KeyValue(key='%s: packets sent (total)' % net_if, value=net_values.packets_sent))
+                # diag_vals.append(KeyValue(key='%s: packets recv (total)' % net_if, value=net_values.packets_recv))
+                diag_vals.append(KeyValue(key='%s: sent [1s]' % net_if, value='%.2f' % bytes_sent_1s))
+                diag_vals.append(KeyValue(key='%s: recv [1s]' % net_if, value='%.2f' % bytes_recv_1s))
+                percent_sent = bytes_sent_1s / (self._net_speed * 1024 * 1024 / 8)
+                # diag_vals.append(KeyValue(key='%s: sent [%%]' % net_if, value='%.2f' % (percent_sent * 100)))
+                percent_recv = bytes_recv_1s / (self._net_speed * 1024 * 1024 / 8)
+                # diag_vals.append(KeyValue(key='%s: recv [%%]' % net_if, value='%.2f' % (percent_recv * 100)))
                 if percent_sent >= warn_level or percent_recv >= warn_level:
                     diag_level = DiagnosticStatus.WARN
                     if percent_sent >= warn_level:
-                        diag_msg = 'Net load for sent is %.0f%% (warn >%.0f%%)' % (percent_sent * 100, self._net_load_warn * 100)
+                        diag_msg = 'Net load for sent is %.0f%% (warn >%.0f%% [%dMBit])' % (percent_sent * 100, self._net_load_warn * 100, self._net_speed)
                     if percent_recv >= warn_level:
                         if diag_msg:
-                            diag_msg = 'Net load for sent is %.0f%% and recv %.0f%% (warn >%.0f%%)' % (percent_sent * 100, percent_recv * 100, self._net_load_warn * 100)
+                            diag_msg = 'Net load for sent is %.0f%% and recv %.0f%% (warn >%.0f%% [%dMBit])' % (percent_sent * 100, percent_recv * 100, self._net_load_warn * 100, self._net_speed)
                         else:
-                            diag_msg = 'Net load for recv is %.0f%% (warn >%.0f%%)' % (percent_recv * 100, self._net_load_warn * 100)
+                            diag_msg = 'Net load for recv is %.0f%% (warn >%.0f%% [%dMBit])' % (percent_recv * 100, self._net_load_warn * 100, self._net_speed)
                 # print '%s: percent %.2f, %.2f' % (net_if, percent_sent, percent_recv), ", level:", diag_level
         # Update status
         with self.mutex:
-            diag_vals.append(KeyValue(key='Update Status', value='OK'))
             self._ts_last = now
             self._stat_msg.level = diag_level
             self._stat_msg.values = diag_vals

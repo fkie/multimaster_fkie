@@ -89,21 +89,23 @@ def get_cwd(cwd, binary=''):
     return result
 
 
-def sizeof_fmt(num, suffix='B'):
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+def sizeof_fmt(num, suffix=''):
+    for unit in ['', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']:
         if abs(num) < 1024.0:
             return "%3.0f%s%s" % (num, unit, suffix)
         num /= 1024.0
-    return "%.0%s%s" % (num, 'Yi', suffix)
+    return "%.0%s%s" % (num, 'YB', suffix)
 
 
-def formated_ts(stamp, with_nanosecs=True):
+def formated_ts(stamp, with_date=True, with_nanosecs=True):
     ts = stamp
     if hasattr(stamp, 'secs'):
         ts = stamp.secs + stamp.secs / 1000000000.
-    str_format = "%H:%M:%S (%d.%m.%Y)"
+    str_format = '%H:%M:%S'
     if with_nanosecs:
-        str_format = "%H:%M:%S.%f (%d.%m.%Y)"
+        str_format += '.%f'
+    if with_date:
+        str_format += ' (%d.%m.%Y)'
     return datetime.fromtimestamp(ts).strftime(str_format)
 
 

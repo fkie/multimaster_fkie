@@ -58,14 +58,12 @@ class HddUsage(SensorInterface):
             diag_level = DiagnosticStatus.WARN
             diag_msg = 'Free disk space on log path only %s (warn on <%s)' % (sizeof_fmt(hdd.free), sizeof_fmt(self._hdd_usage_warn * 1024 * 1024))
         # print "Percent Disk %.2f" % (hdd.percent), diag_level
-        diag_vals.append(KeyValue(key='Total Disk', value=hdd.total))
-        diag_vals.append(KeyValue(key='Used Disk', value=hdd.used))
-        diag_vals.append(KeyValue(key='Free Disk', value=hdd.free))
-        diag_vals.append(KeyValue(key='Percent Disk', value=hdd.percent))
+        diag_vals.append(KeyValue(key='Free', value=hdd.free))
+        diag_vals.append(KeyValue(key='Free [%]', value='%.2f' % (100.0 - hdd.percent)))
+        diag_vals.append(KeyValue(key='Path', value=LOG_PATH))
 
         # Update status
         with self.mutex:
-            diag_vals.append(KeyValue(key='Update Status', value='OK'))
             self._ts_last = time.time()
             self._stat_msg.level = diag_level
             self._stat_msg.values = diag_vals
