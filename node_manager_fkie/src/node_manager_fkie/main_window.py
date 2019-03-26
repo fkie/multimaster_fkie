@@ -1788,10 +1788,15 @@ class MainWindow(QMainWindow):
                 del self._description_history[:]
             # prepend 'back' link the text
             if self._description_history:
+                if len(self._description_history) > 15:
+                    self._description_history.pop(0)
                 # text = '<a href="back://" title="back"><img src=":icons/back.png" alt="back"></a><br>%s' % text
                 text = '<a href="back://" title="back">back</a>%s' % text
             self.descriptionDock.setWindowTitle(title)
+            vbar = self.descriptionTextEdit.verticalScrollBar()
+            stored_vpos = vbar.value()
             self.descriptionTextEdit.setText(text)
+            vbar.setValue(stored_vpos)
             if text and force:  # and not (self.launch_dock.hasFocus() or self.launch_dock.xmlFileView.hasFocus()):
                 self.descriptionDock.raise_()
 
@@ -1880,6 +1885,8 @@ class MainWindow(QMainWindow):
             self.poweroff_host(self._url_host(url))
         elif url.toString().startswith('rosclean://'):
             self.rosclean(url.toString().replace('rosclean', 'http'))
+        elif url.toString().startswith('sysmon-switch://'):
+            self.sysmon_active_update(url.toString().replace('sysmon-switch', 'http'))
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back
@@ -2040,6 +2047,7 @@ class MainWindow(QMainWindow):
             muri = nmdurl.masteruri(grpc_url)
             master = self.getMaster(muri, create_new=False)
             if master:
+                master.update_system_diagnostics(data)
                 self.master_model.update_master_diagnostic(nm.nameres().mastername(muri), data)
         except Exception as err:
             rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
@@ -2050,6 +2058,11 @@ class MainWindow(QMainWindow):
                 self.diagnostics_signal.emit(diagnostic)
         except Exception as err:
             rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
+
+    def sysmon_active_update(self, masteruri):
+        master = self.getMaster(masteruri, create_new=False)
+        if master is not None:
+            master.sysmon_active_update()
 
     def on_nmd_err(self, method, url, path, error):
         '''

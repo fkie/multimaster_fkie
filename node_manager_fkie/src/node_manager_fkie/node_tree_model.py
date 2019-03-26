@@ -878,6 +878,7 @@ class HostItem(GroupItem):
         self._host = address
         self._mastername = address
         self._local = local
+        self._diagnostics = []
         GroupItem.__init__(self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
         image_file = nm.settings().robot_image_file(name)
         if QFile.exists(image_file):
@@ -888,6 +889,7 @@ class HostItem(GroupItem):
             else:
                 self.setIcon(QIcon(':/icons/remote.png'))
         self.descr_type = self.descr_name = self.descr = ''
+        self.sysmon_state = False
 
     @property
     def host(self):
@@ -921,6 +923,17 @@ class HostItem(GroupItem):
         if result is None or not result:
             result = self.hostname
         return result
+
+    @property
+    def local(self):
+        return self._local
+
+    def update_system_diagnostics(self, diagnostics):
+        del self._diagnostics[:]
+        for diagnostic in diagnostics.status:
+            if diagnostic.hardware_id == self.hostname:
+                self._diagnostics.append(diagnostic)
+        self.update_tooltip()
 
     def create_host_description(self, masteruri, address):
         '''
@@ -978,16 +991,31 @@ class HostItem(GroupItem):
         tooltip += '<h3>%s</h3>' % self.mastername
         tooltip += '<font size="+1"><i>%s</i></font><br>' % self.masteruri
         tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' %s' % self.addresses if self.addresses else '')
-        tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (utf8(self.masteruri).replace('http://', ''))
-        tooltip += '<p>'
-        tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (utf8(self.masteruri).replace('http://', ''))
-        tooltip += '<p>'
-        tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.masteruri.replace('http://', ''), self.hostname)
-        tooltip += '<p>'
-        tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
-        tooltip += '<p>'
-        tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
-        tooltip += '<p>'
+        if extended:
+            tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (utf8(self.masteruri).replace('http://', ''))
+            tooltip += '<p>'
+            tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (utf8(self.masteruri).replace('http://', ''))
+            tooltip += '<p>'
+            tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.masteruri.replace('http://', ''), self.hostname)
+            tooltip += '<p>'
+            tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
+            tooltip += '<p>'
+            tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
+            tooltip += '<p>'
+            sysmon_str = 'Disable' if self.sysmon_state else 'Enable'
+            tooltip += '<a href="sysmon-switch://%s">%s system monitor</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_str)
+            tooltip += '<p>'
+            for diag in self._diagnostics:
+                if diag.level > 0:
+                    tooltip += '\n<dt><font color="#CC0000>%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+            if self._diagnostics:
+                tooltip += '<h3>System Monitoring:</h3<dl>'
+                for diag in self._diagnostics:
+                    tooltip += '\n<h5>%s:</h5>' % diag.name
+                    for val in diag.values:
+                        tooltip += '\n<dt>%s: %s</dt>' % (val.key, val.value)
+                tooltip += '</dl>'
+
         # get sensors
         capabilities = []
         for j in range(self.rowCount()):
@@ -995,6 +1023,7 @@ class HostItem(GroupItem):
             if isinstance(item, GroupItem):
                 capabilities.append(item.name)
         if capabilities:
+            tooltip += '<br>'
             tooltip += '<b><u>Capabilities:</u></b>'
             try:
                 tooltip += examples.html_body('- %s' % ('\n- '.join(capabilities)), input_encoding='utf8')
@@ -1600,13 +1629,21 @@ class NodeTreeModel(QStandardItemModel):
             if root.child(i) == host:
                 return root.child(i)
             elif root.child(i) > host:
+                items = []
                 hostItem = HostItem(masteruri, resaddr, local)
-                self.insertRow(i, hostItem)
+                items.append(hostItem)
+                cfgitem = CellItem(masteruri, hostItem)
+                items.append(cfgitem)
+                self.insertRow(i, items)
                 self.hostInserted.emit(hostItem)
                 self._set_std_capabilities(hostItem)
                 return hostItem
+        items = []
         hostItem = HostItem(masteruri, resaddr, local)
-        self.appendRow(hostItem)
+        items.append(hostItem)
+        cfgitem = CellItem(masteruri, hostItem)
+        items.append(cfgitem)
+        self.appendRow(items)
         self.hostInserted.emit(hostItem)
         self._set_std_capabilities(hostItem)
         return hostItem
@@ -1732,6 +1769,24 @@ class NodeTreeModel(QStandardItemModel):
                 hostItem.clearup()
         else:
             rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
+
+    def update_system_diagnostics(self, masteruri, diagnostics):
+        host = nm.nameres().address(masteruri)
+        if host is None:
+            # try with hostname of the masteruri
+            host = get_hostname(masteruri)
+        host_item = self.get_hostitem(masteruri, host)
+        if host_item is not None:
+            host_item.update_system_diagnostics(diagnostics)
+
+    def sysmon_set_state(self, masteruri, state):
+        host = nm.nameres().address(masteruri)
+        if host is None:
+            # try with hostname of the masteruri
+            host = get_hostname(masteruri)
+        host_item = self.get_hostitem(masteruri, host)
+        if host_item is not None:
+            host_item.sysmon_state = state
 
     def set_std_capablilities(self, capabilities):
         '''
@@ -1931,7 +1986,8 @@ class NodeInfoIconsDelegate(QItemDelegate):
                        'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(*params),
                        'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(*params),
                        'group': QImage(':/icons/crystal_clear_group.png').scaled(*params),
-                       'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(*params)
+                       'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(*params),
+                       'sysmon': QImage(':/icons/crystal_clear_get_parameter.png').scaled(*params)
                        }
 
     def paint(self, painter, option, index):
@@ -1971,6 +2027,10 @@ class NodeInfoIconsDelegate(QItemDelegate):
                 elif item.item.nodelet_mngr:
                     tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
                 item.setToolTip(tooltip)
+            elif isinstance(item.item, HostItem):
+                if item.item.sysmon_state:
+                    rect = self.calcDecorationRect(option.rect)
+                    painter.drawImage(rect, self.IMAGES['sysmon'])
             elif isinstance(item.item, GroupItem):
                 lcfgs = len(item.item.get_configs())
                 rect = self.calcDecorationRect(option.rect)

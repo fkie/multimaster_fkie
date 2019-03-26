@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QRegExp, Qt, Signal
+from python_qt_binding.QtCore import QRegExp, Qt, QTimer, Signal
 from python_qt_binding.QtGui import QKeySequence  # , QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
@@ -377,6 +377,8 @@ class MasterViewProxy(QWidget):
 
         nm.nmd().changed_file.connect(self.on_changed_file)
         nm.nmd().multiple_screens.connect(self.on_multiple_screens)
+        self._sysmon_timer = None
+        self._sysmon_enabled = False
 
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
@@ -1089,6 +1091,50 @@ class MasterViewProxy(QWidget):
             self.append_diagnostic(diagnostic_status)
             return True
         return False
+
+    def update_system_diagnostics(self, diagnostics):
+        self.node_tree_model.update_system_diagnostics(self.masteruri, diagnostics)
+        selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+        selectedNodes = self.hostsFromIndexes(selections)
+        if len(selectedNodes) == 1:
+            if selectedNodes[0].local:
+                self.on_node_selection_changed(None, None)
+
+    def append_diagnostic(self, diagnostic_status):
+        nodes = self.getNode(diagnostic_status.name)
+        for node in nodes:
+            node.append_diagnostic_status(diagnostic_status)
+        if nodes:
+            # get node by selected items
+            if self._is_current_tab_name('Nodes'):
+                return
+            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selectedNodes = self.nodesFromIndexes(selections)
+            if len(selectedNodes) == 1:
+                node = selectedNodes[0]
+                if node.name == diagnostic_status.name:
+                    self.on_node_selection_changed(None, None)
+
+    def sysmon_active_update(self):
+        if self._sysmon_timer is None:
+            self._sysmon_timer = QTimer()
+            self._sysmon_timer.timeout.connect(self._sysmon_update_callback)
+            self._sysmon_timer.start(1000)
+            self.node_tree_model.sysmon_set_state(self.masteruri, True)
+        else:
+            self._sysmon_timer.stop()
+            self._sysmon_timer = None
+            self.node_tree_model.sysmon_set_state(self.masteruri, False)
+            # update host description
+            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selectedNodes = self.hostsFromIndexes(selections)
+            if len(selectedNodes) == 1:
+                if selectedNodes[0].local:
+                    self.on_node_selection_changed(None, None)
+
+    def _sysmon_update_callback(self):
+        if self._has_nmd:
+            nm.nmd().get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 
     @property
     def launch_servers(self):
@@ -3198,21 +3244,6 @@ class MasterViewProxy(QWidget):
             master = xmlrpclib.ServerProxy(masteruri)
             _, _, self._nm_materuri = master.getUri(rospy.get_name())  # reuslt: code, message, self._nm_materuri
         return self._nm_materuri
-
-    def append_diagnostic(self, diagnostic_status):
-        nodes = self.getNode(diagnostic_status.name)
-        for node in nodes:
-            node.append_diagnostic_status(diagnostic_status)
-        if nodes:
-            # get node by selected items
-            if self._is_current_tab_name('Nodes'):
-                return
-            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
-            selectedNodes = self.nodesFromIndexes(selections)
-            if len(selectedNodes) == 1:
-                node = selectedNodes[0]
-                if node.name == diagnostic_status.name:
-                    self.on_node_selection_changed(None, None)
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Nodelet handling                                 %%%%%%%%
