@@ -39,7 +39,8 @@ import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros
 from node_manager_daemon_fkie import url as nmdurl
-from node_manager_fkie.common import package_name, utf8
+from node_manager_daemon_fkie.common import utf8
+from node_manager_fkie.common import package_name
 from node_manager_fkie.run_dialog import PackageDialog
 import node_manager_fkie as nm
 

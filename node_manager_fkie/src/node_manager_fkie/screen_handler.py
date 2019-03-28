@@ -40,7 +40,7 @@ from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie import screen
 import node_manager_fkie as nm
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 
 class NoScreenOpenLogRequest(Exception):

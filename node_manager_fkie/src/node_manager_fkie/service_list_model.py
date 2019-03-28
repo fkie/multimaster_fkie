@@ -36,7 +36,8 @@ from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
 from master_discovery_fkie.common import get_hostname
-from node_manager_fkie.common import lnamespace, namespace, normns, utf8
+from node_manager_daemon_fkie.common import utf8
+from node_manager_fkie.common import lnamespace, namespace, normns
 import node_manager_fkie as nm
 
 

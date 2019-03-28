@@ -36,9 +36,9 @@ import os
 import re
 import rospy
 
-from node_manager_daemon_fkie import file_item
-from node_manager_daemon_fkie import exceptions
-from node_manager_fkie.common import package_name, utf8
+from node_manager_daemon_fkie import exceptions, file_item
+from node_manager_daemon_fkie.common import utf8
+from node_manager_fkie.common import package_name
 from node_manager_fkie.detailed_msg_box import MessageBox
 import node_manager_fkie as nm
 

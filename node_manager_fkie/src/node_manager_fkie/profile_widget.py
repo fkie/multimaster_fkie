@@ -41,9 +41,11 @@ import rospy
 import uuid
 from master_discovery_fkie.common import get_hostname
 from node_manager_daemon_fkie import url as nmdurl
+from node_manager_daemon_fkie.common import utf8
+
 
 import node_manager_fkie as nm
-from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg, utf8
+from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg
 from .detailed_msg_box import MessageBox
 
 

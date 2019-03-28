@@ -35,7 +35,7 @@ import threading
 
 import rospy
 
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.detailed_msg_box import MessageBox, DetailedError
 import node_manager_fkie as nm
 

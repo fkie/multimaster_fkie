@@ -50,13 +50,13 @@ import xmlrpclib
 import yaml
 
 from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
+from node_manager_daemon_fkie.common import utf8
 from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie import url as nmdurl
 import node_manager_fkie as nm
 
 from .capability_table import CapabilityTable
-from .common import utf8
 from .detailed_msg_box import MessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .editor import Editor

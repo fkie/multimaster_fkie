@@ -41,11 +41,12 @@ import os
 import node_manager_fkie as nm
 
 from master_discovery_fkie.common import masteruri_from_master
-from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie import url as nmdurl
+from node_manager_daemon_fkie.common import utf8
+from node_manager_daemon_fkie.host import get_hostname
 from node_manager_daemon_fkie.file_item import FileItem
 
-from .common import package_name, utf8
+from .common import package_name
 from .detailed_msg_box import MessageBox
 
 

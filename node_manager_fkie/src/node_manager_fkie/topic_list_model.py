@@ -38,7 +38,8 @@ from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 from detailed_msg_box import MessageBox
 from master_discovery_fkie.master_info import TopicInfo
 
-from node_manager_fkie.common import lnamespace, namespace, normns, utf8
+from node_manager_daemon_fkie.common import utf8
+from node_manager_fkie.common import lnamespace, namespace, normns
 import node_manager_fkie as nm
 
 

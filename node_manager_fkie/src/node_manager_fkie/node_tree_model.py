@@ -43,9 +43,9 @@ import traceback
 
 from master_discovery_fkie.common import get_hostname, subdomain
 from master_discovery_fkie.master_info import NodeInfo
-from node_manager_daemon_fkie.common import sizeof_fmt
+from node_manager_daemon_fkie.common import sizeof_fmt, utf8
 from node_manager_daemon_fkie import url as nmdurl
-from node_manager_fkie.common import lnamespace, namespace, normns, utf8
+from node_manager_fkie.common import lnamespace, namespace, normns
 from node_manager_fkie.name_resolution import NameResolution
 from parameter_handler import ParameterHandler
 import node_manager_fkie as nm

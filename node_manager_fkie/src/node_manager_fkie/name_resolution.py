@@ -36,7 +36,7 @@ import socket
 
 import rospy
 from master_discovery_fkie.common import get_hostname
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 RESOLVE_CACHE = {}  # hostname : address
 

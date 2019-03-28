@@ -40,7 +40,7 @@ import rospy
 import sys
 import threading
 
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.editor.line_edit import EnhancedLineEdit
 from node_manager_fkie.parameter_handler import ParameterHandler
@@ -79,7 +79,7 @@ class MyComboBox(QComboBox):
                             self.removeItem(i)
                             self.remove_item_signal.emit(curr_text)
                             self.clearEditText()
-            except:
+            except Exception:
                 import traceback
                 print traceback.format_exc(1)
         QComboBox.keyPressEvent(self, event)
@@ -102,7 +102,7 @@ class ParameterDescription(object):
         self._widget = widget
         try:
             self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
-        except:
+        except Exception:
             pass
         if msg_type == 'binary':
             self._base_type = msg_type

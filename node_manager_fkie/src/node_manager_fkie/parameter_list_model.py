@@ -34,7 +34,7 @@ from python_qt_binding.QtCore import QSize, Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 from xmlrpclib import Binary
 
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 
 class ParameterValueItem(QStandardItem):

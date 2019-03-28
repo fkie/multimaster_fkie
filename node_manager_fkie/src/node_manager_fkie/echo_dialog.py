@@ -51,7 +51,7 @@ import rospy
 
 import gui_resources
 import node_manager_fkie as nm
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 
 def isstring(s):

@@ -39,7 +39,7 @@ import rospy
 
 from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 import node_manager_fkie as nm
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 import Crypto.Cipher.AES
 orig_new = Crypto.Cipher.AES.new

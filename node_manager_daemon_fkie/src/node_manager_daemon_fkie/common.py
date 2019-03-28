@@ -63,6 +63,9 @@ PACKAGE_CACHE = {}
 
 
 def utf8(s, errors='replace'):
+    '''
+    Converts string to unicode.
+    '''
     if isinstance(s, (str, buffer)):
         return unicode(s, "utf-8", errors=errors)
     elif not isinstance(s, unicode):

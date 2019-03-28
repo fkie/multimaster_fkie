@@ -37,8 +37,8 @@ import threading
 
 import rospy
 
+from node_manager_daemon_fkie.common import is_package, utf8
 from node_manager_daemon_fkie import screen
-from node_manager_fkie.common import is_package, utf8
 from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.editor.yaml_highlighter import YamlHighlighter
 

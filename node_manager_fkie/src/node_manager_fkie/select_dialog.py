@@ -41,7 +41,7 @@ from python_qt_binding.QtGui import QPixmap
 import re
 
 import threading
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.editor.line_edit import EnhancedLineEdit
 
 

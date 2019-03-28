@@ -15,17 +15,6 @@ except ImportError:
 PACKAGE_CACHE = {}
 
 
-def utf8(s, errors='replace'):
-    '''
-    Converts string to unicode.
-    '''
-    if isinstance(s, (str, buffer)):
-        return unicode(s, "utf-8", errors=errors)
-    elif not isinstance(s, unicode):
-        return unicode(str(s))
-    return s
-
-
 def get_ros_home():
     '''
     Returns the ROS HOME depending on ROS distribution API.
@@ -150,7 +139,3 @@ def package_name(path):
     :rtype: tuple(name, path)
     '''
     return nm.nmd().package_name(path)
-
-
-def is_package(file_list):
-    return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))

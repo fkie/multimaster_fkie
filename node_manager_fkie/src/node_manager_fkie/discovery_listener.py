@@ -40,7 +40,7 @@ import rospy
 from master_discovery_fkie.master_monitor import MasterMonitor, MasterConnectionException
 import master_discovery_fkie.interface_finder as interface_finder
 
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 try:
     import std_srvs.srv

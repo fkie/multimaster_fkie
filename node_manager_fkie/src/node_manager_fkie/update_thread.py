@@ -40,7 +40,7 @@ import xmlrpclib
 import rospy
 
 from master_discovery_fkie.master_info import MasterInfo
-from node_manager_fkie.common import utf8
+from node_manager_daemon_fkie.common import utf8
 
 
 class UpdateThread(QObject, threading.Thread):

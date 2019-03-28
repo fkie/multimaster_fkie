@@ -36,9 +36,10 @@ import roslib
 import rospy
 
 from master_discovery_fkie.common import masteruri_from_ros
+from node_manager_daemon_fkie.common import utf8
 from node_manager_daemon_fkie import screen
 from node_manager_daemon_fkie import settings as nmd_settings
-from node_manager_fkie.common import get_ros_home, utf8
+from node_manager_fkie.common import get_ros_home
 
 
 class LoggingConfig(object):
