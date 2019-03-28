@@ -71,14 +71,14 @@ class CpuLoad(SensorInterface):
             diag_msg = 'CPU load of %d cores is >%.0f%%)' % (count_warn_cpu, self._cpu_load_warn * 100)
             try:
                 # determine processes with high load
-                processes = {}
+                processes = []
                 for pi in sorted(psutil.process_iter(attrs=['name', 'cpu_percent']), key=lambda pi: pi.info['cpu_percent'], reverse=True):
                     if pi.info['cpu_percent'] / 100.0 >= warn_level:
                         phlmsg = '%.2f%% %s[%d] %s' % (pi.info['cpu_percent'], pi.info['name'], pi.pid, ' '.join(pi.cmdline()[:1]))
-                        processes[pi.info['cpu_percent']] = phlmsg
+                        processes.append(phlmsg)
                     else:
                         break
-                for _pp, msg in processes.items():
+                for msg in processes:
                     diag_vals.append(KeyValue(key='Process high load', value=msg))
             except Exception:
                 pass

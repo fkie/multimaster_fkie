@@ -1045,7 +1045,7 @@ class HostItem(GroupItem):
                                 val_fmt = '%s&deg;C' % value
                                 key_fmt = key_fmt.replace(' [degree]', '')
                             if key == 'Process high load':
-                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (key_fmt, val_fmt)
+                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (val_fmt)
                             else:
                                 tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
                     except Exception as err:
