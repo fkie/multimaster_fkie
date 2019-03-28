@@ -84,7 +84,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         result.respawn = n.respawn
         if n.respawn_delay > 0:
             result.respawn_delay = n.respawn_delay
-        respawn_params = _get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launchcfg.roscfg.params)
+        respawn_params = _get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
         result.respawn_max = respawn_params['max']
         result.respawn_min_runtime = respawn_params['min_runtime']
         result.respawn_delay = respawn_params['delay']
@@ -270,8 +270,8 @@ def _rosconsole_cfg_file(package, loglevel='INFO'):
     return result
 
 
-def _get_respawn_params(node, params):
-    result = {'max': 0, 'min_runtime': 0, 'delay': 0}
+def _get_respawn_params(node, params, respawn_delay_value=0):
+    result = {'max': 0, 'min_runtime': 0, 'delay': respawn_delay_value}
     respawn_max = rospy.names.ns_join(node, 'respawn/max')
     respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
     respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
