@@ -55,12 +55,12 @@ class MemUsage(SensorInterface):
         warn_level = self._mem_usage_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9
-        if mem.available <= 1024 * 1024 * warn_level:
+        if mem.total - mem.used <= 1024 * 1024 * warn_level:
             diag_level = DiagnosticStatus.WARN
-            diag_msg = 'Memory available %s (warn <%s)' % (sizeof_fmt(mem.available), sizeof_fmt(self._mem_usage_warn * 1024 * 1024))
+            diag_msg = 'Memory available %s (warn <%s)' % (sizeof_fmt(mem.total - mem.used), sizeof_fmt(self._mem_usage_warn * 1024 * 1024))
         # print "MEM available ", mem.available, diag_level
-        diag_vals.append(KeyValue(key='Free', value=mem.free))
-        diag_vals.append(KeyValue(key='Free [%]', value='%.2f' % (float(mem.free) * 100.0 / float(mem.total))))
+        diag_vals.append(KeyValue(key='Free', value=mem.total - mem.used))
+        diag_vals.append(KeyValue(key='Free [%]', value='%.2f' % (float(mem.total - mem.used) * 100.0 / float(mem.total))))
 
         # Update status
         with self.mutex:
