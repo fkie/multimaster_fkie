@@ -1029,9 +1029,9 @@ class HostItem(GroupItem):
                                 others.append((val.key, val.value))
                         tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (diag.name, stamp)
                         if diag.level > 0:
-                            tooltip += '\n<dt><font color="#CC0000">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                            tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                         if free is not None:
-                            tooltip += '\n<dt>%s: %s (%s%%)</dt>' % ('Free', free, free_percent)
+                            tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % ('Free', free, free_percent)
                         for key, value in others:
                             key_fmt = key
                             val_fmt = value
@@ -1044,7 +1044,10 @@ class HostItem(GroupItem):
                             elif '[degree]' in key:
                                 val_fmt = '%s&deg;C' % value
                                 key_fmt = key_fmt.replace(' [degree]', '')
-                            tooltip += '\n<dt>%s: %s</dt>' % (key_fmt, val_fmt)
+                            if key == 'Process high load':
+                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (key_fmt, val_fmt)
+                            else:
+                                tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
                     except Exception as err:
                         tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
                     tooltip += '<br>'
