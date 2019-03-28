@@ -54,7 +54,7 @@ class HddUsage(SensorInterface):
         hdd = psutil.disk_usage(self._path)
         diag_level = 0
         diag_vals = []
-        diag_msg = 'Free disk space for %s: %s' % (self._path, sizeof_fmt(hdd.free))
+        diag_msg = 'warn at <%s' % (sizeof_fmt(self._hdd_usage_warn))
         warn_level = self._hdd_usage_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9

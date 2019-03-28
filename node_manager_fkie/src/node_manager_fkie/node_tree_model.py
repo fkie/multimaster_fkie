@@ -1030,8 +1030,11 @@ class HostItem(GroupItem):
                         tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (diag.name, stamp)
                         if diag.level > 0:
                             tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                        else:
+                            tooltip += '\n<dt><font color="grey">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                         if free is not None:
                             tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % ('Free', free, free_percent)
+                        has_cpu_processes = False
                         for key, value in others:
                             key_fmt = key
                             val_fmt = value
@@ -1044,10 +1047,18 @@ class HostItem(GroupItem):
                             elif '[degree]' in key:
                                 val_fmt = '%s&deg;C' % value
                                 key_fmt = key_fmt.replace(' [degree]', '')
-                            if key == 'Process high load':
-                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (val_fmt)
+                            if key == 'Process load':
+                                kill_ref = ''
+                                pid = self._pid_from_str(val_fmt)
+                                if pid:
+                                    kill_ref = ' <a href="kill-pid://pid%s">kill</a>' % pid
+                                tooltip += '\n<dt><font color="red">%s</font>%s</dt>' % (val_fmt, kill_ref)
+                                has_cpu_processes = True
                             else:
                                 tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
+                        if not has_cpu_processes and diag.name == 'CPU Load':
+                            for _idx in range(3):
+                                tooltip += '\n<dt><font color="grey">%s</font></dt>' % ('--')
                     except Exception as err:
                         tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
                     tooltip += '<br>'
@@ -1066,6 +1077,12 @@ class HostItem(GroupItem):
             except Exception:
                 rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
         return '<div>%s</div>' % tooltip if tooltip else ''
+
+    def _pid_from_str(self, string):
+        re_if = re.compile(r".*\[(?P<pid>.*?)\]")
+        for pid in re_if.findall(string):
+            return pid
+        return ''
 
     def type(self):
         return HostItem.ITEM_TYPE

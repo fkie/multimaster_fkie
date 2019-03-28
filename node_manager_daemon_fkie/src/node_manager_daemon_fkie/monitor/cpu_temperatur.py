@@ -54,7 +54,7 @@ class CpuTemperatur(SensorInterface):
             sensor_temps = psutil.sensors_temperatures()
             diag_level = 0
             diag_vals = []
-            diag_msg = ''
+            diag_msg = 'warn at >%.2f&deg;C' % (self._cpu_temp_warn)
             warn_level = self._cpu_temp_warn
             if diag_level == DiagnosticStatus.WARN:
                 warn_level = warn_level * 0.9
@@ -66,7 +66,7 @@ class CpuTemperatur(SensorInterface):
                             self._cpu_temp_warn = hight
                         if current > max_temp:
                             max_temp = current
-            if max_temp > diag_level:
+            if max_temp > warn_level:
                 diag_msg = 'CPU Temperature: %.2f degree (warn level >%.2f)' % (max_temp, self._cpu_temp_warn)
             diag_vals.append(KeyValue(key='Max [degree]', value=max_temp))
             # Update status

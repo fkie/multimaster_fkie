@@ -51,7 +51,7 @@ class MemUsage(SensorInterface):
         mem = psutil.virtual_memory()
         diag_level = 0
         diag_vals = []
-        diag_msg = ''
+        diag_msg = 'warn at <%s' % sizeof_fmt(self._mem_usage_warn * 1024 * 1024)
         warn_level = self._mem_usage_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9

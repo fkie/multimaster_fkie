@@ -2230,6 +2230,17 @@ class MasterViewProxy(QWidget):
                                     '%s' % utf8(e))
         return True
 
+    def on_kill_pid(self, pid):
+        ret = MessageBox.question(self, "Kill Process", "You are going to kill process with ID %d\nContinue?" % pid, buttons=MessageBox.Ok | MessageBox.Cancel)
+        ret = (ret == MessageBox.Ok)
+        if ret:
+            host = get_hostname(self.masteruri)
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                           'kill %d' % pid,
+                                           nm.starter().kill,
+                                           (host, pid))
+            self._start_queue(self._progress_queue)
+
     def on_kill_nodes(self):
         selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
 

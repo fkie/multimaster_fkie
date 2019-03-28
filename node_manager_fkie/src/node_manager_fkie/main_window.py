@@ -1876,6 +1876,9 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('kill-node://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_kill_nodes()
+        elif url.toString().startswith('kill-pid://pid'):
+            if self.currentMaster is not None:
+                self.currentMaster.on_kill_pid(int(url.toString().replace('kill-pid://pid', '')))
         elif url.toString().startswith('kill-screen://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_kill_screens()

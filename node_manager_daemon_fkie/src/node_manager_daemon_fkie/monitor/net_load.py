@@ -34,6 +34,7 @@ import psutil
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
+from node_manager_daemon_fkie.common import sizeof_fmt
 from .sensor_interface import SensorInterface
 
 
@@ -58,7 +59,7 @@ class NetLoad(SensorInterface):
         net = psutil.net_io_counters(pernic=True)
         diag_level = 0
         diag_vals = []
-        diag_msg = ''
+        diag_msg = 'warn at >%.2f%% at %.0fMBit' % (self._net_load_warn * 100.0, self._net_speed)
         now = time.time()
         warn_level = self._net_load_warn
         if diag_level == DiagnosticStatus.WARN:
