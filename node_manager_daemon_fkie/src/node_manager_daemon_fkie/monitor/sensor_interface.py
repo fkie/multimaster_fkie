@@ -47,7 +47,7 @@ class SensorInterface(object):
         self._interval = interval
         self._timer = None
         self._stat_msg = DiagnosticStatus()
-        self._stat_msg.name = '%s (%s)' % (sensorname, hostname)
+        self._stat_msg.name = '%s' % (sensorname)
         self._stat_msg.level = 3
         self._stat_msg.hardware_id = hostname
         self._stat_msg.message = 'No Data'
