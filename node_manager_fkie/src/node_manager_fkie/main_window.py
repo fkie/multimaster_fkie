@@ -47,6 +47,7 @@ import socket
 import time
 import uuid
 import xmlrpclib
+import yaml
 
 from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
 from node_manager_daemon_fkie.host import get_hostname
@@ -75,10 +76,10 @@ from .update_handler import UpdateHandler
 
 
 try:
-    from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget
+    from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget, QStyle
     from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
 except Exception:
-    from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget
+    from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget, QStyle
     from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
 
 
@@ -178,8 +179,9 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.launch_dock)
 
         self.mIcon = QIcon(":/icons/crystal_clear_prop_run.png")
-        self.setWindowIcon(self.mIcon)
+        # self.style().standardIcon(QStyle.SP_FileIcon)
         self.setWindowTitle("Node Manager")
+        self.setWindowIcon(self.mIcon)
 #    self.setCentralWidget(mainWindow)
 
         # init the stack layout which contains the information about different ros master
@@ -355,6 +357,7 @@ class MainWindow(QMainWindow):
         self._shortcut_restart_nodes_g.activated.connect(self._restart_nodes_g)
 
         nm.nmd().error.connect(self.on_nmd_err)
+        nm.nmd().yaml_config_signal.connect(self._nmd_yaml_cfg)
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
@@ -945,6 +948,8 @@ class MainWindow(QMainWindow):
                   'Only screen log': ('bool', True),
                   # 'Optional Parameter': ('list', params_optional)
                   }
+        print "YAML", yaml.dump(utf8(params))
+        print "LOADED", yaml.load(yaml.dump(utf8(params)))
         dia = ParameterDialog(params, sidebar_var='Host', store_geometry="master_log_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Show log')
@@ -1887,6 +1892,8 @@ class MainWindow(QMainWindow):
             self.rosclean(url.toString().replace('rosclean', 'http'))
         elif url.toString().startswith('sysmon-switch://'):
             self.sysmon_active_update(url.toString().replace('sysmon-switch', 'http'))
+        elif url.toString().startswith('nmd-cfg://'):
+            self.nmd_cfg(url.toString().replace('nmd-cfg', 'http'))
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back
@@ -2063,6 +2070,59 @@ class MainWindow(QMainWindow):
         master = self.getMaster(masteruri, create_new=False)
         if master is not None:
             master.sysmon_active_update()
+
+    def nmd_cfg(self, masteruri):
+        nmd_uri = nmdurl.nmduri(masteruri)
+        nm.nmd().get_config_threaded(nmd_uri)
+
+    def _convert_nmd_cfg(self, data):
+        result = {}
+        for key, value in data.items():
+            if isinstance(value, dict):
+                if ':value' in value:
+                    result[key] = (self._strtype(value[':value']), value[':value'])
+                else:
+                    val = self._convert_nmd_cfg(value)
+                    if val:
+                        result[key] = ('list', val)
+            else:
+                result[key] = (self._strtype(value), value)
+        return result
+
+    def _strtype(self, value):
+        if isinstance(value, str):
+            return 'string'
+        if isinstance(value, bool):
+            return 'bool'
+        if isinstance(value, int):
+            return 'int'
+        if isinstance(value, float):
+            return 'float'
+        return 'string'
+
+    def _nmd_yaml_cfg(self, data, nmdurl):
+        params = yaml.load(data)
+        dia = ParameterDialog(self._convert_nmd_cfg(params), store_geometry="nmd_cfg_dialog")
+        dia.setFilterVisible(False)
+        dia.setWindowTitle('Daemon Configuration')
+        dia.setFocusField('load_warn_level')
+        if dia.exec_():
+            try:
+                params = dia.getKeywords()
+                # we have to convert params back, but daemon does understand it without convert
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               '%s: set configuration for daemon' % nmdurl,
+                                               nm.nmd().set_config,
+                                               (nmdurl, yaml.dump(params)))
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               '%s: get system diagnostics' % nmdurl,
+                                               nm.nmd().get_system_diagnostics_threaded,
+                                               (nmdurl,))
+                self._progress_queue.start()
+            except Exception as err:
+                MessageBox.warning(self, "Daemon configuration error",
+                                   'Error while parse parameter',
+                                   '%s' % utf8(err))
 
     def on_nmd_err(self, method, url, path, error):
         '''

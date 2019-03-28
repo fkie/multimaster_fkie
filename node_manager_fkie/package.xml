@@ -35,9 +35,10 @@
   <exec_depend>rqt_reconfigure</exec_depend>
   <exec_depend>diagnostic_msgs</exec_depend>
 
-  <exec_depend>python_qt_binding</exec_depend>
-  <exec_depend>python-paramiko</exec_depend>
   <exec_depend>python-docutils</exec_depend>
+  <exec_depend>python-paramiko</exec_depend>
+  <exec_depend>python_qt_binding</exec_depend>
+  <exec_depend>python-yaml</exec_depend>
   <exec_depend>screen</exec_depend>
   <exec_depend>xterm</exec_depend>
   <exec_depend>rqt_gui</exec_depend>

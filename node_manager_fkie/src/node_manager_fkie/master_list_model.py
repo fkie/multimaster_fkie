@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QObject, QRect, Qt, Signal
-from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel, QTextOption
+from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
 try:
     from python_qt_binding.QtGui import QItemDelegate, QPushButton, QStyle
 except Exception:

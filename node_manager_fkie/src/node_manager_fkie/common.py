@@ -1,7 +1,6 @@
 import os
 import rospy
 
-from node_manager_daemon_fkie import url as nmdurl
 import node_manager_fkie as nm
 
 MANIFEST_FILE = 'manifest.xml'

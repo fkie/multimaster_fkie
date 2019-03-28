@@ -929,6 +929,10 @@ class HostItem(GroupItem):
     def local(self):
         return self._local
 
+    @property
+    def diagnostics(self):
+        return list(self._diagnostics)
+
     def update_system_diagnostics(self, diagnostics):
         del self._diagnostics[:]
         for diagnostic in diagnostics.status:
@@ -1007,7 +1011,7 @@ class HostItem(GroupItem):
             tooltip += '<a href="sysmon-switch://%s">%s system monitor</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_str)
             tooltip += '<p>'
             if self._diagnostics:
-                tooltip += '<h3>System Monitoring:</h3<dl>'
+                tooltip += '<h3>System Monitoring (<a href="nmd-cfg://%s">setup</a>):</h3><dl>' % (utf8(self.masteruri).replace('http://', ''))
                 for diag in self._diagnostics:
                     try:
                         free = None
@@ -1038,7 +1042,7 @@ class HostItem(GroupItem):
                                 val_fmt = '%s%%' % value
                                 key_fmt = key_fmt.replace(' [%]', '')
                             elif '[degree]' in key:
-                                val_fmt = '%s&deg;' % value
+                                val_fmt = '%s&deg;C' % value
                                 key_fmt = key_fmt.replace(' [degree]', '')
                             tooltip += '\n<dt>%s: %s</dt>' % (key_fmt, val_fmt)
                     except Exception as err:
@@ -2017,7 +2021,13 @@ class NodeInfoIconsDelegate(QItemDelegate):
                        'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(*params),
                        'group': QImage(':/icons/crystal_clear_group.png').scaled(*params),
                        'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(*params),
-                       'sysmon': QImage(':/icons/crystal_clear_get_parameter.png').scaled(*params)
+                       'sysmon': QImage(':/icons/crystal_clear_get_parameter.png').scaled(*params),
+                       'clock_warn': QImage(':/icons/crystal_clear_xclock_fail.png').scaled(*params),
+                       'cpu_warn': QImage(':/icons/hight_load.png').scaled(*params),
+                       'cpu_temp_warn': QImage(':/icons/temperatur_warn.png').scaled(*params),
+                       'hdd_warn': QImage(':/icons/crystal_clear_hdd_warn.png').scaled(*params),
+                       'net_warn': QImage(':/icons/sekkyumu_net_warn.png').scaled(*params),
+                       'mem_warn': QImage(':/icons/mem_warn.png').scaled(*params)
                        }
 
     def paint(self, painter, option, index):
@@ -2058,9 +2068,31 @@ class NodeInfoIconsDelegate(QItemDelegate):
                     tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
                 item.setToolTip(tooltip)
             elif isinstance(item.item, HostItem):
+                tooltip = ''
                 if item.item.sysmon_state:
+                    tooltip += '<dt><font color="orange">%s</font></dt>' % ("active pull for system diagnostic is enabled")
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['sysmon'])
+                diagnistics = item.item.diagnostics
+                for diag in diagnistics:
+                    if diag.level > 0:
+                        tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                        if 'Network Load' in diag.name:
+                            rect = self.calcDecorationRect(option.rect)
+                            painter.drawImage(rect, self.IMAGES['net_warn'])
+                        if 'CPU Load' in diag.name:
+                            rect = self.calcDecorationRect(option.rect)
+                            painter.drawImage(rect, self.IMAGES['cpu_warn'])
+                        if 'CPU Temperature' in diag.name:
+                            rect = self.calcDecorationRect(option.rect)
+                            painter.drawImage(rect, self.IMAGES['cpu_temp_warn'])
+                        if 'Memory Usage' in diag.name:
+                            rect = self.calcDecorationRect(option.rect)
+                            painter.drawImage(rect, self.IMAGES['mem_warn'])
+                        if 'HDD Usage' in diag.name:
+                            rect = self.calcDecorationRect(option.rect)
+                            painter.drawImage(rect, self.IMAGES['hdd_warn'])
+                item.setToolTip(tooltip)
             elif isinstance(item.item, GroupItem):
                 lcfgs = len(item.item.get_configs())
                 rect = self.calcDecorationRect(option.rect)

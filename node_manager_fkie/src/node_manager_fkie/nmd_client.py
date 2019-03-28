@@ -46,6 +46,7 @@ import node_manager_daemon_fkie.file_stub as fstub
 import node_manager_daemon_fkie.launch_stub as lstub
 import node_manager_daemon_fkie.monitor_stub as mstub
 import node_manager_daemon_fkie.screen_stub as sstub
+import node_manager_daemon_fkie.settings_stub as scstub
 import node_manager_daemon_fkie.version_stub as vstub
 from node_manager_daemon_fkie.common import sizeof_fmt, utf8
 from node_manager_daemon_fkie.startcfg import StartConfig
@@ -172,6 +173,10 @@ class NmdClient(QObject):
     '''
       :ivar DiagnosticArray,str remote_diagnostics_signal: signal emit diagnostic messages from remote system {DiagnosticArray, grpc_url}.
     '''
+    yaml_config_signal = Signal(str, str)
+    '''
+      :ivar str,str yaml_config_signal: signal emit YAML configuration from daemon {YAML string, grpc_url}.
+    '''
 
     def __init__(self):
         QObject.__init__(self)
@@ -268,6 +273,12 @@ class NmdClient(QObject):
         channel = remote.get_insecure_channel(uri)
         if channel is not None:
             return sstub.ScreenStub(channel)
+        raise Exception("Node manager daemon '%s' not reachable" % uri)
+
+    def get_settings_manager(self, uri='localhost:12321'):
+        channel = remote.get_insecure_channel(uri)
+        if channel is not None:
+            return scstub.SettingsStub(channel)
         raise Exception("Node manager daemon '%s' not reachable" % uri)
 
     def get_version_manager(self, uri='localhost:12321'):
@@ -821,3 +832,25 @@ class NmdClient(QObject):
             return diagnostic_array
         except Exception as e:
             self.error.emit("get_diagnostics", "grpc://%s" % uri, "", e)
+
+    def get_config_threaded(self, grpc_url='grpc://localhost:12321'):
+        self._threads.start_thread("gcfgt_%s" % grpc_url, target=self.get_config, args=(grpc_url, True))
+
+    def get_config(self, grpc_url='grpc://localhost:12321', threaded=False):
+        rospy.logdebug("get config from %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_settings_manager(uri)
+        try:
+            yaml_cfg = sm.get_config()
+            if threaded:
+                self.yaml_config_signal.emit(yaml_cfg, grpc_url)
+                self._threads.finished("gcfgt_%s" % grpc_url)
+            return yaml_cfg
+        except Exception as e:
+            self.error.emit("get_config", "grpc://%s" % uri, "", e)
+
+    def set_config(self, grpc_url='grpc://localhost:12321', data=''):
+        rospy.logdebug("set config to %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_settings_manager(uri)
+        sm.set_config(data)
