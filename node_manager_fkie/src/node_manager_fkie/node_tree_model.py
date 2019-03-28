@@ -1007,11 +1007,11 @@ class HostItem(GroupItem):
             tooltip += '<p>'
             tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
             tooltip += '<p>'
-            sysmon_str = 'Disable' if self.sysmon_state else 'Enable'
-            tooltip += '<a href="sysmon-switch://%s">%s system monitor</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_str)
-            tooltip += '<p>'
+            sysmon_setup_str = '<a href="nmd-cfg://%s">setup</a>' % (utf8(self.masteruri).replace('http://', ''))
+            sysmon_state_str = 'disable' if self.sysmon_state else 'enable'
+            sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
+            tooltip += '<h3>System Monitoring (%s) (%s):</h3>' % (sysmon_switch_str, sysmon_setup_str)
             if self._diagnostics:
-                tooltip += '<h3>System Monitoring (<a href="nmd-cfg://%s">setup</a>):</h3><dl>' % (utf8(self.masteruri).replace('http://', ''))
                 for diag in self._diagnostics:
                     try:
                         free = None
@@ -1048,7 +1048,6 @@ class HostItem(GroupItem):
                     except Exception as err:
                         tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
                     tooltip += '<br>'
-                tooltip += '</dl>'
 
         # get sensors
         capabilities = []
