@@ -59,6 +59,10 @@ class SensorInterface(object):
     def check_sensor(self):
         pass
 
+    @abc.abstractmethod
+    def reload_parameter(self, settings):
+        pass
+
     def _start_check_sensor(self):
         if not self.is_active():
             return

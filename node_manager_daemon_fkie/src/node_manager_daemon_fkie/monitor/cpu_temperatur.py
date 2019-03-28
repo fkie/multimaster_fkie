@@ -46,6 +46,9 @@ class CpuTemperatur(SensorInterface):
         self._cpu_temp_warn = warn_level
         SensorInterface.__init__(self, hostname, sensorname='CPU Temperature', interval=interval)
 
+    def reload_parameter(self, settings):
+        pass
+
     def check_sensor(self):
         try:
             sensor_temps = psutil.sensors_temperatures()

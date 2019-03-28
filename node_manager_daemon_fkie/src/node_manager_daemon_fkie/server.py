@@ -40,12 +40,14 @@ from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
 from .screen_servicer import ScreenServicer
+from .settings_servicer import SettingsServicer
 from .version_servicer import VersionServicer
 
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
 import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
 import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
 import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
+import multimaster_msgs_fkie.grpc.settings_pb2_grpc as stgrpc
 import multimaster_msgs_fkie.grpc.version_pb2_grpc as vgrpc
 
 
@@ -53,13 +55,15 @@ class GrpcServer:
 
     def __init__(self):
         self.server = None
+        self.settings_servicer = SettingsServicer()
         self.launch_servicer = LaunchServicer()
-        self.monitor_servicer = MonitorServicer()
+        self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
 
     def __del__(self):
         self.server.stop(3)
         self.launch_servicer = None
         self.monitor_servicer = None
+        self.settings_servicer = None
 
     def start(self, url='[::]:12311'):
         rospy.loginfo("Start grpc server on %s" % url)
@@ -83,6 +87,7 @@ class GrpcServer:
             lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
             mgrpc.add_MonitorServiceServicer_to_server(self.monitor_servicer, self.server)
             sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(), self.server)
+            stgrpc.add_SettingsServiceServicer_to_server(self.settings_servicer, self.server)
             vgrpc.add_VersionServiceServicer_to_server(VersionServicer(), self.server)
             self.server.start()
             rospy.loginfo("Server at '%s' started!" % url)

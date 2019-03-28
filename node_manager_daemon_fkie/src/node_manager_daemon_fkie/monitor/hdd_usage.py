@@ -31,26 +31,30 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import psutil
-import rospy
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from node_manager_daemon_fkie.common import sizeof_fmt
-from node_manager_daemon_fkie.screen import LOG_PATH
+from node_manager_daemon_fkie.settings import LOG_PATH
 from .sensor_interface import SensorInterface
 
 
 class HddUsage(SensorInterface):
 
     def __init__(self, hostname='', interval=30.0, warn_level=100.0):
-        self._hdd_usage_warn = rospy.get_param('~hdd_usage_warn', warn_level)
+        self._hdd_usage_warn = warn_level
+        self._path = LOG_PATH
         SensorInterface.__init__(self, hostname, sensorname='HDD Usage', interval=interval)
 
+    def reload_parameter(self, settings):
+        self._hdd_usage_warn = settings.param('sysmon/Disk/usage_warn_level', self._hdd_usage_warn)
+        self._path = settings.param('sysmon/Disk/path', self._path)
+
     def check_sensor(self):
-        hdd = psutil.disk_usage(LOG_PATH)
+        hdd = psutil.disk_usage(self._path)
         diag_level = 0
         diag_vals = []
-        diag_msg = 'Free disk space for %s: %s' % (LOG_PATH, sizeof_fmt(hdd.free))
+        diag_msg = 'Free disk space for %s: %s' % (self._path, sizeof_fmt(hdd.free))
         warn_level = self._hdd_usage_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9
@@ -60,7 +64,7 @@ class HddUsage(SensorInterface):
         # print "Percent Disk %.2f" % (hdd.percent), diag_level
         diag_vals.append(KeyValue(key='Free', value=hdd.free))
         diag_vals.append(KeyValue(key='Free [%]', value='%.2f' % (100.0 - hdd.percent)))
-        diag_vals.append(KeyValue(key='Path', value=LOG_PATH))
+        diag_vals.append(KeyValue(key='Path', value=self._path))
 
         # Update status
         with self.mutex:

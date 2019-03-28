@@ -38,10 +38,10 @@ import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
 
 class MonitorServicer(mgrpc.MonitorServiceServicer):
 
-    def __init__(self):
+    def __init__(self, settings):
         rospy.loginfo("Create monitor servicer")
         mgrpc.MonitorServiceServicer.__init__(self)
-        self._monitor = Service()
+        self._monitor = Service(settings)
 
     def stop(self):
         self._monitor.stop()

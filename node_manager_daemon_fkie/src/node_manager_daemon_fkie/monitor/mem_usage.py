@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import psutil
-import rospy
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
@@ -42,8 +41,11 @@ from .sensor_interface import SensorInterface
 class MemUsage(SensorInterface):
 
     def __init__(self, hostname='', interval=5.0, warn_level=100.0):
-        self._mem_usage_warn = rospy.get_param('~mem_usage_warn', warn_level)
+        self._mem_usage_warn = warn_level
         SensorInterface.__init__(self, hostname, sensorname='Memory Usage', interval=interval)
+
+    def reload_parameter(self, settings):
+        self._mem_usage_warn = settings.param('sysmon/Memory/usage_warn_level', self._mem_usage_warn)
 
     def check_sensor(self):
         mem = psutil.virtual_memory()

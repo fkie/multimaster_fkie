@@ -42,12 +42,13 @@ class SettingsStub(object):
     def __init__(self, channel):
         self.ss_stub = sgrpc.SettingsServiceStub(channel)
 
-    def get_config(self):
+    def get_config(self, nslist=[]):
         '''
         :return: String representation for YAML
         :rtype: str
         '''
-        request = smsg.Empty()
+        request = smsg.Filter()
+        request.nslist.extend(nslist)
         response = self.ss_stub.GetConfig(request, timeout=settings.GRPC_TIMEOUT)
         return response.data
 

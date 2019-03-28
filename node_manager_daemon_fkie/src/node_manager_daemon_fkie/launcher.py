@@ -262,7 +262,7 @@ def changed_binaries(nodes):
 
 
 def _rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(screen.LOG_PATH, '%s.rosconsole.config' % package)
+    result = os.path.join(settings.LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')

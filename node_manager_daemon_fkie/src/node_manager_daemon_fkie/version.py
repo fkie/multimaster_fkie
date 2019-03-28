@@ -6,11 +6,18 @@ import xml.dom.minidom as dom
 
 from node_manager_daemon_fkie.supervised_popen import SupervisedPopen
 
+VERSION = 'unknown'
+DATE = 'unknown'
+
 
 def detect_version(package):
     '''
     Try to detect the current version from git, installed VERSION/DATE files or package.xml
     '''
+    global VERSION
+    global DATE
+    if VERSION != 'unknown':
+        return VERSION, DATE
     version = 'unknown'
     date = 'unknown'
     try:
@@ -52,4 +59,6 @@ def detect_version(package):
                 print >> sys.stderr, "version detection: package.xml not found!"
     except Exception as err:
         print >> sys.stderr, "version detection error: %s" % err
+    VERSION = version
+    DATE = date
     return version, date

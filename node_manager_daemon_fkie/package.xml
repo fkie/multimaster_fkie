@@ -23,6 +23,7 @@
 
   <depend>python-psutil</depend>
   <depend>python-rospkg</depend>
+  <depend>python-yaml</depend>
   <depend>screen</depend>
 
   <test_depend>rostest</test_depend>

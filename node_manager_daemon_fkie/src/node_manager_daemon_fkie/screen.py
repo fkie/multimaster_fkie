@@ -38,6 +38,7 @@ import rospy
 import rospkg
 
 import subprocess
+from .settings import LOG_PATH
 from .supervised_popen import SupervisedPopen
 
 
@@ -45,8 +46,6 @@ class ScreenException(Exception):
     pass
 
 
-LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
-''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
 SCREEN = "/usr/bin/screen"
 ''':var SCREEN: Defines the path to screen binary.'''
 SLASH_SEP = '_'

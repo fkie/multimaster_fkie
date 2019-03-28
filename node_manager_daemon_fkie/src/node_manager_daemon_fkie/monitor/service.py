@@ -67,11 +67,13 @@ class DiagnosticObj(DiagnosticStatus):
 
 class Service:
 
-    def __init__(self):
+    def __init__(self, settings):
+        self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
         self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
-        self._param_sub_only_agg = rospy.get_param('~only_diagnostics_agg', False)
+        self._param_sub_only_agg = settings.param('global/only_diagnostics_agg', False)
+        self._sub_diag = None
         if not self._param_sub_only_agg:
             self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
         hostname = socket.gethostname()
@@ -82,6 +84,18 @@ class Service:
         self.sensors.append(HddUsage(hostname, 30.0, 100.0))
         self.sensors.append(MemUsage(hostname, 1.0, 100.0))
         self.sensors.append(NetLoad(hostname, 1.0, 0.9))
+        for sensor in self.sensors:
+            self._settings.add_reload_listener(sensor.reload_parameter)
+        self._settings.add_reload_listener(self.reload_parameter)
+
+    def reload_parameter(self, settings):
+        value = settings.param('global/only_diagnostics_agg', False)
+        if value != self._param_sub_only_agg:
+            if value:
+                self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
+            elif self._sub_diag is not None:
+                self._sub_diag.unregister()
+            self._param_sub_only_agg = value
 
     def _callback_diagnostics(self, msg):
         # TODO: update diagnostics

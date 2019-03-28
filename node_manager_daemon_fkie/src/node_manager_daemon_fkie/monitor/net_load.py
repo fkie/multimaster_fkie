@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import psutil
-import rospy
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
@@ -41,10 +40,18 @@ from .sensor_interface import SensorInterface
 class NetLoad(SensorInterface):
 
     def __init__(self, hostname='', interval=3.0, warn_level=0.9):
-        self._net_load_warn = rospy.get_param('~net_load_warn', warn_level)
-        self._net_speed = rospy.get_param('~net_speed_mbit', 6)
+        self._net_load_warn = warn_level
+        self._net_speed = 6
         self._net_stat_last = {}  # {iface: (sent, recv)}
+        self.settings = None
         SensorInterface.__init__(self, hostname, sensorname='Network Load', interval=interval)
+
+    def reload_parameter(self, settings):
+        self._net_load_warn = settings.param('sysmon/Network/load_warn_level', self._net_load_warn)
+        self._net_speed = settings.param('sysmon/Network/speed', self._net_speed)
+        # TODO: support more than one interface
+        self._interface = settings.param('sysmon/Network/interface', '')
+        self.settings = settings
 
     def check_sensor(self):
         net_stats = psutil.net_if_stats()
@@ -58,6 +65,10 @@ class NetLoad(SensorInterface):
             warn_level = warn_level * 0.9
         for net_if, net_if_stats in net_stats.items():
             if net_if_stats.isup and net_if_stats.speed > 0 and net_if in net:
+                if self.settings is not None and not self._interface:
+                    # TODO: support more than one interface
+                    self._interface = net_if
+                    self.settings.set_param('sysmon/Network/interface', net_if)
                 net_values = net[net_if]
                 # in psutil versions below 5.3.0 there is no 'nowrap' argument. We need to calculate current rate itself.
                 if net_if not in self._net_stat_last:

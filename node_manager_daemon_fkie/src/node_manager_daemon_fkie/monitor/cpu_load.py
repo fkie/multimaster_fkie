@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import psutil
-import rospy
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
@@ -41,8 +40,11 @@ from .sensor_interface import SensorInterface
 class CpuLoad(SensorInterface):
 
     def __init__(self, hostname='', interval=5.0, warn_level=0.9):
-        self._cpu_load_warn = rospy.get_param('~cpu_load_warn', warn_level)
+        self._cpu_load_warn = warn_level
         SensorInterface.__init__(self, hostname, sensorname='CPU Load', interval=interval)
+
+    def reload_parameter(self, settings):
+        self._cpu_load_warn = settings.param('sysmon/CPU/load_warn_level', self._cpu_load_warn)
 
     def check_sensor(self):
         cpu_percents = psutil.cpu_percent(interval=None, percpu=True)

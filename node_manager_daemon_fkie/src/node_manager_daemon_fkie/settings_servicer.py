@@ -45,13 +45,10 @@ class SettingsServicer(sgrpc.SettingsServiceServicer):
         rospy.loginfo("Create settings servicer")
         sgrpc.SettingsServiceServicer.__init__(self)
         self.settings = Settings(version=version.detect_version('node_manager_daemon_fkie')[0])
-        print 'Version:', self.settings.param('version')
-        print 'cpu_warn:', self.settings.param('sysmon/CPU/load_warn_level'), type(self.settings.param('sysmon/CPU/load_warn_level'))
-        print 'net_warn:', self.settings.param('sysmon/Network/speed/value')
 
     def GetConfig(self, request, context):
         msg = smsg.Yaml()
-        msg.data = self.settings.yaml()
+        msg.data = self.settings.yaml(request.nslist)
         return msg
 
     def SetConfig(self, request, context):
