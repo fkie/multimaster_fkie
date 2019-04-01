@@ -169,7 +169,7 @@ def run_node(startcfg):
             if isinstance(cmd, types.StringTypes):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
-                raise exceptions.StartException('%s in package [%s] not found!' % (startcfg.package, startcfg.binary))
+                raise exceptions.StartException('%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
             if len(cmd) > 1:
                 # Open selection for executables
                 err = 'Multiple executables with same name in package [%s]  found:' % startcfg.package
