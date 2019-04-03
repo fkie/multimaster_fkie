@@ -207,8 +207,6 @@ class Settings:
                 if isinstance(value, dict):
                     if self._is_writable(value):
                         new_cfg[key] = self._apply_recursive(new_data[key], value)
-                    else:
-                        new_cfg[key] = value
                 elif key not in [':hint', ':default', ':ro', ':min', ':max']:
                     if isinstance(new_data, dict):
                         new_cfg[key] = new_data[key]

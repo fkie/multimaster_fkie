@@ -195,6 +195,9 @@ class ParameterDescription(object):
         return self._type
 
     def updateValueFromField(self):
+        if self.read_only:
+            # do no change any values
+            return
         field = self.widget()
         result = ''
         if isinstance(field, QCheckBox):
@@ -309,6 +312,8 @@ class ParameterDescription(object):
                     value = str2bool(value[0] if isinstance(value, list) else value)
                 self._value_org = value
                 result.setChecked(value)
+            elif self.read_only:
+                result = QLabel(value, parent=parent)
             else:
                 result = MyComboBox(parent=parent)
                 result.setObjectName(self.name())
