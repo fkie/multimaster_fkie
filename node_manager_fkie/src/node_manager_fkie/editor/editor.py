@@ -801,10 +801,6 @@ class Editor(QMainWindow):
         add_param_tag_action = QAction("<param>", self, statusTip="", triggered=self._on_add_param_tag)
         add_param_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+Alt+p"))
         tag_menu.addAction(add_param_tag_action)
-        # param capability group tag
-        add_param_cap_group_tag_action = QAction("<param capability group>", self, statusTip="", triggered=self._on_add_param_cap_group_tag)
-        add_param_cap_group_tag_action.setShortcuts(QKeySequence("Ctrl+Alt+p"))
-        tag_menu.addAction(add_param_cap_group_tag_action)
         # param tag with all attributes
         add_param_tag_all_action = QAction("<param all>", self, statusTip="", triggered=self._on_add_param_tag_all)
         tag_menu.addAction(add_param_tag_all_action)
@@ -827,6 +823,33 @@ class Editor(QMainWindow):
         # test tag with all attributes
         add_test_tag_all_action = QAction("<test all>", self, statusTip="", triggered=self._on_add_test_tag_all)
         tag_menu.addAction(add_test_tag_all_action)
+        sub_cp_menu = QMenu("Custom parameters", parent)
+
+        sub_cp_as_menu = QMenu("Autostart", parent)
+        add_cp_as_delay_action = QAction("delay", self, statusTip="", triggered=self._on_add_cp_as_delay)
+        sub_cp_as_menu.addAction(add_cp_as_delay_action)
+        add_cp_as_exclude_action = QAction("exclude", self, statusTip="", triggered=self._on_add_cp_as_exclude)
+        sub_cp_as_menu.addAction(add_cp_as_exclude_action)
+        add_cp_as_req_publisher_action = QAction("required publisher", self, statusTip="", triggered=self._on_add_cp_as_req_publisher)
+        sub_cp_as_menu.addAction(add_cp_as_req_publisher_action)
+        sub_cp_menu.addMenu(sub_cp_as_menu)
+
+        sub_cp_r_menu = QMenu("Respawn", parent)
+        add_cp_r_max_action = QAction("max", self, statusTip="", triggered=self._on_add_cp_r_max)
+        sub_cp_r_menu.addAction(add_cp_r_max_action)
+        add_cp_r_min_runtime_action = QAction("min_runtime", self, statusTip="", triggered=self._on_add_cp_r_min_runtime)
+        sub_cp_r_menu.addAction(add_cp_r_min_runtime_action)
+        add_cp_r_delay_action = QAction("delay", self, statusTip="", triggered=self._on_add_cp_r_delay)
+        sub_cp_r_menu.addAction(add_cp_r_delay_action)
+        sub_cp_menu.addMenu(sub_cp_r_menu)
+
+        add_cp_capability_group_action = QAction("capability_group", self, statusTip="", triggered=self._on_add_cp_capability_group)
+        add_cp_capability_group_action.setShortcuts(QKeySequence("Ctrl+Alt+p"))
+        sub_cp_menu.addAction(add_cp_capability_group_action)
+        add_cp_kill_on_stop_action = QAction("kill_on_stop", self, statusTip="True or time to wait in ms", triggered=self._on_add_cp_kill_on_stop)
+        add_cp_kill_on_stop_action.setShortcuts(QKeySequence("Ctrl+Shift+k"))
+        sub_cp_menu.addAction(add_cp_kill_on_stop_action)
+        tag_menu.addMenu(sub_cp_menu)
         return tag_menu
 
     def _insert_text(self, text, cursor_pose=None, selection_len=None):
@@ -889,9 +912,6 @@ class Editor(QMainWindow):
     def _on_add_param_tag(self):
         self._insert_text('<param name="name" value="value" />', 13, 4)
 
-    def _on_add_param_cap_group_tag(self):
-        self._insert_text('<param name="capability_group" value="demo" />', 38, 4)
-
     def _on_add_param_tag_all(self):
         self._insert_text('<param name="name" value="value"\n'
                           '       type="str|int|double|bool"\n'
@@ -928,3 +948,27 @@ class Editor(QMainWindow):
                               '      cwd="ROS_HOME|node" retry="0"\n'
                               '      launch-prefix="prefix arguments">\n'
                               '</test>' % (dia.binary, dia.package, dia.binary, dia.binary))
+
+    def _on_add_cp_capability_group(self):
+        self._insert_text('<param name="capability_group" value="demo" />', 38, 4)
+
+    def _on_add_cp_kill_on_stop(self):
+        self._insert_text('<param name="kill_on_stop" value="100" hint="[ms]" />', 34, 3)
+
+    def _on_add_cp_as_delay(self):
+        self._insert_text('<param name="autostart/delay" value="1" hint="[seconds]" />', 37, 1)
+
+    def _on_add_cp_as_exclude(self):
+        self._insert_text('<param name="autostart/exclude" value="True" />', 39, 4)
+
+    def _on_add_cp_as_req_publisher(self):
+        self._insert_text('<param name="autostart/required/publisher" value="topic" />', 50, 5)
+
+    def _on_add_cp_r_max(self):
+        self._insert_text('<param name="respawn/max" value="10" />', 33, 2)
+
+    def _on_add_cp_r_min_runtime(self):
+        self._insert_text('<param name="respawn/min_runtime" value="10" hint="[seconds]" />', 41, 2)
+
+    def _on_add_cp_r_delay(self):
+        self._insert_text('<param name="respawn/delay" value="5" hint="[seconds]" />', 31, 2)

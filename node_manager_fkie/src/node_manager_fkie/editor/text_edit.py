@@ -629,21 +629,23 @@ class TextEdit(QTextEdit):
                     menu = QMenu("ROS <%s>" % tag, self)
                     menu.triggered.connect(self._context_activated)
                     # create a menu with attributes
-                    menu_attr = QMenu("attributes", menu)
-                    attributes = sorted(list(set(XmlHighlighter.LAUNCH_ATTR[tag])))
-                    for attr in attributes:
-                        action = menu_attr.addAction(attr.rstrip('='))
-                        action.setData('%s""' % attr)
-                    menu.addMenu(menu_attr)
+                    if tag in XmlHighlighter.LAUNCH_ATTR:
+                        menu_attr = QMenu("attributes", menu)
+                        attributes = sorted(list(set(XmlHighlighter.LAUNCH_ATTR[tag])))
+                        for attr in attributes:
+                            action = menu_attr.addAction(attr.rstrip('='))
+                            action.setData('%s""' % attr)
+                        menu.addMenu(menu_attr)
                     # create a menu with tags
-                    tags = sorted(XmlHighlighter.LAUNCH_CHILDS[tag])
-                    if tags:
-                        menu_tags = QMenu("tags", menu)
-                        for tag in tags:
-                            data = '<%s></%s>' % (tag, tag) if XmlHighlighter.LAUNCH_CHILDS[tag] else '<%s/>' % tag
-                            action = menu_tags.addAction(tag)
-                            action.setData(data)
-                        menu.addMenu(menu_tags)
+                    if tag in XmlHighlighter.LAUNCH_CHILDS:
+                        tags = sorted(XmlHighlighter.LAUNCH_CHILDS[tag])
+                        if tags:
+                            menu_tags = QMenu("tags", menu)
+                            for tag in tags:
+                                data = '<%s></%s>' % (tag, tag) if XmlHighlighter.LAUNCH_CHILDS[tag] else '<%s/>' % tag
+                                action = menu_tags.addAction(tag)
+                                action.setData(data)
+                            menu.addMenu(menu_tags)
                     return menu
                 except Exception:
                     import traceback
