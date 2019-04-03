@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QColor, QFont, QTextCursor
+from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor
 import os
 import re
 import rospy
@@ -47,9 +47,9 @@ from .yaml_highlighter import YamlHighlighter
 
 
 try:
-    from python_qt_binding.QtGui import QApplication, QMenu, QTextEdit
+    from python_qt_binding.QtGui import QAction, QApplication, QMenu, QTextEdit
 except Exception:
-    from python_qt_binding.QtWidgets import QApplication, QMenu, QTextEdit
+    from python_qt_binding.QtWidgets import QAction, QApplication, QMenu, QTextEdit
 
 
 class TextEdit(QTextEdit):
@@ -171,6 +171,21 @@ class TextEdit(QTextEdit):
                 print(traceback.format_exc())
         return False, False, ''
 
+    def toprettyxml(self):
+        try:
+            import xmlformatter
+            formatter = xmlformatter.Formatter(indent="4", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
+            xml_pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
+            cursor = self.textCursor()
+            if not cursor.isNull():
+                cursor.beginEditBlock()
+                cursor.movePosition(QTextCursor.Start)
+                cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+                cursor.insertText(xml_pretty_str)
+                cursor.endEditBlock()
+        except Exception as err:
+            rospy.logwarn("Format XML failed: %s" % utf8(err))
+
     def markLine(self, no):
         try:
             cursor = self.textCursor()
@@ -288,6 +303,8 @@ class TextEdit(QTextEdit):
             self.commentText()
         elif event.modifiers() == Qt.ControlModifier | Qt.ShiftModifier and event.key() == Qt.Key_Slash:
             self.commentText()
+        elif event.modifiers() == Qt.ControlModifier | Qt.ShiftModifier and event.key() == Qt.Key_F:
+            self.toprettyxml()
         elif event.modifiers() == Qt.AltModifier and event.key() == Qt.Key_Space:
             ext = os.path.splitext(self.filename)
             if ext[1] in self.CONTEXT_FILE_EXT:
@@ -588,6 +605,9 @@ class TextEdit(QTextEdit):
 
     def show_custom_context_menu(self, pos):
         menu = QTextEdit.createStandardContextMenu(self)
+        formatxml_action = QAction("Format XML", self, statusTip="", triggered=self.toprettyxml)
+        formatxml_action.setShortcuts(QKeySequence("Ctrl+Shift+F"))
+        menu.addAction(formatxml_action)
 #    if not self.textCursor().selectedText():
 #      self.setTextCursor(self.cursorForPosition(pos))
         submenu = self._create_context_menu_for_tag()
