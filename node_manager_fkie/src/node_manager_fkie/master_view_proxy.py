@@ -2057,6 +2057,7 @@ class MasterViewProxy(QWidget):
     def on_start_nodes_at_host(self):
         '''
         Starts the selected nodes on an another host.
+        :TODO: remove this method or adapt to new ParameterDailaog
         '''
         cursor = self.cursor()
         self.masterTab.startButton.setEnabled(False)
@@ -2570,7 +2571,7 @@ class MasterViewProxy(QWidget):
             # set the parameter in the ROS parameter server
             try:
                 inputDia = MasterParameterDialog(node.masteruri if node.masteruri is not None else self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self, store_geometry="edit_param_dialog")
-                inputDia.setWindowTitle(' - '.join([os.path.basename(node.name), "parameter"]))
+                inputDia.setWindowTitle('%s - %s' % (os.path.basename(node.name), "parameter"))
                 if node.has_launch_cfgs(node.cfgs):
                     inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded as not 'default' and the parameter in the launch file will be reloaded on start of the ROS node.")
                 inputDia.show()
@@ -2683,11 +2684,13 @@ class MasterViewProxy(QWidget):
             # determine the list all available message types
             msg_types = []
             for ppath, pname in nm.nmd().get_packages(nmdurl.nmduri(self.masteruri)).items():
+                #:TODO: get message types from remote nmduri
+                _guri, lpath = nmdurl.split(ppath, with_scheme=False)
                 import rosmsg
-                for f in rosmsg._list_types('%s/msg' % ppath, 'msg', rosmsg.MODE_MSG):
+                for f in rosmsg._list_types('%s/msg' % lpath, 'msg', rosmsg.MODE_MSG):
                     msg_types.append("%s/%s" % (pname, f))
             msg_types.sort()
-            fields = {'Type': ('string', msg_types), 'Name': ('string', [''])}
+            fields = {'Type': {':type': 'string', ':value': msg_types}, 'Name': {':type': 'string', ':value': ['']}}
             # create a dialog
             dia = ParameterDialog(fields, parent=self, store_geometry="topic_pub_dialog")
             dia.setWindowTitle('Publish to topic')
@@ -2731,7 +2734,7 @@ class MasterViewProxy(QWidget):
             if mclass is None:
                 MessageBox.warning(self, "Publish error",
                                    'Error while publish to %s' % topic_name,
-                                   ''.join(['invalid message type: ', topic_type, '.\nIf this is a valid message type, perhaps you need to run "rosmake"']))
+                                   'invalid message type: %s\nIf this is a valid message type, perhaps you need to run "rosmake"' % topic_type)
                 return
             slots = mclass.__slots__
             types = mclass._slot_types
@@ -2741,9 +2744,9 @@ class MasterViewProxy(QWidget):
                 default_topic_values = self.__republish_params[topic_name][topic_type]
                 rate_values = self.__republish_params[topic_name]['! Publish rate']
             args = ServiceDialog._params_from_slots(slots, types, default_topic_values)
-            p = {'! Publish rate': ('string', rate_values), topic_type: ('dict', args)}
+            p = {'! Publish rate': {':type': 'string', ':value': rate_values}, topic_type: args}
             dia = ParameterDialog(p, store_geometry="start_publisher_dialog")
-            dia.setWindowTitle(''.join(['Publish to ', topic_name]))
+            dia.setWindowTitle('Publish to %s' % topic_name)
             dia.showLoadSaveButtons()
             dia.setFocusField('! Publish rate')
 
@@ -2775,7 +2778,8 @@ class MasterViewProxy(QWidget):
                 topic_params = dict()
                 if topic_type in params:
                     topic_params = self._rem_empty_lists(params[topic_type])
-                pub_cmd = ' '.join(['pub', topic_name, topic_type, '"', str(topic_params), '"', opt_str])
+                pub_cmd = 'pub %s %s "%s" %s' % (topic_name, topic_type, str(topic_params), opt_str)
+                rospy.logdebug("rostopic parameter: %s" % pub_cmd)
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                'start publisher for %s' % topic_name,
                                                nm.starter().runNodeWithoutConfig,
@@ -2969,7 +2973,7 @@ class MasterViewProxy(QWidget):
         ns = '/'
         if selectedParameter:
             ns = roslib.names.namespace(selectedParameter[0][0])
-        fields = {'name': ('string', ns), 'type': ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
+        fields = {'name': {':value': ns}, 'type': {':type': 'string', ':value': ['string', 'int', 'float', 'bool', 'list']}, 'value': {':value': ''}}
         newparamDia = ParameterDialog(fields, parent=self, store_geometry="add_parameter_dialog")
         newparamDia.setWindowTitle('Add new parameter')
         newparamDia.setFilterVisible(False)
@@ -3085,8 +3089,8 @@ class MasterViewProxy(QWidget):
                 for (key, value) in selectedParameter:
                     params[key] = value
                 if params:
-                    dia_params = {'master': ('string', masteruri_from_ros())}
-                    dia = ParameterDialog(dia_store_geometry="transfer_param_dialog")
+                    dia_params = {'master': {':value': masteruri_from_ros()}}
+                    dia = ParameterDialog(dia_params, store_geometry="transfer_param_dialog")
                     dia.setFilterVisible(False)
                     dia.setWindowTitle('Copy parameter')
                     dia.setFocusField('master')

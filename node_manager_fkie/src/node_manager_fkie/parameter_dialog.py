@@ -61,6 +61,9 @@ def str2bool(val):
 
 
 class MyComboBox(QComboBox):
+    '''
+    Supports the remove of items by pressing Shift+Delete.
+    '''
 
     remove_item_signal = Signal(str)
 
@@ -93,12 +96,12 @@ class ParameterDescription(object):
     def __init__(self, name, msg_type, value=None, widget=None):
         self._name = str(name)
         self._type = msg_type
-        if isinstance(self._type, dict):
-            self._type = 'dict'
-        elif isinstance(self._type, list):
-            self._type = 'list'
-        self._value = value
-        self._value_org = value
+        self._value = None
+        self._value_org = None
+        self.read_only = False
+        self.hint = ''
+        self._attributes = {}
+        self._read_value(value)
         self._widget = widget
         try:
             self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
@@ -107,8 +110,34 @@ class ParameterDescription(object):
         if msg_type == 'binary':
             self._base_type = msg_type
 
+    def _read_value(self, value):
+        if isinstance(value, dict):
+            for key, val in value.items():
+                if key.startswith(':'):
+                    if key == ':value':
+                        self._value = val
+                        self._value_org = val
+                    elif key == ':ro':
+                        self.read_only = val
+                    elif key == ':hint':
+                        self.hint = val
+                    #:TODO: add :min, :max attributes
+                    self._attributes[key] = val
+        else:
+            self._value = value
+            self._value_org = value
+
     def __repr__(self):
-        return ''.join([self._name, ' [', self._type, ']'])
+        return "%s [%]" % (self._name, self._type)
+
+    @classmethod
+    def is_primitive_type(cls, value_type):
+        result = value_type in roslib.msgs.PRIMITIVE_TYPES
+        result = result or value_type in ['string', 'int', 'float', 'time', 'duration', 'binary', 'unicode']
+        return result
+
+    def add_attribute(self, key, value):
+        self._attributes[key] = value
 
     def origin_value(self):
         return self._value_org
@@ -142,14 +171,13 @@ class ParameterDescription(object):
 
     def isArrayType(self):
         # handle representation of `rosparam`
-        return self._is_array_type or self._type in ['[]']
+        return self._is_array_type or (self._type in ['[]'])
 
     def arrayLength(self):
         return self._array_length
 
     def isPrimitiveType(self):
-        result = self._base_type in roslib.msgs.PRIMITIVE_TYPES
-        result = result or self._base_type in ['int', 'float', 'time', 'duration', 'binary']
+        result = self.is_primitive_type(self._base_type)
         # if value is a string, the list is represented as a string, see `rosparam`
         result = result or self._type in ['[]']
         return result
@@ -162,6 +190,9 @@ class ParameterDescription(object):
 
     def baseType(self):
         return self._base_type
+
+    def msgType(self):
+        return self._type
 
     def updateValueFromField(self):
         field = self.widget()
@@ -200,7 +231,7 @@ class ParameterDescription(object):
                                 self._value = []
                         except yaml.MarkedYAMLError, e:
                             raise Exception("Field [%s] yaml error: %s" % (self.fullName(), utf8(e)))
-                    if not self.arrayLength() is None and self.arrayLength() != len(self._value):
+                    if self.arrayLength() is not None and self.arrayLength() != len(self._value):
                         raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(self._value)), " != ", str(self.arrayLength())]))
                 else:
                     if 'int' in self.baseType() or 'byte' in self.baseType():
@@ -252,16 +283,17 @@ class ParameterDescription(object):
             raise Exception("Error while set value '%s', for '%s': %s" % (utf8(value), self.fullName(), utf8(e)))
         return self._value
 
-    def value(self):
+    def value(self, with_attributes=False):
         if not self.isPrimitiveType() and not self.widget() is None:
-            return self.widget().value()
+            return self.widget().value(with_attributes)
         elif self.isPrimitiveType():
             self.updateValueFromField()
-#      if self.isTimeType() and self._value == 'now':
-#        # FIX: rostopic does not support 'now' values in sub-headers
-#        t = time.time()
-#        return ({'secs': int(t), 'nsecs': int((t-int(t))*1000000)}, self.changed())
-        return (self._value, self.changed())
+        if with_attributes:
+            result = {}
+            result.update(self._attributes)
+            result[':value'] = self._value
+            return result
+        return self._value
 
     def removeCachedValue(self, value):
         nm.history().removeParamCache(self.fullName(), value)
@@ -296,9 +328,13 @@ class ParameterDescription(object):
                         items.append('now')
                 self._value_org = items[0] if items else ''
                 result.addItems(items)
+                if self.read_only:
+                    result.setEnabled(False)
+                if self.hint:
+                    result.setToolTip(self.hint)
         else:
             if self.isArrayType():
-                result = ArrayBox(self.name(), self._type, parent=parent)
+                result = ArrayBox(self.name(), self._type, dynamic=self.arrayLength() is None, parent=parent)
             else:
                 result = GroupBox(self.name(), self._type, parent=parent)
         return result
@@ -325,7 +361,7 @@ class MainBox(QWidget):
         QWidget.__init__(self, parent)
         self.setObjectName(name)
         self.name = name
-        self.type = param_type
+        self.type_msg = param_type
         self.params = []
         self.collapsed = False
         self.parameter_description = None
@@ -338,7 +374,7 @@ class MainBox(QWidget):
         font.setBold(True)
         self.name_label.setFont(font)
         self.type_label = QLabel(''.join([' (', param_type, ')']))
-
+        self.collapsible = collapsible
         if collapsible:
             self.hide_button = QPushButton('-')
             self.hide_button.setFlat(True)
@@ -378,61 +414,86 @@ class MainBox(QWidget):
         try:
             if isinstance(value, (dict, list)):
                 self._createFieldFromDict(value, clear_origin_value=clear_origin_value)
+        except Exception:
+            import traceback
+            traceback.format_exc()
         finally:
             self.setUpdatesEnabled(True)
 
     def _createFieldFromDict(self, value, layout=None, clear_origin_value=False):
         if layout is None:
             layout = self.param_widget.layout()
-        # sort the items: 1. header, 2. all premitives (sorted), 3. list, dict (sorted)
+        # sort the items: 1. header, 2. all primitives (sorted), 3. list, dict (sorted)
         all_params = []
         primitives = []
         komplex = []
-        for name, (_type, val) in value.items():
+        for name, val in value.items():
+            _type = type(val).__name__
+            if isinstance(val, dict):
+                if ':type' in val:
+                    _type = val[':type']
+                elif ':value' in val:
+                    _type = type(val[':value']).__name__
+            if _type == 'str':
+                _type = 'string'
             if _type in ['std_msgs/Header']:
                 all_params.append((name, _type, val))
-            elif isinstance(val, (dict, list)):
-                komplex.append((name, _type, val))
-            else:
+            elif ParameterDescription.is_primitive_type(_type):
                 primitives.append((name, _type, val))
+            else:
+                komplex.append((name, _type, val))
         all_params.extend(sorted(primitives))
         all_params.extend(sorted(komplex))
 
         # create widgets
         for name, _type, val in all_params:
+            if name.startswith(':'):
+                continue
+            # search for existing field
             field = self.getField(name)
             if field is None:
+                # add parameter object first
                 param_desc = ParameterDescription(name, _type, val)
+                # create widget for parameter
                 field = param_desc.createTypedWidget(self)
                 if clear_origin_value:
                     param_desc.clear_origin_value()
                 param_desc.setWidget(field)
                 self.params.append(param_desc)
                 if isinstance(field, (GroupBox, ArrayBox)):
-                    field.createFieldFromValue(val, clear_origin_value)
+                    field.createFieldFromValue(val[':value'] if ':value' in val else val, clear_origin_value)
                     layout.addRow(field)
                 else:
-                    label_name = name if _type == 'string' else ''.join([name, ' (', _type, ')'])
+                    # we have e simple parameter, create label for it
+                    label_name = name if _type == 'string' else '%s (%s)' % (name, _type)
                     label = QLabel(label_name, self)
-                    label.setObjectName(''.join([name, '_label']))
+                    label.setObjectName('%s_label' % name)
                     label.setBuddy(field)
                     layout.addRow(label, field)
             else:
+                # field exists already -> update groups or arrays
                 if isinstance(field, (GroupBox, ArrayBox)):
-                    field.createFieldFromValue(val, clear_origin_value)
+                    field.createFieldFromValue(val[':value'] if ':value' in val else val, clear_origin_value)
                 else:
-                    raise Exception(''.join(["Parameter with name '", name, "' already exists!"]))
+                    raise Exception("Parameter with name '%s' already exists!" % name)
 
-    def value(self):
+    def value(self, with_attributes=False, only_changed=False):
         result = dict()
         for param in self.params:
             if not param.isBinaryType():
-                result[param.name()] = param.value()
+                if param.isPrimitiveType():
+                    if param.changed() or not only_changed:
+                        val = param.value(with_attributes=with_attributes)
+                        result[param.name()] = val
+                else:
+                    val = param.value(with_attributes=with_attributes)
+                    if val or not only_changed:
+                        result[param.name()] = val
         return result
 
     def set_values(self, values):
         '''
-        Sets the values for existing fields.
+        Sets the values for existing fields. Used e.g. while load parameter from file
         :param values: the dictionary with values to set.
         :type values: dict
         :raise Exception: on errors
@@ -442,7 +503,13 @@ class MainBox(QWidget):
                 value = val
                 _type = 'unknown'
                 if isinstance(val, tuple):
+                    # backward compatibility
                     (_type, value) = val
+                elif isinstance(val, dict):
+                    if ':value' in val:
+                        value = val[':value']
+                    if ':type' in val:
+                        _type = val[':type']
                 field = self.getField(param)
                 if field is not None:
                     if isinstance(field, (GroupBox, ArrayBox)):
@@ -487,8 +554,7 @@ class MainBox(QWidget):
     def filter(self, arg):
         '''
         Hide the parameter input field, which label dosn't contains the C{arg}.
-        @param arg: the filter text
-        @type arg: C{str}
+        :param str arg: the filter text
         '''
         result = False
         for child in self.param_widget.children():
@@ -549,10 +615,17 @@ class ArrayEntry(MainBox):
 #    self.param_widget.layout().addRow(label)
 #    self.setLayout(boxLayout)
 
-    def value(self):
+    def value(self, with_attributes=False, only_changed=False):
+        '''
+        Retruns a dictionary for an entry of an array, e.g. {name: value}.
+        If with_attributes is True it looks like: {name: {':value': value, ':type': type}}
+        :rtype: dict
+        '''
         result = dict()
         for param in self.params:
-            result[param.name()] = param.value()
+            val = param.value(with_attributes)
+            if val or not only_changed:
+                result[param.name()] = val
         return result
 
 
@@ -561,8 +634,9 @@ class ArrayBox(MainBox):
     Groups the parameter of a list.
     '''
 
-    def __init__(self, name, param_type, parent=None):
+    def __init__(self, name, param_type, dynamic, parent=None):
         MainBox.__init__(self, name, param_type, True, parent)
+        self._is_dynamic = dynamic
         self._dynamic_value = None
         self._dynamic_widget = None
         self._dynamic_items_count = 0
@@ -584,16 +658,16 @@ class ArrayBox(MainBox):
         self.setUpdatesEnabled(False)
         try:
             if self._dynamic_value is not None:
-                for v in self._dynamic_value:
-                    if isinstance(v, dict):
-                        entry_frame = ArrayEntry(self._dynamic_items_count, self.type)
-                        self.param_widget.layout().addRow(entry_frame)
-                        entry_frame._createFieldFromDict(v)
-                        self._dynamic_items_count += 1
-                        self.count_label.setText(utf8(self._dynamic_items_count))
-                        break
+                self._create_dynamic_frame(self._dynamic_value)
         finally:
             self.setUpdatesEnabled(True)
+
+    def _create_dynamic_frame(self, value):
+        entry_frame = ArrayEntry(self._dynamic_items_count, self.type_msg)
+        self.param_widget.layout().addRow(entry_frame)
+        entry_frame._createFieldFromDict(value)
+        self._dynamic_items_count += 1
+        self.count_label.setText(utf8(self._dynamic_items_count))
 
     def _on_rem_dynamic_entry(self):
         if self._dynamic_items_count > 0:
@@ -621,22 +695,31 @@ class ArrayBox(MainBox):
     def createFieldFromValue(self, value, clear_origin_value=False):
         self.setUpdatesEnabled(False)
         try:
-            if isinstance(value, list):
+            if self._is_dynamic:
                 self.addDynamicBox()
                 self._dynamic_value = value
                 self.set_values(value)
         finally:
             self.setUpdatesEnabled(True)
 
-    def value(self):
+    def value(self, with_attributes=False, only_changed=False):
         '''
         Goes through the list and creates dictionary with values of each element.
+        Returns a list with dictionaries, e.g. [{name: value}, {name: value}].
+        If with_attributes is True the result is a dictionary, e.g. {':type': type[], ':value': [{name: value}, {name: value}]}
+        :rtype: list or dict, if with_attributes==True
         '''
-        result = list()
+        result_list = list()
         for i in range(self.param_widget.layout().rowCount()):
             item = self.param_widget.layout().itemAt(i, QFormLayout.SpanningRole)
             if item and isinstance(item.widget(), ArrayEntry):
-                result.append(item.widget().value())
+                value = item.widget().value(with_attributes=with_attributes, only_changed=only_changed)
+                result_list.append(value)
+        result = result_list
+        if with_attributes:
+            result = {}
+            result[':type'] = self.type_msg
+            result[':value'] = result_list
         return result
 
     def set_values(self, values):
@@ -685,10 +768,22 @@ class ParameterDialog(QDialog):
     def __init__(self, params=dict(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, sidebar_var='', parent=None, store_geometry=''):
         '''
         Creates an input dialog.
-        @param params: a dictionary with parameter names and (type, values).
-        The C{value}, can be a primitive value, a list with values or parameter
-        dictionary to create groups. In this case the type is the name of the group.
-        @type params: C{dict(str:(str, {value, [..], dict()}))}
+        :param dict params: a (recursive) dictionary with parameter names and their values.
+        A value can be of primitive type (int, bool, string), a list or dictionary. If it is
+        of list type, the list should contains dictionaries with parameter and values.
+        If value is of dictionary type it is a recursive include or value with attributes.
+        If it is a recursive include a group will be created. The key is the name of the group.
+        If it is a value with attributes it should contains at least a ':value' attribute.
+        All attributes begin with ':'. Other key attributes:
+        -':type': type, overwrites the autodetection
+        -':ro': read only
+        -':hint': description of the parameter
+        -':default': default value
+        -':min': minimum value
+        -':max': maximum value
+        -':alt': a list of alternative values
+        :param str sidebar_var: the name of the key in first level of params. Creates a sidebar if
+        it is not empty. Cached and alternative values are used to fill the sidebar.
         '''
         QDialog.__init__(self, parent=parent)
         self.setObjectName('ParameterDialog - %s' % utf8(params))
@@ -717,7 +812,7 @@ class ParameterDialog(QDialog):
         self.scrollArea = scrollArea = ScrollArea(self)
         scrollArea.setObjectName("scrollArea")
         scrollArea.setWidgetResizable(True)
-        self.content = MainBox('/', 'str', False, self)
+        self.content = MainBox('/', 'string', False, self)
         scrollArea.setWidget(self.content)
         self.verticalLayout.addWidget(scrollArea)
 
@@ -840,8 +935,7 @@ class ParameterDialog(QDialog):
     def setText(self, text):
         '''
         Adds a label to the dialog's layout and shows the given text.
-        @param text: the text to add to the dialog
-        @type text: C{str}
+        :param str text: the text to add to the dialog
         '''
         self.info_field.setText(text)
         self.setInfoActive(True)
@@ -850,7 +944,7 @@ class ParameterDialog(QDialog):
         '''
         Activates or deactivates the info field of this dialog. If info field is
         activated, the filter frame and the input field are deactivated.
-        @type val: C{bool}
+        :param bool val: state
         '''
         if val and self.info_field.isHidden():
             self.filter_frame.setVisible(False & self.filter_visible)
@@ -868,12 +962,12 @@ class ParameterDialog(QDialog):
         if field is not None:
             field.setFocus()
 
-    def getKeywords(self, only_changed=False):
+    def getKeywords(self, only_changed=False, with_attributes=False):
         '''
-        @param only_changed: requests only changed parameter
-        @type only_changed: bool (Default: False)
-        @returns: a directory with parameter and value for all entered fields.
-        @rtype: C{dict(str(param) : str(value))}
+        :param bool only_changed: returns changed parameter only (Defaul: False)
+        :param bool with_attributes: returns parameter attributes (e.g. :ro, :hint,...) (Defaul: False)
+        :returns  a directory with parameter and value for entered fields.
+        :rtype: dict
         '''
         # get the results of sidebar
         sidebar_list = []
@@ -882,16 +976,23 @@ class ParameterDialog(QDialog):
             w = self.sidebar_frame.layout().itemAt(j).widget()
             if isinstance(w, QCheckBox):
                 if w.checkState() == Qt.Checked:
-                    sidebar_list.append((w.objectName(), True))
-        result_value = self.content.value()
+                    sidebar_list.append(w.objectName())
+        result_value = self.content.value(with_attributes, only_changed)
         # add the sidebar results
         if sidebar_name in result_value:
             # skip the default value, if elements are selected in the side_bar
-            if len(sidebar_list) == 0 or self.sidebar_default_val != result_value[sidebar_name][0]:
-                sidebar_list.append(result_value[sidebar_name])
-            result_value[sidebar_name] = ([v for v, _ in set(sidebar_list)], True)  # _:=changed
-        result = self._remove_change_state(result_value, only_changed)
-        return result
+            sidebar_value = ''
+            if with_attributes:
+                sidebar_value = result_value[sidebar_name][':value']
+            else:
+                sidebar_value = result_value[sidebar_name]
+            if len(sidebar_list) == 0 or self.sidebar_default_val != sidebar_value:
+                sidebar_list.append(sidebar_value)
+            if with_attributes:
+                result_value[sidebar_name][':value'] = [v for v in set(sidebar_list)]
+            else:
+                result_value[sidebar_name] = [v for v in set(sidebar_list)]
+        return result_value
 
     def keywords2params(self, keywords):
         '''
@@ -909,26 +1010,19 @@ class ParameterDialog(QDialog):
                 result[param] = value
         return result
 
-    def _remove_change_state(self, params, only_changed):
-        result = dict()
-        for param, value in params.items():
-            if isinstance(value, dict):
-                r = self._remove_change_state(value, only_changed)
-                if r:
-                    result[param] = r
-            elif isinstance(value, list):
-                new_val = []
-                for val in value:
-                    r = self._remove_change_state(val, only_changed)
-                    if r:
-                        new_val.append(r)
-                if new_val:
-                    result[param] = new_val
-            elif isinstance(value, tuple):
-                if value[1] or not only_changed:
-                    result[param] = value[0]
-            else:
-                print "unknown parameter: should not happens", param, value
+    @classmethod
+    def remove_attributes(cls, keywords):
+        # it it is a value dictionary, we need only :value attribute
+        if ':value' in keywords:
+            return keywords[':value']
+        # remove all attributes which starts with ':'
+        result = {}
+        for key, val in keywords.items():
+            clean_val = val
+            if isinstance(val, dict):
+                clean_val = cls.remove_attributes(val)
+            if not key.startswith(':'):
+                result[key] = clean_val
         return result
 
     def _save_parameter(self):
@@ -941,13 +1035,13 @@ class ParameterDialog(QDialog):
             if fileName:
                 self.__current_path = os.path.dirname(fileName)
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
-                content = self._remove_change_state(self.content.value(), False)
+                content = self.content.value(with_attributes=True)
                 text = yaml.dump(content, default_flow_style=False)
                 with open(fileName, 'w+') as f:
                     f.write(text)
         except Exception as e:
             import traceback
-            print traceback.format_exc(1)
+            print traceback.format_exc(3)
             MessageBox.warning(self, "Save parameter Error",
                                'Error while save parameter',
                                utf8(e))
@@ -966,7 +1060,7 @@ class ParameterDialog(QDialog):
                     self.content.set_values(yaml.load(f.read()))
         except Exception as e:
             import traceback
-            print traceback.format_exc(1)
+            print traceback.format_exc()
             MessageBox.warning(self, "Load parameter Error",
                                'Error while load parameter',
                                utf8(e))
@@ -1017,10 +1111,8 @@ class MasterParameterDialog(ParameterDialog):
 
     def __init__(self, masteruri, ns='/', parent=None, store_geometry=''):
         '''
-        @param masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
-        @type masteruri: C{str}
-        @param ns: namespace of the parameter retrieved from the ROS parameter server.
-        @type ns: C{str}
+        :param str masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
+        :param str ns: namespace of the parameter retrieved from the ROS parameter server.
         '''
         ParameterDialog.__init__(self, dict(), parent=parent, store_geometry=store_geometry)
         self.masteruri = masteruri
@@ -1076,10 +1168,13 @@ class MasterParameterDialog(ParameterDialog):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def _on_add_parameter(self):
-        params_arg = {'namespace': ('string', self.ns), 'name': ('string', ''), 'type': ('string', ['string', 'int', 'float', 'bool', 'list']), 'value': ('string', '')}
-        dia = ParameterDialog(params_arg)
+        params_arg = {'namespace': {':type': 'string', ':value': self.ns},
+                      'name': {':type': 'string', ':value': ''},
+                      'type': {':type': 'string', ':value': ['string', 'int', 'float', 'bool', 'list']},
+                      'value': {':type': 'string', ':value': ''}
+                      }
+        dia = ParameterDialog(params_arg, store_geometry='add_parameter_in_master_dialog')
         dia.setWindowTitle('Add new parameter')
-        dia.resize(360, 150)
         dia.setFilterVisible(False)
         if dia.exec_():
             try:
@@ -1114,14 +1209,10 @@ class MasterParameterDialog(ParameterDialog):
 
     def _on_param_list(self, masteruri, code, msg, params):
         '''
-        @param masteruri: The URI of the ROS parameter server
-        @type masteruri: C{str}
-        @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
-        @type code: C{int}
-        @param msg: The message of the result.
-        @type msg: C{str}
-        @param params: The list the parameter names.
-        @type params: C{[str]}
+        :param str masteruri: The URI of the ROS parameter server
+        :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
+        :param str msg: The message of the result.
+        :param [str] params: The list the parameter names.
         '''
         if code == 1:
             params.sort()
@@ -1131,14 +1222,11 @@ class MasterParameterDialog(ParameterDialog):
 
     def _on_param_values(self, masteruri, code, msg, params, new_param=False):
         '''
-        @param masteruri: The URI of the ROS parameter server
-        @type masteruri: C{str}
-        @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
-        @type code: C{int}
-        @param msg: The message of the result.
-        @type msg: C{str}
-        @param params: The dictionary the parameter names and request result.
-        @type params: C{dict(paramName : (code, statusMessage, parameterValue))}
+        :param str masteruri: The URI of the ROS parameter server
+        :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
+        :param str msg: The message of the result.
+        :param params: The dictionary the parameter names and request result.
+        :type params: dict(paramName : (code, statusMessage, parameterValue))
         '''
         if code == 1:
             dia_params = dict()
@@ -1164,6 +1252,7 @@ class MasterParameterDialog(ParameterDialog):
                 elif isinstance(val, Binary):
                     type_str = 'binary'
                 param = p.replace(self.ns, '')
+                param = param.strip(roslib.names.SEP)
                 names_sep = param.split(roslib.names.SEP)
                 param_name = names_sep.pop()
                 if names_sep:
@@ -1174,11 +1263,11 @@ class MasterParameterDialog(ParameterDialog):
                             group = group[group_name][1]
                         else:
                             tmp_dict = dict()
-                            group[group_name] = ('list', tmp_dict)
+                            group[group_name] = {':type': 'list', ':value': tmp_dict}
                             group = tmp_dict
-                    group[param_name] = (type_str, [value])
+                    group[param_name] = {':type': type_str, ':value': [value]}
                 else:
-                    dia_params[param_name] = (type_str, [value])
+                    dia_params[param_name] = {':type': type_str, ':value': [value]}
             try:
                 self.content.createFieldFromValue(dia_params, clear_origin_value=new_param)
                 self.setInfoActive(False)
@@ -1191,14 +1280,11 @@ class MasterParameterDialog(ParameterDialog):
 
     def _on_delivered_values(self, masteruri, code, msg, params):
         '''
-        @param masteruri: The URI of the ROS parameter server
-        @type masteruri: C{str}
-        @param code: The return code of the request. If not 1, the message is set and the list can be ignored.
-        @type code: C{int}
-        @param msg: The message of the result.
-        @type msg: C{str}
-        @param params: The dictionary the parameter names and request result.
-        @type params: C{dict(paramName : (code, statusMessage, parameterValue))}
+        :param str masteruri: The URI of the ROS parameter server
+        :param int code: The return code of the request. If not 1, the message is set and the list can be ignored.
+        :param str msg: The message of the result.
+        :param params: The dictionary the parameter names and request result.
+        :type params: dict(paramName : (code, statusMessage, parameterValue))
         '''
         self.is_delivered = True
         errmsg = ''
@@ -1210,7 +1296,7 @@ class MasterParameterDialog(ParameterDialog):
             errmsg = msg if msg else 'Unknown error on set parameter'
         if errmsg:
             import traceback
-            print traceback.format_exc(1)
+            print traceback.format_exc(2)
             MessageBox.warning(self, self.tr("Warning"), utf8(errmsg))
             self.is_delivered = False
             self.is_send = False
@@ -1235,10 +1321,10 @@ class ServiceDialog(ParameterDialog):
         self.service = service
         slots = service.get_service_class(True)._request_class.__slots__
         types = service.get_service_class()._request_class._slot_types
-        ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QDialogButtonBox.Close, parent=parent)
-        self.setWindowTitle(''.join(['Call ', service.name]))
+        ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QDialogButtonBox.Close, parent=parent, store_geometry='service_call_dialog')
+        self.setWindowTitle('Call %s' % service.name)
         self.service_resp_signal.connect(self._handle_resp)
-        self.resize(450, 300)
+        # self.resize(450, 300)
         if not slots:
             self.setText(''.join(['Wait for response ...']))
             thread = threading.Thread(target=self._callService)
@@ -1284,12 +1370,12 @@ class ServiceDialog(ParameterDialog):
     def _params_from_slots(cls, slots, types, values={}):
         result = dict()
         for slot, msg_type in zip(slots, types):
-            base_type, is_array, _ = roslib.msgs.parse_type(msg_type)  # _:=array_length
+            base_type, is_array, _array_length = roslib.msgs.parse_type(msg_type)
             if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
                 default_value = 'now' if base_type in ['time', 'duration'] else ''
                 if slot in values and values[slot]:
                     default_value = values[slot]
-                result[slot] = (msg_type, default_value)
+                result[slot] = {':type': msg_type, ':value': default_value}
             else:
                 try:
                     list_msg_class = roslib.message.get_message_class(base_type)
@@ -1298,13 +1384,17 @@ class ServiceDialog(ParameterDialog):
                         for slot_value in values[slot]:
                             subvalue = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, slot_value if slot in values and slot_value else {})
                             subresult.append(subvalue)
-                        result[slot] = (msg_type, subresult)
+                        result[slot] = {':value': subresult, ':type': msg_type}
                     else:
                         subresult = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
-                        result[slot] = (msg_type, [subresult] if is_array else subresult)
+                        if is_array:
+                            result[slot] = {':value': subresult, ':type': msg_type}
+                        else:
+                            subresult[':type'] = msg_type
+                            result[slot] = subresult
                 except ValueError, e:
                     import traceback
-                    print traceback.format_exc(1)
+                    print traceback.format_exc()
                     rospy.logwarn("Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result
 

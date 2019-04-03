@@ -940,23 +940,21 @@ class MainWindow(QMainWindow):
         # get the history list
         user_list = [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]
         user_list.insert(0, 'last used')
-        params = {'Host': ('string', 'localhost'),
-                  'Show master discovery log': ('bool', True),
-                  'Show master sync log': ('bool', False),
-                  'Show daemon log': ('bool', False),
-                  'Username': ('string', user_list),
-                  'Only screen log': ('bool', True),
+        params = {'Host': {':type': 'string', ':value': 'localhost'},
+                  'Show master discovery log': {':type': 'bool', ':value': True},
+                  'Show master sync log': {':type': 'bool', ':value': False},
+                  'Show daemon log': {':type': 'bool', ':value': False},
+                  'Username': {':type': 'string', ':value': user_list},
+                  'Only screen log': {':type': 'bool', ':value': True, ':hint': 'There are two logs: ROS-Log and SCREEN-Log'},
                   # 'Optional Parameter': ('list', params_optional)
                   }
-        print "YAML", yaml.dump(utf8(params))
-        print "LOADED", yaml.load(yaml.dump(utf8(params)))
         dia = ParameterDialog(params, sidebar_var='Host', store_geometry="master_log_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Show log')
         dia.setFocusField('Host')
         if dia.exec_():
             try:
-                params = dia.getKeywords()
+                params = dia.getKeywords(only_changed=False, with_attributes=False)
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 log_master_discovery = params['Show master discovery log']
                 log_master_sync = params['Show master sync log']
@@ -1472,18 +1470,18 @@ class MainWindow(QMainWindow):
         # get the history list
         user_list = [self.userComboBox.itemText(i) for i in reversed(range(self.userComboBox.count()))]
         user_list.insert(0, 'last used')
-        params_optional = {'Discovery type': ('string', ['master_discovery', 'zeroconf']),
-                           'ROS Master Name': ('string', 'autodetect'),
-                           'ROS Master URI': ('string', 'ROS_MASTER_URI'),
-                           'Robot hosts': ('string', ''),
-                           'Username': ('string', user_list),
-                           'MCast Group': ('string', '226.0.0.0'),
-                           'Heartbeat [Hz]': ('float', 0.5)
+        params_optional = {'Discovery type': {':type': 'string', ':value': ['master_discovery', 'zeroconf']},
+                           'ROS Master Name': {':type': 'string', ':value': 'autodetect'},
+                           'ROS Master URI': {':type': 'string', ':value': 'ROS_MASTER_URI'},
+                           'Robot hosts': {':type': 'string', ':value': ''},
+                           'Username': {':type': 'string', ':value': user_list},
+                           'MCast Group': {':type': 'string', ':value': '226.0.0.0'},
+                           'Heartbeat [Hz]': {':type': 'float', ':value': 0.5}
                            }
-        params = {'Host': ('string', 'localhost'),
-                  'Network(0..99)': ('int', '0'),
-                  'Start sync': ('bool', nm.settings().start_sync_with_discovery),
-                  'Optional Parameter': ('list', params_optional)
+        params = {'Host': {':type': 'string', ':value': 'localhost'},
+                  'Network(0..99)': {':type': 'int', ':value': '0'},
+                  'Start sync': {':type': 'bool', ':value': nm.settings().start_sync_with_discovery},
+                  'Optional Parameter': params_optional
                   }
         dia = ParameterDialog(params, sidebar_var='Host', store_geometry="start_robot_dialog")
         dia.setFilterVisible(False)
@@ -1491,7 +1489,7 @@ class MainWindow(QMainWindow):
         dia.setFocusField('Host')
         if dia.exec_():
             try:
-                params = dia.getKeywords()
+                params = dia.getKeywords(only_changed=False)
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 port = params['Network(0..99)']
                 start_sync = params['Start sync']
@@ -1696,8 +1694,8 @@ class MainWindow(QMainWindow):
             nmd_url = nmdurl.nmduri()
             if self.currentMaster is not None:
                 nmd_url = get_hostname(self.currentMaster.masteruri)
-            params = {'master': ('string', self.currentMaster.masteruri),
-                      'recursive': ('bool', 'False')
+            params = {'master': {':type': 'string', ':value': self.currentMaster.masteruri},
+                      'recursive': {':type': 'bool', ':value': False}
                       }
             dia = ParameterDialog(params, store_geometry="launch_transfer_dialog")
             dia.setFilterVisible(False)
@@ -2078,41 +2076,15 @@ class MainWindow(QMainWindow):
         nmd_uri = nmdurl.nmduri(masteruri)
         nm.nmd().get_config_threaded(nmd_uri)
 
-    def _convert_nmd_cfg(self, data):
-        result = {}
-        for key, value in data.items():
-            if isinstance(value, dict):
-                if ':value' in value:
-                    result[key] = (self._strtype(value[':value']), value[':value'])
-                else:
-                    val = self._convert_nmd_cfg(value)
-                    if val:
-                        result[key] = ('list', val)
-            else:
-                result[key] = (self._strtype(value), value)
-        return result
-
-    def _strtype(self, value):
-        if isinstance(value, str):
-            return 'string'
-        if isinstance(value, bool):
-            return 'bool'
-        if isinstance(value, int):
-            return 'int'
-        if isinstance(value, float):
-            return 'float'
-        return 'string'
-
     def _nmd_yaml_cfg(self, data, nmdurl):
         params = yaml.load(data)
-        dia = ParameterDialog(self._convert_nmd_cfg(params), store_geometry="nmd_cfg_dialog")
+        dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Daemon Configuration')
         dia.setFocusField('load_warn_level')
         if dia.exec_():
             try:
-                params = dia.getKeywords()
-                # we have to convert params back, but daemon does understand it without convert
+                params = dia.getKeywords(with_attributes=True)
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: set configuration for daemon' % nmdurl,
                                                nm.nmd().set_config,
@@ -2123,6 +2095,8 @@ class MainWindow(QMainWindow):
                                                (nmdurl,))
                 self._progress_queue.start()
             except Exception as err:
+                import traceback
+                print traceback.format_exc()
                 MessageBox.warning(self, "Daemon configuration error",
                                    'Error while parse parameter',
                                    '%s' % utf8(err))

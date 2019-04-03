@@ -512,7 +512,7 @@ class NmdClient(QObject):
                 # request the args: the dialog must run in the main thread of Qt
                 params = {}
                 for name, value in psr.choices.items():
-                    params[name] = ('string', value)
+                    params[name] = {':value': value, ':type': 'string'}
                 raise LaunchArgsSelectionRequest(grpc_path, params, 'Needs input for args')
             except exceptions.AlreadyOpenException as aoe:
                 rospy.logwarn(aoe)
