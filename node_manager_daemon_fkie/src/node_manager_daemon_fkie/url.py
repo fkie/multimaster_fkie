@@ -146,8 +146,8 @@ def split(grpc_path, with_scheme=False):
 
     :param str grpc_path: gRPC-URI with file path.
     :param bool with_scheme: if True the gRPC-URI contains also the `grpc://` scheme.
-    :return: gRPC_URI without file path
-    :rtype: str
+    :return: a tuple of gRPC_URI without file path and path
+    :rtype: (str, str)
     :raise ValueError: if grpc_path is empty or does not start with `grpc://`
     '''
     url = grpc_path

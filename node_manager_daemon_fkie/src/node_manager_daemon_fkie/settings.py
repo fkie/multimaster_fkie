@@ -84,9 +84,7 @@ class Settings:
                 'Disk':
                 {
                     'usage_warn_level': {':value': 100, ':default': 100.0, ':hint': "values in MB"},
-                    'path': LOG_PATH,
-                    'paths': {
-                    }
+                    'path': LOG_PATH
                 },
                 'Memory':
                 {
@@ -100,6 +98,7 @@ class Settings:
                 }
             }
         }
+        # :TODO: 'paths': {':type': 'path[]', ':value': {'path': {':type': 'string', ':value': ''}}}
         return result
 
     def param(self, param_name, default_value=None, extract_value=True):
