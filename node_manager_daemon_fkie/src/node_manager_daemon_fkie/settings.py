@@ -79,20 +79,20 @@ class Settings:
             {
                 'CPU':
                 {
-                    'load_warn_level': {':value': 0.9, ':hint': 'warn if more than one CPU core exceeds this value'},
+                    'load_warn_level': {':value': 0.9, ':hint': 'warn if more than one CPU core exceeds this percentage'},
                 },
                 'Disk':
                 {
-                    'usage_warn_level': {':value': 100, ':default': 100.0, ':hint': "values in MB"},
+                    'usage_warn_level': {':value': 0.95, ':hint': "warn if used space exceeds this percentage"},
                     'path': LOG_PATH
                 },
                 'Memory':
                 {
-                    'usage_warn_level': {':value': 100, ':default': 100.0, ':hint': "values in MB"},
+                    'usage_warn_level': {':value': 0.95, ':hint': "warn if used memory exceeds this percentage"},
                 },
                 'Network':
                 {
-                    'load_warn_level': {':value': 0.9, ':default': 0.9, ':hint': "Percent of the maximum speed"},
+                    'load_warn_level': {':value': 0.9, ':default': 0.9, ':hint': "warn if load exceeds the percentage of the maximum speed"},
                     'speed': {':value': 6, ':default': 6, ':hint': "Maximal speed in MBit"},
                     'interface': ''
                 }

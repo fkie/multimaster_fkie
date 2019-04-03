@@ -40,7 +40,7 @@ from .sensor_interface import SensorInterface
 
 class MemUsage(SensorInterface):
 
-    def __init__(self, hostname='', interval=5.0, warn_level=100.0):
+    def __init__(self, hostname='', interval=5.0, warn_level=0.95):
         self._mem_usage_warn = warn_level
         SensorInterface.__init__(self, hostname, sensorname='Memory Usage', interval=interval)
 
@@ -51,13 +51,14 @@ class MemUsage(SensorInterface):
         mem = psutil.virtual_memory()
         diag_level = 0
         diag_vals = []
-        diag_msg = 'warn at <%s' % sizeof_fmt(self._mem_usage_warn * 1024 * 1024)
-        warn_level = self._mem_usage_warn
+        warn_on_mem = mem.total * (1.0 - self._mem_usage_warn)
+        diag_msg = 'warn at >%s%% (<%s)' % (self._mem_usage_warn * 100., sizeof_fmt(warn_on_mem))
+        warn_level = warn_on_mem
         if diag_level == DiagnosticStatus.WARN:
-            warn_level = warn_level * 0.9
-        if mem.total - mem.used <= 1024 * 1024 * warn_level:
+            warn_level = warn_level * 1.1
+        if mem.total - mem.used <= warn_on_mem:
             diag_level = DiagnosticStatus.WARN
-            diag_msg = 'Memory available %s (warn <%s)' % (sizeof_fmt(mem.total - mem.used), sizeof_fmt(self._mem_usage_warn * 1024 * 1024))
+            diag_msg = 'Memory available %s (warn <%s)' % (sizeof_fmt(mem.total - mem.used), sizeof_fmt(warn_on_mem))
         # print "MEM available ", mem.available, diag_level
         diag_vals.append(KeyValue(key='Free', value=mem.total - mem.used))
         diag_vals.append(KeyValue(key='Free [%]', value='%.2f' % (float(mem.total - mem.used) * 100.0 / float(mem.total))))
