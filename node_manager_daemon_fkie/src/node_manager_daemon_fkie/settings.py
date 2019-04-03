@@ -125,9 +125,8 @@ class Settings:
                     result = value
             else:
                 result = value
-        except Exception as _exc:
-            pass
-            # print exc
+        except Exception as exc:
+            rospy.logdebug("Cant't get parameter '%s', full parameter path: '%s'" % (utf8(exc), param_name))
         return result
 
     def set_param(self, param_name, value, tag=':value'):
@@ -155,8 +154,8 @@ class Settings:
                 # create new parameter entry
                 cfg_item[pname] = {val_tag: value}
             self.save()
-        except Exception as _exc:
-            pass
+        except Exception as exc:
+            rospy.logdebug("Cant't set parameter '%s', full parameter path: '%s'" % (utf8(exc), param_name))
 
     def reload(self):
         '''
