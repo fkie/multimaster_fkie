@@ -335,8 +335,9 @@ class ParameterDescription(object):
                 result.addItems(items)
                 if self.read_only:
                     result.setEnabled(False)
-                if self.hint:
-                    result.setToolTip(self.hint)
+            if self.hint:
+                result.setToolTip(self.hint)
+                result.setWhatsThis(self.hint)
         else:
             if self.isArrayType():
                 result = ArrayBox(self.name(), self._type, dynamic=self.arrayLength() is None, parent=parent)
@@ -473,6 +474,11 @@ class MainBox(QWidget):
                     label_name = name if _type == 'string' else '%s (%s)' % (name, _type)
                     label = QLabel(label_name, self)
                     label.setObjectName('%s_label' % name)
+                    hint = field.toolTip()
+                    if hint:
+                        label.setToolTip(hint)
+                        # whatsThis destroys the layout
+                        # label.whatsThis(hint)
                     label.setBuddy(field)
                     layout.addRow(label, field)
             else:

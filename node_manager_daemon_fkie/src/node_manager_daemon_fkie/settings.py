@@ -72,14 +72,14 @@ class Settings:
                 'version': {':value': self.version, ':ro': True},
                 'file': {':value': self.filename, ':ro': True},
                 'grpc_timeout': {':value': 15.0, ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
-                'only_diagnostics_agg': False,
-                'reset': False,
+                'only_diagnostics_agg': {':value': False, ':hint': "subscribes only to '/diagnostics_agg' topic"},
+                'reset': {':value': False, ':hint': 'if this flag is set to True the configuration will be reseted'},
             },
             'sysmon':
             {
                 'CPU':
                 {
-                    'load_warn_level': 0.9
+                    'load_warn_level': {':value': 0.9, ':hint': 'warn if more than one CPU core exceeds this value'},
                 },
                 'Disk':
                 {
