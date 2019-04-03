@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtGui import QColor
 import os
 import roslib
@@ -112,8 +114,8 @@ class Settings(object):
             PACKAGE_DIR = "%s/../../share/node_manager_fkie" % PACKAGE_DIR
         print("PACKAGE_DIR: %s" % PACKAGE_DIR)
     ROBOTS_DIR = os.path.join(PACKAGE_DIR, 'images')
-    CFG_PATH = os.path.join('.node_manager', os.sep)
-    ''':ivar CFG_PATH: configuration path to store the history.'''
+    CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
+    ''':ivar CFG_PATH: configuration path to store the settings and history'''
     HELP_FILE = os.path.join(PACKAGE_DIR, 'README.rst')
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
     LOG_PATH = screen.LOG_PATH
@@ -172,7 +174,8 @@ class Settings(object):
         self._noclose_str = '-hold'
         self._terminal_title = '--title'
         self._masteruri = masteruri_from_ros()
-        self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
+        # self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
+        self.CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
         # loads the current configuration path. If the path was changed, a redirection
         # file exists with new configuration folder
         if not os.path.isdir(self.CFG_PATH):
@@ -181,6 +184,18 @@ class Settings(object):
         else:
             settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
             self._cfg_path = settings.value('cfg_path', self.CFG_PATH)
+        # move all stuff from old location to new
+        try:
+            import shutil
+            old_cfg_path = os.path.join(get_ros_home(), 'node_manager')
+            if os.path.exists(old_cfg_path):
+                print("move configuration to new destination: %s" % self.CFG_PATH)
+                for filename in os.listdir(old_cfg_path):
+                    shutil.move(os.path.join(old_cfg_path, filename), os.path.join(self.CFG_PATH, filename))
+                shutil.rmtree(old_cfg_path)
+        except Exception:
+            pass
+        print("Configuration path: %s" % self.CFG_PATH)
         # after the settings path was loaded, load other settings
         self._robots_path = self.ROBOTS_DIR
         settings = self.qsettings(self.CFG_FILE)
