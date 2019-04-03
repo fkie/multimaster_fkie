@@ -174,7 +174,7 @@ class TextEdit(QTextEdit):
     def toprettyxml(self):
         try:
             import xmlformatter
-            formatter = xmlformatter.Formatter(indent="4", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
+            formatter = xmlformatter.Formatter(indent="2", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
             xml_pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
             cursor = self.textCursor()
             if not cursor.isNull():
