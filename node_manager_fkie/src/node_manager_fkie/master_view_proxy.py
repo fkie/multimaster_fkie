@@ -2140,6 +2140,9 @@ class MasterViewProxy(QWidget):
                 p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
                 # 'print "STOP stop finished", node
                 if node.kill_on_stop and node.pid:
+                    # wait kill_on_stop is an integer
+                    if isinstance(node.kill_on_stop, (int, float)):
+                        time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().kill_process(node.pid, nmdurl.nmduri(node.masteruri))
             except Exception, e:
                 rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
