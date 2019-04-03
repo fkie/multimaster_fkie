@@ -125,8 +125,9 @@ class Settings:
                     result = value
             else:
                 result = value
-        except Exception as exc:
-            print exc
+        except Exception as _exc:
+            pass
+            # print exc
         return result
 
     def set_param(self, param_name, value, tag=':value'):
@@ -154,8 +155,8 @@ class Settings:
                 # create new parameter entry
                 cfg_item[pname] = {val_tag: value}
             self.save()
-        except Exception as exc:
-            print exc
+        except Exception as _exc:
+            pass
 
     def reload(self):
         '''
