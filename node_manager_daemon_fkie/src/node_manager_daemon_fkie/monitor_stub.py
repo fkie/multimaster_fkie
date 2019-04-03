@@ -78,3 +78,11 @@ class MonitorStub(object):
         request = mmsg.Empty()
         response = self.mm_stub.GetWarnings(request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
+
+    def kill_process(self, pid):
+        '''
+        '''
+        request = mmsg.Pid()
+        request.pid = pid
+        self.mm_stub.KillProcess(request, timeout=settings.GRPC_TIMEOUT)
+

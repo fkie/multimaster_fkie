@@ -138,6 +138,10 @@ def get_active_screens(nodename=''):
     return result
 
 
+def wipe():
+    _ps = SupervisedPopen([SCREEN, '-wipe'])
+
+
 def test_screen():
     '''
     Tests for whether the SCREEN binary exists and raise an exception if not.

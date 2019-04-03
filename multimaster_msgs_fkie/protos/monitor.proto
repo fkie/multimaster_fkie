@@ -42,6 +42,7 @@ service MonitorService {
 	rpc GetDiagnostics (Filter) returns (DiagnosticArray);
 	// returns only warnings and errors
 	rpc GetWarnings (Empty) returns (DiagnosticArray);
+	rpc KillProcess (Pid) returns (Empty);
 }
 
 message Empty {
@@ -94,4 +95,11 @@ message DiagnosticStatus {
 message KeyValue {
 	string key = 1;
 	string value = 2;
+}
+
+/*
+ * :param pid: process id
+ */
+message Pid {
+	int32 pid = 1;
 }

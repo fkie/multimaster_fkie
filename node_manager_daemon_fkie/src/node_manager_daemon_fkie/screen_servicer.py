@@ -96,3 +96,8 @@ class ScreenServicer(sgrpc.ScreenServiceServicer):
         reply = smsg.DirSize()
         reply.size = screen.log_dir_size()
         return reply
+
+    def WipeScreens(self, request, context):
+        screen.wipe()
+        reply = smsg.Empty()
+        return reply

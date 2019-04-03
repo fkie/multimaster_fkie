@@ -42,6 +42,7 @@ service ScreenService {
 	rpc RosClean (Empty) returns (Empty);
 	rpc DeleteLog (Nodes) returns (Empty);
 	rpc GetLogDiskSize(Empty) returns (DirSize);
+	rpc WipeScreens(Empty) returns (Empty);
 }
 
 message Empty {

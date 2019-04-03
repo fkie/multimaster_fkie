@@ -30,10 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import rospy
+import signal
 from node_manager_daemon_fkie.monitor import Service, grpc_msg
 import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
-# import multimaster_msgs_fkie.grpc.monitor_pb2 as mmsg
+import multimaster_msgs_fkie.grpc.monitor_pb2 as mmsg
 
 
 class MonitorServicer(mgrpc.MonitorServiceServicer):
@@ -61,3 +63,8 @@ class MonitorServicer(mgrpc.MonitorServiceServicer):
     def GetWarnings(self, request, context):
         rosmsg = self._monitor.get_diagnostics(2, 0)
         return grpc_msg(rosmsg)
+
+    def KillProcess(self, request, context):
+        os.kill(request.pid, signal.SIGKILL)
+        reply = mmsg.Empty()
+        return reply

@@ -98,3 +98,7 @@ class ScreenStub(object):
         request = smsg.Empty()
         response = self.sm_stub.GetLogDiskSize(request, timeout=settings.GRPC_TIMEOUT)
         return response.size
+
+    def wipe_screens(self):
+        request = smsg.Empty()
+        _response = self.sm_stub.WipeScreens(request, timeout=settings.GRPC_TIMEOUT)
