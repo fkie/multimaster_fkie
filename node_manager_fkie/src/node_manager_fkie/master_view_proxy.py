@@ -2137,13 +2137,15 @@ class MasterViewProxy(QWidget):
                 # 'print "STOP create xmlrpc", node
                 p = xmlrpclib.ServerProxy(node.uri)
                 # 'print "STOP send stop", node
-                p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.mastername]))
+                p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
                 # 'print "STOP stop finished", node
+                if node.kill_on_stop and node.pid:
+                    nm.nmd().kill_process(node.pid, nmdurl.nmduri(node.masteruri))
             except Exception, e:
                 rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
                 if utf8(e).find(' 111') == 1:
                     raise DetailedError("Stop error",
-                                        ''.join(['Error while stop node ', node.name]),
+                                        'Error while stop node %s' % node.name,
                                         utf8(e))
             finally:
                 socket.setdefaulttimeout(None)
@@ -2200,10 +2202,16 @@ class MasterViewProxy(QWidget):
             # kill the node
             if pid is not None:
                 try:
-                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   ''.join(['kill ', node.name, '(', utf8(pid), ')']),
-                                                   nm.starter().kill,
-                                                   (self.getHostFromNode(node), pid, False, self.current_user))
+                    if self._has_nmd:
+                        self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                       'kill %s (%s)' % (node.name, utf8(pid)),
+                                                       nm.nmd().kill_process,
+                                                       (pid, self._grpc_from_node(node)))
+                    else:
+                        self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                       'kill %s (%s)' % (node.name, utf8(pid)),
+                                                       nm.starter().kill,
+                                                       (self.getHostFromNode(node), pid, False, self.current_user))
                     self._start_queue(self._progress_queue)
                 except Exception as e:
                     rospy.logwarn("Error while kill the node %s: %s", utf8(node.name), utf8(e))

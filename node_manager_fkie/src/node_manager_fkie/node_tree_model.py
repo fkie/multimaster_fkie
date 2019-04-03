@@ -1170,6 +1170,9 @@ class NodeItem(QStandardItem):
         self.has_screen = True
         self.has_multiple_screens = False
         self._with_namespace = rospy.names.SEP in node_info.name
+        self.kill_on_stop = False
+        self._kill_parameter_handler = ParameterHandler()
+        self._kill_parameter_handler.parameter_values_signal.connect(self._on_kill_param_values)
 
     @property
     def state(self):
@@ -1256,6 +1259,8 @@ class NodeItem(QStandardItem):
 #      self.update_displayed_url()
             if self.parent_item is not None:
                 self.parent_item.updateIcon()
+        if run_changed and self.is_running():
+            self._kill_parameter_handler.requestParameterValues(self.masteruri, [roslib.names.ns_join(self.name, 'kill_on_stop')])
 
     @property
     def uri(self):
@@ -1366,6 +1371,13 @@ class NodeItem(QStandardItem):
             return QIcon(':/icons/state_diag_stale.png')
         else:
             return QIcon(':/icons/state_diag_other.png')
+
+    def _on_kill_param_values(self, masteruri, code, msg, params):
+        if code == 1:
+            # assumption: all parameter are 'kill_on_stop' parameter
+            for _p, (code_n, _msg_n, val) in params.items():
+                if code_n == 1:
+                    self.kill_on_stop = val
 
     def update_dispayed_name(self):
         '''

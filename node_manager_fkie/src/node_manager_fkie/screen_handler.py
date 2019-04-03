@@ -182,14 +182,16 @@ class ScreenHandler(object):
                         pid, _, _ = sname.partition('.')
                         if pid:
                             try:
-                                nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
+                                nm.nmd().kill_process(int(pid), grpc_url)
+                                # nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
                             except Exception:
                                 import traceback
                                 rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(pid), utf8(host), traceback.format_exc(1))
-                    if nm.is_local(host):
-                        SupervisedPopen([screen.SCREEN, '-wipe'], object_id='screen -wipe', description="screen: clean up the socket with -wipe")
-                    else:
-                        nm.ssh().ssh_exec(host, [screen.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
+                    nm.nmd().wipe_screens(grpc_url)
+                    # if nm.is_local(host):
+                    #     SupervisedPopen([screen.SCREEN, '-wipe'], object_id='screen -wipe', description="screen: clean up the socket with -wipe")
+                    # else:
+                    #     nm.ssh().ssh_exec(host, [screen.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
         except nm.AuthenticationRequest as e:
             raise nm.InteractionNeededError(e, cls.kill_screens, (node, grpc_url, auto_ok_request))
 

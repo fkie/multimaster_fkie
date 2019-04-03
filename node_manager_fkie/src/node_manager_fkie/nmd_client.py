@@ -758,6 +758,12 @@ class NmdClient(QObject):
         sm = self.get_screen_manager(uri)
         return sm.rosclean()
 
+    def wipe_screens(self, grpc_url='grpc://localhost:12321'):
+        rospy.logdebug("wipe screens on %s" % (grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        sm = self.get_screen_manager(uri)
+        sm.wipe_screens()
+
     def log_dir_size_threaded(self, grpc_url='grpc://localhost:12321'):
         '''
         Determine the size of ROS log_dir.
@@ -832,6 +838,15 @@ class NmdClient(QObject):
             return diagnostic_array
         except Exception as e:
             self.error.emit("get_diagnostics", "grpc://%s" % uri, "", e)
+
+    def kill_process(self, pid, grpc_url='grpc://localhost:12321'):
+        rospy.logdebug("kill process %d on %s" % (pid, grpc_url))
+        uri, _ = nmdurl.split(grpc_url)
+        vm = self.get_monitor_manager(uri)
+        try:
+            vm.kill_process(pid)
+        except Exception as e:
+            self.error.emit("kill_process", "grpc://%s" % uri, "", e)
 
     def get_config_threaded(self, grpc_url='grpc://localhost:12321'):
         self._threads.start_thread("gcfgt_%s" % grpc_url, target=self.get_config, args=(grpc_url, True))
