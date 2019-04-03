@@ -100,7 +100,7 @@ class ParameterDescription(object):
         self._value_org = None
         self.read_only = False
         self.hint = ''
-        self._attributes = {}
+        self._tags = {}
         self._read_value(value)
         self._widget = widget
         try:
@@ -121,8 +121,8 @@ class ParameterDescription(object):
                         self.read_only = val
                     elif key == ':hint':
                         self.hint = val
-                    #:TODO: add :min, :max attributes
-                    self._attributes[key] = val
+                    #:TODO: add :min, :max tags
+                    self._tags[key] = val
         else:
             self._value = value
             self._value_org = value
@@ -136,8 +136,8 @@ class ParameterDescription(object):
         result = result or value_type in ['string', 'int', 'float', 'time', 'duration', 'binary', 'unicode']
         return result
 
-    def add_attribute(self, key, value):
-        self._attributes[key] = value
+    def add_tag(self, key, value):
+        self._tags[key] = value
 
     def origin_value(self):
         return self._value_org
@@ -286,14 +286,14 @@ class ParameterDescription(object):
             raise Exception("Error while set value '%s', for '%s': %s" % (utf8(value), self.fullName(), utf8(e)))
         return self._value
 
-    def value(self, with_attributes=False):
+    def value(self, with_tags=False):
         if not self.isPrimitiveType() and not self.widget() is None:
-            return self.widget().value(with_attributes)
+            return self.widget().value(with_tags)
         elif self.isPrimitiveType():
             self.updateValueFromField()
-        if with_attributes:
+        if with_tags:
             result = {}
-            result.update(self._attributes)
+            result.update(self._tags)
             result[':value'] = self._value
             return result
         return self._value
@@ -331,6 +331,13 @@ class ParameterDescription(object):
                         items.append(utf8(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
                     elif self.isTimeType():
                         items.append('now')
+                if ':alt' in self._tags:
+                    try:
+                        for alt_value in self._tags[':alt']:
+                            if alt_value not in items:
+                                items.append(alt_value)
+                    except Exception as err:
+                        rospy.logwarn('Can not add alternative values to %s: %s' % (self.name(), utf8(err)))
                 self._value_org = items[0] if items else ''
                 result.addItems(items)
                 if self.read_only:
@@ -488,16 +495,16 @@ class MainBox(QWidget):
                 else:
                     raise Exception("Parameter with name '%s' already exists!" % name)
 
-    def value(self, with_attributes=False, only_changed=False):
+    def value(self, with_tags=False, only_changed=False):
         result = dict()
         for param in self.params:
             if not param.isBinaryType():
                 if param.isPrimitiveType():
                     if param.changed() or not only_changed:
-                        val = param.value(with_attributes=with_attributes)
+                        val = param.value(with_tags=with_tags)
                         result[param.name()] = val
                 else:
-                    val = param.value(with_attributes=with_attributes)
+                    val = param.value(with_tags=with_tags)
                     if val or not only_changed:
                         result[param.name()] = val
         return result
@@ -626,15 +633,15 @@ class ArrayEntry(MainBox):
 #    self.param_widget.layout().addRow(label)
 #    self.setLayout(boxLayout)
 
-    def value(self, with_attributes=False, only_changed=False):
+    def value(self, with_tags=False, only_changed=False):
         '''
         Retruns a dictionary for an entry of an array, e.g. {name: value}.
-        If with_attributes is True it looks like: {name: {':value': value, ':type': type}}
+        If with_tags is True it looks like: {name: {':value': value, ':type': type}}
         :rtype: dict
         '''
         result = dict()
         for param in self.params:
-            val = param.value(with_attributes)
+            val = param.value(with_tags)
             if val or not only_changed:
                 result[param.name()] = val
         return result
@@ -713,21 +720,21 @@ class ArrayBox(MainBox):
         finally:
             self.setUpdatesEnabled(True)
 
-    def value(self, with_attributes=False, only_changed=False):
+    def value(self, with_tags=False, only_changed=False):
         '''
         Goes through the list and creates dictionary with values of each element.
         Returns a list with dictionaries, e.g. [{name: value}, {name: value}].
-        If with_attributes is True the result is a dictionary, e.g. {':type': type[], ':value': [{name: value}, {name: value}]}
-        :rtype: list or dict, if with_attributes==True
+        If with_tags is True the result is a dictionary, e.g. {':type': type[], ':value': [{name: value}, {name: value}]}
+        :rtype: list or dict, if with_tags==True
         '''
         result_list = list()
         for i in range(self.param_widget.layout().rowCount()):
             item = self.param_widget.layout().itemAt(i, QFormLayout.SpanningRole)
             if item and isinstance(item.widget(), ArrayEntry):
-                value = item.widget().value(with_attributes=with_attributes, only_changed=only_changed)
+                value = item.widget().value(with_tags=with_tags, only_changed=only_changed)
                 result_list.append(value)
         result = result_list
-        if with_attributes:
+        if with_tags:
             result = {}
             result[':type'] = self.type_msg
             result[':value'] = result_list
@@ -782,9 +789,9 @@ class ParameterDialog(QDialog):
         :param dict params: a (recursive) dictionary with parameter names and their values.
         A value can be of primitive type (int, bool, string), a list or dictionary. If it is
         of list type, the list should contains dictionaries with parameter and values.
-        If value is of dictionary type it is a recursive include or value with attributes.
+        If value is of dictionary type it is a recursive include or value with tags.
         If it is a recursive include a group will be created. The key is the name of the group.
-        If it is a value with attributes it should contains at least a ':value' attribute.
+        If it is a value with tags it should contains at least a ':value' tag.
         All attributes begin with ':'. Other key attributes:
         -':type': type, overwrites the autodetection
         -':ro': read only
@@ -973,10 +980,10 @@ class ParameterDialog(QDialog):
         if field is not None:
             field.setFocus()
 
-    def getKeywords(self, only_changed=False, with_attributes=False):
+    def getKeywords(self, only_changed=False, with_tags=False):
         '''
         :param bool only_changed: returns changed parameter only (Defaul: False)
-        :param bool with_attributes: returns parameter attributes (e.g. :ro, :hint,...) (Defaul: False)
+        :param bool with_tags: returns parameter attributes (e.g. :ro, :hint,...) (Defaul: False)
         :returns  a directory with parameter and value for entered fields.
         :rtype: dict
         '''
@@ -988,18 +995,18 @@ class ParameterDialog(QDialog):
             if isinstance(w, QCheckBox):
                 if w.checkState() == Qt.Checked:
                     sidebar_list.append(w.objectName())
-        result_value = self.content.value(with_attributes, only_changed)
+        result_value = self.content.value(with_tags, only_changed)
         # add the sidebar results
         if sidebar_name in result_value:
             # skip the default value, if elements are selected in the side_bar
             sidebar_value = ''
-            if with_attributes:
+            if with_tags:
                 sidebar_value = result_value[sidebar_name][':value']
             else:
                 sidebar_value = result_value[sidebar_name]
             if len(sidebar_list) == 0 or self.sidebar_default_val != sidebar_value:
                 sidebar_list.append(sidebar_value)
-            if with_attributes:
+            if with_tags:
                 result_value[sidebar_name][':value'] = [v for v in set(sidebar_list)]
             else:
                 result_value[sidebar_name] = [v for v in set(sidebar_list)]
@@ -1046,7 +1053,7 @@ class ParameterDialog(QDialog):
             if fileName:
                 self.__current_path = os.path.dirname(fileName)
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
-                content = self.content.value(with_attributes=True)
+                content = self.content.value(with_tags=True)
                 text = yaml.dump(content, default_flow_style=False)
                 with open(fileName, 'w+') as f:
                     f.write(text)

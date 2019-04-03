@@ -34,7 +34,7 @@ import psutil
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from node_manager_daemon_fkie.common import sizeof_fmt
+# from node_manager_daemon_fkie.common import sizeof_fmt
 from .sensor_interface import SensorInterface
 
 
@@ -44,6 +44,7 @@ class NetLoad(SensorInterface):
         self._net_load_warn = warn_level
         self._net_speed = 6
         self._net_stat_last = {}  # {iface: (sent, recv)}
+        self._interface = ''
         self.settings = None
         SensorInterface.__init__(self, hostname, sensorname='Network Load', interval=interval)
 
@@ -64,8 +65,15 @@ class NetLoad(SensorInterface):
         warn_level = self._net_load_warn
         if diag_level == DiagnosticStatus.WARN:
             warn_level = warn_level * 0.9
+        interfaces = []
         for net_if, net_if_stats in net_stats.items():
-            if net_if_stats.isup and net_if_stats.speed > 0 and net_if in net:
+            interfaces.append(net_if)
+            do_parse = net_if in net
+            if not self._interface:
+                do_parse = do_parse and net_if_stats.isup and net_if_stats.speed > 0
+            else:
+                do_parse = do_parse and net_if == self._interface
+            if do_parse:
                 if self.settings is not None and not self._interface:
                     # TODO: support more than one interface
                     self._interface = net_if
@@ -99,6 +107,8 @@ class NetLoad(SensorInterface):
                         else:
                             diag_msg = 'Net load for recv is %.0f%% (warn >%.0f%% [%dMBit])' % (percent_recv * 100, self._net_load_warn * 100, self._net_speed)
                 # print '%s: percent %.2f, %.2f' % (net_if, percent_sent, percent_recv), ", level:", diag_level
+        if self.settings is not None:
+            self.settings.set_param('sysmon/Network/interface', interfaces, tag=':alt')
         # Update status
         with self.mutex:
             self._ts_last = now

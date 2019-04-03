@@ -94,7 +94,7 @@ class Settings:
                 {
                     'load_warn_level': {':value': 0.9, ':default': 0.9, ':hint': "warn if load exceeds the percentage of the maximum speed"},
                     'speed': {':value': 6, ':default': 6, ':hint': "Maximal speed in MBit"},
-                    'interface': ''
+                    'interface': {':value': '', ':default': '', ':hint': "interface to observe", ':alt': []},
                 }
             }
         }
@@ -129,9 +129,10 @@ class Settings:
             print exc
         return result
 
-    def set_param(self, param_name, value):
+    def set_param(self, param_name, value, tag=':value'):
         try:
             path = os.path.dirname(param_name).split('/')
+            val_tag = tag if tag else ':value'
             cfg_item = self._cfg
             for item in path:
                 if item:
@@ -144,14 +145,14 @@ class Settings:
             if pname in cfg_item:
                 if isinstance(cfg_item[pname], dict):
                     if self._is_writable(cfg_item[pname]):
-                        cfg_item[pname][':value'] = value
+                        cfg_item[pname][val_tag] = value
                     else:
                         raise Exception('%s is a read only parameter!' % param_name)
                 else:
                     cfg_item[pname] = value
             else:
                 # create new parameter entry
-                cfg_item[pname] = {':value': value}
+                cfg_item[pname] = {val_tag: value}
             self.save()
         except Exception as exc:
             print exc
@@ -207,7 +208,7 @@ class Settings:
                 if isinstance(value, dict):
                     if self._is_writable(value):
                         new_cfg[key] = self._apply_recursive(new_data[key], value)
-                elif key not in [':hint', ':default', ':ro', ':min', ':max']:
+                elif key not in [':hint', ':default', ':ro', ':min', ':max', ':alt']:
                     if isinstance(new_data, dict):
                         new_cfg[key] = new_data[key]
                     else:

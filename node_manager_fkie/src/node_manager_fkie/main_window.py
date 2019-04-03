@@ -954,7 +954,7 @@ class MainWindow(QMainWindow):
         dia.setFocusField('Host')
         if dia.exec_():
             try:
-                params = dia.getKeywords(only_changed=False, with_attributes=False)
+                params = dia.getKeywords(only_changed=False, with_tags=False)
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 log_master_discovery = params['Show master discovery log']
                 log_master_sync = params['Show master sync log']
@@ -2085,7 +2085,7 @@ class MainWindow(QMainWindow):
         dia.setFocusField('load_warn_level')
         if dia.exec_():
             try:
-                params = dia.getKeywords(with_attributes=True)
+                params = dia.getKeywords(with_tags=True)
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: set configuration for daemon' % nmdurl,
                                                nm.nmd().set_config,
