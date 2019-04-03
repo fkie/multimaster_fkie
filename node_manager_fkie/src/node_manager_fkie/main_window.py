@@ -1785,10 +1785,11 @@ class MainWindow(QMainWindow):
         if (valid_sender) and (same_title or no_focus or self._accept_next_update):
             self._accept_next_update = False
             # _description_accept is set to True on click on link of {node, topic, service}
-            if self._description_accept:
-                self._description_history.append((wtitle, self.descriptionTextEdit.toHtml()))
-            else:
-                del self._description_history[:]
+            if not same_title:
+                if self._description_accept:
+                    self._description_history.append((wtitle, self.descriptionTextEdit.toHtml()))
+                else:
+                    del self._description_history[:]
             # prepend 'back' link the text
             if self._description_history:
                 if len(self._description_history) > 15:
