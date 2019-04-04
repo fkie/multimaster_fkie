@@ -20,6 +20,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 https://pypi.org/project/xmlformatter
 
+Changes by Alexander Tiderko:
+04.04.2019 added functionality for
+	DEFAULT_NOEMPTYTAG = False
+	DEFAULT_EMPTYATTR = True
+	DEFAULT_INDENT_DATA = True
+
 Format and compress XML documents
 """
 
