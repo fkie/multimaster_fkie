@@ -23,7 +23,7 @@ Class definition for reporting the description of nodes to Node Manager.
 `launch_servicer`
 =================
 
-Handles the launch file functionality of GRPC Server defined in `protos/launch.proto`.
+Handles the launch file functionality of GRPC Server defined in `multimaster_msgs_fkie/protos/launch.proto`.
 
 .. automodule:: node_manager_daemon_fkie.launch_servicer
    :members:

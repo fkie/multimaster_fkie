@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 from urlparse import urlparse
 from master_discovery_fkie.common import masteruri_from_master

@@ -30,9 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
+import rospy
 import subprocess
 import threading
-import rospy
 
 
 class SupervisedPopen():

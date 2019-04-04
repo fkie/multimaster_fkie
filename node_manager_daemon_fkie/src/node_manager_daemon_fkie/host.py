@@ -30,12 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import socket
 import threading
 from urlparse import urlparse
 
-import roslib
-import roslib.network
+from roslib import network
 import rospy
 
 
@@ -134,7 +135,7 @@ def is_local(hostname, wait=True):
             return HOSTS_CACHE[hostname]
     try:
         socket.inet_aton(hostname)
-        local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+        local_addresses = ['localhost'] + network.get_local_addresses()
         # check 127/8 and local addresses
         result = hostname.startswith('127.') or hostname == '::1' or hostname in local_addresses
         with _LOCK:
@@ -167,7 +168,7 @@ def __is_local(hostname):
             rospy.logdebug("host::HOSTS_CACHE resolve %s failed" % hostname)
             HOSTS_CACHE[hostname] = False
         return False
-    local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+    local_addresses = ['localhost'] + network.get_local_addresses()
     # check 127/8 and local addresses
     result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != []) or (set(machine_ips) & set(local_addresses) != set())
     with _LOCK:

@@ -30,11 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
-import settings
+from __future__ import division, absolute_import, print_function, unicode_literals
+
+from . import file_item
+from . import settings
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
 import multimaster_msgs_fkie.grpc.file_pb2 as fmsg
-import file_item
 
 OK = fmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = fmsg.ReturnStatus.StatusType.Value('ERROR')

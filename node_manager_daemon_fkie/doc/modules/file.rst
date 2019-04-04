@@ -12,7 +12,7 @@ Class definition for a file item representation for use in node manager.
 `file_servicer`
 ===============
 
-Servicer handles the file functionality of GRPC Server defined in `protos/file.proto`.
+Servicer handles the file functionality of GRPC Server defined in `multimaster_msgs_fkie/protos/file.proto`.
 
 .. automodule:: node_manager_daemon_fkie.file_servicer
    :members:

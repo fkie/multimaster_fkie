@@ -30,10 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import rospy
 import multimaster_msgs_fkie.grpc.version_pb2_grpc as vgrpc
 import multimaster_msgs_fkie.grpc.version_pb2 as vmsg
-import version
+from . import version
 
 
 class VersionServicer(vgrpc.VersionServiceServicer):

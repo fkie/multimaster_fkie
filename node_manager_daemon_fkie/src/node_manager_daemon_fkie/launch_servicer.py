@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import grpc
 import os
 import re
@@ -43,12 +45,12 @@ from master_discovery_fkie.common import masteruri_from_master
 import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
 import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 
-import url
+from . import exceptions
+from . import launcher
+from . import url
 from .common import INCLUDE_PATTERN, included_files, interpret_path, utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
-import exceptions
-import launcher
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -362,7 +364,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
             except Exception as e:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
                 err_text = "%s loading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
                 rospy.logwarn("Loading launch file: %s", err_details)
@@ -448,7 +450,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     reply.description.extend(rd_hosts)
                 except Exception:
                     import traceback
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
             # create nodelets description
             nodelets = {}
             for n in lc.roscfg.nodes:

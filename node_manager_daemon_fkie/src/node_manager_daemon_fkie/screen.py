@@ -30,14 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function, unicode_literals
 
 import os
+import subprocess
 from rosclean import get_disk_usage
 import rospy
 import rospkg
 
-import subprocess
 from .settings import LOG_PATH
 from .supervised_popen import SupervisedPopen
 
@@ -139,6 +139,9 @@ def get_active_screens(nodename=''):
 
 
 def wipe():
+    '''
+    Calls 'screen -wipe' command to clean up SockDir.
+    '''
     _ps = SupervisedPopen([SCREEN, '-wipe'])
 
 
@@ -260,8 +263,8 @@ def get_cmd(node, env=[], keys=[]):
 
 def rosclean():
     '''
-    Removes the content of the log directory. We didn't use rosclean purge because it
-    removes the log-directory. This needs restart of ros nodes or recreate log directory
+    Removes the content of the ROS-log directory. We didn't use rosclean purge because it
+    removes the log-directory. This needs restart of ROS nodes or recreate log directory
     to get log again.
     '''
     d = rospkg.get_log_dir()
@@ -273,12 +276,22 @@ def rosclean():
 
 
 def log_dir_size():
+    '''
+    :return: Disk usage in bytes for ROS log directory.
+    :rtype: int
+    '''
     d = rospkg.get_log_dir()
     disk_usage = get_disk_usage(d)
     return disk_usage
 
 
 def delete_log(nodename):
+    '''
+    Removes log and runtime files located in ROS-log directory.
+    These are log and configuration file of node's screen. PID file and ROS-log file of the node.
+
+    :param str nodename: Name of the node.
+    '''
     screen_log = get_logfile(node=nodename)
     screen_conf = get_cfgfile(node=nodename)
     pid_file = get_pidfile(node=nodename)

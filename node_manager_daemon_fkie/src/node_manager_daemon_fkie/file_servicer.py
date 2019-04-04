@@ -30,17 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import rospy
 
-
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fms_grpc
 import multimaster_msgs_fkie.grpc.file_pb2 as fms
+from . import file_item
+from . import remote
+from . import settings
+from . import url as nmdurl
 from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
-import url as nmdurl
-import file_item
-import remote
-import settings
 
 try:
     from catkin_pkg.package import parse_package

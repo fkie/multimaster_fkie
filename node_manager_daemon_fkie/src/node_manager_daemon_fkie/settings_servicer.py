@@ -30,13 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import rospy
 
 import multimaster_msgs_fkie.grpc.settings_pb2_grpc as sgrpc
 import multimaster_msgs_fkie.grpc.settings_pb2 as smsg
 
+from . import version
 from .settings import Settings
-import version
 
 
 class SettingsServicer(sgrpc.SettingsServiceServicer):

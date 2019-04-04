@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import rospy
 import threading
@@ -65,7 +67,8 @@ class Settings:
 
     def default(self):
         '''
-        Value supports follow keys: {:value, :min, :max, :default, :hint(str), :ro(bool)}
+        Creates a new default configuration.
+        Value supports follow tags: {:value, :min, :max, :default, :hint(str), :ro(bool)}
         '''
         result = {
             'global': {
@@ -104,6 +107,7 @@ class Settings:
     def param(self, param_name, default_value=None, extract_value=True):
         '''
         Returns parameter value for given param_name.
+
         :param str param_name: name of the parameter. Namespace is separated by '/'.
         :param default_value: returns this value if parameter was not found (Default: None)
         :param bool extract_value: Since value is a dictionary with additional informations,
@@ -130,6 +134,15 @@ class Settings:
         return result
 
     def set_param(self, param_name, value, tag=':value'):
+        '''
+        Sets new value to a parameter. The parameter can contain namespaces separated by '/'.
+        Since a value can contain different tags, you can change the tag value
+        by specifying the tag parameter.
+
+        :param: str param_name: parameter name with namespaces.
+        :param: value: new value.
+        :param: str tag: tag name of parameter. It should begin with ':'.
+        '''
         try:
             path = os.path.dirname(param_name).split('/')
             val_tag = tag if tag else ':value'
@@ -174,6 +187,9 @@ class Settings:
             self._notify_reload_callbacks()
 
     def save(self):
+        '''
+        Saves current configuration to file.
+        '''
         with open(self.filename, 'w') as stream:
             try:
                 stream.write(yaml.dump(self._cfg))
@@ -181,7 +197,12 @@ class Settings:
             except yaml.YAMLError as exc:
                 rospy.logwarn("Cant't save configuration to '%s': %s" % (self.filename, utf8(exc)))
 
-    def yaml(self, nslist=[]):
+    def yaml(self, _nslist=[]):
+        '''
+        :param list nslist: Filter option. Currently not used!
+        :return: Create YAML string representation from configuration dictionary structure.
+        :rtype: str
+        '''
         return yaml.dump(self._cfg)
 
     def apply(self, data):
@@ -189,6 +210,8 @@ class Settings:
         Applies data (string representation of YAML).
         After new data are set the configuration will be saved to file.
         All subscribers are notified.
+
+        :param str data: YAML as string representation.
         '''
         with self._mutex:
             self._cfg = self._apply_recursive(yaml.load(data), self._cfg)
@@ -217,7 +240,7 @@ class Settings:
                     new_cfg[key] = value
             except Exception:
                 import traceback
-                print "TMP:", traceback.format_exc(), "use old value:", value
+                print("_apply_recursive error:", traceback.format_exc(), "use old value:", value)
                 new_cfg[key] = value
         return new_cfg
 
@@ -229,6 +252,7 @@ class Settings:
     def add_reload_listener(self, callback, call=True):
         '''
         Adds a subscriber to change notifications. All subscribers are notified on any changes.
+
         :param callback: Method of type callback(Settings)
         :param call: if True the callback is called after adding. (Default: True)
         '''

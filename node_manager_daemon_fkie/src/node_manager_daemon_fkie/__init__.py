@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import argparse
 import os
 import signal
@@ -40,11 +42,11 @@ import traceback
 import roslib
 import rospy
 
-import remote
+from . import remote
+from . import url
 from .server import GrpcServer
 from .common import interpret_path
 from .screen import test_screen
-import url
 
 
 def set_terminal_name(name):
@@ -90,7 +92,7 @@ def start_server(node_name='node_manager_daemon'):
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % node_name, "INFO"))
     except Exception as e:
-        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
     rospy.init_node(node_name, log_level=log_level)
     set_terminal_name(node_name)
     set_process_name(node_name)

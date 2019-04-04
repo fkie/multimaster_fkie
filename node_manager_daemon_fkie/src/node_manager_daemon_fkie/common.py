@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from datetime import datetime
 import os
 import re
@@ -261,7 +263,7 @@ def replace_internal_args(content, resolve_args={}, path=None):
             new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
             replaced = True
     except Exception as err:
-        print "%s in %s" % (utf8(err), path)
+        print("%s in %s" % (utf8(err), path))
         rospy.logdebug("%s in %s" % (utf8(err), path))
     return replaced, new_content, resolve_args_intern
 
@@ -310,7 +312,7 @@ def __get_include_args(content, resolve_args):
                 if filename:
                     included_files.append((filename, resolved_inc_args))
     except Exception as err:
-        print err
+        print("__get_include_args reports: %s" % utf8(err))
         rospy.logdebug(utf8(err))
     return included_files
 

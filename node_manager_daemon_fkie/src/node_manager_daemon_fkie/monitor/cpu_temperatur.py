@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import psutil
 import rospy
 import time
@@ -77,6 +79,6 @@ class CpuTemperatur(SensorInterface):
                 self._stat_msg.message = diag_msg
         except Exception as error:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             rospy.logwarn("Sensor temperatures are not checked because of error: %s" % utf8(error))
             self._interval = 0

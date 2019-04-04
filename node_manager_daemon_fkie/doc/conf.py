@@ -15,7 +15,7 @@
 import sys
 import os
 
-import catkin_sphinx
+# import catkin_sphinx
 import catkin_pkg.package
 catkin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) 
 catkin_package = catkin_pkg.package.parse_package(os.path.join(catkin_dir, catkin_pkg.package.PACKAGE_MANIFEST_FILENAME))
@@ -41,7 +41,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.pngmath',
+    'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
 ]
 
@@ -135,7 +135,7 @@ html_theme = 'default'
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = []
-html_theme_path.append(os.path.join(os.path.dirname(catkin_sphinx.__file__), 'theme'))
+# html_theme_path.append(os.path.join(os.path.dirname(catkin_sphinx.__file__), 'theme'))
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

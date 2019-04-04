@@ -29,10 +29,14 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import grpc
-import host
 import rospy
+
+from . import host
 
 INSECURE_CHANNEL_CACHE = dict()
 ''' the cache for channels '''
@@ -114,5 +118,5 @@ def get_insecure_channel(url):
                 INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
 #                 INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
                 return INSECURE_CHANNEL_CACHE[cn]
-    print "NO URL", url
+    print("No cached URL for insecure channel: %s" % url)
     return None

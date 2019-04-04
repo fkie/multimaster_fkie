@@ -30,12 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function, unicode_literals
 
 from node_manager_daemon_fkie.monitor import ros_msg
-import settings
 import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
 import multimaster_msgs_fkie.grpc.monitor_pb2 as mmsg
+from . import settings
 
 
 class MonitorStub(object):
@@ -85,4 +85,3 @@ class MonitorStub(object):
         request = mmsg.Pid()
         request.pid = pid
         self.mm_stub.KillProcess(request, timeout=settings.GRPC_TIMEOUT)
-

@@ -30,10 +30,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from concurrent import futures
 import grpc
 import rospy
 import time
+
+import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
+import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
+import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
+import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
+import multimaster_msgs_fkie.grpc.settings_pb2_grpc as stgrpc
+import multimaster_msgs_fkie.grpc.version_pb2_grpc as vgrpc
 
 from .common import interpret_path
 from .file_servicer import FileServicer
@@ -42,13 +51,6 @@ from .monitor_servicer import MonitorServicer
 from .screen_servicer import ScreenServicer
 from .settings_servicer import SettingsServicer
 from .version_servicer import VersionServicer
-
-import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
-import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
-import multimaster_msgs_fkie.grpc.monitor_pb2_grpc as mgrpc
-import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
-import multimaster_msgs_fkie.grpc.settings_pb2_grpc as stgrpc
-import multimaster_msgs_fkie.grpc.version_pb2_grpc as vgrpc
 
 
 class GrpcServer:

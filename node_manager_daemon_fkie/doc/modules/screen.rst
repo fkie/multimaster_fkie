@@ -1,7 +1,7 @@
 `screen_servicer`
 =================
 
-Servicer handles the file functionality of GRPC Server defined in `protos/screen.proto`.
+Servicer handles the file functionality of GRPC Server defined in `multimaster_msgs_fkie/protos/screen.proto`.
 
 .. automodule:: node_manager_daemon_fkie.screen_servicer
    :members:

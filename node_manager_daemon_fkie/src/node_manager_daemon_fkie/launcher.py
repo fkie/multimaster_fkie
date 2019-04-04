@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import roslib
 import rospkg
@@ -40,17 +42,17 @@ import types
 import xmlrpclib
 import roslaunch
 
-import exceptions
-import screen
-import settings
-import host
 from master_discovery_fkie.common import masteruri_from_ros
+
+from . import host
+from . import exceptions
+from . import remote
+from . import screen
+from . import settings
 from .launch_stub import LaunchStub
 from .common import get_cwd, package_name, interpret_path, utf8
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
-from .host import get_hostname
-import remote
 
 STARTED_BINARIES = dict()
 ''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
@@ -96,7 +98,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         result.masteruri = result.env['ROS_MASTER_URI']
         result.host = launchcfg.host
         if not result.host and masteruri:
-            result.host = get_hostname(masteruri)
+            result.host = host.get_hostname(masteruri)
     else:
         result.masteruri = masteruri if masteruri or masteruri is None else None
         result.host = launchcfg.host
@@ -255,9 +257,9 @@ def changed_binaries(nodes):
         except KeyError:
             pass
         except Exception:
-            print "for ", nodename
+            print(" Error while check changed binary for %s" % nodename)
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
     return result
 
 

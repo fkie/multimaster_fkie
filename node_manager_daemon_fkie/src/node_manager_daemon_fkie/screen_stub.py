@@ -30,11 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function, unicode_literals
 
-import settings
 import multimaster_msgs_fkie.grpc.screen_pb2_grpc as sgrpc
 import multimaster_msgs_fkie.grpc.screen_pb2 as smsg
+from . import settings
 
 
 class ScreenStub(object):
