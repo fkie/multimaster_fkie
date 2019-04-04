@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import threading
 from python_qt_binding.QtCore import QObject, Qt, QMetaObject, Signal
 try:
@@ -80,7 +82,7 @@ class RequestBinariesThread(QObject, threading.Thread):
                     self.binaries_signal.emit(self._package, self._result)
             except Exception:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
 
 
 class PackageDialog(QDialog):

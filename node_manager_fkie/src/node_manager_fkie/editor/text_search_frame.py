@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import Signal, Qt
 import os
 import rospy
@@ -311,8 +313,7 @@ class TextSearchFrame(QDockWidget):
                     self.replace_button.setEnabled(False)
             except Exception:
                 import traceback
-                print traceback.format_exc()
-                pass
+                print(traceback.format_exc())
 
     def on_itemActivated(self, item):
         '''
@@ -443,4 +444,4 @@ class TextSearchFrame(QDockWidget):
 #            self.found_files_list.setVisible(len(self.search_results_fileset) > 0)
         except Exception:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())

@@ -29,6 +29,9 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QTimer
 try:
@@ -36,7 +39,6 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QFileDialog
 import os
-import roslib
 import rospy
 import uuid
 from master_discovery_fkie.common import get_hostname
@@ -174,7 +176,7 @@ class ProfileWidget(QDockWidget):
                 f.write(text)
         except Exception as e:
             import traceback
-            print utf8(traceback.format_exc(3))
+            print(utf8(traceback.format_exc(3)))
             MessageBox.warning(self, "Save profile Error",
                                'Error while save profile',
                                utf8(e))
@@ -266,11 +268,11 @@ class ProfileWidget(QDockWidget):
                                     master.start_nodes_by_name(list(nodes), cfg, force_start)
                         except Exception as ml:
                             import traceback
-                            print utf8(traceback.format_exc(1))
+                            print(utf8(traceback.format_exc(1)))
                             rospy.logwarn("Can not load launch file for %s: %s" % (muri, utf8(ml)))
             except Exception as e:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
                 MessageBox.warning(self, "Load profile error",
                                    'Error while load profile',
                                    utf8(e))

@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import Qt, Signal, QPoint, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette
 from xmlrpclib import Binary
@@ -84,7 +86,7 @@ class MyComboBox(QComboBox):
                             self.clearEditText()
             except Exception:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
         QComboBox.keyPressEvent(self, event)
 
 
@@ -707,7 +709,7 @@ class ArrayBox(MainBox):
                 del item
             except Exception:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
             self.count_label.setText(utf8(self._dynamic_items_count))
 
     def createFieldFromValue(self, value, clear_origin_value=False):
@@ -1059,7 +1061,7 @@ class ParameterDialog(QDialog):
                     f.write(text)
         except Exception as e:
             import traceback
-            print traceback.format_exc(3)
+            print(traceback.format_exc(3))
             MessageBox.warning(self, "Save parameter Error",
                                'Error while save parameter',
                                utf8(e))
@@ -1078,7 +1080,7 @@ class ParameterDialog(QDialog):
                     self.content.set_values(yaml.load(f.read()))
         except Exception as e:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             MessageBox.warning(self, "Load parameter Error",
                                'Error while load parameter',
                                utf8(e))
@@ -1176,7 +1178,7 @@ class MasterParameterDialog(ParameterDialog):
                     self.close()
             except Exception, e:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
         elif self.masteruri is None:
             MessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI')
@@ -1222,7 +1224,7 @@ class MasterParameterDialog(ParameterDialog):
                     MessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!')
             except ValueError, e:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
 
     def _on_param_list(self, masteruri, code, msg, params):
@@ -1291,7 +1293,7 @@ class MasterParameterDialog(ParameterDialog):
                 self.setInfoActive(False)
             except Exception, e:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
         else:
             self.setText(msg)
@@ -1314,7 +1316,7 @@ class MasterParameterDialog(ParameterDialog):
             errmsg = msg if msg else 'Unknown error on set parameter'
         if errmsg:
             import traceback
-            print traceback.format_exc(2)
+            print(traceback.format_exc(2))
             MessageBox.warning(self, self.tr("Warning"), utf8(errmsg))
             self.is_delivered = False
             self.is_send = False
@@ -1380,7 +1382,7 @@ class ServiceDialog(ParameterDialog):
             self.service_resp_signal.emit(utf8(repr(req)), utf8(repr(resp)))
         except Exception, e:
             import traceback
-            print traceback.format_exc(1)
+            print(traceback.format_exc(1))
             rospy.logwarn("Error while call service '%s': %s", utf8(self.service.name), utf8(e))
             self.service_resp_signal.emit(utf8(repr(req)), utf8(e))
 
@@ -1412,7 +1414,7 @@ class ServiceDialog(ParameterDialog):
                             result[slot] = subresult
                 except ValueError, e:
                     import traceback
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
                     rospy.logwarn("Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result
 

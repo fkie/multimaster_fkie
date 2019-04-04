@@ -29,6 +29,9 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Signal

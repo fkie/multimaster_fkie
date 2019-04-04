@@ -30,12 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import Queue
 from datetime import datetime
 from python_qt_binding.QtCore import Qt, Signal
 try:
     from python_qt_binding.QtGui import QDialog, QLabel, QTextBrowser, QVBoxLayout
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QDialog, QLabel, QTextBrowser, QVBoxLayout
 import threading
 import time
@@ -113,7 +115,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         with self.mutex:
             try:
                 hostname = self._hosts[address[0]]
-            except:
+            except Exception:
                 self.status_text_signal.emit("resolve %s" % address[0])
                 hostname = nm.nameres().hostname(utf8(address[0]), resolve=True)
                 self._hosts[address[0]] = hostname
@@ -128,8 +130,8 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                 self._msg_counts[hostname] += 1
                 self._received_msgs += 1
                 force_update = True
-            except:
-                print traceback.format_exc(1)
+            except Exception:
+                print(traceback.format_exc(1))
         if force_update:
             self._updateDisplay()
 
@@ -161,7 +163,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
             for p in range(len(self.sockets)):
                 try:
                     self.sockets[p].close()
-                except:
+                except Exception:
                     pass
 
     def _updateDisplay(self):
@@ -194,5 +196,5 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self._updateDisplay()
         try:
             self.network_join_request.emit(int(url.toString()))
-        except:
-            print traceback.format_exc(1)
+        except Exception:
+            print(traceback.format_exc(1))

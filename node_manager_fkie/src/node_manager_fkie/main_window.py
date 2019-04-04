@@ -32,6 +32,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from datetime import datetime
 from multimaster_msgs_fkie.msg import MasterState
 from python_qt_binding import loadUi, QT_BINDING_VERSION
@@ -41,7 +43,6 @@ from python_qt_binding.QtGui import QPalette, QColor
 import getpass
 import grpc
 import os
-import roslib
 import rospy
 import socket
 import time
@@ -82,13 +83,8 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget, QStyle
     from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
 
+from node_manager_fkie import gui_resources
 
-try:
-    import gui_resources
-except Exception:
-    print "no gui resources :-/"
-
-# from python_qt_binding import QtUiTools
 try:
     from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
     DIAGNOSTICS_AVAILABLE = True
@@ -506,13 +502,13 @@ class MainWindow(QMainWindow):
     def finish(self):
         if not self._finished:
             self._finished = True
-            print "Mainwindow finish..."
+            print("Mainwindow finish...")
             self._stop_updating()
             for _, editor in self.editor_dialogs.items():
                 editor.close()
             for _, master in self.masters.iteritems():
                 master.stop()
-            print "Mainwindow finished!"
+            print("Mainwindow finished!")
 
     def getMasteruri(self):
         '''
@@ -983,7 +979,7 @@ class MainWindow(QMainWindow):
                                                            ('/node_manager_daemon', hostname, usr, screen_only))
                     except (Exception, nm.StartException) as err:
                         import traceback
-                        print traceback.format_exc(1)
+                        print(traceback.format_exc(1))
                         rospy.logwarn("Error while show LOG for master_discovery %s: %s" % (utf8(hostname), utf8(err)))
                         MessageBox.warning(self, "Show log error",
                                            'Error while show log of master_discovery',
@@ -1139,7 +1135,7 @@ class MainWindow(QMainWindow):
                                                               True, False))
             except (Exception, nm.StartException), e:
                 import traceback
-                print utf8(traceback.format_exc(1))
+                print(utf8(traceback.format_exc(1)))
                 rospy.logwarn("Error while start %s: %s" % (name, utf8(e)))
                 MessageBox.warning(self, "Start error",
                                    'Error while start %s' % name,
@@ -1550,7 +1546,7 @@ class MainWindow(QMainWindow):
                                     self._syncs_to_start.append(hostname)
                     except (Exception, nm.StartException) as e:
                         import traceback
-                        print traceback.format_exc(1)
+                        print(traceback.format_exc(1))
                         rospy.logwarn("Error while start master_discovery for %s: %s" % (utf8(hostname), utf8(e)))
                         MessageBox.warning(self, "Start error",
                                            'Error while start master_discovery',
@@ -1643,7 +1639,7 @@ class MainWindow(QMainWindow):
                 master_proxy.launchfiles = (path, args)
             except Exception, e:
                 import traceback
-                print utf8(traceback.format_exc(1))
+                print(utf8(traceback.format_exc(1)))
                 MessageBox.warning(self, "Loading launch file", path, '%s' % utf8(e))
 #      self.setCursor(cursor)
         else:
@@ -1666,7 +1662,7 @@ class MainWindow(QMainWindow):
                     if trynr > 1:
                         raise
                     import traceback
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
                     del self.editor_dialogs[grpc_path]
                     self.on_launch_edit(grpc_path, search_text, 2)
             else:
@@ -2097,7 +2093,7 @@ class MainWindow(QMainWindow):
                 self._progress_queue.start()
             except Exception as err:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
                 MessageBox.warning(self, "Daemon configuration error",
                                    'Error while parse parameter',
                                    '%s' % utf8(err))

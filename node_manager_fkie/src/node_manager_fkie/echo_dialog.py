@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import itertools
 import math
@@ -42,14 +44,14 @@ from python_qt_binding.QtCore import Qt, QUrl, QTimer, Signal
 from python_qt_binding.QtGui import QIcon, QTextDocument
 try:
     from python_qt_binding.QtGui import QApplication, QDialog
-except:
+except Exception:
     from python_qt_binding.QtWidgets import QApplication, QDialog
 
 from roslib import message
 from genpy.rostime import Time, TVal
 import rospy
 
-import gui_resources
+from . import gui_resources
 import node_manager_fkie as nm
 from node_manager_daemon_fkie.common import utf8
 

@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from qt_gui.plugin import Plugin
 
 import node_manager_fkie
@@ -24,8 +26,8 @@ class NodeManager(Plugin):
                             help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
         if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
+            print('arguments: ', args)
+            print('unknowns: ', unknowns)
         node_manager_fkie.init_settings()
         masteruri = node_manager_fkie.settings().masteruri()
         node_manager_fkie.init_globals(masteruri)

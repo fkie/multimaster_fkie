@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 import xmlrpclib
@@ -189,7 +191,7 @@ class RequestListThread(QObject, threading.Thread):
                     if p.startswith(self._ns):
                         result.append(p)
                 self.parameter_list_signal.emit(self._masteruri, code, msg, result)
-            except:
+            except Exception:
                 import traceback
                 err_msg = "Error while retrieve the parameter list from %s: %s" % (self._masteruri, traceback.format_exc(1))
                 rospy.logwarn(err_msg)
@@ -228,7 +230,7 @@ class RequestValuesThread(QObject, threading.Thread):
                 for index, (code, msg, value) in enumerate(r):
                     result[self._params[index]] = (code, msg, value)
                 self.parameter_values_signal.emit(self._masteruri, 1, '', result)
-            except:
+            except Exception:
                 import traceback
 #        err_msg = "Error while retrieve parameter values from %s: %s"%(self._masteruri, traceback.format_exc(1))
 #        rospy.logwarn(err_msg)
@@ -274,7 +276,7 @@ class DeliverValuesThread(QObject, threading.Thread):
                 for index, (code, msg, value) in enumerate(r):
                     result[names[index]] = (code, msg, value)
                 self.result_signal.emit(self._masteruri, 1, '', result)
-            except:
+            except Exception:
                 import traceback
                 err_msg = "Error while deliver parameter values to %s: %s" % (self._masteruri, traceback.format_exc(1))
                 rospy.logwarn(err_msg)

@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QPainter
 try:

@@ -30,11 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 
 from master_discovery_fkie.master_info import MasterInfo
-from update_thread import UpdateThread
+from node_manager_fkie.update_thread import UpdateThread
 
 
 class UpdateHandler(QObject):
@@ -75,11 +77,11 @@ class UpdateHandler(QObject):
     def stop(self):
         with self._lock:
             if len(self.__updateThreads) > 0:
-                print "  Shutdown update threads..."
+                print("  Shutdown update threads...")
                 self.__requestedUpdates.clear()
                 for _, thread in self.__updateThreads.iteritems():
                     thread.join(3)
-                print "  Update threads are off!"
+                print("  Update threads are off!")
 
     def requestMasterInfo(self, masteruri, monitoruri, delayed_exec=0.0):
         '''
@@ -129,7 +131,7 @@ class UpdateHandler(QObject):
                 pass
             except Exception:
                 import traceback
-                print traceback.format_exc(1)
+                print(traceback.format_exc(1))
 
     def __create_update_thread(self, monitoruri, masteruri, delayed_exec):
         upthread = UpdateThread(monitoruri, masteruri, delayed_exec)

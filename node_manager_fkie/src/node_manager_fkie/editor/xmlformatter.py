@@ -22,6 +22,9 @@ https://pypi.org/project/xmlformatter
 
 Format and compress XML documents
 """
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import re
 import sys
 import getopt

@@ -123,7 +123,7 @@ def start_server(node_name='node_manager_daemon'):
     except Exception:
         # on load error the process will be killed to notify user in node_manager
         # about error
-        rospy.logwarn("%s", traceback.format_exc())
+        rospy.logwarn("Start server failed: %s", traceback.format_exc())
         sys.stdout.write(traceback.format_exc())
         sys.stdout.flush()
         os.kill(os.getpid(), signal.SIGKILL)

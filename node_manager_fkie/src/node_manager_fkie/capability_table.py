@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import Signal, Qt, QRect, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette, QPixmap
 import os
@@ -410,6 +412,7 @@ class CapabilityTable(QTableWidget):
     def updateCapabilities(self, masteruri, cfg_name, description):
         '''
         Updates the capabilities view.
+
         :param str masteruri: the ROS master URI of updated ROS master.
         :param str cfg_name: The name of the node provided the capabilities description.
         :param description: The capabilities description object.
@@ -463,7 +466,7 @@ class CapabilityTable(QTableWidget):
                     self.cellWidget(cap_index, robot_index).updateNodes(cfg_name, c.namespace, c.nodes)
                 except Exception:
                     import traceback
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
 
     def removeConfig(self, cfg):
         '''

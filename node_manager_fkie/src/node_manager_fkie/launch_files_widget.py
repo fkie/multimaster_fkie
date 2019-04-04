@@ -29,6 +29,9 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QColor, QKeySequence, QPalette
@@ -160,7 +163,7 @@ class LaunchFilesWidget(QDockWidget):
                     self.setWindowTitle('Launch files')
             except Exception as e:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
                 rospy.logwarn("Error while load launch file %s: %s" % (item, utf8(e)))
                 MessageBox.warning(self, "Load error",
                                    'Error while load launch file:\n%s' % item.name,
@@ -190,7 +193,7 @@ class LaunchFilesWidget(QDockWidget):
             self._reload_timer.start()
 
     def on_launch_selection_changed(self, selected, deselected):
-        print "selection launch changed"
+        print("selection launch changed")
 
     def load_file(self, path, args={}, masteruri=None):
         '''

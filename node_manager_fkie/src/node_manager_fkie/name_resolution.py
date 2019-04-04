@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from threading import Thread, RLock
 from urlparse import urlparse
 import socket
@@ -312,7 +314,7 @@ class NameResolution(object):
                 return hostname
         except Exception:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
         return address
 
     @classmethod

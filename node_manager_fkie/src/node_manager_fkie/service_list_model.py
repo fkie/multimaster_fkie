@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import re
 import rospy
 from python_qt_binding.QtCore import Qt
@@ -668,7 +670,7 @@ class ServiceModel(QStandardItemModel):
                         root_group.add_node(topic)
             except Exception:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
                 pass
 
     def index_from_names(self, services):

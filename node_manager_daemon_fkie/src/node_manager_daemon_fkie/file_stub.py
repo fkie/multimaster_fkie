@@ -36,6 +36,7 @@ from . import file_item
 from . import settings
 import multimaster_msgs_fkie.grpc.file_pb2_grpc as fgrpc
 import multimaster_msgs_fkie.grpc.file_pb2 as fmsg
+from .common import utf8
 
 OK = fmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = fmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -118,14 +119,14 @@ class FileStub(object):
         response_stream = self.fm_stub.GetFileContent(fmsg.ListPathRequest(path=path))
         file_size = None
         file_mtime = None
-        file_content = ''
+        file_content = ""
         for response in response_stream:
             if self._running:
                 if response.status.code == OK:
                     if response.file.offset == 0:
                         file_size = response.file.size
                         file_mtime = response.file.mtime
-                    file_content += response.file.data
+                    file_content += utf8(response.file.data)
                 elif response.status.code == OS_ERROR:
                     raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
                 elif response.status.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:

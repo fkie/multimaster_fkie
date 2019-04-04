@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal, QTimer
 from python_qt_binding.QtGui import QColor, QIcon, QKeySequence, QTextCursor, QTextDocument
 import os
@@ -41,6 +43,7 @@ from master_discovery_fkie.common import masteruri_from_ros
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.common import package_name
+from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.run_dialog import PackageDialog
 import node_manager_fkie as nm
 
@@ -49,7 +52,6 @@ from .graph_view import GraphViewWidget
 from .text_edit import TextEdit
 from .text_search_frame import TextSearchFrame
 from .text_search_thread import TextSearchThread
-from node_manager_fkie.detailed_msg_box import MessageBox
 
 try:
     from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QDockWidget, QWidget, QMainWindow
@@ -347,7 +349,7 @@ class Editor(QMainWindow):
                 self.restoreState(settings.value("window_state"))
             except Exception:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
             settings.endGroup()
 
     def storeSetting(self):
@@ -363,6 +365,7 @@ class Editor(QMainWindow):
     def on_load_request(self, filename, search_text='', insert_index=-1, goto_line=-1, only_launch=False):
         '''
         Loads a file in a new tab or focus the tab, if the file is already open.
+
         :param str filename: the path to file
         :param str search_text: if not empty, searches in new document for first occurrence of the given text
         '''
@@ -414,7 +417,7 @@ class Editor(QMainWindow):
         except Exception as err:
             self.tabWidget.setUpdatesEnabled(True)
             import traceback
-            msg = "Error while open %s: %s" % (filename, traceback.format_exc(1))
+            msg = "Error while open %s: %s" % (filename, traceback.format_exc())
             rospy.logwarn(msg)
             MessageBox.critical(self, "Error", utf8(err), msg)
             if self.tabWidget.count() == 0:
@@ -572,7 +575,7 @@ class Editor(QMainWindow):
                     self.graph_view.clear_cache()
         except Exception:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
 
     ##############################################################################
     # HANDLER for buttons

@@ -29,6 +29,9 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject
 import os
 import codecs
@@ -56,7 +59,7 @@ class History(QObject):
     def cachedParamValues(self, key):
         try:
             return list(self.PARAM_CACHE[key])
-        except:
+        except Exception:
             result = []
             return result
 
@@ -112,7 +115,7 @@ class History(QObject):
                             f.write(''.join([key, ':=', utf8(value), '\n']))
                         except UnicodeEncodeError, e:
                             ignored[key] = (value, utf8(e))
-                        except:
+                        except Exception:
                             import traceback
                             rospy.logwarn("Storing history aborted: %s", traceback.format_exc(3))
                         count += 1
@@ -141,7 +144,7 @@ class History(QObject):
                 value_list = cache[key]
                 try:
                     value_list.remove(uvalue)
-                except:
+                except Exception:
                     pass
                 if len(value_list) == 0:
                     del cache[key]

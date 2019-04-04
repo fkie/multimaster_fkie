@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
@@ -266,7 +268,7 @@ class SettingsModel(QStandardItemModel):
             return result
         except Exception:
             import traceback
-            print traceback.format_exc(1)
+            print(traceback.format_exc(1))
             return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -291,7 +293,7 @@ class SettingsModel(QStandardItemModel):
                 self._add_item(root, name, value)
         except Exception:
             import traceback
-            print traceback.format_exc(1)
+            print(traceback.format_exc(1))
 
     def _add_item(self, root, name, value):
         if isinstance(value, dict):

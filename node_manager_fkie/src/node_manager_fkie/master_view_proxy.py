@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QRegExp, Qt, QTimer, Signal
 from python_qt_binding.QtGui import QKeySequence  # , QBrush, QPen
@@ -392,7 +394,7 @@ class MasterViewProxy(QWidget):
 #        print "    ", self.objectName(), "destroyed"
 
     def stop(self):
-        print "  Shutdown master", self.masteruri, "..."
+        print("  Shutdown master", self.masteruri, "...")
         # self.default_cfg_handler.stop()
         nm.nmd().changed_file.disconnect(self.on_changed_file)
         nm.nmd().multiple_screens.disconnect(self.on_multiple_screens)
@@ -406,7 +408,7 @@ class MasterViewProxy(QWidget):
                 ps.terminate()
             except Exception:
                 pass
-        print "  Master", self.masteruri, " is down!"
+        print("  Master", self.masteruri, " is down!")
 
     @property
     def current_user(self):
@@ -530,7 +532,7 @@ class MasterViewProxy(QWidget):
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
         except Exception:
-            print traceback.format_exc(1)
+            print(traceback.format_exc(1))
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
@@ -707,7 +709,7 @@ class MasterViewProxy(QWidget):
             raise DetailedError("Timeout", "Timeout while load %s" % tout.remote, "Daemon not responded within %.2f seconds while"
                                 "load launch file. You can try to increase the timeout for GRPC requests in node manager settings." % nm.settings().timeout_grpc)
         except Exception as e:
-            print traceback.format_exc()
+            print(traceback.format_exc())
             err_text = '%s loading failed!' % os.path.basename(launchfile)
             rospy.logwarn("Loading launch file: %s", utf8(e))
             raise DetailedError("Loading launch file", err_text, utf8(e))
@@ -850,7 +852,7 @@ class MasterViewProxy(QWidget):
                                 if isinstance(item, (GroupItem, HostItem)):
                                     result.append(item.name)
         except Exception:
-            print traceback.format_exc(3)
+            print(traceback.format_exc(3))
         return result
 
     def _expand_groups(self, groups=None):
@@ -872,7 +874,7 @@ class MasterViewProxy(QWidget):
                                     if groups is None or item.name in groups:
                                         self.masterTab.nodeTreeView.setExpanded(index_cap, True)
         except Exception:
-            print traceback.format_exc(3)
+            print(traceback.format_exc(3))
 
     def update_robot_icon(self, force=False):
         '''
@@ -1843,12 +1845,12 @@ class MasterViewProxy(QWidget):
             except nm.InteractionNeededError as _:
                 raise
             except (exceptions.StartException, nm.StartException) as e:
-                print type(e)
+                print(type(e))
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
                 raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
             except Exception as e:
-                print type(e)
-                print traceback.format_exc(3)
+                print(type(e))
+                print(traceback.format_exc(3))
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
                 raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
 
@@ -2500,7 +2502,7 @@ class MasterViewProxy(QWidget):
                                                         (node.name, self.getHostFromNode(node), self.current_user, only_screen))
                 self._start_queue(self._progress_queue_prio)
         except Exception, e:
-            print traceback.format_exc(3)
+            print(traceback.format_exc(3))
             rospy.logwarn("Error while show log: %s", utf8(e))
             MessageBox.warning(self, "Show log error",
                                'Error while show Log',
@@ -2714,7 +2716,7 @@ class MasterViewProxy(QWidget):
                         try:
                             self._start_publisher(params['Name'], params['Type'])
                         except Exception, e:
-                            print traceback.format_exc(1)
+                            print(traceback.format_exc(1))
                             rospy.logwarn("Publish topic '%s' failed: %s", utf8(params['Name']), utf8(e))
                             MessageBox.warning(self, "Publish topic error",
                                                ''.join(['Publish topic ', params['Name'], ' failed!']),
@@ -2804,7 +2806,7 @@ class MasterViewProxy(QWidget):
             MessageBox.warning(self, "Publish topic error",
                                ''.join(['Publish topic ', topic_name, ' failed!']),
                                utf8(e))
-            print utf8(traceback.format_exc(1))
+            print(utf8(traceback.format_exc(1)))
             return False
 
     def _rem_empty_lists(self, param_dict):
@@ -3084,7 +3086,7 @@ class MasterViewProxy(QWidget):
 #            print yaml.dump(values, default_flow_style=False)
                         f.write(yaml.dump(values, default_flow_style=False))
                 except Exception as e:
-                    print utf8(traceback.format_exc(1))
+                    print(utf8(traceback.format_exc(1)))
                     MessageBox.warning(self, "Save parameter Error",
                                        'Error while save parameter',
                                        utf8(e))

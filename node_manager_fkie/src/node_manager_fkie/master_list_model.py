@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, QRect, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
 try:
@@ -188,7 +190,7 @@ class MasterItem(QStandardItem):
 #      self.updateNameView(self.master, self.quality, self)
         except Exception:
             import traceback
-            print traceback.format_exc(1)
+            print(traceback.format_exc(1))
 
     @property
     def master(self):

@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, Signal
 import socket
 import threading
@@ -73,12 +75,12 @@ class MasterListService(QObject):
         self._lock = threading.RLock()
 
     def stop(self):
-        print "  Shutdown discovery listener..."
+        print("  Shutdown discovery listener...")
         for _, thread in self.__serviceThreads.iteritems():
             thread.join(3)
         for _, thread in self.__refreshThreads.iteritems():
             thread.join(3)
-        print "  Discovery listener is off!"
+        print("  Discovery listener is off!")
 
     def retrieveMasterList(self, masteruri, wait=False):
         '''
@@ -234,7 +236,7 @@ class MasterStateTopic(QObject):
     will be determine using U{master_discovery_fkie.interface_finder.get_changes_topic()<http://docs.ros.org/kinetic/api/master_discovery_fkie/html/modules.html#interface-finder-module>}.
     '''
     state_signal = Signal(MasterState)
-    '''@ivar: a signal to inform the receiver about new master state. 
+    ''':ivar state_signal: a signal to inform the receiver about new master state.
     Parameter: U{master_discovery_fkie.msg.MasterState<http://docs.ros.org/api/multimaster_msgs_fkie/html/msg/MasterState.html>}'''
 
     def registerByROS(self, masteruri, wait=False):
@@ -371,10 +373,10 @@ class OwnMasterMonitoring(QObject):
         '''
         self._do_finish = True
         if self._master_monitor.is_running():
-            print "  Shutdown the local master monitoring..."
+            print("  Shutdown the local master monitoring...")
             self._masterMonitorThread.join(15)
             self._master_monitor.shutdown()
-            print "  Local master monitoring is off!"
+            print("  Local master monitoring is off!")
 
     def mastermonitor_loop(self):
         '''

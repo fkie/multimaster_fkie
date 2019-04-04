@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import argparse
 import os
 import roslib.network
@@ -376,7 +378,7 @@ def main(name):
             _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file)
     except Exception as err:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         sys.exit("%s" % err)
 
     exit_code = 0
@@ -400,5 +402,5 @@ def main(name):
         except Exception:
             if not rospy.is_shutdown():
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
     return exit_code

@@ -30,16 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import re
 import rospy
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 
-from detailed_msg_box import MessageBox
 from master_discovery_fkie.master_info import TopicInfo
 
 from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.common import lnamespace, namespace, normns
+from node_manager_fkie.detailed_msg_box import MessageBox
 import node_manager_fkie as nm
 
 
@@ -726,8 +728,7 @@ class TopicModel(QStandardItemModel):
                         root_group.add_node(topic)
             except Exception:
                 import traceback
-                print traceback.format_exc()
-                pass
+                print(traceback.format_exc())
 #    cputimes = os.times()
 #    cputime = cputimes[0] + cputimes[1] - cputime_init
 #    print "      update topic ", cputime, ", topic count:", len(topics)

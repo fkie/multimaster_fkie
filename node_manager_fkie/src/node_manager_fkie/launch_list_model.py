@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QMimeData, Qt, Signal
 try:
     from python_qt_binding.QtGui import QApplication, QInputDialog, QLineEdit
@@ -621,7 +623,7 @@ class LaunchListModel(QStandardItemModel):
             self._set_new_list(self._current_path, items, add_history=False)
         except Exception:
             import traceback
-            print traceback.format_exc(2)
+            print(traceback.format_exc(2))
 
     def paste_from_clipboard(self):
         '''
@@ -637,7 +639,7 @@ class LaunchListModel(QStandardItemModel):
                     self.reload_current_path(clear_cache=True)
                 except Exception:
                     import traceback
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
 
     def copy_to_clipboard(self, indexes):
         '''
@@ -680,7 +682,7 @@ class LaunchListModel(QStandardItemModel):
             return path_item
         except Exception:
             import traceback
-            print traceback.format_exc(2)
+            print(traceback.format_exc(2))
         return []
 
     def _exists(self, name):
@@ -752,5 +754,5 @@ class LaunchListModel(QStandardItemModel):
                 return True
             except Exception:
                 import traceback
-                print traceback.format_exc(2)
+                print(traceback.format_exc(2))
             return False

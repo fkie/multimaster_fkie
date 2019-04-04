@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QFile, QRect, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
 try:
@@ -47,7 +49,7 @@ from node_manager_daemon_fkie.common import sizeof_fmt, utf8
 from node_manager_daemon_fkie import url as nmdurl
 from node_manager_fkie.common import lnamespace, namespace, normns
 from node_manager_fkie.name_resolution import NameResolution
-from parameter_handler import ParameterHandler
+from node_manager_fkie.parameter_handler import ParameterHandler
 import node_manager_fkie as nm
 
 

@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, Signal
 import random
 import socket
@@ -64,13 +66,13 @@ class LaunchServerHandler(QObject):
 
     def stop(self):
         if len(self.__updateThreads) > 0:
-            print "  Shutdown launch update threads..."
+            print("  Shutdown launch update threads...")
             self.__requestedUpdates.clear()
             with self._lock:
                 for _, thread in self.__updateThreads.iteritems():
                     thread.launch_server_signal.disconnect()
                     thread.error_signal.disconnect()
-            print "  Launch update threads are off!"
+            print("  Launch update threads are off!")
 
     def updateLaunchServerInfo(self, serveruri, delayed_exec=0.0):
         '''
@@ -93,7 +95,7 @@ class LaunchServerHandler(QObject):
                     self.__requestedUpdates[serveruri] = delayed_exec
                 else:
                     self.__create_update_thread(serveruri, delayed_exec)
-            except:
+            except Exception:
                 pass
 
     def _on_launch_server_info(self, serveruri, pid, nodes):
@@ -113,9 +115,9 @@ class LaunchServerHandler(QObject):
                 self.__create_update_thread(serveruri, delayed_exec)
             except KeyError:
                 pass
-            except:
+            except Exception:
                 import traceback
-                print traceback.format_exc(2)
+                print(traceback.format_exc(2))
 
     def __create_update_thread(self, serveruri, delayed_exec):
         upthread = LaunchServerUpdateThread(serveruri, delayed_exec)
@@ -151,7 +153,7 @@ class LaunchServerUpdateThread(QObject, threading.Thread):
             _, _, pid = server.get_pid()  # _:=code, msg
             _, _, nodes = server.get_node_names()  # _:=code, msg
             self.launch_server_signal.emit(self._launch_serveruri, pid, nodes)
-        except:
+        except Exception:
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()

@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 
@@ -80,15 +82,15 @@ class ProgressQueue(QObject):
         try:
             val = self._progress_bar.value()
             if val < len(self.__progress_queue):
-                print "  Stop progress queue '%s'..." % self._name
+                print("  Stop progress queue '%s'..." % self._name)
                 thread = self.__progress_queue[val]
                 self.__progress_queue = []
                 if thread.is_alive():
                     thread.join(3)
-                print "  Progress queue '%s' stopped!" % self._name
+                print("  Progress queue '%s' stopped!" % self._name)
         except Exception:
             import traceback
-            print utf8(traceback.format_exc())
+            print(utf8(traceback.format_exc()))
 
     def add2queue(self, ident, descr, target=None, args=()):
         '''
@@ -116,8 +118,8 @@ class ProgressQueue(QObject):
             self._progress_frame.setVisible(True)
             self.__running = True
             self._progress_bar.setToolTip(self.__progress_queue[0].descr)
-            dscr_len = self._progress_bar.size().width() / 10
-            self._progress_bar.setFormat(''.join(['%v/%m - ', self.__progress_queue[0].descr[0:dscr_len]]))
+            dscr_len = int(self._progress_bar.size().width() / 10)
+            self._progress_bar.setFormat("%v/%m - " + self.__progress_queue[0].descr[0:dscr_len])
             self._progress_bar.setValue(0)
             self.__progress_queue[0].start()
 
@@ -147,8 +149,8 @@ class ProgressQueue(QObject):
                 val = val + 1
             th = self.__progress_queue[val]
             self._progress_bar.setToolTip(th.descr)
-            dscr_len = self._progress_bar.size().width() / 10
-            self._progress_bar.setFormat(''.join(['%v/%m - ', th.descr[0:dscr_len]]))
+            dscr_len = int(self._progress_bar.size().width() / 10)
+            self._progress_bar.setFormat('%v/%m - ' + th.descr[0:dscr_len])
             self.__progress_queue[val].start()
             self._progress_bar.setValue(val)
             # print "PG finished ok", id
@@ -190,7 +192,7 @@ class ProgressQueue(QObject):
             self.__running = False
         except Exception:
             import traceback
-            print utf8(traceback.format_exc(1))
+            print(utf8(traceback.format_exc(1)))
 
     def _on_request_interact(self, ident, descr, req):
         '''

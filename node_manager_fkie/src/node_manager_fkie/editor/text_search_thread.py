@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QObject, Signal
 import re
 import rospy
@@ -88,8 +90,9 @@ class TextSearchThread(QObject, threading.Thread):
         except Exception:
             import traceback
             # formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Error while search for '%s' in '%s': %s" % (self._search_text, self._path, traceback.print_exc()))
-            self.warning_signal.emit(traceback.print_exc())
+            msg = "Error while search for '%s' in '%s': %s" % (self._search_text, self._path, traceback.print_exc())
+            rospy.logwarn(msg)
+            self.warning_signal.emit(msg)
         finally:
             if self._isrunning:
                 self.search_result_signal.emit(self._search_text, False, '', -1, -1, -1, '')

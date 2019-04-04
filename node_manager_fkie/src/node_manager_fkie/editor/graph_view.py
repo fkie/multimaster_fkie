@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QObject, Signal, Qt
 from python_qt_binding.QtGui import QStandardItemModel, QStandardItem
@@ -263,7 +265,7 @@ class GraphThread(QObject, threading.Thread):
         except Exception:
             import traceback
             formatted_lines = traceback.format_exc(1).splitlines()
-            print "Error while parse launch file for includes:\n\t%s" % traceback.format_exc()
+            print("Error while parse launch file for includes:\n\t%s" % traceback.format_exc())
             try:
                 rospy.logwarn("Error while parse launch file for includes:\n\t%s", formatted_lines[-5])
             except Exception:

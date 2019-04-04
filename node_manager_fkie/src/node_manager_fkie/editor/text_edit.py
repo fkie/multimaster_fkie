@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
 from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor
 import os
@@ -60,7 +62,7 @@ class TextEdit(QTextEdit):
     '''
 
     load_request_signal = Signal(str)
-    ''' :ivar: A signal for request to open a configuration file'''
+    ''' :ivar load_request_signal: A signal for request to open a configuration file'''
 
     SUBSTITUTION_ARGS = ['env', 'optenv', 'find', 'anon', 'arg']
     CONTEXT_FILE_EXT = ['.launch', '.test', '.xml']
@@ -69,7 +71,7 @@ class TextEdit(QTextEdit):
     def __init__(self, filename, parent=None):
         self.parent = parent
         QTextEdit.__init__(self, parent)
-        self.setObjectName(' - '.join(['Editor', filename]))
+        self.setObjectName('Editor - %s' % filename)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_custom_context_menu)
 #        self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
@@ -107,9 +109,9 @@ class TextEdit(QTextEdit):
         self._search_thread = None
         self._stop = False
         if self.filename:
-            self.setText(unicode("", "utf-8"))
+            self.setText("")
             _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
-            self.setText(unicode(file_content, "utf-8"))
+            self.setText(file_content)
         if filename.endswith('.launch'):
             self.hl = XmlHighlighter(self.document())
             self.cursorPositionChanged.connect(self._document_position_changed)
@@ -173,7 +175,7 @@ class TextEdit(QTextEdit):
 
     def toprettyxml(self):
         try:
-            import xmlformatter
+            from . import xmlformatter
             formatter = xmlformatter.Formatter(indent="2", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
             xml_pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
             cursor = self.textCursor()
@@ -232,7 +234,7 @@ class TextEdit(QTextEdit):
             if result == MessageBox.Yes:
                 try:
                     _, self.file_mtime, file_content = nm.nmd().get_file_content(self.filename, force=True)
-                    self.setText(unicode(file_content, "utf-8"))
+                    self.setText(file_content)
                     self.document().setModified(False)
                     self.textChanged.emit()
                 except Exception as err:
@@ -649,7 +651,7 @@ class TextEdit(QTextEdit):
                     return menu
                 except Exception:
                     import traceback
-                    print traceback.format_exc(1)
+                    print(traceback.format_exc(1))
                     return None
         return None
 

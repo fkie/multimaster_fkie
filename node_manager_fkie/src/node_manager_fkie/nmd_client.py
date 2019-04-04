@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function, unicode_literals
 import grpc
 import os
 from python_qt_binding.QtCore import QObject, Signal
@@ -38,7 +38,6 @@ import rospy
 import threading
 
 from diagnostic_msgs.msg import DiagnosticArray
-# import node_manager_fkie as nm
 
 import node_manager_daemon_fkie.exceptions as exceptions
 import node_manager_daemon_fkie.remote as remote

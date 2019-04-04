@@ -35,6 +35,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 from datetime import datetime
 import os
 import re
+import sys
 
 import rospy
 import roslib
@@ -68,10 +69,11 @@ def utf8(s, errors='replace'):
     '''
     Converts string to unicode.
     '''
-    if isinstance(s, (str, buffer)):
-        return unicode(s, "utf-8", errors=errors)
-    elif not isinstance(s, unicode):
-        return unicode(str(s))
+    if sys.version_info <= (3, 0):
+        if isinstance(s, (str, buffer)):
+            return unicode(s, "utf-8", errors=errors)
+        elif not isinstance(s, unicode):
+            return unicode(str(s))
     return s
 
 
@@ -344,9 +346,11 @@ def included_files(string,
         re_filelist = re.compile(r"%s" % '|'.join(include_pattern))
     pwd = '.'
     content = string
+    content_info = 'content'
     # read file content if file exists
     if os.path.exists(string) and not os.path.isdir(string):
         pwd = os.path.dirname(string)
+        content_info = string
         with open(string, 'r') as f:
             content = f.read()
             # replace XML comments by the same count of NEWLINES
@@ -380,7 +384,7 @@ def included_files(string,
                         # try to resolve path
                         filename = interpret_path(filename, pwd)
                     except Exception as err:
-                        rospy.logwarn(utf8(err))
+                        rospy.logwarn("Interpret file failed: %s" % utf8(err))
                     if os.path.isdir(filename):
                         filename = ''
                     if filename:
@@ -393,12 +397,15 @@ def included_files(string,
                     # for recursive search
                     if os.path.isfile(filename):
                         if recursive:
-                            ext = os.path.splitext(filename)
-                            if ext[1] in SEARCH_IN_EXT:
-                                for res_item in included_files(filename, recursive, unique, include_pattern, resolve_args_all):
-                                    publish = not unique or (unique and res_item[2] not in my_unique_files)
-                                    if publish:
-                                        my_unique_files.append(res_item[2])
-                                        yield res_item
+                            try:
+                                ext = os.path.splitext(filename)
+                                if ext[1] in SEARCH_IN_EXT:
+                                    for res_item in included_files(filename, recursive, unique, include_pattern, resolve_args_all):
+                                        publish = not unique or (unique and res_item[2] not in my_unique_files)
+                                        if publish:
+                                            my_unique_files.append(res_item[2])
+                                            yield res_item
+                            except Exception as e:
+                                rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (filename, utf8(e)))
                 except Exception as e:
-                    rospy.logwarn(utf8(e))
+                    rospy.logwarn("Error while parse %s for include pattern: %s" % (content_info, utf8(e)))
