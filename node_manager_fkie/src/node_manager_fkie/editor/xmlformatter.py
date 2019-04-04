@@ -39,15 +39,22 @@ DEFAULT_INDENT_CHAR = " "
 DEFAULT_INLINE = True
 DEFAULT_ENCODING_INPUT = None
 DEFAULT_ENCODING_OUTPUT = None
+DEFAULT_NOEMPTYTAG = False
+DEFAULT_EMPTYATTR = True
+DEFAULT_INDENT_DATA = True
 
 
 class Formatter():
 	# Use internal encoding:
 	encoding_internal = None
 
-	def __init__(self, indent = DEFAULT_INDENT, preserve = [], compress = DEFAULT_COMPRESS, indent_char = DEFAULT_INDENT_CHAR, encoding_input = DEFAULT_ENCODING_INPUT, encoding_output = DEFAULT_ENCODING_OUTPUT, inline = DEFAULT_INLINE, correct = DEFAULT_CORRECT):
+	def __init__(self, indent = DEFAULT_INDENT, preserve = [], compress = DEFAULT_COMPRESS, indent_char = DEFAULT_INDENT_CHAR, encoding_input = DEFAULT_ENCODING_INPUT, encoding_output = DEFAULT_ENCODING_OUTPUT, inline = DEFAULT_INLINE, correct = DEFAULT_CORRECT, noemptytag = DEFAULT_NOEMPTYTAG, emptyattr = DEFAULT_EMPTYATTR, indent_data = DEFAULT_INDENT_DATA):
 		# Minify the XML document:
 		self.compress = compress
+		# Allow self closing tag also it not compress
+		self.noemptytag = noemptytag
+		# Allow attributes with empty value
+		self.emptyattr = emptyattr
 		# Correct text nodes
 		self.correct = correct
 		# Decode the XML document:
@@ -58,6 +65,8 @@ class Formatter():
 		self.indent = int(indent)
 		# Indent by char:
 		self.indent_char = indent_char
+		# Indent also data
+		self.indent_data = indent_data
 		# Format inline objects:
 		self.inline = inline
 		# Don't compress this elements and their descendants:
@@ -352,7 +361,7 @@ class Formatter():
 			# Reference Token List:
 			self.list = tklist
 			# Token datas:
-			self.arg= list(arg)
+			self.arg = list(arg)
 			# Token is placed in an CDATA section:
 			self.cdata_section = False
 			# Token has content model:
@@ -417,8 +426,8 @@ class Formatter():
 			return self.formatter.correct
 
 		def attribute(self, key, value):
-			if (key and value):
-				return " %s=\"%s\"" %(key, value)
+			if ((key and value) or self.formatter.emptyattr):
+				return " %s=\"%s\"" % (key, value)
 			return ""
 
 		def indent_insert(self):
@@ -494,6 +503,8 @@ class Formatter():
 			if not self.cdata_section:
 				str = re.sub(r'&', '&amp;', str)
 				str = re.sub(r'<', '&lt;', str)
+			if str and self.formatter.indent_data:
+				str = "%s%s" % (self.indent_create(self.level + 1), str)
 			return str
 	
 		def pre_operate(self):
@@ -580,10 +591,10 @@ class Formatter():
 		def __unicode__(self):
 			str = ""
 			# Don't close empty nodes on compression mode:
-			if (not self.formatter.compress or self.list[self.pos-1].name != "StartElement"):
-				if (self.preserve in [0] and self.indent):
+			if (self.formatter.noemptytag or self.list[self.pos - 1].name != "StartElement"):
+				if (not self.formatter.compress or self.preserve in [0] and self.indent):
 					str += self.indent_insert()
-				str += "</%s>" %self.arg[0]
+				str += "</%s>" % self.arg[0]
 			return str
 		
 		def configure(self):
@@ -653,7 +664,7 @@ class Formatter():
 			str += "<%s" %self.arg[0]
 			for attr in sorted(self.arg[1].keys()):
 				str += self.attribute(attr, self.arg[1][attr])
-			if (self.list[self.pos+1].end and self.formatter.compress):
+			if (self.list[self.pos + 1].end and not self.formatter.noemptytag):
 				str += "/>"
 			else:
 				str += ">"
