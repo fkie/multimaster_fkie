@@ -112,10 +112,13 @@ class LineNumberWidget(QFrame):
     def eventFilter(self, obj, event):
         # Update the line numbers for all events on the text edit and the viewport.
         # This is easier than connecting all necessary signals.
-        if obj in (self.edit, self.edit.viewport()):
-            self.number_bar.update()
-            return False
-        return QFrame.eventFilter(obj, event)
+        try:
+            if obj in (self.edit, self.edit.viewport()):
+                self.number_bar.update()
+                return False
+            return QFrame.eventFilter(obj, event)
+        except Exception:
+            pass
 
     def get_text_edit(self):
         return self.edit
