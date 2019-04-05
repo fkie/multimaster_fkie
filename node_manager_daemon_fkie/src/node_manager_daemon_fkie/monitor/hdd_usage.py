@@ -53,6 +53,9 @@ class HddUsage(SensorInterface):
         self._path = settings.param('sysmon/Disk/path', self._path)
 
     def check_sensor(self):
+        diag_level = 0
+        diag_vals = []
+        diag_msg = ''
         try:
             hdd = psutil.disk_usage(self._path)
             diag_level = 0
