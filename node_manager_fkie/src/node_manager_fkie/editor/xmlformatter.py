@@ -55,7 +55,7 @@ class Formatter():
 	# Use internal encoding:
 	encoding_internal = None
 
-	def __init__(self, indent = DEFAULT_INDENT, preserve = [], compress = DEFAULT_COMPRESS, indent_char = DEFAULT_INDENT_CHAR, encoding_input = DEFAULT_ENCODING_INPUT, encoding_output = DEFAULT_ENCODING_OUTPUT, inline = DEFAULT_INLINE, correct = DEFAULT_CORRECT, noemptytag = DEFAULT_NOEMPTYTAG, emptyattr = DEFAULT_EMPTYATTR, indent_data = DEFAULT_INDENT_DATA):
+	def __init__(self, indent = DEFAULT_INDENT, preserve = [], compress = DEFAULT_COMPRESS, indent_char = DEFAULT_INDENT_CHAR, encoding_input = DEFAULT_ENCODING_INPUT, encoding_output = DEFAULT_ENCODING_OUTPUT, inline = DEFAULT_INLINE, correct = DEFAULT_CORRECT, noemptytag = DEFAULT_NOEMPTYTAG, emptyattr = DEFAULT_EMPTYATTR, indent_data = DEFAULT_INDENT_DATA, wraped = ['node', 'group', 'include']):
 		# Minify the XML document:
 		self.compress = compress
 		# Allow self closing tag also it not compress
@@ -78,6 +78,8 @@ class Formatter():
 		self.inline = inline
 		# Don't compress this elements and their descendants:
 		self.preserve = preserve
+		# Insert new line before this elements
+		self.wraped = wraped
 
 	@property	
 	def encoding_effective(self, enc = None):
@@ -673,6 +675,8 @@ class Formatter():
 
 		def __unicode__(self):
 			str = ""
+			if self.arg[0] in self.formatter.wraped:
+				str += "\n"
 			if (self.preserve in [0, 1] and self.indent):
 				str += self.indent_insert()
 			str += "<%s" %self.arg[0]
