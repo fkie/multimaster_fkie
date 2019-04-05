@@ -11,6 +11,7 @@
     <file>icons/crystal_clear_button_close.png</file>
     <file>icons/crystal_clear_clicknrun.png</file>
     <file>icons/crystal_clear_copy_log_path_24.png</file>
+    <file>icons/crystal_clear_critical_128.png</file>
     <file>icons/crystal_clear_discovery.png</file>
     <file>icons/crystal_clear_dyncfg.png</file>
     <file>icons/crystal_clear_edit_launch.png</file>
@@ -20,6 +21,7 @@
     <file>icons/crystal_clear_group.png</file>
     <file>icons/crystal_clear_hdd_warn.png</file>
     <file>icons/crystal_clear_helpcenter.png</file>
+    <file>icons/crystal_clear_info_128.png</file>
     <file>icons/crystal_clear_info.png</file>
     <file>icons/crystal_clear_launch_file.png</file>
     <file>icons/crystal_clear_launch_file_new.png</file>

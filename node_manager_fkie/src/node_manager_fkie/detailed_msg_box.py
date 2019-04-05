@@ -33,14 +33,14 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtCore import Qt
-from python_qt_binding.QtGui import QPixmap
+from python_qt_binding.QtGui import QImage, QPixmap
 
 try:
     from python_qt_binding.QtGui import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
-    from python_qt_binding.QtGui import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QStyleOption, QApplication
-except:
+    from python_qt_binding.QtGui import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
+except Exception:
     from python_qt_binding.QtWidgets import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
-    from python_qt_binding.QtWidgets import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QStyleOption, QApplication
+    from python_qt_binding.QtWidgets import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
 
 
 IGNORED_ERRORS = []
@@ -103,17 +103,16 @@ class MessageBox(QDialog):
         self.horizontalLayout.setContentsMargins(1, 1, 1, 1)
         # create icon
         pixmap = None
-        style_option = QStyleOption()
         if icon == self.NoIcon:
             pass
         elif icon == self.Question:
-            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxQuestion, style_option)
+            pixmap = QPixmap(":icons/crystal_clear_question.png")
         elif icon == self.Information:
-            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxInformation, style_option)
+            pixmap = QPixmap(QImage(":icons/crystal_clear_info_128.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         elif icon == self.Warning:
             pixmap = QPixmap(":icons/crystal_clear_warning_56.png")
         elif icon == self.Critical:
-            pixmap = QApplication.style().standardPixmap(QStyle.SP_MessageBoxCritical, style_option)
+            pixmap = QPixmap(QImage(":icons/crystal_clear_critical_128.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         spacerItem = QSpacerItem(10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.icon_label = QLabel()
