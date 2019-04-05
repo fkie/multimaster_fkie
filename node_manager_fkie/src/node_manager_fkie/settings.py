@@ -159,6 +159,7 @@ class Settings(object):
     TIMEOUT_CLOSE_DIALOG = 5.0
     GROUP_BY_NAMESPACE = True
     TIMEOUT_GRPC = nmd_settings.GRPC_TIMEOUT
+    SYSMON_DEFAULT_INTERVAL = 10
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -240,6 +241,7 @@ class Settings(object):
         self._timeout_close_dialog = float(settings.value('timeout_close_dialog', self.TIMEOUT_CLOSE_DIALOG))
         self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
         self._timeout_grpc = float(settings.value('timeout_grpc', self.TIMEOUT_GRPC))
+        self._sysmon_default_interval = int(settings.value('sysmon_default_interval', self.SYSMON_DEFAULT_INTERVAL))
         nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
         settings.beginGroup('host_colors')
         self._host_colors = dict()
@@ -560,6 +562,16 @@ class Settings(object):
             nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
             settings = self.qsettings(self.CFG_FILE)
             settings.setValue('timeout_grpc', self._timeout_grpc)
+
+    @property
+    def sysmon_default_interval(self):
+        return self._sysmon_default_interval
+
+    @sysmon_default_interval.setter
+    def sysmon_default_interval(self, length):
+        self._sysmon_default_interval = length
+        settings = self.qsettings(self.CFG_FILE)
+        settings.setValue('sysmon_default_interval', self._sysmon_default_interval)
 
     @property
     def group_nodes_by_namespace(self):

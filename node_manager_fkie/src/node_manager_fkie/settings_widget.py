@@ -248,9 +248,17 @@ class SettingsWidget(QDockWidget):
                                                     'settings': nm.settings(),
                                                     'attrname': 'timeout_grpc',
                                                     'value_default': nm.settings().TIMEOUT_GRPC,
-                                                    'value_step': 15.,
+                                                    'value_step': 1.,
                                                     'tooltip': "<p>Timeout in seconds for GRPC requests to daemon.</p>"
-                                                    },)
+                                                    },),
+                    'Sysmon default interval:': ({'value': nm.settings()._sysmon_default_interval,
+                                                  'settings': nm.settings(),
+                                                  'attrname': 'sysmon_default_interval',
+                                                  'value_default': nm.settings().SYSMON_DEFAULT_INTERVAL,
+                                                  'value_step': 1,
+                                                  'tooltip': "<p>Interval in seconds to get system monitor diagnostics from each remote host.</p>",
+                                                  'need_restart': True
+                                                  },)
                     }
         self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)

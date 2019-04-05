@@ -382,6 +382,9 @@ class MasterViewProxy(QWidget):
         nm.nmd().multiple_screens.connect(self.on_multiple_screens)
         self._sysmon_timer = None
         self._sysmon_enabled = False
+        self._sysmon_timer_idle = QTimer()
+        self._sysmon_timer_idle.timeout.connect(self._sysmon_update_callback)
+        self._sysmon_timer_idle.start(nm.settings().sysmon_default_interval * 1000)
 
 #        self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+C", "copy selected values to clipboard")), self)
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
@@ -397,6 +400,9 @@ class MasterViewProxy(QWidget):
     def stop(self):
         print("  Shutdown master", self.masteruri, "...")
         # self.default_cfg_handler.stop()
+        if self._sysmon_timer is not None:
+            self._sysmon_timer.stop()
+        self._sysmon_timer_idle.stop()
         nm.nmd().changed_file.disconnect(self.on_changed_file)
         nm.nmd().multiple_screens.disconnect(self.on_multiple_screens)
         self.launch_server_handler.stop()
@@ -1138,6 +1144,8 @@ class MasterViewProxy(QWidget):
     def _sysmon_update_callback(self):
         if self._has_nmd:
             nm.nmd().get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+        if not nm.is_local(self.mastername):
+            nm.nmd().get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 
     @property
     def launch_servers(self):
