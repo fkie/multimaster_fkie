@@ -30,7 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+from __future__ import division, absolute_import, print_function
+# unicode_literals are not included to avoid problems with publish to ROS topics
 
 from python_qt_binding.QtCore import Qt, Signal, QPoint, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette
@@ -39,6 +40,7 @@ import os
 import roslib.msgs
 import roslib.names
 import rospy
+import ruamel.yaml
 import sys
 import threading
 
@@ -227,14 +229,13 @@ class ParameterDescription(object):
                         self._value = value
                     else:
                         try:
-                            import yaml
-                            self._value = yaml.load("[%s]" % value)
+                            self._value = ruamel.yaml.load("[%s]" % value, Loader=ruamel.yaml.Loader)
                             # if there is no YAML, load() will return an
                             # empty string.  We want an empty dictionary instead
                             # for our representation of empty.
                             if self._value is None:
                                 self._value = []
-                        except yaml.MarkedYAMLError, e:
+                        except ruamel.yaml.MarkedYAMLError, e:
                             raise Exception("Field [%s] yaml error: %s" % (self.fullName(), utf8(e)))
                     if self.arrayLength() is not None and self.arrayLength() != len(self._value):
                         raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(self._value)), " != ", str(self.arrayLength())]))
@@ -1047,7 +1048,6 @@ class ParameterDialog(QDialog):
 
     def _save_parameter(self):
         try:
-            import yaml
             (fileName, _) = QFileDialog.getSaveFileName(self,
                                                         "Save parameter",
                                                         self.__current_path,
@@ -1056,7 +1056,7 @@ class ParameterDialog(QDialog):
                 self.__current_path = os.path.dirname(fileName)
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
                 content = self.content.value(with_tags=True)
-                text = yaml.dump(content, default_flow_style=False)
+                text = ruamel.yaml.dump(content, default_flow_style=False)
                 with open(fileName, 'w+') as f:
                     f.write(text)
         except Exception as e:
@@ -1068,7 +1068,6 @@ class ParameterDialog(QDialog):
 
     def _load_parameter(self):
         try:
-            import yaml
             (fileName, _) = QFileDialog.getOpenFileName(self, "Load parameter",
                                                               self.__current_path,
                                                               "YAML files (*.yaml);;All files (*)")
@@ -1077,7 +1076,7 @@ class ParameterDialog(QDialog):
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
                 with open(fileName, 'r') as f:
                     # print yaml.load(f.read())
-                    self.content.set_values(yaml.load(f.read()))
+                    self.content.set_values(ruamel.yaml.load(f.read(), Loader=ruamel.yaml.Loader))
         except Exception as e:
             import traceback
             print(traceback.format_exc())
@@ -1208,14 +1207,13 @@ class MasterParameterDialog(ParameterDialog):
                         value = str2bool(params['value'])
                     elif params['type'] == 'list':
                         try:
-                            import yaml
-                            value = yaml.load("[%s]" % params['value'])
+                            value = ruamel.yaml.load("[%s]" % params['value'], Loader=ruamel.yaml.Loader)
                             # if there is no YAML, load() will return an
                             # empty string.  We want an empty dictionary instead
                             # for our representation of empty.
                             if value is None:
                                 value = []
-                        except yaml.MarkedYAMLError, e:
+                        except ruamel.yaml.MarkedYAMLError, e:
                             MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e))
                     else:
                         value = params['value']

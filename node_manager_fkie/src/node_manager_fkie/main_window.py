@@ -48,7 +48,7 @@ import socket
 import time
 import uuid
 import xmlrpclib
-import yaml
+import ruamel.yaml
 
 from master_discovery_fkie.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
 from node_manager_daemon_fkie.common import utf8
@@ -2074,7 +2074,7 @@ class MainWindow(QMainWindow):
         nm.nmd().get_config_threaded(nmd_uri)
 
     def _nmd_yaml_cfg(self, data, nmdurl):
-        params = yaml.load(data)
+        params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
         dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Daemon Configuration')
@@ -2085,7 +2085,7 @@ class MainWindow(QMainWindow):
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: set configuration for daemon' % nmdurl,
                                                nm.nmd().set_config,
-                                               (nmdurl, yaml.dump(params)))
+                                               (nmdurl, ruamel.yaml.dump(params)))
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: get system diagnostics' % nmdurl,
                                                nm.nmd().get_system_diagnostics_threaded,

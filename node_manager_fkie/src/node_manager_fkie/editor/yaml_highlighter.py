@@ -62,7 +62,7 @@ class YamlHighlighter(QSyntaxHighlighter):
         self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
 
         # create pattern for params
-        self.rules.append((self._create_regexp("^\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp("\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
 
         # create pattern for params
         self.rules.append((self._create_regexp(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$"), self._create_format(Qt.darkBlue)))

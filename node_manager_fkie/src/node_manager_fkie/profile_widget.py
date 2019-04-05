@@ -40,6 +40,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QFileDialog
 import os
 import rospy
+import ruamel.yaml
 import uuid
 from master_discovery_fkie.common import get_hostname
 from node_manager_daemon_fkie import url as nmdurl
@@ -116,7 +117,6 @@ class ProfileWidget(QDockWidget):
                 if path is None:
                     return
             rospy.loginfo("Save profile %s" % path)
-            import yaml
             content = {}
             for muri, master in self._main_window.masters.items():
                 if not masteruri or masteruri == muri:
@@ -171,7 +171,7 @@ class ProfileWidget(QDockWidget):
                         content[smuri]['zeroconf'] = zc_param
                     if nmd_param:
                         content[smuri]['node_manager_daemon'] = nmd_param
-            text = yaml.dump(content, default_flow_style=False)
+            text = ruamel.yaml.dump(content, default_flow_style=False)
             with open(path, 'w+') as f:
                 f.write(text)
         except Exception as e:
@@ -195,10 +195,8 @@ class ProfileWidget(QDockWidget):
         hasstart = False
         if path:
             try:
-                import yaml
                 with open(path, 'r') as f:
-                    # print yaml.load(f.read())
-                    content = yaml.load(f.read())
+                    content = ruamel.yaml.load(f.read(), Loader=ruamel.yaml.Loader)
                     if not isinstance(content, dict):
                         raise Exception("Mailformed profile: %s" % os.path.basename(path))
                     for muri, master_dict in content.items():

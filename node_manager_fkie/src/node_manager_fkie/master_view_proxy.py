@@ -40,6 +40,7 @@ import getpass
 import os
 import roslib
 import rospy
+import ruamel.yaml
 import socket
 import time
 import traceback
@@ -3008,14 +3009,13 @@ class MasterViewProxy(QWidget):
                     value = bool(params['value'].lower() in ("yes", "true", "t", "1"))
                 elif params['type'] == 'list':
                     try:
-                        import yaml
-                        value = [yaml.load(params['value'])]
+                        value = [ruamel.yaml.load(params['value'], Loader=ruamel.yaml.Loader)]
                         # if there is no YAML, load() will return an
                         # empty string.  We want an empty dictionary instead
                         # for our representation of empty.
                         if value is None:
                             value = []
-                    except yaml.MarkedYAMLError, e:
+                    except ruamel.yaml.MarkedYAMLError, e:
                         MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), buttons=MessageBox.Ok)
                         return
                 else:
@@ -3082,9 +3082,7 @@ class MasterViewProxy(QWidget):
                                     curr_v = curr_v[k]
                                 else:
                                     curr_v[k] = value
-                        import yaml
-#            print yaml.dump(values, default_flow_style=False)
-                        f.write(yaml.dump(values, default_flow_style=False))
+                        f.write(ruamel.yaml.dump(values, default_flow_style=False))
                 except Exception as e:
                     print(utf8(traceback.format_exc(1)))
                     MessageBox.warning(self, "Save parameter Error",
@@ -3148,15 +3146,14 @@ class MasterViewProxy(QWidget):
                     value = float(item.text())
                 elif isinstance(item.value, list):
                     try:
-                        import yaml
-                        value = yaml.load(item.text())
+                        value = ruamel.yaml.load(item.text(), Loader=ruamel.yaml.Loader)
                         # if there is no YAML, load() will return an
                         # empty string.  We want an empty dictionary instead
                         # for our representation of empty.
                         if value is None:
                             value = []
                         value = self._replaceDoubleSlash(value)
-                    except yaml.MarkedYAMLError, e:
+                    except ruamel.yaml.MarkedYAMLError, e:
                         MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), buttons=MessageBox.Ok)
                         item.setText(utf8(item.value))
                         return

@@ -35,6 +35,7 @@ import re
 import sys
 import getopt
 import xml.parsers.expat
+from . import yamlformatter
 
 __version__ = "0.1.1"
 
@@ -498,19 +499,26 @@ class Formatter():
 				if (self.empty and not self.descendant_mixed):
 					str = ""
 				else:
-					if (self.correct):
-						str = re.sub(r'\r\n', '\n', str)	
-						str = re.sub(r'\r|\n|\t', ' ', str)
-						str = re.sub(r'\s+', ' ', str)
 					if (self.delete_leading):
 						str = re.sub(r'^\s', '', str)
 					if (self.delete_trailing):
 						str = re.sub(r'\s$', '', str)
+					if (self.correct):
+						try:
+							indent = ''
+							if self.formatter.indent_data:
+								indent = self.indent_create(self.level + 1).replace('\n', '')
+							yamlftr = yamlformatter.YamlFormatter(indent)
+							str = yamlftr.format_string(str)
+						except Exception:
+							str = re.sub(r'\r\n', '\n', str)
+							str = re.sub(r'\r|\t', ' ', str)
+							str = re.sub(r'\s+', ' ', str)
+							if self.formatter.indent_data:
+								str = '%s%s' % (self.indent_create(self.level + 1), str)
 			if not self.cdata_section:
 				str = re.sub(r'&', '&amp;', str)
 				str = re.sub(r'<', '&lt;', str)
-			if str and self.formatter.indent_data:
-				str = "%s%s" % (self.indent_create(self.level + 1), str)
 			return str
 	
 		def pre_operate(self):

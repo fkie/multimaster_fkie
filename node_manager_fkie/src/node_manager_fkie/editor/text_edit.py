@@ -112,7 +112,8 @@ class TextEdit(QTextEdit):
             self.setText("")
             _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
             self.setText(file_content)
-        if filename.endswith('.launch'):
+        ext = os.path.splitext(filename)
+        if ext[1] in ['.launch', '.xml', '.xacro', '.urdf']:
             self.hl = XmlHighlighter(self.document())
             self.cursorPositionChanged.connect(self._document_position_changed)
         else:
@@ -128,6 +129,7 @@ class TextEdit(QTextEdit):
     def save(self, force=False):
         '''
         Saves changes to the file.
+
         :return: saved, errors, msg
         :rtype: bool, bool, str
         '''
@@ -154,10 +156,10 @@ class TextEdit(QTextEdit):
                 # validate the yaml structure of yaml files
                 elif ext[1] in self.YAML_VALIDATION_FILES:
                     try:
-                        import yaml
-                        yaml.load(self.toPlainText().encode('utf-8'))
-                    except yaml.MarkedYAMLError as e:
-                        return True, True, "%s" % e
+                        import ruamel.yaml
+                        ruamel.yaml.load(self.toPlainText().encode('utf-8'), Loader=ruamel.yaml.Loader)
+                    except ruamel.yaml.MarkedYAMLError as e:
+                        return True, True, "YAML validation error: %s" % e
                 return True, False, ''
             except IOError as ioe:
                 if ioe.errno in [file_item.EFILE_CHANGED, file_item.EFILE_REMOVED]:
@@ -186,7 +188,26 @@ class TextEdit(QTextEdit):
                 cursor.insertText(xml_pretty_str)
                 cursor.endEditBlock()
         except Exception as err:
-            rospy.logwarn("Format XML failed: %s" % utf8(err))
+            msg = "Format XML failed: %s" % utf8(err)
+            rospy.logwarn(msg)
+            MessageBox.warning(self, "Warning", msg)
+
+    def toprettyyaml(self):
+        try:
+            from . import yamlformatter
+            formatter = yamlformatter.YamlFormatter()
+            pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
+            cursor = self.textCursor()
+            if not cursor.isNull():
+                cursor.beginEditBlock()
+                cursor.movePosition(QTextCursor.Start)
+                cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+                cursor.insertText(pretty_str)
+                cursor.endEditBlock()
+        except Exception as err:
+            msg = "Format YAML failed: %s" % utf8(err)
+            rospy.logwarn(msg)
+            MessageBox.warning(self, "Warning", msg)
 
     def markLine(self, no):
         try:
@@ -203,6 +224,7 @@ class TextEdit(QTextEdit):
         '''
         Sets the current working path. This path is to open the included files,
         which contains the relative path.
+
         :param str path: the path of the current opened file (without the file)
         '''
         self.path = path
@@ -211,6 +233,7 @@ class TextEdit(QTextEdit):
         '''
         Searches in the given text for key indicates the including of a file and
         return their index.
+
         :param str text: text to find
         :return: the index of the including key or -1
         :rtype: int
@@ -306,7 +329,10 @@ class TextEdit(QTextEdit):
         elif event.modifiers() == Qt.ControlModifier | Qt.ShiftModifier and event.key() == Qt.Key_Slash:
             self.commentText()
         elif event.modifiers() == Qt.ControlModifier | Qt.ShiftModifier and event.key() == Qt.Key_F:
-            self.toprettyxml()
+            if isinstance(self.hl, XmlHighlighter):
+                self.toprettyxml()
+            else:
+                self.toprettyyaml()
         elif event.modifiers() == Qt.AltModifier and event.key() == Qt.Key_Space:
             ext = os.path.splitext(self.filename)
             if ext[1] in self.CONTEXT_FILE_EXT:
@@ -607,9 +633,13 @@ class TextEdit(QTextEdit):
 
     def show_custom_context_menu(self, pos):
         menu = QTextEdit.createStandardContextMenu(self)
-        formatxml_action = QAction("Format XML", self, statusTip="", triggered=self.toprettyxml)
-        formatxml_action.setShortcuts(QKeySequence("Ctrl+Shift+F"))
-        menu.addAction(formatxml_action)
+        formattext_action = None
+        if isinstance(self.hl, XmlHighlighter):
+            formattext_action = QAction("Format XML", self, statusTip="", triggered=self.toprettyxml)
+        else:
+            formattext_action = QAction("Format as YAML", self, statusTip="", triggered=self.toprettyyaml)
+        formattext_action.setShortcuts(QKeySequence("Ctrl+Shift+F"))
+        menu.addAction(formattext_action)
 #    if not self.textCursor().selectedText():
 #      self.setTextCursor(self.cursorForPosition(pos))
         submenu = self._create_context_menu_for_tag()
