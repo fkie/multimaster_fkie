@@ -171,9 +171,10 @@ class ProfileWidget(QDockWidget):
                         content[smuri]['zeroconf'] = zc_param
                     if nmd_param:
                         content[smuri]['node_manager_daemon'] = nmd_param
-            text = ruamel.yaml.dump(content, default_flow_style=False)
+            buf = ruamel.yaml.compat.StringIO()
+            ruamel.yaml.dump(content, buf, Dumper=ruamel.yaml.RoundTripDumper)
             with open(path, 'w+') as f:
-                f.write(text)
+                f.write(buf.getvalue())
         except Exception as e:
             import traceback
             print(utf8(traceback.format_exc(3)))
