@@ -138,8 +138,10 @@ class FileStub(object):
         return (file_size, file_mtime, file_content)
 
     def _gen_save_content_list(self, path, content, mtime, package=''):
-        send_content = content
-        while send_content:
+        minone = True
+        send_content = content.encode('utf-8')
+        while send_content or minone:
+            minone = False
             chunk = send_content
             # split into small parts on big files
             if len(chunk) > self.FILE_CHUNK_SIZE:

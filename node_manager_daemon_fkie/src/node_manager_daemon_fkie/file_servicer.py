@@ -109,6 +109,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
             yield result
 
     def SaveFileContent(self, request_iterator, context):
+        result = fms.SaveFileContentReply()
         try:
             path = ''
             dest_size = 0
