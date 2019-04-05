@@ -34,8 +34,8 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 import os
 import rospy
+import ruamel.yaml
 import threading
-import yaml
 
 from .common import utf8
 
@@ -178,10 +178,10 @@ class Settings:
         with self._mutex:
             try:
                 with open(self.filename, 'r') as stream:
-                    result = yaml.load(stream)
+                    result = ruamel.yaml.load(stream, Loader=ruamel.yaml.Loader)
                     rospy.loginfo('loaded configuration from %s' % self.filename)
                     self._cfg = result
-            except (yaml.YAMLError, IOError) as exc:
+            except (ruamel.yaml.YAMLError, IOError) as exc:
                 rospy.loginfo('%s: use default configuration!' % utf8(exc))
                 self._cfg = self.default()
             self._notify_reload_callbacks()
@@ -192,9 +192,9 @@ class Settings:
         '''
         with open(self.filename, 'w') as stream:
             try:
-                stream.write(yaml.dump(self._cfg))
+                stream.write(ruamel.yaml.dump(self._cfg))
                 rospy.logdebug("Configuration saved to '%s'" % self.filename)
-            except yaml.YAMLError as exc:
+            except ruamel.yaml.YAMLError as exc:
                 rospy.logwarn("Cant't save configuration to '%s': %s" % (self.filename, utf8(exc)))
 
     def yaml(self, _nslist=[]):
@@ -203,7 +203,7 @@ class Settings:
         :return: Create YAML string representation from configuration dictionary structure.
         :rtype: str
         '''
-        return yaml.dump(self._cfg)
+        return ruamel.yaml.dump(self._cfg)
 
     def apply(self, data):
         '''
@@ -214,7 +214,7 @@ class Settings:
         :param str data: YAML as string representation.
         '''
         with self._mutex:
-            self._cfg = self._apply_recursive(yaml.load(data), self._cfg)
+            self._cfg = self._apply_recursive(ruamel.yaml.load(data, Loader=ruamel.yaml.Loader), self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
                 rospy.loginfo("Reset configuration requested!")
