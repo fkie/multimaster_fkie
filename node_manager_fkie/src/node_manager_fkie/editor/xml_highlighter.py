@@ -179,13 +179,14 @@ class XmlHighlighter(QSyntaxHighlighter):
         self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
         self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
         # create patterns for yaml parameter inside
-        self.rules.append((self._create_regexp("^\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp("[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
         # create patterns for yaml oneline strings inside
         self.rules.append((self._create_regexp("'.*'"), self._create_format(Qt.blue)))
         # create pattern for list signes
         self.rules.append((self._create_regexp("^\s*-"), self._create_format(Qt.darkRed, 'bold')))
         # create pattern for digits
         self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
+        self.yaml_comment_rule = (self._create_regexp("#[.]*"), self._create_format(Qt.darkGray))
         # create patterns for strings
         self.string_pattern = QRegExp("\"")
         self.string_format = self._create_format(Qt.blue)
@@ -226,9 +227,13 @@ class XmlHighlighter(QSyntaxHighlighter):
                     frmt.setFontWeight(QFont.Bold)
                 self.setFormat(index, length, frmt)
                 index = pattern.indexIn(text, index + length)
+        # search for YAML comments
+        index = self.yaml_comment_rule[0].indexIn(text)
+        if index >= 0:
+            self.setFormat(index, len(text) - index, self.yaml_comment_rule[1])
         self._tag_hl_range = []
         self.setCurrentBlockState(0)
-        # detection for comments
+        # detection for XML comments
         self._comments_idx = []
         idx_start_cmt = 0
         comment_length = 0
