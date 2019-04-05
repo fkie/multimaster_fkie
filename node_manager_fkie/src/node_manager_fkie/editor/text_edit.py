@@ -117,7 +117,7 @@ class TextEdit(QTextEdit):
         if ext[1] in ['.launch', '.xml', '.xacro', '.urdf']:
             if ext[1] in ['.launch']:
                 self._is_launchfile = True
-            self.hl = XmlHighlighter(self.document())
+            self.hl = XmlHighlighter(self.document(), is_launch=False)
             self.cursorPositionChanged.connect(self._document_position_changed)
         else:
             self.hl = YamlHighlighter(self.document())

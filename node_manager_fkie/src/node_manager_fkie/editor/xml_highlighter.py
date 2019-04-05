@@ -158,8 +158,9 @@ class XmlHighlighter(QSyntaxHighlighter):
     STATE_COMMENT = 2
     STATE_STRING = 4
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, is_launch=True):
         QSyntaxHighlighter.__init__(self, parent)
+        self._is_launch = is_launch
         self.rules = []
         self.comment_start = QRegExp("<!--")
         self.comment_end = QRegExp("-->")
@@ -168,11 +169,17 @@ class XmlHighlighter(QSyntaxHighlighter):
         # create patterns for braces
         self.rules.append((self._create_regexp("</?|/?>"), self._create_format(QColor(24, 24, 24))))
         # create patterns for TAG
-        tag_list = '|'.join(["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()])
-        self.rules.append((self._create_regexp(tag_list), self._create_format(Qt.darkRed)))
+        if self._is_launch:
+            tag_list = '|'.join(["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()])
+            self.rules.append((self._create_regexp(tag_list), self._create_format(Qt.darkRed)))
+        else:
+            self.rules.append((self._create_regexp(">|/>|<[/.\w:]*[\s\t>]|<[/.\w:]*$"), self._create_format(Qt.darkRed)))
         # create patterns for ATTRIBUTES
-        attr_list = '|'.join(set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
-        self.rules.append((self._create_regexp(attr_list), self._create_format(QColor(0, 100, 0))))  # darkGreen
+        if self._is_launch:
+            attr_list = '|'.join(set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
+            self.rules.append((self._create_regexp(attr_list), self._create_format(QColor(0, 100, 0))))  # darkGreen
+        else:
+            self.rules.append((self._create_regexp("[_.\w]*="), self._create_format(QColor(0, 100, 0))))  # darkGreen
         # create patterns for substitutions
         self.rule_arg = (self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(77, 0, 38)))
         # create patterns for DOCTYPE
