@@ -80,6 +80,7 @@ class Formatter():
 		self.preserve = preserve
 		# Insert new line before this elements
 		self.wraped = wraped
+		self.attr_order = []
 
 	@property	
 	def encoding_effective(self, enc = None):
@@ -148,6 +149,7 @@ class Formatter():
 			self._list = []
 			self.formatter = formatter
 			self.parser = xml.parsers.expat.ParserCreate(encoding=self.formatter.encoding_input)
+			self.parser.ordered_attributes = True
 			self.parser.specified_attributes = 1
 			self.parser.buffer_text = True
 			# Push tokens to buffer:
@@ -679,9 +681,21 @@ class Formatter():
 				str += "\n"
 			if (self.preserve in [0, 1] and self.indent):
 				str += self.indent_insert()
-			str += "<%s" %self.arg[0]
-			for attr in sorted(self.arg[1].keys()):
-				str += self.attribute(attr, self.arg[1][attr])
+			str += "<%s" % self.arg[0]
+			ordered = ['' for i in range(len(self.formatter.attr_order))]
+			for i in range(0, len(self.arg[1]), 2):
+				str_val = self.attribute(self.arg[1][i], self.arg[1][i + 1])
+				try:
+					# if this attribute is in ordered list, it will be inserted, otherwise appended.
+					idx = self.formatter.attr_order.index(self.arg[1][i])
+					del ordered[idx]
+					ordered.insert(idx, str_val)
+				except Exception:
+					ordered.append(str_val)
+			# add attributes
+			for val in ordered:
+				if val:
+					str += val
 			if (self.list[self.pos + 1].end and not self.formatter.noemptytag):
 				str += "/>"
 			else:

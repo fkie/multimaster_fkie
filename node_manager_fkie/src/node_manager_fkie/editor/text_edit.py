@@ -113,7 +113,10 @@ class TextEdit(QTextEdit):
             _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
             self.setText(file_content)
         ext = os.path.splitext(filename)
+        self._is_launchfile = False
         if ext[1] in ['.launch', '.xml', '.xacro', '.urdf']:
+            if ext[1] in ['.launch']:
+                self._is_launchfile = True
             self.hl = XmlHighlighter(self.document())
             self.cursorPositionChanged.connect(self._document_position_changed)
         else:
@@ -179,6 +182,8 @@ class TextEdit(QTextEdit):
         try:
             from . import xmlformatter
             formatter = xmlformatter.Formatter(indent="2", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
+            if self._is_launchfile:
+                formatter.attr_order = ['if', 'unless', 'name', 'pkg', 'type']
             xml_pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
             cursor = self.textCursor()
             if not cursor.isNull():
