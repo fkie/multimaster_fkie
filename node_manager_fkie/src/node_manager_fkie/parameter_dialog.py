@@ -1056,9 +1056,10 @@ class ParameterDialog(QDialog):
                 self.__current_path = os.path.dirname(fileName)
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
                 content = self.content.value(with_tags=True)
-                text = ruamel.yaml.dump(content, default_flow_style=False)
+                buf = ruamel.yaml.compat.StringIO()
+                ruamel.yaml.dump(content, buf, Dumper=ruamel.yaml.RoundTripDumper)
                 with open(fileName, 'w+') as f:
-                    f.write(text)
+                    f.write(buf.getvalue())
         except Exception as e:
             import traceback
             print(traceback.format_exc(3))

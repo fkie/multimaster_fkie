@@ -3083,7 +3083,9 @@ class MasterViewProxy(QWidget):
                                     curr_v = curr_v[k]
                                 else:
                                     curr_v[k] = value
-                        f.write(ruamel.yaml.dump(values, default_flow_style=False))
+                        buf = ruamel.yaml.compat.StringIO()
+                        ruamel.yaml.dump(values, buf, Dumper=ruamel.yaml.RoundTripDumper)
+                        f.write(buf.getvalue())
                 except Exception as e:
                     print(utf8(traceback.format_exc(1)))
                     MessageBox.warning(self, "Save parameter Error",

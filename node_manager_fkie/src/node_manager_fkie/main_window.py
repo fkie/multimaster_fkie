@@ -2082,10 +2082,12 @@ class MainWindow(QMainWindow):
         if dia.exec_():
             try:
                 params = dia.getKeywords(with_tags=True)
+                buf = ruamel.yaml.compat.StringIO()
+                ruamel.yaml.dump(params, buf, Dumper=ruamel.yaml.RoundTripDumper)
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: set configuration for daemon' % nmdurl,
                                                nm.nmd().set_config,
-                                               (nmdurl, ruamel.yaml.dump(params)))
+                                               (nmdurl, buf.getvalue()))
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: get system diagnostics' % nmdurl,
                                                nm.nmd().get_system_diagnostics_threaded,

@@ -192,7 +192,7 @@ class Settings:
         '''
         with open(self.filename, 'w') as stream:
             try:
-                stream.write(ruamel.yaml.dump(self._cfg))
+                ruamel.yaml.dump(self._cfg, stream, Dumper=ruamel.yaml.RoundTripDumper)
                 rospy.logdebug("Configuration saved to '%s'" % self.filename)
             except ruamel.yaml.YAMLError as exc:
                 rospy.logwarn("Cant't save configuration to '%s': %s" % (self.filename, utf8(exc)))

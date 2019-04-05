@@ -34,7 +34,6 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 import ruamel.yaml
-from ruamel.yaml.compat import StringIO
 
 
 class YamlFormatter(ruamel.yaml.YAML):
@@ -42,11 +41,12 @@ class YamlFormatter(ruamel.yaml.YAML):
     def __init__(self, indent=''):
         self.indent_data = indent
         ruamel.yaml.YAML.__init__(self)
-        self.indent(sequence=4, offset=2)
 
     def format_string(self, data):
-        code = ruamel.yaml.load(data, Loader=ruamel.yaml.RoundTripLoader)
-        result = self.dump(code)
+        code = ruamel.yaml.load(data.encode('utf-8'), Loader=ruamel.yaml.RoundTripLoader)
+        buf = ruamel.yaml.compat.StringIO()
+        ruamel.yaml.dump(code, buf, Dumper=ruamel.yaml.RoundTripDumper, encoding='utf-8')
+        result = buf.getvalue()  # self.dump(code)
         if self.indent_data:
             lines = result.splitlines()
             result = ''
@@ -68,12 +68,3 @@ class YamlFormatter(ruamel.yaml.YAML):
                     result += line
                 last_idx = idx
         return result
-
-    def dump(self, data, stream=None, **kw):
-        inefficient = False
-        if stream is None:
-            inefficient = True
-            stream = StringIO()
-        ruamel.yaml.YAML.dump(self, data, stream, **kw)
-        if inefficient:
-            return stream.getvalue()
