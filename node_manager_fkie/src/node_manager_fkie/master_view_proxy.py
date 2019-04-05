@@ -2435,10 +2435,11 @@ class MasterViewProxy(QWidget):
         try:
             selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
             for node in selectedNodes:
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               "kill screen of %s" % node.name,
-                                               nm.screen().kill_screens,
-                                               (node.name, self._grpc_from_node(node), False, self.current_user))
+                if not self._is_in_ignore_list(node.name):
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   "kill screen of %s" % node.name,
+                                                   nm.screen().kill_screens,
+                                                   (node.name, self._grpc_from_node(node), False, self.current_user))
             self._start_queue(self._progress_queue)
         finally:
             self.setCursor(cursor)
