@@ -45,26 +45,31 @@ class YamlFormatter(ruamel.yaml.YAML):
     def format_string(self, data):
         code = ruamel.yaml.load(data.encode('utf-8'), Loader=ruamel.yaml.RoundTripLoader)
         buf = ruamel.yaml.compat.StringIO()
-        ruamel.yaml.dump(code, buf, Dumper=ruamel.yaml.RoundTripDumper, encoding='utf-8')
-        result = buf.getvalue()  # self.dump(code)
+        ruamel.yaml.dump(code, buf, Dumper=ruamel.yaml.RoundTripDumper, encoding='utf-8', default_style=None, indent='  ')
+        result = buf.getvalue()
         if self.indent_data:
             lines = result.splitlines()
             result = ''
-            last_idx = 0
+            commented_line = False
+            commented_lines = []
             for line in lines:
                 len_line = len(line)
                 idx = len_line - len(line.lstrip())
-                indent_ = self.indent_data
                 try:
                     # handle comments
                     if idx == line.index('#'):
-                        indent_ = ' ' * (last_idx + len(indent_))
-                        line = line.lstrip()
+                        commented_lines.append(line.lstrip())
+                        commented_line = True
+                    else:
+                        commented_line = False
                 except ValueError:
-                    pass
-                if idx < len_line:
-                    result += '\n%s%s' % (indent_, line)
-                else:
-                    result += line
-                last_idx = idx
+                    commented_line = False
+                if not commented_line:
+                    # add all collected comments first
+                    indent_ = ' ' * (idx + len(self.indent_data))
+                    for cl in commented_lines:
+                        result += '\n%s%s' % (indent_, cl)
+                    del commented_lines[:]
+                    # add the uncommented line now
+                    result += '\n%s%s' % (self.indent_data, line)
         return result
