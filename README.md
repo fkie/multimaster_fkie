@@ -27,5 +27,5 @@ catkin build multimaster_fkie
 * [node manager GUI](http://fkie.github.io/multimaster_fkie/node_manager.html) -- `A GUI to manage the configuration on local and remote ROS masters`
 * [node manager daemon](http://fkie.github.io/multimaster_fkie/node_manager_daemon.html) -- `Helper node allows an easy (auto)start of remote nodes and manage remote launch files`
 
-The ROS-interfaces and parameterization see [ros_wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you can look look example launch files of each package.
+For ROS-interfaces and parameterization see [ros_wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you can look look example launch files of each package.
 
