@@ -200,7 +200,7 @@ class SettingsWidget(QDockWidget):
                                                       'settings': nm.settings(),
                                                       'attrname': 'check_for_nodelets_at_start',
                                                       'value_default': nm.settings().CHECK_FOR_NODELETS_AT_START,
-                                                      'tooltip': "Test the startlist for nodelet manager and all nodelets. "
+                                                      'tooltip': "<p>Test the startlist for nodelet manager and all nodelets. "
                                                       "If one of the nodes is not in the list a dialog is displayed with "
                                                       "proposal to start other nodes, too.</p>"
                                                       },),
@@ -208,13 +208,13 @@ class SettingsWidget(QDockWidget):
                                               'settings': nm.settings(),
                                               'attrname': 'show_noscreen_error',
                                               'value_default': nm.settings().SHOW_NOSCREEN_ERROR,
-                                              'tooltip': "Shows an error if requested screen for a node is not available.</p>"
+                                              'tooltip': "<p>Shows an error if requested screen for a node is not available.</p>"
                                               },),
                     'Ask for reload launch:': ({'value': nm.settings().ask_reload_launch,
                                                 'settings': nm.settings(),
                                                 'attrname': 'ask_reload_launch',
                                                 'value_default': nm.settings().ASK_RELOAD_LAUNCH,
-                                                'tooltip': "On change asks for reload launch file.</p>"
+                                                'tooltip': "<p>On change asks for reload launch file.</p>"
                                                 },),
                     'Show domain suffix:': ({'value': nm.settings().show_domain_suffix,
                                              'settings': nm.settings(),
