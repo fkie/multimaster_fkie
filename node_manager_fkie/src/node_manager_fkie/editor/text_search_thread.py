@@ -147,7 +147,7 @@ class TextSearchThread(QObject, threading.Thread):
                     new_dict = dict(args)
                     new_dict.update(include_args)
                     # test search string for 'name=' and skip search in not launch files
-                    if self._only_launch and inc_path.endswith('.launch'):
+                    if self._only_launch or inc_path.endswith('.launch'):
                         self.search(search_text, inc_path, recursive, new_dict, count + 1)
         if self._path == path and self._found == 0:
             self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
