@@ -86,6 +86,7 @@ class LaunchConfig(object):
         self._capabilities = None
         self.host = host if host else None
         self.resolve_dict = {}
+        self.changed = True
 
 #     def __del__(self):
 #         pass
@@ -185,6 +186,7 @@ class LaunchConfig(object):
             self.__roscfg = roscfg
             if 'arg' in loader.root_context.resolve_dict:
                 self.resolve_dict = loader.root_context.resolve_dict['arg']
+            self.changed = True
         except roslaunch.XmlParseException, e:
             test = list(re.finditer(r"environment variable '\w+' is not set", utf8(e)))
             message = utf8(e)

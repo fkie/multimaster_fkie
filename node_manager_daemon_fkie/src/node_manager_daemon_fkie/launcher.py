@@ -107,9 +107,10 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     # set cwd unchanged, it will be resolved on host
     result.cwd = n.cwd
     # add global parameter on start of first node of the launch
-    if reload_global_param:
+    if reload_global_param or launchcfg.changed:
         if result.masteruri in launchcfg.global_param_done:
             launchcfg.global_param_done.remove(result.masteruri)
+            launchcfg.changed = False
     if result.masteruri not in launchcfg.global_param_done:
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
