@@ -2191,14 +2191,13 @@ class MasterViewProxy(QWidget):
         :param nodes: a list with full node names
         :type nodes: list(str)
         '''
-        result = []
         if self.master_info is not None:
+            req_nodes = []
             for n in nodes:
                 if n not in ignore:
-                    node = self.master_info.getNode(n)
-                    if node is not None:
-                        result.append(node)
-        self.stop_nodes(result, force)
+                    req_nodes.append(n)
+            found_nodes = self.node_tree_model.get_local_node_items_by_name(req_nodes)
+        self.stop_nodes(found_nodes, force)
 
     def kill_node(self, node, force=False):
         if node is not None and node.uri is not None and (not self._is_in_ignore_list(node.name) or force):

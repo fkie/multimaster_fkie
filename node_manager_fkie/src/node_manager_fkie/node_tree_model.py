@@ -1973,6 +1973,21 @@ class NodeTreeModel(QStandardItemModel):
             if host is not None and (masteruri is None or nmdurl.equal_uri(host.masteruri, masteruri)):
                 host.clear_multiple_screens()
 
+    def get_local_node_items_by_name(self, nodes):
+        '''
+        Returns a list with matched nodes.
+
+        :rtype: list(str)
+        '''
+        result = list()
+        # # determine all running nodes
+        for i in reversed(range(self.invisibleRootItem().rowCount())):
+            host = self.invisibleRootItem().child(i)
+            if host is not None and host.local:
+                for node in nodes:
+                    result[len(nodes):] = host.get_node_items_by_name(node)
+        return result
+
     def get_nodes_running(self):
         '''
         Returns a list with all known running nodes.
