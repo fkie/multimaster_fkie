@@ -682,20 +682,27 @@ class Formatter():
 			if (self.preserve in [0, 1] and self.indent):
 				str += self.indent_insert()
 			str += "<%s" % self.arg[0]
+			args_attr = ''
 			ordered = ['' for i in range(len(self.formatter.attr_order))]
 			for i in range(0, len(self.arg[1]), 2):
 				str_val = self.attribute(self.arg[1][i], self.arg[1][i + 1])
-				try:
-					# if this attribute is in ordered list, it will be inserted, otherwise appended.
-					idx = self.formatter.attr_order.index(self.arg[1][i])
-					del ordered[idx]
-					ordered.insert(idx, str_val)
-				except Exception:
-					ordered.append(str_val)
+				if self.arg[1][i] == 'args':
+					# always append args attribute
+					args_attr = '%s   %s' % (self.indent_insert(), str_val)
+				else:
+					try:
+						# if this attribute is in ordered list, it will be inserted, otherwise appended.
+						idx = self.formatter.attr_order.index(self.arg[1][i])
+						del ordered[idx]
+						ordered.insert(idx, '%s%s' % ('    ' if self.arg[1][i] == 'if' else '', str_val))
+					except Exception:
+						ordered.append(str_val)
 			# add attributes
 			for val in ordered:
 				if val:
 					str += val
+			if args_attr:
+				str += args_attr
 			if (self.list[self.pos + 1].end and not self.formatter.noemptytag):
 				str += "/>"
 			else:
