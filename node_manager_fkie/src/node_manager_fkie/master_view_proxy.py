@@ -2596,7 +2596,7 @@ class MasterViewProxy(QWidget):
                 inputDia = MasterParameterDialog(node.masteruri if node.masteruri is not None else self.masteruri, ''.join([node.name, roslib.names.SEP]), parent=self, store_geometry="edit_param_dialog")
                 inputDia.setWindowTitle('%s - %s' % (os.path.basename(node.name), "parameter"))
                 if node.has_launch_cfgs(node.cfgs):
-                    inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded as not 'default' and the parameter in the launch file will be reloaded on start of the ROS node.")
+                    inputDia.add_warning("The changes may not have any effect, because the launch file was also loaded and the parameter in the launch file will be reloaded on restart of the ROS node.")
                 inputDia.show()
             except Exception:
                 rospy.logwarn("Error on retrieve parameter for %s: %s", utf8(node.name), traceback.format_exc(1))
