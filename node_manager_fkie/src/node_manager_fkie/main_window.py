@@ -1058,7 +1058,7 @@ class MainWindow(QMainWindow):
         '''
         Open a dialog to run a ROS node without a configuration
         '''
-        from run_dialog import RunDialog
+        from .run_dialog import RunDialog
         if self.currentMaster is not None:
             dia = RunDialog(get_hostname(self.currentMaster.masteruri), self.currentMaster.masteruri)
             if dia.exec_():
