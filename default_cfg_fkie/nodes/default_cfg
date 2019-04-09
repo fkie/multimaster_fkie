@@ -1,4 +1,0 @@
-#!/usr/bin/env python
-
-import default_cfg_fkie
-default_cfg_fkie.main()
