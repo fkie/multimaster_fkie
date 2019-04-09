@@ -535,6 +535,9 @@ class ServiceGroupItem(QStandardItem):
             return self.name.lower() == item.name.lower()
         return False
 
+    def __ne__(self, item):
+        return not (self == item)
+
     def __gt__(self, item):
         '''
         Compares the name of the group.
