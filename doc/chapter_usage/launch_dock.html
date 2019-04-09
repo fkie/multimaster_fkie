@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: Launch Dock">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: Launch Dock</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+The <strong>Launch Dock</strong> can be used to find and load or edit the launch files. The <strong>root</strong> contains the paths defined by <strong>ROS_PACKAGE_PATH</strong> environment variable. Only configuration relevant files are shown in launch dock.<!-- In addition, all subfolders are skipped, do not contain the <strong>*.launch or *.yaml</strong> files. -->The extentions of display files can be changed in the settings dock (Parameter: 'Show files extentions'). 
+</p>
+<p>
+The launch dock uses <a href="https://grpc.io/">gRPC</a> to communicate with <em>node manager daemon</em> and to manage configuration files. This allows to load and edit configuration files on  remote host. The connection to remote host is displayed in the launch dock if a host is selected in <a href="ros_network.html">network dock</a>
+</p>
+<p>
+On load, the launch file itself and all included files are added to a watcher list. Each time the node manager is focused it checks however a file  was changed. If one of this files was changed, you will prompt to reload the launch file. If changes for a node are detected you will be asked to restart the changed node.
+In the root also will be shown a history of last five loaded launch files. When needed, the selected history files can be removed by pressing the <strong>Delete</strong> button.
+</p>
+
+You can also search for a package where the launch-file is located.
+
+<p><img src="../images/usage/launch_dock.png" alt="launch_dock"></p>
+
+<p><strong>Launch control buttons:</strong></p>
+
+<table><tbody>
+  <tr>
+    <td><p><img src="../images/usage/oxygen_view_refresh_24.png" align="middle"></p> </td>
+    <td>Refresh the current path. </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_edit_launch.png" align="middle"></p> </td>
+    <td>Opens the launch file in a <a href="launch_editor.html">Launch Editor</a>. </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_launch_file_new.png" align="middle"></p> </td>
+    <td>Creates a new launch file.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_launch_file_transfer.png" align="middle"></p> </td>
+    <td>Copies the selected file to a remote hosts. Optionally, the included files are copied, too.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_launch_file_32.png" align="middle"></p> </td>
+    <td>Loads the launch file and show the content on the selected host.</td>
+  </tr>
+</tbody></table>
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

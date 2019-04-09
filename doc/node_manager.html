@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="FKIE node manager : GUI to manage nodes, topics, services, parameters and launch files">
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/fkie/multimaster_fkie/tree/master/node_manager_fkie">View on GitHub</a>
+
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">GUI to manage nodes, topics, services, parameters and launch files</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/fkie/multimaster_fkie/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/fkie/multimaster_fkie/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+This package offers a graphical user interface (GUI) to manage ROS nodes, topics, services, parameters, and launch files in a ROS network. Combined with other tools of the <a href="index.html">multimaster_fkie</a> stack it is possible to operate a network with multiple masters.
+
+<p><img src="images/usage/node_manager_overview.png" alt="node_manager_overview"></p>
+
+
+<h3>
+<a name="Usage" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>
+Usage
+</h3>
+
+<a href="chapter_usage/ros_network.html">ROS Network</a><br/>
+<a href="chapter_usage/host_description_panel.html">Host description panel</a><br/>
+<a href="chapter_usage/ros_nodes_view_and_control.html">ROS Nodes view and control</a><br/>
+<a href="chapter_usage/ros_topics_view.html">ROS Topics view</a><br/>
+<a href="chapter_usage/ros_services_view.html">ROS Services view</a><br/>
+<a href="chapter_usage/ros_parameter_view.html">ROS Parameter view</a><br/>
+<a href="chapter_usage/launch_dock.html">Launch Dock</a><br/>
+<a href="chapter_usage/launch_editor.html">Launch Editor</a><br/>
+<a href="chapter_usage/description_dock.html">Description Dock</a><br/>
+<a href="chapter_usage/capabilities_and_additional_description.html">Capabilities and additional description</a><br/>
+<a href="chapter_usage/node_manager_daemon.html">Node Manager Daemon</a><br/>
+<a href="chapter_usage/capability_view.html">Capability View</a><br/>
+<a href="chapter_usage/settings.html">Settings</a><br/>
+<a href="chapter_usage/key_bindings.html">Key Bindings</a><br/>
+
+<h3>
+<a name="Troubleshooting" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>
+Troubleshooting
+</h3>
+
+<ol>
+  <li>
+    <strong>Error while launch a node on remote host: ''bash: rosrun: command not found''</strong>
+    <ul>To run a node on remote host, an SSH connection will be established without setting any enviroment variables. Try to comment out in .bashrc:</br>
+    <code>
+    #[ -z "$PS1" ] && return
+    </code></ul>
+  </li>
+
+  <li>
+    <strong>The `Node Manager` crashes on load a launch file with error: ''QSpiAccessible::accessibleEvent not handled: "8008"''</strong>
+    <ul>This "bug" seems to be resolved by removing the ''qt-at-spi'' package.</ul>
+  </li>
+
+  <li>
+    <strong>You don't see the correct output of your nodes.</strong>
+    <ul>Try to change your default terminal:</br>
+    <code>
+      sudo update-alternatives --config x-terminal-emulator
+    </code></ul>
+  </li>
+
+</ol>
+
+
+<p><a href="index.html">back to main</a></p>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

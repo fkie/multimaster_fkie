@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Master Discovery : Discover the running ROS Masters in local network">
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Master Discovery</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/fkie/multimaster_fkie">View on GitHub</a>
+
+          <h1 id="project_title">Master Discovery</h1>
+          <h2 id="project_tagline">Discover the running ROS Masters in local network</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/fkie/multimaster_fkie/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/fkie/multimaster_fkie/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+This package contains discovery nodes to detect a ROS master in a multi robot system. There are currently two nodes 'master_discovery' and 'zeroconf' which uses different discovery strategies. 'zeroconf' node uses an avahi implementation of zeroconf technique. The 'master_discovery' node sends periodically a multicast message to notify about an available ROS master. Furthermore the ROS master will be monitored for changes. On changes other discovery nodes are notified using a timestamp. This feature is used e.g. by <a href="master_sync.html">master_sync</a> to syncronize the ROS masters. Moreover an XML-RPC server created by a discovery node helps to avoid a lot of requests on remote ROS master for a synchronization.
+</p>
+
+For parameterization see <a href="http://wiki.ros.org/master_discovery_fkie">ros wiki</a>
+
+
+<p><a href="index.html">back to main</a></p>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: Settings">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: Settings</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+By default the settings and history files are stored in <em>$(HOME)/.config/ros.fkie/node_manager</em> folder. This can be also changed by <em>ROS_LOG_DIR</em> environment variable.
+
+<p><img src="../images/usage/settings_dock.png" alt="settings_dock"></p>
+
+<h4>Settings parameter:</h4>
+<p>
+<strong>Ask for reload launch</strong> <br/>
+Each time node manager is focused the loaded launch files are checked for changes. If file change is detected is asks to reload launch file. If this parameter is set to False node manger reloads the launch file without ask the user. (Default: True)
+</p>
+<p>
+<strong>Autoupdate</strong> <br/>
+By default node manager updates the current state on changes. You can deactivate this behavior to reduce the network load. If autoupdate is deactivated you must refresh the state manually. (Default: True)
+</p>
+<p>
+<strong>Check for nodelets at start</strong> <br/>
+Test the startlist for nodelet manager and all nodelets. If one of the nodes is not in the list a dialog is displayed with proposal to start other nodes, too. (Default: True)
+</p>
+<p>
+<strong>Colorize hosts</strong> <br/>
+Determine automatic a default color for each host if True. Manually setted color will be prefered. You can select the color by double-click on hostname in description panel. To remove a setted color delete it manually from $HOME/.config/ros.fkie/node_manager/settings.ini. (Default: True)
+</p>
+<p>
+<strong>Confirm exit when closing</strong> <br/>
+Shows on closing of node_manager a dialog to stop all ROS nodes if this option is set to true. (Default: True)
+</p>
+<p>
+<strong>Default user</strong> <br/>
+The username for access remote hosts. (Default: robot)
+</p>
+<p>
+<strong>Group nodes by namespace</strong> <br/>
+Split namespace of the node by / and create groups for each name part. (Default: True)
+</p>
+<p>
+<strong>Highlight xml blocks</strong> <br/>
+Highlights the current selected XML block, while editing ROS launch file. (Default: True)
+</p>
+<p>
+<strong>Launch history length</strong> <br/>
+The count of displayed files in the root of <a href="launch_dock.html">Launch Dock</a>. (Default: 6)
+</p>
+<p>
+<strong>Max time difference</strong> <br/>
+Shows a warning if the time difference to remote host is greater than this value. (Default: 0.5)
+</p>
+<p>
+<strong>Movable dock widgets</strong> <br/>
+On false you can't reorganize docking widgets. (Default: True)
+</p>
+<p>
+<strong>Param history length</strong> <br/>
+The length of the history of values entered in any dialog window. (Default: 12)
+</p>
+<p>
+<strong>Robot icon path</strong> <br/>
+The default search path for an image with robot name. If an image file is found, it will be shown in <a href="host_description_panel.html">Host Description Panel</a>. (Default: $(find node_manager_fkie)/images)
+</p>
+<p>
+<strong>Settings path</strong> <br/>
+The path to store this settings and history files. The default path will not be removed but a redirection to new path is created in. (Default: $(HOME)/.ros/node_manager)
+</p>
+<p>
+<strong>Show domain suffix</strong> <br/>
+Shows the domain suffix of the host in the host description panel and node tree view. (Default: False)
+</p>
+<p>
+<strong>Show file extensions</strong> <br/>
+While browsing in <a href="launch_dock.html">Launch Dock</a> all folders which not contain a file with here defined extension is skipped. If you can't find your folder you can add your file extension to this parameter. (Default: '.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xacro')
+</p>
+<strong>Show noscreen error</strong> <br/>
+Shows an error dialog if requested screen for a node is not available. (Default: True)
+</p>
+<p>
+<strong>Start sync with discovery</strong> <br/>
+Sets 'start sync' in 'Start' master discovery dialog to True, if this option is set to true. (Default: True)
+</p>
+<p>
+<strong>Store windows layout</strong> <br/>
+Stores the position and size of Node Manager window and dialogs (Default: True)
+</p>
+<p>
+<strong>Sysmon default interval</strong> <br/>
+Interval in seconds to get system monitor diagnostics from each remote host. (Default: 10sec)
+</p>
+<p>
+<strong>Timeout close dialog</strong> <br/>
+Timeout in seconds to close dialog while closing Node Manager. 0 disables autoclose functionality. (Default: 30sec)
+</p>
+<p>
+<strong>Timeout for GRPC requests</strong> <br/>
+Timeout in seconds for GRPC requests to daemon. (Default: 15sec)
+</p>
+<p>
+<strong>Transpose pub/sub description</strong> <br/>
+Transpose publisher/subscriber in description dock. (Default: True)
+</p>
+
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

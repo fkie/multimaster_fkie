@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager Daemon: Helper node allows an easy launch file management and (auto)start of {remote}nodes">
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Node Manager Daemon</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/fkie/multimaster_fkie">View on GitHub</a>
+
+          <h1 id="project_title">Node Manager Daemon</h1>
+          <h2 id="project_tagline">Helper node allows an easy launch file management and (auto)start of {remote}nodes</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/fkie/multimaster_fkie/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/fkie/multimaster_fkie/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+The <strong>node_manager_daemon</strong> is an instance which allows the Node Manager a remote access to configuration files. Through the daemon the launch file can be edited, loaded and the containing nodes executed by Node Manager GUI. The needed nodes can be launched on demand without knowing the details of the configuration to run those. As configuration a ROS launch file is used. For advanced features like auto start or respawn the node configuration can be extended by adding further parameters.
+</p>
+<p>
+The daemon instance is usually launched be Node Manager through SSH connection. After that the Node Manager communicates with daemon using <a href="https://grpc.io/">gRPC</a>.
+</p>
+<p>
+Beside offering remote configuration access to Node Manager the daemon supports many other features, e.g. system monitoring, forwarding diagnostic messages or auto start/load of launchfiles.
+</p>
+<p>
+While loading a launch file by the <strong>node_manager_daemon</strong> some addtional parameters are parsed to obtain a description of robots, nodes and capabilities configured by the launch file. This description is used in <a href="node_manager.html">Node Manager</a> to show additional information for nodes. The <a href="chapter_usage/capabilities_and_additional_description.html">detailed description</a> shows the usage of additional description.
+</p>
+
+<h4>
+<a name="Autostart" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>
+Autostart
+</h4>
+
+The <strong>node_manager_daemon</strong> node can be used to start ROS nodes delayed or on condition (a topic is available). It also offers additional parameter for respawn behavior.
+To enable the autostart the launchfiles should be appended though <strong>-a</strong> argument.
+<pre>
+  &lt;node name="node_manager_daemon" pkg="node_manager_daemon_fkie" type="node_manager_daemon" args="-a $(find node_manager_daemon_fkie)/launch/autostart.launch"&gt;
+  &lt;/node&gt;
+</pre>
+
+Now all nodes in the loaded launch will be started. To modify the autostart behavior you must add the autostart parameter to the corresponding node. This is the list of supported parameter:
+<p>
+<strong>autostart/exclude</strong> <br/>
+Excludes this node from autostart. [bool]
+</p>
+
+<p>
+<strong>autostart/delay</strong> <br/>
+Delays the start of the node in [seconds].
+</p>
+
+<p>
+<strong>autostart/required/publisher</strong> <br/>
+The node will be started after the publisher for this topic is available. [string]
+</p>
+
+<p>
+<strong>respawn/max</strong> <br/>
+Only if <em>respawn</em> is enabled. Respawns this maximal [int] times.
+</p>
+
+<p>
+<strong>respawn/delay</strong> <br/>
+Only if <em>respawn</em> is enabled. Wait [seconds] before respawn.
+</p>
+
+<p>
+<strong>respawn/min_runtime</strong> <br/>
+Only if <em>respawn</em> is enabled. If runtime of the is greater than [seconds] the counter for maximal respanws will be reseted.
+</p>
+
+<p>
+<img src="images/usage/alert.png" align="middle"> The <strong>respawn</strong> parameter are used by <a href="node_manager.html">Node Manager</a> too!
+</p>
+
+<h4>Example:</h4>
+<pre>
+&lt;launch&gt;
+  &lt;node name="rostopic_publisher" pkg="rostopic" type="rostopic" args="pub topic_name std_msgs/String 'Started' -r 1" clear_params="True"&gt;
+    &lt;param name="capability_group" value="autostart" /&gt;
+    &lt;param name="autostart/delay" value="5.0" /&gt;
+  &lt;/node>
+
+  &lt;node name="rostopic_echo" pkg="rostopic" type="rostopic" args="echo topic_name" clear_params="True"&gt;
+    &lt;param name="capability_group" value="autostart" /&gt;
+    &lt;param name="autostart/delay" value="5.0" /&gt;
+    &lt;param name="autostart/required/publisher" value="topic_name" /&gt;
+  &lt;/node>
+
+  &lt;node respawn="True" name="rostopic_respawn" pkg="rostopic" type="rostopic" args="what" clear_params="True"&gt;
+    &lt;param name="capability_group" value="autostart" /&gt;
+    &lt;param name="respawn/max" value="5" /&gt;
+    &lt;param name="respawn/min_runtime" value="60" /&gt;
+    &lt;param name="respawn/delay" value="2" /&gt;
+  &lt;/node&gt;
+&lt;/launch&gt;
+</pre>
+
+
+<p><a href="index.html">back to main</a></p>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: ROS Parameter view">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: ROS Parameter view</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+The <strong>Parameter</strong> tab shows all in ROS parameter server registered parameter. The value of the ROS parameter is also displayed. The parameter are not automatically requested or updated. Use <strong>get parameter</strong> button to load the parameter from ROS parameter server.
+</p>
+<p><img src="../images/usage/parameter_view.png" alt="parameter_view"></p>
+
+You can search for a parameter respectively his value using the filter row at the top.
+
+<p><strong>Parameter control buttons:</strong></p>
+
+<table><tbody>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_action_db_update.png" align="middle"></p> </td>
+    <td>Loads parameter from <a href="http://www.ros.org/wiki/ROS/Parameter Server API">ROS Parameter Server</a>.
+    </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_action_db_add.png" align="middle"></p> </td>
+    <td>Adds a parameter to the <a href="http://www.ros.org/wiki/ROS/Parameter Server API">ROS Parameter Server</a>.
+    </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_action_db_remove.png" align="middle"></p> </td>
+    <td>Deletes selected parameter from <a href="http://www.ros.org/wiki/ROS/Parameter Server API">ROS Parameter Server</a>.
+    </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/save.png" align="middle"></p> </td>
+    <td>Saves selected parameter to a yaml file.
+    </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_launch_file_transfer.png" align="middle"></p> </td>
+    <td>Copy selected parameter to another ROS-Master. The destination master can be selected in prompt dialog.
+    </td>
+  </tr>
+</tbody></table>
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: ROS Network">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: ROS Network</h2>
+        </header>
+    </div>
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+The <strong>ROS Network</strong> docking widget shows all discovered ROS masters. In order to detect other ROS masters, a special node (<a href="master_discovery.html">master_discovery</a>) must be run. Otherwise, only the local ROS master will be shown.
+
+<p><img src="../images/usage/ros_network_connected.png" alt="ros_network_connected"> <img src="../images/usage/ros_network_disconnected.png" alt="ros_network_disconnected"></p>
+
+<p>
+The <img src="../images/usage/oxygen_view_refresh_24.png" alt="stock_connect" align="middle"> <em>Refresh</em>-button lets you query the current state of the ROS masters from all running <a href="master_discovery.html">master_discovery</a> nodes.
+</p>
+<p>
+The icons <img src="../images/usage/stock_connect.png" alt="stock_connect" align="middle"> and <img src="../images/usage/stock_disconnect.png" alt="stock_disconnect" align="middle"> show whether a connection to the host exists. The color of the <img src="../images/usage/stock_connect.png" alt="stock_connect" align="middle">  icon indicates the connection quality as determined by the <a href="master_discovery.html">master_discovery</a> node.
+</p>
+<p>
+The <img src="../images/usage/irondevil_sync_24.png" alt="icon_sync" align="middle"> next to each host name indicates whether the parameter servers will be synchronized by the <a href="../master_sync.html">master_sync</a> node. You can toggle ROS master synchronization by click on this icon. A synchronisation dialog with additional options is available by <img src="../images/usage/irondevil_sync_24.png" alt="button_sync" align="middle"> button on the `host description panel`.
+</p>
+<img src="../images/usage/alert.png" alt="!" align="left"> The multimaster capabilities are disabled, if the local <strong>ROS_MASTER_URI</strong> is referenced to a remote host.
+
+<p>
+You can initiate the discovery process with the <em>Start</em>-button on the <strong>ROS Network</strong> widget. The discovery node can also be started on a remote host. Click on the <em>Start</em>-button and enter the hostname or IP address in the dialog below.
+</p>
+
+<p><img src="../images/usage/dialog_start_discovery.png" alt="dialog_start_discovery"></p>
+
+Additionally, you can enter a network number <em>(0..99)</em> to create your own multi robot network. Thus you avoid the redundant synchronization to non-participant robots. The <strong>roscore</strong> will be run automatically via SSH if it is not currently available.
+<p>
+<img src="../images/usage/idea.png" alt="!" align="left"> If no multicast communication is available sets the <em>static hosts</em> parameter to the list of availabele hosts separated by comma. This also increases the network load!
+</p>
+
+<p>
+On problems while launch master discovery or master sync on remote hosts you can use <img src="../images/usage/crystal_clear_show_log.png" alt="crystal_clear_show_log" align="middle"> to get the log output from these node.
+</p>
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

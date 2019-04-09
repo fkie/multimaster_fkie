@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: ROS Nodes view and control">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: ROS Nodes view and control</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+The <strong>Nodes</strong> tab lists all nodes which are either running or available for launch in the current configuration. Running nodes have a green icon <img src="../images/usage/state_run.png" align="middle">.
+They are monitored using their process ID, which is updated by the local <a href="../master_discovery.html">master_discovery</a>  node. You have to run a <strong>master_discovery</strong> node on each host to ensure that information about all nodes is available in the network. If a node is registered with the master but has no associated process ID, the node is considered crashed and marked with <img src="../images/usage/crystal_clear_warning.png" align="middle">. Note that only local nodes are pinged. Nodes which are running not at the same host with ROS Master are marked by <img src="../images/usage/state_unknown.png" align="middle">. Crashes of these nodes cannot be detected.
+</p>
+
+<p><img src="../images/usage/nodes_view.png" alt="nodes_view" align="buttom"></p>
+
+<p>
+As of now, the only reliable way to detect running nodes is by their registered topics 
+and services. Thus, if a node has neither, it will never be shown as running.
+</p>
+<p>
+In order to launch nodes, a configuration must be loaded. You can open <a href="http://www.ros.org/wiki/roslaunch/XML">roslaunch</a> files. Nodes which are backed by a local configuration in
+this manner are marked with <img src="../images/usage/crystal_clear_launch_file.png" align="middle">. If a node with
+the same name is listed in multiple launch files, you have choose one configuration when
+you launch the node.
+</p>
+<p>
+If you select a node additional information to this node are shown in <strong>description dock</strong>. The description dock offers some special control actions and direct access to topics and services of the node.
+</p>
+<p><img src="../images/usage/nodes_view_info.png" alt="nodes_view_info" align="buttom"></p>
+<br/>
+<p><strong>Nodes control buttons:</strong></p>
+
+<table><tbody>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_play.png" align="middle"></p> </td>
+    <td><p>Launches the selected nodes unless they are already running. Crashed <img src="../images/usage/crystal_clear_warning.png" align="middle"> nodes are restarted. Use links in <strong>description dock</strong> to start the node on another host or force the node restart</p></td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_stop.png" align="middle"></p> </td>
+    <td><p>Terminates the selected nodes using the <strong>shutdown</strong> method of the <a href="http://www.ros.org/wiki/ROS/Slave_API">Slave API</a>. Use <img src="../images/usage/sekkyumu_kill_screen_24.png" align="middle"> in <strong>description dock</strong> to send a <strong>SIGKILL</strong> signal to the SCREEN of the node process or force the master to unregister the services and topics. The latter is useful if the node died without a proper shutdown.</p></td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_show_io.png" align="middle"></p> </td>
+    <td>Shows a console with terminal session of the selected node. In <strong>description dock</strong> you can kill the <strong>screen</strong> program that provides the terminal session, most likely killing the node in the process. Select a host in <strong>Nodes View</strong> to get access to all screens on the host.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_show_log.png" align="middle"></p> </td>
+    <td>Shows the log files of the selected nodes. Usually there are two files for each node. One is the ROS log file and the other one contains the output of the terminal session. The log files are not overwritten if the node is stopped and restarted. In <strong>description dock</strong> you can copy the file path to clipboard.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_show_delete_log.png" align="middle"></p> </td>
+    <td>Deletes the log files.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_dyncfg.png" align="middle"></p> </td>
+    <td>Runs the <a href="../http://ros.org/wiki/dynamic_reconfigure.html">dynamic reconfigure GUI</a> for selected node.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/default_cfg_edit.png" align="middle"></p> </td>
+    <td>Edit values on the ROS Parameter Server of selected node. The dialog fields store a history of the entered data. To delete a stored entry, setect this entry and then press <strong>Shift+Delete</strong>. Additional, values of the parameter dialog can be stored or loaded from a file in YAML format. <p><img src="../images/usage/dialog_param.png" align="middle"></p></td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_edit_launch.png" align="middle"></p> </td>
+    <td>Opens the <a href="launch_editor.html">Launch File Editor</a></td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_profile_new_32.png" align="middle"></p> </td>
+    <td>Save current state (loaded launch files and running nodes) to a profile. You can load this profile through <a href="launch_dock.html">launch dock</a>.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_button_close.png" align="middle"></p> </td>
+    <td>Unloads the configuration file(s).</td>
+  </tr>
+</tbody></table>
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

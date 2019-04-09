@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: Host description panel">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: Host description panel</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+The host description panel displays the name and the time of the last update for the currently selected host. If the node manager finds a PNG image in <strong>node_manager_fkie/images</strong> (this path can be changed in settings tab in node manager) with the same name as the host, it is used as icon. The icon can be also changed by double click on it or by setting the ROS parameter <strong>/robot_icon</strong> to an image file.
+</p>
+<p>
+Additionally the panel will be colorized with a color depend on the host name. This can be deactivated on the settings panel.
+</p>
+<p><img src="../images/usage/host_descr_panel.png" alt="host_descr_panel"></p>
+
+<p>
+The host description panel contains additional buttons to update the state of the host or run ROS tools:
+<table><tbody>
+  <tr>
+    <td><p><img src="../images/usage/button_usesimtime.png" align="middle"></p> </td>
+    <td>This symbol is only visible, if <strong>/use_sim_time</strong> parameter is set to <strong>True</strong>.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/button_username.png" align="middle"></p> </td>
+    <td>for remote hosts the usename can be changed. This box is only visible for remote hosts.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_set_clock_24.png" align="middle"></p> </td>
+    <td>Change time on remote host.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/oxygen_view_refresh_24.png" align="middle"></p> </td>
+    <td>requests the current state of the ROS master.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/crystal_clear_clicknrun.png" align="middle"></p> </td>
+    <td>opens a dialog to run a ROS node without a configuration. This node is launched in a dedicated terminal session using the <strong>screen</strong> tool, so you can monitor its output if necessary.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/button_rqt.png" align="middle"></p> </td>
+    <td>runs the <strong>rqt</strong> tools (Console, Logger Level, TF Tree, Ros Graph and rqt_gui) which are connected to the ROS master on the selected host.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/irondevil_sync_24.png" align="middle"></p> </td>
+    <td>enables or disables the ROS Master synchronization on the selected host using synchronisation dialog with additional options. For full list of synchronization options see <a href="../master_sync.html">master_sync</a> <p><img src="../images/usage/dialog_sync.png" align="middle"></p></td>
+  </tr>
+</tbody></table>
+</p>
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

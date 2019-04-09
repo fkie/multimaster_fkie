@@ -3,6 +3,8 @@
 The ROS stack of *multimaster_fkie* offers a complete solution for using ROS with multicores.
 In addition, Node Manager with a daemon provide a GUI-based management environment that is very useful to manage ROS-launch configurations and control running nodes, also in a single-core system.
 
+![multimaster overview](multimaster_overview.png)
+
 ## Install
 
 The communication between Node Manager and the daemon is based on python [gRPC](https://grpc.io/). Until Ubuntu *cosmic* you have to install *python-grpcio-tools* from PIP. That's why there are no debian packages for this version of FKIE multimaster. Use follow command line to install all dependencies:

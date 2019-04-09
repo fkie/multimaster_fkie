@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Master Sync : Synchronize local ROS master to remote ROS masters">
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Master Sync</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/fkie/multimaster_fkie">View on GitHub</a>
+
+          <h1 id="project_title">Master Sync</h1>
+          <h2 id="project_tagline">Synchronize local ROS master to remote ROS masters</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/fkie/multimaster_fkie/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/fkie/multimaster_fkie/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+This package contains a node to synchronize the local ROS master to remote ROS masters discovered by <a href="master_discovery.html">master_discovery</a> node. For synchronization the <a href="http://www.ros.org/wiki/ROS/Master_API">Master API</a> will be used. Thereby the regitration of topics/services are performed only on the local ROS master. To obtain a complete synchronization of two ROS master one master_sync node in <strong>each</strong> "ROS system" have to be started.
+</p>
+<p>
+The syncronization will be performed on each time the remote ROS master is changed. The change detection is done by the <a href="master_discovery.html">master_discovery</a> node. To avoid multiple calls over unreliable connections e.g. WiFi, needed for a synchronization, the XML-RPC server of the <a href="master_discovery.html">master_discovery</a> node is used to get the current state of the remote ROS master.
+</p>
+<p>
+<img src="images/usage/alert.png" align="middle"> in the current state the <a href="http://www.ros.org/wiki/ROS/Parameter%20Server%20API">ROS Parameter server</a> will be not synchronized.</p>
+
+<p>
+<img src="images/usage/alert.png" align="middle"> The services and published topics of <a href="master_discovery.html">master_discovery</a> node are detected automatically!
+</p>
+
+<h4>
+<a name="Config" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>
+Configuration Parameter
+</h4>
+By default all possible topics and services are synchronized. If you want to synchronize or ignore a special set of topics or services you can use the configuration parameter. For details see <a href="http://wiki.ros.org/master_sync_fkie">ros wiki</a>.
+
+
+
+<p><a href="index.html">back to main</a></p>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

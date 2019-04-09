@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: Capabilities and additional description">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: Capabilities and additional description</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+Since the <strong>Node Manager</strong> tries to improve the overview and control of available ROS nodes on a robot we added some parameter to allow grouping nodes to capabilities.
+<p><img src="../images/usage/capability_nodes.png" alt="capability_nodes" align="middle"></p>
+
+The <strong>capability_group</strong> parameter adds a node to a specified group:
+<pre>
+  &lt;node name="node_manager" pkg="node_manager_fkie" type="node_manager"&gt;
+    &lt;param name="capability_group" value="Management"/&gt;
+  &lt;/node&gt;
+</pre>
+
+<br/>
+Since for a node no local <em>capability_group</em> parameter is found a <em>capability_group</em> parameter in nodes namespace will be assigned to the node. In this manner it is possible to add multiple node by using only one parameter, e.g.:
+<pre>
+    &lt;param name="capability_group" value="Joystick"/&gt;
+    &lt;node name="joy" pkg="rostopic" type="rostopic" args="pub joy std_msgs/String -r 1 'joy'" /&gt;
+    &lt;node name="joy_mapper" pkg="rostopic" type="rostopic" args="echo joy"/&gt;
+</pre>
+
+
+<br/>
+It is possible to add a node to multiple groups using a prefix for <strong>capability_group</strong>, e.g.:
+<pre>
+  &lt;node name="node_manager" pkg="node_manager_fkie" type="node_manager"&gt;
+    &lt;param name="capability_group" value="Management"/&gt;
+    &lt;param name="1.capability_group" value="Node Manager"/&gt;
+  &lt;/node&gt;
+</pre>
+
+<br/>
+The description of a capability group is stored in a global <strong>capabilities</strong> parameter. This parameter is defined as <a href="http://www.ros.org/wiki/roslaunch/XML/rosparam">rosparam</a> and contains the list with all groups and their description. To describe a group adds a list with <em>group name</em>, <em>group type</em>, <em>image</em> and <em>description</em>. <strong>image</strong> is a relative path to <em>node_manager_fkie</em> package unless you use <em>$(find PACKAGE)</em>. The <strong>description</strong> can be coded as <a href="http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html">reStructeredText</a> and contains also image references relative to <em>node_manager_fkie</em> package path or with <em>$(find PACKAGE)</em>. Since after loading the XML the new line separators are removed, you must enter <strong>\n</strong> to insert a new line.
+<pre>
+   &lt;rosparam param="capabilities"&gt;
+      [
+        ["Management",
+         "core",
+         "$(find node_manager_fkie)/images/crystal_clear_app_network2.png",
+         "The ``management`` group provides nodes needed to detect and synchronize
+          other robots in the ROS network. These are:\n\n- Node Manager\n- Master
+          Discovery\n- Master Synchronization"
+        ]
+      ]
+    &lt;/rosparam&gt;
+</pre>
+
+<p>
+The capability group do <strong>not</strong> change the <em>namespace</em> of the included ROS nodes.
+</p>
+
+Further parameter <strong>robots</strong> describes in same manner the robots. The list must contains <em>host name</em>, <em>robot type</em>, <em>displayed name</em>, <em>image</em> and <em>description</em>:
+
+<pre>
+  &lt;rosparam param="robots"&gt;
+    [
+      ["tiderko",
+       "Workstation",
+       "tiderko",
+       "$(find node_manager_fkie)/images/veryicon_devcom_workstation.png",
+       "Workstation\n\n|ws|\n\n.. |ws| image::
+        $(find node_manager_fkie)/images/veryicon_devcom_workstation.png\n"
+      ]
+    ]
+  &lt;/rosparam&gt;
+</pre>
+
+<br/>
+This description will also shown in <a href="description_dock.html">Description Dock</a>.
+
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

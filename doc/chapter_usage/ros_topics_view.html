@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: ROS Topics view">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: ROS Topics view</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+The <strong>Topics</strong> tab shows all in ROS master registered subscriber and publisher. The count of these is shown in <strong>Publisher</strong> and <strong>Subscriber</strong> columns. The type of the ROS topic is also displayed. If a node is selected the corresponding topics will be selected. To get more information to the topic you can use <a href="description_dock.html">Description Dock</a>.
+
+<p><img src="../images/usage/topics_view.png" alt="topics_view"></p>
+
+You can search for a topic respectively his type using the filter row at the top.
+
+<p><strong>Topic control buttons:</strong></p>
+
+<table><tbody>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_topic_echo.png" align="middle"></p> </td>
+    <td>Subscribes the topic and shows his output in a dialog. To reduce the load while printing the messages the length of array and strings is reduced to 80 signs. By default the received messages often as 10 Hz will be skipped. You can increase this values, if needed. 0 disables the limits. There are some other filter settings, which can be changed at runtime.
+        <p><img src="../images/usage/topic_output.png"></p>
+    </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_topic_hz.png" align="middle"></p> </td>
+    <td>Subscribes the topic and shows only Hz of received messages</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_topic_echo_ssh_hz.png" align="middle"></p> </td>
+    <td>Connects via SSH to remote host and subscribe the topic locally to avoid network load. Shows Hz output of rostopic.</td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_topic_pub.png" align="middle"></p> </td>
+    <td>Start publishing a message to selected topic. <p><img src="../images/usage/alert.png" alt="!" align="middle"> Only available on local ROS Master. Use <a href="../master_sync.html">master_sync</a>  to publish to remote topics!</p> </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_topic_repub.png" align="middle"></p> </td>
+    <td>Restart publishing a message to selected topic with last parameters. <p><img src="../images/usage/alert.png" alt="!" align="middle">This button only visible if a publisher was started previously and only in <a href="description_dock.html">desciption dock</a>.</p><p><img src="../images/usage/description_dock_topic.png" alt="!" align="left"></p> </td>
+  </tr>
+  <tr>
+    <td><p><img src="../images/usage/sekkyumu_topic_pub_stop.png" align="middle"></p> </td>
+    <td>Stops own publishing to selected topic. </td>
+  </tr>
+</tbody></table>
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

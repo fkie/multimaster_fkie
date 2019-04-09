@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Node Manager : Usage: Key Bindings">
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>Node Manager</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Node Manager</h1>
+          <h2 id="project_tagline">Usage: Key Bindings</h2>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+<p>
+<table>
+  <colgroup>
+    <col width="90">
+  </colgroup>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>R</strong></td>
+    <td>Opens a dialog to launch a <a href="../master_discovery.html">master_discovery</a> node on entered host.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>E</strong>, <strong>F4</strong></td>
+    <td>Opens an <a href="launch_editor.html">XML Editor</a> for selected launch file.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>L</strong></td>
+    <td>Loads the selected launch file into selected host.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>S</strong></td>
+    <td>Runs a synchronization dialog.</td>
+  </tr>
+  <tr>
+    <td><strong>Alt</strong>+<strong>R</strong></td>
+    <td>Runs selected nodes. Ignores already running nodes.</td>
+  </tr>
+  <tr>
+    <td><strong>Alt</strong>+<strong>S</strong></td>
+    <td>Stops selected nodes. If more then one node is selected, nodes ending with <strong>rosout</strong>, <strong>node_manager</strong>, <strong>master_discovery</strong>, <strong>master_sync</strong> or <strong>default_cfg</strong> are ignored.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>Backspace</strong></td>
+    <td>Sends a SIGKILL to selected nodes. If more then one node is selected, nodes ending with <strong>rosout</strong>, <strong>node_manager</strong>, <strong>master_discovery</strong>, <strong>master_sync</strong> or <strong>default_cfg</strong> are ignored.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>Delete</strong></td>
+    <td>Unregister selected nodes (their topics and services) from ROS master. If more then one node is selected, nodes ending with <strong>rosout</strong>, <strong>node_manager</strong>, <strong>master_discovery</strong>, <strong>master_sync</strong> or <strong>default_cfg</strong> are ignored.</td>
+  </tr>
+  <tr>
+    <td><strong>Shift</strong>+<strong>Backspace</strong></td>
+    <td>Sends a SIGKILL to assigned <strong>SCREEN</strong> of selected nodes.</td>
+  </tr>
+  <tr>
+    <td><strong>Shift</strong>+<strong>S</strong></td>
+    <td>Shows all available <strong>SCREEN</strong> which contains the ROS nodes launched by node manager.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>F4</strong></td>
+    <td>Closes the loaded configurations.</td>
+  </tr>
+  <tr>
+    <td><strong>Alt</strong>+<strong>{1..5}</strong></td>
+    <td>Selects all nodes of the {first...fifth} host in <strong>Nodes</strong> tab excepting the manage nodes.</td>
+  </tr>
+  <tr>
+    <td><strong>Delete</strong></td>
+    <td>[<a href="launch_dock.html">Launch Dock</a>] Removes the selected history file from view in the root.</td>
+  </tr>
+  <tr>
+    <td><strong>Shift</strong>+<strong>Delete</strong></td>
+    <td>[Parameter Dialog] Removes the current entry from history.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>X</strong></td>
+    <td>Copies the alternative values to clipboard. On [<a href="ros_nodes_view_and_control.html">Node View</a>] this is PID. On Topic and Service view it is the type. On [<a href="ros_parameter_view.html">Parameter View</a>] it is the parameter value.</td>
+  </tr>
+  <tr>
+    <td><strong>Ctrl</strong>+<strong>7</strong></td>
+    <td>[<a href="launch_editor.html">XML Editor</a>] Comment/Uncomment selected lines.</td>
+  </tr>
+</table>
+
+        <p><a href="../node_manager.html#Usage">back to node manager</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

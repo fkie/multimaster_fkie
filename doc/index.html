@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="FKIE Multimaster : ROS packages for multimaster support (discovering, synchronizing and management GUI) developed by Fraunhofer FKIE">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>FKIE Multimaster</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/fkie/multimaster_fkie">View on GitHub</a>
+
+          <h1 id="project_title">FKIE Multimaster</h1>
+          <h2 id="project_tagline">ROS packages for multimaster support (discovering, synchronizing and management GUI)</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/fkie/multimaster_fkie/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/fkie/multimaster_fkie/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+<h3>
+<a name="overview" class="anchor" href="#designer-templates">
+<span class="octicon octicon-link"></span></a>
+Overview</h3>
+
+<p>This package offers a set of nodes to establish and manage a multimaster network. This requires no or minimal configuration. The changes are automatically detected and synchronized.
+<br/>
+<br/>
+<strong>Packages:</strong>
+<ul>
+<a href="master_discovery.html">Master Discovery</a> -- discovery using multicast or zeroconf
+<br/>
+<a href="master_sync.html">Master Synchronization</a> -- Synchronize local ROS master to remote ROS masters
+<br/>
+<a href="node_manager.html">Node Manager</a> -- A GUI to manage the configuration on local and remote ROS masters
+<br/>
+<a href="node_manager_daemon.html">Node Manager Daemon</a> -- Helper node allows an easy launch file management and (auto)start of {remote}nodes
+</ul>
+
+<strong>Idea:</strong>
+<ul type="square">
+  <li>The <a href="master_discovery.html">master_discovery</a> node connects to the ROS-Master, gets changes by polling (1.) and publish the changes (multicast or/and unicast) over the network (2.). The received changes of the remote ROS-Master are published to the local ROS topics (3.). </li>
+  <li>The <a href="master_sync.html">master_sync</a> node connects to the discovered <a href="master_discovery.html">master_discovery</a> nodes (4.), requests the actual ROS state and registers the remote topics/service by local ROS master (5.).</li>
+  <li>The <a href="node_manager.html">node_manager</a> simplifies launching and managing the ROS multi-master system. It also offers options for managing nodes, topics, services, parameters and launch files through <a href="node_manager_daemon.html">node_manager_daemon</a>. Can also be used in a single ROS master system!</li>
+</ul>
+</p>
+
+<p><img src="images/ros_multimaster.png" alt="ROS Multimaster"></p>
+<!--pre><code>$ cd your_repo_root/repo_name
+$ git fetch origin
+$ git checkout gh-pages
+</code></pre-->
+
+<!--p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p-->
+
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">multimaster_fkie maintained by <a href="https://github.com/fkie">Fraunhofer FKIE</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
