@@ -472,7 +472,7 @@ def find_included_files(string,
                             try:
                                 ext = os.path.splitext(filename)
                                 if ext[1] in search_in_ext:
-                                    for res_item in find_included_files(filename, recursive, unique, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
+                                    for res_item in find_included_files(filename, recursive, False, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
                                         publish = not unique or (unique and res_item.inc_path not in my_unique_files)
                                         if publish:
                                             my_unique_files.append(res_item.inc_path)

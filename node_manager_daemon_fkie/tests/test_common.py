@@ -35,7 +35,7 @@ import unittest
 import time
 import rospkg
 
-from node_manager_daemon_fkie.common import get_cwd, included_files, interpret_path, package_name
+from node_manager_daemon_fkie.common import get_cwd, find_included_files, interpret_path, package_name
 
 PKG = 'node_manager_daemon_fkie'
 
@@ -111,14 +111,14 @@ class TestCommonLib(unittest.TestCase):
         self.assertEqual(self.test_include_file, path, "wrong interpreted path, expected: %s, got: %s" % (self.test_include_file, path))
 
     def test_include_files(self):
-        file_list = [file_tuple for file_tuple in included_files(self.test_include_file, unique=True)]
-        self.assertEqual(4, len(file_list), "Count of unique included files is wrong, expected: %d, got: %d" % (4, len(file_list)))
-        file_list = [file_tuple for file_tuple in included_files(self.test_include_file, recursive=False, unique=True)]
+        file_list = [file_tuple for file_tuple in find_included_files(self.test_include_file, unique=True)]
+        self.assertEqual(5, len(file_list), "Count of unique included files is wrong, expected: %d, got: %d" % (5, len(file_list)))
+        file_list = [file_tuple for file_tuple in find_included_files(self.test_include_file, recursive=False, unique=True)]
         self.assertEqual(3, len(file_list), "Count of unique included files while not recursive search is wrong, expected: %d, got: %d" % (3, len(file_list)))
-        file_list = [file_tuple for file_tuple in included_files(self.test_include_file, unique=False)]
+        file_list = [file_tuple for file_tuple in find_included_files(self.test_include_file, unique=False)]
         self.assertEqual(10, len(file_list), "Count of included files is wrong, expected: %d, got: %d" % (10, len(file_list)))
-        self.assertEqual(6, file_list[0][1], "Wrong line number of first included file, expected: %d, got: %d" % (6, file_list[0][1]))
-        self.assertEqual(10, file_list[2][1], "Wrong line number of second included file, expected: %d, got: %d" % (10, file_list[2][1]))
+        self.assertEqual(6, file_list[0].line_number, "Wrong line number of first included file, expected: %d, got: %d" % (6, file_list[0].line_number))
+        self.assertEqual(10, file_list[2].line_number, "Wrong line number of second included file, expected: %d, got: %d" % (10, file_list[2].line_number))
 
 
 if __name__ == '__main__':

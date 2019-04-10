@@ -98,7 +98,7 @@ class TestLaunchServicer(unittest.TestCase):
         path = interpret_path("$(find node_manager_daemon_fkie)/tests/resources/include_dummy.launch")
         response_stream = ls.GetIncludedFiles(lmsg.IncludedFilesRequest(path=path, recursive=True, unique=True, pattern=[]), DummyContext())
         file_list = [response for response in response_stream]
-        self.assertEqual(len(file_list), 4, "Count of unique included, recursive  files is wrong, got: %d, expected: %d" % (len(file_list), 4))
+        self.assertEqual(len(file_list), 5, "Count of unique included, recursive  files is wrong, got: %d, expected: %d" % (len(file_list), 5))
         response_stream = ls.GetIncludedFiles(lmsg.IncludedFilesRequest(path=path, recursive=False, unique=True, pattern=[]), DummyContext())
         file_list = [response for response in response_stream]
         self.assertEqual(len(file_list), 3, "Count of unique included files while not recursive search is wrong, got: %d, expected: %d" % (len(file_list), 3))
