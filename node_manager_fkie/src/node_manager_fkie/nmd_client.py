@@ -47,7 +47,7 @@ import node_manager_daemon_fkie.monitor_stub as mstub
 import node_manager_daemon_fkie.screen_stub as sstub
 import node_manager_daemon_fkie.settings_stub as scstub
 import node_manager_daemon_fkie.version_stub as vstub
-from node_manager_daemon_fkie.common import sizeof_fmt, utf8
+from node_manager_daemon_fkie.common import IncludedFile, sizeof_fmt, utf8
 from node_manager_daemon_fkie.startcfg import StartConfig
 from node_manager_daemon_fkie import url as nmdurl
 
@@ -202,7 +202,7 @@ class NmdClient(QObject):
         with self._args_lock:
             self._launch_args.clear()
 
-    def _delete_cache_for(self, grpc_path):
+    def delete_cache_for(self, grpc_path):
         try:
             del self._cache_file_content[grpc_path]
         except Exception:
@@ -367,7 +367,7 @@ class NmdClient(QObject):
         result = fm.save_file_content(path, content, mtime)
         for ack in result:
             if ack.path == path and ack.mtime != 0:
-                self._delete_cache_for(grpc_path)
+                self.delete_cache_for(grpc_path)
                 return ack.mtime
         return 0
 
@@ -423,12 +423,14 @@ class NmdClient(QObject):
             self._cache_file_unique_includes[grpc_path] = result
         return result
 
-    def get_included_files(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[]):
+    def get_included_files(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[], search_in_ext=[]):
         '''
         :param str grpc_path: the root path to search for included files
         :param bool recursive: True for recursive search
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
+        :param search_in_ext: file extensions to search in
+        :type search_in_ext: [str]
         :return: Returns an iterator for tuple with root path, line number, path of included file, file exists or not, file size and dictionary with defined arguments.
         :rtype: iterator (str, int, str, bool, int, {str: str})
         '''
@@ -444,22 +446,23 @@ class NmdClient(QObject):
                 uri, path = nmdurl.split(current_path)
                 lm = self.get_launch_manager(uri)
                 rospy.logdebug("get_included_files for %s, recursive: %s, pattern: %s" % (grpc_path, recursive, include_pattern))
-                reply = lm.get_included_files(path, recursive, include_pattern)
+                reply = lm.get_included_files(path, recursive, include_pattern, search_in_ext)
                 url, _ = nmdurl.split(grpc_path, with_scheme=True)
                 # initialize requested path in cache
                 if grpc_path not in self._cache_file_includes:
                     self._cache_file_includes[grpc_path] = []
-                for root_path, linenr, path, exists, size, include_args in reply:
-                    current_path = nmdurl.join(url, root_path)
-                    entry = (linenr, nmdurl.join(url, path), exists, size, include_args)
+                for inc_file in reply:
+                    entry = inc_file
+                    entry.path_or_str = nmdurl.join(url, inc_file.path_or_str)
+                    entry.inc_path = nmdurl.join(url, inc_file.inc_path)
                     # initialize and add returned root path to cache
                     if current_path not in self._cache_file_includes:
                         self._cache_file_includes[current_path] = []
                     self._cache_file_includes[current_path].append(entry)
                     yield entry
             except grpc._channel._Rendezvous as grpc_error:
-                self._delete_cache_for(grpc_path)
-                self._delete_cache_for(current_path)
+                self.delete_cache_for(grpc_path)
+                self.delete_cache_for(current_path)
                 if grpc_error.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
                     raise exceptions.GrpcTimeout(grpc_path, grpc_error)
                 raise

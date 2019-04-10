@@ -375,7 +375,7 @@ class Editor(QMainWindow):
         try:
             if filename not in self.files:
                 tab_name = self.__getTabName(filename)
-                editor = TextEdit(filename)
+                editor = TextEdit(filename, parent=self)
                 linenumber_editor = LineNumberWidget(editor)
                 tab_index = 0
                 if insert_index > -1:
@@ -616,7 +616,7 @@ class Editor(QMainWindow):
             self.on_graph_info("saved %s" % self.tabWidget.currentWidget().filename)
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
-            self.graph_view.clear_cache(self.tabWidget.currentWidget().filename)
+            self.graph_view.clear_cache()
 
     def on_shortcut_find(self):
         pass

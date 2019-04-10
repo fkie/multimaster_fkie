@@ -139,24 +139,28 @@ class FileStub(object):
 
     def _gen_save_content_list(self, path, content, mtime, package=''):
         minone = True
-        send_content = content.encode('utf-8')
-        while send_content or minone:
-            minone = False
-            chunk = send_content
-            # split into small parts on big files
-            if len(chunk) > self.FILE_CHUNK_SIZE:
-                chunk = send_content[0:self.FILE_CHUNK_SIZE]
-                send_content = send_content[self.FILE_CHUNK_SIZE:]
-            else:
-                send_content = ''
-            msg = fmsg.SaveFileContentRequest()
-            msg.overwrite = mtime == 0
-            msg.file.path = path
-            msg.file.mtime = mtime  # something not zero to update a not existing file
-            msg.file.size = len(content)
-            msg.file.data = chunk
-            msg.file.package = package
-            yield msg
+        try:
+            send_content = content.encode('utf-8')
+            while send_content or minone:
+                minone = False
+                chunk = send_content
+                # split into small parts on big files
+                if len(chunk) > self.FILE_CHUNK_SIZE:
+                    chunk = send_content[0:self.FILE_CHUNK_SIZE]
+                    send_content = send_content[self.FILE_CHUNK_SIZE:]
+                else:
+                    send_content = ''
+                msg = fmsg.SaveFileContentRequest()
+                msg.overwrite = mtime == 0
+                msg.file.path = path
+                msg.file.mtime = mtime  # something not zero to update a not existing file
+                msg.file.size = len(content)
+                msg.file.data = chunk
+                msg.file.package = package
+                yield msg
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
 
     def save_file_content(self, path, content, mtime, package=''):
         '''

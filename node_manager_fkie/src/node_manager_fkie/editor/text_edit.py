@@ -37,11 +37,13 @@ from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor
 import os
 import re
 import rospy
+import traceback
 
 from node_manager_daemon_fkie import exceptions, file_item
-from node_manager_daemon_fkie.common import utf8
+from node_manager_daemon_fkie.common import get_arg_names, get_internal_args, replace_arg, utf8
 from node_manager_fkie.common import package_name
 from node_manager_fkie.detailed_msg_box import MessageBox
+from node_manager_fkie.parameter_dialog import ParameterDialog
 import node_manager_fkie as nm
 
 from .xml_highlighter import XmlHighlighter
@@ -108,11 +110,14 @@ class TextEdit(QTextEdit):
         # variables for threaded search
         self._search_thread = None
         self._stop = False
+        self._internal_args = {}
+        ext = os.path.splitext(filename)
         if self.filename:
             self.setText("")
             _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
+            if ext[1] in ['.launch', '.xml']:
+                self._internal_args = get_internal_args(file_content)
             self.setText(file_content)
-        ext = os.path.splitext(filename)
         self._is_launchfile = False
         if ext[1] in ['.launch', '.xml', '.xacro', '.urdf']:
             if ext[1] in ['.launch']:
@@ -174,7 +179,6 @@ class TextEdit(QTextEdit):
                     MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(self.filename), detailed_text=utf8(ioe))
             except Exception as e:
                 rospy.logwarn("Error while save file: %s" % e)
-                import traceback
                 print(traceback.format_exc())
         return False, False, ''
 
@@ -284,6 +288,32 @@ class TextEdit(QTextEdit):
                         if not search_for:
                             continue
                         try:
+                            args_in_name = get_arg_names(search_for)
+                            resolved_args = {}
+                            # if found arg in the name, try to detect values
+                            if args_in_name:
+                                resolved_args = self.parent.graph_view.get_include_args(args_in_name, search_for, self.filename)
+                            if resolved_args:
+                                params = {}
+                                self._internal_args
+                                # create parameter dialog
+                                for key, val in resolved_args.items():
+                                    values = list(val)
+                                    # add args defined in current file
+                                    if key in self._internal_args and self._internal_args[key] not in values:
+                                        values.append(self._internal_args[key])
+                                    params[key] = {':type': 'string', ':value': values}
+                                dia = ParameterDialog(params, store_geometry="open_launch_on_click")
+                                dia.setFilterVisible(False)
+                                dia.setWindowTitle('Select Parameter')
+                                if dia.exec_():
+                                    params = dia.getKeywords()
+                                    search_for = replace_arg(search_for, params)
+                                else:
+                                    # canceled -> cancel interpretation
+                                    QTextEdit.mouseReleaseEvent(self, event)
+                                    return
+                            # now resolve find-statements
                             inc_files = nm.nmd().get_interpreted_path(self.filename, text=[search_for])
                             for path, exists in inc_files:
                                 try:
@@ -300,10 +330,11 @@ class TextEdit(QTextEdit):
                                                 event.setAccepted(True)
                                                 self.load_request_signal.emit(path)
                                 except Exception, e:
-                                    MessageBox.critical(self, "Error", "File not found %s" % inc_files[0], detailed_text=utf8(e))
+                                    MessageBox.critical(self, "Error", "File not found %s" % path, detailed_text=utf8(e))
                         except exceptions.ResourceNotFound as not_found:
                             MessageBox.critical(self, "Error", "Resource not found %s" % search_for, detailed_text=utf8(not_found.error))
             except Exception as err:
+                print(traceback.format_exc())
                 MessageBox.critical(self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)
 

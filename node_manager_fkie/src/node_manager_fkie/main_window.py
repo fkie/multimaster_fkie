@@ -1720,12 +1720,15 @@ class MainWindow(QMainWindow):
                                        'Error while transfer files', '%s' % utf8(e))
 
     def _recursive_transfer(self, path, nmd_url):
-        includes = nm.nmd().get_included_files_set(path, True)
-        for inc in includes:
+        includes = nm.nmd().get_included_files_set(path, True, search_in_ext=nm.settings().SEARCH_IN_EXT)
+        copy_set = set()
+        for inc_file in includes:
+            copy_set.add(inc_file.inc_path)
+        for cppath in copy_set:
             self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                      'transfer file %s to %s' % (inc, nmd_url),
+                                                      'transfer file %s to %s' % (cppath, nmd_url),
                                                       nm.starter().transfer_file_nmd,
-                                                      ('%s' % nmd_url, inc))
+                                                      ('%s' % nmd_url, cppath))
         self.launch_dock.progress_queue.start()
 
     def _reload_globals_at_next_start(self, launch_file):

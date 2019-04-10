@@ -309,6 +309,7 @@ message IncludedFilesRequest {
 	bool recursive = 2;
 	bool unique = 3;
 	repeated string pattern = 4;
+	repeated string search_in_ext = 5;
 }
 
 message IncludedFilesReply {
@@ -316,8 +317,10 @@ message IncludedFilesReply {
 	string path = 2;
 	uint64 linenr = 3;
 	bool exists = 4;
-	uint64  size = 5;
-	repeated Argument include_args = 6;
+	uint64 size = 5;
+	string rawname = 6;
+	uint64 rec_depth = 7;
+	repeated Argument include_args = 8;
 }
 
 /** The status message included in replies. */

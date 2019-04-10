@@ -40,6 +40,7 @@ import roslib.names
 import roslib.packages
 import rospkg
 import threading
+import traceback
 
 from master_discovery_fkie.common import masteruri_from_master
 import multimaster_msgs_fkie.grpc.launch_pb2_grpc as lgrpc
@@ -48,7 +49,7 @@ import multimaster_msgs_fkie.grpc.launch_pb2 as lmsg
 from . import exceptions
 from . import launcher
 from . import url
-from .common import INCLUDE_PATTERN, included_files, interpret_path, utf8
+from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, find_included_files, interpret_path, utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 
@@ -363,7 +364,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             result.changed_nodes.append(n)
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
             except Exception as e:
-                import traceback
                 print(traceback.format_exc())
                 err_text = "%s loading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -449,7 +449,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                         rd.capabilities.extend(caps)
                     reply.description.extend(rd_hosts)
                 except Exception:
-                    import traceback
                     print(traceback.format_exc())
             # create nodelets description
             nodelets = {}
@@ -514,7 +513,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(err_nf))
                 yield result
             except Exception as _errr:
-                import traceback
                 result = lmsg.StartNodeReply(name=request.name)
                 result.status.code = ERROR
                 result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
@@ -535,38 +533,41 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             result.status.code = CONNECTION_ERROR
             result.status.error_msg = utf8(conerr)
         except Exception:
-            import traceback
             result = lmsg.StartNodeReply(name=request.name)
             result.status.code = ERROR
             result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
         return result
 
     def GetIncludedFiles(self, request, context):
-        pattern = INCLUDE_PATTERN
-        if request.pattern:
-            pattern = request.pattern
-        # search for loaded file and get the arguments
-        resolve_args = {}
-        for cfgid, lcfg in self._loaded_files.items():
-            if cfgid.path == request.path:
-                resolve_args.update(lcfg.resolve_dict)
-                break
-        # create a stack to reply the include tree as a list
-        queue = []
-        for inc_file_tuple in included_files(request.path, request.recursive, request.unique, pattern, resolve_args):
-            queue.append(inc_file_tuple)
-            while queue:
-                filename, lnr, path, args = queue.pop()
+        try:
+            pattern = INCLUDE_PATTERN
+            if request.pattern:
+                pattern = request.pattern
+            search_in_ext = SEARCH_IN_EXT
+            if request.search_in_ext:
+                search_in_ext = request.search_in_ext
+            # search for loaded file and get the arguments
+            resolve_args = {}
+            for cfgid, lcfg in self._loaded_files.items():
+                if cfgid.path == request.path:
+                    resolve_args.update(lcfg.resolve_dict)
+                    break
+            # replay each file
+            for inc_file in find_included_files(request.path, request.recursive, request.unique, pattern, search_in_ext, resolve_args):
                 reply = lmsg.IncludedFilesReply()
-                reply.root_path = filename
-                reply.linenr = lnr
-                reply.path = path
-                reply.exists = os.path.exists(reply.path)
+                reply.root_path = inc_file.path_or_str
+                reply.linenr = inc_file.line_number
+                reply.path = inc_file.inc_path
+                reply.exists = inc_file.exists
+                reply.rawname = inc_file.raw_inc_path
                 if reply.exists:
                     reply.size = os.path.getsize(reply.path)
-                reply.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in args.items())
+                reply.rec_depth = inc_file.rec_depth
+                reply.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in inc_file.args.items())
                 # return each file one by one
                 yield reply
+        except Exception:
+            rospy.logwarn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
 
     def InterpretPath(self, request, context):
         for text in request.paths:
@@ -590,9 +591,16 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             mtime = os.path.getmtime(request.path)
             already_in.append(request.path)
         result.mtime = mtime
+        # search for loaded file and get the arguments
+        resolve_args = {}
+        for cfgid, lcfg in self._loaded_files.items():
+            if cfgid.path == request.path:
+                resolve_args.update(lcfg.resolve_dict)
+                break
         # add mtimes for all included files
-        inc_files = included_files(request.path, True, True, INCLUDE_PATTERN)
-        for _root_path, _linenr, incf, _args in inc_files:
+        inc_files = find_included_files(request.path, True, True, INCLUDE_PATTERN, SEARCH_IN_EXT, resolve_args)
+        for inc_file in inc_files:
+            incf = inc_file.inc_file
             if incf not in already_in:
                 mtime = 0
                 if os.path.exists(incf):

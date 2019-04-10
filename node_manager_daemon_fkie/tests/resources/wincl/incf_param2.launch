@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="param" default="two"/>
+
+  <node name="node_from_two_$(arg param)" pkg="rostopic" type="rostopic"
+      args="pub two std_msgs/String -r 1 'two :)'"/>
+</launch>

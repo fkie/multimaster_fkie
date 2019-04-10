@@ -907,9 +907,6 @@ class ParameterDialog(QDialog):
                 self.move(pos)
             settings.endGroup()
 
-    def __del__(self):
-        self.content.removeAllFields()
-
     def _on_sidebar_stateChanged(self, state):
         if state == Qt.Checked:
             self._sidebar_selected += 1
@@ -1013,6 +1010,7 @@ class ParameterDialog(QDialog):
                 result_value[sidebar_name][':value'] = [v for v in set(sidebar_list)]
             else:
                 result_value[sidebar_name] = [v for v in set(sidebar_list)]
+        self.content.removeAllFields()
         return result_value
 
     def keywords2params(self, keywords):
@@ -1108,6 +1106,7 @@ class ParameterDialog(QDialog):
         self._store_geometry()
         self.setResult(QDialog.Rejected)
         self.rejected.emit()
+        self.content.removeAllFields()
         self.hide()
 
     def hideEvent(self, event):

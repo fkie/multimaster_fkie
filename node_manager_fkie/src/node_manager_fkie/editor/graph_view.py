@@ -73,6 +73,8 @@ class GraphViewWidget(QDockWidget):
     DATA_INC_FILE = Qt.UserRole + 3
     DATA_LEVEL = Qt.UserRole + 4
     DATA_SIZE = Qt.UserRole + 5
+    DATA_RAW = Qt.UserRole + 6
+    DATA_ARGS = Qt.UserRole + 7
 
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "LaunchGraph", parent)
@@ -95,18 +97,14 @@ class GraphViewWidget(QDockWidget):
         self.graphTreeView.clicked.connect(self.on_clicked)
         self._created_tree = False
         self.has_none_packages = True
-        self._refill_tree([], [], False)
+        self._refill_tree(False)
         self._fill_graph_thread = None
 
-    def clear_cache(self, path=None):
+    def clear_cache(self):
         with CHACHE_MUTEX:
-            if path is None:
-                GRAPH_CACHE.clear()
-            else:
-                try:
-                    del GRAPH_CACHE[path]
-                except KeyError:
-                    pass
+            if self._root_path:
+                nm.nmd().delete_cache_for(self._root_path)
+            GRAPH_CACHE.clear()
             self._created_tree = False
             self.graphTreeView.model().clear()
             crp = self._current_path
@@ -162,7 +160,36 @@ class GraphViewWidget(QDockWidget):
         self.activateWindow()
         self.graphTreeView.setFocus()
 
-    def _refill_tree(self, included_from, includes, create_tree=True):
+    def get_include_args(self, arglist, inc_string, from_file):
+        '''
+        Searches for each argument in arglist argument values, which are set while include files.
+        :rtype: {key: [str]}
+        '''
+        selected = self.graphTreeView.selectionModel().selectedIndexes()
+        from_file_selected = False
+        result = {arg: [] for arg in arglist}
+        for index in selected:
+            item = self.graphTreeView.model().itemFromIndex(index)
+            if from_file == item.data(self.DATA_INC_FILE):
+                from_file_selected = True
+                items = self.graphTreeView.model().match(index, self.DATA_RAW, inc_string, 10, Qt.MatchRecursive)
+                for item in items:
+                    for arg in arglist:
+                        # add only requested args and if value is not already in
+                        incargs = item.data(self.DATA_ARGS)
+                        if arg in incargs and incargs[arg] not in result[arg]:
+                            result[arg].append(incargs[arg])
+        # global search if from_file was not in selected
+        if not from_file_selected:
+            items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_RAW, inc_string, 10, Qt.MatchRecursive)
+            for item in items:
+                for arg in arglist:
+                    incargs = item.data(self.DATA_ARGS)
+                    if arg in incargs and incargs[arg] not in result[arg]:
+                        result[arg].append(incargs[arg])
+        return result
+
+    def _refill_tree(self, create_tree=True):
         deep = 0
         file_dsrc = self._root_path
         try:
@@ -184,7 +211,7 @@ class GraphViewWidget(QDockWidget):
                     inc_item.setData(-1, self.DATA_LINE)
                     inc_item.setData(self._root_path, self.DATA_INC_FILE)
                     inc_item.setData(deep, self.DATA_LEVEL)
-                    self._append_items(inc_item, deep + 1)
+                    self._append_items(inc_item, deep, GRAPH_CACHE[self._root_path])
                     self.graphTreeView.model().appendRow(inc_item)
                     # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
                 self._created_tree = True
@@ -195,36 +222,48 @@ class GraphViewWidget(QDockWidget):
         for item in items:
             if first:
                 self._current_deep = item.data(self.DATA_LEVEL)
-                self.graphTreeView.selectionModel().select(item, QItemSelectionModel.SelectCurrent)
                 first = False
-            else:
-                self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
+            self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
         self.graphTreeView.expandAll()
         self.finished_signal.emit()
 
-    def _append_items(self, item, deep):
-        path = item.data(self.DATA_INC_FILE)
-        if not path:
-            path = item.data(self.DATA_FILE)
-        if path in GRAPH_CACHE:
-            for inc_lnr, inc_path, _, size in GRAPH_CACHE[path]:
-                pkg, _ = package_name(os.path.dirname(inc_path))
-                itemstr = '%s  _%s_  [%s]' % (os.path.basename(inc_path), sizeof_fmt(size), pkg)
-                inc_item = QStandardItem('%d: %s' % (inc_lnr, itemstr))
-                inc_item.setData(path, self.DATA_FILE)
-                inc_item.setData(inc_lnr, self.DATA_LINE)
-                inc_item.setData(inc_path, self.DATA_INC_FILE)
-                inc_item.setData(deep, self.DATA_LEVEL)
-                inc_item.setData(size, self.DATA_SIZE)
-                self._append_items(inc_item, deep + 1)
-                item.appendRow(inc_item)
+    def _append_items(self, item, deep, items=[]):
+        sub_items = []
+        inc_item = None
+        for inc_file in items:
+            if inc_file.rec_depth == deep:
+                if inc_item is not None:
+                    if sub_items:
+                        self._append_items(inc_item, deep + 1, sub_items)
+                        sub_items = []
+                    item.appendRow(inc_item)
+                    inc_item = None
+                if inc_item is None:
+                    pkg, _ = package_name(os.path.dirname(inc_file.inc_path))
+                    itemstr = '%s  _%s_  [%s]' % (os.path.basename(inc_file.inc_path), sizeof_fmt(inc_file.size), pkg)
+                    inc_item = QStandardItem('%d: %s' % (inc_file.line_number, itemstr))
+                    inc_item.setData(inc_file.path_or_str, self.DATA_FILE)
+                    inc_item.setData(inc_file.line_number, self.DATA_LINE)
+                    inc_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
+                    inc_item.setData(inc_file.rec_depth, self.DATA_LEVEL)
+                    inc_item.setData(inc_file.size, self.DATA_SIZE)
+                    inc_item.setData(inc_file.raw_inc_path, self.DATA_RAW)
+                    inc_item.setData(inc_file.args, self.DATA_ARGS)
+            elif inc_file.rec_depth > deep:
+                sub_items.append(inc_file)
+        if inc_item is not None:
+            if sub_items:
+                self._append_items(inc_item, deep + 1, sub_items)
+                sub_items = []
+            item.appendRow(inc_item)
+            inc_item = None
 
 
 class GraphThread(QObject, threading.Thread):
     '''
     A thread to parse file for includes
     '''
-    graph = Signal(list, list)
+    graph = Signal()
     '''
     :ivar: graph is a signal, which emit two list for files include the current path and a list with included files.
     Each entry is a tuple of the line number and path.
@@ -238,25 +277,28 @@ class GraphThread(QObject, threading.Thread):
         '''
         :param root_path: the open root file
         :type root_path: str
-        :param current_path: current shown file
-        :type current_path: str
         '''
         QObject.__init__(self)
         threading.Thread.__init__(self)
         self.setDaemon(True)
-        self.current_path = current_path
+#        self.current_path = current_path
         self.root_path = root_path
 
     def run(self):
         '''
         '''
         try:
-            self.info_signal.emit("build tree: start for %s" % self.current_path, False)
-            includes = self._get_includes(self.current_path)
-            included_from = []
-            incs = self._get_includes(self.root_path)
-            included_from = self._find_inc_file(self.current_path, incs, self.root_path)
-            self.graph.emit(included_from, includes)
+            self.info_signal.emit("build tree: start for %s" % self.root_path, False)
+            with CHACHE_MUTEX:
+                if self.root_path not in GRAPH_CACHE:
+                    result = []
+                    filelist = nm.nmd().get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
+                    for inc_file in filelist:
+                        result.append(inc_file)
+                        if not inc_file.exists:
+                            self.info_signal.emit("build tree: skip parse %s, not exist" % inc_file.inc_path, True)
+                    GRAPH_CACHE[self.root_path] = result
+            self.graph.emit()
         except exceptions.GrpcTimeout as tout:
             rospy.logwarn("Build launch tree failed! Daemon not responded within %.2f seconds while"
                           " get configuration file: %s\nYou can try to increase"
@@ -264,38 +306,10 @@ class GraphThread(QObject, threading.Thread):
             self.error.emit('failed: timeout')
         except Exception:
             import traceback
+            # print("Error while parse launch file for includes:\n\t%s" % traceback.format_exc())
             formatted_lines = traceback.format_exc(1).splitlines()
-            print("Error while parse launch file for includes:\n\t%s" % traceback.format_exc())
             try:
                 rospy.logwarn("Error while parse launch file for includes:\n\t%s", formatted_lines[-5])
             except Exception:
                 pass
             self.error.emit('failed: %s' % formatted_lines[-1])
-
-    def _get_includes(self, path):
-        result = []
-        with CHACHE_MUTEX:
-            if path:
-                if path in GRAPH_CACHE:
-                    result = GRAPH_CACHE[path]
-                else:
-                    self.info_signal.emit("build tree: download and parse %s" % path, False)
-                    filelist = nm.nmd().get_included_files(path, recursive=False)
-                    for line, fname, exists, size, _include_args in filelist:
-                        if size > 1048576:
-                            self.info_signal.emit("build tree: large file %s, size %s" % (path, sizeof_fmt(size)), True)
-                        result.append((line, fname, exists, size))
-                    GRAPH_CACHE[path] = result
-        return result
-
-    def _find_inc_file(self, filename, files, root_path):
-        result = []
-        for line, fname, exists, size in files:
-            if filename == fname:
-                result.append((line, root_path, size))
-            elif exists:
-                inc_files = self._get_includes(fname)
-                result += self._find_inc_file(filename, inc_files, fname)
-            else:
-                self.info_signal.emit("build tree: skip parse %s, not exist" % fname, True)
-        return result

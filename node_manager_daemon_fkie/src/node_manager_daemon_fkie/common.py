@@ -65,6 +65,41 @@ _get_pkg_path_var = None
 PACKAGE_CACHE = {}
 
 
+class IncludedFile():
+
+    def __init__(self, path_or_str, line_number, inc_path, exists, raw_inc_path, rec_depth, args, size=0):
+        '''
+        Representation of an included file found in given string or path of a file.
+        :param str path_or_str: path of file or content where to search. If it is a path, the content will be read from file.
+        :param int line_number: line number of the occurrence. If `unique` is True the line number is zero.
+        :param str inc_path: resolved path.
+        :param bool exists: True if resolved path exists.
+        :param str raw_inc_path: representation of included file without resolved arg and find statements.
+        :param int rec_depth: depth of recursion. if `unique` is True the depth is zero
+        :param dict(str:str) args: a dictionary with all defined arguments valid for current file/content.
+        '''
+        self.path_or_str = path_or_str
+        self.line_number = line_number
+        self.inc_path = inc_path
+        self.exists = exists
+        self.raw_inc_path = raw_inc_path
+        self.rec_depth = rec_depth
+        self.args = args
+        self.size = size
+
+    def __repr__(self):
+        result = "IncludedFile:"
+        result += "\n  from: %s" % self.path_or_str
+        result += "\n  line nr:  %d" % self.line_number
+        result += "\n  inc_path: %s" % self.inc_path
+        result += "\n  raw:      %s" % self.raw_inc_path
+        result += "\n  exists:   %s" % ('True' if self.exists else 'False')
+        result += "\n  size:     %d" % self.size
+        result += "\n  depth:    %d" % self.rec_depth
+        result += "\n  args: %s" % utf8(self.args)
+        return result
+
+
 def utf8(s, errors='replace'):
     '''
     Converts string to unicode.
@@ -234,19 +269,15 @@ def replace_paths(text, pwd='.'):
     return result
 
 
-def replace_internal_args(content, resolve_args={}, path=None):
+def get_internal_args(content, path=None):
     '''
-    Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
-    :return: True if something was replaced, new content and detected arguments
-    :rtype: (bool, str, {str: str})
+    Load the content with xml parser, search for arg-nodes.
+    :return: a dictionary with detected arguments
+    :rtype: {str: str}
     '''
     new_content = content
-    replaced = False
     try:
         resolve_args_intern = {}
-        for arg_key, args_val in resolve_args.items():
-            replaced = True
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
         xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
         for node in xml_nodes:
             for child in node.childNodes:
@@ -261,6 +292,25 @@ def replace_internal_args(content, resolve_args={}, path=None):
                             aval = arg_attr.value
                     if aname:
                         resolve_args_intern[aname] = aval
+    except Exception as err:
+        print("%s while get_internal_args %s" % (utf8(err), path))
+        rospy.logdebug("%s while get_internal_args %s" % (utf8(err), path))
+    return resolve_args_intern
+
+
+def replace_internal_args(content, resolve_args={}, path=None):
+    '''
+    Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
+    :return: True if something was replaced, new content and detected arguments
+    :rtype: (bool, str, {str: str})
+    '''
+    new_content = content
+    replaced = False
+    try:
+        for arg_key, args_val in resolve_args.items():
+            replaced = True
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+        resolve_args_intern = get_internal_args(content)
         for arg_key, args_val in resolve_args_intern.items():
             new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
             replaced = True
@@ -270,13 +320,26 @@ def replace_internal_args(content, resolve_args={}, path=None):
     return replaced, new_content, resolve_args_intern
 
 
+def get_arg_names(value):
+    '''
+    Searches for $(arg <name>) statements and returns a list with <name>.
+    :rtype: [str]
+    '''
+    result = []
+    re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
+    for arg in re_if.findall(value):
+        result.append(arg)
+    return result
+
+
 def replace_arg(value, resolve_args):
     # test for if statement
+    result = value
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
     for arg in re_if.findall(value):
         if arg in resolve_args:
-            return value.replace('$(arg %s)' % arg, resolve_args[arg])
-    return value
+            result = result.replace('$(arg %s)' % arg, resolve_args[arg])
+    return result
 
 
 def __get_include_args(content, resolve_args):
@@ -319,12 +382,14 @@ def __get_include_args(content, resolve_args):
     return included_files
 
 
-def included_files(string,
-                   recursive=True,
-                   unique=False,
-                   include_pattern=INCLUDE_PATTERN,
-                   resolve_args={},
-                   unique_files=[]):
+def find_included_files(string,
+                        recursive=True,
+                        unique=False,
+                        include_pattern=INCLUDE_PATTERN,
+                        search_in_ext=SEARCH_IN_EXT,
+                        resolve_args={},
+                        unique_files=[],
+                        rec_depth=0):
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
@@ -334,11 +399,12 @@ def included_files(string,
     :param bool unique: returns the same files once (Default: False)
     :param include_pattern: the list with patterns to find include files.
     :type include_pattern: [str]
+    :param search_in_ext: file extensions to search in
+    :type search_in_ext: [str]
     :param resolve_args: dictionary with arguments to resolve arguments in path names
     :type resolve_args: {str, str}
-    :return: Returns an iterator with tuple of given string, line number, path of included file and a dictionary with all defined arguments.
-             if `unique` is True the line number is zero
-    :rtype: iterator with (str, int, str, {str:str})
+    :return: Returns an iterator with IncludedFile-class
+    :rtype: iterator with IncludedFile
     '''
     re_filelist = EMPTY_PATTERN
     if include_pattern:
@@ -363,15 +429,19 @@ def included_files(string,
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     if (string.endswith(".launch")):
-        _replaced, content, _resolve_args_intern = replace_internal_args(content, path=string)
-        inc_files_forward_args = __get_include_args(content, resolve_args)
+        _replaced, content_resolved, resolve_args_intern = replace_internal_args(content, resolve_args=resolve_args, path=string)
+        # intern args use only internal
+        inc_files_forward_args = __get_include_args(content_resolved, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
         my_unique_files = list()
     # search for include pattern in the content without comments
     for groups in re_filelist.finditer(content):
+        if groups.lastindex is None:
+            continue
         for index in range(groups.lastindex):
             filename = groups.groups()[index]
+            rawname = filename
             if filename:
                 try:
                     forward_args = {}
@@ -382,6 +452,8 @@ def included_files(string,
                     resolve_args_all.update(forward_args)
                     try:
                         # try to resolve path
+                        filename = replace_arg(filename, resolve_args_all)
+                        filename = replace_arg(filename, resolve_args_intern)
                         filename = interpret_path(filename, pwd)
                     except Exception as err:
                         rospy.logwarn("Interpret file failed: %s" % utf8(err))
@@ -393,17 +465,17 @@ def included_files(string,
                             my_unique_files.append(filename)
                             # transform found position to line number
                             position = content.count("\n", 0, groups.start()) + 1
-                            yield (string, position, filename, resolve_args_all)
+                            yield IncludedFile(string, position, filename, os.path.isfile(filename), rawname, rec_depth, resolve_args_all)
                     # for recursive search
                     if os.path.isfile(filename):
                         if recursive:
                             try:
                                 ext = os.path.splitext(filename)
-                                if ext[1] in SEARCH_IN_EXT:
-                                    for res_item in included_files(filename, recursive, unique, include_pattern, resolve_args_all):
-                                        publish = not unique or (unique and res_item[2] not in my_unique_files)
+                                if ext[1] in search_in_ext:
+                                    for res_item in find_included_files(filename, recursive, unique, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
+                                        publish = not unique or (unique and res_item.inc_path not in my_unique_files)
                                         if publish:
-                                            my_unique_files.append(res_item[2])
+                                            my_unique_files.append(res_item.inc_path)
                                             yield res_item
                             except Exception as e:
                                 rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (filename, utf8(e)))

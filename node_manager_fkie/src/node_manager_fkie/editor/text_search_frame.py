@@ -246,7 +246,7 @@ class TextSearchFrame(QDockWidget):
                 return index
         return -1
 
-    def on_search_result(self, search_text, found, path, startpos, endpos, linenr, line):
+    def on_search_result(self, search_text, found, path, startpos, endpos, linenr, line, include_args):
         '''
         Slot to handle the signals for search result. This signals are forwarded used
         found_signal.

@@ -115,18 +115,6 @@ class TextSearchThread(QObject, threading.Thread):
                 line = self._strip_text(data, pos)
                 if self._only_launch:
                     doemit = path.endswith('.launch')
-#                 if doemit:
-#                     # test for if statement
-#                     re_if = re.compile(r"if=\"\$\(arg.(?P<name>.*?)\)")
-#                     for ifarg in re_if.findall(line):
-#                         if ifarg in my_resolved_args and my_resolved_args[ifarg] in ['false', '0']:
-#                             doemit = False
-#                 if doemit:
-#                     # test for unless statement
-#                     re_if = re.compile(r"unless=\"\$\(arg.(?P<name>.*?)\)")
-#                     for ifarg in re_if.findall(line):
-#                         if ifarg in my_resolved_args and my_resolved_args[ifarg] in ['false', '0']:
-#                             doemit = False
                 if doemit:
                     self._found += 1
                     self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, line)
@@ -137,11 +125,11 @@ class TextSearchThread(QObject, threading.Thread):
                 queue = []
                 inc_files = nm.nmd().get_included_files(path, False)
                 # read first all included files in current file
-                for _linenr, inc_path, exists, _size, include_args in inc_files:
+                for inc_file in inc_files:
                     if not self._isrunning:
                         return
-                    if exists:
-                        queue.append((search_text, inc_path, recursive, include_args))
+                    if inc_file.exists:
+                        queue.append((search_text, inc_file.inc_path, recursive, inc_file.args))
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(args)
@@ -190,11 +178,11 @@ class TextSearchThread(QObject, threading.Thread):
                 queue = []
                 inc_files = nm.nmd().get_included_files(path, False)
                 # read first all included files in current file
-                for _linenr, inc_path, exists, _size, include_args in inc_files:
+                for inc_file in inc_files:
                     if not self._isrunning:
                         return
-                    if exists:
-                        queue.append((search_text, inc_path, recursive, include_args))
+                    if inc_file.exists:
+                        queue.append((search_text, inc_file.inc_path, recursive, inc_file.args))
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(my_resolved_args)
