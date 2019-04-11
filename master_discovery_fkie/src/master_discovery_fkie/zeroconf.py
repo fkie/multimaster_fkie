@@ -43,10 +43,12 @@ import socket
 import sys
 import threading
 import time
+import traceback
 
 import rospy
 
-from master_monitor import MasterMonitor
+from .common import get_hostname
+from .master_monitor import MasterMonitor
 from multimaster_msgs_fkie.msg import LinkStatesStamped, MasterState, ROSMaster  # , SyncMasterInfo, SyncTopicInfo
 from multimaster_msgs_fkie.srv import DiscoverMasters, DiscoverMastersResponse  # , GetSyncInfo
 
@@ -82,7 +84,7 @@ class MasterInfo(object):
     def getRosTimestampLocal(self):
         try:
             return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp_local'))
-        except:
+        except Exception:
             return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp'))
 
     @staticmethod
@@ -94,7 +96,7 @@ class MasterInfo(object):
         try:
             if not (timestamp is None):
                 return float(timestamp)
-        except:
+        except Exception:
             # depricated
             if not (timestamp is None):
                 t = datetime.strptime(timestamp, '%Y%m%d%H%M%S.%f')
@@ -309,7 +311,8 @@ class Zeroconf(threading.Thread):
             if self.__group is None:
                 if (self.masterInfo.domain is None) or len(self.masterInfo.domain) == 0:
                     self.masterInfo.domain = 'local'
-                self.masterInfo.host = self.masterInfo.host + '.' + self.masterInfo.domain
+                if '.' not in self.masterInfo.host:
+                    self.masterInfo.host = self.masterInfo.host + '.' + self.masterInfo.domain
                 self.__group = dbus.Interface(self.__bus.get_object(avahi.DBUS_NAME,
                                                                     self.__server.EntryGroupNew()),
                                               avahi.DBUS_INTERFACE_ENTRY_GROUP)
@@ -345,8 +348,7 @@ class Zeroconf(threading.Thread):
                 result = MasterInfo(name, stype, domain, host, port, avahi.txt_array_to_string_array(txt), interface, protocol, online=True)
         except dbus.DBusException:
             result = None
-        except:
-            import traceback
+        except Exception:
             print traceback.format_exc()
         finally:
             self._lock.release()
@@ -556,7 +558,7 @@ class MasterList(object):
                                                               state,
                                                               m.getTXTValue('zname', ''),
                                                               m.getTXTValue('rpcuri', ''))))
-        except:
+        except Exception:
             pass
         finally:
             self.__lock.release()
@@ -572,8 +574,7 @@ class MasterList(object):
                 master = self.__masters[key]
                 if time.time() - master.lastUpdate > 1.0 / Discoverer.ROSMASTER_HZ + 2:
                     self.setMasterOnline(key, False)
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while check master state: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -623,8 +624,7 @@ class MasterList(object):
                         self._services_initialized = True
                         rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
 #            rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while update master: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -657,8 +657,7 @@ class MasterList(object):
                                                               r.getTXTValue('rpcuri', ''))))
 #        r.stop()
                 del r
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while remove master: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -679,8 +678,7 @@ class MasterList(object):
         try:
             self.__lock.acquire()
             result = self.__masters[name]
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while getMasterInfo: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -706,7 +704,6 @@ class MasterList(object):
                                                               master.getTXTValue('zname', ''),
                                                               master.getTXTValue('rpcuri', ''))))
         except Exception:
-            import traceback
             rospy.logwarn("Error while removeAll: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -726,7 +723,7 @@ class MasterList(object):
                                          master.online,
                                          master.getTXTValue('zname', ''),
                                          master.getTXTValue('rpcuri', '')))
-        except:
+        except Exception:
             pass
         finally:
             self.__lock.release()
@@ -750,7 +747,7 @@ class Discoverer(Zeroconf):
     '''
     ROSMASTER_HZ = 1  # the test rate of ROS master state in hz
 
-    def __init__(self, monitor_port=11611, network_id=0, domain=''):
+    def __init__(self, monitor_port=11611, network_id=0):
         '''
         Initialize method of the local master.
 
@@ -760,21 +757,30 @@ class Discoverer(Zeroconf):
         '''
         if rospy.has_param('~rosmaster_hz'):
             Discoverer.ROSMASTER_HZ = rospy.get_param('~rosmaster_hz')
-
         self.network_id = str(network_id)
         rospy.loginfo("Network ID: %s" % self.network_id)
-        self.master_monitor = MasterMonitor(monitor_port)
+        self._use_fqdn = rospy.get_param('~fqdn', False)
+        rospy.loginfo("Fully-Qualified Domain Name: %s" % ('enabled' if self._use_fqdn else 'disabled'))
+        self._use_ipv6 = 'ROS_IPV6' in os.environ and os.environ['ROS_IPV6'] == 'on'
+        rospy.loginfo("IPv6: %s" % ('enabled' if self._use_ipv6 else 'disabled'))
+        self.master_monitor = MasterMonitor(monitor_port, ipv6=self._use_ipv6)
         name = self.master_monitor.getMastername()
-        # create the txtArray for the zeroconf service of the ROS master
         materuri = self.master_monitor.getMasteruri()
+        # create the txtArray for the zeroconf service of the ROS master
+        hostname = get_hostname(materuri)
+        if self._use_fqdn:
+            fqhostname = socket.getfqdn()
+            materuri = materuri.replace('://%s:' % hostname, '://%s:' % fqhostname)
+            hostname = fqhostname
         # test the host for local entry
         masterhost, masterport = MasterInfo.MasteruriToAddr(materuri)
         if (masterhost in ['localhost', '127.0.0.1']):
             sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % masterhost)
-        rpcuri = ''.join(['http://', socket.gethostname(), ':', str(monitor_port), '/'])
+        rpcuri = 'http://%s:%s/' % (hostname, str(monitor_port))
         txtArray = ["timestamp=%s" % str(0), "timestamp_local=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
+        rospy.loginfo("Publish txtArray: %s" % txtArray)
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
-        Zeroconf.__init__(self, name, '_ros-master._tcp', masterhost, masterport, domain, txtArray)
+        Zeroconf.__init__(self, name, '_ros-master._tcp', hostname, masterport, domain='local', txt_array=txtArray)
         # the list with all ROS master neighbors with theirs SyncThread's and all Polling threads
         self.masters = MasterList(self.masterInfo, self.requestResolve, self.checkLocalMaster)
         # set the callback to finish all running threads
@@ -869,7 +875,6 @@ class Discoverer(Zeroconf):
                 self.masterInfo.txt = ["timestamp=%.9f" % self.master_monitor.getCurrentState().timestamp, "timestamp_local=%.9f" % self.master_monitor.getCurrentState().timestamp_local, "master_uri=%s" % masteruri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
                 self.updateService(self.masterInfo.txt)
             return self.masterInfo
-        except:
-            import traceback
+        except Exception:
             rospy.logerr("Error while check local master: %s", traceback.format_exc())
         return None
