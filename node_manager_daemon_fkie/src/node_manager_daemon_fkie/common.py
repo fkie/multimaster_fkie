@@ -306,6 +306,7 @@ def replace_internal_args(content, resolve_args={}, path=None):
     '''
     new_content = content
     replaced = False
+    resolve_args_intern = {}
     try:
         for arg_key, args_val in resolve_args.items():
             replaced = True
