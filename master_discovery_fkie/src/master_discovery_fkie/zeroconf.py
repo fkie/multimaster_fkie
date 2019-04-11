@@ -43,6 +43,7 @@ import socket
 import sys
 import threading
 import time
+import traceback
 
 import rospy
 
@@ -83,7 +84,7 @@ class MasterInfo(object):
     def getRosTimestampLocal(self):
         try:
             return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp_local'))
-        except:
+        except Exception:
             return MasterInfo.timestampToRosTime(self.getTXTValue('timestamp'))
 
     @staticmethod
@@ -95,7 +96,7 @@ class MasterInfo(object):
         try:
             if not (timestamp is None):
                 return float(timestamp)
-        except:
+        except Exception:
             # depricated
             if not (timestamp is None):
                 t = datetime.strptime(timestamp, '%Y%m%d%H%M%S.%f')
@@ -346,8 +347,7 @@ class Zeroconf(threading.Thread):
                 result = MasterInfo(name, stype, domain, host, port, avahi.txt_array_to_string_array(txt), interface, protocol, online=True)
         except dbus.DBusException:
             result = None
-        except:
-            import traceback
+        except Exception:
             print traceback.format_exc()
         finally:
             self._lock.release()
@@ -557,7 +557,7 @@ class MasterList(object):
                                                               state,
                                                               m.getTXTValue('zname', ''),
                                                               m.getTXTValue('rpcuri', ''))))
-        except:
+        except Exception:
             pass
         finally:
             self.__lock.release()
@@ -573,8 +573,7 @@ class MasterList(object):
                 master = self.__masters[key]
                 if time.time() - master.lastUpdate > 1.0 / Discoverer.ROSMASTER_HZ + 2:
                     self.setMasterOnline(key, False)
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while check master state: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -624,8 +623,7 @@ class MasterList(object):
                         self._services_initialized = True
                         rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
 #            rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while update master: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -658,8 +656,7 @@ class MasterList(object):
                                                               r.getTXTValue('rpcuri', ''))))
 #        r.stop()
                 del r
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while remove master: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -680,8 +677,7 @@ class MasterList(object):
         try:
             self.__lock.acquire()
             result = self.__masters[name]
-        except:
-            import traceback
+        except Exception:
             rospy.logwarn("Error while getMasterInfo: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -707,7 +703,6 @@ class MasterList(object):
                                                               master.getTXTValue('zname', ''),
                                                               master.getTXTValue('rpcuri', ''))))
         except Exception:
-            import traceback
             rospy.logwarn("Error while removeAll: %s", traceback.format_exc())
         finally:
             self.__lock.release()
@@ -727,7 +722,7 @@ class MasterList(object):
                                          master.online,
                                          master.getTXTValue('zname', ''),
                                          master.getTXTValue('rpcuri', '')))
-        except:
+        except Exception:
             pass
         finally:
             self.__lock.release()
@@ -870,7 +865,6 @@ class Discoverer(Zeroconf):
                 self.masterInfo.txt = ["timestamp=%.9f" % self.master_monitor.getCurrentState().timestamp, "timestamp_local=%.9f" % self.master_monitor.getCurrentState().timestamp_local, "master_uri=%s" % masteruri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
                 self.updateService(self.masterInfo.txt)
             return self.masterInfo
-        except:
-            import traceback
+        except Exception:
             rospy.logerr("Error while check local master: %s", traceback.format_exc())
         return None
