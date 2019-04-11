@@ -40,7 +40,7 @@ import rospy
 import traceback
 
 from node_manager_daemon_fkie import exceptions, file_item
-from node_manager_daemon_fkie.common import get_arg_names, get_internal_args, replace_arg, utf8
+from node_manager_daemon_fkie.common import find_included_files, get_arg_names, get_internal_args, replace_arg, utf8
 from node_manager_fkie.common import package_name
 from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.parameter_dialog import ParameterDialog
@@ -280,9 +280,8 @@ class TextEdit(QTextEdit):
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
             try:
-                value_pattern = re.compile(r"\"(?P<value>.*?)\"")
-                for groups in value_pattern.finditer(cursor.block().text()):
-                    aval = groups.group("value")
+                for inc_file in find_included_files(cursor.block().text(), False, False, search_in_ext=[]):
+                    aval = inc_file.raw_inc_path
                     aitems = aval.split("'")
                     for search_for in aitems:
                         if not search_for:
@@ -720,7 +719,6 @@ class TextEdit(QTextEdit):
                             menu.addMenu(menu_tags)
                     return menu
                 except Exception:
-                    import traceback
                     print(traceback.format_exc(1))
                     return None
         return None
