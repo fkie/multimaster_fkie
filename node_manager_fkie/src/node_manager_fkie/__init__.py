@@ -47,7 +47,8 @@ from node_manager_daemon_fkie.version import detect_version
 from .common import get_ros_home
 from .history import History
 from .name_resolution import NameResolution
-from .nmd_client import NmdClient, LaunchArgsSelectionRequest
+from node_manager_fkie.nmd_client import NmdClient
+from node_manager_fkie.nmd_client.launch_channel import LaunchArgsSelectionRequest
 from .progress_queue import InteractionNeededError
 from .screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
 from .settings import Settings

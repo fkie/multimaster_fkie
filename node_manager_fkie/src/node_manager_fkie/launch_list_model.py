@@ -246,10 +246,10 @@ class PathItem(QStandardItem):
                                        "        </node>\n"
                                        "    </group>\n"
                                        "</launch>\n")
-                        nm.nmd().save_file(new_path, content, 0)
+                        nm.nmd().file.save_file(new_path, content, 0)
                         self._isnew = False
                     else:
-                        nm.nmd().rename(self.path, new_path)
+                        nm.nmd().file.rename(self.path, new_path)
                     # check for new file extension
                     if new_id != self.id:
                         self.id = new_id
@@ -361,10 +361,10 @@ class LaunchListModel(QStandardItemModel):
         self.ros_root_paths = {}  # {url: [root pasth(str)]}
         self.ros_root_paths[self._current_path] = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
         self._progress_queue = progress_queue
-        nm.nmd().listed_path.connect(self._listed_path)
-        nm.nmd().packages_available.connect(self._on_new_packages)
+        nm.nmd().file.listed_path.connect(self._listed_path)
+        nm.nmd().file.packages_available.connect(self._on_new_packages)
         nm.nmd().error.connect(self._nmd_error)
-        nm.nmd().list_path_threaded(self._current_path)
+        nm.nmd().file.list_path_threaded(self._current_path)
         # self.count = 0
 
     @property
@@ -416,7 +416,7 @@ class LaunchListModel(QStandardItemModel):
         self._current_master = masteruri.rstrip(os.path.sep)
         self._current_master_name = mastername
         if self._is_root(self._current_path):
-            nm.nmd().list_path_threaded(self._current_path)
+            nm.nmd().file.list_path_threaded(self._current_path)
             if nmdurl.equal_uri(self._current_path, masteruri_from_master()):
                 self._add_path(nmdurl.nmduri(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
 
@@ -582,7 +582,7 @@ class LaunchListModel(QStandardItemModel):
             elif self._current_path != path:
                 self._current_path = path
         self._add_path(self._current_path, PathItem.ROOT, 0, 0, 'loading...')
-        nm.nmd().list_path_threaded(self._current_path, clear_cache)
+        nm.nmd().file.list_path_threaded(self._current_path, clear_cache)
         # TODO: add functionality to go deep automatically
 #         else:
 #             key_mod = QApplication.keyboardModifiers()
@@ -614,7 +614,7 @@ class LaunchListModel(QStandardItemModel):
             self.pyqt_workaround.clear()
             items = []
             currurl = self.current_grpc
-            for url, packages in nm.nmd().get_packages().items():
+            for url, packages in nm.nmd().file.get_packages().items():
                 if url == currurl:
                     for path, name in packages.items():
                         if pattern in name:
@@ -634,7 +634,7 @@ class LaunchListModel(QStandardItemModel):
                 basename = os.path.basename(text)
                 dest_path = os.path.join(self._current_path, basename)
                 try:
-                    nm.nmd().copy(text, dest_path)
+                    nm.nmd().file.copy(text, dest_path)
                     self.reload_current_path(clear_cache=True)
                 except Exception:
                     import traceback

@@ -189,7 +189,7 @@ class LaunchFilesWidget(QDockWidget):
         if gpath == self._current_search or gpath == self.launchlist_model.current_path:
             self.ui_search_line.set_process_active(False)
         if self.launchlist_model.is_in_root:
-            self._reload_timer = threading.Timer(2., nm.nmd().list_path_threaded, args=(self.launchlist_model.current_path,))
+            self._reload_timer = threading.Timer(2., nm.nmd().file.list_path_threaded, args=(self.launchlist_model.current_path,))
             self._reload_timer.start()
 
     def on_launch_selection_changed(self, selected, deselected):

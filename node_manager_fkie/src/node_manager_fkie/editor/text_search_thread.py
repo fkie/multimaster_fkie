@@ -161,7 +161,7 @@ class TextSearchThread(QObject, threading.Thread):
             # read XML content and update the arguments
             resolve_args = dict(args)
             if not resolve_args:
-                resolve_args.update(nm.nmd().launch_args(path))
+                resolve_args.update(nm.nmd().launch.launch_args(path))
             my_resolved_args = self._resolve_args(launch_node, resolve_args, path)
             # replace arguments and search for node in data
             search_for_name = search_text.replace('name="', '').replace('"', '')
@@ -176,7 +176,7 @@ class TextSearchThread(QObject, threading.Thread):
                 occur_idx += 1
             if self._isrunning and recursive:
                 queue = []
-                inc_files = nm.nmd().get_included_files(path, False)
+                inc_files = nm.nmd().launch.get_included_files(path, False)
                 # read first all included files in current file
                 for inc_file in inc_files:
                     if not self._isrunning:
@@ -275,7 +275,7 @@ class TextSearchThread(QObject, threading.Thread):
             result = self._path_text[path]
         except KeyError:
             try:
-                _, _, data = nm.nmd().get_file_content(path)
+                _, _, data = nm.nmd().file.get_file_content(path)
                 result = utf8(data)
             except Exception as err:
                 rospy.logwarn("can't get content: %s" % (utf8(err)))

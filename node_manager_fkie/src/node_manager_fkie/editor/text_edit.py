@@ -114,7 +114,7 @@ class TextEdit(QTextEdit):
         ext = os.path.splitext(filename)
         if self.filename:
             self.setText("")
-            _, self.file_mtime, file_content = nm.nmd().get_file_content(filename)
+            _, self.file_mtime, file_content = nm.nmd().file.get_file_content(filename)
             if ext[1] in ['.launch', '.xml']:
                 self._internal_args = get_internal_args(file_content)
             self.setText(file_content)
@@ -143,7 +143,7 @@ class TextEdit(QTextEdit):
         '''
         if force or self.document().isModified():
             try:
-                mtime = nm.nmd().save_file(self.filename, self.toPlainText().encode('utf-8'), 0 if force else self.file_mtime)
+                mtime = nm.nmd().file.save_file(self.filename, self.toPlainText().encode('utf-8'), 0 if force else self.file_mtime)
                 self.file_mtime = mtime
                 if mtime == 0:
                     MessageBox.warning(self, "Warning", "File not saved and not error reported: %s" % os.path.basename(self.filename))
@@ -256,7 +256,7 @@ class TextEdit(QTextEdit):
     def focusInEvent(self, event):
         # check for file changes
         if self.filename and self.file_mtime:
-            nm.nmd().check_for_changed_files_threaded({self.filename: self.file_mtime})
+            nm.nmd().file.check_for_changed_files_threaded({self.filename: self.file_mtime})
         QTextEdit.focusInEvent(self, event)
 
     def file_changed(self, mtime):
@@ -265,7 +265,7 @@ class TextEdit(QTextEdit):
             result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
             if result == MessageBox.Yes:
                 try:
-                    _, self.file_mtime, file_content = nm.nmd().get_file_content(self.filename, force=True)
+                    _, self.file_mtime, file_content = nm.nmd().file.get_file_content(self.filename, force=True)
                     self.setText(file_content)
                     self.document().setModified(False)
                     self.textChanged.emit()
@@ -316,7 +316,7 @@ class TextEdit(QTextEdit):
                                     return
                             # now resolve find-statements
                             rospy.logdebug("  send interpret request to daemon: %s" % search_for)
-                            inc_files = nm.nmd().get_interpreted_path(self.filename, text=[search_for])
+                            inc_files = nm.nmd().launch.get_interpreted_path(self.filename, text=[search_for])
                             for path, exists in inc_files:
                                 try:
                                     rospy.logdebug("  received interpret request from daemon: %s, exists: %d" % (path, exists))
@@ -329,7 +329,7 @@ class TextEdit(QTextEdit):
                                             # create a new file, if it does not exists
                                             result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
                                             if result == MessageBox.Yes:
-                                                nm.nmd().save_file(path, '<launch>\n\n</launch>', 0)
+                                                nm.nmd().file.save_file(path, '<launch>\n\n</launch>', 0)
                                                 event.setAccepted(True)
                                                 self.load_request_signal.emit(path)
                                 except Exception, e:

@@ -158,7 +158,7 @@ def resolve_pkg(pkg, grpc_url):
         url = pkg.replace('pkg://', '')
         splits = url.split(os.path.sep, 1)
         if len(splits) == 2:
-            packages = nm.nmd().get_packages(grpc_url)
+            packages = nm.nmd().file.get_packages(grpc_url)
             for path, pkgname in packages.items():
                 if pkgname == splits[0]:
                     return os.path.join(path, splits[1])
@@ -172,4 +172,4 @@ def package_name(path):
 
     :rtype: tuple(name, path)
     '''
-    return nm.nmd().package_name(path)
+    return nm.nmd().file.package_name(path)

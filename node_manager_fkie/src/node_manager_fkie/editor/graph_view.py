@@ -98,7 +98,7 @@ class GraphViewWidget(QDockWidget):
 
     def clear_cache(self):
         if self._root_path:
-            nm.nmd().delete_cache_for(self._root_path)
+            nm.nmd().clear_cache(self._root_path)
         self._created_tree = False
         self.graphTreeView.model().clear()
         crp = self._current_path
@@ -283,7 +283,7 @@ class GraphThread(QObject, threading.Thread):
         try:
             self.info_signal.emit("build tree: start for %s" % self.root_path, False)
             result = []
-            filelist = nm.nmd().get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
+            filelist = nm.nmd().launch.get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
             for inc_file in filelist:
                 rospy.logdebug("build tree: append file: %s" % inc_file)
                 result.append(inc_file)

@@ -342,8 +342,8 @@ class MainWindow(QMainWindow):
         self._con_tries = dict()
         self._subscribe()
         self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
-        nm.nmd().system_diagnostics_signal.connect(self._callback_system_diagnostics)
-        nm.nmd().remote_diagnostics_signal.connect(self._callback_diagnostics)
+        nm.nmd().monitor.system_diagnostics_signal.connect(self._callback_system_diagnostics)
+        nm.nmd().monitor.remote_diagnostics_signal.connect(self._callback_diagnostics)
 
         # TODO: self.launch_dock.launchlist_model.reloadPackages()
         self._select_index = 0
@@ -353,7 +353,7 @@ class MainWindow(QMainWindow):
         self._shortcut_restart_nodes_g.activated.connect(self._restart_nodes_g)
 
         nm.nmd().error.connect(self.on_nmd_err)
-        nm.nmd().yaml_config_signal.connect(self._nmd_yaml_cfg)
+        nm.nmd().settings.yaml_config_signal.connect(self._nmd_yaml_cfg)
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
@@ -1379,8 +1379,8 @@ class MainWindow(QMainWindow):
         if item is not None:
             self._history_selected_robot = item.master.name
             self.setCurrentMaster(item.master.uri)
-            if not nm.nmd().get_packages(item.master.uri):
-                nm.nmd().list_packages_threaded(nmdurl.nmduri(item.master.uri))
+            if not nm.nmd().file.get_packages(item.master.uri):
+                nm.nmd().file.list_packages_threaded(nmdurl.nmduri(item.master.uri))
             if self.currentMaster.master_info is not None and not self.restricted_to_one_master:
                 node = self.currentMaster.master_info.getNodeEndsWith('master_sync')
                 self.syncButton.setEnabled(True)
@@ -1720,7 +1720,7 @@ class MainWindow(QMainWindow):
                                        'Error while transfer files', '%s' % utf8(e))
 
     def _recursive_transfer(self, path, nmd_url):
-        includes = nm.nmd().get_included_files_set(path, True, search_in_ext=nm.settings().SEARCH_IN_EXT)
+        includes = nm.nmd().launch.get_included_files_set(path, True, search_in_ext=nm.settings().SEARCH_IN_EXT)
         copy_set = set()
         for inc_file in includes:
             copy_set.add(inc_file.inc_path)
@@ -2074,7 +2074,7 @@ class MainWindow(QMainWindow):
 
     def nmd_cfg(self, masteruri):
         nmd_uri = nmdurl.nmduri(masteruri)
-        nm.nmd().get_config_threaded(nmd_uri)
+        nm.nmd().settings.get_config_threaded(nmd_uri)
 
     def _nmd_yaml_cfg(self, data, nmdurl):
         params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
@@ -2089,11 +2089,11 @@ class MainWindow(QMainWindow):
                 ruamel.yaml.dump(params, buf, Dumper=ruamel.yaml.RoundTripDumper)
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: set configuration for daemon' % nmdurl,
-                                               nm.nmd().set_config,
+                                               nm.nmd().settings.set_config,
                                                (nmdurl, buf.getvalue()))
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                '%s: get system diagnostics' % nmdurl,
-                                               nm.nmd().get_system_diagnostics_threaded,
+                                               nm.nmd().monitor.get_system_diagnostics_threaded,
                                                (nmdurl,))
                 self._progress_queue.start()
             except Exception as err:

@@ -61,6 +61,7 @@ class Settings:
         if not os.path.isdir(cfg_path):
             os.makedirs(cfg_path)
         self._reload_callbacks = []
+        self._cfg = None
         self.reload()
         global GRPC_TIMEOUT
         GRPC_TIMEOUT = self.param('global/grpc_timeout', 15.0)
@@ -179,8 +180,13 @@ class Settings:
             try:
                 with open(self.filename, 'r') as stream:
                     result = ruamel.yaml.load(stream, Loader=ruamel.yaml.Loader)
-                    rospy.loginfo('loaded configuration from %s' % self.filename)
-                    self._cfg = result
+                    if result is None:
+                        rospy.loginfo('reset configuration file %s' % self.filename)
+                        self._cfg = self.default()
+                        self.save()
+                    else:
+                        rospy.loginfo('loaded configuration from %s' % self.filename)
+                        self._cfg = result
             except (ruamel.yaml.YAMLError, IOError) as exc:
                 rospy.loginfo('%s: use default configuration!' % utf8(exc))
                 self._cfg = self.default()

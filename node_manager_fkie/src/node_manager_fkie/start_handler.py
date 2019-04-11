@@ -140,7 +140,7 @@ class StartHandler(object):
                     if ros_hostname:
                         new_env['ROS_HOSTNAME'] = ros_hostname
             if use_nmd:
-                nm.nmd().start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri, host)
+                nm.nmd().launch.start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri, host)
             else:
                 local_env = dict(os.environ)
                 local_env.update(new_env)
@@ -389,7 +389,7 @@ class StartHandler(object):
         :see: :meth:`node_manager_fkie.is_local()`
         '''
         try:
-            nm.nmd().delete_log(grpc_uri, [nodename])
+            nm.nmd().screen.delete_log(grpc_uri, [nodename])
         except Exception as err:
             rospy.logwarn("delete log using SSH because of error: %s" % utf8(err))
             host = get_hostname(grpc_uri)
@@ -521,7 +521,7 @@ class StartHandler(object):
 
     def _rosclean_wo(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
         try:
-            nm.nmd().rosclean(grpc_uri)
+            nm.nmd().screen.rosclean(grpc_uri)
         except Exception as err:
             host = get_hostname(grpc_uri)
             if nm.is_local(host):
@@ -543,7 +543,7 @@ class StartHandler(object):
         :param str path: file to transfer
         '''
         try:
-            nm.nmd().copy(path, grpc_url)
+            nm.nmd().file.copy(path, grpc_url)
         except Exception as err:
             host = get_hostname(grpc_url)
             _uri, path = nmdurl.split(path)
@@ -626,7 +626,7 @@ class StartHandler(object):
         :raise Exception: on errors while resolving host
         :see: :meth:`node_manager_fkie.is_local()`
         '''
-        startcfg = nm.nmd().get_start_cfg(name, grpc_path, masteruri, reload_global_param=reload_global_param, loglevel=loglevel, logformat=logformat)
+        startcfg = nm.nmd().launch.get_start_cfg(name, grpc_path, masteruri, reload_global_param=reload_global_param, loglevel=loglevel, logformat=logformat)
         new_env = dict(startcfg.env)
         # set logging options
         if startcfg.namespace:

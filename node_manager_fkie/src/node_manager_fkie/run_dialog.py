@@ -77,7 +77,7 @@ class RequestBinariesThread(QObject, threading.Thread):
         '''
         if self._grpc_url:
             try:
-                self._result = nm.nmd().get_package_binaries(self._package, nmdurl.nmduri(self._grpc_url))
+                self._result = nm.nmd().file.get_package_binaries(self._package, nmdurl.nmduri(self._grpc_url))
                 if not self._canceled:
                     self.binaries_signal.emit(self._package, self._result)
             except Exception:
@@ -127,7 +127,7 @@ class PackageDialog(QDialog):
             self.package_field.addItems(['packages searching...'])
             self.package_field.setCurrentIndex(0)
         # fill the input fields
-        self.packages = {name: path for path, name in nm.nmd().get_packages(nmdurl.nmduri(masteruri)).items()}
+        self.packages = {name: path for path, name in nm.nmd().launch.get_packages(nmdurl.nmduri(masteruri)).items()}
         packages = self.packages.keys()
         packages.sort()
         self.package_field.clear()

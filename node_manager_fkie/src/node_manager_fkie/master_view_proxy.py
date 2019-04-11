@@ -342,11 +342,11 @@ class MasterViewProxy(QWidget):
         self._shortcut_screen_kill.activated.connect(self.on_kill_screens)
 
         self.loaded_config.connect(self._apply_launch_config)
-        nm.nmd().mtimes.connect(self._apply_mtimes)
-        nm.nmd().changed_binaries.connect(self._apply_changed_binaries)
-        nm.nmd().launch_nodes.connect(self.on_launch_description_retrieved)
-        nm.nmd().version_signal.connect(self.on_nmd_version_retrieved)
-        nm.nmd().log_dir_size_signal.connect(self.on_log_dir_retrieved)
+        nm.nmd().launch.mtimes.connect(self._apply_mtimes)
+        nm.nmd().launch.changed_binaries.connect(self._apply_changed_binaries)
+        nm.nmd().launch.launch_nodes.connect(self.on_launch_description_retrieved)
+        nm.nmd().version.version_signal.connect(self.on_nmd_version_retrieved)
+        nm.nmd().screen.log_dir_size_signal.connect(self.on_log_dir_retrieved)
 
         # set the shortcuts
         self._shortcut1 = QShortcut(QKeySequence(self.tr("Alt+1", "Select first group")), self)
@@ -378,8 +378,8 @@ class MasterViewProxy(QWidget):
         self.masterTab.infoFrameLayout.addWidget(self.info_frame.frameui)
         self.info_frame.accept_signal.connect(self._on_info_ok)
 
-        nm.nmd().changed_file.connect(self.on_changed_file)
-        nm.nmd().multiple_screens.connect(self.on_multiple_screens)
+        nm.nmd().file.changed_file.connect(self.on_changed_file)
+        nm.nmd().screen.multiple_screens.connect(self.on_multiple_screens)
         self._sysmon_timer = None
         self._sysmon_enabled = False
         self._sysmon_timer_idle = QTimer()
@@ -403,8 +403,8 @@ class MasterViewProxy(QWidget):
         if self._sysmon_timer is not None:
             self._sysmon_timer.stop()
         self._sysmon_timer_idle.stop()
-        nm.nmd().changed_file.disconnect(self.on_changed_file)
-        nm.nmd().multiple_screens.disconnect(self.on_multiple_screens)
+        nm.nmd().file.changed_file.disconnect(self.on_changed_file)
+        nm.nmd().screen.multiple_screens.disconnect(self.on_multiple_screens)
         self.launch_server_handler.stop()
         self._progress_queue_prio.stop()
         self._progress_queue.stop()
@@ -528,13 +528,13 @@ class MasterViewProxy(QWidget):
                 nmd_uri = nmdurl.nmduri(self.masteruri)
                 if self._has_nmd:
                     # only try to get updates from daemon if it is running
-                    nm.nmd().get_nodes_threaded(nmd_uri, self.masteruri)
+                    nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
                     self.set_diagnostic_ok('/node_manager_daemon')
-                    nm.nmd().get_version_threaded(nmdurl.nmduri(self.masteruri))
-                    nm.nmd().log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
-                    nm.nmd().get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+                    nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
+                    nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
+                    nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
                     if not nm.is_local(self.mastername):
-                        nm.nmd().get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+                        nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
@@ -699,17 +699,17 @@ class MasterViewProxy(QWidget):
             args = {}
             changed_nodes = []
             if launchfile in self.__configs:
-                _launch_file, changed_nodes = nm.nmd().reload_launch(launchfile, masteruri=self.masteruri)
+                _launch_file, changed_nodes = nm.nmd().launch.reload_launch(launchfile, masteruri=self.masteruri)
             else:
-                # nm.nmd().load_launch(launchfile, argv_forced)  CREATE DICT
+                # nm.nmd().launch.load_launch(launchfile, argv_forced)  CREATE DICT
                 # on_host should be an nmdurl
-                _launch_file, args = nm.nmd().load_launch(launchfile, masteruri=self.masteruri, host=self.masteruri, args=args_forced)
+                _launch_file, args = nm.nmd().launch.load_launch(launchfile, masteruri=self.masteruri, host=self.masteruri, args=args_forced)
             # do not load if the loadings process was canceled
             if self._progress_queue_prio.has_id(pqid):
                 cfg = LaunchConfig(launchfile, args=args)
                 self._loaded_args[launchfile] = args
                 self.loaded_config.emit(cfg, changed_nodes)
-            nm.nmd().get_nodes_threaded(launchfile)
+            nm.nmd().launch.get_nodes_threaded(launchfile)
         except nm.LaunchArgsSelectionRequest as lasr:
             raise nm.InteractionNeededError(lasr, self._load_launchfile, (launchfile,))
         except exceptions.GrpcTimeout as tout:
@@ -766,11 +766,11 @@ class MasterViewProxy(QWidget):
         if self._has_nmd:
             # do not connect to the node manager daemon until it is not in the nodes list (not started)
             if lfiles:
-                nm.nmd().check_for_changed_files_threaded(lfiles)
-                nm.nmd().multiple_screens_threaded(grpc_url)
+                nm.nmd().file.check_for_changed_files_threaded(lfiles)
+                nm.nmd().screen.multiple_screens_threaded(grpc_url)
             nodes = self.get_nodes_runningIfLocal(True)
             if nodes:
-                nm.nmd().get_changed_binaries_threaded(grpc_url, nodes.keys())
+                nm.nmd().launch.get_changed_binaries_threaded(grpc_url, nodes.keys())
 
     def get_files_for_change_check(self):
         result = {}
@@ -979,7 +979,7 @@ class MasterViewProxy(QWidget):
                 if ld.path in self._loaded_args:
                     args = self._loaded_args[ld.path]
                 self.__configs[ld.path] = LaunchConfig(ld.path, args=args)
-                nm.nmd().get_mtimes_threaded(ld.path)
+                nm.nmd().launch.get_mtimes_threaded(ld.path)
             new_configs.append(ld.path)
             self.__configs[ld.path].nodes = ld.nodes
             node_cfgs = dict()
@@ -1143,9 +1143,9 @@ class MasterViewProxy(QWidget):
 
     def _sysmon_update_callback(self):
         if self._has_nmd:
-            nm.nmd().get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
         if not nm.is_local(self.mastername):
-            nm.nmd().get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 
     @property
     def launch_servers(self):
@@ -1839,8 +1839,8 @@ class MasterViewProxy(QWidget):
                     if not logging.is_default('loglevel'):
                         loglevel = logging.loglevel
                 if self._has_nmd:
-                    _result = nm.nmd().start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
-                                                  loglevel=loglevel, logformat=logformat)
+                    _result = nm.nmd().launch.start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
+                                                         loglevel=loglevel, logformat=logformat)
                 else:
                     rospy.logwarn("no running daemon found, start '%s' via SSH" % node.name)
                     nm.starter().bc_run_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
@@ -2154,7 +2154,7 @@ class MasterViewProxy(QWidget):
                     # wait kill_on_stop is an integer
                     if isinstance(node.kill_on_stop, (int, float)):
                         time.sleep(float(node.kill_on_stop) / 1000.0)
-                    nm.nmd().kill_process(node.pid, nmdurl.nmduri(node.masteruri))
+                    nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
             except Exception, e:
                 rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
                 if utf8(e).find(' 111') == 1:
@@ -2218,7 +2218,7 @@ class MasterViewProxy(QWidget):
                     if self._has_nmd:
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'kill %s (%s)' % (node.name, utf8(pid)),
-                                                       nm.nmd().kill_process,
+                                                       nm.nmd().monitor.kill_process,
                                                        (pid, self._grpc_from_node(node)))
                     else:
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
@@ -2461,7 +2461,7 @@ class MasterViewProxy(QWidget):
             grpc_url = nmdurl.nmduri(self.masteruri)
             sel_screen = []
             try:
-                screens = nm.nmd().get_all_screens(grpc_url)
+                screens = nm.nmd().screen.get_all_screens(grpc_url)
                 sel_screen, _ = SelectDialog.getValue('Open screen', '', screens.keys(), False, False, self)  # _:=ok
             except Exception, e:
                 rospy.logwarn("Error while get screen list: %s", utf8(e))
@@ -2668,12 +2668,12 @@ class MasterViewProxy(QWidget):
     def _close_cfg(self, cfg):
         try:
             self.remove_cfg_from_model(cfg)
-            nm.nmd().unload_launch(cfg, self.masteruri)
+            nm.nmd().launch.unload_launch(cfg, self.masteruri)
             del self.__configs[cfg]
-            nm.nmd().get_nodes_threaded(cfg)
+            nm.nmd().launch.get_nodes_threaded(cfg)
         except exceptions.ResourceNotFound:
             del self.__configs[cfg]
-            nm.nmd().get_nodes_threaded(cfg)
+            nm.nmd().launch.get_nodes_threaded(cfg)
         except Exception:
             rospy.logwarn(traceback.format_exc())
 
@@ -2705,7 +2705,7 @@ class MasterViewProxy(QWidget):
             # fill the input fields
             # determine the list all available message types
             msg_types = []
-            for ppath, pname in nm.nmd().get_packages(nmdurl.nmduri(self.masteruri)).items():
+            for ppath, pname in nm.nmd().launch.get_packages(nmdurl.nmduri(self.masteruri)).items():
                 #:TODO: get message types from remote nmduri
                 _guri, lpath = nmdurl.split(ppath, with_scheme=False)
                 import rosmsg

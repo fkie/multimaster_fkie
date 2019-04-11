@@ -160,8 +160,8 @@ class Editor(QMainWindow):
         self.readSettings()
         self.find_dialog.setVisible(False)
         self.graph_view.setVisible(False)
-        nm.nmd().changed_file.connect(self.on_changed_file)
-        nm.nmd().packages_available.connect(self._on_new_packages)
+        nm.nmd().file.changed_file.connect(self.on_changed_file)
+        nm.nmd().file.packages_available.connect(self._on_new_packages)
         # open the files
         for f in filenames:
             if f:
@@ -542,8 +542,8 @@ class Editor(QMainWindow):
             event.accept()
         if event.isAccepted():
             self.storeSetting()
-            nm.nmd().changed_file.disconnect(self.on_changed_file)
-            nm.nmd().packages_available.connect(self._on_new_packages)
+            nm.nmd().file.changed_file.disconnect(self.on_changed_file)
+            nm.nmd().file.packages_available.connect(self._on_new_packages)
             self.finished_signal.emit(self.init_filenames)
 
     def on_editor_modificationChanged(self, value=None):

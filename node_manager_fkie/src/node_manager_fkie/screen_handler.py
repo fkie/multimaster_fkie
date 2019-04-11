@@ -125,7 +125,7 @@ class ScreenHandler(object):
                 screens = {}
                 try:
                     if use_nmd:
-                        screens = nm.nmd().get_screens(grpc_url, node)
+                        screens = nm.nmd().screen.get_screens(grpc_url, node)
                     else:
                         screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
                 except grpc.RpcError as e:
@@ -170,7 +170,7 @@ class ScreenHandler(object):
             return False
         try:
             # get the available screens
-            screens = nm.nmd().get_screens(grpc_url, node)
+            screens = nm.nmd().screen.get_screens(grpc_url, node)
             if screens:
                 do_kill = True
                 if auto_ok_request:
@@ -184,12 +184,12 @@ class ScreenHandler(object):
                         pid, _, _ = sname.partition('.')
                         if pid:
                             try:
-                                nm.nmd().kill_process(int(pid), grpc_url)
+                                nm.nmd().monitor.kill_process(int(pid), grpc_url)
                                 # nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
                             except Exception:
                                 import traceback
                                 rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(pid), utf8(host), traceback.format_exc(1))
-                    nm.nmd().wipe_screens(grpc_url)
+                    nm.nmd().screen.wipe_screens(grpc_url)
                     # if nm.is_local(host):
                     #     SupervisedPopen([screen.SCREEN, '-wipe'], object_id='screen -wipe', description="screen: clean up the socket with -wipe")
                     # else:
