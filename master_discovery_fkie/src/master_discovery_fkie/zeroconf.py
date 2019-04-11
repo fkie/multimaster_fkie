@@ -311,7 +311,8 @@ class Zeroconf(threading.Thread):
             if self.__group is None:
                 if (self.masterInfo.domain is None) or len(self.masterInfo.domain) == 0:
                     self.masterInfo.domain = 'local'
-                self.masterInfo.host = self.masterInfo.host + '.' + self.masterInfo.domain
+                if '.' not in self.masterInfo.host:
+                    self.masterInfo.host = self.masterInfo.host + '.' + self.masterInfo.domain
                 self.__group = dbus.Interface(self.__bus.get_object(avahi.DBUS_NAME,
                                                                     self.__server.EntryGroupNew()),
                                               avahi.DBUS_INTERFACE_ENTRY_GROUP)
@@ -746,7 +747,7 @@ class Discoverer(Zeroconf):
     '''
     ROSMASTER_HZ = 1  # the test rate of ROS master state in hz
 
-    def __init__(self, monitor_port=11611, network_id=0, domain=''):
+    def __init__(self, monitor_port=11611, network_id=0):
         '''
         Initialize method of the local master.
 
@@ -756,21 +757,28 @@ class Discoverer(Zeroconf):
         '''
         if rospy.has_param('~rosmaster_hz'):
             Discoverer.ROSMASTER_HZ = rospy.get_param('~rosmaster_hz')
-
         self.network_id = str(network_id)
         rospy.loginfo("Network ID: %s" % self.network_id)
+        self._use_fqdn = rospy.get_param('~fqdn', False)
+        rospy.loginfo("Fully-Qualified Domain Name: %s" % ('enabled' if self._use_fqdn else 'disabled'))
         self.master_monitor = MasterMonitor(monitor_port)
         name = self.master_monitor.getMastername()
-        # create the txtArray for the zeroconf service of the ROS master
         materuri = self.master_monitor.getMasteruri()
+        # create the txtArray for the zeroconf service of the ROS master
+        hostname = get_hostname(materuri)
+        if self._use_fqdn:
+            fqhostname = socket.getfqdn()
+            materuri = materuri.replace('://%s:' % hostname, '://%s:' % fqhostname)
+            hostname = fqhostname
         # test the host for local entry
         masterhost, masterport = MasterInfo.MasteruriToAddr(materuri)
         if (masterhost in ['localhost', '127.0.0.1']):
             sys.exit("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % masterhost)
-        rpcuri = 'http://%s:%s/' % (get_hostname(materuri), str(monitor_port))
+        rpcuri = 'http://%s:%s/' % (hostname, str(monitor_port))
         txtArray = ["timestamp=%s" % str(0), "timestamp_local=%s" % str(0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
+        rospy.loginfo("Publish txtArray: %s" % txtArray)
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
-        Zeroconf.__init__(self, name, '_ros-master._tcp', masterhost, masterport, domain, txtArray)
+        Zeroconf.__init__(self, name, '_ros-master._tcp', hostname, masterport, domain='local', txt_array=txtArray)
         # the list with all ROS master neighbors with theirs SyncThread's and all Polling threads
         self.masters = MasterList(self.masterInfo, self.requestResolve, self.checkLocalMaster)
         # set the callback to finish all running threads
