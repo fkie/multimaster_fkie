@@ -202,6 +202,15 @@ class NmdClient(QObject):
         with self._args_lock:
             self._launch_args.clear()
 
+    def clear_cache(self):
+        self._cache_file_content.clear()
+        self._cache_file_includes.clear()
+        self._cache_file_unique_includes.clear()
+        self._cache_path.clear()
+        self._cache_packages.clear()
+        with self._args_lock:
+            self._launch_args.clear()
+
     def delete_cache_for(self, grpc_path):
         try:
             del self._cache_file_content[grpc_path]
@@ -437,7 +446,12 @@ class NmdClient(QObject):
         dorequest = False
         try:
             for entry in self._cache_file_includes[grpc_path]:
-                yield entry
+                do_return = True
+                if not recursive and entry.rec_depth != 0:
+                    do_return = False
+                if do_return:
+                    rospy.logdebug("get_included_files from cache: %s" % entry.inc_path)
+                    yield entry
         except KeyError:
             dorequest = True
         if dorequest:
@@ -455,10 +469,11 @@ class NmdClient(QObject):
                     entry = inc_file
                     entry.path_or_str = nmdurl.join(url, inc_file.path_or_str)
                     entry.inc_path = nmdurl.join(url, inc_file.inc_path)
-                    # initialize and add returned root path to cache
-                    if current_path not in self._cache_file_includes:
-                        self._cache_file_includes[current_path] = []
-                    self._cache_file_includes[current_path].append(entry)
+                    # initialize and add returned root path to cache, only on recursive
+                    if recursive:
+                        if current_path not in self._cache_file_includes:
+                            self._cache_file_includes[current_path] = []
+                        self._cache_file_includes[current_path].append(entry)
                     yield entry
             except grpc._channel._Rendezvous as grpc_error:
                 self.delete_cache_for(grpc_path)

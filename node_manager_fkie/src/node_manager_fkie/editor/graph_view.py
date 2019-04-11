@@ -52,10 +52,6 @@ except Exception:
     from python_qt_binding.QtCore import QItemSelectionModel
 
 
-GRAPH_CACHE = {}
-CHACHE_MUTEX = threading.RLock()
-
-
 class GraphViewWidget(QDockWidget):
     '''
     A frame to find text in the Editor.
@@ -97,19 +93,17 @@ class GraphViewWidget(QDockWidget):
         self.graphTreeView.clicked.connect(self.on_clicked)
         self._created_tree = False
         self.has_none_packages = True
-        self._refill_tree(False)
+        self._refill_tree([], False)
         self._fill_graph_thread = None
 
     def clear_cache(self):
-        with CHACHE_MUTEX:
-            if self._root_path:
-                nm.nmd().delete_cache_for(self._root_path)
-            GRAPH_CACHE.clear()
-            self._created_tree = False
-            self.graphTreeView.model().clear()
-            crp = self._current_path
-            self._current_path = None
-            self.set_file(crp, self._root_path)
+        if self._root_path:
+            nm.nmd().delete_cache_for(self._root_path)
+        self._created_tree = False
+        self.graphTreeView.model().clear()
+        crp = self._current_path
+        self._current_path = None
+        self.set_file(crp, self._root_path)
 
     def set_file(self, current_path, root_path):
         self._root_path = root_path
@@ -148,6 +142,7 @@ class GraphViewWidget(QDockWidget):
 
     def on_activated(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
+        rospy.logdebug("graph_view: send request to load %s" % item.data(self.DATA_INC_FILE))
         self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
 
     def on_clicked(self, index):
@@ -189,7 +184,7 @@ class GraphViewWidget(QDockWidget):
                         result[arg].append(incargs[arg])
         return result
 
-    def _refill_tree(self, create_tree=True):
+    def _refill_tree(self, tree, create_tree=True):
         deep = 0
         file_dsrc = self._root_path
         try:
@@ -198,24 +193,22 @@ class GraphViewWidget(QDockWidget):
             pass
         self.setWindowTitle("Include Graph - %s" % file_dsrc)
         if not self._created_tree and create_tree:
-            with CHACHE_MUTEX:
-                has_none_packages = False
-                self.graphTreeView.model().clear()
-                if self._root_path in GRAPH_CACHE:
-                    pkg, _ = package_name(os.path.dirname(self._root_path))
-                    if pkg is None:
-                        has_none_packages = True
-                    itemstr = '%s [%s]' % (os.path.basename(self._root_path), pkg)
-                    inc_item = QStandardItem('%s' % itemstr)
-                    inc_item.setData(self._root_path, self.DATA_FILE)
-                    inc_item.setData(-1, self.DATA_LINE)
-                    inc_item.setData(self._root_path, self.DATA_INC_FILE)
-                    inc_item.setData(deep, self.DATA_LEVEL)
-                    self._append_items(inc_item, deep, GRAPH_CACHE[self._root_path])
-                    self.graphTreeView.model().appendRow(inc_item)
-                    # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
-                self._created_tree = True
-                self.has_none_packages = has_none_packages
+            has_none_packages = False
+            self.graphTreeView.model().clear()
+            pkg, _ = package_name(os.path.dirname(self._root_path))
+            if pkg is None:
+                has_none_packages = True
+            itemstr = '%s [%s]' % (os.path.basename(self._root_path), pkg)
+            inc_item = QStandardItem('%s' % itemstr)
+            inc_item.setData(self._root_path, self.DATA_FILE)
+            inc_item.setData(-1, self.DATA_LINE)
+            inc_item.setData(self._root_path, self.DATA_INC_FILE)
+            inc_item.setData(deep, self.DATA_LEVEL)
+            self._append_items(inc_item, deep, tree)
+            self.graphTreeView.model().appendRow(inc_item)
+            # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
+            self._created_tree = True
+            self.has_none_packages = has_none_packages
         items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
         first = True
         self.graphTreeView.selectionModel().clearSelection()
@@ -263,7 +256,7 @@ class GraphThread(QObject, threading.Thread):
     '''
     A thread to parse file for includes
     '''
-    graph = Signal()
+    graph = Signal(list)
     '''
     :ivar: graph is a signal, which emit two list for files include the current path and a list with included files.
     Each entry is a tuple of the line number and path.
@@ -289,16 +282,14 @@ class GraphThread(QObject, threading.Thread):
         '''
         try:
             self.info_signal.emit("build tree: start for %s" % self.root_path, False)
-            with CHACHE_MUTEX:
-                if self.root_path not in GRAPH_CACHE:
-                    result = []
-                    filelist = nm.nmd().get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
-                    for inc_file in filelist:
-                        result.append(inc_file)
-                        if not inc_file.exists:
-                            self.info_signal.emit("build tree: skip parse %s, not exist" % inc_file.inc_path, True)
-                    GRAPH_CACHE[self.root_path] = result
-            self.graph.emit()
+            result = []
+            filelist = nm.nmd().get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
+            for inc_file in filelist:
+                rospy.logdebug("build tree: append file: %s" % inc_file)
+                result.append(inc_file)
+                if not inc_file.exists:
+                    self.info_signal.emit("build tree: skip parse %s, not exist" % inc_file.inc_path, True)
+            self.graph.emit(result)
         except exceptions.GrpcTimeout as tout:
             rospy.logwarn("Build launch tree failed! Daemon not responded within %.2f seconds while"
                           " get configuration file: %s\nYou can try to increase"

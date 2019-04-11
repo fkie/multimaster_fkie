@@ -540,7 +540,7 @@ class LaunchListModel(QStandardItemModel):
         '''
         self.expand_item(self._current_path, PathItem.FOLDER, clear_cache)
         if clear_cache:
-            nm.nmd().clear_package_cache(self.current_grpc)
+            nm.nmd().clear_cache()
 
     def expand_item(self, path, path_id, clear_cache=False):
         '''
