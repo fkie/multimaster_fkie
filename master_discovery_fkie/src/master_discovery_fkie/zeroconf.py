@@ -761,7 +761,9 @@ class Discoverer(Zeroconf):
         rospy.loginfo("Network ID: %s" % self.network_id)
         self._use_fqdn = rospy.get_param('~fqdn', False)
         rospy.loginfo("Fully-Qualified Domain Name: %s" % ('enabled' if self._use_fqdn else 'disabled'))
-        self.master_monitor = MasterMonitor(monitor_port)
+        self._use_ipv6 = 'ROS_IPV6' in os.environ and os.environ['ROS_IPV6'] == 'on'
+        rospy.loginfo("IPv6: %s" % ('enabled' if self._use_ipv6 else 'disabled'))
+        self.master_monitor = MasterMonitor(monitor_port, ipv6=self._use_ipv6)
         name = self.master_monitor.getMastername()
         materuri = self.master_monitor.getMasteruri()
         # create the txtArray for the zeroconf service of the ROS master
