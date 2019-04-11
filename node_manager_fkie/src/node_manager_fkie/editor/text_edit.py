@@ -288,10 +288,12 @@ class TextEdit(QTextEdit):
                         if not search_for:
                             continue
                         try:
+                            rospy.logdebug("try to interpret: %s" % search_for)
                             args_in_name = get_arg_names(search_for)
                             resolved_args = {}
                             # if found arg in the name, try to detect values
                             if args_in_name:
+                                rospy.logdebug("  args %s in filename found, try to resolve..." % args_in_name)
                                 resolved_args = self.parent.graph_view.get_include_args(args_in_name, search_for, self.filename)
                             if resolved_args:
                                 params = {}
@@ -314,9 +316,11 @@ class TextEdit(QTextEdit):
                                     QTextEdit.mouseReleaseEvent(self, event)
                                     return
                             # now resolve find-statements
+                            rospy.logdebug("  send interpret request to daemon: %s" % search_for)
                             inc_files = nm.nmd().get_interpreted_path(self.filename, text=[search_for])
                             for path, exists in inc_files:
                                 try:
+                                    rospy.logdebug("  received interpret request from daemon: %s, exists: %d" % (path, exists))
                                     if exists:
                                         event.setAccepted(True)
                                         self.load_request_signal.emit(path)

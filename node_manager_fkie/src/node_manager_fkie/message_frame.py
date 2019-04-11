@@ -131,7 +131,7 @@ class MessageFrame(QFrame):
         self.text = ""
         self.data = MessageData(None)
         self.IMAGES = {1: QPixmap(),
-                       2: QPixmap(':/icons/crystal_clear_question.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       2: QPixmap(':/icons/question.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        3: QPixmap(':/icons/crystal_clear_launch_file.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        4: QPixmap(":/icons/default_cfg.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        5: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),

@@ -106,13 +106,13 @@ class MessageBox(QDialog):
         if icon == self.NoIcon:
             pass
         elif icon == self.Question:
-            pixmap = QPixmap(":icons/crystal_clear_question.png")
+            pixmap = QPixmap(QImage(":icons/question.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         elif icon == self.Information:
-            pixmap = QPixmap(QImage(":icons/crystal_clear_info_128.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            pixmap = QPixmap(QImage(":icons/info.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         elif icon == self.Warning:
-            pixmap = QPixmap(":icons/crystal_clear_warning_56.png")
+            pixmap = QPixmap(QImage(":icons/warning.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         elif icon == self.Critical:
-            pixmap = QPixmap(QImage(":icons/crystal_clear_critical_128.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            pixmap = QPixmap(QImage(":icons/critical.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         spacerItem = QSpacerItem(10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.icon_label = QLabel()

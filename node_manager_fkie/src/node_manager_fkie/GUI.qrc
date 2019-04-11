@@ -2,6 +2,7 @@
   <qresource>
     <file>icons/back.png</file>
     <file>icons/button_graph.png</file>
+    <file>icons/critical.png</file>
     <file>icons/crystal_clear_action_db_add.png</file>
     <file>icons/crystal_clear_action_db_remove.png</file>
     <file>icons/crystal_clear_action_db_update.png</file>
@@ -11,7 +12,6 @@
     <file>icons/crystal_clear_button_close.png</file>
     <file>icons/crystal_clear_clicknrun.png</file>
     <file>icons/crystal_clear_copy_log_path_24.png</file>
-    <file>icons/crystal_clear_critical_128.png</file>
     <file>icons/crystal_clear_discovery.png</file>
     <file>icons/crystal_clear_dyncfg.png</file>
     <file>icons/crystal_clear_edit_launch.png</file>
@@ -42,7 +42,6 @@
     <file>icons/crystal_clear_profile.png</file>
     <file>icons/crystal_clear_prop_run.png</file>
     <file>icons/crystal_clear_prop_run_echo.png</file>
-    <file>icons/crystal_clear_question.png</file>
     <file>icons/crystal_clear_reload.png</file>
     <file>icons/crystal_clear_run_zeroconf.png</file>
     <file>icons/crystal_clear_show_delete_log.png</file>
@@ -61,17 +60,16 @@
     <file>icons/crystal_clear_xclock_fail.png</file>
     <file>icons/default_cfg.png</file>
     <file>icons/default_cfg_edit.png</file>
-    <file>icons/deleket_deviantart_play.png</file>
-    <file>icons/deleket_deviantart_refresh.png</file>
-    <file>icons/deleket_deviantart_stop.png</file>
     <file>icons/hight_load.png</file>
     <file>icons/imacadam_stop.png</file>
+    <file>icons/info.png</file>
     <file>icons/irondevil_not_sync.png</file>
     <file>icons/irondevil_start_sync.png</file>
     <file>icons/irondevil_sync.png</file>
     <file>icons/load.png</file>
     <file>icons/mem_warn.png</file>
     <file>icons/oxygen_view_refresh.png</file>
+    <file>icons/question.png</file>
     <file>icons/remote.png</file>
     <file>icons/save.png</file>
     <file>icons/sekkyumu_call_service.png</file>
@@ -115,5 +113,6 @@
     <file>icons/stock_disconnect.png</file>
     <file>icons/temperatur_warn.png</file>
     <file>icons/up.png</file>
+    <file>icons/warning.png</file>
   </qresource>
 </RCC>
