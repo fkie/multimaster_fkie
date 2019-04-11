@@ -583,31 +583,35 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 yield reply
 
     def GetMtime(self, request, context):
-        result = lmsg.MtimeReply()
-        result.path = request.path
-        already_in = []
-        mtime = 0
-        if os.path.exists(request.path):
-            mtime = os.path.getmtime(request.path)
-            already_in.append(request.path)
-        result.mtime = mtime
-        # search for loaded file and get the arguments
-        resolve_args = {}
-        for cfgid, lcfg in self._loaded_files.items():
-            if cfgid.path == request.path:
-                resolve_args.update(lcfg.resolve_dict)
-                break
-        # add mtimes for all included files
-        inc_files = find_included_files(request.path, True, True, INCLUDE_PATTERN, SEARCH_IN_EXT, resolve_args)
-        for inc_file in inc_files:
-            incf = inc_file.inc_file
-            if incf not in already_in:
-                mtime = 0
-                if os.path.exists(incf):
-                    mtime = os.path.getmtime(incf)
-                result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
-                already_in.append(incf)
-        return result
+        try:
+            result = lmsg.MtimeReply()
+            result.path = request.path
+            already_in = []
+            mtime = 0
+            if os.path.exists(request.path):
+                mtime = os.path.getmtime(request.path)
+                already_in.append(request.path)
+            result.mtime = mtime
+            print(result.path, mtime)
+            # search for loaded file and get the arguments
+            resolve_args = {}
+            for cfgid, lcfg in self._loaded_files.items():
+                if cfgid.path == request.path:
+                    resolve_args.update(lcfg.resolve_dict)
+                    break
+            # add mtimes for all included files
+            inc_files = find_included_files(request.path, True, True, INCLUDE_PATTERN, SEARCH_IN_EXT, resolve_args)
+            for inc_file in inc_files:
+                incf = inc_file.inc_path
+                if incf not in already_in:
+                    mtime = 0
+                    if os.path.exists(incf):
+                        mtime = os.path.getmtime(incf)
+                    result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
+                    already_in.append(incf)
+            return result
+        except Exception:
+            rospy.logwarn(traceback.format_exc())
 
     def GetChangedBinaries(self, request, context):
         result = lmsg.MtimeNodes()
