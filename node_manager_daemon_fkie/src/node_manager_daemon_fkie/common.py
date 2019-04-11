@@ -429,6 +429,7 @@ def find_included_files(string,
                 match = comment_pattern.search(content, match.start())
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
+    resolve_args_intern = {}
     if (string.endswith(".launch")):
         _replaced, content_resolved, resolve_args_intern = replace_internal_args(content, resolve_args=resolve_args, path=string)
         # intern args use only internal
