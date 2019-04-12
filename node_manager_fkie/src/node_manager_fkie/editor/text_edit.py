@@ -119,7 +119,7 @@ class TextEdit(QTextEdit):
                 self._internal_args = get_internal_args(file_content)
             self.setText(file_content)
         self._is_launchfile = False
-        if ext[1] in ['.launch', '.xml', '.xacro', '.urdf']:
+        if ext[1] in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
             if ext[1] in ['.launch']:
                 self._is_launchfile = True
             self.hl = XmlHighlighter(self.document(), is_launch=False)
