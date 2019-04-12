@@ -148,6 +148,7 @@ class Settings:
             path = os.path.dirname(param_name).split('/')
             val_tag = tag if tag else ':value'
             cfg_item = self._cfg
+            changed = False
             for item in path:
                 if item:
                     if item in cfg_item:
@@ -155,19 +156,24 @@ class Settings:
                     else:
                         cfg_item[item] = {}
                         cfg_item = cfg_item[item]
+                        changed = True
             pname = os.path.basename(param_name)
             if pname in cfg_item:
                 if isinstance(cfg_item[pname], dict):
                     if self._is_writable(cfg_item[pname]):
+                        changed = cfg_item[pname][val_tag] != value
                         cfg_item[pname][val_tag] = value
                     else:
                         raise Exception('%s is a read only parameter!' % param_name)
                 else:
+                    changed = cfg_item[pname] != value
                     cfg_item[pname] = value
             else:
                 # create new parameter entry
                 cfg_item[pname] = {val_tag: value}
-            self.save()
+                changed = True
+            if changed:
+                self.save()
         except Exception as exc:
             rospy.logdebug("Cant't set parameter '%s', full parameter path: '%s'" % (utf8(exc), param_name))
 
