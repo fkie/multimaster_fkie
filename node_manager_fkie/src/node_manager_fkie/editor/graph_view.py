@@ -233,7 +233,10 @@ class GraphViewWidget(QDockWidget):
                     inc_item = None
                 if inc_item is None:
                     pkg, _ = package_name(os.path.dirname(inc_file.inc_path))
-                    itemstr = '%s  _%s_  [%s]' % (os.path.basename(inc_file.inc_path), sizeof_fmt(inc_file.size), pkg)
+                    size_color = 'gray'
+                    if inc_file.size == 0 or inc_file.size > 1000000:
+                        size_color = 'orange'
+                    itemstr = '%s   <span style="color:%s;"><em>%s</em></span>   [%s]' % (os.path.basename(inc_file.inc_path), size_color, sizeof_fmt(inc_file.size), pkg)
                     inc_item = QStandardItem('%d: %s' % (inc_file.line_number, itemstr))
                     inc_item.setData(inc_file.path_or_str, self.DATA_FILE)
                     inc_item.setData(inc_file.line_number, self.DATA_LINE)
