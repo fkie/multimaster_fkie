@@ -364,8 +364,7 @@ class LaunchListModel(QStandardItemModel):
         nm.nmd().file.listed_path.connect(self._listed_path)
         nm.nmd().file.packages_available.connect(self._on_new_packages)
         nm.nmd().error.connect(self._nmd_error)
-        nm.nmd().file.list_path_threaded(self._current_path)
-        # self.count = 0
+        # nm.nmd().file.list_path_threaded(self._current_path)
 
     @property
     def current_path(self):

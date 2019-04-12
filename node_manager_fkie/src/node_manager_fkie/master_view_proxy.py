@@ -188,6 +188,9 @@ class MasterViewProxy(QWidget):
         self._nmd_version, self._nmd_date = detect_version('node_manager_daemon_fkie')
         self._diag_nmd_version = None
         self._diag_log_dir_size = None
+        self._timer_nmd_request = QTimer()
+        self._timer_nmd_request.timeout.connect(self._sysmon_update_callback)
+        self._timer_nmd_request.setSingleShot(True)
 
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -494,6 +497,9 @@ class MasterViewProxy(QWidget):
                             self._on_question_ok(MessageFrame.TYPE_NMD, MessageData(self.masteruri))
                 else:
                     self.message_frame.hide_question([MessageFrame.TYPE_NMD])
+                    if not self._timer_nmd_request.isActive():
+                        timeout = 2000 if not self._has_nmd else 200
+                        self._timer_nmd_request.start(timeout)
                     self._has_nmd = True
             try:
                 if my_masterinfo:
@@ -524,22 +530,23 @@ class MasterViewProxy(QWidget):
                 # update the default configuration
                 # self.updateDefaultConfigs(self.__master_info)
             self.__force_update = False
-            if my_masterinfo:
-                nmd_uri = nmdurl.nmduri(self.masteruri)
-                if self._has_nmd:
-                    # only try to get updates from daemon if it is running
-                    nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
-                    self.set_diagnostic_ok('/node_manager_daemon')
-                    nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
-                    nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
-                    nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
-                    if not nm.is_local(self.mastername):
-                        nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 #      cputimes = os.times()
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
         except Exception:
             print(traceback.format_exc(1))
+
+    def perform_nmd_requests(self, _event):
+        nmd_uri = nmdurl.nmduri(self.masteruri)
+        if self._has_nmd:
+            # only try to get updates from daemon if it is running
+            nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
+            self.set_diagnostic_ok('/node_manager_daemon')
+            nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            if not nm.is_local(self.mastername):
+                nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
@@ -1144,8 +1151,8 @@ class MasterViewProxy(QWidget):
     def _sysmon_update_callback(self):
         if self._has_nmd:
             nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
-        if not nm.is_local(self.mastername):
-            nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            if not nm.is_local(self.mastername):
+                nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 
     @property
     def launch_servers(self):

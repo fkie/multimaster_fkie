@@ -2111,6 +2111,11 @@ class MainWindow(QMainWindow):
         :param str url: the URI of the node manager daemon.
         :param Exception error: on occurred exception.
         '''
+        muri = nmdurl.masteruri(url)
+        master = self.getMaster(muri, False)
+        if master is not None and not master._has_nmd:
+            # no daemon for this master available, ignore errors
+            return
         reason = method
         if method == '_get_nodes':
             reason = 'get launch configuration'
