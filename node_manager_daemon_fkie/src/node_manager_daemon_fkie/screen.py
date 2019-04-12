@@ -118,7 +118,7 @@ def get_active_screens(nodename=''):
     :rtype: {str: [str]}
     '''
     result = {}
-    ps = SupervisedPopen([SCREEN, '-ls'], stdout=subprocess.PIPE)
+    ps = SupervisedPopen([SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
     output = ps.stdout.read()
     if output:
         splits = output.splitlines()
@@ -142,7 +142,7 @@ def wipe():
     '''
     Calls 'screen -wipe' command to clean up SockDir.
     '''
-    _ps = SupervisedPopen([SCREEN, '-wipe'])
+    _ps = SupervisedPopen([SCREEN, '-wipe'], object_id='screen wipe')
 
 
 def test_screen():
@@ -269,7 +269,7 @@ def rosclean():
     '''
     d = rospkg.get_log_dir()
     if d and d != os.path.sep:
-        ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True)
+        ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True, object_id='rosclean')
         output_err = ps.stderr.read()
         if output_err:
             raise Exception(output_err)

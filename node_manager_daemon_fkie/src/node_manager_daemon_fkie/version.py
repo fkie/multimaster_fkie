@@ -70,10 +70,10 @@ def detect_version(package):
         elif os.path.isdir("%s/../.git" % pkg_path):
             try:
                 os.chdir(pkg_path)
-                ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always', '--abbrev=8'], stdout=subprocess.PIPE)
+                ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always', '--abbrev=8'], stdout=subprocess.PIPE, object_id='get git version')
                 output = ps.stdout.read()
                 version = output.strip()
-                ps = SupervisedPopen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE)
+                ps = SupervisedPopen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE, object_id='get git date')
                 output = ps.stdout.read().split()
                 if output:
                     date = output[0]
