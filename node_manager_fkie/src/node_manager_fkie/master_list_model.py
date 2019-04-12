@@ -596,6 +596,7 @@ class MasterIconsDelegate(QItemDelegate):
         self._hspacing = 2
         self._vspacing = 4
         self._icon_size = 0
+        self._enabled = True
         self.IMAGES = {}
 
     def _scale_icons(self, icon_size):
@@ -614,6 +615,9 @@ class MasterIconsDelegate(QItemDelegate):
                        'net_warn': QImage(':/icons/sekkyumu_net_warn.png').scaled(*params),
                        'mem_warn': QImage(':/icons/mem_warn.png').scaled(*params)
                        }
+
+    def set_enabled(self, value):
+        self._enabled = value
 
     def paint(self, painter, option, index):
         # update the icon size and resize images if needed
@@ -649,7 +653,7 @@ class MasterIconsDelegate(QItemDelegate):
                         tooltip = '%s\n<h4>Errors reported by master_discovery:</h4>' % (tooltip)
                         for err in master_errors:
                             tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (tooltip, err)
-                else:
+                elif self._enabled:
                     rect = self.calcDecorationRect(option.rect)
                     if item.quality is not None and item.quality != -1.:
                         if item.quality > 30:

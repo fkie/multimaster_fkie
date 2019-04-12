@@ -627,6 +627,7 @@ class MainWindow(QMainWindow):
         @type on: C{boolean}
         '''
         if self.own_master_monitor.is_running() != on:
+            self.master_delegate.set_enabled(not on)
             self.masterTableView.setEnabled(not on)
             self.refreshAllButton.setEnabled(not on)
             self.own_master_monitor.pause(not on)
