@@ -21,6 +21,7 @@
   <exec_depend>roslaunch</exec_depend>
   <exec_depend>rospy</exec_depend>
 
+  <depend>python-grpcio</depend>
   <depend>python-psutil</depend>
   <depend>python-rospkg</depend>
   <depend>python-ruamel.yaml</depend>
