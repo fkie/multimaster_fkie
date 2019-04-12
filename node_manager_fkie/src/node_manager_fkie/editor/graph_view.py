@@ -138,16 +138,20 @@ class GraphViewWidget(QDockWidget):
         selected = self.graphTreeView.selectionModel().selectedIndexes()
         for index in selected:
             item = self.graphTreeView.model().itemFromIndex(index.parent())
-            self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
+            if item is not None:
+                rospy.logdebug("graph_view: send request to load parent file %s" % item.data(self.DATA_INC_FILE))
+                self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
 
     def on_activated(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
-        rospy.logdebug("graph_view: send request to load %s" % item.data(self.DATA_INC_FILE))
-        self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
+        if item is not None:
+            rospy.logdebug("graph_view: send request to load %s" % item.data(self.DATA_INC_FILE))
+            self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
 
     def on_clicked(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
-        self.goto_signal.emit(item.data(self.DATA_FILE), item.data(self.DATA_LINE))
+        if item is not None:
+            self.goto_signal.emit(item.data(self.DATA_FILE), item.data(self.DATA_LINE))
 
     def enable(self):
         self.setVisible(True)
@@ -211,7 +215,7 @@ class GraphViewWidget(QDockWidget):
             self.has_none_packages = has_none_packages
         items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
         first = True
-        self.graphTreeView.selectionModel().clearSelection()
+        self.graphTreeView.selectionModel().clear()
         for item in items:
             if first:
                 self._current_deep = item.data(self.DATA_LEVEL)
@@ -241,7 +245,7 @@ class GraphViewWidget(QDockWidget):
                     inc_item.setData(inc_file.path_or_str, self.DATA_FILE)
                     inc_item.setData(inc_file.line_number, self.DATA_LINE)
                     inc_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
-                    inc_item.setData(inc_file.rec_depth, self.DATA_LEVEL)
+                    inc_item.setData(inc_file.rec_depth + 1, self.DATA_LEVEL)
                     inc_item.setData(inc_file.size, self.DATA_SIZE)
                     inc_item.setData(inc_file.raw_inc_path, self.DATA_RAW)
                     inc_item.setData(inc_file.args, self.DATA_ARGS)

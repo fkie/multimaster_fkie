@@ -426,7 +426,7 @@ class Editor(QMainWindow):
 
     def on_graph_load_file(self, path, insert_after=True):
         insert_index = self.tabWidget.currentIndex() + 1
-        if not insert_after:
+        if not insert_after and insert_index > 1:
             insert_index = self.tabWidget.currentIndex()
         self.on_load_request(path, insert_index=insert_index)
 
