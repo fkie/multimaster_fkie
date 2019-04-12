@@ -2712,7 +2712,7 @@ class MasterViewProxy(QWidget):
             # fill the input fields
             # determine the list all available message types
             msg_types = []
-            for ppath, pname in nm.nmd().launch.get_packages(nmdurl.nmduri(self.masteruri)).items():
+            for ppath, pname in nm.nmd().file.get_packages(nmdurl.nmduri(self.masteruri)).items():
                 #:TODO: get message types from remote nmduri
                 _guri, lpath = nmdurl.split(ppath, with_scheme=False)
                 import rosmsg

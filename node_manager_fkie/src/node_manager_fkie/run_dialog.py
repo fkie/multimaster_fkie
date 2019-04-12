@@ -127,7 +127,7 @@ class PackageDialog(QDialog):
             self.package_field.addItems(['packages searching...'])
             self.package_field.setCurrentIndex(0)
         # fill the input fields
-        self.packages = {name: path for path, name in nm.nmd().launch.get_packages(nmdurl.nmduri(masteruri)).items()}
+        self.packages = {name: path for path, name in nm.nmd().file.get_packages(nmdurl.nmduri(masteruri)).items()}
         packages = self.packages.keys()
         packages.sort()
         self.package_field.clear()
