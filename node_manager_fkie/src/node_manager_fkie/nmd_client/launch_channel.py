@@ -118,12 +118,14 @@ class LaunchChannel(ChannelInterface):
         for ln, ph, ex, ifi in inc_files:
             self._print_inc_file(indent + 2, ln, ph, ex, ifi)
 
-    def get_included_files_set(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[]):
+    def get_included_files_set(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[], search_in_ext=[]):
         '''
         :param str root: the root path to search for included files
         :param bool recursive: True for recursive search
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
+        :param search_in_ext: file extensions to search in
+        :type search_in_ext: [str]
         :return: Returns a list of included files.
         :rtype: [str]
         '''
@@ -135,16 +137,18 @@ class LaunchChannel(ChannelInterface):
             uri, path = nmdurl.split(grpc_path, with_scheme=False)
             lm = self.get_launch_manager(uri)
             url, path = nmdurl.split(grpc_path, with_scheme=True)
-            reply = lm.get_included_files_set(path, recursive, include_pattern)
+            reply = lm.get_included_files_set(path, recursive, {}, include_pattern, search_in_ext)
             for fname in reply:
                 result.append(nmdurl.join(url, fname))
             self._cache_file_unique_includes[grpc_path] = result
         return result
 
-    def get_included_files(self, grpc_path='grpc://localhost:12321', recursive=True, include_pattern=[], search_in_ext=[]):
+    def get_included_files(self, grpc_path='grpc://localhost:12321', recursive=True, include_args={}, include_pattern=[], search_in_ext=[]):
         '''
         :param str grpc_path: the root path to search for included files
         :param bool recursive: True for recursive search
+        :param include_args: dictionary with arguments to override while include.
+        :type include_args: {str: str}
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
         :param search_in_ext: file extensions to search in
@@ -168,12 +172,13 @@ class LaunchChannel(ChannelInterface):
             try:
                 uri, path = nmdurl.split(current_path)
                 lm = self.get_launch_manager(uri)
-                rospy.logdebug("get_included_files for %s, recursive: %s, pattern: %s" % (grpc_path, recursive, include_pattern))
-                reply = lm.get_included_files(path, recursive, include_pattern, search_in_ext)
+                rospy.logdebug("get_included_files for %s, recursive: %s, include_args: %s, pattern: %s, search_in_ext: %s" % (grpc_path, recursive, include_args, include_pattern, search_in_ext))
+                reply = lm.get_included_files(path, recursive, include_args, include_pattern, search_in_ext)
                 url, _ = nmdurl.split(grpc_path, with_scheme=True)
                 # initialize requested path in cache
-                if grpc_path not in self._cache_file_includes:
-                    self._cache_file_includes[grpc_path] = []
+                if recursive:
+                    if grpc_path not in self._cache_file_includes:
+                        self._cache_file_includes[grpc_path] = []
                 for inc_file in reply:
                     entry = inc_file
                     entry.path_or_str = nmdurl.join(url, inc_file.path_or_str)

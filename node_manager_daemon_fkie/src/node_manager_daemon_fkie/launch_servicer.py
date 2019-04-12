@@ -547,11 +547,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
             # search for loaded file and get the arguments
-            resolve_args = {}
-            for cfgid, lcfg in self._loaded_files.items():
-                if cfgid.path == request.path:
-                    resolve_args.update(lcfg.resolve_dict)
-                    break
+            resolve_args = {arg.name: arg.value for arg in request.include_args}
+            if not resolve_args:
+                for cfgid, lcfg in self._loaded_files.items():
+                    if cfgid.path == request.path:
+                        resolve_args.update(lcfg.resolve_dict)
+                        break
             # replay each file
             for inc_file in find_included_files(request.path, request.recursive, request.unique, pattern, search_in_ext, resolve_args):
                 reply = lmsg.IncludedFilesReply()
@@ -592,7 +593,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 mtime = os.path.getmtime(request.path)
                 already_in.append(request.path)
             result.mtime = mtime
-            print(result.path, mtime)
             # search for loaded file and get the arguments
             resolve_args = {}
             for cfgid, lcfg in self._loaded_files.items():

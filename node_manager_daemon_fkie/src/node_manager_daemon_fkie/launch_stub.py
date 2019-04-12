@@ -155,18 +155,21 @@ class LaunchStub(object):
             result.append(ld)
         return result
 
-    def _get_included_files(self, path, recursive=True, unique=False, include_pattern=[], search_in_ext=[]):
+    def _get_included_files(self, path, recursive=True, unique=False, include_args={}, include_pattern=[], search_in_ext=[]):
         '''
         :return: Returns the result from grpc server
         :rtype: stream lmsg.IncludedFilesReply
         '''
         request = lmsg.IncludedFilesRequest(path=path, recursive=recursive, unique=unique, pattern=include_pattern, search_in_ext=search_in_ext)
+        request.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in include_args.items())
         return self.lm_stub.GetIncludedFiles(request, timeout=settings.GRPC_TIMEOUT)
 
-    def get_included_files_set(self, root, recursive=True, include_pattern=[], search_in_ext=[]):
+    def get_included_files_set(self, root, recursive=True, include_args={}, include_pattern=[], search_in_ext=[]):
         '''
         :param str root: the root path to search for included files
         :param bool recursive: True for recursive search
+        :param include_args: dictionary with arguments to override while include.
+        :type include_args: {str: str}
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
         :param search_in_ext: file extensions to search in
@@ -174,16 +177,18 @@ class LaunchStub(object):
         :return: Returns a list of included files.
         :rtype: list(str)
         '''
-        reply = self._get_included_files(path=root, recursive=recursive, unique=True, include_pattern=include_pattern, search_in_ext=search_in_ext)
+        reply = self._get_included_files(path=root, recursive=recursive, unique=True, include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
         result = set()
         for response in reply:
             result.add(response.path)
         return list(result)
 
-    def get_included_files(self, root, recursive=True, include_pattern=[], search_in_ext=[]):
+    def get_included_files(self, root, recursive=True, include_args={}, include_pattern=[], search_in_ext=[]):
         '''
         :param str root: the root path to search for included files
         :param bool recursive: True for recursive search
+        :param include_args: dictionary with arguments to override while include.
+        :type include_args: {str: str}
         :param include_pattern: the list with regular expression patterns to find include files.
         :type include_pattern: [str]
         :param search_in_ext: file extensions to search in
@@ -191,7 +196,7 @@ class LaunchStub(object):
         :return: Returns an iterator for IncludedFile
         :rtype: node_manager_daemon_fkie.common.IncludedFile
         '''
-        reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_pattern=include_pattern, search_in_ext=search_in_ext)
+        reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
         for response in reply:
             args = {arg.name: arg.value for arg in response.include_args}
             yield IncludedFile(response.root_path, response.linenr, response.path, response.exists, response.rawname, response.rec_depth, args, response.size)

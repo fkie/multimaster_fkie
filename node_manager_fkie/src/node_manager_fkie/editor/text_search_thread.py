@@ -123,7 +123,7 @@ class TextSearchThread(QObject, threading.Thread):
         if self._isrunning:
             if recursive:
                 queue = []
-                inc_files = nm.nmd().get_included_files(path, False)
+                inc_files = nm.nmd().launch.get_included_files(path, False, include_args=args)
                 # read first all included files in current file
                 for inc_file in inc_files:
                     if not self._isrunning:
@@ -176,7 +176,7 @@ class TextSearchThread(QObject, threading.Thread):
                 occur_idx += 1
             if self._isrunning and recursive:
                 queue = []
-                inc_files = nm.nmd().launch.get_included_files(path, False)
+                inc_files = nm.nmd().launch.get_included_files(path, False, include_args=args)
                 # read first all included files in current file
                 for inc_file in inc_files:
                     if not self._isrunning:
@@ -234,6 +234,8 @@ class TextSearchThread(QObject, threading.Thread):
     def _next_node_name(self, content, node_name, resolve_args={}, path=''):
         '''
         Load the content with xml parser, search for arg-nodes and replace the arguments in node-statements.
+        note:: We do not use xml parser to be able to find the position of the name in file.
+
         :return: True if something was replaced, node name, line number
         :rtype: (bool, str, line number)
         '''

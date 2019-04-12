@@ -310,6 +310,7 @@ message IncludedFilesRequest {
 	bool unique = 3;
 	repeated string pattern = 4;
 	repeated string search_in_ext = 5;
+	repeated Argument include_args = 6;
 }
 
 message IncludedFilesReply {
