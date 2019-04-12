@@ -208,7 +208,7 @@ class SelectDialog(QDialog):
     def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2='', closein=0):
         selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein)
         selectDia.setWindowTitle(title)
-        selectDia.resize(480, 256)
+        selectDia.resize(480, 320)
         if selectDia.exec_():
             if selectDia.checkitem2:
                 return selectDia.getSelected(), True, selectDia.checkitem1_result, selectDia.checkitem2_result

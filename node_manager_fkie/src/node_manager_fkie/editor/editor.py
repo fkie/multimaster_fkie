@@ -45,6 +45,7 @@ from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.common import package_name
 from node_manager_fkie.detailed_msg_box import MessageBox
 from node_manager_fkie.run_dialog import PackageDialog
+from node_manager_fkie.select_dialog import SelectDialog
 import node_manager_fkie as nm
 
 from .line_number_widget import LineNumberWidget
@@ -762,6 +763,25 @@ class Editor(QMainWindow):
     # LAUNCH TAG insertion
     ##############################################################################
 
+    def _show_custom_parameter_dialog(self):
+        methods = {'capability_group': self._on_add_cp_capability_group,
+                   'kill_on_stop': self._on_add_cp_kill_on_stop,
+                   'autostart/delay': self._on_add_cp_as_delay,
+                   'autostart/exclude': self._on_add_cp_as_exclude,
+                   'autostart/required_publisher': self._on_add_cp_as_req_publisher,
+                   'respawn/max': self._on_add_cp_r_max,
+                   'respawn/min_runtime': self._on_add_cp_r_min_runtime,
+                   'respawn/delay': self._on_add_cp_r_delay,
+                   }
+
+        res = SelectDialog.getValue('Insert custom parameter', "Select parameter to insert:",
+                                    sorted(methods.keys()), exclusive=True, parent=self,
+                                    select_if_single=False)
+        tags2insert = res[0]
+        for tag in tags2insert:
+            print("Insert", tag)
+            methods[tag]()
+
     def _create_tag_button(self, parent=None):
         btn = QPushButton(parent)
         btn.setObjectName("tagButton")
@@ -827,6 +847,10 @@ class Editor(QMainWindow):
         add_test_tag_all_action = QAction("<test all>", self, statusTip="", triggered=self._on_add_test_tag_all)
         tag_menu.addAction(add_test_tag_all_action)
         sub_cp_menu = QMenu("Custom parameters", parent)
+
+        show_cp_dialog_action = QAction("Show Dialog", self, statusTip="", triggered=self._show_custom_parameter_dialog)
+        show_cp_dialog_action.setShortcuts(QKeySequence("Ctrl+Shift+d"))
+        sub_cp_menu.addAction(show_cp_dialog_action)
 
         sub_cp_as_menu = QMenu("Autostart", parent)
         add_cp_as_delay_action = QAction("delay", self, statusTip="", triggered=self._on_add_cp_as_delay)
