@@ -287,7 +287,7 @@ def init_arg_parser():
     parser.add_argument("-m", "--muri", nargs=1, default='', help="starts ROS master with given URI, usefull on hosts "
                                                                   "with multiple interfaces. ROS_HOSTNAME will be set "
                                                                   "to the host of this URI, but only if it is not an IP.")
-
+    parser.add_argument("-p", "--port", nargs='?', default=22622, type=int, help="port for local monitoring (default: 22622)")
     group = parser.add_argument_group('echo')
     group.add_argument("--echo", nargs=2, help="starts an echo dialog instead of node manager", metavar=('name', 'type'))
     group.add_argument("--hz", action="store_true", help="shows only the Hz value instead of topic content in echo dialog")
@@ -312,7 +312,7 @@ def init_echo_dialog(prog_name, masteruri, topic_name, topic_type, hz=False, use
     return EchoDialog(topic_name, topic_type, hz, masteruri, use_ssh=use_ssh)
 
 
-def init_main_window(prog_name, masteruri, launch_files=[]):
+def init_main_window(prog_name, masteruri, launch_files=[], port=22622):
     '''
     Intialize the environment to start Node Manager.
     '''
@@ -329,7 +329,7 @@ def init_main_window(prog_name, masteruri, launch_files=[]):
     set_process_name(prog_name)
     from node_manager_fkie.main_window import MainWindow
     local_master = init_globals(masteruri)
-    return MainWindow(launch_files, not local_master, launch_files)
+    return MainWindow(launch_files, not local_master, port)
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%                 MAIN                               %%%%%%%%
@@ -376,7 +376,7 @@ def main(name):
                                           parsed_args.echo[1], parsed_args.hz,
                                           parsed_args.ssh)
         else:
-            _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file)
+            _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file, parsed_args.port)
     except Exception as err:
         import traceback
         print(traceback.format_exc())

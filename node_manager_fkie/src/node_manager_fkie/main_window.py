@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
     '''@ivar: the signal is emitted if a message on topic nm_notifier was
   reiceved (DiagnosticStatus)'''
 
-    def __init__(self, files=[], restricted_to_one_master=False, parent=None):
+    def __init__(self, files=[], restricted_to_one_master=False, monitor_port=22622, parent=None):
         '''
         Creates the window, connects the signals and init the class.
         '''
@@ -319,7 +319,7 @@ class MainWindow(QMainWindow):
 
         # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
         self.own_master_monitor = OwnMasterMonitoring()
-        self.own_master_monitor.init(22622)
+        self.own_master_monitor.init(monitor_port)
         self.own_master_monitor.state_signal.connect(self.on_master_state_changed)
         self.own_master_monitor.err_signal.connect(self.on_master_monitor_err)
 
