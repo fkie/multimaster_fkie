@@ -213,7 +213,7 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.ScreenSelectionRequest):
             from node_manager_fkie.select_dialog import SelectDialog
-            items, _ = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False)
+            items, _ = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False, store_geometry='screen_select')
             if not items:
                 self._progress_thread_finished(ident)
                 return
@@ -225,7 +225,7 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.BinarySelectionRequest):
             from node_manager_fkie.select_dialog import SelectDialog
-            items, _ = SelectDialog.getValue('Multiple executables', '', req.request.choices, True)
+            items, _ = SelectDialog.getValue('Multiple executables', '', req.request.choices, True, store_geometry='binary_select')
             if not items:
                 self._progress_thread_finished(ident)
                 return

@@ -1055,7 +1055,7 @@ class MasterViewProxy(QWidget):
             if cfg in self._cfg_changed_nodes:
                 changed_nodes = self._cfg_changed_nodes[cfg]
                 del self._cfg_changed_nodes[cfg]
-                restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self)
+                restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self, store_geometry='restart_nodes')
                 if ok:
                     self.stop_nodes_by_name(restart)
                     self.start_nodes_by_name(restart, cfg, force=True)
@@ -2123,7 +2123,7 @@ class MasterViewProxy(QWidget):
             value = choices.keys()[0]
             ok = True
         elif len(choices) > 0:
-            items, ok = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>' % nodename, choices.keys(), True)
+            items, ok = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>' % nodename, choices.keys(), True, store_geometry='cfg_select')
             if items:
                 value = items[0]
         return value, ok
@@ -2471,7 +2471,7 @@ class MasterViewProxy(QWidget):
             sel_screen = []
             try:
                 screens = nm.nmd().screen.get_all_screens(grpc_url)
-                sel_screen, _ = SelectDialog.getValue('Open screen', '', screens.keys(), False, False, self)  # _:=ok
+                sel_screen, _ok = SelectDialog.getValue('Open screen', '', screens.keys(), False, False, self, store_geometry='open_screen')
             except Exception, e:
                 rospy.logwarn("Error while get screen list: %s", utf8(e))
                 MessageBox.warning(self, "Screen list error",
@@ -2565,7 +2565,7 @@ class MasterViewProxy(QWidget):
                     if len(nodes) == 1:
                         items = nodes
                     elif len(nodes) > 1:
-                        items, _ = SelectDialog.getValue('Dynamic configuration selection', '', [i for i in nodes])
+                        items, _ = SelectDialog.getValue('Dynamic configuration selection', '', [i for i in nodes], store_geometry='dynamic_cfg')
                         if items is None:
                             items = []
                     if len(items) > 3:
@@ -2631,7 +2631,8 @@ class MasterViewProxy(QWidget):
         res = SelectDialog.getValue('Close/Stop/Shutdown', '',
                                     cfg_items, False, False,
                                     self, checkitem1='stop ROS',
-                                    checkitem2='shutdown host')
+                                    checkitem2='shutdown host',
+                                    store_geometry='close_cfg')
         cfgs, _, stop_nodes, shutdown = res[0], res[1], res[2], res[3]
         # close configurations
         for config in cfgs:

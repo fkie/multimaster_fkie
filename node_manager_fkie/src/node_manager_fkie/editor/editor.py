@@ -776,7 +776,8 @@ class Editor(QMainWindow):
 
         res = SelectDialog.getValue('Insert custom parameter', "Select parameter to insert:",
                                     sorted(methods.keys()), exclusive=True, parent=self,
-                                    select_if_single=False)
+                                    select_if_single=False,
+                                    store_geometry='insert_param')
         tags2insert = res[0]
         for tag in tags2insert:
             print("Insert", tag)

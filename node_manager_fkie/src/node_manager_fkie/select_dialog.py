@@ -32,7 +32,7 @@
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
-from python_qt_binding.QtCore import Qt, Signal
+from python_qt_binding.QtCore import Qt, Signal, QPoint, QSize
 try:
     from python_qt_binding.QtGui import QCheckBox, QDialog, QFrame, QDialogButtonBox, QLabel, QLineEdit, QScrollArea, QWidget
     from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy, QSpacerItem
@@ -43,6 +43,7 @@ from python_qt_binding.QtGui import QPixmap
 import re
 
 import threading
+import node_manager_fkie as nm
 from node_manager_daemon_fkie.common import utf8
 from node_manager_fkie.editor.line_edit import EnhancedLineEdit
 
@@ -54,7 +55,7 @@ class SelectDialog(QDialog):
 
     def __init__(self, items=list(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, exclusive=False,
                  preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True,
-                 checkitem1='', checkitem2='', closein=0):
+                 checkitem1='', checkitem2='', closein=0, store_geometry=''):
         '''
         Creates an input dialog.
         @param items: a list with strings
@@ -154,6 +155,18 @@ class SelectDialog(QDialog):
 
         if not items or len(items) < 7:
             self.filter_frame.setVisible(False)
+
+        # restore from configuration file
+        self._geometry_name = store_geometry
+        if store_geometry and nm.settings().store_geometry:
+            settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+            settings.beginGroup(store_geometry)
+            self.resize(settings.value("size", QSize(480, 320)))
+            pos = settings.value("pos", QPoint(0, 0))
+            if pos.x() != 0 and pos.y() != 0:
+                self.move(pos)
+            settings.endGroup()
+
 #    print '=============== create', self.objectName()
 #
 #  def __del__(self):
@@ -205,10 +218,9 @@ class SelectDialog(QDialog):
         return self.content.getSelected()
 
     @staticmethod
-    def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2='', closein=0):
-        selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein)
+    def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2='', closein=0, store_geometry=''):
+        selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein, store_geometry=store_geometry)
         selectDia.setWindowTitle(title)
-        selectDia.resize(480, 320)
         if selectDia.exec_():
             if selectDia.checkitem2:
                 return selectDia.getSelected(), True, selectDia.checkitem1_result, selectDia.checkitem2_result
@@ -226,12 +238,22 @@ class SelectDialog(QDialog):
 # %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    def _store_geometry(self):
+        if self._geometry_name:
+            settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
+            settings.beginGroup(self._geometry_name)
+            settings.setValue("size", self.size())
+            settings.setValue("pos", self.pos())
+            settings.endGroup()
+
     def accept(self):
+        self._store_geometry()
         self.cancel_autoclose()
         self.setResult(QDialog.Accepted)
         self.hide()
 
     def reject(self):
+        self._store_geometry()
         self.cancel_autoclose()
         self.setResult(QDialog.Rejected)
         self.hide()

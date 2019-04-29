@@ -145,7 +145,7 @@ class ScreenHandler(object):
                             cls.open_screen_terminal(host, choices[0], node, user)
                         elif auto_item_request:
                             from select_dialog import SelectDialog
-                            items, _ = SelectDialog.getValue('Show screen', '', choices.keys(), False)
+                            items, _ = SelectDialog.getValue('Show screen', '', choices.keys(), False, store_geometry='show_screens')
                             for item in items:
                                 # open the selected screen
                                 cls.open_screen_terminal(host, choices[item], node, user)
