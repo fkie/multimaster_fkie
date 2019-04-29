@@ -67,6 +67,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     if n is None:
         raise exceptions.StartException("Node '%s' not found in launch file %s" % (node, launchcfg.filename))
     result = StartConfig(n.package, n.type)
+    result.config_path = launchcfg.filename
     if executable:
         result.binary_path = executable
     result.name = n.name
@@ -223,7 +224,7 @@ def run_node(startcfg):
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
         cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args)))
-        rospy.loginfo("run node '%s' with masteruri: %s" % (nodename, masteruri))
+        rospy.loginfo("run node '%s' with masteruri: %s, launch_file: '%s'" % (nodename, masteruri, startcfg.config_path))
         rospy.logdebug("run node: %s (env: %s)", cmd_str, new_env)
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:

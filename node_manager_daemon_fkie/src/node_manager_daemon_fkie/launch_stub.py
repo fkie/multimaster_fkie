@@ -240,9 +240,9 @@ class LaunchStub(object):
             elif response.status.code == NODE_NOT_FOUND:
                 raise exceptions.StartException(response.status.error_msg)
             elif response.status.code == MULTIPLE_BINARIES:
-                raise exceptions.BinarySelectionRequest(response.path, response.status.error_msg)
+                raise exceptions.BinarySelectionRequest([path for path in response.path], response.status.error_msg)
             elif response.status.code == MULTIPLE_LAUNCHES:
-                raise exceptions.LaunchSelectionRequest(response.launch, response.status.error_msg)
+                raise exceptions.LaunchSelectionRequest([path for path in response.launch], response.status.error_msg)
             elif response.status.code == CONNECTION_ERROR:
                 raise exceptions.ConnectionException(response.name, response.status.error_msg)
 
@@ -260,7 +260,7 @@ class LaunchStub(object):
         if response.status.code == 0:
             pass
         elif response.status.code == MULTIPLE_BINARIES:
-            raise exceptions.BinarySelectionRequest(response.path, 'Multiple executables')
+            raise exceptions.BinarySelectionRequest([path for path in response.path], 'Multiple executables')
         elif response.status.code == FILE_NOT_FOUND:
             raise exceptions.StartException("Can't find %s in %s" % (startcfg.binary, startcfg.package))
         elif response.status.code == ERROR:
@@ -287,7 +287,7 @@ class LaunchStub(object):
         elif response.status.code == NODE_NOT_FOUND:
             raise exceptions.StartException(response.status.error_msg)
         elif response.status.code == MULTIPLE_LAUNCHES:
-            raise exceptions.LaunchSelectionRequest(response.launch, response.status.error_msg)
+            raise exceptions.LaunchSelectionRequest([path for path in response.launch], response.status.error_msg)
         elif response.status.code == CONNECTION_ERROR:
             raise exceptions.ConnectionException(response.name, response.status.error_msg)
         return startcfg

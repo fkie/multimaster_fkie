@@ -48,13 +48,13 @@ from .common import get_ros_home
 from .history import History
 from .name_resolution import NameResolution
 from node_manager_fkie.nmd_client import NmdClient
-from node_manager_fkie.nmd_client.launch_channel import LaunchArgsSelectionRequest
+from node_manager_fkie.nmd_client.launch_channel import BinarySelectionRequest, LaunchArgsSelectionRequest
 from .progress_queue import InteractionNeededError
 from .screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
 from .settings import Settings
 from .ssh_handler import SSHhandler, AuthenticationRequest
 from .start_handler import StartException
-from .start_handler import StartHandler, BinarySelectionRequest
+from .start_handler import StartHandler
 
 
 PKG_NAME = 'node_manager_fkie'

@@ -47,6 +47,18 @@ from node_manager_daemon_fkie.startcfg import StartConfig
 from .channel_interface import ChannelInterface
 
 
+class BinarySelectionRequest(Exception):
+    ''' '''
+
+    def __init__(self, choices, error):
+        Exception.__init__(self)
+        self.choices = choices
+        self.error = error
+
+    def __str__(self):
+        return "BinarySelectionRequest from " + self.choices + "::" + repr(self.error)
+
+
 class LaunchArgsSelectionRequest(Exception):
     ''' Request needed to set the args of a launchfile from another thread.
     :param dict args: a dictionary with args and values
@@ -370,16 +382,20 @@ class LaunchChannel(ChannelInterface):
         if hasattr(self, '_threads'):
             self._threads.finished("gn_%s_%s" % (grpc_path, masteruri))
 
-    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
+    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat='', opt_binary=''):
         rospy.loginfo("start node: %s with %s" % (name, grpc_path))
-        uri, _ = nmdurl.split(grpc_path)
+        uri, opt_launch = nmdurl.split(grpc_path)
         lm = self.get_launch_manager(uri)
         try:
-            return lm.start_node(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
+            return lm.start_node(name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
         except grpc.RpcError as gerr:
             rospy.logdebug("remove connection", uri)
             remote.remove_insecure_channel(uri)
             raise gerr
+        except exceptions.BinarySelectionRequest as bsr:
+            rospy.loginfo("Question while start node: %s" % bsr.error)
+            binaries = bsr.choices
+            raise BinarySelectionRequest(binaries, 'Needs binary selection')
         except Exception as err:
             raise err
 
@@ -412,6 +428,10 @@ class LaunchChannel(ChannelInterface):
             rospy.logdebug("remove connection", uri)
             remote.remove_insecure_channel(uri)
             raise err
+        except exceptions.BinarySelectionRequest as bsr:
+            rospy.loginfo("Question while start node: %s" % bsr.error)
+            binaries = bsr.choices
+            raise BinarySelectionRequest(binaries, 'Needs binary selection')
 
     def get_start_cfg(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
         rospy.logdebug("get start configuration for '%s' from %s" % (name, grpc_path))

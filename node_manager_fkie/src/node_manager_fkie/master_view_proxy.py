@@ -501,6 +501,7 @@ class MasterViewProxy(QWidget):
                         timeout = 2000 if not self._has_nmd else 200
                         self._timer_nmd_request.start(timeout)
                     self._has_nmd = True
+                self.perform_nmd_requests()
             try:
                 if my_masterinfo:
                     self.update_system_parameter()
@@ -536,7 +537,7 @@ class MasterViewProxy(QWidget):
         except Exception:
             print(traceback.format_exc(1))
 
-    def perform_nmd_requests(self, _event):
+    def perform_nmd_requests(self):
         nmd_uri = nmdurl.nmduri(self.masteruri)
         if self._has_nmd:
             # only try to get updates from daemon if it is running
@@ -1824,7 +1825,7 @@ class MasterViewProxy(QWidget):
         finally:
             self.setCursor(cursor)
 
-    def start_node(self, node, force, config, force_host=None, logging=None):
+    def start_node(self, node, force, config, force_host=None, logging=None, opt_binary=''):
 
         if node is None:
             raise DetailedError("Start error", 'None is not valid node name!')
@@ -1847,7 +1848,7 @@ class MasterViewProxy(QWidget):
                         loglevel = logging.loglevel
                 if self._has_nmd:
                     _result = nm.nmd().launch.start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
-                                                         loglevel=loglevel, logformat=logformat)
+                                                         loglevel=loglevel, logformat=logformat, opt_binary=opt_binary)
                 else:
                     rospy.logwarn("no running daemon found, start '%s' via SSH" % node.name)
                     nm.starter().bc_run_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
@@ -1860,8 +1861,9 @@ class MasterViewProxy(QWidget):
                 return False
             except nm.InteractionNeededError as _:
                 raise
+            except nm.BinarySelectionRequest as bsr:
+                raise nm.InteractionNeededError(bsr, self.start_node, (node, force, config, force_host, logging))
             except (exceptions.StartException, nm.StartException) as e:
-                print(type(e))
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
                 raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
             except Exception as e:

@@ -58,18 +58,6 @@ class StartException(Exception):
     pass
 
 
-class BinarySelectionRequest(Exception):
-    ''' '''
-
-    def __init__(self, choices, error):
-        Exception.__init__(self)
-        self.choices = choices
-        self.error = error
-
-    def __str__(self):
-        return "BinarySelectionRequest from " + self.choices + "::" + repr(self.error)
-
-
 CACHED_PKG_PATH = dict()  # {host : {pkg: path}}
 
 

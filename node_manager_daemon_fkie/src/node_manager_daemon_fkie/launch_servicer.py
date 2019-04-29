@@ -500,8 +500,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     yield result
                 except exceptions.BinarySelectionRequest as bsr:
                     result.status.code = MULTIPLE_BINARIES
-                    result.status.error_msg = "multiple binaries found for node '%s'" % request.name
-                    result.launch.extend(bsr.choices)
+                    result.status.error_msg = "multiple binaries found for node '%s': %s" % (request.name, bsr.choices)
+                    result.path.extend(bsr.choices)
                     yield result
                 except grpc.RpcError as conerr:
                     result.status.code = CONNECTION_ERROR
@@ -527,7 +527,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.code = OK
             except exceptions.BinarySelectionRequest as bsr:
                 result.status.code = MULTIPLE_BINARIES
-                result.status.error_msg = "multiple binaries found for node '%s'" % request.name
+                result.status.error_msg = "multiple binaries found for node '%s': %s" % (request.name, bsr.choices)
                 result.launch.extend(bsr.choices)
         except grpc.RpcError as conerr:
             result.status.code = CONNECTION_ERROR

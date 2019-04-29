@@ -54,6 +54,7 @@ class StartConfig():
         '''
         self.package = package
         self.binary = binary
+        self.config_path = ''
         self.binary_path = ''
         self.name = ''
         self.namespace = ''
