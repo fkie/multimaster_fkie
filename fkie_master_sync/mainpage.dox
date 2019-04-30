@@ -1,0 +1,29 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b fkie_master_sync synchronizes the local ROS master to the remote masters 
+  discovered by fkie_master_discovery node. The registration
+  of topics and services is only perform by local ROS master. 
+
+<!-- 
+Synchronize the local ROS master to the remote masters discovered by
+fkie_master_discovery node.
+-->
+
+
+\section codeapi Code API
+
+<!--
+Provide links to specific auto-generated API documentation within your
+package that is of particular interest to a reader. Doxygen will
+document pretty much every part of your code, so do your best here to
+point the reader to the actual API.
+
+If your codebase is fairly large or has different sets of APIs, you
+should use the doxygen 'group' tag to keep these APIs together. For
+example, the roscpp documentation has 'libros' group.
+-->
+
+
+*/

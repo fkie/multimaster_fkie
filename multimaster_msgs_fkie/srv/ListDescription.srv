@@ -1,6 +1,0 @@
----
-string robot_name
-string robot_type
-string[] robot_images
-string robot_descr
-multimaster_msgs_fkie/Capability[] capabilities 

@@ -1,0 +1,106 @@
+<launch>
+   <rosparam param="capabilities" tag="Format: [Name, Type, Image, Description in as 'reStructeredText']">
+      [
+        ["Management", "core",  "images/crystal_clear_app_network2.png", "The ``management`` group provides nodes needed to detect and synchronize other robots in the ROS network. These are:\n\n- Node Manager\n- Master Discovery\n- Master Synchronization"],
+        ["Velodyne",  "Laser",  "images/velodyne_hdl64.png", ".. image:: images/velodyne_hdl64.png\n\nThe HDL-64E LiDAR sensor is designed for obstacle detection and navigation of autonomous ground vehicles and marine vessels. Its durability, 360° field of view and very high data rate makes this sensor ideal for the most demanding perception applications as well as 3D mobile data collection and mapping applications.\n\nWith its full 360° horizontal field of view by 26.8° vertical field of view, 5-15 Hz user-selectable frame rate and over 1.3 million points per second output rate, the HDL-64E provides all the distancing sensing data you'll ever need.\n\nThe HDL-64E's patented one-piece design uses 64 fixed-mounted lasers to measure the surrounding environment, each mechanically mounted to a specific vertical angle, with the entire unit spinning. This approach dramatically increases reliability, field of view and point cloud density."],
+        ["SICK", "Laser", "images/sick_lms_300.png", ".. image:: images/sick_lms_300.png\n\n"],
+        ["Hokuyo", "Laser",  "images/hokuyo.png", ".. image:: images/hokuyo.png\n\nA scanning laser range finder with an extended sensing range out to 30 meters. Interface to the sensor is through USB 2.0 with an additional synchronous data line to indicate a full sweep. Scanning rate is 25 milliseconds across a 270° range. A 12 V power source is required.\n\n
++--------------------+-----------------------------------------------------+\n
+|          Specifications                                                  |\n
++====================+=====================================================+\n
+| Voltage            | 12.0 V ±10%                                         |\n
++--------------------+-----------------------------------------------------+\n
+| Current            | 0.7 A (Rush current 1.0 A)                          |\n
++--------------------+-----------------------------------------------------+\n
+| Detection range    | 0.1 m to approximately 60 m (less 30 m guaranteed)  |\n
++--------------------+-----------------------------------------------------+\n
+| Laser wavelength   | 870 nm, Class 1                                     |\n
++--------------------+-----------------------------------------------------+\n
+| Scan angle         | 270°                                                |\n
++--------------------+-----------------------------------------------------+\n
+| Scan time          | 25 ms/scan (40.0 Hz)                                |\n
++--------------------+-----------------------------------------------------+\n
+| Angular resolution | 0.25°                                               |\n
++--------------------+-----------------------------------------------------+\n
+| Interface          | USB 2.0                                             |\n
++--------------------+-----------------------------------------------------+\n
+| Weight             | 8.2 oz (233 g)                                      |\n
++--------------------+-----------------------------------------------------+\n
+        "],
+        ["Joystick", "Controller", "images/crystal_clear_app_package_games.png", "Erkennt automatisch den angeschloßenen Joystick."],
+        ["Base", "Chassis", "", "Kontroller für das Chassis des Roboters."],
+        ["GPS", "Localization", "images/satellite_256.png", "GPS Maus"],
+        ["Local Navigation", "Intelligence", "images/navigation.png", "Algorithmen mit lokaler Navigation"]
+      ]
+   </rosparam>
+
+   <rosparam param="robots" tag="Format: [Name (name of the host), Type, Displayed name, Image, Description in as 'reStructeredText']">
+      [
+      ["robot", "Workstation", "pc", "images/crystal_clear_app_klaptop.png", "Notebook\n\n|nb|\n\n.. |nb| image:: images/crystal_clear_app_klaptop.png\n"]
+      ]
+   </rosparam>
+
+  <machine name="robot" address="tiderko4" />
+  <machine name="control station" address="tiderko" />
+
+  <!--node name="master_sync" pkg="fkie_master_sync" type="master_sync">
+    <param name="capability_group" value="Management"/>
+  </node>
+  <node name="master_discovery" pkg="fkie_master_discovery" type="master_discovery">
+    <param name="capability_group" value="Management"/>
+  </node>
+  <node name="node_manager" pkg="fkie_node_manager" type="nm" >
+    <param name="capability_group" value="Management"/>
+  </node-->
+
+  <node name="talker" pkg="rostopic" type="rostopic" args="pub /chatter std_msgs/String -r 1 'chatter'">
+  </node>
+
+
+  <group ns="example">
+  <node machine="control station" name="hokuyo" pkg="rostopic" type="rostopic" args="pub /description_example/hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+    <param name="capability_group" value="Hokuyo"/>
+  </node>
+
+  <node machine="robot" name="velodyne" pkg="rostopic" type="rostopic" args="pub /description_example/velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+    <param name="capability_group" value="Velodyne"/>
+  </node>
+
+  <node machine="robot" name="velodyne_helper" pkg="rostopic" type="rostopic" args="echo /description_example/velodyne_scan">
+    <param name="capability_group" value="Velodyne"/>
+  </node>
+
+  <node machine="robot" name="joy" pkg="rostopic" type="rostopic" args="pub /description_example/joy std_msgs/String -r 1 'joy'">
+    <param name="capability_group" value="Joystick"/>
+  </node>
+
+  <node machine="robot" name="joy_mapper" pkg="rostopic" type="rostopic" args="echo /description_example/joy">
+    <param name="capability_group" value="Joystick"/>
+  </node>
+
+  <node machine="robot" name="gps" pkg="rostopic" type="rostopic" args="pub /description_example/gps std_msgs/String -r 1 'gps'">
+    <param name="capability_group" value="GPS"/>
+  </node>
+  <node machine="robot" name="gps_tf" pkg="rostopic" type="rostopic" args="echo /description_example/gps">
+    <param name="capability_group" value="GPS"/>
+  </node>
+
+  <node machine="robot" name="base" pkg="rostopic" type="rostopic" args="pub /description_example/base std_msgs/String -r 1 'base'">
+    <param name="capability_group" value="Base"/>
+  </node>
+
+  <node machine="robot" name="local_navigation" pkg="rostopic" type="rostopic" args="echo /description_example/base">
+    <param name="capability_group" value="Local Navigation"/>
+  </node>
+
+  <node machine="control station" name="rviz" pkg="rviz" type="rviz">
+    <param name="capability_group" value="GUI"/>
+  </node>
+
+  <node machine="control station" name="map" pkg="rostopic" type="rostopic" args="pub /description_example/base std_msgs/String -r 1 'map'">
+    <param name="capability_group" value="Map"/>
+  </node>
+  
+  </group>
+
+</launch>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fkie_multimaster_msgs</name>
+  <description>
+     The messages required by multimaster packages.
+  </description>
+  <version>1.0.0</version>
+  <license>BSD</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://ros.org/wiki/fkie_multimaster_msgs</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <depend>python-grpc-tools</depend>
+
+</package>

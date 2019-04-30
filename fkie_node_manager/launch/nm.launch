@@ -1,0 +1,4 @@
+<launch>
+  <node launch-prefix="screen -dmS _master_discovery" name="master_discovery" pkg="fkie_master_discovery" type="master_discovery" output="screen"/>
+  <node launch-prefix="/usr/bin/screen -dmS _node_manager" name="node_manager" cwd="ROS_HOME" pkg="fkie_node_manager" type="nm" output="screen"/>
+</launch>

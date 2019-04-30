@@ -1,0 +1,25 @@
+<package>
+  <name>fkie_multimaster</name>
+  <description>
+    The metapackage to combine the nodes required to establish and manage a multimaster network. 
+    This requires no or minimal configuration. The changes are automatically detected and synchronized.
+  </description>
+  <version>1.0.0</version>
+  <license>BSD</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://ros.org/wiki/fkie_multimaster</url>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <run_depend>fkie_multimaster_msgs</run_depend>
+  <run_depend>fkie_master_discovery</run_depend>
+  <run_depend>fkie_master_sync</run_depend>
+  <run_depend>fkie_node_manager</run_depend>
+  <run_depend>fkie_node_manager_daemon</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+
+</package>

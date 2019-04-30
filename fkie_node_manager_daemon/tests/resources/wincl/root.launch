@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <include file="$(find fkie_node_manager_daemon)/tests/resources/wincl/incf.launch">
+    <arg name="inc" value="1"/>
+  </include>
+
+  <include file="$(find fkie_node_manager_daemon)/tests/resources/wincl/incf.launch">
+    <arg name="inc" value="2"/>
+  </include>
+</launch>

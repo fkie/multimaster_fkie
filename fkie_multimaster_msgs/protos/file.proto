@@ -1,0 +1,202 @@
+// Software License Agreement (BSD License)
+//
+// Copyright (c) 2018, Fraunhofer FKIE/CMS, Alexander Tiderko
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//	* Redistributions of source code must retain the above copyright
+//		notice, this list of conditions and the following disclaimer.
+//	* Redistributions in binary form must reproduce the above
+//		copyright notice, this list of conditions and the following
+//		disclaimer in the documentation and/or other materials provided
+//		with the distribution.
+//	* Neither the name of Fraunhofer nor the names of its
+//		contributors may be used to endorse or promote products derived
+//		from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+package fkie_multimaster_msgs.file;
+
+
+/** The file manager service definition. */
+service FileService {
+	rpc GetFileContent (GetFileContentRequest) returns (stream GetFileContentReply);
+	rpc SaveFileContent (stream SaveFileContentRequest) returns (stream SaveFileContentReply);
+	rpc CopyFileTo (CopyToRequest) returns (ReturnStatus);
+	rpc Rename (RenameRequest) returns (ReturnStatus);
+	rpc ListPath (ListPathRequest) returns (ListPathReply);
+	rpc ListPackages (ListPackagesRequest) returns (ListPackagesReply);
+	rpc ChangedFiles (PathList) returns (PathList);
+	rpc GetPackageBinaries (PackageObj) returns (PathList);
+}
+
+message Empty {
+}
+
+/** The request message to get the content of a file. */
+message GetFileContentRequest {
+	string path = 1;
+}
+
+/** The reply message with status and file content on success.
+ * :param status: errors if occurred.
+ * :param file: file content
+ */
+message GetFileContentReply {
+	ReturnStatus status = 1;
+	FileChunk file = 2;
+}
+
+message RenameRequest {
+	string old = 1;
+	string new = 2;
+}
+
+/** Request to save the file content.
+ * :param overwrite: force replace of existing file with new content.
+ * :param file: new file content
+ */
+message SaveFileContentRequest {
+	bool overwrite = 1;
+	FileChunk file = 2;
+}
+
+/** The reply message with status and new modification time on success.
+ * :param status: errors if occurred.
+ * :param ack: acknowledge for received chunks.
+ */
+message SaveFileContentReply {
+	ReturnStatus status = 1;
+	FileChunkAck ack = 2;
+}
+
+/** The message to transfer file to another grpc server.
+ * :param path: the path of the file.
+ * :param uri: the uri of the another server
+ * :param overwrite: force replace of existing file with new content or create a new file
+ */
+message CopyToRequest {
+	string path = 1;
+	string uri = 2;
+	bool overwrite = 3;
+}
+
+/** The message to transfer the file content.
+ * :param path: the path of the file. Required on first chunk.
+ * :param mtime: time of last modification of this file. If save the content,
+ * the time should be equal to the file already exists (zero for new file).
+ * Required on first chunk.
+ * :param size: size of the file in bytes.
+ * :param offset: offset of data in this chunk.
+ * :param data: file content.
+ * :param package: if package name is set the path is handled as relative to the package.
+ */
+message FileChunk {
+	string path = 1;
+	double mtime = 2;
+	uint64 size = 3;
+	uint64 offset = 4;
+	bytes data = 5;
+	string package = 6;
+}
+
+/** The acknowledge for received chunk.
+ * :param path: the path of the file. Only on first chunk.
+ * :param mtime: time of last modification of this file. Only valid for last chunk.
+ * :param size: current received data.
+ */
+message FileChunkAck {
+	string path = 1;
+	double mtime = 2;
+	uint64 size = 4;
+}
+
+/** The request message to list the content in given path.
+ * :param path: if path is empty the root paths specified in ROS_PACKAGE_PATH. */
+message ListPathRequest {
+	string path = 1;
+}
+
+/** The response message with status and list of files in requested path on success.
+ * :param status: status of the request process.
+ * :param path: requested path.
+ * :param items: list of files. If the status is not OK the list is empty. */
+message ListPathReply {
+	ReturnStatus status = 1;
+	string path = 2;
+	repeated PathObj items = 3;
+}
+
+/** This message is used to request and reply for changed files.
+ * :param items: list of files. */
+message PathList {
+	repeated PathObj items = 1;
+}
+
+message PathObj {
+	string path = 1;
+	// time of last modification of path. The return value is a number giving the number of seconds since the epoch
+	double mtime = 2;
+	// size, in bytes, of path
+	uint64 size = 3;
+
+	enum PathType {
+		FILE = 0;
+		DIR = 1;
+		SYMLINK = 2;
+		PACKAGE  = 3;
+	}
+	PathType type = 4;
+}
+
+/** The status message included in replies. */
+message ReturnStatus {
+	enum StatusType {
+		OK = 0;
+		ERROR = 1;
+		IO_ERROR = 2;
+		OS_ERROR = 3;
+		CHANGED_FILE = 4;
+		REMOVED_FILE = 5;
+	}
+	sint32 code = 1;
+	sint32 error_code = 2;
+	string error_msg = 3;
+	string error_file = 4;
+}
+
+/** The request message to list all ROS packages in given path.
+ * :param clear_ros_cache: clear ROS cache. */
+message ListPackagesRequest {
+	bool clear_ros_cache = 1;
+}
+
+/** The response message with status and list of packages on success.
+ * :param status: status of the request process.
+ * :param items: list of packages. If the status is not OK the list is empty. */
+message ListPackagesReply {
+	ReturnStatus status = 1;
+	repeated PackageObj items = 2;
+}
+
+message PackageObj {
+	string name = 1;
+	string path = 2;
+}
+

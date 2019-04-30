@@ -1,0 +1,21 @@
+<launch>
+  <arg name="ROBOT_1" value="bar"/>
+  <arg name="ROBOT_2" value="bob"/>
+
+  <include file="$(find fkie_node_manager)/launch/demo_capabilities.launch"/>
+
+  <group ns="Leitstand">
+    <node name="rviz" pkg="rviz" type="rviz">
+      <param name="capability_group" value="GUI"/>
+    </node>
+ 
+    <node name="velodyne_$(arg ROBOT_1)" pkg="rostopic" type="rostopic" args="echo /$(arg ROBOT_1)/velodyne_scan">
+      <param name="capability_group" value="SENSORS"/>
+    </node>
+    <node name="velodyne_$(arg ROBOT_2)" pkg="rostopic" type="rostopic" args="echo /$(arg ROBOT_2)/velodyne_scan">
+      <param name="capability_group" value="SENSORS"/>
+    </node>
+
+  </group>
+
+</launch>

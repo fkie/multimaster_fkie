@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fkie_node_manager_daemon</name>
+  <version>1.0.1</version>
+  <description>A daemon node to manage ROS launch files and launch nodes from loaded files.</description>
+
+  <license>BSD</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>https://github.com/fkie/fkie_multimaster</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+  <build_depend>fkie_multimaster_msgs</build_depend>
+  <build_depend>python-catkin-pkg</build_depend>
+  <build_depend>roslaunch</build_depend>
+  <build_depend>rospy</build_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>fkie_master_discovery</exec_depend>
+  <exec_depend>fkie_multimaster_msgs</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rospy</exec_depend>
+
+  <depend>python-grpcio</depend>
+  <depend>python-psutil</depend>
+  <depend>python-rospkg</depend>
+  <depend>python-ruamel.yaml</depend>
+  <depend>screen</depend>
+
+  <test_depend>rostest</test_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
+</package>

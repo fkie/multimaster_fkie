@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+import fkie_master_sync
+fkie_master_sync.main()

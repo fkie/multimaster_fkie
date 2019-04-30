@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<arg name="inc" value= "included3" />
+	<include file="$(find fkie_node_manager_daemon)/tests/resources/$(arg inc).launch"/>
+</launch>

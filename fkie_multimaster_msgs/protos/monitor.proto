@@ -1,0 +1,105 @@
+// Software License Agreement (BSD License)
+//
+// Copyright (c) 2018, Fraunhofer FKIE/CMS, Alexander Tiderko
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//	* Redistributions of source code must retain the above copyright
+//		notice, this list of conditions and the following disclaimer.
+//	* Redistributions in binary form must reproduce the above
+//		copyright notice, this list of conditions and the following
+//		disclaimer in the documentation and/or other materials provided
+//		with the distribution.
+//	* Neither the name of Fraunhofer nor the names of its
+//		contributors may be used to endorse or promote products derived
+//		from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+package fkie_multimaster_msgs.monitor;
+
+
+// System and ROS monitor service definition.
+service MonitorService {
+	rpc GetSystemDiagnostics (Filter) returns (DiagnosticArray);
+	// returns only warnings and errors
+	rpc GetSystemWarnings (Empty) returns (DiagnosticArray);
+	rpc GetDiagnostics (Filter) returns (DiagnosticArray);
+	// returns only warnings and errors
+	rpc GetWarnings (Empty) returns (DiagnosticArray);
+	rpc KillProcess (Pid) returns (Empty);
+}
+
+message Empty {
+}
+
+/* Set filter for requested diagnostic messages.
+ * :param timestamp: only messages after given timestamp. 0 for all.
+ * :param level: only messages with higher ID. 0 for all.
+ */
+message Filter {
+	double timestamp = 1;
+	int32 level = 2;
+}
+
+/* This message is used to send diagnostic information about the state of the host.
+ * :param timestamp:
+ * :param status: an array of components being reported on.
+ */
+message DiagnosticArray {
+	double timestamp = 1;
+	repeated DiagnosticStatus status = 2;
+}
+
+/* This message holds the status of an individual component of the host.
+ * :param level: level of operation enumerated above
+ * :param name: a description of the test/component reporting
+ * :param message: a description of the status
+ * :param hardware_id: a hardware unique string
+ * :param values: an array of values associated with the status
+ */
+message DiagnosticStatus {
+	// Possible levels of operations
+	enum LevelType {
+		OK = 0;
+		WARN = 1;
+		ERROR = 2;
+		STALE = 3;
+	}
+	int32 level = 1;
+	string name = 2;
+	string message = 3;
+	string hardware_id = 4;
+	repeated KeyValue values = 5;
+}
+
+/*
+ * :param key: what to label this value when viewing
+ * :param value: a value to track over time
+ */
+message KeyValue {
+	string key = 1;
+	string value = 2;
+}
+
+/*
+ * :param pid: process id
+ */
+message Pid {
+	int32 pid = 1;
+}

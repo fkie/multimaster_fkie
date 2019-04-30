@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fkie_node_manager</name>
+  <description>
+     Graphical interface, written in PySide, to manage the running and 
+     configured ROS nodes on different hosts. For discovering 
+     the running ROS master master_discovery node will be used.
+  </description>
+  <version>1.0.0</version>
+  <license>BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</license>
+  <author>Alexander Tiderko</author>
+  <author>Timo Roehling</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://ros.org/wiki/fkie_node_manager</url>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>python-catkin-pkg</build_depend>
+  <build_depend>fkie_master_discovery</build_depend>
+  <build_depend>fkie_multimaster_msgs</build_depend>
+  <build_depend>fkie_node_manager_daemon</build_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+
+  <exec_depend>fkie_master_discovery</exec_depend>
+  <exec_depend>fkie_master_sync</exec_depend>
+  <exec_depend>fkie_multimaster_msgs</exec_depend>
+  <exec_depend>fkie_node_manager_daemon</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>roslib</exec_depend>
+  <exec_depend>rosmsg</exec_depend>
+  <exec_depend>rosgraph</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rosservice</exec_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>rqt_reconfigure</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+
+  <exec_depend>python-docutils</exec_depend>
+  <exec_depend>python-paramiko</exec_depend>
+  <exec_depend>python_qt_binding</exec_depend>
+  <exec_depend>python-ruamel.yaml</exec_depend>
+  <exec_depend>screen</exec_depend>
+  <exec_depend>xterm</exec_depend>
+  <exec_depend>rqt_gui</exec_depend>
+  
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
+
+</package>

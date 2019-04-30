@@ -1,0 +1,343 @@
+// Software License Agreement (BSD License)
+//
+// Copyright (c) 2018, Fraunhofer FKIE/CMS, Alexander Tiderko
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//	* Redistributions of source code must retain the above copyright
+//		notice, this list of conditions and the following disclaimer.
+//	* Redistributions in binary form must reproduce the above
+//		copyright notice, this list of conditions and the following
+//		disclaimer in the documentation and/or other materials provided
+//		with the distribution.
+//	* Neither the name of Fraunhofer nor the names of its
+//		contributors may be used to endorse or promote products derived
+//		from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+package fkie_multimaster_msgs.launch;
+
+// The launch manager service definition.
+service LaunchService {
+	rpc GetLoadedFiles (Empty) returns (stream LoadedFile);
+	rpc LoadLaunch (LoadLaunchRequest) returns (LoadLaunchReply);
+	rpc ReloadLaunch (LaunchFile) returns (LoadLaunchReply);
+	rpc UnloadLaunch (LaunchFile) returns (LoadLaunchReply);
+	rpc GetNodes (ListNodesRequest) returns (stream LaunchContent);
+	rpc StartNode (stream Node) returns (stream StartNodeReply);
+	rpc StartStandaloneNode (StartConfig) returns (StartNodeReply);
+	rpc GetIncludedFiles (IncludedFilesRequest) returns (stream IncludedFilesReply);
+	rpc InterpretPath (InterpretPaths) returns (stream InterpredPath);
+	rpc GetMtime (LaunchFile) returns (MtimeReply);
+	rpc GetChangedBinaries (Nodes) returns (MtimeNodes);
+	rpc GetStartCfg (Node) returns (StartCfgReply);
+}
+
+message Empty {
+}
+
+/** The request message to list the ROS packages in given path.
+ * :param package: ROS package name
+ * :param launch: launch file in the package path. If the package contains
+ *   more then one launch file with same name, you have to specify the sub-path with launch file.
+ * :param load_params: loads all parameter into ROS parameter server after successful load.
+ * :param args: arguments to load the launch file. If args are empty but the launch file needs them,
+ *   the reply status has code PARAMS_REQUIRED and args list will be filled with requested args.
+ * :param force_first_file: use first file if more than one was found in the package.
+ * :param masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+ *   the nodes are started on the host specified by hostname of the masteruri.
+ * :param host: start nodes of this file on specified host.
+ */
+message LoadLaunchRequest {
+	string package = 1;
+	string launch = 2;
+	string path = 3;
+	bool load_params = 4;
+	repeated Argument args = 5;
+	bool force_first_file = 6;
+	bool request_args = 7;
+	string masteruri = 8;
+	string host = 9;
+}
+
+/** The response message with load status
+ * :param status: the status of the load process.
+ * :param path: the path of the launch file on this host. Multiple paths if more then one in the package found.
+ * :param mtime: time of last modification of path. The return value is a number giving the number of seconds since the epoch
+ * :param args: a list of requested arguments, only if PARAMS_REQUIRED is returned.
+ * :param changed_nodes: changed nodes (new nodes or changed parameter). Changes on global parameter are not handled!
+ * :param included_files: included files with last modification time. 0 if file does not exists.
+ */
+message LoadLaunchReply {
+	ReturnStatus status = 1;
+	repeated string path = 2;
+	repeated Argument args = 3;
+	repeated string changed_nodes = 4;
+}
+
+message MtimeReply {
+	string path = 1;
+	double mtime = 2;
+	repeated FileObj included_files = 3;
+}
+
+message FileObj {
+	string path = 1;
+	double mtime = 2;
+}
+
+message Argument {
+	enum ValueType {
+		STRING = 0;
+		INT32 = 1;
+		DOUBLE = 2;
+		BOOL = 3;
+		LIST = 4;
+	}
+	string name = 1;
+	string value = 2;
+	int32 value_type = 3;
+}
+
+message LaunchFile {
+	string path = 1;
+	string masteruri = 2;
+}
+/** Loaded launch file.
+ * :param package: ROS package name.
+ * :param launch: launch file in the package path.
+ * :param path: full path of the launch file. Will be preferred!
+ * :param args: arguments used to load this launch file.
+ * :param masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+ *   the nodes are started on the host specified by hostname of the masteruri.
+ * :param host: if not empty, the nodes of this launch file are launched on specified host.
+ */
+message LoadedFile {
+	string package = 1;
+	string launch = 2;
+	string path = 3;
+	repeated Argument args = 4;
+	string masteruri = 5;
+	string host = 6;
+}
+
+/** Requests the nodes configured by this launch manager.
+ * :param launch_file: request the nodes only for specified launch files (full path). If empty, all will be returned.
+ * :param request_description: if True the :message:RobotDescription will be filled from each launch file.
+ * :param masteruri: for specified masteruri
+ */
+message ListNodesRequest {
+	repeated string launch_files = 1;
+	bool request_description = 2;
+	string masteruri = 3;
+}
+
+/** Report the nodes of a launch file.
+ * :param launch_file: full path of the launch file with contains the reported nodes.
+ * :param masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
+ *   the nodes are started on the host specified by hostname of the masteruri.
+ * :param host: if not empty, the nodes of this launch file are launched on specified host.
+ * :param node: list of node names.
+ * :param description: a list of robot descriptions :message:RobotDescription.
+ */
+message LaunchContent {
+	string launch_file = 1;
+	string masteruri = 2;
+	string host = 3;
+	repeated string node = 4;
+	repeated RobotDescription description = 5;
+	repeated Nodelets nodelets = 6;
+}
+
+/** Description of the robot configured by this launch file.
+ * :param machine: the address of the host.
+ * :param robot_name: robot name.
+ * :param robot_type: type of the robot.
+ * :param robot_images: list of the images assigned to the robot.
+ * :param robot_descr: some description.
+ * :param capabilities: a list of capabilities :message:Capability.
+ */
+message RobotDescription {
+	string machine = 1;
+	string robot_name = 2;
+	string robot_type = 3;
+	repeated string robot_images = 4;
+	string robot_descr = 5;
+	repeated Capability capabilities = 6;
+}
+
+/** Capabilities defined in launch file.
+ * :param namespace: the ROS namespace of the capability.
+ * :param name: the name of the capability.
+ * :param type: the type of the capability.
+ * :param images: list of the images assigned to the this capability.
+ * :param description: the description of the capability.
+ * :param nodes: a list of nodes assigned to this group. The nodes are described by full ROS name (with namesspace).
+ */
+message Capability {
+	string namespace = 1;
+	string name = 2;
+	string type = 3;
+	repeated string images = 4;
+	string description = 5;
+	repeated string nodes = 6;
+}
+
+/** Starts a ROS node by full name. */
+message Node {
+	string name = 1;
+	string opt_binary = 2;
+	string opt_launch = 3;
+	string loglevel = 4;
+	string logformat = 5;
+	string masteruri = 6;
+	bool reload_global_param = 7;
+}
+
+/** Represents the nodelets specified in Launchfile.
+ * :param manager: nodelete manager
+ * :param nodes: list with nodes (full name) controlled by nodelet manager. */
+message Nodelets {
+	string manager = 1;
+	repeated string nodes = 2;
+}
+
+/** List with ROS-node names. */
+message Nodes {
+	repeated string names = 1;
+}
+
+/** List with ROS-node names. */
+message MtimeNode {
+	string name = 1;
+	double mtime = 2;
+}
+
+/** List with ROS-node names. */
+message MtimeNodes {
+	repeated MtimeNode nodes = 1;
+}
+
+/** List of string to interpret */
+message InterpretPaths {
+	repeated string paths = 1;
+}
+
+/** Interpreted path result */
+message InterpredPath {
+	string path = 1;
+	bool exists = 2;
+	ReturnStatus status = 3;
+}
+
+/** Starts a ROS node without configurations. All parameter are set by this request.
+ *
+ */
+message StartConfig {
+	string package = 1;
+	string binary = 2;
+	string binary_path = 3;
+	string name = 4;
+	string namespace = 5;
+	string fullname = 6;
+	string prefix = 7;
+	string cwd = 8;
+	repeated Argument env = 9;
+	repeated Remapping remaps = 10;
+	repeated Argument params = 11;
+	repeated string clear_params = 12;
+	repeated string args = 13;
+	string masteruri = 14;
+	string host = 15;
+	string loglevel = 16;  // FATAL, ERROR, WARN, INFO, DEBUG
+	string logformat = 17;
+	bool respawn = 18;
+	double respawn_delay = 19;
+	sint32 respawn_max = 20;
+	double respawn_min_runtime = 21;
+}
+
+message Remapping {
+	string from_name = 1;
+	string to_name = 2;
+}
+
+/** The response message with load status
+ * :param status: the status of the start process.
+ * :param path: a list of paths with binaries for a node, only if MULTIPLE_BINARIES is returned.
+ * :param launch: a list with names launch files, only if MULTIPLE_LAUNCHES is returned.
+ */
+message StartNodeReply {
+	ReturnStatus status = 1;
+	string name = 2;
+	repeated string path = 3;
+	repeated string launch = 4;
+}
+
+/** The response message with status of create configuration status
+ * :param status: the status of the create process.
+ * :param launch: a list with names launch files, only if MULTIPLE_LAUNCHES is returned.
+ * :param startcfg: Returns the start configuration.
+ */
+message StartCfgReply {
+	ReturnStatus status = 1;
+	string name = 2;
+	repeated string launch = 3;
+	StartConfig startcfg = 4;
+}
+
+/** Requests included files for given path.
+ * */
+message IncludedFilesRequest {
+	string path = 1;
+	bool recursive = 2;
+	bool unique = 3;
+	repeated string pattern = 4;
+	repeated string search_in_ext = 5;
+	repeated Argument include_args = 6;
+}
+
+message IncludedFilesReply {
+	string root_path = 1;
+	string path = 2;
+	uint64 linenr = 3;
+	bool exists = 4;
+	uint64 size = 5;
+	string rawname = 6;
+	uint64 rec_depth = 7;
+	repeated Argument include_args = 8;
+}
+
+/** The status message included in replies. */
+message ReturnStatus {
+	enum StatusType {
+		OK = 0;
+		ERROR = 1;
+		ALREADY_OPEN = 2;
+		MULTIPLE_BINARIES = 3;
+		MULTIPLE_LAUNCHES = 4;
+		PARAMS_REQUIRED = 5;
+		FILE_NOT_FOUND = 6;
+		NODE_NOT_FOUND = 7;
+		PACKAGE_NOT_FOUND = 8;
+		CONNECTION_ERROR = 9;
+	}
+	sint32 code = 1;
+	string error_msg = 3;
+}

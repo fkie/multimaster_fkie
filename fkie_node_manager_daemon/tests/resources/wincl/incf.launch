@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="inc" default="1"/>
+  <arg name="intern" default="param"/>
+
+  <include file="$(find fkie_node_manager_daemon)/tests/resources/wincl/incf_$(arg intern)$(arg inc).launch"/>
+</launch>

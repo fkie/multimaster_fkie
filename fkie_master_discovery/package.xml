@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fkie_master_discovery</name>
+  <description>
+     Discover the running ROS Masters in local network. The 
+     discovering is done by sending an echo heartbeat messages to a defined 
+     multicast group.
+     The alternative is to use a zeroconf/avahi daemon to register the ROS 
+     master as service and discover other ROS masters.
+  </description>
+  <version>1.0.0</version>
+  <license>BSD</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://ros.org/wiki/fkie_master_discovery</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>fkie_multimaster_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_export_depend>fkie_multimaster_msgs</build_export_depend>
+  <build_export_depend>std_srvs</build_export_depend>
+  <exec_depend>fkie_multimaster_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>roslib</exec_depend>
+  <exec_depend>rosgraph</exec_depend>
+  <exec_depend>python-avahi</exec_depend>
+  <exec_depend>avahi-daemon</exec_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
+</package>
