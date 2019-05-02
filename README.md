@@ -1,4 +1,10 @@
-> This is a new version with daemon instance! Since the packages are renamed, you need to clean your build space before build new packages.
+## This is a new version with daemon instance!
+
+Whats new:
+
+ * Remote access and control of launch and configuration files.
+ * Easy remote editing of launch files.
+ * Monitoring for ROS nodes and system resources on remote hosts.
 
 > Old version is available on branch: `old_master` and is no longer supported!
 
@@ -12,6 +18,8 @@ In addition, Node Manager with a daemon provide a GUI-based management environme
 ## Install
 
 The communication between Node Manager and the daemon is based on python [gRPC](https://grpc.io/). Until Ubuntu *cosmic* you have to install *python-grpcio-tools* from PIP. That's why there are no debian packages for this version of FKIE multimaster. Use follow command line to install all dependencies:
+
+> if you already build previous version (without node_manager_daemon) you need to clean your build space to remove all packages with `_fkie` suffix.
 
 ```
 cd catkin_ws/src
