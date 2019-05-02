@@ -2,6 +2,46 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.12 (2019-04-30)
+-------------------
+* Merge pull request `#100 <https://github.com/fkie/multimaster_fkie/issues/100>`_ from stertingen/patch-1
+  zeroconf.py: Detect IPv6 usage from environment
+* zeroconf.py: Detect IPv6 usage from environment
+  Set environment ROS_IPV6=on to enable the IPv6 RPC server.
+* master_discovery_fkie: zeroconf: added fqdn-parameter, see issue `#99 <https://github.com/fkie/multimaster_fkie/issues/99>`_
+* master_discovery_fkie: fixed some format warning
+* master_discovery_fkie: zeroconf use for monitoruri the same hostname from masteruri
+* Contributors: Alexander Tiderko, Hermann von Kleist
+
+0.8.11 (2019-02-27)
+-------------------
+
+0.8.10 (2019-02-26)
+-------------------
+
+0.8.9 (2018-12-21)
+------------------
+
+0.8.8 (2018-12-19)
+------------------
+
+0.8.7 (2018-12-18)
+------------------
+
+0.8.5 (2018-12-11)
+------------------
+
+0.8.4 (2018-12-08)
+------------------
+* master_discovery_fkie: fix zeroconf to avoid request loop in master_sync
+  see issue `#90 <https://github.com/fkie/multimaster_fkie/issues/90>`_
+* Contributors: Alexander Tiderko
+
+0.8.3 (2018-12-07)
+------------------
+* Fixed typo hearbeat[s] to heartbeat[s] pull request `#87 <https://github.com/fkie/multimaster_fkie/issues/87>`_ from Paulls20/master
+* Contributors: Alexander Tiderko, Paul.Varghese
+
 0.8.2 (2018-08-10)
 ------------------
 

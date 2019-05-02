@@ -1,3 +1,7 @@
+> This is a new version with daemon instance! Since the packages are renamed, you need to clean your build space before build new packages.
+
+> Old version is available on branch: `old_master` and is no longer supported!
+
 # FKIE multimaster for ROS
 
 The ROS stack of *multimaster_fkie* offers a complete solution for using ROS with multicores.

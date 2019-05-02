@@ -2,6 +2,63 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.12 (2019-04-30)
+-------------------
+* fixed lost nodes while grouping
+* Contributors: Alexander Tiderko
+
+0.8.11 (2019-02-27)
+-------------------
+
+0.8.10 (2019-02-26)
+-------------------
+* node_manager_fkie: exapand (nodes, topics, services) on filter
+* fixed build node_manager_fkie without .git repository issue `#91 <https://github.com/fkie/multimaster_fkie/issues/91>`_
+* node_manager_fkie: fixed crash on show critical message dialog
+* Contributors: Alexander Tiderko
+
+0.8.9 (2018-12-21)
+------------------
+* fix install build
+* Contributors: Alexander Tiderko
+
+0.8.8 (2018-12-19)
+------------------
+* fixed install node_manager_fkie
+* Contributors: Alexander Tiderko
+
+0.8.7 (2018-12-18)
+------------------
+* node_manager_fkie: added version detection
+* Contributors: Alexander Tiderko
+
+0.8.5 (2018-12-11)
+------------------
+* node_manager_fkie: removed install author warning
+* node_manager_fkie: fixed navigation in topic and service view
+  do not open echo/call dialog on activate namespace group
+* Contributors: Alexander Tiderko
+
+0.8.4 (2018-12-08)
+------------------
+
+0.8.3 (2018-12-07)
+------------------
+* node_manager_fkie: added: Augment CMake script to install node_manager launcher on Ubuntu. pull request `#82 <https://github.com/fkie/multimaster_fkie/issues/82>`_ from acschaefer/master
+* node_manager_fkie: added parameter to disable namespace groups
+* node_manager_fkie: editor: improved seletion of node definition by moving selected text to top
+* node_manager_fkie: new: apply enhancement to organize nodes view by namespaces, see issue `#83 <https://github.com/fkie/multimaster_fkie/issues/83>`_
+* node_manager_fkie: fixed copy paste error
+* node_manager_fkie: changed highlighting for groups and nodes
+* node_manager_fkie: editor: fixed uncomment of -- statements
+* node_manager_fkie: added launch file to test namespace grouping.
+* node_manager_fkie: fix namespace view
+* node_manager_fkie: fixed topic publish dialog for messages with arrays
+* node_manager_fkie: fix crash while start master_discovery with master_sync on
+* node_manager_fkie: fixed add new parameter in parameter dialog
+* node_manager_fkie: added parameter for timeout to close closing dialog
+* Contributors: Alexander Schaefer, Alexander Tiderko
+
 0.8.2 (2018-08-10)
 ------------------
 * fixed issue `#79 <https://github.com/fkie/fkie_multimaster/issues/79>`_

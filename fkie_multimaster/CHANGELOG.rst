@@ -2,6 +2,85 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2019-04-30)
+-------------------
+* added daemon for node manager. The daemon replaces the default_config package and adds support for remote access through gRPC.
+* renamed all packages to fkie_*
+* old version are availabe on branch 'old_master'
+
+0.8.12 (2019-04-30)
+-------------------
+* node_manager_fkie: fixed lost nodes while grouping
+* Merge pull request `#100 <https://github.com/fkie/multimaster_fkie/issues/100>`_ from stertingen/patch-1
+  zeroconf.py: Detect IPv6 usage from environment
+  Set environment ROS_IPV6=on to enable the IPv6 RPC server.
+* master_discovery_fkie: zeroconf: added fqdn-parameter, see issue `#99 <https://github.com/fkie/multimaster_fkie/issues/99>`_
+* master_discovery_fkie: zeroconf use for monitoruri the same hostname from masteruri
+* Contributors: Alexander Tiderko, Hermann von Kleist
+
+0.8.11 (2019-02-27)
+-------------------
+* fix release issues
+
+0.8.10 (2019-02-26)
+-------------------
+* node_manager_fkie: exapand (nodes, topics, services) on filter
+* fixed build node_manager_fkie without .git repository issue `#91 <https://github.com/fkie/multimaster_fkie/issues/91>`_
+* node_manager_fkie: fixed crash on show critical message dialog
+* Contributors: Alexander Tiderko
+
+0.8.9 (2018-12-21)
+------------------
+* fix install build
+* Contributors: Alexander Tiderko
+
+0.8.8 (2018-12-19)
+------------------
+* fixed install node_manager_fkie
+* Contributors: Alexander Tiderko
+
+0.8.7 (2018-12-18)
+------------------
+* default_cfg_fkie: fixed changelog format
+* node_manager_fkie: added version detection
+* Contributors: Alexander Tiderko
+
+0.8.5 (2018-12-11)
+------------------
+* node_manager_fkie: removed install author warning
+* node_manager_fkie: fixed navigation in topic and service view
+  do not open echo/call dialog on activate namespace group
+* master_sync_fkie: added a simple node to sync parameter
+  Original code from
+  https://github.com/jhu-lcsr-forks/multimaster_fkie/tree/param-sync
+  adapted to change only local ROS Parameter Server
+* Contributors: Alexander Tiderko
+
+0.8.4 (2018-12-08)
+------------------
+* master_discovery_fkie: fix zeroconf to avoid request loop in master_sync
+  see issue `#90 <https://github.com/fkie/multimaster_fkie/issues/90>`_
+* Contributors: Alexander Tiderko
+
+0.8.3 (2018-12-07)
+------------------
+* node_manager_fkie: added: Augment CMake script to install node_manager launcher on Ubuntu. pull request `#82 <https://github.com/fkie/multimaster_fkie/issues/82>`_ from acschaefer/master
+* node_manager_fkie: added parameter to disable namespace groups
+* node_manager_fkie: editor: improved seletion of node definition by moving selected text to top
+* node_manager_fkie: new: apply enhancement to organize nodes view by namespaces, see issue `#83 <https://github.com/fkie/multimaster_fkie/issues/83>`_
+* node_manager_fkie: fixed copy paste error
+* node_manager_fkie: changed highlighting for groups and nodes
+* node_manager_fkie: editor: fixed uncomment of -- statements
+* node_manager_fkie: added launch file to test namespace grouping.
+* node_manager_fkie: fix namespace view
+* node_manager_fkie: fixed topic publish dialog for messages with arrays
+* node_manager_fkie: fix crash while start master_discovery with master_sync on
+* node_manager_fkie: fixed add new parameter in parameter dialog
+* node_manager_fkie: added parameter for timeout to close closing dialog
+* master_discovery_fkie: fixed typo hearbeat[s] to heartbeat[s] pull request `#87 <https://github.com/fkie/multimaster_fkie/issues/87>`_ from Paulls20/master
+* master_sync_fkie: install launch dir pull request `#81 <https://github.com/fkie/multimaster_fkie/issues/81>`_ from ahoarau/patch-1
+* Contributors: Alexander Schaefer, Alexander Tiderko, Antoine Hoarau, Paul.Varghese
+
 0.8.2 (2018-08-10)
 ------------------
 * fixed issue `#79 <https://github.com/fkie/fkie_multimaster/issues/79>`_
