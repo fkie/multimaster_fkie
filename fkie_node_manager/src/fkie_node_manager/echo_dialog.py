@@ -375,7 +375,7 @@ class EchoDialog(QDialog):
                     self._start_time = time.time()
                 else:
                     self._on_display_anchorClicked(QUrl(self._masteruri))
-                self.topicControlButton.setIcon(QIcon(':/icons/deleket_deviantart_stop.png'))
+                self.topicControlButton.setIcon(QIcon(':/icons/sekkyumu_stop.png'))
             else:
                 if self.sub is not None:
                     self.sub.unregister()
@@ -384,7 +384,7 @@ class EchoDialog(QDialog):
                     self.ssh_output_file.close()
                     self.ssh_error_file.close()
                     self.ssh_output_file = None
-                self.topicControlButton.setIcon(QIcon(':/icons/deleket_deviantart_play.png'))
+                self.topicControlButton.setIcon(QIcon(':/icons/sekkyumu_play.png'))
         except Exception as e:
             rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, utf8(e)))
 
