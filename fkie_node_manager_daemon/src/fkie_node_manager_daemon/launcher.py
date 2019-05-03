@@ -224,8 +224,8 @@ def run_node(startcfg):
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
         cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args)))
-        rospy.loginfo("run node '%s' with masteruri: %s, launch_file: '%s'" % (nodename, masteruri, startcfg.config_path))
-        rospy.logdebug("run node: %s (env: %s)", cmd_str, new_env)
+        rospy.loginfo("%s (launch_file: '%s', masteruri: %s)" % (cmd_str, startcfg.config_path, masteruri))
+        rospy.logdebug("environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
         rospy.loginfo("remote run node '%s' at '%s'" % (nodename, startcfg.nmduri))
