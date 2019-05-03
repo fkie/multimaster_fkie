@@ -87,7 +87,8 @@ class SettingsWidget(QDockWidget):
                                        'settings': nm.settings(),
                                        'attrname': 'default_user',
                                        'value_default': nm.settings().USER_DEFAULT,
-                                       'tooltip': '<p>The user used for ssh connection to remote hosts</p>'
+                                       'tooltip': '<p>The user used for ssh connection to remote hosts</p>',
+                                       'need_restart': True
                                        },),
                     'Launch history length:': ({'value': nm.settings().launch_history_length,
                                                 'settings': nm.settings(),
@@ -258,7 +259,14 @@ class SettingsWidget(QDockWidget):
                                                   'value_step': 1,
                                                   'tooltip': "<p>Interval in seconds to get system monitor diagnostics from each remote host.</p>",
                                                   'need_restart': True
-                                                  },)
+                                                  },),
+                    'Use /diagnostigs_agg:': ({'value': nm.settings().use_diagnostics_agg,
+                                               'settings': nm.settings(),
+                                               'attrname': 'use_diagnostics_agg',
+                                               'value_default': nm.settings().USE_DIAGNOSTICS_AGG,
+                                               'tooltip': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'",
+                                               'need_restart': True
+                                               },),
                     }
         self.settings_model.init_settings(settings)
 #    self.settingsTreeView.setSortingEnabled(True)

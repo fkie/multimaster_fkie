@@ -341,7 +341,8 @@ class MainWindow(QMainWindow):
 
         self._con_tries = dict()
         self._subscribe()
-        self._sub_extended_log = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+        agg_suffix = '_agg' if nm.settings().use_diagnostics_agg else ''
+        self._sub_extended_log = rospy.Subscriber('/diagnostics%s' % agg_suffix, DiagnosticArray, self._callback_diagnostics)
         nm.nmd().monitor.system_diagnostics_signal.connect(self._callback_system_diagnostics)
         nm.nmd().monitor.remote_diagnostics_signal.connect(self._callback_diagnostics)
 

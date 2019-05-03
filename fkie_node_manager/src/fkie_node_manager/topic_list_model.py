@@ -634,7 +634,7 @@ class TopicModel(QStandardItemModel):
         QStandardItemModel.__init__(self)
         self.setColumnCount(len(TopicModel.header))
         self.setHorizontalHeaderLabels([label for label, _ in TopicModel.header])
-        topics = ['/rosout', '/rosout_agg', '/diagnostics_agg']
+        topics = ['/rosout', '/rosout_agg', '/diagnostics', '/diagnostics_agg']
         def_list = ['\A' + n.strip().replace('*', '.*') + '\Z' for n in topics]
         self._re_cap_systopics = re.compile('|'.join(def_list), re.I)
         self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass

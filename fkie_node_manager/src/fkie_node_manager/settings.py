@@ -160,6 +160,7 @@ class Settings(object):
     GROUP_BY_NAMESPACE = True
     TIMEOUT_GRPC = nmd_settings.GRPC_TIMEOUT
     SYSMON_DEFAULT_INTERVAL = 10
+    USE_DIAGNOSTICS_AGG = False
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -242,6 +243,7 @@ class Settings(object):
         self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
         self._timeout_grpc = float(settings.value('timeout_grpc', self.TIMEOUT_GRPC))
         self._sysmon_default_interval = int(settings.value('sysmon_default_interval', self.SYSMON_DEFAULT_INTERVAL))
+        self._use_diagnostics_agg = self.str2bool(settings.value('use_diagnostics_agg', self.USE_DIAGNOSTICS_AGG))
         nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
         settings.beginGroup('host_colors')
         self._host_colors = dict()
@@ -572,6 +574,18 @@ class Settings(object):
         self._sysmon_default_interval = length
         settings = self.qsettings(self.CFG_FILE)
         settings.setValue('sysmon_default_interval', self._sysmon_default_interval)
+
+    @property
+    def use_diagnostics_agg(self):
+        return self._use_diagnostics_agg
+
+    @use_diagnostics_agg.setter
+    def use_diagnostics_agg(self, value):
+        val = self.str2bool(value)
+        if self._use_diagnostics_agg != val:
+            self._use_diagnostics_agg = val
+            settings = self.qsettings(self.CFG_FILE)
+            settings.setValue('use_diagnostics_agg', self._use_diagnostics_agg)
 
     @property
     def group_nodes_by_namespace(self):
