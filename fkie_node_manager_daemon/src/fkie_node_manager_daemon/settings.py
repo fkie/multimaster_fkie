@@ -76,7 +76,7 @@ class Settings:
                 'version': {':value': self.version, ':ro': True},
                 'file': {':value': self.filename, ':ro': True},
                 'grpc_timeout': {':value': 15.0, ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
-                'only_diagnostics_agg': {':value': False, ':hint': "subscribes only to '/diagnostics_agg' topic"},
+                'use_diagnostics_agg': {':value': False, ':hint': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'"},
                 'reset': {':value': False, ':hint': 'if this flag is set to True the configuration will be reseted'},
             },
             'sysmon':

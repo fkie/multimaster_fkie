@@ -73,10 +73,12 @@ class Service:
         self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
-        self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
-        self._param_sub_only_agg = settings.param('global/only_diagnostics_agg', False)
+        self.use_diagnostics_agg = settings.param('global/use_diagnostics_agg', False)
+        self._sub_diag_agg = None
         self._sub_diag = None
-        if not self._param_sub_only_agg:
+        if self.use_diagnostics_agg:
+            self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+        else:
             self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
         hostname = socket.gethostname()
 
@@ -91,13 +93,19 @@ class Service:
         self._settings.add_reload_listener(self.reload_parameter)
 
     def reload_parameter(self, settings):
-        value = settings.param('global/only_diagnostics_agg', False)
-        if value != self._param_sub_only_agg:
-            if value:
-                self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
-            elif self._sub_diag is not None:
+        value = settings.param('global/use_diagnostics_agg', False)
+        if value != self.use_diagnostics_agg:
+            if self._sub_diag is not None:
                 self._sub_diag.unregister()
-            self._param_sub_only_agg = value
+                self._sub_diag = None
+            if self._sub_diag_agg is not None:
+                self._sub_diag_agg.unregister()
+                self._sub_diag_agg = None
+            if value:
+                self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+            else:
+                self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
+            self.use_diagnostics_agg = value
 
     def _callback_diagnostics(self, msg):
         # TODO: update diagnostics
@@ -111,6 +119,7 @@ class Service:
                     diag_obj.timestamp = stamp
                 except Exception:
                     diag_obj = DiagnosticObj(status, stamp)
+                    diag_obj.timestamp = stamp
                     self._diagnostics.append(diag_obj)
 
     def get_system_diagnostics(self, filter_level=0, filter_ts=0):
@@ -129,7 +138,7 @@ class Service:
         result.header.stamp = rospy.Time.from_sec(time.time())
         with self._mutex:
             for diag_obj in self._diagnostics:
-                if diag_obj.timestamp > filter_ts:
+                if diag_obj.timestamp >= filter_ts:
                     if diag_obj.msg.level >= filter_level:
                         result.status.append(diag_obj.msg)
         return result
