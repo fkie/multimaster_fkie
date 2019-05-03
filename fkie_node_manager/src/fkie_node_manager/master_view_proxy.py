@@ -1923,12 +1923,12 @@ class MasterViewProxy(QWidget):
         logging = None
         diag_canceled = False
         if use_adv_cfg:
-            log_params = {'Level': ('string', nm.settings().logging.get_alternatives('loglevel')),
+            log_params = {'Level': {':type': 'string', ':value': nm.settings().logging.get_alternatives('loglevel')},
                           # 'Level (roscpp)': ('string', nm.settings().logging.get_alternatives('loglevel_roscpp')),
                           # 'Level (super)': ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
-                          'Format': ('string', nm.settings().logging.get_alternatives('console_format'))
+                          'Format': {':type': 'string', ':value': nm.settings().logging.get_alternatives('console_format')}
                           }
-            params = {'Logging': ('dict', log_params)}
+            params = {'Logging': log_params}
             dia = ParameterDialog(params, store_geometry="adv_cfg_dialog")
             dia.setFilterVisible(False)
             dia.setWindowTitle('Start with parameters')
@@ -2081,7 +2081,7 @@ class MasterViewProxy(QWidget):
         '''
         cursor = self.cursor()
         self.masterTab.startButton.setEnabled(False)
-        params = {'Host': ('string', 'localhost')}
+        params = {'Host': {':type': 'string', ':value': 'localhost'}}
         dia = ParameterDialog(params, store_geometry="start_node_at_host_dialog")
         dia.setFilterVisible(False)
         dia.setWindowTitle('Start node on...')
