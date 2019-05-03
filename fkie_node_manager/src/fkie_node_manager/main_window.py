@@ -2082,7 +2082,6 @@ class MainWindow(QMainWindow):
     def _nmd_yaml_cfg(self, data, nmdurl):
         params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
         dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
-        dia.setFilterVisible(False)
         dia.setWindowTitle('Daemon Configuration')
         dia.setFocusField('load_warn_level')
         if dia.exec_():
