@@ -1910,6 +1910,8 @@ class MainWindow(QMainWindow):
             self.sysmon_active_update(url.toString().replace('sysmon-switch', 'http'))
         elif url.toString().startswith('nmd-cfg://'):
             self.nmd_cfg(url.toString().replace('nmd-cfg', 'http'))
+        elif url.toString().startswith('nm-cfg://'):
+            self._on_settings_button_clicked()
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back

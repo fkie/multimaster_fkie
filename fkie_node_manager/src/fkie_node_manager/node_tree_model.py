@@ -1009,10 +1009,10 @@ class HostItem(GroupItem):
             tooltip += '<p>'
             tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
             tooltip += '<p>'
-            sysmon_setup_str = '<a href="nmd-cfg://%s">setup</a>' % (utf8(self.masteruri).replace('http://', ''))
+            sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
             sysmon_state_str = 'disable' if self.sysmon_state else 'enable'
             sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
-            tooltip += '<h3>System Monitoring (%s) (%s):</h3>' % (sysmon_switch_str, sysmon_setup_str)
+            tooltip += '<h3>System Monitoring: (%s) %s</h3>' % (sysmon_switch_str, sysmon_setup_str)
             if self._diagnostics:
                 for diag in self._diagnostics:
                     try:

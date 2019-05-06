@@ -1474,12 +1474,13 @@ class MasterViewProxy(QWidget):
         if node is not None:
             # create description for a node
             ns, sep, name = node.name.rpartition(rospy.names.SEP)
-            sysmon_setup_str = ''
-            if name == 'node_manager_daemon':
-                sysmon_setup_str = ' (<a href="nmd-cfg://%s">setup</a>)' % (utf8(self.masteruri).replace('http://', ''))
-            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s%s</b></font><br>' % (ns, sep, name, sysmon_setup_str)
+            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
+            if name == 'node_manager_daemon':
+                text += '<a href="nmd-cfg://%s" title="Configure Daemon"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
+            elif name == 'node_manager' and nm.is_local(self.mastername):
+                text += '<a href="nm-cfg://%s" title="Configure Node Manager"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
             if launches or default_cfgs:
                 text += '<a href="restart-node://%s" title="Restart node Ctrl+Shift+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
                 text += '&nbsp;<a href="restart-node-g://%s" title="Reload global parameter and restart node Ctrl+Shift+Alt+R"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
