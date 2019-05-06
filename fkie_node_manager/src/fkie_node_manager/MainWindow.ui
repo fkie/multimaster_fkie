@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>976</width>
-    <height>753</height>
+    <width>1066</width>
+    <height>762</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -106,6 +106,32 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="settingsButton">
+         <property name="maximumSize">
+          <size>
+           <width>16</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="GUI.qrc">
+           <normaloff>:/icons/crystal_clear_settings.png</normaloff>:/icons/crystal_clear_settings.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="infoButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -116,7 +142,7 @@
          <property name="maximumSize">
           <size>
            <width>16</width>
-           <height>16777215</height>
+           <height>20</height>
           </size>
          </property>
          <property name="icon">
@@ -676,8 +702,8 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>976</width>
-     <height>30</height>
+     <width>1066</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>

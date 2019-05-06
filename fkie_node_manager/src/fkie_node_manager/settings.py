@@ -33,6 +33,8 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtGui import QColor
+from python_qt_binding.QtCore import QSettings
+
 import os
 import roslib
 import rospy
@@ -41,6 +43,7 @@ from fkie_master_discovery.common import masteruri_from_ros
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import settings as nmd_settings
+from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.common import get_ros_home
 
 
@@ -101,10 +104,6 @@ class LoggingConfig(object):
 
 class Settings(object):
 
-    USER_DEFAULT = 'robot'
-    ''':ivar USER_DEFAULT: default user, if no one is set for specific master. Defaul: robot'''
-    # set the cwd to the package of the fkie_node_manager to support the images
-    # in HTML descriptions of the robots and capabilities
     PKG_NAME = 'fkie_node_manager'
     try:
         PACKAGE_DIR = roslib.packages.get_pkg_dir(PKG_NAME)
@@ -113,24 +112,17 @@ class Settings(object):
         if "dist-packages" in __file__:
             PACKAGE_DIR = "%s/../../share/fkie_node_manager" % PACKAGE_DIR
         print("PACKAGE_DIR: %s" % PACKAGE_DIR)
-    ROBOTS_DIR = os.path.join(PACKAGE_DIR, 'images')
     CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
     ''':ivar CFG_PATH: configuration path to store the settings and history'''
     HELP_FILE = os.path.join(PACKAGE_DIR, 'README.rst')
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
     LOG_PATH = screen.LOG_PATH
-
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
     STARTER_SCRIPT = 'rosrun fkie_node_manager remote_nm.py'
     ''':ivar STARTER_SCRIPT: the script used on remote hosts to start new ROS nodes.'''
 
     LAUNCH_HISTORY_FILE = 'launch.history'
-    LAUNCH_HISTORY_LENGTH = 5
-
     PARAM_HISTORY_FILE = 'param.history'
-    PARAM_HISTORY_LENGTH = 12
-
-    CFG_REDIRECT_FILE = 'redirect'
     CFG_FILE = 'settings.ini'
     CFG_GUI_FILE = 'settings.ini'
 
@@ -140,31 +132,10 @@ class Settings(object):
     SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
     LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xacro']
 
-    STORE_GEOMETRY = True
-    MOVABLE_DOCK_WIDGETS = True
-    AUTOUPDATE = True
-    MAX_TIMEDIFF = 0.5
-
-    START_SYNC_WITH_DISCOVERY = False
-    CONFIRM_EXIT_WHEN_CLOSING = True
-    HIGHLIGHT_XML_BLOCKS = True
-    COLORIZE_HOSTS = True
-    CHECK_FOR_NODELETS_AT_START = True
-    SHOW_NOSCREEN_ERROR = True
-    ASK_RELOAD_LAUNCH = True
-
-    SHOW_DOMAIN_SUFFIX = False
-
-    TRANSPOSE_PUB_SUB_DESCR = True
-    TIMEOUT_CLOSE_DIALOG = 30.0
-    GROUP_BY_NAMESPACE = True
-    TIMEOUT_GRPC = nmd_settings.GRPC_TIMEOUT
-    SYSMON_DEFAULT_INTERVAL = 10
-    USE_DIAGNOSTICS_AGG = False
-
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
     def __init__(self):
+        self._data = {}
         self.reload()
 
     def reload(self):
@@ -176,16 +147,12 @@ class Settings(object):
         self._noclose_str = '-hold'
         self._terminal_title = '--title'
         self._masteruri = masteruri_from_ros()
-        # self.CFG_PATH = os.path.join(get_ros_home(), 'node_manager')
         self.CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
         # loads the current configuration path. If the path was changed, a redirection
         # file exists with new configuration folder
         if not os.path.isdir(self.CFG_PATH):
             os.makedirs(self.CFG_PATH)
-            self._cfg_path = self.CFG_PATH
-        else:
-            settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
-            self._cfg_path = settings.value('cfg_path', self.CFG_PATH)
+            self.cfg_path = self.CFG_PATH
         # move all stuff from old location to new
         try:
             import shutil
@@ -199,52 +166,27 @@ class Settings(object):
             pass
         print("Configuration path: %s" % self.CFG_PATH)
         # after the settings path was loaded, load other settings
-        self._robots_path = self.ROBOTS_DIR
         settings = self.qsettings(self.CFG_FILE)
-        self._default_user = settings.value('default_user', self.USER_DEFAULT)
+        self._data = self._load_settings(settings)
+        # load stored usernames for hosts
         settings.beginGroup('default_user_hosts')
         self._default_user_hosts = dict()
         for k in settings.childKeys():
-            self._default_user_hosts[k] = settings.value(k, self._default_user)
+            self._default_user_hosts[k] = settings.value(k, self.default_user)
         settings.endGroup()
-        try:
-            self._launch_history_length = int(settings.value('launch_history_length', self.LAUNCH_HISTORY_LENGTH))
-        except Exception:
-            self._launch_history_length = self.LAUNCH_HISTORY_LENGTH
-        try:
-            self._param_history_length = int(settings.value('param_history_length', self.PARAM_HISTORY_LENGTH))
-        except Exception:
-            self._param_history_length = self.PARAM_HISTORY_LENGTH
         self._current_dialog_path = self.CURRENT_DIALOG_PATH
         self._log_viewer = self.LOG_VIEWER
         self._start_remote_script = self.STARTER_SCRIPT
-        self._launch_view_file_ext = self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))
-        self._store_geometry = self.str2bool(settings.value('store_geometry', self.STORE_GEOMETRY))
-        self._movable_dock_widgets = self.str2bool(settings.value('movable_dock_widgets', self.MOVABLE_DOCK_WIDGETS))
-        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
-        self._autoupdate = self.str2bool(settings.value('autoupdate', self.AUTOUPDATE))
-        self._max_timediff = float(settings.value('max_timediff', self.MAX_TIMEDIFF))
+        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self.launch_view_file_ext))
+        # setup logging
         self._rosconsole_cfg_file = 'rosconsole.config'
         self.logging = LoggingConfig()
         self.logging.loglevel = settings.value('logging/level', LoggingConfig.LOGLEVEL)
         self.logging.loglevel_roscpp = settings.value('logging/level_roscpp', LoggingConfig.LOGLEVEL_ROSCPP)
         self.logging.loglevel_superdebug = settings.value('logging/level_superdebug', LoggingConfig.LOGLEVEL_SUPERDEBUG)
         self.logging.console_format = settings.value('logging/rosconsole_format', LoggingConfig.CONSOLE_FORMAT)
-        self._start_sync_with_discovery = self.str2bool(settings.value('start_sync_with_discovery', self.START_SYNC_WITH_DISCOVERY))
-        self._confirm_exit_when_closing = self.str2bool(settings.value('confirm_exit_when_closing', self.CONFIRM_EXIT_WHEN_CLOSING))
-        self._highlight_xml_blocks = self.str2bool(settings.value('highlight_xml_blocks', self.HIGHLIGHT_XML_BLOCKS))
-        self._colorize_hosts = self.str2bool(settings.value('colorize_hosts', self.COLORIZE_HOSTS))
-        self._check_for_nodelets_at_start = self.str2bool(settings.value('check_for_nodelets_at_start', self.CHECK_FOR_NODELETS_AT_START))
-        self._show_noscreen_error = self.str2bool(settings.value('show_noscreen_error', self.SHOW_NOSCREEN_ERROR))
-        self._ask_reload_launch = self.str2bool(settings.value('ask_reload_launch', self.ASK_RELOAD_LAUNCH))
-        self._show_domain_suffix = self.str2bool(settings.value('show_domain_suffix', self.SHOW_DOMAIN_SUFFIX))
-        self._transpose_pub_sub_descr = self.str2bool(settings.value('transpose_pub_sub_descr', self.TRANSPOSE_PUB_SUB_DESCR))
-        self._timeout_close_dialog = float(settings.value('timeout_close_dialog', self.TIMEOUT_CLOSE_DIALOG))
-        self._group_nodes_by_namespace = self.str2bool(settings.value('group_nodes_by_namespace', self.GROUP_BY_NAMESPACE))
-        self._timeout_grpc = float(settings.value('timeout_grpc', self.TIMEOUT_GRPC))
-        self._sysmon_default_interval = int(settings.value('sysmon_default_interval', self.SYSMON_DEFAULT_INTERVAL))
-        self._use_diagnostics_agg = self.str2bool(settings.value('use_diagnostics_agg', self.USE_DIAGNOSTICS_AGG))
-        nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
+        nmd_settings.GRPC_TIMEOUT = self.timeout_grpc
+        # setup colors
         settings.beginGroup('host_colors')
         self._host_colors = dict()
         for k in settings.childKeys():
@@ -256,49 +198,232 @@ class Settings(object):
     def masteruri(self):
         return self._masteruri
 
-    @property
-    def cfg_path(self):
-        return self._cfg_path
+    def _load_settings(self, settings):
+        '''
+        Creates a new default configuration.
+        Value supports follow tags: {:value, :min, :max, :default, :hint(str), :ro(bool)}
+        '''
+        result = {'reset': {':value': False, ':var': 'reset', ':hint': 'if this flag is set to True the configuration will be reseted.'},
+                  'reset_cache': {':value': False, ':var': 'reset_cache', ':hint': 'if this flag is set to True cached values will be removed.'},
+                  'Default user:': {':value': settings.value('default_user', 'robot'),
+                                    ':var': 'default_user',
+                                    ':default': 'robot',
+                                    ':hint': 'The user used for ssh connection to remote hosts if no one is set for specific master.'
+                                    ' <span style="font-weight:600;">Restart required!</span>',
+                                    ':need_restart': True
+                                    },
+                  'Launch history length:': {':value': int(settings.value('launch_history_length', 5)),
+                                             ':var': 'launch_history_length',
+                                             ':default': 5,
+                                             ':min': 0,
+                                             ':max': 25,
+                                             ':hint': 'The count of recent loaded launch files displayed in the root'
+                                             ' of the <span style="font-weight:600;">launch files</span> view.'
+                                             },
+                  'Param history length:': {':value': int(settings.value('param_history_length', 12)),
+                                            ':var': 'param_history_length',
+                                            ':default': 12,
+                                            ':min': 0,
+                                            ':max': 25,
+                                            ':hint': 'The count of parameters stored which'
+                                            ' are entered in a parameter dialog (Launch file arguments,'
+                                            ' parameter server, publishing to a topic, service call)'
+                                            },
+                  'Settings path:': {':value': settings.value('cfg_path', self.CFG_PATH),
+                                     ':var': 'cfg_path',
+                                     ':path': 'dir',
+                                     ':default': self.CFG_PATH,
+                                     ':hint': '',
+                                     ':ro': True,
+                                     },
+                  'Robot icon path:': {':value': os.path.join(self.PACKAGE_DIR, 'images'),
+                                       ':var': 'robots_path',
+                                       ':path': 'dir',
+                                       ':default': os.path.join(self.PACKAGE_DIR, 'images'),
+                                       ':hint': 'The path to the folder with robot images'
+                                       '(<span style=" font-weight:600;">.png</span>).'
+                                       ' The images with robot name will be displayed in the info bar.',
+                                       },
+                  'Show files extensions:': {':value': ', '.join(self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))),
+                                             ':var': 'launch_view_file_ext',
+                                             ':default': ', '.join(self.LAUNCH_VIEW_EXT),
+                                             ':hint': 'Files that are displayed next to Launch'
+                                             ' files in the <span style="font-weight:600;">launch files</span> view.',
+                                             },
+                  'Store window layout:': {':value': self.str2bool(settings.value('store_geometry', True)),
+                                           ':var': 'store_geometry',
+                                           ':default': True,
+                                           ':hint': ''
+                                           },
+                  'Movable dock widgets:': {':value': self.str2bool(settings.value('movable_dock_widgets', True)),
+                                            ':var': 'movable_dock_widgets',
+                                            ':default': True,
+                                            ':hint': 'On false you can\'t reorganize docking widgets.'
+                                            ' <span style="font-weight:600;">Restart required!</span>',
+                                            ':need_restart': True
+                                            },
+                  'Max time difference:': {':value': float(settings.value('max_timediff', 0.5)),
+                                           ':var': 'max_timediff',
+                                           ':default': 0.5,
+                                           ':step': 0.1,
+                                           ':hint': 'Shows a warning if the time difference to remote host is greater than this value.',
+                                           },
+                  'Autoupdate:': {':value': self.str2bool(settings.value('autoupdate', True)),
+                                  ':var': 'autoupdate',
+                                  ':default': True,
+                                  ':hint': 'By default node manager updates the current'
+                                  ' state on changes. You can deactivate this behavior to'
+                                  ' reduce the network load. If autoupdate is deactivated'
+                                  ' you must refresh the state manually.',
+                                  },
+                  'Start sync with discovery:': {':value': self.str2bool(settings.value('start_sync_with_discovery', False)),
+                                                 ':var': 'start_sync_with_discovery',
+                                                 ':default': False,
+                                                 ':hint': "Sets 'start sync' in 'Start' master discovery"
+                                                 "dialog to True, if this option is set to true."
+                                                 },
+                  'Confirm exit when closing:': {':value': self.str2bool(settings.value('confirm_exit_when_closing', True)),
+                                                 ':var': 'confirm_exit_when_closing',
+                                                 ':default': True,
+                                                 ':hint': "Shows on closing of node_manager a dialog to stop"
+                                                 " all ROS nodes if this option is set to true.",
+                                                 },
+                  'Highlight xml blocks:': {':value': self.str2bool(settings.value('highlight_xml_blocks', True)),
+                                            ':var': 'highlight_xml_blocks',
+                                            ':default': True,
+                                            ':hint': "Highlights the current selected XML block, while editing ROS launch file.",
+                                            },
+                  'Colorize hosts:': {':value': self.str2bool(settings.value('colorize_hosts', True)),
+                                      ':var': 'colorize_hosts',
+                                      ':default': True,
+                                      ':hint': "Determine automatic a default color for each host if True."
+                                      " Manually setting color will be preferred. You can select the color by"
+                                      " double-click on hostname in description panel. To remove a setting color"
+                                      " delete it manually from %s" % self.CFG_PATH,
+                                      },
+                  'Check for nodelets at start:': {':value': self.str2bool(settings.value('check_for_nodelets_at_start', True)),
+                                                   ':var': 'check_for_nodelets_at_start',
+                                                   ':default': True,
+                                                   ':hint': "Test the starting nodes for nodelet manager and all nodelets."
+                                                   " If one of the nodes is not in the list a dialog is displayed with"
+                                                   " proposal to start other nodes, too.",
+                                                   },
+                  'Show noscreen error:': {':value': self.str2bool(settings.value('show_noscreen_error', True)),
+                                           ':var': 'show_noscreen_error',
+                                           ':default': True,
+                                           ':hint': "Shows an error if requested screen for a node is not available.",
+                                           },
+                  'Ask for reload launch:': {':value': self.str2bool(settings.value('ask_reload_launch', True)),
+                                             ':var': 'ask_reload_launch',
+                                             ':default': True,
+                                             ':hint': "On change asks for reload launch file. On False reload without asking.",
+                                             },
+                  'Show domain suffix:': {':value': self.str2bool(settings.value('show_domain_suffix', False)),
+                                          ':var': 'show_domain_suffix',
+                                          ':default': False,
+                                          ':hint': "Shows the domain suffix of the host in the host description panel and node tree view.",
+                                          },
+                  'Transpose pub/sub description:': {':value': self.str2bool(settings.value('transpose_pub_sub_descr', True)),
+                                                     ':var': 'transpose_pub_sub_descr',
+                                                     ':default': True,
+                                                     ':hint': "Transpose publisher/subscriber in description dock.",
+                                                     },
+                  'Timeout close dialog:': {':value': float(settings.value('timeout_close_dialog', 30.0)),
+                                            ':var': 'timeout_close_dialog',
+                                            ':default': 30.0,
+                                            ':step': 1.,
+                                            ':hint': "Timeout in seconds to close dialog while closing Node Manager."
+                                            " 0 disables autoclose functionality.",
+                                            },
+                  'Group nodes by namespace:': {':value': self.str2bool(settings.value('group_nodes_by_namespace', True)),
+                                                ':var': 'group_nodes_by_namespace',
+                                                ':default': True,
+                                                ':hint': 'Split namespace of the node by / and create groups for each name part.'
+                                                ' <span style="font-weight:600;">Restart required!</span>',
+                                                ':need_restart': True,
+                                                },
+                  'Timeout for GRPC requests:': {':value': float(settings.value('timeout_grpc', nmd_settings.GRPC_TIMEOUT)),
+                                                 ':var': 'timeout_grpc',
+                                                 ':default': nmd_settings.GRPC_TIMEOUT,
+                                                 ':step': 1.,
+                                                 ':hint': "Timeout in seconds for GRPC requests to daemon.",
+                                                 },
+                  'Sysmon default interval:': {':value': int(settings.value('sysmon_default_interval', 10)),
+                                               ':var': 'sysmon_default_interval',
+                                               ':default': 10,
+                                               ':step': 1,
+                                               ':hint': 'Interval in seconds to get system monitor diagnostics from each remote host.'
+                                               ' <span style="font-weight:600;">Restart required!</span>',
+                                               ':need_restart': True,
+                                               },
+                  'Use /diagnostigs_agg:': {':value': self.str2bool(settings.value('use_diagnostics_agg', False)),
+                                            ':var': 'use_diagnostics_agg',
+                                            ':default': False,
+                                            ':hint': 'subscribes to \'/diagnostics_agg\' topic instead of \'/diagnostics\'.'
+                                            ' <span style="font-weight:600;">Restart required!</span>',
+                                            ':need_restart': True,
+                                            },
+                  }
+        return result
 
-    @cfg_path.setter
-    def cfg_path(self, path):
-        if path:
-            abspath = os.path.abspath(path).rstrip(os.path.sep)
-            if not os.path.isdir(abspath):
-                os.makedirs(abspath)
-            self._cfg_path = abspath
-            if abspath != os.path.abspath(self.CFG_PATH).rstrip(os.path.sep):
-                settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
-                settings.setValue('cfg_path', abspath)
-            else:
-                # remove the redirection
-                settings = self.qsettings(os.path.join(self.CFG_PATH, self.CFG_REDIRECT_FILE))
-                settings.remove('cfg_path')
+    def yaml(self):
+        return self._data
+
+    def set_yaml(self, data):
+        reset = False
+        reset_cache = False
+        need_restart = False
+        for value in data.itervalues():
+            setattr(self, value[':var'], value[':value'])
+            if ':need_restart' in value:
+                if value[':need_restart']:
+                    need_restart = True
+            if value[':var'] == 'reset':
+                reset = value[':value']
+            if value[':var'] == 'reset_cache':
+                reset_cache = value[':value']
+        if need_restart:
+            MessageBox.information(None, "restart Node Manager", "Some of modified parameter requires a restart of Node Manager!")
+        # handle reset
+        if reset:
+            try:
+                os.remove(os.path.join(self.CFG_PATH, self.CFG_FILE))
+                os.remove(os.path.join(self.CFG_PATH, self.CFG_GUI_FILE))
+            except Exception:
+                pass
             self.reload()
+        if reset_cache:
+            try:
+                os.remove(os.path.join(self.CFG_PATH, self.LAUNCH_HISTORY_FILE))
+                os.remove(os.path.join(self.CFG_PATH, self.PARAM_HISTORY_FILE))
+            except Exception:
+                pass
 
-    @property
-    def robots_path(self):
-        return self._robots_path
+    def __getattr__(self, name):
+        for value in self._data.itervalues():
+            if value[':var'] == name:
+                return value[':value']
+        raise AttributeError("'Settings' has no attribute '%s'" % name)
 
-    @robots_path.setter
-    def robots_path(self, path):
-        if path:
-            if not os.path.isdir(path):
-                os.makedirs(path)
-            self._robots_path = path
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('robots_path', self._robots_path)
-
-    @property
-    def default_user(self):
-        return self._default_user
-
-    @default_user.setter
-    def default_user(self, user):
-        if user:
-            self._default_user = user
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('default_user', self._default_user)
+    def __setattr__(self, name, value):
+        if name == '_data':
+            object.__setattr__(self, name, value)
+        for val in self._data.itervalues():
+            if val[':var'] == name:
+                setval = value
+                val[':value'] = setval
+                # if it is a directory, create it if not exists
+                if ':path' in val:
+                    if val[':path'] == 'dir':
+                        setval = os.path.abspath(setval).rstrip(os.path.sep)
+                        val[':value'] = setval
+                    if name == 'cfg_path':
+                        if not os.path.isdir(setval):
+                            os.makedirs(setval)
+                settings = self.qsettings(self.CFG_FILE)
+                settings.setValue(name, setval)
+                return
+        object.__setattr__(self, name, value)
 
     def host_user(self, host):
         if host in self._default_user_hosts:
@@ -312,26 +437,6 @@ class Settings(object):
             settings.setValue('default_user_hosts/%s' % host, user)
 
     @property
-    def launch_history_length(self):
-        return self._launch_history_length
-
-    @launch_history_length.setter
-    def launch_history_length(self, length):
-        self._launch_history_length = length
-        settings = self.qsettings(self.CFG_FILE)
-        settings.setValue('launch_history_length', self._launch_history_length)
-
-    @property
-    def param_history_length(self):
-        return self._param_history_length
-
-    @param_history_length.setter
-    def param_history_length(self, length):
-        self._param_history_length = length
-        settings = self.qsettings(self.CFG_FILE)
-        settings.setValue('param_history_length', self._param_history_length)
-
-    @property
     def current_dialog_path(self):
         return self._current_dialog_path
 
@@ -340,7 +445,7 @@ class Settings(object):
         self._current_dialog_path = path
 
     def robot_image_file(self, robot_name):
-        return os.path.join(self.ROBOTS_DIR, '%s.png' % robot_name)
+        return os.path.join(self.robots_path, '%s.png' % robot_name)
 
     @property
     def log_viewer(self):
@@ -358,65 +463,6 @@ class Settings(object):
     def start_remote_script(self, script):
         self._start_remote_script = script
 
-    @property
-    def launch_view_file_ext(self):
-        return self._launch_view_file_ext
-
-    @launch_view_file_ext.setter
-    def launch_view_file_ext(self, exts):
-        self._launch_view_file_ext = self.str2list('%s' % exts)
-        settings = self.qsettings(self.CFG_FILE)
-        settings.setValue('launch_view_file_ext', self._launch_view_file_ext)
-        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self._launch_view_file_ext))
-
-    @property
-    def store_geometry(self):
-        return self._store_geometry
-
-    @store_geometry.setter
-    def store_geometry(self, value):
-        v = self.str2bool(value)
-        if self._store_geometry != v:
-            self._store_geometry = v
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('store_geometry', self._store_geometry)
-
-    @property
-    def movable_dock_widgets(self):
-        return self._movable_dock_widgets
-
-    @movable_dock_widgets.setter
-    def movable_dock_widgets(self, value):
-        v = self.str2bool(value)
-        if self._movable_dock_widgets != v:
-            self._movable_dock_widgets = v
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('movable_dock_widgets', self._movable_dock_widgets)
-
-    @property
-    def autoupdate(self):
-        return self._autoupdate
-
-    @autoupdate.setter
-    def autoupdate(self, value):
-        v = self.str2bool(value)
-        if self._autoupdate != v:
-            self._autoupdate = v
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('autoupdate', self._autoupdate)
-
-    @property
-    def max_timediff(self):
-        return self._max_timediff
-
-    @max_timediff.setter
-    def max_timediff(self, value):
-        v = float(value)
-        if self._max_timediff != v:
-            self._max_timediff = v
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('max_timediff', self._max_timediff)
-
     def rosconsole_cfg_file(self, package):
         result = os.path.join(self.LOG_PATH, '%s.%s' % (package, self._rosconsole_cfg_file))
         with open(result, 'w') as cfg_file:
@@ -431,173 +477,6 @@ class Settings(object):
         settings.setValue('logging/level_roscpp', self.logging.loglevel_roscpp)
         settings.setValue('logging/level_superdebug', self.logging.loglevel_superdebug)
         settings.setValue('logging/rosconsole_format', self.logging.console_format)
-
-    @property
-    def start_sync_with_discovery(self):
-        return self._start_sync_with_discovery
-
-    @start_sync_with_discovery.setter
-    def start_sync_with_discovery(self, value):
-        v = self.str2bool(value)
-        if self._start_sync_with_discovery != v:
-            self._start_sync_with_discovery = v
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('start_sync_with_discovery', self._start_sync_with_discovery)
-
-    @property
-    def confirm_exit_when_closing(self):
-        return self._confirm_exit_when_closing
-
-    @confirm_exit_when_closing.setter
-    def confirm_exit_when_closing(self, value):
-        val = self.str2bool(value)
-        if self._confirm_exit_when_closing != val:
-            self._confirm_exit_when_closing = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('confirm_exit_when_closing', self._confirm_exit_when_closing)
-
-    @property
-    def highlight_xml_blocks(self):
-        return self._highlight_xml_blocks
-
-    @highlight_xml_blocks.setter
-    def highlight_xml_blocks(self, value):
-        val = self.str2bool(value)
-        if self._highlight_xml_blocks != val:
-            self._highlight_xml_blocks = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('highlight_xml_blocks', self._highlight_xml_blocks)
-
-    @property
-    def colorize_hosts(self):
-        return self._colorize_hosts
-
-    @colorize_hosts.setter
-    def colorize_hosts(self, value):
-        val = self.str2bool(value)
-        if self._colorize_hosts != val:
-            self._colorize_hosts = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('colorize_hosts', self._colorize_hosts)
-
-    @property
-    def check_for_nodelets_at_start(self):
-        return self._check_for_nodelets_at_start
-
-    @check_for_nodelets_at_start.setter
-    def check_for_nodelets_at_start(self, value):
-        val = self.str2bool(value)
-        if self._check_for_nodelets_at_start != val:
-            self._check_for_nodelets_at_start = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('check_for_nodelets_at_start', self._check_for_nodelets_at_start)
-
-    @property
-    def show_noscreen_error(self):
-        return self._show_noscreen_error
-
-    @show_noscreen_error.setter
-    def show_noscreen_error(self, value):
-        val = self.str2bool(value)
-        if self._show_noscreen_error != val:
-            self._show_noscreen_error = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('show_noscreen_error', self._show_noscreen_error)
-
-    @property
-    def ask_reload_launch(self):
-        return self._ask_reload_launch
-
-    @ask_reload_launch.setter
-    def ask_reload_launch(self, value):
-        val = self.str2bool(value)
-        if self._ask_reload_launch != val:
-            self._ask_reload_launch = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('ask_reload_launch', self._ask_reload_launch)
-
-    @property
-    def show_domain_suffix(self):
-        return self._show_domain_suffix
-
-    @show_domain_suffix.setter
-    def show_domain_suffix(self, value):
-        val = self.str2bool(value)
-        if self._show_domain_suffix != val:
-            self._show_domain_suffix = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('show_domain_suffix', self._show_domain_suffix)
-
-    @property
-    def transpose_pub_sub_descr(self):
-        return self._transpose_pub_sub_descr
-
-    @transpose_pub_sub_descr.setter
-    def transpose_pub_sub_descr(self, value):
-        val = self.str2bool(value)
-        if self._transpose_pub_sub_descr != val:
-            self._transpose_pub_sub_descr = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('transpose_pub_sub_descr', self._transpose_pub_sub_descr)
-
-    @property
-    def timeout_close_dialog(self):
-        return self._timeout_close_dialog
-
-    @timeout_close_dialog.setter
-    def timeout_close_dialog(self, value):
-        v = float(value)
-        if self._timeout_close_dialog != v:
-            self._timeout_close_dialog = v
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('timeout_close_dialog', self._timeout_close_dialog)
-
-    @property
-    def timeout_grpc(self):
-        return self._timeout_grpc
-
-    @timeout_grpc.setter
-    def timeout_grpc(self, value):
-        v = float(value)
-        if self._timeout_grpc != v:
-            self._timeout_grpc = v
-            nmd_settings.GRPC_TIMEOUT = self._timeout_grpc
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('timeout_grpc', self._timeout_grpc)
-
-    @property
-    def sysmon_default_interval(self):
-        return self._sysmon_default_interval
-
-    @sysmon_default_interval.setter
-    def sysmon_default_interval(self, length):
-        self._sysmon_default_interval = length
-        settings = self.qsettings(self.CFG_FILE)
-        settings.setValue('sysmon_default_interval', self._sysmon_default_interval)
-
-    @property
-    def use_diagnostics_agg(self):
-        return self._use_diagnostics_agg
-
-    @use_diagnostics_agg.setter
-    def use_diagnostics_agg(self, value):
-        val = self.str2bool(value)
-        if self._use_diagnostics_agg != val:
-            self._use_diagnostics_agg = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('use_diagnostics_agg', self._use_diagnostics_agg)
-
-    @property
-    def group_nodes_by_namespace(self):
-        return self._group_nodes_by_namespace
-
-    @group_nodes_by_namespace.setter
-    def group_nodes_by_namespace(self, value):
-        val = self.str2bool(value)
-        if self._group_nodes_by_namespace != val:
-            self._group_nodes_by_namespace = val
-            settings = self.qsettings(self.CFG_FILE)
-            settings.setValue('group_nodes_by_namespace', self._group_nodes_by_namespace)
 
     def host_color(self, host, default_color):
         if self.colorize_hosts:
@@ -744,10 +623,9 @@ class Settings(object):
         return '%s %s "%s" %s -%s %s' % (self._terminal_emulator, self._terminal_title, title, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
-        from python_qt_binding.QtCore import QSettings
         path = settings_file
         if not settings_file.startswith(os.path.sep):
-            path = os.path.join(self.cfg_path, settings_file)
+            path = os.path.join(self.CFG_PATH, settings_file)
         return QSettings(path, QSettings.IniFormat)
 
     def init_hosts_color_list(self):

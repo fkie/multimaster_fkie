@@ -43,6 +43,7 @@ import rospy
 import ruamel.yaml
 import sys
 import threading
+import traceback
 
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox
@@ -73,7 +74,6 @@ class MyComboBox(QComboBox):
 
     def __init__(self, parent=None):
         QComboBox.__init__(self, parent=parent)
-        self.parameter_description = None
 
     def keyPressEvent(self, event):
         key_mod = QApplication.keyboardModifiers()
@@ -87,9 +87,183 @@ class MyComboBox(QComboBox):
                             self.remove_item_signal.emit(curr_text)
                             self.clearEditText()
             except Exception:
-                import traceback
                 print(traceback.format_exc(1))
         QComboBox.keyPressEvent(self, event)
+
+
+class ValueWidget(QWidget):
+    '''
+    '''
+
+    def __init__(self, parameter_description, parent=None):
+        QWidget.__init__(self, parent=parent)
+        self.parameter_description = parameter_description
+        self._value_widget = None
+        self.warn_label = QLabel(parent=self)
+        self.help_label = QLabel(parameter_description.hint, parent=self)
+        vw = QWidget(self)
+        hlayout = QHBoxLayout(vw)
+        hlayout.setContentsMargins(0, 0, 0, 0)
+        hlayout.addWidget(self._create_input_widget())
+        if parameter_description.hint:
+            # add help button if hint is available
+            self.help_button = QPushButton(QIcon(':/icons/info.png'), '')
+            self.help_button.setFlat(True)
+            self.help_button.setMaximumSize(20, 20)
+            self.help_button.setCheckable(True)
+            self.help_button.toggled.connect(self._on_help_toggled)
+            hlayout.addWidget(self.help_button)
+        vlayout = QVBoxLayout(self)
+        vlayout.setContentsMargins(0, 0, 0, 0)
+        vlayout.setSpacing(1)
+        vlayout.addWidget(vw)
+        # add label to show warnings on wrong input value
+        self.warn_label.setWordWrap(True)
+        vlayout.addWidget(self.warn_label)
+        self.warn_label.setVisible(False)
+        self.warn_label.setStyleSheet("QLabel { color: %s;}" % QColor(255, 83, 13).name())
+        # help label
+        self.help_label.setWordWrap(True)
+        self.help_label.setStyleSheet("QLabel { background: %s;}" % QColor(255, 255, 235).name())
+        vlayout.addWidget(self.help_label)
+        self.help_label.setVisible(False)
+
+    def current_text(self):
+        result = ''
+        if isinstance(self._value_widget, QCheckBox):
+            result = repr(self._value_widget.isChecked())
+        elif isinstance(self._value_widget, MyComboBox):
+            result = self._value_widget.currentText()
+        elif isinstance(self._value_widget, QLineEdit):
+            result = self._value_widget.text()
+        elif isinstance(self._value_widget, QLabel):
+            result = self._value_widget.text()
+        return result
+
+    def set_value(self, value):
+        if isinstance(self._value_widget, QCheckBox):
+            bval = value
+            if not isinstance(value, bool):
+                bval = str2bool(value[0] if isinstance(value, list) else value)
+            self._value_widget.setChecked(bval)
+        elif isinstance(self._value_widget, MyComboBox):
+            self._value_widget.setEditText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
+        elif isinstance(self._value_widget, QLabel):
+            self._value_widget.setText(value)
+        elif isinstance(self._value_widget, QLineEdit):
+            # avoid ' or " that escapes the string values
+            self._value_widget.setText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
+
+    def add_cached_values(self):
+        if isinstance(self._value_widget, MyComboBox):
+            fullname = self.parameter_description.fullName()
+            values = nm.history().cachedParamValues(fullname)
+            for i in range(self._value_widget.count()):
+                try:
+                    values.remove(self._value_widget.itemText(i))
+                except ValueError:
+                    pass
+                except Exception:
+                    print(traceback.format_exc())
+            if self._value_widget.count() == 0:
+                values.insert(0, '')
+            self._value_widget.addItems(values)
+
+    def _create_input_widget(self):
+        pd = self.parameter_description
+        value = pd._value
+        if 'bool' in pd.baseType():
+            # add checkbox to edit boolean value
+            cb = QCheckBox(parent=self)
+            cb.setObjectName(pd.name())
+            if not isinstance(value, bool):
+                value = str2bool(value[0] if isinstance(value, list) else value)
+            pd._value_org = value
+            cb.setChecked(value)
+            cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            cb.setMinimumHeight(20)
+            self._value_widget = cb
+            return cb
+        elif pd.read_only:
+            # read only value are added as label
+            label = QLabel(value, parent=self)
+            label.setMinimumHeight(20)
+            label.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            self._value_widget = label
+            return label
+        else:
+            # all other are added as combobox
+            cb = MyComboBox(parent=self)
+            cb.setObjectName(pd.name())
+            cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            cb.setEditable(True)
+            cb.remove_item_signal.connect(pd.removeCachedValue)
+            cb.editTextChanged.connect(self._check_text)
+            items = []
+            if isinstance(value, list):
+                if pd.isArrayType():
+                    items.append(','.join([utf8(val) for val in value]))
+                else:
+                    items[len(items):] = value
+            else:
+                if value is not None and value:
+                    items.append(utf8(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
+                elif pd.isTimeType():
+                    items.append('now')
+            if ':alt' in pd._tags:
+                # add alternative values
+                try:
+                    for alt_value in pd._tags[':alt']:
+                        if alt_value not in items:
+                            items.append(alt_value)
+                except Exception as err:
+                    rospy.logwarn('Can not add alternative values to %s: %s' % (pd.name(), utf8(err)))
+            pd._value_org = items[0] if items else ''
+            cb.addItems(items)
+            self._value_widget = cb
+            if pd.path_type:
+                # add path editor if path type is defined
+                fd = QWidget(self)
+                hlayout = QHBoxLayout(fd)
+                hlayout.setContentsMargins(0, 0, 0, 0)
+                hlayout.addWidget(cb)
+                self.path_button = QPushButton('...')
+                self.path_button.setFlat(True)
+                self.path_button.setMaximumSize(20, 20)
+                self.path_button.clicked.connect(self._on_file_dialog_clicked)
+                hlayout.addWidget(self.path_button)
+                return fd
+            else:
+                return cb
+
+    def _check_text(self, text=''):
+        '''
+        Checks the content of the combobox for valid type
+        '''
+        try:
+            self.parameter_description.updateValue(text)
+            # self.combobox.setStyleSheet('')
+            self.warn_label.setVisible(False)
+        except Exception as err:
+            self.warn_label.setText(utf8(err))
+            # bg_style = "MyComboBox { background: %s;}" % QColor(255, 83, 13).name()
+            # self.combobox.setStyleSheet("%s" % (bg_style))
+            self.warn_label.setVisible(True)
+
+    def _on_file_dialog_clicked(self):
+        # Workaround for QFileDialog.getExistingDirectory because it do not
+        # select the configuration folder in the dialog
+        self.dialog = QFileDialog(self, caption=self.parameter_description.hint)
+        self.dialog.setOption(QFileDialog.HideNameFilterDetails, True)
+        if self.parameter_description.path_type == 'dir':
+            self.dialog.setFileMode(QFileDialog.Directory)
+        self.dialog.setDirectory(self._value_widget.currentText())
+        if self.dialog.exec_():
+            fileNames = self.dialog.selectedFiles()
+            self._value_widget.setEditText(fileNames[0])
+
+    def _on_help_toggled(self, checked):
+        self.help_label.setVisible(checked)
 
 
 class ParameterDescription(object):
@@ -103,7 +277,10 @@ class ParameterDescription(object):
         self._value = None
         self._value_org = None
         self.read_only = False
+        self.path_type = ''
         self.hint = ''
+        self._min = None
+        self._max = None
         self._tags = {}
         self._read_value(value)
         self._widget = widget
@@ -125,14 +302,19 @@ class ParameterDescription(object):
                         self.read_only = val
                     elif key == ':hint':
                         self.hint = val
-                    #:TODO: add :min, :max tags
+                    elif key == ':path':
+                        self.path_type = val
+                    elif key == ':min':
+                        self._min = val
+                    elif key == ':max':
+                        self._max = val
                     self._tags[key] = val
         else:
             self._value = value
             self._value_org = value
 
     def __repr__(self):
-        return "%s [%]" % (self._name, self._type)
+        return "%s [%s]: %s" % (self._name, self._type, utf8(self._value))
 
     @classmethod
     def is_primitive_type(cls, value_type):
@@ -158,7 +340,6 @@ class ParameterDescription(object):
     def setWidget(self, widget):
         self._widget = widget
         if widget is not None:
-            widget.parameter_description = self
             self.addCachedValuesToWidget()
 
     def widget(self):
@@ -202,92 +383,96 @@ class ParameterDescription(object):
         if self.read_only:
             # do no change any values
             return
-        field = self.widget()
-        result = ''
-        if isinstance(field, QCheckBox):
-            result = repr(field.isChecked())
-        elif isinstance(field, QLineEdit):
-            result = field.text()
-        elif isinstance(field, QComboBox):
-            result = field.currentText()
-        self.updateValue(result)
+        result = self.widget().current_text()
+        self._value = self.updateValue(result, raise_on_min_max=False)
+        if self.changed():
+            nm.history().addParamCache(self.fullName(), self._value)
 
-    def updateValue(self, value):
+    def updateValue(self, value, raise_on_min_max=True):
+        rvalue = value
         try:
             if isinstance(value, (dict, list)):
-                self._value = value
+                rvalue = value
             elif value:
-                nm.history().addParamCache(self.fullName(), value)
                 if self.isArrayType():
                     if 'int' in self.baseType() or 'byte' in self.baseType():
-                        self._value = map(int, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = map(int, value.lstrip('[').rstrip(']').split(','))
                     elif 'float' in self.baseType():
-                        self._value = map(float, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = map(float, value.lstrip('[').rstrip(']').split(','))
                     elif 'bool' in self.baseType():
-                        self._value = map(str2bool, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = map(str2bool, value.lstrip('[').rstrip(']').split(','))
                     elif self.isBinaryType():
-                        self._value = value
+                        rvalue = value
                     else:
                         try:
-                            self._value = ruamel.yaml.load("[%s]" % value, Loader=ruamel.yaml.Loader)
+                            rvalue = ruamel.yaml.load("[%s]" % value, Loader=ruamel.yaml.Loader)
                             # if there is no YAML, load() will return an
                             # empty string.  We want an empty dictionary instead
                             # for our representation of empty.
-                            if self._value is None:
-                                self._value = []
+                            if rvalue is None:
+                                rvalue = []
                         except ruamel.yaml.MarkedYAMLError, e:
                             raise Exception("Field [%s] yaml error: %s" % (self.fullName(), utf8(e)))
-                    if self.arrayLength() is not None and self.arrayLength() != len(self._value):
-                        raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(self._value)), " != ", str(self.arrayLength())]))
+                    if self.arrayLength() is not None and self.arrayLength() != len(rvalue):
+                        raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(rvalue)), " != ", str(self.arrayLength())]))
                 else:
                     if 'int' in self.baseType() or 'byte' in self.baseType():
-                        self._value = int(value)
+                        rvalue = int(value)
                     elif 'float' in self.baseType():
-                        self._value = float(value)
+                        rvalue = float(value)
                     elif 'bool' in self.baseType():
                         if isinstance(value, bool):
-                            self._value = value
+                            rvalue = value
                         else:
-                            self._value = str2bool(value)
+                            rvalue = str2bool(value)
                     elif self.isBinaryType():
-                        self._value = utf8(value)
+                        rvalue = utf8(value)
                     elif self.isTimeType():
                         if value == 'now':
-                            self._value = 'now'
+                            rvalue = 'now'
                         else:
                             try:
                                 val = eval(value)
                                 if isinstance(val, dict):
-                                    self._value = val
+                                    rvalue = val
                                 else:
                                     secs = int(val)
                                     nsecs = int((val - secs) * 1000000000)
-                                    self._value = {'secs': secs, 'nsecs': nsecs}
+                                    rvalue = {'secs': secs, 'nsecs': nsecs}
                             except Exception:
-                                self._value = {'secs': 0, 'nsecs': 0}
+                                rvalue = {'secs': 0, 'nsecs': 0}
                     else:
-                        self._value = value.encode(sys.getfilesystemencoding())
+                        rvalue = value.encode(sys.getfilesystemencoding())
             else:
                 if self.isArrayType():
                     arr = []
-                    self._value = arr
+                    rvalue = arr
                 else:
                     if 'int' in self.baseType() or 'byte' in self.baseType():
-                        self._value = 0
+                        rvalue = 0
                     elif 'float' in self.baseType():
-                        self._value = 0.0
+                        rvalue = 0.0
                     elif 'bool' in self.baseType():
-                        self._value = False
+                        rvalue = False
                     elif self.isBinaryType():
-                        self._value = utf8(value)
+                        rvalue = utf8(value)
                     elif self.isTimeType():
-                        self._value = {'secs': 0, 'nsecs': 0}
+                        rvalue = {'secs': 0, 'nsecs': 0}
                     else:
-                        self._value = ''
-            nm.history().addParamCache(self.fullName(), value)
+                        rvalue = ''
         except Exception, e:
             raise Exception("Error while set value '%s', for '%s': %s" % (utf8(value), self.fullName(), utf8(e)))
-        return self._value
+        if self._min is not None:
+            if rvalue < self._min:
+                if raise_on_min_max:
+                    raise Exception("%s is smaller than minimum: %s" % (utf8(rvalue), utf8(self._min)))
+                rvalue = self._min
+        if self._max is not None:
+            if rvalue > self._max:
+                if raise_on_min_max:
+                    raise Exception("%s is greater than maximum: %s" % (utf8(rvalue), utf8(self._max)))
+                rvalue = self._max
+        return rvalue
 
     def value(self, with_tags=False):
         if not self.isPrimitiveType() and not self.widget() is None:
@@ -307,47 +492,7 @@ class ParameterDescription(object):
     def createTypedWidget(self, parent):
         result = None
         if self.isPrimitiveType():
-            value = self._value
-            if 'bool' in self.baseType():
-                result = QCheckBox(parent=parent)
-                result.setObjectName(self.name())
-                if not isinstance(value, bool):
-                    value = str2bool(value[0] if isinstance(value, list) else value)
-                self._value_org = value
-                result.setChecked(value)
-            elif self.read_only:
-                result = QLabel(value, parent=parent)
-            else:
-                result = MyComboBox(parent=parent)
-                result.setObjectName(self.name())
-                result.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
-                result.setEditable(True)
-                result.remove_item_signal.connect(self.removeCachedValue)
-                items = []
-                if isinstance(value, list):
-                    if self.isArrayType():
-                        items.append(','.join([utf8(val) for val in value]))
-                    else:
-                        items[len(items):] = value
-                else:
-                    if value is not None and value:
-                        items.append(utf8(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
-                    elif self.isTimeType():
-                        items.append('now')
-                if ':alt' in self._tags:
-                    try:
-                        for alt_value in self._tags[':alt']:
-                            if alt_value not in items:
-                                items.append(alt_value)
-                    except Exception as err:
-                        rospy.logwarn('Can not add alternative values to %s: %s' % (self.name(), utf8(err)))
-                self._value_org = items[0] if items else ''
-                result.addItems(items)
-                if self.read_only:
-                    result.setEnabled(False)
-            if self.hint:
-                result.setToolTip(self.hint)
-                result.setWhatsThis(self.hint)
+            result = ValueWidget(self, parent)
         else:
             if self.isArrayType():
                 result = ArrayBox(self.name(), self._type, dynamic=self.arrayLength() is None, parent=parent)
@@ -356,61 +501,52 @@ class ParameterDescription(object):
         return result
 
     def addCachedValuesToWidget(self):
-        if isinstance(self.widget(), QComboBox):
-            values = nm.history().cachedParamValues(self.fullName())
-            for i in range(self.widget().count()):
-                try:
-                    values.remove(self.widget().itemText(i))
-                except Exception:
-                    pass
-            if self.widget().count() == 0:
-                values.insert(0, '')
-            self.widget().addItems(values)
+        if isinstance(self.widget(), ValueWidget):
+            self.widget().add_cached_values()
 
 
-class MainBox(QWidget):
+class MainBox(QFrame):
     '''
     Groups the parameter without visualization of the group. It is the main widget.
     '''
 
     def __init__(self, name, param_type, collapsible=True, parent=None):
-        QWidget.__init__(self, parent)
+        QFrame.__init__(self, parent)
         self.setObjectName(name)
         self.name = name
         self.type_msg = param_type
         self.params = []
         self.collapsed = False
         self.parameter_description = None
-        vLayout = QVBoxLayout()
-        vLayout.setSpacing(0)
-        self.options_layout = QHBoxLayout()
-        self.param_widget = QFrame()
-        self.name_label = QLabel(name)
-        font = self.name_label.font()
-        font.setBold(True)
-        self.name_label.setFont(font)
-        self.type_label = QLabel(''.join([' (', param_type, ')']))
+        vLayout = QVBoxLayout(self)
+        vLayout.setContentsMargins(1, 1, 1, 1)
+        vLayout.setSpacing(1)
+        self.param_widget = QFrame(self)
         self.collapsible = collapsible
         if collapsible:
+            self.options_layout = QHBoxLayout()
+            self.options_layout.setContentsMargins(1, 1, 1, 1)
+            self.options_layout.setSpacing(1)
             self.hide_button = QPushButton('-')
             self.hide_button.setFlat(True)
             self.hide_button.setMaximumSize(20, 20)
             self.hide_button.clicked.connect(self._on_hide_clicked)
+            self.name_label = QLabel(name)
+            font = self.name_label.font()
+            font.setBold(True)
+            self.name_label.setFont(font)
             self.options_layout.addWidget(self.hide_button)
             self.options_layout.addWidget(self.name_label)
+            self.type_label = QLabel('(%s)' % param_type)
             self.options_layout.addWidget(self.type_label)
             self.options_layout.addStretch()
-
             vLayout.addLayout(self.options_layout)
-
-            self.param_widget.setFrameShape(QFrame.Box)
-            self.param_widget.setFrameShadow(QFrame.Raised)
-
-        boxLayout = QFormLayout()
-        boxLayout.setVerticalSpacing(0)
-        self.param_widget.setLayout(boxLayout)
+            self.param_widget.setFrameShape(QFrame.StyledPanel)
+            self.param_widget.setFrameShadow(QFrame.Sunken)
+        boxLayout = QFormLayout(self.param_widget)
+        boxLayout.setContentsMargins(3, 3, 3, 3)
+        boxLayout.setVerticalSpacing(1)
         vLayout.addWidget(self.param_widget)
-        self.setLayout(vLayout)
         if param_type in ['std_msgs/Header']:
             self.setCollapsed(True)
 
@@ -431,8 +567,7 @@ class MainBox(QWidget):
             if isinstance(value, (dict, list)):
                 self._createFieldFromDict(value, clear_origin_value=clear_origin_value)
         except Exception:
-            import traceback
-            traceback.format_exc()
+            print(traceback.format_exc())
         finally:
             self.setUpdatesEnabled(True)
 
@@ -481,9 +616,10 @@ class MainBox(QWidget):
                     layout.addRow(field)
                 else:
                     # we have e simple parameter, create label for it
-                    label_name = name if _type == 'string' else '%s (%s)' % (name, _type)
+                    label_name = name if _type in ['string', 'str', 'unicode', 'bool'] else '%s (%s)' % (name, _type)
                     label = QLabel(label_name, self)
                     label.setObjectName('%s_label' % name)
+                    label.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
                     hint = field.toolTip()
                     if hint:
                         label.setToolTip(hint)
@@ -503,8 +639,8 @@ class MainBox(QWidget):
         for param in self.params:
             if not param.isBinaryType():
                 if param.isPrimitiveType():
+                    val = param.value(with_tags=with_tags)
                     if param.changed() or not only_changed:
-                        val = param.value(with_tags=with_tags)
                         result[param.name()] = val
                 else:
                     val = param.value(with_tags=with_tags)
@@ -515,8 +651,8 @@ class MainBox(QWidget):
     def set_values(self, values):
         '''
         Sets the values for existing fields. Used e.g. while load parameter from file
-        :param values: the dictionary with values to set.
-        :type values: dict
+
+        :param dict values: the dictionary with values to set.
         :raise Exception: on errors
         '''
         if isinstance(values, dict):
@@ -536,15 +672,7 @@ class MainBox(QWidget):
                     if isinstance(field, (GroupBox, ArrayBox)):
                         field.set_values(value)
                     else:
-                        if isinstance(field, QCheckBox):
-                            if not isinstance(value, bool):
-                                value = str2bool(value[0] if isinstance(value, list) else value)
-                            field.setChecked(value)
-                        elif isinstance(field, QLineEdit):
-                            # avoid ' or " that escapes the string values
-                            field.setText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
-                        elif isinstance(field, QComboBox):
-                            field.setEditText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
+                        field.set_value(value)
         elif isinstance(values, list):
             raise Exception("Setting 'list' values in MainBox or GroupBox not supported!!!")
 
@@ -572,26 +700,31 @@ class MainBox(QWidget):
                 child.removeAllFields()
                 self.param_widget.layout().removeWidget(child)
 
-    def filter(self, arg):
+    def filter(self, arg, force_show=False):
         '''
         Hide the parameter input field, which label dosn't contains the C{arg}.
+
         :param str arg: the filter text
+        :param bool force_show: override filter, if group is shown
         '''
         result = False
         for child in self.param_widget.children():
             if isinstance(child, (MainBox, GroupBox, ArrayBox)):
-                show = not arg or child.objectName().lower().find(arg.lower()) != -1
-                show = child.filter(arg) or show
+                show = force_show or not arg
+                if not show:
+                    show = child.objectName().lower().find(arg) != -1
+                show = child.filter(arg, force_show=show) or show
                 # hide group, if no parameter are visible
                 child.setVisible(show)
                 if show:
                     child.setCollapsed(False)
                     result = True
-            elif isinstance(child, (QWidget)) and not isinstance(child, (QLabel)) and not isinstance(child, (QFrame)):
+            elif isinstance(child, ValueWidget):
                 label = child.parentWidget().layout().labelForField(child)
                 if label is not None:
-                    has_text = child.objectName().lower().find(arg.lower()) == -1
-                    show = not arg or (not has_text or (hasattr(child, 'currentText') and not has_text))
+                    show = force_show or not arg
+                    if not show:
+                        show = child.current_text().lower().find(arg) != -1 or label.text().lower().find(arg) != -1
                     # set the parent group visible if it is not visible
                     if show and not child.parentWidget().isVisible():
                         child.parentWidget().setVisible(show)
@@ -624,7 +757,7 @@ class ArrayEntry(MainBox):
     '''
 
     def __init__(self, index, param_type, parent=None):
-        MainBox.__init__(self, ''.join(['#', utf8(index)]), param_type, True, parent)
+        MainBox.__init__(self, '#%s' % utf8(index), param_type, True, parent)
         self.index = index
         self.setObjectName(''.join(['[', utf8(index), ']']))
         self.param_widget.setFrameShape(QFrame.Box)
@@ -709,8 +842,7 @@ class ArrayBox(MainBox):
                 item.widget().setParent(None)
                 del item
             except Exception:
-                import traceback
-                print(traceback.format_exc(1))
+                print(traceback.format_exc(3))
             self.count_label.setText(utf8(self._dynamic_items_count))
 
     def createFieldFromValue(self, value, clear_origin_value=False):
@@ -720,6 +852,8 @@ class ArrayBox(MainBox):
                 self.addDynamicBox()
                 self._dynamic_value = value
                 self.set_values(value)
+        except Exception:
+            print(traceback.format_exc(1))
         finally:
             self.setUpdatesEnabled(True)
 
@@ -728,6 +862,7 @@ class ArrayBox(MainBox):
         Goes through the list and creates dictionary with values of each element.
         Returns a list with dictionaries, e.g. [{name: value}, {name: value}].
         If with_tags is True the result is a dictionary, e.g. {':type': type[], ':value': [{name: value}, {name: value}]}
+
         :rtype: list or dict, if with_tags==True
         '''
         result_list = list()
@@ -746,8 +881,8 @@ class ArrayBox(MainBox):
     def set_values(self, values):
         '''
         Create a list of the elements and sets their values.
-        :param values: The list of dictionaries with parameter values
-        :type values: list
+
+        :param list values: The list of dictionaries with parameter values
         '''
         if isinstance(values, list):
             count_entries = 0
@@ -789,6 +924,7 @@ class ParameterDialog(QDialog):
     def __init__(self, params=dict(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, sidebar_var='', parent=None, store_geometry=''):
         '''
         Creates an input dialog.
+
         :param dict params: a (recursive) dictionary with parameter names and their values.
         A value can be of primitive type (int, bool, string), a list or dictionary. If it is
         of list type, the list should contains dictionaries with parameter and values.
@@ -803,6 +939,7 @@ class ParameterDialog(QDialog):
         -':min': minimum value
         -':max': maximum value
         -':alt': a list of alternative values
+        -'path': 'dir' or 'file'
         :param str sidebar_var: the name of the key in first level of params. Creates a sidebar if
         it is not empty. Cached and alternative values are used to fill the sidebar.
         '''
@@ -812,34 +949,30 @@ class ParameterDialog(QDialog):
         self.__current_path = nm.settings().current_dialog_path
         self.horizontalLayout = QHBoxLayout(self)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.horizontalLayout.setContentsMargins(1, 1, 1, 1)
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout.setSpacing(0)
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
-        self.verticalLayout.setContentsMargins(1, 1, 1, 1)
+        self.verticalLayout.setContentsMargins(3, 3, 3, 3)
         # add filter row
-        self.filter_frame = QFrame(self)
-        filterLayout = QHBoxLayout(self.filter_frame)
-        filterLayout.setContentsMargins(1, 1, 1, 1)
-        label = QLabel("Filter:", self.filter_frame)
-        self.filter_field = EnhancedLineEdit(self.filter_frame)
-        filterLayout.addWidget(label)
-        filterLayout.addWidget(self.filter_field)
+        self.filter_field = EnhancedLineEdit(self)
+        self.filter_field.setPlaceholderText("filter")
         self.filter_field.textChanged.connect(self._on_filter_changed)
         self.filter_visible = True
 
-        self.verticalLayout.addWidget(self.filter_frame)
+        self.verticalLayout.addWidget(self.filter_field)
 
         # create area for the parameter
         self.scrollArea = scrollArea = ScrollArea(self)
         scrollArea.setObjectName("scrollArea")
-        scrollArea.setWidgetResizable(True)
         self.content = MainBox('/', 'string', False, self)
+        scrollArea.setFrameStyle(QFrame.NoFrame)
         scrollArea.setWidget(self.content)
+        scrollArea.setWidgetResizable(True)
         self.verticalLayout.addWidget(scrollArea)
 
         # add info text field
         self.info_field = QTextEdit(self)
-        self.info_field.setVisible(False)
         palette = QPalette()
         brush = QBrush(QColor(255, 254, 242))
         brush.setStyle(Qt.SolidPattern)
@@ -856,6 +989,7 @@ class ParameterDialog(QDialog):
         self.info_field.setTextInteractionFlags(Qt.LinksAccessibleByKeyboard | Qt.LinksAccessibleByMouse | Qt.TextBrowserInteraction | Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self.info_field.setObjectName("dialog_info_field")
         self.verticalLayout.addWidget(self.info_field)
+        self.info_field.setVisible(False)
 
         # create buttons
         self.buttonBox = QDialogButtonBox(self)
@@ -869,11 +1003,11 @@ class ParameterDialog(QDialog):
 
         # add side bar for checklist
         values = nm.history().cachedParamValues('/%s' % sidebar_var)
-        self.sidebar_frame = QFrame()
+        self.sidebar_frame = QFrame(self)
         self.sidebar_frame.setObjectName(sidebar_var)
         sidebarframe_verticalLayout = QVBoxLayout(self.sidebar_frame)
         sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
-        sidebarframe_verticalLayout.setContentsMargins(1, 1, 1, 1)
+        sidebarframe_verticalLayout.setContentsMargins(3, 3, 3, 3)
         self._sidebar_selected = 0
         if len(values) > 1 and sidebar_var in params:
             self.horizontalLayout.addWidget(self.sidebar_frame)
@@ -890,10 +1024,13 @@ class ParameterDialog(QDialog):
             self.sidebar_frame.layout().addItem(QSpacerItem(100, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # set the input fields
         if params:
-            self.content.createFieldFromValue(params)
-            self.setInfoActive(False)
+            try:
+                self.content.createFieldFromValue(params)
+                self.setInfoActive(False)
+            except Exception:
+                print(traceback.format_exc())
 
-        if self.filter_frame.isVisible():
+        if self.filter_field.isVisible():
             self.filter_field.setFocus()
         # restore from configuration file
         self._geometry_name = store_geometry
@@ -906,6 +1043,9 @@ class ParameterDialog(QDialog):
             if pos.x() != 0 and pos.y() != 0:
                 self.move(pos)
             settings.endGroup()
+
+    def __del__(self):
+        self.content.removeAllFields()
 
     def _on_sidebar_stateChanged(self, state):
         if state == Qt.Checked:
@@ -935,17 +1075,17 @@ class ParameterDialog(QDialog):
         self.buttonBox.addButton(self.save_button, QDialogButtonBox.ActionRole)
 
     def _on_filter_changed(self):
-        self.content.filter(self.filter_field.text())
+        self.content.filter(self.filter_field.text().lower())
 
     def setFilterVisible(self, val):
         '''
         Shows or hides the filter row.
         '''
         self.filter_visible = val
-        self.filter_frame.setVisible(val & self.scrollArea.isHidden())
+        self.filter_field.setVisible(val & self.scrollArea.isHidden())
 
     def add_warning(self, message):
-        label = QLabel()
+        label = QLabel(self)
         label.setWordWrap(True)
         label.setText(''.join(["<font color='red'>Warning!\n", message, "</font>"]))
         self.verticalLayout.insertWidget(1, label)
@@ -953,6 +1093,7 @@ class ParameterDialog(QDialog):
     def setText(self, text):
         '''
         Adds a label to the dialog's layout and shows the given text.
+
         :param str text: the text to add to the dialog
         '''
         self.info_field.setText(text)
@@ -962,17 +1103,18 @@ class ParameterDialog(QDialog):
         '''
         Activates or deactivates the info field of this dialog. If info field is
         activated, the filter frame and the input field are deactivated.
+
         :param bool val: state
         '''
         if val and self.info_field.isHidden():
-            self.filter_frame.setVisible(False & self.filter_visible)
+            self.filter_field.setVisible(False & self.filter_visible)
             self.scrollArea.setVisible(False)
             self.info_field.setVisible(True)
         elif not val and self.scrollArea.isHidden():
-            self.filter_frame.setVisible(True & self.filter_visible)
+            self.filter_field.setVisible(True & self.filter_visible)
             self.scrollArea.setVisible(True)
             self.info_field.setVisible(False)
-            if self.filter_frame.isVisible():
+            if self.filter_field.isVisible():
                 self.filter_field.setFocus()
 
     def setFocusField(self, field_label):
@@ -1010,14 +1152,14 @@ class ParameterDialog(QDialog):
                 result_value[sidebar_name][':value'] = [v for v in set(sidebar_list)]
             else:
                 result_value[sidebar_name] = [v for v in set(sidebar_list)]
-        self.content.removeAllFields()
         return result_value
 
     def keywords2params(self, keywords):
         '''
         Resolves the dictionary values to ROS parameter names.
-        @param keywords: the result of the getKeywords
-        @return: dictionary of (ROS parameter name : value)
+
+        :param keywords: the result of the getKeywords
+        :return: dictionary of (ROS parameter name : value)
         '''
         result = dict()
         for param, value in keywords.items():
@@ -1059,7 +1201,6 @@ class ParameterDialog(QDialog):
                 with open(fileName, 'w+') as f:
                     f.write(buf.getvalue())
         except Exception as e:
-            import traceback
             print(traceback.format_exc(3))
             MessageBox.warning(self, "Save parameter Error",
                                'Error while save parameter',
@@ -1077,7 +1218,6 @@ class ParameterDialog(QDialog):
                     # print yaml.load(f.read())
                     self.content.set_values(ruamel.yaml.load(f.read(), Loader=ruamel.yaml.Loader))
         except Exception as e:
-            import traceback
             print(traceback.format_exc())
             MessageBox.warning(self, "Load parameter Error",
                                'Error while load parameter',
@@ -1106,7 +1246,6 @@ class ParameterDialog(QDialog):
         self._store_geometry()
         self.setResult(QDialog.Rejected)
         self.rejected.emit()
-        self.content.removeAllFields()
         self.hide()
 
     def hideEvent(self, event):
@@ -1117,6 +1256,8 @@ class ParameterDialog(QDialog):
         Test the open files for changes and save this if needed.
         '''
         self.setAttribute(Qt.WA_DeleteOnClose, True)
+        if self.result() == QDialog.Accepted:
+            event.setAccepted(False)
         QDialog.closeEvent(self, event)
 
 
@@ -1176,8 +1317,7 @@ class MasterParameterDialog(ParameterDialog):
                 else:
                     self.close()
             except Exception, e:
-                import traceback
-                print(traceback.format_exc(1))
+                print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
         elif self.masteruri is None:
             MessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI')
@@ -1221,8 +1361,7 @@ class MasterParameterDialog(ParameterDialog):
                 else:
                     MessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!')
             except ValueError, e:
-                import traceback
-                print(traceback.format_exc(1))
+                print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
 
     def _on_param_list(self, masteruri, code, msg, params):
@@ -1289,9 +1428,8 @@ class MasterParameterDialog(ParameterDialog):
             try:
                 self.content.createFieldFromValue(dia_params, clear_origin_value=new_param)
                 self.setInfoActive(False)
-            except Exception, e:
-                import traceback
-                print(traceback.format_exc(1))
+            except Exception as e:
+                print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
         else:
             self.setText(msg)
@@ -1313,7 +1451,6 @@ class MasterParameterDialog(ParameterDialog):
         else:
             errmsg = msg if msg else 'Unknown error on set parameter'
         if errmsg:
-            import traceback
             print(traceback.format_exc(2))
             MessageBox.warning(self, self.tr("Warning"), utf8(errmsg))
             self.is_delivered = False
@@ -1333,8 +1470,8 @@ class ServiceDialog(ParameterDialog):
 
     def __init__(self, service, parent=None):
         '''
-        @param service: Service to call.
-        @type service: U{fkie_master_discovery.ServiceInfo<http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#fkie_master_discovery.master_info.ServiceInfo>}
+        :param service: Service to call.
+        :type service: U{fkie_master_discovery.ServiceInfo<http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#fkie_master_discovery.master_info.ServiceInfo>}
         '''
         self.service = service
         slots = service.get_service_class(True)._request_class.__slots__
@@ -1379,8 +1516,7 @@ class ServiceDialog(ParameterDialog):
             req, resp = nm.starter().callService(self.service.uri, self.service.name, self.service.get_service_class(), [params])
             self.service_resp_signal.emit(utf8(repr(req)), utf8(repr(resp)))
         except Exception, e:
-            import traceback
-            print(traceback.format_exc(1))
+            print(traceback.format_exc(2))
             rospy.logwarn("Error while call service '%s': %s", utf8(self.service.name), utf8(e))
             self.service_resp_signal.emit(utf8(repr(req)), utf8(e))
 
@@ -1411,7 +1547,6 @@ class ServiceDialog(ParameterDialog):
                             subresult[':type'] = msg_type
                             result[slot] = subresult
                 except ValueError, e:
-                    import traceback
                     print(traceback.format_exc())
                     rospy.logwarn("Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result

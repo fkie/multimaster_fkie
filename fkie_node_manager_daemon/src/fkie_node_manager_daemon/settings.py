@@ -75,7 +75,7 @@ class Settings:
             'global': {
                 'version': {':value': self.version, ':ro': True},
                 'file': {':value': self.filename, ':ro': True},
-                'grpc_timeout': {':value': 15.0, ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
+                'grpc_timeout': {':value': 15.0, ':type': 'float', ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
                 'use_diagnostics_agg': {':value': False, ':hint': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'"},
                 'reset': {':value': False, ':hint': 'if this flag is set to True the configuration will be reseted'},
             },
@@ -83,21 +83,21 @@ class Settings:
             {
                 'CPU':
                 {
-                    'load_warn_level': {':value': 0.9, ':hint': 'warn if more than one CPU core exceeds this percentage'},
+                    'load_warn_level': {':value': 0.9, ':type': 'float', ':min': 0, ':max': 1.0, ':hint': 'warn if more than one CPU core exceeds this percentage'},
                 },
                 'Disk':
                 {
-                    'usage_warn_level': {':value': 0.95, ':hint': "warn if used space exceeds this percentage"},
-                    'path': LOG_PATH
+                    'usage_warn_level': {':value': 0.95, ':type': 'float', ':min': 0, ':max': 1.0, ':hint': "warn if used space exceeds this percentage"},
+                    'path': {':value': LOG_PATH, ':hint': "Directory to observe", ':path': 'dir'}
                 },
                 'Memory':
                 {
-                    'usage_warn_level': {':value': 0.95, ':hint': "warn if used memory exceeds this percentage"},
+                    'usage_warn_level': {':value': 0.95, ':type': 'float', ':min': 0, ':max': 1.0, ':hint': "warn if used memory exceeds this percentage"},
                 },
                 'Network':
                 {
-                    'load_warn_level': {':value': 0.9, ':default': 0.9, ':hint': "warn if load exceeds the percentage of the maximum speed"},
-                    'speed': {':value': 6, ':default': 6, ':hint': "Maximal speed in MBit"},
+                    'load_warn_level': {':value': 0.9, ':type': 'float', ':min': 0, ':max': 1.0, ':default': 0.9, ':hint': "warn if load exceeds the percentage of the maximum speed"},
+                    'speed': {':value': 6, ':default': 6, ':type': 'float', ':min': 0, ':hint': "Maximal speed in MBit"},
                     'interface': {':value': '', ':default': '', ':hint': "interface to observe", ':alt': []},
                 }
             }

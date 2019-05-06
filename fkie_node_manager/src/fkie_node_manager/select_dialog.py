@@ -66,18 +66,13 @@ class SelectDialog(QDialog):
 
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.verticalLayout.setContentsMargins(1, 1, 1, 1)
+        self.verticalLayout.setContentsMargins(3, 3, 3, 3)
 
         # add filter row
-        self.filter_frame = QFrame(self)
-        filterLayout = QHBoxLayout(self.filter_frame)
-        filterLayout.setContentsMargins(1, 1, 1, 1)
-        label = QLabel("Filter:", self.filter_frame)
-        self.filter_field = EnhancedLineEdit(self.filter_frame)
-        filterLayout.addWidget(label)
-        filterLayout.addWidget(self.filter_field)
+        self.filter_field = EnhancedLineEdit(self)
+        self.filter_field.setPlaceholderText("filter")
         self.filter_field.textChanged.connect(self._on_filter_changed)
-        self.verticalLayout.addWidget(self.filter_frame)
+        self.verticalLayout.addWidget(self.filter_field)
 
         if description:
             self.description_frame = QFrame(self)
@@ -154,7 +149,7 @@ class SelectDialog(QDialog):
                 self.select_all_checkbox.setCheckState(Qt.Checked)
 
         if not items or len(items) < 7:
-            self.filter_frame.setVisible(False)
+            self.filter_field.setVisible(False)
 
         # restore from configuration file
         self._geometry_name = store_geometry

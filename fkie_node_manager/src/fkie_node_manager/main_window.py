@@ -71,7 +71,6 @@ from .parameter_dialog import ParameterDialog
 from .profile_widget import ProfileWidget
 from .progress_queue import ProgressQueue  # , ProgressThread
 from .select_dialog import SelectDialog
-from .settings_widget import SettingsWidget
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
 
@@ -157,8 +156,6 @@ class MainWindow(QMainWindow):
         # setup settings widget
         self.profiler = ProfileWidget(self, self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.profiler)
-        self.settings_dock = SettingsWidget(self)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.settings_dock)
         # setup logger widget
         self.log_dock = LogWidget()
         self.log_dock.added_signal.connect(self._on_log_added)
@@ -166,6 +163,7 @@ class MainWindow(QMainWindow):
         self.log_dock.setVisible(False)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
         self.logButton.clicked.connect(self._on_log_button_clicked)
+        self.settingsButton.clicked.connect(self._on_settings_button_clicked)
         # setup the launch files view
         self.launch_dock = LaunchFilesWidget()
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
@@ -235,7 +233,6 @@ class MainWindow(QMainWindow):
         self._shortcut_copy.activated.connect(self.descriptionTextEdit.copy)
 
         self.tabifyDockWidget(self.launch_dock, self.descriptionDock)
-        self.tabifyDockWidget(self.launch_dock, self.settings_dock)
         self.tabifyDockWidget(self.launch_dock, self.helpDock)
         self.launch_dock.raise_()
         self.helpDock.setWindowIcon(QIcon(':icons/crystal_clear_helpcenter.png'))
@@ -302,7 +299,6 @@ class MainWindow(QMainWindow):
             self.networkDock.setFeatures(self.networkDock.NoDockWidgetFeatures)
             self.launch_dock.setFeatures(self.launch_dock.NoDockWidgetFeatures)
             self.descriptionDock.setFeatures(self.descriptionDock.NoDockWidgetFeatures)
-            self.settings_dock.setFeatures(self.settings_dock.NoDockWidgetFeatures)
             self.helpDock.setFeatures(self.helpDock.NoDockWidgetFeatures)
             self.log_dock.setFeatures(self.log_dock.NoDockWidgetFeatures)
 
@@ -368,6 +364,22 @@ class MainWindow(QMainWindow):
     def _on_log_button_clicked(self):
         self.log_dock.setVisible(not self.log_dock.isVisible())
 
+    def _on_settings_button_clicked(self):
+        params = nm.settings().yaml()
+        dia = ParameterDialog(params, store_geometry="settings_dialog")
+        dia.setWindowTitle('Node Manager Configuration')
+        if dia.exec_():
+            try:
+                params = dia.getKeywords(only_changed=True, with_tags=True)
+                nm.settings().set_yaml(params)
+            except Exception as err:
+                import traceback
+                print(traceback.format_exc())
+                MessageBox.warning(self, "Configuration error",
+                                   'Error while set parameter',
+                                   '%s' % utf8(err))
+
+
     def _on_log_added(self, info, warn, err, fatal):
         self.logButton.setEnabled(True)
 
@@ -385,8 +397,6 @@ class MainWindow(QMainWindow):
             self.helpDock.setVisible(not checked)
         if self.dockWidgetArea(self.networkDock) == Qt.LeftDockWidgetArea:
             self.networkDock.setVisible(not checked)
-        if self.dockWidgetArea(self.settings_dock) == Qt.LeftDockWidgetArea:
-            self.settings_dock.setVisible(not checked)
         self.hideDocksButton.setArrowType(Qt.RightArrow if checked else Qt.LeftArrow)
 
     def on_currentChanged_tab(self, index):
@@ -954,6 +964,7 @@ class MainWindow(QMainWindow):
         if dia.exec_():
             try:
                 params = dia.getKeywords(only_changed=False, with_tags=False)
+                print("params", params)
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 log_master_discovery = params['Show master discovery log']
                 log_master_sync = params['Show master sync log']
@@ -1960,14 +1971,11 @@ class MainWindow(QMainWindow):
             self.descriptionDock.raise_()
             self.descriptionTextEdit.setFocus(Qt.TabFocusReason)
         elif self._select_index == 3:
-            self.settings_dock.raise_()
-            self.settings_dock.settingsTreeView.setFocus(Qt.TabFocusReason)
-        elif self._select_index == 4:
             self.helpDock.raise_()
             self.textBrowser.setFocus(Qt.TabFocusReason)
-        elif self._select_index == 5:
+        elif self._select_index == 4:
             self.startRobotButton.setFocus(Qt.TabFocusReason)
-        elif self._select_index == 6:
+        elif self._select_index == 5:
             self.hideDocksButton.setFocus(Qt.TabFocusReason)
         else:
             self._select_index = -1
