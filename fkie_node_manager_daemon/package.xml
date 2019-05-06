@@ -7,7 +7,7 @@
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
-  <url>https://github.com/fkie/fkie_multimaster</url>
+  <url>https://github.com/fkie/multimaster_fkie</url>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>diagnostic_msgs</build_depend>

@@ -4,8 +4,8 @@ Node Manager
 
 A GUI to manage the configuration on local and remote ROS masters. For more details see manual_, roswiki_ or use the **(?)** button in the title bar.
 
-.. _manual: http://fkie.github.io/fkie_multimaster/
-.. _roswiki: http://www.ros.org/wiki/fkie_node_manager
+.. _manual: http://fkie.github.io/multimaster_fkie/
+.. _roswiki: http://www.ros.org/wiki/node_manager_fkie
 
 
 Shortcuts
@@ -38,4 +38,4 @@ TODO
 ... write local help
 
 
-.. _master_discovery: http://www.ros.org/wiki/fkie_master_discovery
+.. _master_discovery: http://www.ros.org/wiki/master_discovery_fkie

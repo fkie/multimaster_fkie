@@ -12,7 +12,7 @@
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
-  <url>http://ros.org/wiki/fkie_master_discovery</url>
+  <url>http://ros.org/wiki/master_discovery_fkie</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
