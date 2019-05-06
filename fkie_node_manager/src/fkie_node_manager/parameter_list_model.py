@@ -77,7 +77,6 @@ class ParameterValueItem(QStandardItem):
     @value.setter
     def value(self, value):
         self._value = value
-        self.setText(utf8(value) if not isinstance(value, Binary) else utf8(value))
         if isinstance(value, (str, unicode)) and value.find('\n') > -1:
             self.setSizeHint(QSize(-1, 45))
 
