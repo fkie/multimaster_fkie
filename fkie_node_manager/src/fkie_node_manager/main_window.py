@@ -940,6 +940,7 @@ class MainWindow(QMainWindow):
             text = '%s<dt><b>Version</b>: %s</dt>' % (text, nm.__version__)
         else:
             text = '%s<dt><b>Version</b>: %s (%s)</dt>' % (text, nm.__version__, nm.__date__)
+        text = '%s<dt><b>URL</b>: <a href="https://github.com/fkie/multimaster_fkie">https://github.com/fkie/multimaster_fkie</a></dt>' % (text)
         MessageBox.about(self, 'About Node Manager', text)
 
     def on_master_log_clicked(self):

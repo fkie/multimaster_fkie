@@ -1474,7 +1474,10 @@ class MasterViewProxy(QWidget):
         if node is not None:
             # create description for a node
             ns, sep, name = node.name.rpartition(rospy.names.SEP)
-            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
+            sysmon_setup_str = ''
+            if name == 'node_manager_daemon':
+                sysmon_setup_str = ' (<a href="nmd-cfg://%s">setup</a>)' % (utf8(self.masteruri).replace('http://', ''))
+            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s%s</b></font><br>' % (ns, sep, name, sysmon_setup_str)
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
             if launches or default_cfgs:
