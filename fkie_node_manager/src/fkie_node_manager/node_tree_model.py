@@ -1009,61 +1009,62 @@ class HostItem(GroupItem):
             tooltip += '<p>'
             tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
             tooltip += '<p>'
-            sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
-            sysmon_state_str = 'disable' if self.sysmon_state else 'enable'
-            sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
-            tooltip += '<h3>System Monitoring: (%s) %s</h3>' % (sysmon_switch_str, sysmon_setup_str)
-            if self._diagnostics:
-                for diag in self._diagnostics:
-                    try:
-                        free = None
-                        free_percent = None
-                        stamp = None
-                        others = []
-                        for val in diag.values:
-                            if val.key == 'Free [%]':
-                                free_percent = float(val.value)
-                            elif val.key == 'Free':
-                                free = sizeof_fmt(float(val.value))
-                            elif val.key == 'Timestamp':
-                                stamp = val.value
+            if self.local:
+                sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
+                sysmon_state_str = 'disable' if self.sysmon_state else 'enable'
+                sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
+                tooltip += '<h3>System Monitoring: (%s) %s</h3>' % (sysmon_switch_str, sysmon_setup_str)
+                if self._diagnostics:
+                    for diag in self._diagnostics:
+                        try:
+                            free = None
+                            free_percent = None
+                            stamp = None
+                            others = []
+                            for val in diag.values:
+                                if val.key == 'Free [%]':
+                                    free_percent = float(val.value)
+                                elif val.key == 'Free':
+                                    free = sizeof_fmt(float(val.value))
+                                elif val.key == 'Timestamp':
+                                    stamp = val.value
+                                else:
+                                    others.append((val.key, val.value))
+                            tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (diag.name, stamp)
+                            if diag.level > 0:
+                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                             else:
-                                others.append((val.key, val.value))
-                        tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (diag.name, stamp)
-                        if diag.level > 0:
-                            tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
-                        else:
-                            tooltip += '\n<dt><font color="grey">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
-                        if free is not None:
-                            tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % ('Free', free, free_percent)
-                        has_cpu_processes = False
-                        for key, value in others:
-                            key_fmt = key
-                            val_fmt = value
-                            if '[1s]' in key:
-                                val_fmt = '%s/s' % sizeof_fmt(float(value))
-                                key_fmt = key_fmt.replace(' [1s]', '')
-                            elif '[%]' in key:
-                                val_fmt = '%s%%' % value
-                                key_fmt = key_fmt.replace(' [%]', '')
-                            elif '[degree]' in key:
-                                val_fmt = '%s&deg;C' % value
-                                key_fmt = key_fmt.replace(' [degree]', '')
-                            if key == 'Process load':
-                                kill_ref = ''
-                                pid = self._pid_from_str(val_fmt)
-                                if pid:
-                                    kill_ref = ' <a href="kill-pid://pid%s">kill</a>' % pid
-                                tooltip += '\n<dt><font color="red">%s</font>%s</dt>' % (val_fmt, kill_ref)
-                                has_cpu_processes = True
-                            else:
-                                tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
-                        if not has_cpu_processes and diag.name == 'CPU Load':
-                            for _idx in range(3):
-                                tooltip += '\n<dt><font color="grey">%s</font></dt>' % ('--')
-                    except Exception as err:
-                        tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
-                    tooltip += '<br>'
+                                tooltip += '\n<dt><font color="grey">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                            if free is not None:
+                                tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % ('Free', free, free_percent)
+                            has_cpu_processes = False
+                            for key, value in others:
+                                key_fmt = key
+                                val_fmt = value
+                                if '[1s]' in key:
+                                    val_fmt = '%s/s' % sizeof_fmt(float(value))
+                                    key_fmt = key_fmt.replace(' [1s]', '')
+                                elif '[%]' in key:
+                                    val_fmt = '%s%%' % value
+                                    key_fmt = key_fmt.replace(' [%]', '')
+                                elif '[degree]' in key:
+                                    val_fmt = '%s&deg;C' % value
+                                    key_fmt = key_fmt.replace(' [degree]', '')
+                                if key == 'Process load':
+                                    kill_ref = ''
+                                    pid = self._pid_from_str(val_fmt)
+                                    if pid:
+                                        kill_ref = ' <a href="kill-pid://pid%s">kill</a>' % pid
+                                    tooltip += '\n<dt><font color="red">%s</font>%s</dt>' % (val_fmt, kill_ref)
+                                    has_cpu_processes = True
+                                else:
+                                    tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
+                            if not has_cpu_processes and diag.name == 'CPU Load':
+                                for _idx in range(3):
+                                    tooltip += '\n<dt><font color="grey">%s</font></dt>' % ('--')
+                        except Exception as err:
+                            tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
+                        tooltip += '<br>'
 
         # get sensors
         capabilities = []
