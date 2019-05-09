@@ -1738,7 +1738,7 @@ class MainWindow(QMainWindow):
         includes = nm.nmd().launch.get_included_files_set(path, True, search_in_ext=nm.settings().SEARCH_IN_EXT)
         copy_set = set()
         for inc_file in includes:
-            copy_set.add(inc_file.inc_path)
+            copy_set.add(inc_file)
         for cppath in copy_set:
             self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
                                                       'transfer file %s to %s' % (cppath, nmd_url),
