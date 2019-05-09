@@ -62,8 +62,12 @@ def set_process_name(name):
         buff = create_string_buffer(len(name) + 1)
         buff.value = name
         libc.prctl(15, byref(buff), 0, 0, 0)
-    except:
-        pass
+    except Exception:
+        try:
+            import setproctitle
+            setproctitle.setproctitle(name)
+        except Exception:
+            pass
 
 
 def main():
