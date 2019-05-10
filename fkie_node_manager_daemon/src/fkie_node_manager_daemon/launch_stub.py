@@ -216,10 +216,10 @@ class LaunchStub(object):
                 raise exceptions.ResourceNotFound('', response.status.error_msg)
 
     def _gen_node_list(self, nodes):
-        for name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param in nodes:
-            yield lmsg.Node(name=name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
+        for name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param, cmd_prefix in nodes:
+            yield lmsg.Node(name=name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param, cmd_prefix=cmd_prefix)
 
-    def start_node(self, name, opt_binary='', opt_launch='', loglevel='', logformat='', masteruri='', reload_global_param=False):
+    def start_node(self, name, opt_binary='', opt_launch='', loglevel='', logformat='', masteruri='', reload_global_param=False, cmd_prefix=''):
         '''
         Start node.
 
@@ -227,11 +227,12 @@ class LaunchStub(object):
         :param str opt_binary: the full path of the binary. Used in case of multiple binaries in the same package.
         :param str opt_launch: full name of the launch file to use. Used in case the node with same name exists in more then one loaded launch file.
         :param str loglevel: log level
+        :param str cmd_prefix: custom command prefix. It will be prepended before launch prefix.
         :raise exceptions.StartException: on start errors
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         :raise exceptions.LaunchSelectionRequest: on multiple launch files
         '''
-        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param)]), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param, cmd_prefix)]), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == 0:
                 pass

@@ -199,7 +199,12 @@ message Capability {
 	repeated string nodes = 6;
 }
 
-/** Starts a ROS node by full name. */
+/** Starts a ROS node by full name.
+ * :param str name: full name of the ros node exists in the launch file.
+ * :param str opt_binary: the full path of the binary. Used in case of multiple binaries in the same package.
+ * :param str opt_launch: full name of the launch file to use. Used in case the node with same name exists in more then one loaded launch file.
+ * :param str loglevel: log level
+ * :param str cmd_prefix: custom command prefix. It will be prepended before launch prefix.*/
 message Node {
 	string name = 1;
 	string opt_binary = 2;
@@ -208,6 +213,7 @@ message Node {
 	string logformat = 5;
 	string masteruri = 6;
 	bool reload_global_param = 7;
+	string cmd_prefix = 8;
 }
 
 /** Represents the nodelets specified in Launchfile.

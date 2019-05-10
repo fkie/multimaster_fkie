@@ -1840,7 +1840,7 @@ class MasterViewProxy(QWidget):
         finally:
             self.setCursor(cursor)
 
-    def start_node(self, node, force, config, force_host=None, logging=None, opt_binary=''):
+    def start_node(self, node, force, config, force_host=None, logging=None, opt_binary='', cmd_prefix=''):
 
         if node is None:
             raise DetailedError("Start error", 'None is not valid node name!')
@@ -1863,7 +1863,7 @@ class MasterViewProxy(QWidget):
                         loglevel = logging.loglevel
                 if self._has_nmd:
                     _result = nm.nmd().launch.start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
-                                                         loglevel=loglevel, logformat=logformat, opt_binary=opt_binary)
+                                                         loglevel=loglevel, logformat=logformat, opt_binary=opt_binary, cmd_prefix=cmd_prefix)
                 else:
                     rospy.logwarn("no running daemon found, start '%s' via SSH" % node.name)
                     nm.starter().bc_run_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
@@ -1877,7 +1877,7 @@ class MasterViewProxy(QWidget):
             except nm.InteractionNeededError as _:
                 raise
             except nm.BinarySelectionRequest as bsr:
-                raise nm.InteractionNeededError(bsr, self.start_node, (node, force, config, force_host, logging))
+                raise nm.InteractionNeededError(bsr, self.start_node, (node, force, config, force_host, logging, '', cmd_prefix))
             except (exceptions.StartException, nm.StartException) as e:
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
                 raise DetailedError("Start error", 'Error while start %s' % node.name, '%s' % utf8(e))
@@ -1937,13 +1937,15 @@ class MasterViewProxy(QWidget):
         # get the advanced configuration
         logging = None
         diag_canceled = False
+        cmd_prefix = ''
         if use_adv_cfg:
             log_params = {'Level': {':type': 'string', ':value': nm.settings().logging.get_alternatives('loglevel')},
                           # 'Level (roscpp)': ('string', nm.settings().logging.get_alternatives('loglevel_roscpp')),
                           # 'Level (super)': ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
                           'Format': {':type': 'string', ':value': nm.settings().logging.get_alternatives('console_format')}
                           }
-            params = {'Logging': log_params}
+            params = {'prefix': {':type': 'string', ':value': ['', 'gdb -ex run --args', 'valgrind', 'python -m pdb']},
+                      'Logging': log_params}
             dia = ParameterDialog(params, store_geometry="adv_cfg_dialog")
             dia.setFilterVisible(False)
             dia.setWindowTitle('Start with parameters')
@@ -1958,6 +1960,7 @@ class MasterViewProxy(QWidget):
                     nm.settings().logging.console_format = params['Logging']['Format']
                     nm.settings().store_logging()
                     logging = nm.settings().logging
+                    cmd_prefix = params['prefix']
                 except Exception, e:
                     diag_canceled = True
                     MessageBox.warning(self, "Get advanced start parameter",
@@ -1974,7 +1977,7 @@ class MasterViewProxy(QWidget):
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    ''.join(['start ', node.node_info.name]),
                                                    self.start_node,
-                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging))
+                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, '', cmd_prefix))
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):

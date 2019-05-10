@@ -59,8 +59,9 @@ STARTED_BINARIES = dict()
 ''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
 
 
-def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel='', logformat='', reload_global_param=False):
+def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel='', logformat='', reload_global_param=False, cmd_prefix=''):
     '''
+    :param str cmd_prefix: custom command prefix. It will be prepended before launch prefix.
     :return: Returns start configuration created from loaded launch file.
     :rtype: fkie_node_manager_daemon.startcfg.StartConfig
     '''
@@ -79,7 +80,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
         rospy.loginfo("SCREEN prefix removed before start!")
         prefix = ''
-    result.prefix = prefix
+    result.prefix = '%s %s' % (cmd_prefix, prefix) if cmd_prefix else prefix
     result.env = {key: value for key, value in n.env_args}
     # set remapings
     result.remaps = {remap[0]: remap[1] for remap in n.remap_args}
