@@ -100,7 +100,7 @@ class TestCommonLib(unittest.TestCase):
     def test_get_packages(self):
         path = os.path.dirname(self.nm_path.rstrip(os.path.sep))
         pkg_res = get_packages(path)
-        self.assertEqual(6, len(pkg_res), "wrong count of get_packages(%s), expected: %d, got: %d" % (path, 6, len(pkg_res)))
+        self.assertEqual(6, len(pkg_res), "wrong count of get_packages(%s), expected: %d, got: %d -> packages: %s" % (path, 6, len(pkg_res), pkg_res))
 
     def test_get_cwd(self):
         test_path = '/this/is/path/to'
