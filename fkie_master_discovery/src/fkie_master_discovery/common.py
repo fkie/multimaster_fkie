@@ -195,12 +195,12 @@ def read_interface(interface_file):
             data = yaml.load(iface)
             if data is None:
                 data = {}
-        except yaml.MarkedYAMLError, e:
+        except yaml.MarkedYAMLError as e:
             if not interface_file:
                 raise ValueError("Error within YAML block:\n\t%s\n\nYAML is:\n%s" % (str(e), iface))
             else:
                 raise ValueError("file %s contains invalid YAML:\n%s" % (interface_file, str(e)))
-        except Exception, e:
+        except Exception as e:
             if not interface_file:
                 raise ValueError("invalid YAML: %s\n\nYAML is:\n%s" % (str(e), iface))
             else:

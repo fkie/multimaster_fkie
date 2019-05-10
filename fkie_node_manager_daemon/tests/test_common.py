@@ -52,6 +52,7 @@ class TestCommonLib(unittest.TestCase):
 
     def setUp(self):
         self.nm_path = interpret_path("$(find fkie_node_manager_daemon)/")
+        self.nmgr_path = interpret_path("$(find fkie_node_manager)/")
         self.res_dir = 'resources'
         if os.path.exists(os.path.join(self.nm_path, 'tests')):
             self.res_dir = 'tests/resources'
@@ -149,7 +150,7 @@ class TestCommonLib(unittest.TestCase):
         text_path = "$(find fkie_node_manager_daemon)/resources/include_dummy.launch, $(find fkie_node_manager)/launch/demo_bar.launch"
         path = replace_paths(text_path)
         nm_path = os.path.dirname(self.nm_path.rstrip(os.path.sep))
-        path_exp = "%s/fkie_node_manager_daemon/resources/include_dummy.launch, %s/fkie_node_manager/launch/demo_bar.launch" % (nm_path, nm_path)
+        path_exp = "%s/fkie_node_manager_daemon/resources/include_dummy.launch, %s/launch/demo_bar.launch" % (nm_path, self.nmgr_path.rstrip(os.path.sep))
         self.assertEqual(path_exp, path, "wrong replace_paths, expected: %s, got: %s" % (path_exp, path))
 
     def test_get_arg_names(self):

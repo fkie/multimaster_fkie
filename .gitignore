@@ -24,3 +24,5 @@ lib*.so.*
 */doc/html/
 */doc/manifest.yaml
 generated/
+.vscode/
+*.code-workspace
