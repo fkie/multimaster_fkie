@@ -34,6 +34,7 @@ import os
 import unittest
 import time
 import rospkg
+from datetime import tzinfo, timedelta, datetime
 
 from fkie_node_manager_daemon.common import IncludedFile
 from fkie_node_manager_daemon.common import sizeof_fmt
@@ -72,17 +73,28 @@ class TestCommonLib(unittest.TestCase):
         self.assertEqual(sizeof_str_res, sizeof_str, "wrong sizeof_fmt, expected: %s, got: '%s'" % (sizeof_str_res, sizeof_str))
 
     def test_formated_ts(self):
-        tsstr_ff = formated_ts(1557480759.608808, with_date=False, with_nanosecs=False)
-        tsstr_ff_res = "11:32:39"
+
+        class UTC(tzinfo):
+            def utcoffset(self, dt):
+                return timedelta(0)
+
+            def tzname(self, dt):
+                return "UTC"
+
+            def dst(self, dt):
+                return timedelta(0)
+
+        tsstr_ff = formated_ts(1557480759.608808, with_date=False, with_nanosecs=False, tz=UTC())
+        tsstr_ff_res = "09:32:39"
         self.assertEqual(tsstr_ff_res, tsstr_ff, "wrong formated_ts(value, False, False), expected: %s, got: %s" % (tsstr_ff_res, tsstr_ff))
-        tsstr_tf = formated_ts(1557480759.608808, with_date=True, with_nanosecs=False)
-        tsstr_tf_res = "11:32:39 (10.05.2019)"
+        tsstr_tf = formated_ts(1557480759.608808, with_date=True, with_nanosecs=False, tz=UTC())
+        tsstr_tf_res = "09:32:39 (10.05.2019)"
         self.assertEqual(tsstr_tf_res, tsstr_tf, "wrong formated_ts(value, True, False), expected: %s, got: %s" % (tsstr_tf_res, tsstr_tf))
-        tsstr_tt = formated_ts(1557480759.608808, with_date=True, with_nanosecs=True)
-        tsstr_tt_res = "11:32:39.608808 (10.05.2019)"
+        tsstr_tt = formated_ts(1557480759.608808, with_date=True, with_nanosecs=True, tz=UTC())
+        tsstr_tt_res = "09:32:39.608808 (10.05.2019)"
         self.assertEqual(tsstr_tt_res, tsstr_tt, "wrong formated_ts(value, True, True), expected: %s, got: %s" % (tsstr_tt_res, tsstr_tt))
-        tsstr_ft = formated_ts(1557480759.608808, with_date=False, with_nanosecs=True)
-        tsstr_ft_res = "11:32:39.608808"
+        tsstr_ft = formated_ts(1557480759.608808, with_date=False, with_nanosecs=True, tz=UTC())
+        tsstr_ft_res = "09:32:39.608808"
         self.assertEqual(tsstr_ft_res, tsstr_ft, "wrong formated_ts(value, False, True), expected: %s, got: %s" % (tsstr_ft_res, tsstr_ft))
 
     def test_get_packages(self):

@@ -141,7 +141,7 @@ def sizeof_fmt(num, suffix='B'):
     return "%.0%s%s" % (num, 'YiB', suffix)
 
 
-def formated_ts(stamp, with_date=True, with_nanosecs=True):
+def formated_ts(stamp, with_date=True, with_nanosecs=True, tz=None):
     ts = stamp
     if hasattr(stamp, 'secs'):
         ts = stamp.secs + stamp.secs / 1000000000.
@@ -150,7 +150,7 @@ def formated_ts(stamp, with_date=True, with_nanosecs=True):
         str_format += '.%f'
     if with_date:
         str_format += ' (%d.%m.%Y)'
-    return datetime.fromtimestamp(ts).strftime(str_format)
+    return datetime.fromtimestamp(ts, tz).strftime(str_format)
 
 
 def get_packages(path):
