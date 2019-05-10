@@ -2,6 +2,7 @@
 
 import os
 import shlex
+import socket
 import subprocess
 import sys
 import time
@@ -10,6 +11,7 @@ import roslib
 import rospy
 
 from fkie_master_discovery.common import masteruri_from_ros
+from fkie_master_discovery.udp import DiscoverSocket
 from fkie_node_manager_daemon import host as nmdhost
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
@@ -183,7 +185,9 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     new_env['ROS_MASTER_URI'] = masteruri
     ros_hostname = nmdhost.get_ros_hostname(masteruri)
     if ros_hostname:
-        new_env['ROS_HOSTNAME'] = ros_hostname
+        addr = socket.gethostbyname(ros_hostname)
+        if addr in set(ip for _n, ip in DiscoverSocket.localifs()):
+            new_env['ROS_HOSTNAME'] = ros_hostname
     if loglevel:
         new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)
     subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)

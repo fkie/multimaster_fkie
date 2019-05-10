@@ -36,7 +36,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from .common import utf8
 from .host import get_hostname
-from .url import nmduri
+from .url import nmduri, nmdport
 
 
 STRING = lmsg.Argument.ValueType.Value('STRING')
@@ -75,6 +75,19 @@ class StartConfig():
         self.respawn_max = 0
         self.respawn_min_runtime = 0
 
+    def __repr__(self):
+        params = "name=%s" % self.name
+        params += ", ns=%s" % self.namespace
+        params += ", package=%s" % self.package
+        params += ", binary=%s" % self.binary
+        params += ", prefix=%s" % self.prefix
+        params += ", cwd=%s" % self.cwd
+        params += ", masteruri=%s" % self.masteruri
+        params += ", host=%s" % self.host
+        params += ", loglevel=%s" % self.loglevel
+        params += ", respawn=%s" % self.respawn
+        return "<StartConfig %s/>" % params
+
     @property
     def hostname(self):
         '''
@@ -90,7 +103,10 @@ class StartConfig():
         :return: the nmd uri where to launch the node from host_masteruri if it is not None.
         '''
         if self.host:
-            return nmduri(self.host, prefix='')
+            try:
+                return nmduri(self.host, prefix='')
+            except ValueError:
+                return '%s:%d' % (self.host, nmdport(self.masteruri))
         return None
 
     def _msg_type(self, value):

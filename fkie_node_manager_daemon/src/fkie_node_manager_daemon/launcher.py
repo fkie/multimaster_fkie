@@ -43,6 +43,7 @@ import xmlrpclib
 import roslaunch
 
 from fkie_master_discovery.common import masteruri_from_ros
+from fkie_master_discovery.udp import DiscoverSocket
 
 from . import host
 from . import exceptions
@@ -103,6 +104,9 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     else:
         result.masteruri = masteruri if masteruri or masteruri is None else None
         result.host = launchcfg.host
+    # override host with machine tag
+    if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
+        result.host = launchcfg.roscfg.machines[n.machine_name].address
     # set args
     result.args = n.args.split()
     # set cwd unchanged, it will be resolved on host
@@ -219,7 +223,9 @@ def run_node(startcfg):
             # host in startcfg is a nmduri -> get host name
             ros_hostname = host.get_ros_hostname(masteruri, hostname)
             if ros_hostname:
-                new_env['ROS_HOSTNAME'] = ros_hostname
+                addr = socket.gethostbyname(ros_hostname)
+                if addr in set(ip for _n, ip in DiscoverSocket.localifs()):
+                    new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
@@ -228,11 +234,12 @@ def run_node(startcfg):
         rospy.logdebug("environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
-        rospy.loginfo("remote run node '%s' at '%s'" % (nodename, startcfg.nmduri))
+        nmduri = startcfg.nmduri
+        rospy.loginfo("remote run node '%s' at '%s'" % (nodename, nmduri))
         startcfg.params.update(_params_to_package_path(startcfg.params))
         startcfg.args = _args_to_package_path(startcfg.args)
         # run on a remote machine
-        channel = remote.get_insecure_channel(startcfg.nmduri)
+        channel = remote.get_insecure_channel(nmduri)
         if channel is None:
             raise exceptions.StartException("Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))
         lm = LaunchStub(channel)

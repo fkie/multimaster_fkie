@@ -360,7 +360,7 @@ class LaunchChannel(ChannelInterface):
             launch_descriptions = lm.get_nodes(True, masteruri=masteruri)
             return launch_descriptions
         except grpc.RpcError as gerr:
-            rospy.logdebug("remove connection", uri)
+            rospy.logdebug("remove connection %s" % uri)
             remote.remove_insecure_channel(uri)
             raise gerr
 
@@ -389,7 +389,7 @@ class LaunchChannel(ChannelInterface):
         try:
             return lm.start_node(name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
         except grpc.RpcError as gerr:
-            rospy.logdebug("remove connection", uri)
+            rospy.logdebug("remove connection %s" % uri)
             remote.remove_insecure_channel(uri)
             raise gerr
         except exceptions.BinarySelectionRequest as bsr:
@@ -425,7 +425,7 @@ class LaunchChannel(ChannelInterface):
             startcfg.respawn_min_runtime = 0
             return lm.start_standalone_node(startcfg)
         except grpc.RpcError as err:
-            rospy.logdebug("remove connection", uri)
+            rospy.logdebug("remove connection %s" % uri)
             remote.remove_insecure_channel(uri)
             raise err
         except exceptions.BinarySelectionRequest as bsr:

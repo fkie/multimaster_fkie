@@ -78,6 +78,9 @@ class NodeInfo(object):
         self._subscribedTopics = []
         self._services = []
 
+    def __repr__(self):
+        return "<NodeInfo name=%s, uri=%s, masteruri=%s, is_local=%s, pub_topics=%d, sub_topics=%d>" % (self.name, self.uri, self.masteruri, self.isLocal, len(self.publishedTopics), len(self.subscribedTopics))
+
     @property
     def name(self):
         '''
