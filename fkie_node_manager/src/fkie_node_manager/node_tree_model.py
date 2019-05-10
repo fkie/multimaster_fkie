@@ -1948,7 +1948,7 @@ class NodeTreeModel(QStandardItemModel):
         # remove empty hosts
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host.rowCount() == 0 or not host.remote_launched_nodes_updated():
+            if host.rowCount() == 0: # or not host.remote_launched_nodes_updated():
                 self.invisibleRootItem().removeRow(i)
 
     def get_tree_node(self, node_name, masteruri):

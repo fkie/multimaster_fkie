@@ -89,7 +89,7 @@ class RobotDescription:
         self.capabilities = capabilities if capabilities else []  # create a new array to a void to fill a default one
 
     def __repr__(self):
-        return "<%s[%s], with %d capabilities>" % (self.__class__, self.robot_name, len(self.capabilities))
+        return "<%s[%s], machine=%s, with %d capabilities>" % (self.__class__, self.robot_name, self.machine, len(self.capabilities))
 
     def __str__(self):
         if self.capabilities:
