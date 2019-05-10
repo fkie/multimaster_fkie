@@ -70,6 +70,7 @@ class IncludedFile():
     def __init__(self, path_or_str, line_number, inc_path, exists, raw_inc_path, rec_depth, args, size=0):
         '''
         Representation of an included file found in given string or path of a file.
+
         :param str path_or_str: path of file or content where to search. If it is a path, the content will be read from file.
         :param int line_number: line number of the occurrence. If `unique` is True the line number is zero.
         :param str inc_path: resolved path.
@@ -88,15 +89,16 @@ class IncludedFile():
         self.size = size
 
     def __repr__(self):
-        result = "IncludedFile:"
-        result += "\n  from: %s" % self.path_or_str
-        result += "\n  line nr:  %d" % self.line_number
-        result += "\n  inc_path: %s" % self.inc_path
-        result += "\n  raw:      %s" % self.raw_inc_path
-        result += "\n  exists:   %s" % ('True' if self.exists else 'False')
-        result += "\n  size:     %d" % self.size
-        result += "\n  depth:    %d" % self.rec_depth
-        result += "\n  args: %s" % utf8(self.args)
+        result = "<IncludedFile "
+        result += " from=%s" % self.path_or_str
+        result += " line_number=%d" % self.line_number
+        result += " inc_path=%s" % self.inc_path
+        result += " raw_inc_path=%s" % self.raw_inc_path
+        result += " exists=%s" % self.exists
+        result += " size=%d" % self.size
+        result += " rec_depth=%d" % self.rec_depth
+        result += " args=%s" % utf8(self.args)
+        result += " />"
         return result
 
 
@@ -134,7 +136,7 @@ def get_cwd(cwd, binary=''):
 def sizeof_fmt(num, suffix='B'):
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
-            return "%3.0f%s%s" % (num, unit, suffix)
+            return "%.0f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.0%s%s" % (num, 'YiB', suffix)
 

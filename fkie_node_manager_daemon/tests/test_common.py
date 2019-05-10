@@ -35,7 +35,13 @@ import unittest
 import time
 import rospkg
 
+from fkie_node_manager_daemon.common import IncludedFile
+from fkie_node_manager_daemon.common import sizeof_fmt
+from fkie_node_manager_daemon.common import formated_ts
+from fkie_node_manager_daemon.common import get_packages
 from fkie_node_manager_daemon.common import get_cwd, find_included_files, interpret_path, package_name
+from fkie_node_manager_daemon.common import replace_paths
+from fkie_node_manager_daemon.common import get_arg_names
 
 PKG = 'fkie_node_manager_daemon'
 
@@ -53,6 +59,35 @@ class TestCommonLib(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def test_includefile_repr(self):
+        inc_file = IncludedFile("path_or_str", 1, "inc_path", False, "raw_inc_path", 0, {'one': 'empty'}, -1)
+        inc_file_str = "<IncludedFile  from=path_or_str line_number=1 inc_path=inc_path raw_inc_path=raw_inc_path exists=False size=-1 rec_depth=0 args={'one': 'empty'} />"
+        self.assertEqual(inc_file_str, '%s' % inc_file, "wrong _repr__ from IncludedFile, expected: %s, got: %s" % (inc_file_str, '%s' % inc_file))
+
+    def test_sizeof_fmt(self):
+        sizeof_str = sizeof_fmt(12345678)
+        sizeof_str_res = "12MiB"
+        self.assertEqual(sizeof_str_res, sizeof_str, "wrong sizeof_fmt, expected: %s, got: '%s'" % (sizeof_str_res, sizeof_str))
+
+    def test_formated_ts(self):
+        tsstr_ff = formated_ts(1557480759.608808, with_date=False, with_nanosecs=False)
+        tsstr_ff_res = "11:32:39"
+        self.assertEqual(tsstr_ff_res, tsstr_ff, "wrong formated_ts(value, False, False), expected: %s, got: %s" % (tsstr_ff_res, tsstr_ff))
+        tsstr_tf = formated_ts(1557480759.608808, with_date=True, with_nanosecs=False)
+        tsstr_tf_res = "11:32:39 (10.05.2019)"
+        self.assertEqual(tsstr_tf_res, tsstr_tf, "wrong formated_ts(value, True, False), expected: %s, got: %s" % (tsstr_tf_res, tsstr_tf))
+        tsstr_tt = formated_ts(1557480759.608808, with_date=True, with_nanosecs=True)
+        tsstr_tt_res = "11:32:39.608808 (10.05.2019)"
+        self.assertEqual(tsstr_tt_res, tsstr_tt, "wrong formated_ts(value, True, True), expected: %s, got: %s" % (tsstr_tt_res, tsstr_tt))
+        tsstr_ft = formated_ts(1557480759.608808, with_date=False, with_nanosecs=True)
+        tsstr_ft_res = "11:32:39.608808"
+        self.assertEqual(tsstr_ft_res, tsstr_ft, "wrong formated_ts(value, False, True), expected: %s, got: %s" % (tsstr_ft_res, tsstr_ft))
+
+    def test_get_packages(self):
+        path = os.path.dirname(self.nm_path.rstrip(os.path.sep))
+        pkg_res = get_packages(path)
+        self.assertEqual(6, len(pkg_res), "wrong count of get_packages(%s), expected: %d, got: %d" % (path, 6, len(pkg_res)))
 
     def test_get_cwd(self):
         test_path = '/this/is/path/to'
@@ -109,6 +144,24 @@ class TestCommonLib(unittest.TestCase):
         text_path = "some other --args here '$(find fkie_node_manager_daemon)/%s/include_dummy.launch'" % self.res_dir
         path = interpret_path(text_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted path, expected: %s, got: %s" % (self.test_include_file, path))
+
+    def test_replace_paths(self):
+        text_path = "$(find fkie_node_manager_daemon)/resources/include_dummy.launch, $(find fkie_node_manager)/launch/demo_bar.launch"
+        path = replace_paths(text_path)
+        nm_path = os.path.dirname(self.nm_path.rstrip(os.path.sep))
+        path_exp = "%s/fkie_node_manager_daemon/resources/include_dummy.launch, %s/fkie_node_manager/launch/demo_bar.launch" % (nm_path, nm_path)
+        self.assertEqual(path_exp, path, "wrong replace_paths, expected: %s, got: %s" % (path_exp, path))
+
+    def test_get_arg_names(self):
+        args = get_arg_names('')
+        self.assertEqual(0, len(args), "wrong get_arg_names, expected: %d, got: %d" % (0, len(args)))
+        args = get_arg_names('some text $(arg test_name_arg)')
+        self.assertEqual(1, len(args), "wrong get_arg_names, expected: %d, got: %d" % (1, len(args)))
+        self.assertEqual('test_name_arg', args[0], "wrong get_arg_names, expected: %s, got: %s" % ('test_name_arg', args[0]))
+        args = get_arg_names('some text $(arg test_name_arg)/\n$(arg test_name_second) ')
+        self.assertEqual(2, len(args), "wrong get_arg_names, expected: %d, got: %d" % (2, len(args)))
+        self.assertEqual('test_name_arg', args[0], "wrong get_arg_names, expected: %s, got: %s" % ('test_name_arg', args[0]))
+        self.assertEqual('test_name_second', args[1], "wrong get_arg_names, expected: %s, got: %s" % ('test_name_second', args[1]))
 
     def test_include_files(self):
         file_list = [file_tuple for file_tuple in find_included_files(self.test_include_file, unique=True)]

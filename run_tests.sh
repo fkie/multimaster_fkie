@@ -1,2 +1,2 @@
-nosetests -s -vv -w master_discovery_fkie/tests/ --with-coverage --cover-erase --nocapture --cover-package=master_discovery_fkie
-nosetests -s -vv -w node_manager_daemon_fkie/tests/ --with-coverage --cover-erase --nocapture --cover-package=node_manager_daemon_fkie
+nosetests -s -vv -w fkie_master_discovery/tests/ --with-coverage --cover-erase --nocapture --cover-package=fkie_master_discovery
+nosetests -s -vv -w fkie_node_manager_daemon/tests/ --with-coverage --cover-erase --nocapture --cover-package=fkie_node_manager_daemon
