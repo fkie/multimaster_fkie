@@ -990,28 +990,35 @@ class MasterViewProxy(QWidget):
                 nm.nmd().launch.get_mtimes_threaded(ld.path)
             new_configs.append(ld.path)
             self.__configs[ld.path].nodes = ld.nodes
+            alredy_added_nodes = set()
             # update capabilities
             for rd in ld.robot_descriptions:
                 # add capabilities
                 caps = dict()
-                node_cfgs = dict()
+                rd_node_cfgs = dict()
                 for c in rd.capabilities:
                     if c.namespace not in caps:
                         caps[c.namespace] = dict()
                     caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [interpret_path(i) for i in c.images], 'description': interpret_path(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                     for n in c.nodes:
-                        node_cfgs[n] = ld.path
+                        rd_node_cfgs[n] = ld.path
+                        alredy_added_nodes.add(n)
                 robot_addr = host_addr
                 valid_machine = False
                 if rd.machine and rd.machine != host:
                     robot_addr = rd.machine
-                self.node_tree_model.append_config(masteruri, robot_addr, node_cfgs)
+                self.node_tree_model.append_config(masteruri, robot_addr, rd_node_cfgs)
                 if valid_machine or not rd.robot_name or utf8(rd.robot_name) == self.mastername:
                     self.node_tree_model.add_capabilities(masteruri, robot_addr, ld.path, caps)
                     # set host description
                     tooltip = self.node_tree_model.update_host_description(masteruri, robot_addr, rd.robot_type, utf8(rd.robot_name), interpret_path(utf8(rd.robot_descr)))
                     self.capabilities_update_signal.emit(masteruri, robot_addr, ld.path, [rd])
                     self.host_description_updated.emit(masteruri, robot_addr, tooltip)
+            node_cfgs = dict()
+            for n in ld.nodes:
+                if n not in alredy_added_nodes:
+                    node_cfgs[n] = ld.path
+            self.node_tree_model.append_config(masteruri, host_addr, node_cfgs)
             # set the robot_icon
             if ld.path in self.__robot_icons:
                 self.__robot_icons.remove(ld.path)
