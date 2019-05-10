@@ -1944,7 +1944,10 @@ class MasterViewProxy(QWidget):
                           # 'Level (super)': ('string', nm.settings().logging.get_alternatives('loglevel_superdebug')),
                           'Format': {':type': 'string', ':value': nm.settings().logging.get_alternatives('console_format')}
                           }
-            params = {'prefix': {':type': 'string', ':value': ['', 'gdb -ex run --args', 'valgrind', 'python -m pdb']},
+            params = {'Prefix': {':type': 'string',
+                                 ':value': ['', 'gdb -ex run --args', 'valgrind', 'python -m pdb'],
+                                 ':hint': 'Custom command prefix. It will be prepended before launch prefix.'
+                                 },
                       'Logging': log_params}
             dia = ParameterDialog(params, store_geometry="adv_cfg_dialog")
             dia.setFilterVisible(False)
@@ -1960,7 +1963,7 @@ class MasterViewProxy(QWidget):
                     nm.settings().logging.console_format = params['Logging']['Format']
                     nm.settings().store_logging()
                     logging = nm.settings().logging
-                    cmd_prefix = params['prefix']
+                    cmd_prefix = params['Prefix']
                 except Exception, e:
                     diag_canceled = True
                     MessageBox.warning(self, "Get advanced start parameter",
