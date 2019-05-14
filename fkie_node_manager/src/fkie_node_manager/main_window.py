@@ -2090,7 +2090,11 @@ class MainWindow(QMainWindow):
         nm.nmd().settings.get_config_threaded(nmd_uri)
 
     def _nmd_yaml_cfg(self, data, nmdurl):
-        params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
+        params = {}
+	try:
+            params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
+	except Exception as err:
+            rospy.logwarn("Error while parse daemon configuration: %s" % utf8(err))
         dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
         dia.setWindowTitle('Daemon Configuration')
         dia.setFocusField('load_warn_level')
