@@ -1400,7 +1400,7 @@ class MasterParameterDialog(ParameterDialog):
                     type_str = 'float'
                 elif isinstance(val, list) or isinstance(val, dict):
                     # handle representation of `rosparam`
-                    type_str = '[]'
+                    type_str = 'list'
                     value = ''
                     for v in val:
                         if len(value) > 0:
@@ -1417,14 +1417,14 @@ class MasterParameterDialog(ParameterDialog):
                     for n in names_sep:
                         group_name = n
                         if group_name in group:
-                            group = group[group_name][1]
+                            group = group[group_name]
                         else:
                             tmp_dict = dict()
-                            group[group_name] = {':type': 'list', ':value': tmp_dict}
+                            group[group_name] = tmp_dict
                             group = tmp_dict
-                    group[param_name] = {':type': type_str, ':value': [value]}
+                    group[param_name] = {':type': type_str, ':value': value}
                 else:
-                    dia_params[param_name] = {':type': type_str, ':value': [value]}
+                    dia_params[param_name] = {':type': type_str, ':value': value}
             try:
                 self.content.createFieldFromValue(dia_params, clear_origin_value=new_param)
                 self.setInfoActive(False)
