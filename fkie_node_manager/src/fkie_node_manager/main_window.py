@@ -170,6 +170,7 @@ class MainWindow(QMainWindow):
         self.launch_dock.load_profile_signal.connect(self.profiler.on_load_profile_file)
         self.launch_dock.edit_signal.connect(self.on_launch_edit)
         self.launch_dock.transfer_signal.connect(self.on_launch_transfer)
+        self.launch_dock.save_profile_signal.connect(self.profiler.on_save_profile)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.launch_dock)
 
         self.mIcon = QIcon(":/icons/crystal_clear_prop_run.png")
@@ -558,7 +559,6 @@ class MainWindow(QMainWindow):
             self.masters[masteruri].request_xml_editor.disconnect()
             self.masters[masteruri].stop_nodes_signal.disconnect()
             self.masters[masteruri].robot_icon_updated.disconnect()
-            self.masters[masteruri].save_profile_signal.disconnect()
             if DIAGNOSTICS_AVAILABLE:
                 self.diagnostics_signal.disconnect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.removeWidget(self.masters[masteruri])
@@ -586,7 +586,6 @@ class MainWindow(QMainWindow):
             self.masters[masteruri].request_xml_editor.connect(self.on_launch_edit)
             self.masters[masteruri].stop_nodes_signal.connect(self.on_stop_nodes)
             self.masters[masteruri].robot_icon_updated.connect(self._on_robot_icon_changed)
-            self.masters[masteruri].save_profile_signal.connect(self.profiler.on_save_profile)
             if DIAGNOSTICS_AVAILABLE:
                 self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.addWidget(self.masters[masteruri])

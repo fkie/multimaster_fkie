@@ -73,6 +73,8 @@ class LaunchFilesWidget(QDockWidget):
     ''' list of paths to open in an editor '''
     transfer_signal = Signal(list)
     ''' list of tuples of (url, path) selected for transfer '''
+    save_profile_signal = Signal(str)
+    ''':ivar str save_profile_signa: the signal is emitted, to save profile. (current path selected in launch files)'''
 
     def __init__(self, parent=None):
         '''
@@ -111,6 +113,7 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_button_edit.clicked.connect(self.on_edit_xml_clicked)
         self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
         self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
+        self.ui_button_save_profile.clicked.connect(self.on_save_profile_clicked)
         self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
         self._masteruri2name = {}
         self._reload_timer = None
@@ -271,6 +274,11 @@ class LaunchFilesWidget(QDockWidget):
                 paths.append(path)
         if paths:
             self.transfer_signal.emit(paths)
+
+    def on_save_profile_clicked(self):
+        # save the profile
+        _netloc, path = nmdurl.split(self.launchlist_model.current_path, with_scheme=True)
+        self.save_profile_signal.emit(path)
 
     def on_load_xml_clicked(self):
         '''

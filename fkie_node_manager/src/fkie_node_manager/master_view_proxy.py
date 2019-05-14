@@ -121,9 +121,6 @@ class MasterViewProxy(QWidget):
     loaded_config = Signal(object, list)
     ''':ivar LaunchConfig,list(str) loaded_config: the signal is emitted, after a launchfile is successful loaded (LaunchConfig, [changed nodes (str)])'''
 
-    save_profile_signal = Signal(str)
-    ''':ivar str save_profile_signa: the signal is emitted, to save profile. (masteruri) If masteruri is empty, save all masters else only for this master.'''
-
     DIAGNOSTIC_LEVELS = {0: 'OK',
                          1: 'WARN',
                          2: 'ERROR',
@@ -301,7 +298,6 @@ class MasterViewProxy(QWidget):
         self.masterTab.dynamicConfigButton.clicked.connect(self.on_dynamic_config_clicked)
         self.masterTab.editConfigButton.clicked.connect(self.on_edit_config_clicked)
         self.masterTab.editRosParamButton.clicked.connect(self.on_edit_rosparam_clicked)
-        self.masterTab.saveButton.clicked.connect(self.on_save_clicked)
         self.masterTab.closeCfgButton.clicked.connect(self.on_close_clicked)
 
         self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
@@ -1161,7 +1157,7 @@ class MasterViewProxy(QWidget):
                     self.on_node_selection_changed(None, None)
 
     def _sysmon_update_callback(self):
-        if self._has_nmd:
+        if self._has_nmd and self.__online:
             nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
             if not nm.is_local(self.mastername):
                 nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
@@ -2221,6 +2217,7 @@ class MasterViewProxy(QWidget):
         :param nodes: a list with full node names
         :type nodes: list(str)
         '''
+        found_nodes = []
         if self.master_info is not None:
             req_nodes = []
             for n in nodes:
@@ -2629,10 +2626,6 @@ class MasterViewProxy(QWidget):
                 inputDia.show()
             except Exception:
                 rospy.logwarn("Error on retrieve parameter for %s: %s", utf8(node.name), traceback.format_exc(1))
-
-    def on_save_clicked(self):
-        # save the profile
-        self.save_profile_signal.emit('')
 
     def on_close_clicked(self):
         '''

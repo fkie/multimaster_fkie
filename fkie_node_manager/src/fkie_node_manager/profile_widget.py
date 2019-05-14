@@ -72,7 +72,7 @@ class ProfileWidget(QDockWidget):
         self.setVisible(False)
         self._current_profile = dict()
 
-    def get_profile_file(self):
+    def get_profile_file(self, current_path):
         '''
         Opens file manager dialog to save to select a new file for node manager profile.
 
@@ -82,7 +82,7 @@ class ProfileWidget(QDockWidget):
         # save the profile
         (path, _) = QFileDialog.getSaveFileName(self,
                                                 "New profile file",
-                                                nm.settings().current_dialog_path,
+                                                current_path if current_path else nm.settings().current_dialog_path,
                                                 "node manager profile files (*.nmprofile);;All files (*)")  # _:=filter
         if path:
             if not path.endswith('.nmprofile'):
@@ -104,73 +104,66 @@ class ProfileWidget(QDockWidget):
                                    utf8(e))
         return None
 
-    def on_save_profile(self, masteruri='', path=None):
+    def on_save_profile(self, current_path='', path=None):
         '''
         Saves the current environment to a node manager profile.
 
-        :param str masteruri: If not empty, save the profile only for given master
+        :param str current_path: open given path in the file dialog.
         :param str path: the path of file to save. If None :meth:`get_profile_file` is called to get a path.
         '''
         try:
             if path is None:
-                path = self.get_profile_file()
+                path = self.get_profile_file(current_path)
                 if path is None:
                     return
             rospy.loginfo("Save profile %s" % path)
             content = {}
             for muri, master in self._main_window.masters.items():
-                if not masteruri or masteruri == muri:
-                    running_nodes = master.get_nodes_runningIfLocal()
-                    configs = {}
-                    md_param = {}
-                    ms_param = {}
-                    zc_param = {}
-                    nmd_param = {}
-                    smuri = muri
-                    addr = nm.nameres().address(smuri)
-                    hostname = get_hostname(smuri)
-                    mastername = ''
-                    if nm.is_local(addr):
-                        smuri = smuri.replace(hostname, '$LOCAL$')
-                        addr = '$LOCAL$'
-                    else:
-                        mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
-                    for node_name in running_nodes.keys():
-                        node_items = master.getNode(node_name)
-                        for node in node_items:
-                            if node.is_running() and node.launched_cfg is not None:  # node.has_launch_cfgs(node.cfgs):
-                                # it is a loaded launch file, get the filename
-                                cfg = to_pkg(node.launched_cfg)
-                                if cfg not in configs:
-                                    configs[cfg] = {'nodes': []}
-                                configs[cfg]['nodes'].append(node_name)
-                            elif node_name.endswith('master_discovery'):
-                                md_param = get_rosparam('master_discovery', muri)
-                            elif node_name.endswith('master_sync'):
-                                ms_param = get_rosparam('master_sync', muri)
-                            elif node_name.endswith('zeroconf'):
-                                zc_param = get_rosparam('zeroconf', muri)
-                            elif node_name.endswith('node_manager_daemon'):
-                                nmd_param = get_rosparam('node_manager_daemon', muri)
-                    # store arguments for launchfiles
-                    for a, b in master.launchfiles.items():
-                        resolved_a = to_pkg(a)
-                        if resolved_a not in configs:
-                            configs[resolved_a] = {}
-                            configs[resolved_a]['default'] = False
-                        configs[resolved_a]['args'] = b.args
+                running_nodes = master.get_nodes_runningIfLocal()
+                configs = {}
+                md_param = {}
+                ms_param = {}
+                zc_param = {}
+                nmd_param = {}
+                smuri = muri
+                addr = nm.nameres().address(smuri)
+                hostname = get_hostname(smuri)
+                mastername = ''
+                if nm.is_local(addr):
+                    smuri = smuri.replace(hostname, '$LOCAL$')
+                    addr = '$LOCAL$'
+                else:
+                    mastername = nm.nameres().mastername(smuri, nm.nameres().address(smuri))
+                content[smuri] = {'mastername': mastername,
+                                  'address': addr}
+                for node_name in running_nodes.keys():
+                    node_items = master.getNode(node_name)
+                    for node in node_items:
+                        if node.is_running() and node.launched_cfg is not None:
+                            # it is a loaded launch file, get the filename
+                            cfg = node.launched_cfg
+                            if cfg not in configs:
+                                configs[cfg] = {'nodes': []}
+                            configs[cfg]['nodes'].append(node_name)
+                        elif node_name.endswith('master_discovery'):
+                            md_param = get_rosparam('master_discovery', muri)
+                            content[smuri]['master_discovery'] = md_param
+                        elif node_name.endswith('master_sync'):
+                            ms_param = get_rosparam('master_sync', muri)
+                            content[smuri]['master_sync'] = ms_param
+                        elif node_name.endswith('zeroconf'):
+                            zc_param = get_rosparam('zeroconf', muri)
+                            content[smuri]['zeroconf'] = zc_param
+                        elif node_name.endswith('node_manager_daemon'):
+                            nmd_param = get_rosparam('node_manager_daemon', muri)
+                            content[smuri]['node_manager_daemon'] = nmd_param
+                # store arguments for launchfiles
+                for a, b in master.launchfiles.items():
+                    if a not in configs:
+                        configs[a] = {}
+                    configs[a]['args'] = b.args
                     # fill the configuration content for yaml as dictionary
-                    content[smuri] = {'mastername': mastername,
-                                      'address': addr,
-                                      'configs': configs}
-                    if md_param:
-                        content[smuri]['master_discovery'] = md_param
-                    if ms_param:
-                        content[smuri]['master_sync'] = ms_param
-                    if zc_param:
-                        content[smuri]['zeroconf'] = zc_param
-                    if nmd_param:
-                        content[smuri]['node_manager_daemon'] = nmd_param
+                content[smuri]['configs'] = configs
             buf = ruamel.yaml.compat.StringIO()
             ruamel.yaml.dump(content, buf, Dumper=ruamel.yaml.RoundTripDumper)
             with open(path, 'w+') as f:
