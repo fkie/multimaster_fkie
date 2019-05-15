@@ -2087,27 +2087,27 @@ class MainWindow(QMainWindow):
             params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
         except Exception as err:
             rospy.logwarn("Error while parse daemon configuration: %s" % utf8(err))
-            dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
-            dia.setWindowTitle('Daemon Configuration')
-            dia.setFocusField('load_warn_level')
-            if dia.exec_():
-                try:
-                    params = dia.getKeywords(with_tags=True)
-                    buf = ruamel.yaml.compat.StringIO()
-                    ruamel.yaml.dump(params, buf, Dumper=ruamel.yaml.RoundTripDumper)
-                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   '%s: set configuration for daemon' % nmdurl,
-                                                   nm.nmd().settings.set_config,
-                                                   (nmdurl, buf.getvalue()))
-                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   '%s: get system diagnostics' % nmdurl,
-                                                   nm.nmd().monitor.get_system_diagnostics_threaded,
-                                                   (nmdurl,))
-                    self._progress_queue.start()
-                except Exception as err:
-                    import traceback
-                    print(traceback.format_exc())
-                    MessageBox.warning(self, "Daemon configuration error",
+        dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
+        dia.setWindowTitle('Daemon Configuration')
+        dia.setFocusField('load_warn_level')
+        if dia.exec_():
+            try:
+                params = dia.getKeywords(with_tags=True)
+                buf = ruamel.yaml.compat.StringIO()
+                ruamel.yaml.dump(params, buf, Dumper=ruamel.yaml.RoundTripDumper)
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                '%s: set configuration for daemon' % nmdurl,
+                                                nm.nmd().settings.set_config,
+                                                (nmdurl, buf.getvalue()))
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                '%s: get system diagnostics' % nmdurl,
+                                                nm.nmd().monitor.get_system_diagnostics_threaded,
+                                                (nmdurl,))
+                self._progress_queue.start()
+            except Exception as err:
+                import traceback
+                print(traceback.format_exc())
+                MessageBox.warning(self, "Daemon configuration error",
                                     'Error while parse parameter',
                                     '%s' % utf8(err))
 
