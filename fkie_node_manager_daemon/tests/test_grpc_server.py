@@ -125,7 +125,7 @@ class TestGrpcServer(unittest.TestCase):
         file_list = [file_tuple for file_tuple in self.ls.get_included_files(path, recursive=True, include_pattern=[])]
         self.assertEqual(len(file_list), 10, "Count of recursive included files is wrong, got: %d, expected: %d" % (len(file_list), 10))
         self.assertEqual(file_list[0].line_number, 6, "Wrong line number of first included file, got: %d, expected: %d" % (file_list[0].line_number, 6))
-        #self.assertEqual(file_list[0][1], file_list[0][3][0][1], "Wrong root path of second included file, expected: %s, got: %s" % (file_list[0][1], file_list[0][3][0][1]))
+        # self.assertEqual(file_list[0][1], file_list[0][3][0][1], "Wrong root path of second included file, expected: %s, got: %s" % (file_list[0][1], file_list[0][3][0][1]))
         self.assertEqual(file_list[1].line_number, 4, "Wrong line number of second included file, got: %d, expected: %d" % (file_list[1].line_number, 4))
         self.assertEqual(file_list[2].line_number, 10, "Wrong line number of third included file, got: %d, expected: %d" % (file_list[2].line_number, 10))
 
@@ -141,7 +141,7 @@ class TestGrpcServer(unittest.TestCase):
         try:
             launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
             self.fail("`load_launch` did not raises `exceptions.LaunchSelectionRequest` on multiple launch files")
-        except exceptions.LaunchSelectionRequest as lsr:
+        except exceptions.LaunchSelectionRequest as _lsr:
             path = interpret_path("$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on multiple launch files, got: %s, expected: `exceptions.LaunchSelectionRequest`: %s" % (type(err), err))

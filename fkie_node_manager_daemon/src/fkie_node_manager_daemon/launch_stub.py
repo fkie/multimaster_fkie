@@ -70,7 +70,7 @@ class LaunchStub(object):
         if response.status.code == OK:
             pass
         elif response.status.code == MULTIPLE_LAUNCHES:
-            raise exceptions.LaunchSelectionRequest([path for path in response.path], response.status.error_msg)
+            raise exceptions.LaunchSelectionRequest([_path for _path in response.path], response.status.error_msg)
         elif response.status.code == PARAMS_REQUIRED:
             raise exceptions.ParamSelectionRequest({arg.name: arg.value for arg in response.args}, response.status.error_msg)
         elif response.status.code == ALREADY_OPEN:
