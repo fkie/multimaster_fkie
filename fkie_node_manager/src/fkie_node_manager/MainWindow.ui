@@ -16,9 +16,6 @@
   <property name="windowTitle">
    <string>ROS Node Manager</string>
   </property>
-  <property name="toolTip">
-   <string>Go to the root of the help</string>
-  </property>
   <property name="locale">
    <locale language="English" country="UnitedStates"/>
   </property>
@@ -808,8 +805,12 @@ p, li { white-space: pre-wrap; }
                <height>26</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>Go to the root of the help</string>
+             </property>
              <property name="icon">
-              <iconset theme="go-home"/>
+              <iconset theme="go-home">
+               <normaloff>.</normaloff>.</iconset>
              </property>
              <property name="flat">
               <bool>true</bool>
@@ -834,7 +835,8 @@ p, li { white-space: pre-wrap; }
               <string>Go back in history</string>
              </property>
              <property name="icon">
-              <iconset theme="go-previous"/>
+              <iconset theme="go-previous">
+               <normaloff>.</normaloff>.</iconset>
              </property>
              <property name="flat">
               <bool>true</bool>
@@ -859,7 +861,8 @@ p, li { white-space: pre-wrap; }
               <string>Go forward in history</string>
              </property>
              <property name="icon">
-              <iconset theme="go-next"/>
+              <iconset theme="go-next">
+               <normaloff>.</normaloff>.</iconset>
              </property>
              <property name="flat">
               <bool>true</bool>
