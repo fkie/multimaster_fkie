@@ -485,7 +485,7 @@ class MasterViewProxy(QWidget):
                 nmd_node = master_info.getNode('/node_manager_daemon')
                 if nmd_node is None:  # do not test for PID. It can be None if daemon is busy on load big launch files
                     self._has_nmd = False
-                    if time.time() - self.__last_question_start_nmd > 1.:
+                    if time.time() - self.__last_question_start_nmd > 10.:
                         self.__last_question_start_nmd = time.time()
                         if not self.is_local:
                             self.message_frame.show_question(MessageFrame.TYPE_NMD, "node_manager_daemon not found for '%s'.\nShould it be started?" % self.masteruri, MessageData(self.masteruri))
@@ -1980,7 +1980,6 @@ class MasterViewProxy(QWidget):
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):
-        # TODO
         self._restart_nodelets = {}
         nodenames = [n.name for n in nodes]
         nodelet_mngr = ''
@@ -2167,15 +2166,9 @@ class MasterViewProxy(QWidget):
         if node is not None and node.uri is not None and (not self._is_in_ignore_list(node.name) or force):
             try:
                 rospy.loginfo("Stop node '%s'[%s]", utf8(node.name), utf8(node.uri))
-                # TODO
-                # nm.filewatcher().rem_binary(node.name)
-                # 'print "STOP set timeout", node
                 socket.setdefaulttimeout(10)
-                # 'print "STOP create xmlrpc", node
                 p = xmlrpclib.ServerProxy(node.uri)
-                # 'print "STOP send stop", node
                 p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
-                # 'print "STOP stop finished", node
                 if node.kill_on_stop and node.pid:
                     # wait kill_on_stop is an integer
                     if isinstance(node.kill_on_stop, (int, float)):
