@@ -44,7 +44,7 @@ from fkie_node_manager_daemon import screen
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.editor.yaml_highlighter import YamlHighlighter
 
-from .editor import TextEdit
+from .editor.text_edit import TextEdit
 try:
     from python_qt_binding.QtGui import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtGui import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton

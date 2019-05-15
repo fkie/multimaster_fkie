@@ -62,7 +62,7 @@ import fkie_node_manager as nm
 from .capability_table import CapabilityTable
 from .detailed_msg_box import MessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
-from .editor import Editor
+from .editor.editor import Editor
 from .launch_files_widget import LaunchFilesWidget
 from .log_widget import LogWidget
 from .master_list_model import MasterModel, MasterIconsDelegate
