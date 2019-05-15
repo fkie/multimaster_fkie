@@ -114,7 +114,7 @@ class Settings(object):
         print("PACKAGE_DIR: %s" % PACKAGE_DIR)
     CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
     ''':ivar CFG_PATH: configuration path to store the settings and history'''
-    HELP_FILE = os.path.join(PACKAGE_DIR, 'README.rst')
+    HELP_FILE = os.path.join(PACKAGE_DIR, 'doc/index.rst')
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
     LOG_PATH = screen.LOG_PATH
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"

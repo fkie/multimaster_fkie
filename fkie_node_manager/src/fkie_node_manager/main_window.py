@@ -35,11 +35,13 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from datetime import datetime
+from docutils import examples
 from fkie_multimaster_msgs.msg import MasterState
 from python_qt_binding import loadUi, QT_BINDING_VERSION
-from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, Signal
-from python_qt_binding.QtGui import QIcon, QKeySequence, QPixmap
+from python_qt_binding.QtCore import QFile, QPoint, QSize, Qt, QTimer, QUrl, Signal
+from python_qt_binding.QtGui import QDesktopServices, QIcon, QKeySequence, QPixmap
 from python_qt_binding.QtGui import QPalette, QColor
+
 import getpass
 import grpc
 import os
@@ -51,7 +53,7 @@ import xmlrpclib
 import ruamel.yaml
 
 from fkie_master_discovery.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import utf8, get_pkg_path
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url as nmdurl
@@ -69,7 +71,7 @@ from .menu_rqt import MenuRqt
 from .network_discovery_dialog import NetworkDiscoveryDialog
 from .parameter_dialog import ParameterDialog
 from .profile_widget import ProfileWidget
-from .progress_queue import ProgressQueue  # , ProgressThread
+from .progress_queue import ProgressQueue
 from .select_dialog import SelectDialog
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
@@ -234,9 +236,7 @@ class MainWindow(QMainWindow):
         self._shortcut_copy.activated.connect(self.descriptionTextEdit.copy)
 
         self.tabifyDockWidget(self.launch_dock, self.descriptionDock)
-        self.tabifyDockWidget(self.launch_dock, self.helpDock)
         self.launch_dock.raise_()
-        self.helpDock.setWindowIcon(QIcon(':icons/crystal_clear_helpcenter.png'))
 
         flags = self.windowFlags()
         self.setWindowFlags(flags | Qt.WindowContextHelpButtonHint)
@@ -262,16 +262,16 @@ class MainWindow(QMainWindow):
         # since the is_local method is threaded for host names, call it to cache the localhost
         nm.is_local("localhost")
 
-        # set the help text
-        try:
-            from docutils import examples
-            with file(nm.settings().HELP_FILE) as f:
-                self.textBrowser.setText(examples.html_body(utf8(f.read())))
-        except Exception:
-            import traceback
-            msg = "Error while generate help: %s" % traceback.format_exc(2)
-            rospy.logwarn(msg)
-            self.textBrowser.setText(msg)
+        # add help page
+        self.ui_help_web_view.page().setLinkDelegationPolicy(self.ui_help_web_view.page().DelegateAllLinks)
+        self.ui_help_web_view.linkClicked.connect(self._on_help_link_clicked)
+        self._help_history = []
+        self._help_history_idx = -1
+        self._help_root_url = QUrl('file://%s' % nm.settings().HELP_FILE)
+        self._on_help_go_home()
+        self.ui_help_home.clicked.connect(self._on_help_go_home)
+        self.ui_help_back.clicked.connect(self._on_help_go_back)
+        self.ui_help_forward.clicked.connect(self._on_help_go_forward)
 
         try:
             screen.test_screen()
@@ -300,7 +300,6 @@ class MainWindow(QMainWindow):
             self.networkDock.setFeatures(self.networkDock.NoDockWidgetFeatures)
             self.launch_dock.setFeatures(self.launch_dock.NoDockWidgetFeatures)
             self.descriptionDock.setFeatures(self.descriptionDock.NoDockWidgetFeatures)
-            self.helpDock.setFeatures(self.helpDock.NoDockWidgetFeatures)
             self.log_dock.setFeatures(self.log_dock.NoDockWidgetFeatures)
 
         # =============================
@@ -343,7 +342,6 @@ class MainWindow(QMainWindow):
         nm.nmd().monitor.system_diagnostics_signal.connect(self._callback_system_diagnostics)
         nm.nmd().monitor.remote_diagnostics_signal.connect(self._callback_diagnostics)
 
-        # TODO: self.launch_dock.launchlist_model.reloadPackages()
         self._select_index = 0
         self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+Shift+R", "restart selected nodes")), self)
         self._shortcut_restart_nodes.activated.connect(self._restart_nodes)
@@ -355,7 +353,7 @@ class MainWindow(QMainWindow):
 
     def _dock_widget_in(self, area=Qt.LeftDockWidgetArea, only_visible=False):
         result = []
-        docks = [self.launch_dock, self.descriptionDock, self.helpDock, self.networkDock]
+        docks = [self.launch_dock, self.descriptionDock, self.networkDock]
         for dock in docks:
             if self.dockWidgetArea(dock) == area:
                 if not only_visible or (only_visible and dock.isVisibleTo(self)):
@@ -394,8 +392,6 @@ class MainWindow(QMainWindow):
             self.launch_dock.setVisible(not checked)
         if self.dockWidgetArea(self.descriptionDock) == Qt.LeftDockWidgetArea:
             self.descriptionDock.setVisible(not checked)
-        if self.dockWidgetArea(self.helpDock) == Qt.LeftDockWidgetArea:
-            self.helpDock.setVisible(not checked)
         if self.dockWidgetArea(self.networkDock) == Qt.LeftDockWidgetArea:
             self.networkDock.setVisible(not checked)
         self.hideDocksButton.setArrowType(Qt.RightArrow if checked else Qt.LeftArrow)
@@ -1359,7 +1355,6 @@ class MainWindow(QMainWindow):
             if m.master_state is not None:
                 m.set_duplicate_nodes(running_nodes)
 
-
 # ======================================================================================================================
 # Handling of master list view
 # ======================================================================================================================
@@ -1973,11 +1968,8 @@ class MainWindow(QMainWindow):
             self.descriptionDock.raise_()
             self.descriptionTextEdit.setFocus(Qt.TabFocusReason)
         elif self._select_index == 3:
-            self.helpDock.raise_()
-            self.textBrowser.setFocus(Qt.TabFocusReason)
-        elif self._select_index == 4:
             self.startRobotButton.setFocus(Qt.TabFocusReason)
-        elif self._select_index == 5:
+        elif self._select_index == 4:
             self.hideDocksButton.setFocus(Qt.TabFocusReason)
         else:
             self._select_index = -1
@@ -2091,33 +2083,33 @@ class MainWindow(QMainWindow):
 
     def _nmd_yaml_cfg(self, data, nmdurl):
         params = {}
-	try:
+        try:
             params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
-	except Exception as err:
+        except Exception as err:
             rospy.logwarn("Error while parse daemon configuration: %s" % utf8(err))
-        dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
-        dia.setWindowTitle('Daemon Configuration')
-        dia.setFocusField('load_warn_level')
-        if dia.exec_():
-            try:
-                params = dia.getKeywords(with_tags=True)
-                buf = ruamel.yaml.compat.StringIO()
-                ruamel.yaml.dump(params, buf, Dumper=ruamel.yaml.RoundTripDumper)
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               '%s: set configuration for daemon' % nmdurl,
-                                               nm.nmd().settings.set_config,
-                                               (nmdurl, buf.getvalue()))
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               '%s: get system diagnostics' % nmdurl,
-                                               nm.nmd().monitor.get_system_diagnostics_threaded,
-                                               (nmdurl,))
-                self._progress_queue.start()
-            except Exception as err:
-                import traceback
-                print(traceback.format_exc())
-                MessageBox.warning(self, "Daemon configuration error",
-                                   'Error while parse parameter',
-                                   '%s' % utf8(err))
+            dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
+            dia.setWindowTitle('Daemon Configuration')
+            dia.setFocusField('load_warn_level')
+            if dia.exec_():
+                try:
+                    params = dia.getKeywords(with_tags=True)
+                    buf = ruamel.yaml.compat.StringIO()
+                    ruamel.yaml.dump(params, buf, Dumper=ruamel.yaml.RoundTripDumper)
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   '%s: set configuration for daemon' % nmdurl,
+                                                   nm.nmd().settings.set_config,
+                                                   (nmdurl, buf.getvalue()))
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   '%s: get system diagnostics' % nmdurl,
+                                                   nm.nmd().monitor.get_system_diagnostics_threaded,
+                                                   (nmdurl,))
+                    self._progress_queue.start()
+                except Exception as err:
+                    import traceback
+                    print(traceback.format_exc())
+                    MessageBox.warning(self, "Daemon configuration error",
+                                    'Error while parse parameter',
+                                    '%s' % utf8(err))
 
     def on_nmd_err(self, method, url, path, error):
         '''
@@ -2143,3 +2135,53 @@ class MainWindow(QMainWindow):
                 if master:
                     self.master_model.add_master_error(nm.nameres().mastername(muri), 'node_manager_daemon has unimplemented methods! Please update!')
                     master.set_diagnostic_warn('/node_manager_daemon', 'unimplemented methods detected! Please update!')
+
+# ======================================================================================================================
+# Help site handling
+# ======================================================================================================================
+
+    def _on_help_go_back(self):
+        self._on_help_link_clicked(QUrl(''), history_idx=-1)
+
+    def _on_help_go_home(self):
+        self._on_help_link_clicked(self._help_root_url)
+
+    def _on_help_go_forward(self):
+        self._on_help_link_clicked(QUrl(''), history_idx=1)
+
+    def _on_help_link_clicked(self, link, history_idx=0):
+        if link.isEmpty():
+            # read from history if given link is empty
+            try:
+                link = self._help_history[self._help_history_idx + history_idx]
+                self._help_history_idx += history_idx
+            except Exception:
+                pass
+        if not link.isEmpty():
+            if history_idx == 0:
+                # it was not a history request -> add link to history
+                current_link = self.ui_help_web_view.url()
+                if current_link != link:
+                    # if we navigate in the history previously remove forward items
+                    if len(self._help_history) - 1 > self._help_history_idx:
+                        self._help_history = self._help_history[:self._help_history_idx + 1]
+                    self._help_history_idx += 1
+                    self._help_history.append(link)
+            if link.scheme() == 'file':
+                try:
+                    fpath = link.toLocalFile()
+                    if fpath.endswith('.rst'):
+                        # render .rst files
+                        with file(fpath) as f:
+                            self.ui_help_web_view.setHtml(examples.html_body(utf8(f.read())), link)
+                    else:
+                        self.ui_help_web_view.setUrl(link)
+                except Exception:
+                    import traceback
+                    msg = "Error while generate help: %s" % traceback.format_exc(2)
+                    rospy.logwarn(msg)
+            else:
+                QDesktopServices.openUrl(link)
+        # update navigation buttons
+        self.ui_help_back.setEnabled(self._help_history_idx > 0)
+        self.ui_help_forward.setEnabled(self._help_history_idx < len(self._help_history) - 1)
