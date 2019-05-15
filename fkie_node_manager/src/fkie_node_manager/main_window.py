@@ -272,6 +272,12 @@ class MainWindow(QMainWindow):
         self.ui_help_home.clicked.connect(self._on_help_go_home)
         self.ui_help_back.clicked.connect(self._on_help_go_back)
         self.ui_help_forward.clicked.connect(self._on_help_go_forward)
+        if self.ui_help_home.icon().isNull():
+            self.ui_help_home.setText("Home")
+        if self.ui_help_back.icon().isNull():
+            self.ui_help_back.setText("Back")
+        if self.ui_help_forward.icon().isNull():
+            self.ui_help_forward.setText("Forward")
 
         try:
             screen.test_screen()
