@@ -763,6 +763,12 @@ p, li { white-space: pre-wrap; }
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <widget class="QFrame" name="ui_nav_frame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="frameShape">
            <enum>QFrame::NoFrame</enum>
           </property>
