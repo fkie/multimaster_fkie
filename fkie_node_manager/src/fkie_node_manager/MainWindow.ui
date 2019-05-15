@@ -16,6 +16,9 @@
   <property name="windowTitle">
    <string>ROS Node Manager</string>
   </property>
+  <property name="toolTip">
+   <string>Go to the root of the help</string>
+  </property>
   <property name="locale">
    <locale language="English" country="UnitedStates"/>
   </property>
@@ -792,28 +795,6 @@ p, li { white-space: pre-wrap; }
             <number>0</number>
            </property>
            <item>
-            <widget class="QPushButton" name="ui_help_back">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>26</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>back</string>
-             </property>
-             <property name="flat">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QPushButton" name="ui_help_home">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -827,8 +808,33 @@ p, li { white-space: pre-wrap; }
                <height>26</height>
               </size>
              </property>
-             <property name="text">
-              <string>home</string>
+             <property name="icon">
+              <iconset theme="go-home"/>
+             </property>
+             <property name="flat">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="ui_help_back">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>26</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>Go back in history</string>
+             </property>
+             <property name="icon">
+              <iconset theme="go-previous"/>
              </property>
              <property name="flat">
               <bool>true</bool>
@@ -849,8 +855,11 @@ p, li { white-space: pre-wrap; }
                <height>26</height>
               </size>
              </property>
-             <property name="text">
-              <string>forward</string>
+             <property name="statusTip">
+              <string>Go forward in history</string>
+             </property>
+             <property name="icon">
+              <iconset theme="go-next"/>
              </property>
              <property name="flat">
               <bool>true</bool>
