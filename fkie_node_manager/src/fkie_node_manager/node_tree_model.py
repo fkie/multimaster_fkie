@@ -1037,7 +1037,7 @@ class HostItem(GroupItem):
                                 tooltip += '\n<dt><font color="grey">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                             if free is not None:
                                 tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % ('Free', free, free_percent)
-                            has_cpu_processes = False
+                            cpu_processes = 3
                             for key, value in others:
                                 key_fmt = key
                                 val_fmt = value
@@ -1056,11 +1056,11 @@ class HostItem(GroupItem):
                                     if pid:
                                         kill_ref = ' <a href="kill-pid://pid%s">kill</a>' % pid
                                     tooltip += '\n<dt><font color="red">%s</font>%s</dt>' % (val_fmt, kill_ref)
-                                    has_cpu_processes = True
+                                    cpu_processes -= 1
                                 else:
                                     tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
-                            if not has_cpu_processes and diag.name == 'CPU Load':
-                                for _idx in range(3):
+                            if cpu_processes > 0 and diag.name == 'CPU Load':
+                                for _idx in range(cpu_processes):
                                     tooltip += '\n<dt><font color="grey">%s</font></dt>' % ('--')
                         except Exception as err:
                             tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
