@@ -77,20 +77,6 @@ def clear_channels():
     INSECURE_CHANNEL_CACHE.clear()
 
 
-def add_insecure_channel(url):
-    '''
-    Adds a new insecure channel for given url. Ports are ignored!
-    :param str url: the url to parse
-    '''
-    global INSECURE_CHANNEL_CACHE
-#     global CREDENTIALS
-    cn = ChannelName(url)
-    if cn not in INSECURE_CHANNEL_CACHE:
-        rospy.logdebug("add insecure channel to %s" % url)
-#         INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
-        INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
-
-
 def remove_insecure_channel(url):
     global INSECURE_CHANNEL_CACHE
     try:
@@ -115,8 +101,10 @@ def get_insecure_channel(url):
         except Exception:
             if host.get_port(url):
                 rospy.logdebug("create insecure channel to %s" % url)
-                INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
+                # does the storeage cause delays on connection problems?
+                # INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
+                # return INSECURE_CHANNEL_CACHE[cn]
 #                 INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
-                return INSECURE_CHANNEL_CACHE[cn]
+                return grpc.insecure_channel(url)
     print("No cached URL for insecure channel: %s" % url)
     return None
