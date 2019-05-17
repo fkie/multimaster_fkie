@@ -102,9 +102,9 @@ def get_insecure_channel(url):
             if host.get_port(url):
                 rospy.logdebug("create insecure channel to %s" % url)
                 # does the storeage cause delays on connection problems?
-                # INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
-                # return INSECURE_CHANNEL_CACHE[cn]
+                INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
+                return INSECURE_CHANNEL_CACHE[cn]
 #                 INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
-                return grpc.insecure_channel(url)
+                # return grpc.insecure_channel(url)
     print("No cached URL for insecure channel: %s" % url)
     return None
