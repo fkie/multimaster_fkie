@@ -2003,11 +2003,11 @@ class MainWindow(QMainWindow):
         '''
         if self.currentMaster:
             try:
-                if not os.path.isdir(nm.settings().ROBOTS_DIR):
-                    os.makedirs(nm.settings().ROBOTS_DIR)
+                if not os.path.isdir(nm.settings().robots_path):
+                    os.makedirs(nm.settings().robots_path)
                 (fileName, _) = QFileDialog.getOpenFileName(self,
                                                             "Set robot image",
-                                                            nm.settings().ROBOTS_DIR,
+                                                            nm.settings().robots_path,
                                                             "Image files (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.xbm);;All files (*)")
                 if fileName and self.__current_master_label_name:
                     p = QPixmap(fileName)
