@@ -10,7 +10,7 @@ Whats new:
 
 # FKIE multimaster for ROS
 
-The ROS stack of *multimaster_fkie* offers a complete solution for using ROS with multicores.
+The ROS stack of *fkie_multimaster* offers a complete solution for using ROS with multicores.
 In addition, Node Manager with a daemon provide a GUI-based management environment that is very useful to manage ROS-launch configurations and control running nodes, also in a single-core system.
 
 ![multimaster overview](multimaster_overview.png)
@@ -23,14 +23,14 @@ The communication between Node Manager and the daemon is based on python [gRPC](
 
 ```
 cd catkin_ws/src
-git clone https://github.com/fkie/multimaster_fkie.git
+git clone https://github.com/fkie/multimaster_fkie.git multimaster
 rosdep update
-rosdep install -i --as-root pip:false --reinstall --from-paths multimaster_fkie
+rosdep install -i --as-root pip:false --reinstall --from-paths multimaster
 ```
 
 Than build all packages:
 ```
-catkin build multimaster_fkie
+catkin build fkie_multimaster
 ```
 
 ## Manual:
