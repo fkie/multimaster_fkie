@@ -15,11 +15,16 @@ In addition, Node Manager with a daemon provide a GUI-based management environme
 
 ![multimaster overview](multimaster_overview.png)
 
+## Packages have been renamed
+
+The FKIE multimaster packages used to have an \_fkie suffix. In conformance with [REP-144](http://www.ros.org/reps/rep-0144.html), all packages have been renamed with an fkie\_ prefix, starting from version 1.0.0.
+If you have built an older version from source, make sure to remove the build artifacts of the old versions from your build space.
+
 ## Install
 
-The communication between Node Manager and the daemon is based on python [gRPC](https://grpc.io/). Until Ubuntu *cosmic* you have to install *python-grpcio-tools* from PIP. That's why there are no debian packages for this version of FKIE multimaster. Use follow command line to install all dependencies:
+The communication between the Node Manager GUI and the Daemon is based on Python [gRPC](https://grpc.io/). If you are using Ubuntu 18.10 or later, you can simply run `sudo apt install python-grpcio python-grpc-tools`. For Ubuntu 18.04 LTS, we provide a [PPA backport of the gRPC libraries](https://launchpad.net/~roehling/+archive/ubuntu/grpc). If your Ubuntu version is older than that, you need to install `grpcio-tools` from [PyPI](https://pypi.org/project/grpcio-tools/).
 
-> if you already build previous version (without node_manager_daemon) you need to clean your build space to remove all packages with `_fkie` suffix.
+You can run the following commands to setup a build from source:
 
 ```
 cd catkin_ws/src
@@ -28,18 +33,18 @@ rosdep update
 rosdep install -i --as-root pip:false --reinstall --from-paths multimaster
 ```
 
-Than build all packages:
+Then build all packages:
 ```
 catkin build fkie_multimaster
 ```
 
-## Manual:
+## Documentation
 
-* [multimaster_fkie](http://fkie.github.io/multimaster_fkie)
+* [multimaster\_fkie](http://fkie.github.io/multimaster_fkie)
 * [discovery](http://fkie.github.io/multimaster_fkie/master_discovery.html) -- `discovery using multicast or zeroconf`
 * [synchronization](http://fkie.github.io/multimaster_fkie/master_sync.html) -- `master synchronization`
-* [node manager GUI](http://fkie.github.io/multimaster_fkie/node_manager.html) -- `A GUI to manage the configuration on local and remote ROS masters`
-* [node manager daemon](http://fkie.github.io/multimaster_fkie/node_manager_daemon.html) -- `Helper node allows an easy (auto)start of remote nodes and manage remote launch files`
+* [Node Manager GUI](http://fkie.github.io/multimaster_fkie/node_manager.html) -- `A GUI to manage the configuration on local and remote ROS masters`
+* [Node Manager daemon](http://fkie.github.io/multimaster_fkie/node_manager_daemon.html) -- `Helper node allows an easy (auto)start of remote nodes and manage remote launch files`
 
-For ROS-interfaces and parameterization see [ros_wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you can see example launch files of each package.
+For ROS interfaces and parameterization see the [ROS Wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you can find example launch files in each package.
 
