@@ -121,6 +121,7 @@ class Editor(QMainWindow):
         self.setWindowTitle(window_title)
         self.init_filenames = filenames
         self._search_thread = None
+        self._last_search_request = None
         # list with all open files
         self.files = []
         # create tabs for files
@@ -409,6 +410,7 @@ class Editor(QMainWindow):
                 self._search_thread = TextSearchThread(search_text, filename, path_text={filename: self.tabWidget.widget(0).document().toPlainText()}, recursive=True, only_launch=only_launch)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
                 self._search_thread.warning_signal.connect(self.on_search_result_warning)
+                self._last_search_request = (filename, search_text, insert_index, goto_line, only_launch)
                 if not self.graph_view.is_loading():
                     self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
                     self._search_thread.start()
@@ -464,10 +466,12 @@ class Editor(QMainWindow):
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():
             self.find_dialog.file_changed(self.tabWidget.currentWidget().filename)
+            self._last_search_request = None
 
     def on_tab_changed(self, index):
         if index > -1:
             self.graph_view.set_file(self.tabWidget.widget(index).filename, self.tabWidget.widget(0).filename)
+            self._last_search_request = None
 
     def on_close_tab(self, tab_index):
         '''
@@ -495,6 +499,7 @@ class Editor(QMainWindow):
                 # close editor, if no tabs are open
                 if not self.tabWidget.count():
                     self.close()
+            self._last_search_request = None
         except Exception:
             import traceback
             rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
@@ -512,6 +517,8 @@ class Editor(QMainWindow):
                 if self.tabWidget.widget(i).filename == grpc_path:
                     self.tabWidget.widget(i).file_changed(mtime)
                     break
+        if self._last_search_request is not None:
+            self.on_load_request(*self._last_search_request)
 
     def closeEvent(self, event):
         '''
