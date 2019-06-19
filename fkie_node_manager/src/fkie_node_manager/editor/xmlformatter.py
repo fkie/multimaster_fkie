@@ -185,8 +185,16 @@ class Formatter():
 				for tk in iter(self):
 					getattr(tk, step)()
 			result = ""
+			prev_comment = False
 			for tk in iter(self):
-				result += str(tk)
+				tk_str = str(tk)
+				# remove newline for wrapped items if we had comment before
+				if prev_comment:
+					if tk.arg[0] in self.formatter.wraped:
+						tk_str = tk_str.replace('\n\n', '\n', 1)
+				result += tk_str
+				if not isinstance(tk, Formatter.CharacterData):
+					prev_comment = isinstance(tk, Formatter.Comment)
 			return result
 
 		def append(self, tk):
