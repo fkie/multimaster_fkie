@@ -808,11 +808,14 @@ class ArrayBox(MainBox):
         remButton.clicked.connect(self._on_rem_dynamic_entry)
         self.options_layout.addWidget(remButton)
 
-    def _on_add_dynamic_entry(self):
+    def _on_add_dynamic_entry(self, checked=False, value=None):
         self.setUpdatesEnabled(False)
         try:
-            if self._dynamic_value is not None:
-                self._create_dynamic_frame(self._dynamic_value)
+            val = value
+            if val is None:
+                val = self._dynamic_value
+            if val is not None:
+                self._create_dynamic_frame(val)
         finally:
             self.setUpdatesEnabled(True)
 
@@ -850,10 +853,16 @@ class ArrayBox(MainBox):
         try:
             if self._is_dynamic:
                 self.addDynamicBox()
-                self._dynamic_value = value
+                # Set value used to add dynamic array fields.
+                # On republish there is an array filled array. So only last enry will be used on add new entry.
+                if isinstance(value, list):
+                    if value:
+                        self._dynamic_value = value[-1]
+                else:
+                    self._dynamic_value = value
                 self.set_values(value)
         except Exception:
-            print(traceback.format_exc(1))
+            print(traceback.format_exc())
         finally:
             self.setUpdatesEnabled(True)
 
@@ -894,7 +903,8 @@ class ArrayBox(MainBox):
             # create the list of the elements of the length of values
             if count_entries < len(values):
                 for i in range(len(values) - count_entries):
-                    self._on_add_dynamic_entry()
+                    # use array entry
+                    self._on_add_dynamic_entry(value=values[i])
             elif count_entries > len(values):
                 for i in range(count_entries - len(values)):
                     self._on_rem_dynamic_entry()
