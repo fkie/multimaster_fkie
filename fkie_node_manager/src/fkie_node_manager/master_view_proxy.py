@@ -223,7 +223,7 @@ class MasterViewProxy(QWidget):
         self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
         self.node_delegate = NodeInfoIconsDelegate()
         self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
-        self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
+        # self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
         self.masterTab.nodeTreeView.expanded.connect(self.on_node_expanded)
         sm = self.masterTab.nodeTreeView.selectionModel()
         sm.selectionChanged.connect(self.on_node_selection_changed)
@@ -2949,8 +2949,6 @@ class MasterViewProxy(QWidget):
             index = selected
             while index is not None and index.isValid():
                 item = proxy_model.sourceModel().itemFromIndex(index)
-                if type(item) in [TopicGroupItem, ServiceGroupItem, GroupItem] and not tree_view.isExpanded(index):
-                    tree_view.setExpanded(index, True)
                 tree_view.setExpanded(index, True)
                 index = index.parent()
         # expand the root item. NodesView has on sync also other hosts. In this case only local host will expanded.
