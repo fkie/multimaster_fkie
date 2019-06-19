@@ -268,6 +268,7 @@ class Editor(QMainWindow):
         self.horizontal_layout_log_bar.setContentsMargins(2, 0, 2, 0)
         self.horizontal_layout_log_bar.setObjectName("horizontal_layout_log_bar")
         # add info label
+        self._log_warning_count = 0
         self.log_browser = QTextEdit()
         self.log_browser.setObjectName("log_browser")
         self.log_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -284,10 +285,6 @@ class Editor(QMainWindow):
         self.clear_log_button.clicked.connect(self.on_clear_log_button_clicked)
         self.clear_log_button.setFlat(True)
         self.horizontal_layout_log_bar.addWidget(self.clear_log_button)
-        self._timer_hide_log = QTimer(self)
-        self._timer_hide_log.setSingleShot(True)
-        self._timer_hide_log.setInterval(3000)
-        self._timer_hide_log.timeout.connect(self._timed_hide_log)
         self.log_dock.setWidget(self.log_bar)
         return self.log_dock
 
@@ -447,21 +444,15 @@ class Editor(QMainWindow):
                 pass
 
     def on_graph_info(self, msg, warning=False):
-        self._timer_hide_log.stop()
-        self._timer_hide_log.start()
         text_color = "#000000"
         if warning:
+            self._log_warning_count += 1
+            if self._log_warning_count == 1:
+                self.show_log_button.setIcon(self._error_icon)
             text_color = "#FE9A2E"
         text = ('<pre style="padding:10px;"><dt><font color="%s">'
                 '%s</font></dt></pre>' % (text_color, msg))
         self.log_browser.append(text)
-        if warning:
-            self.log_dock.setVisible(True)
-            self.show_log_button.setChecked(True)
-
-    def _timed_hide_log(self):
-        self.log_dock.setVisible(False)
-        self.show_log_button.setChecked(False)
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():
@@ -590,6 +581,8 @@ class Editor(QMainWindow):
     ##############################################################################
 
     def on_clear_log_button_clicked(self):
+        self._log_warning_count = 0
+        self.show_log_button.setIcon(self._empty_icon)
         self.log_browser.clear()
         self.log_dock.setVisible(False)
         self.show_log_button.setChecked(False)
