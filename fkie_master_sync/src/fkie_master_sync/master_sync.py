@@ -68,7 +68,8 @@ class Main(object):
         # load interface
         self._load_interface()
         # subscribe to changes notifier topics
-        topic_names = interface_finder.get_changes_topic(masteruri_from_master())
+        self._check_host = rospy.get_param('~check_host', True)
+        topic_names = interface_finder.get_changes_topic(masteruri_from_master(), check_host=self._check_host)
         self.sub_changes = dict()
         '''@ivar: `dict` with topics {name: U{rospy.Subscriber<http://docs.ros.org/api/rospy/html/rospy.topics.Subscriber-class.html>}} publishes the changes of the discovered ROS masters.'''
         for topic_name in topic_names:
@@ -110,7 +111,7 @@ class Main(object):
             <http://docs.ros.org/api/fkie_master_discovery/html/modules.html#interface-finder-module>}
         '''
         if not rospy.is_shutdown():
-            service_names = interface_finder.get_listmaster_service(masteruri_from_master(), False)
+            service_names = interface_finder.get_listmaster_service(masteruri_from_master(), False, check_host=self._check_host)
             for service_name in service_names:
                 try:
                     with self.__lock:

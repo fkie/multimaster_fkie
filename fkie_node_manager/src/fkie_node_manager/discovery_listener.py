@@ -82,7 +82,7 @@ class MasterListService(QObject):
             thread.join(3)
         print("  Discovery listener is off!")
 
-    def retrieveMasterList(self, masteruri, wait=False):
+    def retrieveMasterList(self, masteruri, wait=False, check_host=True):
         '''
         This method use the service 'list_masters' of the master_discovery to get
         the list of discovered ROS master. The retrieved list will be emitted as
@@ -94,13 +94,13 @@ class MasterListService(QObject):
         '''
         with self._lock:
             if masteruri not in self.__serviceThreads:
-                upthread = MasterListThread(masteruri, wait)
+                upthread = MasterListThread(masteruri, wait, check_host)
                 upthread.master_list_signal.connect(self._on_master_list)
                 upthread.err_signal.connect(self._on_err)
                 self.__serviceThreads[masteruri] = upthread
                 upthread.start()
 
-    def refresh(self, masteruri, wait=False):
+    def refresh(self, masteruri, wait=False, check_host=True):
         '''
         This method use the service 'refresh' of the master_discovery to refresh the
         discovered masters.
@@ -111,7 +111,7 @@ class MasterListService(QObject):
         '''
         with self._lock:
             if masteruri not in self.__refreshThreads:
-                upthread = MasterRefreshThread(masteruri, wait)
+                upthread = MasterRefreshThread(masteruri, wait, check_host)
                 upthread.ok_signal.connect(self._on_ok)
                 upthread.err_signal.connect(self._on_err)
                 self.__refreshThreads[masteruri] = upthread
@@ -156,11 +156,12 @@ class MasterListThread(QObject, threading.Thread):
     master_list_signal = Signal(str, str, list)
     err_signal = Signal(str, str, bool)
 
-    def __init__(self, masteruri, wait, parent=None):
+    def __init__(self, masteruri, wait, check_host=True, parent=None):
         QObject.__init__(self)
         threading.Thread.__init__(self)
         self._masteruri = masteruri
         self._wait = wait
+        self._check_host = check_host
         self.setDaemon(True)
 
     def run(self):
@@ -168,7 +169,7 @@ class MasterListThread(QObject, threading.Thread):
         '''
         if self._masteruri:
             found = False
-            service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait)
+            service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait, check_host=self._check_host)
             err_msg = ''
             for service_name in service_names:
                 rospy.logdebug("service 'list_masters' found on %s as %s", self._masteruri, service_name)
@@ -201,18 +202,19 @@ class MasterRefreshThread(QObject, threading.Thread):
     ok_signal = Signal(str)
     err_signal = Signal(str, str, bool)
 
-    def __init__(self, masteruri, wait, parent=None):
+    def __init__(self, masteruri, wait, check_host=True, parent=None):
         QObject.__init__(self)
         threading.Thread.__init__(self)
         self._masteruri = masteruri
         self._wait = wait
+        self._check_host = check_host
         self.setDaemon(True)
 
     def run(self):
         '''
         '''
         if self._masteruri:
-            service_names = interface_finder.get_refresh_service(self._masteruri, self._wait)
+            service_names = interface_finder.get_refresh_service(self._masteruri, self._wait, check_host=self._check_host)
             err_msg = ''
             for service_name in service_names:
                 rospy.logdebug("service 'refresh' found on %s as %s", self._masteruri, service_name)
