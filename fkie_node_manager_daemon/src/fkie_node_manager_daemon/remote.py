@@ -36,8 +36,6 @@ import os
 import grpc
 import rospy
 
-from . import host
-
 INSECURE_CHANNEL_CACHE = dict()
 ''' the cache for channels '''
 
@@ -58,20 +56,6 @@ except Exception:
 #     CREDENTIALS = grpc.ssl_channel_credentials(root_certificates=trusted_certs)
 
 
-class ChannelName:
-
-    def __init__(self, url, hostname=''):
-        self.url = url
-        self.hostname = host.get_hostname(url)
-        self.__hash = hash(url)
-
-    def __eq__(self, other):
-        return self.__hash == other.__hash
-
-    def __hash__(self):
-        return self.__hash
-
-
 def clear_channels():
     global INSECURE_CHANNEL_CACHE
     INSECURE_CHANNEL_CACHE.clear()
@@ -86,25 +70,19 @@ def remove_insecure_channel(url):
         pass
 
 
-def get_insecure_channel(url):
+def get_insecure_channel(url, cached=False):
     '''
     :param str url: the url to parse or hostname. If hostname the channel should be added before.
-    :return: returns insecure channel for given url. Ports are ignored!
+    :return: returns insecure channel for given url
     :rtype: grpc.Channel or None
     '''
-    global INSECURE_CHANNEL_CACHE
 #     global CREDENTIALS
-    if url:
-        cn = ChannelName(url)
-        try:
-            return INSECURE_CHANNEL_CACHE[cn]
-        except Exception:
-            if host.get_port(url):
-                rospy.logdebug("create insecure channel to %s" % url)
-                # does the storeage cause delays on connection problems?
-                INSECURE_CHANNEL_CACHE[cn] = grpc.insecure_channel(url)
-                return INSECURE_CHANNEL_CACHE[cn]
-#                 INSECURE_CHANNEL_CACHE[cn] = grpc.secure_channel(url, CREDENTIALS)
-                # return grpc.insecure_channel(url)
-    print("No cached URL for insecure channel: %s" % url)
-    return None
+    if cached:
+        global INSECURE_CHANNEL_CACHE
+        if url in INSECURE_CHANNEL_CACHE:
+            return INSECURE_CHANNEL_CACHE[url]
+    rospy.logdebug("create insecure channel to %s" % url)
+    channel = grpc.insecure_channel(url)
+    if cached:
+        INSECURE_CHANNEL_CACHE[url] = channel
+    return channel

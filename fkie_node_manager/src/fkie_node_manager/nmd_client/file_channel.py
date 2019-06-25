@@ -36,7 +36,6 @@ import os
 import rospy
 from python_qt_binding.QtCore import Signal
 
-import fkie_node_manager_daemon.remote as remote
 import fkie_node_manager_daemon.file_stub as fstub
 from fkie_node_manager_daemon import url as nmdurl
 
@@ -88,10 +87,8 @@ class FileChannel(ChannelInterface):
             self._cache_path.clear()
 
     def get_file_manager(self, uri='localhost:12321'):
-        channel = remote.get_insecure_channel(uri)
-        if channel is not None:
-            return fstub.FileStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % uri)
+        channel = self.get_insecure_channel(uri)
+        return fstub.FileStub(channel), channel
 
     def package_name(self, grpc_path):
         uri, _path = nmdurl.split(grpc_path, with_scheme=True)
@@ -129,7 +126,7 @@ class FileChannel(ChannelInterface):
     def _list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
         uri, path = nmdurl.split(grpc_path)
         rospy.logdebug("[thread] list path: %s, '%s'" % (uri, path))
-        fm = self.get_file_manager(uri)
+        fm, channel = self.get_file_manager(uri)
         result = None
         try:
             if not clear_cache:
@@ -143,12 +140,12 @@ class FileChannel(ChannelInterface):
                     self.list_packages_threaded(grpc_path, clear_cache)
 #                    self.get_loaded_files_threaded(grpc_path)
             except Exception as e:
-                remote.remove_insecure_channel(uri)
                 self.error.emit("list_path", "grpc://%s" % uri, path, e)
                 # rospy.logwarn("LIST PATH: %s" % e)
         if result is not None:
             self._cache_path[grpc_path] = result
             self.listed_path.emit("grpc://%s" % uri, path, result)
+        self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("lpt_%s" % grpc_path)
 
@@ -165,7 +162,7 @@ class FileChannel(ChannelInterface):
     def _check_for_changed_files_threaded(self, grpc_url, path_dict):
         rospy.logdebug("[thread] check_for_changed_files_threaded: with %d files on %s" % (len(path_dict), grpc_url))
         uri, _path = nmdurl.split(grpc_url, with_scheme=False)
-        fm = self.get_file_manager(uri)
+        fm, channel = self.get_file_manager(uri)
         try:
             response = fm.changed_files(path_dict)
             for item in response:
@@ -174,6 +171,7 @@ class FileChannel(ChannelInterface):
             self.error.emit("changed_files", "grpc://%s" % uri, "", e)
             # rospy.logwarn("check_for_changed_files_threaded: %s" % e)
         url, _path = nmdurl.split(grpc_url, with_scheme=True)
+        self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("cft_%s" % url)
 
@@ -191,7 +189,7 @@ class FileChannel(ChannelInterface):
                 self._cache_packages['']  # only to cause an exception
         except KeyError:
             rospy.logdebug("[thread] get packages %s" % grpc_url)
-            fm = self.get_file_manager(uri)
+            fm, channel = self.get_file_manager(uri)
             try:
                 result = fm.list_packages(clear_ros_cache)
                 fixed_result = {nmdurl.join(grpc_url, path): name for path, name in result.items()}
@@ -199,8 +197,9 @@ class FileChannel(ChannelInterface):
                 self.packages.emit(grpc_url, fixed_result)
                 self.packages_available.emit(grpc_url)
             except Exception as err:
-                remote.remove_insecure_channel(uri)
                 self.error.emit("_list_packages", "grpc://%s" % uri, path, err)
+            finally:
+                self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("gmt_%s_%d" % (grpc_url_or_path, clear_ros_cache))
 
@@ -213,42 +212,49 @@ class FileChannel(ChannelInterface):
         except KeyError:
             rospy.logdebug("get file content for %s:" % grpc_path)
             uri, path = nmdurl.split(grpc_path)
-            fm = self.get_file_manager(uri)
+            fm, channel = self.get_file_manager(uri)
             result = fm.get_file_content(path)
             self._cache_file_content[grpc_path] = result
+            self.close_channel(channel, uri)
         return result
 
     def save_file(self, grpc_path, content, mtime):
         rospy.logdebug("save_file_content: %s" % grpc_path)
         uri, path = nmdurl.split(grpc_path)
-        fm = self.get_file_manager(uri)
+        fm, channel = self.get_file_manager(uri)
         result = fm.save_file_content(path, content, mtime)
         for ack in result:
             if ack.path == path and ack.mtime != 0:
                 self.clear_cache(grpc_path)
+                self.close_channel(channel, uri)
                 return ack.mtime
+        self.close_channel(channel, uri)
         return 0
 
     def rename(self, grpc_path_old='grpc://localhost:12321', grpc_path_new='grpc://localhost:12321'):
         uri, old = nmdurl.split(grpc_path_old)
         _, new = nmdurl.split(grpc_path_new)
         rospy.logdebug("rename path on %s" % uri)
-        fm = self.get_file_manager(uri)
-        return fm.rename(old, new)
+        fm, channel = self.get_file_manager(uri)
+        result = fm.rename(old, new)
+        self.close_channel(channel, uri)
+        return result
 
     def copy(self, grpc_path='grpc://localhost:12321', grpc_dest='grpc://localhost:12321'):
         uri, path = nmdurl.split(grpc_path)
         rospy.logdebug("copy '%s' to '%s'" % (grpc_path, grpc_dest))
-        fm = self.get_file_manager(uri)
+        fm, channel = self.get_file_manager(uri)
         fm.copy(path, grpc_dest)
+        self.close_channel(channel, uri)
 
     def get_package_binaries(self, pkgname, grpc_url='grpc://localhost:12321'):
         uri, _path = nmdurl.split(grpc_url)
         rospy.logdebug("get_package_binaries for '%s' from '%s'" % (pkgname, uri))
-        fm = self.get_file_manager(uri)
+        fm, channel = self.get_file_manager(uri)
         response = fm.get_package_binaries(pkgname)
         url, _ = nmdurl.split(grpc_url, with_scheme=True)
         result = {}
         for item in response:
             result[nmdurl.join(url, item.path)] = item.mtime
+        self.close_channel(channel, uri)
         return result

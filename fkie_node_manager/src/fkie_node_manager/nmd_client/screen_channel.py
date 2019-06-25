@@ -35,7 +35,6 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import rospy
 from python_qt_binding.QtCore import Signal
 
-import fkie_node_manager_daemon.remote as remote
 import fkie_node_manager_daemon.screen_stub as sstub
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import sizeof_fmt
@@ -58,22 +57,24 @@ class ScreenChannel(ChannelInterface):
         pass
 
     def get_screen_manager(self, uri='localhost:12321'):
-        channel = remote.get_insecure_channel(uri)
-        if channel is not None:
-            return sstub.ScreenStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % uri)
+        channel = self.get_insecure_channel(uri)
+        return sstub.ScreenStub(channel), channel
 
     def get_all_screens(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get all screens from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(uri)
-        return sm.all_screens()
+        sm, channel = self.get_screen_manager(uri)
+        screens = sm.all_screens()
+        self.close_channel(channel, uri)
+        return screens
 
     def get_screens(self, grpc_url='grpc://localhost:12321', node=''):
         rospy.logdebug("get screen from %s for %s" % (grpc_url, node))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(uri)
-        return sm.screens(node)
+        sm, channel = self.get_screen_manager(uri)
+        screens = sm.screens(node)
+        self.close_channel(channel, uri)
+        return screens
 
     def multiple_screens_threaded(self, grpc_url='grpc://localhost:12321'):
         '''
@@ -89,25 +90,30 @@ class ScreenChannel(ChannelInterface):
         rospy.logdebug("get multiple screens from %s" % (grpc_url))
         try:
             uri, _ = nmdurl.split(grpc_url)
-            sm = self.get_screen_manager(uri)
+            sm, channel = self.get_screen_manager(uri)
             result = sm.multiple_screens()
             self.multiple_screens.emit(grpc_url, result)
         except Exception as e:
             self.error.emit("get_multiple_screens", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("mst_%s" % grpc_url)
 
     def rosclean(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("clear log directory on %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(uri)
-        return sm.rosclean()
+        sm, channel = self.get_screen_manager(uri)
+        result = sm.rosclean()
+        self.close_channel(channel, uri)
+        return result
 
     def wipe_screens(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("wipe screens on %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(uri)
+        sm, channel = self.get_screen_manager(uri)
         sm.wipe_screens()
+        self.close_channel(channel, uri)
 
     def log_dir_size_threaded(self, grpc_url='grpc://localhost:12321'):
         '''
@@ -121,17 +127,21 @@ class ScreenChannel(ChannelInterface):
         rospy.logdebug("get log_dir size on %s" % (grpc_url))
         try:
             uri, _ = nmdurl.split(grpc_url)
-            sm = self.get_screen_manager(uri)
+            sm, channel = self.get_screen_manager(uri)
             log_dir_size = sm.log_dir_size()
             rospy.logdebug("log_dir size on %s: %s" % (grpc_url, sizeof_fmt(log_dir_size)))
             self.log_dir_size_signal.emit(grpc_url, log_dir_size)
         except Exception as e:
             self.error.emit("log_dir_size", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("lds_%s" % grpc_url)
 
     def delete_log(self, grpc_url='grpc://localhost:12321', nodes=[]):
         rospy.logdebug("delete logs on %s for %s" % (grpc_url, nodes))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_screen_manager(uri)
-        return sm.delete_log(nodes)
+        sm, channel = self.get_screen_manager(uri)
+        result = sm.delete_log(nodes)
+        self.close_channel(channel, uri)
+        return result

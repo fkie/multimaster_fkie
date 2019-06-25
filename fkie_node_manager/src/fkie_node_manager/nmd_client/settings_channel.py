@@ -35,7 +35,6 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import rospy
 from python_qt_binding.QtCore import Signal
 
-import fkie_node_manager_daemon.remote as remote
 import fkie_node_manager_daemon.settings_stub as scstub
 from fkie_node_manager_daemon import url as nmdurl
 
@@ -53,10 +52,8 @@ class SettingsChannel(ChannelInterface):
         pass
 
     def get_settings_manager(self, uri='localhost:12321'):
-        channel = remote.get_insecure_channel(uri)
-        if channel is not None:
-            return scstub.SettingsStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % uri)
+        channel = self.get_insecure_channel(uri)
+        return scstub.SettingsStub(channel), channel
 
     def get_config_threaded(self, grpc_url='grpc://localhost:12321'):
         self._threads.start_thread("gcfgt_%s" % grpc_url, target=self.get_config, args=(grpc_url, True))
@@ -64,7 +61,7 @@ class SettingsChannel(ChannelInterface):
     def get_config(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get config from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_settings_manager(uri)
+        sm, channel = self.get_settings_manager(uri)
         try:
             yaml_cfg = sm.get_config()
             if threaded:
@@ -73,9 +70,12 @@ class SettingsChannel(ChannelInterface):
             return yaml_cfg
         except Exception as e:
             self.error.emit("get_config", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)
 
     def set_config(self, grpc_url='grpc://localhost:12321', data=''):
         rospy.logdebug("set config to %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        sm = self.get_settings_manager(uri)
+        sm, channel = self.get_settings_manager(uri)
         sm.set_config(data)
+        self.close_channel(channel, uri)

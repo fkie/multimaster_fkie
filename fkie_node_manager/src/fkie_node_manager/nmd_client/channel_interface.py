@@ -33,7 +33,9 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtCore import QObject, Signal
+import rospy
 
+import fkie_node_manager_daemon.remote as remote
 from .thread_manager import ThreadManager
 
 
@@ -47,6 +49,17 @@ class ChannelInterface(QObject):
     def __init__(self):
         QObject.__init__(self)
         self._threads = ThreadManager()
+
+    def get_insecure_channel(self, uri):
+        channel = remote.get_insecure_channel(uri)
+        if channel is None:
+            raise Exception("Node manager daemon '%s' not reachable" % uri)
+        return channel
+
+    def close_channel(self, channel, uri):
+        if channel is not None:
+            rospy.logdebug("close channel to %s" % uri)
+            channel.close()
 
     def clear_cache(self, grpc_path=''):
         pass

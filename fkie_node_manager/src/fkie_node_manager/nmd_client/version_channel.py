@@ -35,7 +35,6 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import rospy
 from python_qt_binding.QtCore import Signal
 
-import fkie_node_manager_daemon.remote as remote
 import fkie_node_manager_daemon.version_stub as vstub
 from fkie_node_manager_daemon import url as nmdurl
 
@@ -53,10 +52,8 @@ class VersionChannel(ChannelInterface):
         pass
 
     def get_version_manager(self, uri='localhost:12321'):
-        channel = remote.get_insecure_channel(uri)
-        if channel is not None:
-            return vstub.VersionStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % uri)
+        channel = self.get_insecure_channel(uri)
+        return vstub.VersionStub(channel), channel
 
     def get_version_threaded(self, grpc_url='grpc://localhost:12321'):
         self._threads.start_thread("gvt_%s" % grpc_url, target=self.get_version, args=(grpc_url, True))
@@ -64,7 +61,7 @@ class VersionChannel(ChannelInterface):
     def get_version(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get version from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        vm = self.get_version_manager(uri)
+        vm, channel = self.get_version_manager(uri)
         try:
             version, date = vm.get_version()
             if threaded:
@@ -73,3 +70,5 @@ class VersionChannel(ChannelInterface):
             return version, date
         except Exception as e:
             self.error.emit("get_version", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)

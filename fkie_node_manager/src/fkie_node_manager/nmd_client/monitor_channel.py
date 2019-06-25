@@ -36,7 +36,6 @@ import rospy
 from diagnostic_msgs.msg import DiagnosticArray
 from python_qt_binding.QtCore import Signal
 
-import fkie_node_manager_daemon.remote as remote
 import fkie_node_manager_daemon.monitor_stub as mstub
 from fkie_node_manager_daemon import url as nmdurl
 
@@ -58,10 +57,8 @@ class MonitorChannel(ChannelInterface):
         pass
 
     def get_monitor_manager(self, uri='localhost:12321'):
-        channel = remote.get_insecure_channel(uri)
-        if channel is not None:
-            return mstub.MonitorStub(channel)
-        raise Exception("Node manager daemon '%s' not reachable" % uri)
+        channel = self.get_insecure_channel(uri)
+        return mstub.MonitorStub(channel), channel
 
     def get_system_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):
         self._threads.start_thread("gmsdt_%s" % grpc_url, target=self.get_system_diagnostics, args=(grpc_url, True))
@@ -69,7 +66,7 @@ class MonitorChannel(ChannelInterface):
     def get_system_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get system diagnostics from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        vm = self.get_monitor_manager(uri)
+        vm, channel = self.get_monitor_manager(uri)
         try:
             diagnostic_array = vm.get_system_diagnostics()
             if threaded:
@@ -78,6 +75,8 @@ class MonitorChannel(ChannelInterface):
             return diagnostic_array
         except Exception as e:
             self.error.emit("get_system_diagnostics", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)
 
     def get_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):
         self._threads.start_thread("gmdt_%s" % grpc_url, target=self.get_diagnostics, args=(grpc_url, True))
@@ -85,7 +84,7 @@ class MonitorChannel(ChannelInterface):
     def get_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get diagnostics from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        vm = self.get_monitor_manager(uri)
+        vm, channel = self.get_monitor_manager(uri)
         try:
             diagnostic_array = vm.get_diagnostics()
             if threaded:
@@ -94,12 +93,16 @@ class MonitorChannel(ChannelInterface):
             return diagnostic_array
         except Exception as e:
             self.error.emit("get_diagnostics", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)
 
     def kill_process(self, pid, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("kill process %d on %s" % (pid, grpc_url))
         uri, _ = nmdurl.split(grpc_url)
-        vm = self.get_monitor_manager(uri)
+        vm, channel = self.get_monitor_manager(uri)
         try:
             vm.kill_process(pid)
         except Exception as e:
             self.error.emit("kill_process", "grpc://%s" % uri, "", e)
+        finally:
+            self.close_channel(channel, uri)
