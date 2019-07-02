@@ -23,9 +23,9 @@ def master_changed(msg, cb_args):
         if '/'+local_name in params_from:
             del params_from['/'+local_name]
         rospy.logdebug("Syncing params from {} to {}...".format(msg.master.name, local_name))
-        if param_cache.get(msg.master.name, None) != params_from:
-            param_cache[msg.master.name] = params_from
-            master_to['/'+msg.master.name] = params_from
+        if param_cache.get('', None) != params_from:
+            param_cache[''] = params_from
+            master_to['/'] = params_from
             rospy.logdebug("Done syncing params from {} to {}.".format(msg.master.name, local_name))
         else:
             rospy.logdebug("Params have not changed from {} to {}.".format(msg.master.name, local_name))
@@ -39,7 +39,7 @@ def master_changed(msg, cb_args):
 
 
 def main():
-    rospy.init_node('param_sync', log_level=rospy.DEBUG)
+    rospy.init_node('param_sync', log_level=rospy.DEBUG, anonymous=True)
 
     param_cache = dict()
     local_master = list()
