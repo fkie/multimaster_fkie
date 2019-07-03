@@ -609,7 +609,9 @@ class Editor(QMainWindow):
         '''
         saved, errors, msg = self.tabWidget.currentWidget().save()
         if errors:
-            MessageBox.critical(self, "Error", msg)
+            if msg:
+                rospy.logwarn(msg)
+                MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(self.tabWidget.currentWidget().filename), detailed_text=msg)
             self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), msg)
             self.on_graph_info("saved failed %s: %s" % (self.tabWidget.currentWidget().filename, msg), True)

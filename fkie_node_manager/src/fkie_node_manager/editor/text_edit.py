@@ -160,7 +160,7 @@ class TextEdit(QTextEdit):
                     except Exception as e:
                         if imported:
                             self.markLine(e.position[0])
-                            return True, True, "%s" % e
+                            return True, True, utf8(e)
                 # validate the yaml structure of yaml files
                 elif ext[1] in self.YAML_VALIDATION_FILES:
                     try:
@@ -175,11 +175,10 @@ class TextEdit(QTextEdit):
                     if result == MessageBox.Yes:
                         return self.save(force=True)
                 else:
-                    rospy.logwarn("Error while save file: %s" % ioe)
-                    MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(self.filename), detailed_text=utf8(ioe))
+                    return False, True, utf8(ioe)
             except Exception as e:
-                rospy.logwarn("Error while save file: %s" % e)
                 print(traceback.format_exc())
+                return False, True, utf8(e)
         return False, False, ''
 
     def toprettyxml(self):

@@ -115,7 +115,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
             dest_size = 0
             curr_size = 0
             first = True
-            file_org = None
             file_tmp = None
             count = 0
             for chunk in request_iterator:
@@ -130,7 +129,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     if os.path.exists(path):
                         # checks for mtime
                         if chunk.overwrite or chunk.file.mtime == os.path.getmtime(path):
-                            file_org = open(path, 'w')
                             file_tmp = open("%s.tmp" % path, 'w')
                             dest_size = chunk.file.size
                         else:
@@ -144,7 +142,6 @@ class FileServicer(fms_grpc.FileServiceServicer):
                             os.makedirs(os.path.dirname(path))
                         except OSError:
                             pass
-                        file_org = open(path, 'w')
                         file_tmp = open("%s.tmp" % path, 'w')
                         dest_size = chunk.file.size
                     else:
@@ -154,18 +151,23 @@ class FileServicer(fms_grpc.FileServiceServicer):
                         result.status.error_file = utf8(path)
                     first = False
                 if result.status.code == 0:
+                    written = 0
                     if chunk.file.data:
-                        file_tmp.write(chunk.file.data)
-                    curr_size += len(chunk.file.data)
+                        written = file_tmp.write(chunk.file.data)
+                        if written is None:
+                            written = len(chunk.file.data)
+                    if written != len(chunk.file.data):
+                        result.status.code = ERROR
+                        result.status.error_msg = utf8("error while write to tmp file")
+                        result.status.error_file = utf8(path)
+                        yield result
+                    curr_size += written
                     result.ack.path = path
                     result.ack.size = curr_size
                 if dest_size == curr_size:
                     if file_tmp is not None:
                         file_tmp.close()
-                    if file_org is not None:
-                        file_org.close()
-                    if file_tmp is not None and file_org is not None:
-                        os.remove(path)
+                    if file_tmp is not None:
                         os.rename("%s.tmp" % path, path)
                         result.ack.mtime = os.path.getmtime(path)
                         result.status.code = OK
