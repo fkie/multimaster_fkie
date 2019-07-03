@@ -8,7 +8,7 @@ from fkie_master_discovery.common import masteruri_from_master
 from fkie_multimaster_msgs.msg import MasterState
 
 def master_changed(msg, cb_args):
-    param_cache, local_master = cb_args
+    param_cache, local_master, __add_ns = cb_args
     local_name = ''
     if local_master:
         local_name = local_master[0]
@@ -23,9 +23,13 @@ def master_changed(msg, cb_args):
         if '/'+local_name in params_from:
             del params_from['/'+local_name]
         rospy.logdebug("Syncing params from {} to {}...".format(msg.master.name, local_name))
-        if param_cache.get(msg.master.name, None) != params_from:
-            param_cache[msg.master.name] = params_from
-            master_to['/'+msg.master.name] = params_from
+        if __add_ns:
+            _ns = msg.master.name
+        else:
+            _ns = ''
+        if param_cache.get(_ns, None) != params_from:
+            param_cache[_ns] = params_from
+            master_to['/'+_ns] = params_from
             rospy.logdebug("Done syncing params from {} to {}.".format(msg.master.name, local_name))
         else:
             rospy.logdebug("Params have not changed from {} to {}.".format(msg.master.name, local_name))
@@ -45,7 +49,8 @@ def main():
     local_master = list()
     masteruri_from_master()
 
-    sub = rospy.Subscriber('master_discovery/changes', MasterState, master_changed, callback_args=(param_cache, local_master))
+    __add_ns = rospy.get_param('~add_ns', True)
+    sub = rospy.Subscriber('master_discovery/changes', MasterState, master_changed, callback_args=(param_cache, local_master, __add_ns))
 
     rospy.spin()
 
