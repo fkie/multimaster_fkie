@@ -37,6 +37,7 @@ import subprocess
 from rosclean import get_disk_usage
 import rospy
 import rospkg
+import time
 
 from .settings import LOG_PATH
 from .supervised_popen import SupervisedPopen
@@ -118,9 +119,12 @@ def get_active_screens(nodename=''):
     :rtype: {str: [str]}
     '''
     result = {}
+    starttime = time.time()
     ps = SupervisedPopen([SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
     output = ps.stdout.read()
     if output:
+        if time.time() - starttime > 1.0:
+            rospy.logwarn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" % (SCREEN, time.time() - starttime))
         splits = output.splitlines()
         for item in splits:
             pid, nodepart = split_session_name(item)

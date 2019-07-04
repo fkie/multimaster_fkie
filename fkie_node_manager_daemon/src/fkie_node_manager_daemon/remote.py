@@ -35,6 +35,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import os
 import grpc
 import rospy
+import time
 
 INSECURE_CHANNEL_CACHE = dict()
 ''' the cache for channels '''
@@ -77,12 +78,15 @@ def get_insecure_channel(url, cached=False):
     :rtype: grpc.Channel or None
     '''
 #     global CREDENTIALS
+    starttime = time.time()
     if cached:
         global INSECURE_CHANNEL_CACHE
         if url in INSECURE_CHANNEL_CACHE:
             return INSECURE_CHANNEL_CACHE[url]
     rospy.logdebug("create insecure channel to %s" % url)
     channel = grpc.insecure_channel(url)
+    if time.time() - starttime > 5.0:
+        rospy.logwarn("Open insecure gRPC channel took too long (%.3f sec)! Fix your network configuration!" % (time.time() - starttime))
     if cached:
         INSECURE_CHANNEL_CACHE[url] = channel
     return channel
