@@ -801,17 +801,17 @@ class MainWindow(QMainWindow):
             if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
                 # we don't know which name for host was used to start master discovery
                 if host in self._syncs_to_start:
-                    self.on_sync_start(msg.master.uri)
                     self._syncs_to_start.remove(host)
-                elif msg.master.name in self._syncs_to_start:
                     self.on_sync_start(msg.master.uri)
+                elif msg.master.name in self._syncs_to_start:
                     self._syncs_to_start.remove(msg.master.name)
+                    self.on_sync_start(msg.master.uri)
                 else:
                     addresses = nm.nameres().addresses(msg.master.uri)
                     for address in addresses:
                         if address in self._syncs_to_start:
-                            self.on_sync_start(msg.master.uri)
                             self._syncs_to_start.remove(address)
+                            self.on_sync_start(msg.master.uri)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
 
