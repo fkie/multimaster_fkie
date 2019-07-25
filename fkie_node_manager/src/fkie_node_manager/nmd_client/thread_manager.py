@@ -44,14 +44,16 @@ class ThreadManager(QObject):
 
     def __init__(self):
         QObject.__init__(self)
+        self._lock = threading.RLock()
         self._threads = {}
 
     def __del__(self):
-        self.finished('')
+        self._threads.clear()
 
     def has_thread(self, thread_id):
         try:
-            return self._threads[thread_id].is_alive()
+            with self._lock:
+                return self._threads[thread_id].is_alive()
         except Exception:
             pass
         return False
@@ -66,21 +68,21 @@ class ThreadManager(QObject):
         :param tule args: the argument tuple for the target invocation. Defaults to ().
         '''
         if not rospy.is_shutdown() and not self.has_thread(thread_id):
-            thread = threading.Thread(target=target, args=args)
-            thread.setDaemon(True)
-            self._threads[thread_id] = thread
-            thread.start()
+            with self._lock:
+                thread = threading.Thread(target=target, args=args)
+                thread.setDaemon(True)
+                self._threads[thread_id] = thread
+                thread.start()
             return True
         return False
 
-    def finished(self, thread_id=''):
+    def finished(self, thread_id):
         '''
         Removes a thread with given thread_id from the managed list.
 
         :param str thread_id: thread identification string used while start_thread().
         :raise KeyError: if thread_id does not exists.
         '''
-        if thread_id:
-            del self._threads[thread_id]
-        else:
-            self._threads.clear()
+        with self._lock:
+            if thread_id in self._threads:
+                del self._threads[thread_id]

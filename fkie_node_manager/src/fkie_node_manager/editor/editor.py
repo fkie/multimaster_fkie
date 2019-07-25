@@ -32,7 +32,7 @@
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
-from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal, QTimer
+from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal
 from python_qt_binding.QtGui import QColor, QIcon, QKeySequence, QTextCursor, QTextDocument
 import os
 

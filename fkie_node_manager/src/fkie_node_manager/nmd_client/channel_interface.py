@@ -65,5 +65,5 @@ class ChannelInterface(QObject):
         pass
 
     def stop(self):
-        self._threads.finished()
         self.clear_cache()
+        del self._threads

@@ -239,6 +239,7 @@ class EchoDialog(QDialog):
 #    self.close()
 
     def closeEvent(self, event):
+        self.print_hz_timer.stop()
         if self.sub is not None:
             self.sub.unregister()
             del self.sub

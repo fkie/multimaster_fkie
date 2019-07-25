@@ -99,6 +99,8 @@ class MainWindow(QMainWindow):
     '''
     The class to create the main window of the application.
     '''
+    close_signal = Signal()
+
     DELAYED_NEXT_REQ_ON_ERR = 5.0
 
     if DIAGNOSTICS_AVAILABLE:
@@ -137,6 +139,8 @@ class MainWindow(QMainWindow):
         loadUi(ui_file, self)
         self.setObjectName('MainUI')
         self.setDockOptions(QMainWindow.AllowNestedDocks | QMainWindow.AllowTabbedDocks | QMainWindow.AnimatedDocks | QMainWindow.VerticalTabs)
+        self.close_signal.connect(self.close)
+        self.close_without_ask = False
         self.user_frame.setVisible(False)
         self._add_user_to_combo(getpass.getuser())
         self.userComboBox.editTextChanged.connect(self.on_user_changed)
@@ -384,7 +388,6 @@ class MainWindow(QMainWindow):
                                    'Error while set parameter',
                                    '%s' % utf8(err))
 
-
     def _on_log_added(self, info, warn, err, fatal):
         self.logButton.setEnabled(True)
 
@@ -440,7 +443,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         # ask to close nodes on exit
-        if self._close_on_exit and nm.settings().confirm_exit_when_closing:
+        # self.close_without_ask is changes in on_shutdown method in __init__.py
+        if self._close_on_exit and nm.settings().confirm_exit_when_closing and not self.close_without_ask:
             masters = [uri for uri, m in self.masters.items() if m.online]
             res = SelectDialog.getValue('Stop nodes?', "Select masters where to stop:",
                                         masters, False, False, '', self,
@@ -451,7 +455,7 @@ class MainWindow(QMainWindow):
             masters2stop, self._close_on_exit = res[0], res[1]
             nm.settings().confirm_exit_when_closing = not res[2]
             if self._close_on_exit:
-                self._on_finish = True
+                self.on_finish = True
                 self._stop_local_master = None
                 for uri in masters2stop:
                     try:
@@ -475,6 +479,8 @@ class MainWindow(QMainWindow):
             rospy.loginfo("Wait for running processes are finished...")
             event.ignore()
         else:
+            self.on_finish = True
+            self.master_timecheck_timer.stop()
             try:
                 self.storeSetting()
             except Exception as e:
@@ -510,7 +516,6 @@ class MainWindow(QMainWindow):
         self.state_topic.stop()
         self.stats_topic.stop()
         self.own_master_monitor.stop()
-        self.master_timecheck_timer.stop()
         self.launch_dock.stop()
         self.log_dock.stop()
 
@@ -522,7 +527,7 @@ class MainWindow(QMainWindow):
             for _, editor in self.editor_dialogs.items():
                 editor.close()
             for _, master in self.masters.iteritems():
-                master.stop()
+                master.close()
             print("Mainwindow finished!")
 
     def getMasteruri(self):
@@ -756,7 +761,7 @@ class MainWindow(QMainWindow):
         @type msg: U{fkie_master_discovery.msg.MasterState<http://docs.ros.org/api/fkie_multimaster_msgs/html/msg/MasterState.html>}
         '''
         # do not update while closing
-        if hasattr(self, "_on_finish"):
+        if hasattr(self, "on_finish"):
             rospy.logdebug("ignore changes on %s, because currently on closing...", msg.master.uri)
             return
         host = get_hostname(msg.master.uri)
@@ -840,7 +845,7 @@ class MainWindow(QMainWindow):
         @param minfo: the ROS master Info
         @type minfo: U{fkie_master_discovery.MasterInfo<http://docs.ros.org/api/fkie_master_discovery/html/modules.html#module-fkie_master_discovery.master_info>}
         '''
-        if hasattr(self, "_on_finish"):
+        if hasattr(self, "on_finish"):
             rospy.logdebug("ignore changes on %s, because currently on closing...", minfo.masteruri)
             return
         rospy.logdebug("MASTERINFO from %s (%s) received", minfo.mastername, minfo.masteruri)
@@ -895,7 +900,7 @@ class MainWindow(QMainWindow):
 #    print "ALL:", cputime_m
 
     def _load_default_profile_slot(self):
-        if not hasattr(self, "_on_finish"):
+        if not hasattr(self, "on_finish"):
             self.profiler.on_load_profile_file(self.default_load_launch)
 
     def on_master_errors_retrieved(self, masteruri, error_list):

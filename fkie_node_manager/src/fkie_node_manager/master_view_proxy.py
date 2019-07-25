@@ -396,9 +396,8 @@ class MasterViewProxy(QWidget):
 #        print "    Destroy mester view proxy", self.objectName(), " ..."
 #        print "    ", self.objectName(), "destroyed"
 
-    def stop(self):
+    def closeEvent(self, event):
         print("  Shutdown master", self.masteruri, "...")
-        # self.default_cfg_handler.stop()
         if self._sysmon_timer is not None:
             self._sysmon_timer.stop()
         self._sysmon_timer_idle.stop()
@@ -414,6 +413,7 @@ class MasterViewProxy(QWidget):
                 ps.terminate()
             except Exception:
                 pass
+        QWidget.closeEvent(self, event)
         print("  Master", self.masteruri, " is down!")
 
     @property

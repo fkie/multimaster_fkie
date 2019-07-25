@@ -219,9 +219,9 @@ def finish(*arg):
     from fkie_node_manager.main_window import MainWindow
     # stop all threads in the main window
     if isinstance(_MAIN_FORM, MainWindow):
-        _MAIN_FORM.finish()
-    if _QAPP is not None:
-        _QAPP.exit()
+        if not hasattr(_MAIN_FORM, "on_finish"):
+            _MAIN_FORM.close_without_ask = True
+            _MAIN_FORM.close_signal.emit()
 
 
 def set_terminal_name(name):
