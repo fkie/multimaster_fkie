@@ -1523,7 +1523,9 @@ class MasterViewProxy(QWidget):
             added_diags = []
             for diag_status in reversed(node.diagnostic_array):
                 if node.diagnostic_array:
-                    level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
+                    level_str = 'Unknown'
+                    if diag_status.level in self.DIAGNOSTIC_LEVELS:
+                        level_str = self.DIAGNOSTIC_LEVELS[diag_status.level]
                     diag_color = '#FF6600'
                     if diag_status.level == 2:
                         diag_color = '#CC0000'
