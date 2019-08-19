@@ -33,7 +33,7 @@ macro(generate_version)
 
         # create ALL target
         add_custom_target(
-            TARGET ALL
+            ${PROJECT_NAME}_GET_VERSION ALL
             DEPENDS ${${arg_TARGETS}}
             COMMENT "Generate version files"
         )
