@@ -1764,8 +1764,8 @@ class MainWindow(QMainWindow):
         '''
         if self.isActiveWindow() and self.isActiveWindow() != self._last_window_state:
             if hasattr(self, 'currentMaster') and self.currentMaster is not None:
-                # perform checks for changed files of multiple screens
-                self.currentMaster.perform_master_checks()
+                # perform delayed checks for changed files or multiple screens
+                QTimer.singleShot(700, self.currentMaster.perform_master_checks)
         self._last_window_state = self.isActiveWindow()
         QMainWindow.changeEvent(self, event)
 
