@@ -246,7 +246,7 @@ class MessageFrame(QFrame):
         self.frameui.setVisible(False)
         try:
             # set action for do not ask again
-            if self._do_not_ask[self.questionid] == 2:
+            if self.frameui.checkBox_dnaa.isChecked():
                 self._do_not_ask[self.questionid] = 1
         except Exception:
             pass
@@ -261,7 +261,7 @@ class MessageFrame(QFrame):
         self.frameui.setVisible(False)
         try:
             # set action for do not ask again
-            if self._do_not_ask[self.questionid] == 2:
+            if self.frameui.checkBox_dnaa.isChecked():
                 self._do_not_ask[self.questionid] = 0
         except Exception:
             pass
@@ -307,8 +307,6 @@ class MessageFrame(QFrame):
         elif self.questionid == self.TYPE_NOSCREEN:
             self.frameui.questionCancelButton.setVisible(not state)
             nm.settings().show_noscreen_error = not state
-        else:
-            self._do_not_ask[self.questionid] = 2
 
     def _clear_scroll_area(self):
         child = self.frameui.scrollAreaLayout.takeAt(0)
