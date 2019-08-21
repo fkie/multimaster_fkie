@@ -247,6 +247,7 @@ class Settings(object):
                   'Show files extensions:': {':value': ', '.join(self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))),
                                              ':var': 'launch_view_file_ext',
                                              ':default': ', '.join(self.LAUNCH_VIEW_EXT),
+                                             ':type': 'list',
                                              ':hint': 'Files that are displayed next to Launch'
                                              ' files in the <span style="font-weight:600;">launch files</span> view.',
                                              },
@@ -402,6 +403,9 @@ class Settings(object):
     def __getattr__(self, name):
         for value in self._data.itervalues():
             if value[':var'] == name:
+                if ':type' in value:
+                    if value[':type'] == 'list':
+                        return self.str2list(value[':value'])
                 return value[':value']
         raise AttributeError("'Settings' has no attribute '%s'" % name)
 

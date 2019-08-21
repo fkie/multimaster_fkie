@@ -173,7 +173,7 @@ class LaunchChannel(ChannelInterface):
                 if not recursive and entry.rec_depth != 0:
                     do_return = False
                 if do_return:
-                    rospy.logdebug("get_included_files from cache: %s" % entry.inc_path)
+                    rospy.logdebug("get_included_files from cache: %s, include_args: %s" % (entry.inc_path, entry.args))
                     yield entry
         except KeyError:
             dorequest = True

@@ -469,7 +469,7 @@ def find_included_files(string,
                             my_unique_files.append(filename)
                             # transform found position to line number
                             position = content.count("\n", 0, groups.start()) + 1
-                            yield IncludedFile(string, position, filename, os.path.isfile(filename), rawname, rec_depth, resolve_args_all)
+                            yield IncludedFile(string, position, filename, os.path.isfile(filename), rawname, rec_depth, forward_args)
                     # for recursive search
                     if os.path.isfile(filename):
                         if recursive:
