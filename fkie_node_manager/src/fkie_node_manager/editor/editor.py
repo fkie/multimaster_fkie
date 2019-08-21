@@ -168,6 +168,7 @@ class Editor(QMainWindow):
         for f in filenames:
             if f:
                 self.on_load_request(f, search_text, only_launch=True)
+        self.log_dock.setVisible(False)
 
 #  def __del__(self):
 #    print "******** destroy", self.objectName()
