@@ -55,7 +55,7 @@ class TextSearchThread(QObject, threading.Thread):
     '''
     warning_signal = Signal(str)
 
-    def __init__(self, search_text, path, is_regex=False, path_text={}, recursive=False, only_launch=False):
+    def __init__(self, search_text, path, is_regex=False, path_text={}, recursive=False, only_launch=False, count_results=0):
         '''
         :param str search_text: text to search for
         :param str path: initial file path
@@ -69,6 +69,7 @@ class TextSearchThread(QObject, threading.Thread):
         self._recursive = recursive
         self._only_launch = only_launch
         self._found = 0
+        self._count_results = count_results
         self._isrunning = True
         self.setDaemon(True)
 
@@ -118,6 +119,9 @@ class TextSearchThread(QObject, threading.Thread):
                 if doemit:
                     self._found += 1
                     self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, line)
+            if self._count_results > 0 and self._count_results < self._found:
+                # break search if found the requested count of occurrences
+                return
             pos += slen
             pos = data.find(search_text, pos)
         if self._isrunning:

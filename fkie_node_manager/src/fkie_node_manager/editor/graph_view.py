@@ -61,8 +61,8 @@ class GraphViewWidget(QDockWidget):
     ''' :ivar: filename of file to load, True if insert after the current open tab'''
     goto_signal = Signal(str, int)
     ''' :ivar: filename, line to go'''
-    search_signal = Signal(str, str)
-    ''' :ivar: filename of file to load, text to search'''
+    search_signal = Signal(str, str, int, int, bool, int)
+    ''' :ivar: filename of file to load, text to search, -1, -1, False, 1'''
     finished_signal = Signal()
     ''' :ivar: graph was updated'''
     info_signal = Signal(str, bool)
@@ -172,7 +172,7 @@ class GraphViewWidget(QDockWidget):
                 self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
             elif item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_ARG:
                 rospy.logdebug("graph_view: send request to search for '<arg name=\"%s\"' in %s" % (item.data(self.DATA_ARG_NAME), item.data(self.DATA_INC_FILE)))
-                self.search_signal.emit(item.data(self.DATA_INC_FILE), "<arg name=\"%s\"" % item.data(self.DATA_ARG_NAME))
+                self.search_signal.emit(item.data(self.DATA_INC_FILE), "<arg name=\"%s\"" % item.data(self.DATA_ARG_NAME), -1, -1, False, 1)
             else:
                 self.graphTreeView.setExpanded(index, not self.graphTreeView.isExpanded(index))
 

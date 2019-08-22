@@ -363,7 +363,7 @@ class Editor(QMainWindow):
             settings.setValue("window_state", self.saveState())
             settings.endGroup()
 
-    def on_load_request(self, filename, search_text='', insert_index=-1, goto_line=-1, only_launch=False):
+    def on_load_request(self, filename, search_text='', insert_index=-1, goto_line=-1, only_launch=False, count_results=0):
         '''
         Loads a file in a new tab or focus the tab, if the file is already open.
 
@@ -409,7 +409,7 @@ class Editor(QMainWindow):
                 except Exception:
                     pass
                 # TODO: put all text of all tabs into path_text
-                self._search_thread = TextSearchThread(search_text, filename, path_text=path_text, recursive=True, only_launch=only_launch)
+                self._search_thread = TextSearchThread(search_text, filename, path_text=path_text, recursive=True, only_launch=only_launch, count_results=count_results)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
                 self._search_thread.warning_signal.connect(self.on_search_result_warning)
                 self._last_search_request = (filename, search_text, insert_index, goto_line, only_launch)
