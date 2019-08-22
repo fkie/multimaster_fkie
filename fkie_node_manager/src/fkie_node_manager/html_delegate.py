@@ -145,6 +145,10 @@ class HTMLDelegate(QStyledItemDelegate):
                 result = '%s<b>%s</b><span style="color:%s;">%s</span><b>%s</b>' % (text[0:nr_idx + 1], text[nr_idx + 1:start_idx], color, text[start_idx:end_idx + 1], last_part)
             else:
                 result = '<b>%s</b><span style="color:%s;">%s</span><b>%s</b>' % (text[0:start_idx], color, text[start_idx:end_idx + 1], last_part)
+        elif text.find('!') > -1:
+            result = '<span style="color:#FF6600;">%s</span>' % (text)
+        elif text.find('->') > -1:
+            result = text
         elif check_for_ros_names and not is_legal_name(text):  # handle all invalid names (used space in the name)
             ns, sep, name = text.rpartition('/')
             result = ''

@@ -34,13 +34,14 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QObject, Signal, Qt
-from python_qt_binding.QtGui import QStandardItemModel, QStandardItem
+from python_qt_binding.QtGui import QIcon, QStandardItemModel, QStandardItem
+from xml.dom import minidom
 import os
 import threading
 import rospy
 
 from fkie_node_manager_daemon import exceptions
-from fkie_node_manager_daemon.common import sizeof_fmt
+from fkie_node_manager_daemon.common import get_internal_args, sizeof_fmt, utf8
 import fkie_node_manager as nm
 from fkie_node_manager.common import package_name
 from fkie_node_manager.html_delegate import HTMLDelegate
@@ -71,6 +72,11 @@ class GraphViewWidget(QDockWidget):
     DATA_SIZE = Qt.UserRole + 5
     DATA_RAW = Qt.UserRole + 6
     DATA_ARGS = Qt.UserRole + 7
+    DATA_DEF_ARGS_NOT_SET = Qt.UserRole + 8
+    ITEM_TYPE = Qt.UserRole + 9
+    ITEM_TYPE_INC_FILE = 1
+    ITEM_TYPE_INC_GROUP_ARG = 2
+    ITEM_TYPE_INC_ARG = 3
 
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "LaunchGraph", parent)
@@ -78,6 +84,7 @@ class GraphViewWidget(QDockWidget):
         loadUi(graph_ui_file, self)
         self.setObjectName('LaunchGraph')
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self._warning_icon = QIcon(":/icons/crystal_clear_warning.png")
         self._tabwidget = tabwidget
         self._current_path = None
         self._root_path = None
@@ -93,6 +100,7 @@ class GraphViewWidget(QDockWidget):
         self.graphTreeView.clicked.connect(self.on_clicked)
         self._created_tree = False
         self.has_none_packages = True
+        self.has_warnings = False
         self._refill_tree([], False)
         self._fill_graph_thread = None
 
@@ -204,6 +212,7 @@ class GraphViewWidget(QDockWidget):
                 has_none_packages = True
             itemstr = '%s [%s]' % (os.path.basename(self._root_path), pkg)
             inc_item = QStandardItem('%s' % itemstr)
+            inc_item.setData(self.ITEM_TYPE_INC_FILE, self.ITEM_TYPE)
             inc_item.setData(self._root_path, self.DATA_FILE)
             inc_item.setData(-1, self.DATA_LINE)
             inc_item.setData(self._root_path, self.DATA_INC_FILE)
@@ -222,6 +231,12 @@ class GraphViewWidget(QDockWidget):
                 first = False
             self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
         self.graphTreeView.expandAll()
+        # collapse argument nodes
+        proxy = self.graphTreeView.model()
+        for row in range(proxy.rowCount()):
+            index = proxy.index(row, 0)
+            item = proxy.itemFromIndex(index)
+            self._collapse_args(item)
         self.finished_signal.emit()
 
     def _append_items(self, item, deep, items=[]):
@@ -242,6 +257,7 @@ class GraphViewWidget(QDockWidget):
                         size_color = 'orange'
                     itemstr = '%s   <span style="color:%s;"><em>%s</em></span>   [%s]' % (os.path.basename(inc_file.inc_path), size_color, sizeof_fmt(inc_file.size), pkg)
                     inc_item = QStandardItem('%d: %s' % (inc_file.line_number, itemstr))
+                    inc_item.setData(self.ITEM_TYPE_INC_FILE, self.ITEM_TYPE)
                     inc_item.setData(inc_file.path_or_str, self.DATA_FILE)
                     inc_item.setData(inc_file.line_number, self.DATA_LINE)
                     inc_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
@@ -249,6 +265,25 @@ class GraphViewWidget(QDockWidget):
                     inc_item.setData(inc_file.size, self.DATA_SIZE)
                     inc_item.setData(inc_file.raw_inc_path, self.DATA_RAW)
                     inc_item.setData(inc_file.args, self.DATA_ARGS)
+                    inc_item.setData(inc_file.unset_default_args, self.DATA_DEF_ARGS_NOT_SET)
+                    # add included arguments
+                    if inc_file.unset_default_args or inc_file.args:
+                        arg_item = QStandardItem('arguments')
+                        arg_item.setData(self.ITEM_TYPE_INC_GROUP_ARG, self.ITEM_TYPE)
+                        if inc_file.unset_default_args:
+                            self.has_warnings = True
+                            arg_item.setIcon(self._warning_icon)
+                            for da_name, da_value in inc_file.unset_default_args.items():
+                                da_item = QStandardItem('! %s: %s' % (da_name, da_value))
+                                da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
+                                da_item.setToolTip("This argument is definded as default, but no set while include.")
+                                arg_item.appendRow(da_item)
+                        if inc_file.args:
+                            for da_name, da_value in inc_file.args.items():
+                                da_item = QStandardItem('-> %s: %s' % (da_name, da_value))
+                                da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
+                                arg_item.appendRow(da_item)
+                        inc_item.appendRow(arg_item)
             elif inc_file.rec_depth > deep:
                 sub_items.append(inc_file)
         if inc_item is not None:
@@ -257,6 +292,14 @@ class GraphViewWidget(QDockWidget):
                 sub_items = []
             item.appendRow(inc_item)
             inc_item = None
+
+    def _collapse_args(self, root):
+        for i in range(root.rowCount()):
+            item = root.child(i)
+            if item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_FILE:
+                self._collapse_args(item)
+            elif item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_GROUP_ARG:
+                self.graphTreeView.setExpanded(self.graphTreeView.model().indexFromItem(item), False)
 
 
 class GraphThread(QObject, threading.Thread):
@@ -293,6 +336,7 @@ class GraphThread(QObject, threading.Thread):
             filelist = nm.nmd().launch.get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
             for inc_file in filelist:
                 rospy.logdebug("build tree: append file: %s" % inc_file)
+                inc_file.unset_default_args = self.find_default_args(inc_file.inc_path, inc_file.args)
                 result.append(inc_file)
                 if not inc_file.exists:
                     self.info_signal.emit("build tree: skip parse %s, not exist" % inc_file.inc_path, True)
@@ -311,3 +355,36 @@ class GraphThread(QObject, threading.Thread):
             except Exception:
                 pass
             self.error.emit('failed: %s' % formatted_lines[-1])
+
+    def find_default_args(self, path, inc_args):
+        '''
+        Searches for args with default value not overwritten by including file.
+        :param str path: file content or a launch file path
+        :param dict(str,str) inc_args: a dictionary with arguments set while include the given path.
+        :return: a dictinary with default arguments not overwriting while include.
+        :rtype: dict(str: str)
+        '''
+        not_set_args = {}
+        if path and not path.endswith('.launch'):
+            return not_set_args
+        if rospy.is_shutdown():
+            return not_set_args
+        try:
+            # get file content
+            _, _, data = nm.nmd().file.get_file_content(path)
+            launch_node = None
+            # create xml node
+            xml_nodes = minidom.parseString(data).getElementsByTagName('launch')
+            if xml_nodes:
+                launch_node = xml_nodes[-1]
+            if launch_node is not None:
+                # read XML content and get default arguments
+                default_args = get_internal_args(data, only_default=True)
+                for arg_in_file, arg_value in default_args.items():
+                    if arg_in_file not in inc_args:
+                        not_set_args[arg_in_file] = arg_value
+        except Exception as err:
+            msg = "can't get default arguments for %s: %s" % (path, utf8(err))
+            self.error.emit(msg)
+            rospy.logwarn(msg)
+        return not_set_args

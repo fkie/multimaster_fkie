@@ -437,8 +437,13 @@ class Editor(QMainWindow):
 
     def on_graph_finished(self):
         self.on_graph_info("build tree: finished", False)
+        if self.graph_view.has_warnings:
+            self.graphButton.setIcon(self._error_icon)
+        else:
+            self.graphButton.setIcon(self._empty_icon)
         if self._search_thread:
             try:
+                self._search_thread.find_args_not_set = True
                 self._search_thread.start()
                 self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
             except Exception:

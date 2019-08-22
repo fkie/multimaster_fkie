@@ -199,7 +199,7 @@ class LaunchStub(object):
         reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
         for response in reply:
             args = {arg.name: arg.value for arg in response.include_args}
-            yield IncludedFile(response.root_path, response.linenr, response.path, response.exists, response.rawname, response.rec_depth, args, response.size)
+            yield IncludedFile(response.root_path, response.linenr, response.path, response.exists, response.rawname, response.rec_depth, args, size=response.size)
 
     def get_interpreted_path(self, paths):
         '''

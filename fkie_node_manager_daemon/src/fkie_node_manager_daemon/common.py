@@ -77,7 +77,7 @@ class IncludedFile():
         :param bool exists: True if resolved path exists.
         :param str raw_inc_path: representation of included file without resolved arg and find statements.
         :param int rec_depth: depth of recursion. if `unique` is True the depth is zero
-        :param dict(str:str) args: a dictionary with all defined arguments valid for current file/content.
+        :param dict(str:str) args: a dictionary with arguments forwarded within include tag for 'inc_path'.
         '''
         self.path_or_str = path_or_str
         self.line_number = line_number
@@ -87,6 +87,7 @@ class IncludedFile():
         self.rec_depth = rec_depth
         self.args = args
         self.size = size
+        self.unset_default_args = {}
 
     def __repr__(self):
         result = "<IncludedFile "
@@ -271,13 +272,14 @@ def replace_paths(text, pwd='.'):
     return result
 
 
-def get_internal_args(content, path=None):
+def get_internal_args(content, path=None, only_default=False):
     '''
     Load the content with xml parser, search for arg-nodes.
     :return: a dictionary with detected arguments
     :rtype: {str: str}
     '''
     new_content = content
+    value_types = ['default'] if only_default else ['value', 'default']
     try:
         resolve_args_intern = {}
         xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
@@ -290,7 +292,7 @@ def get_internal_args(content, path=None):
                         arg_attr = child.attributes.item(argi)
                         if arg_attr.localName == 'name':
                             aname = arg_attr.value
-                        elif arg_attr.localName in ['value', 'default']:
+                        elif arg_attr.localName in value_types:
                             aval = arg_attr.value
                     if aname:
                         resolve_args_intern[aname] = aval
@@ -463,15 +465,16 @@ def find_included_files(string,
                         rospy.logwarn("Interpret file failed: %s" % utf8(err))
                     if os.path.isdir(filename):
                         filename = ''
+                    exists = os.path.isfile(filename)
                     if filename:
                         publish = not unique or (unique and filename not in my_unique_files)
                         if publish:
                             my_unique_files.append(filename)
                             # transform found position to line number
                             position = content.count("\n", 0, groups.start()) + 1
-                            yield IncludedFile(string, position, filename, os.path.isfile(filename), rawname, rec_depth, forward_args)
+                            yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
                     # for recursive search
-                    if os.path.isfile(filename):
+                    if exists:
                         if recursive:
                             try:
                                 ext = os.path.splitext(filename)
