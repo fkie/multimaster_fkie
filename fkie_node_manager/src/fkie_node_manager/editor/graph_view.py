@@ -87,7 +87,7 @@ class GraphViewWidget(QDockWidget):
         loadUi(graph_ui_file, self)
         self.setObjectName('LaunchGraph')
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        self._info_icon = QIcon(":/icons/crystal_clear_info.png")
+        self._info_icon = QIcon(":/icons/info.png")
         self._tabwidget = tabwidget
         self._current_path = None
         self._root_path = None
@@ -306,7 +306,7 @@ class GraphViewWidget(QDockWidget):
                             self.has_warnings = True
                             arg_item.setIcon(self._info_icon)
                             for da_name, da_value in inc_file.unset_default_args.items():
-                                da_item = QStandardItem('! %s: %s' % (da_name, da_value))
+                                da_item = QStandardItem('<arg_not_set>%s: %s' % (da_name, da_value))
                                 da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
                                 da_item.setData(inc_file.path_or_str, self.DATA_FILE)
                                 da_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
@@ -315,7 +315,7 @@ class GraphViewWidget(QDockWidget):
                                 arg_item.appendRow(da_item)
                         if inc_file.args:
                             for da_name, da_value in inc_file.args.items():
-                                da_item = QStandardItem('-> %s: %s' % (da_name, da_value))
+                                da_item = QStandardItem('<arg>%s: %s' % (da_name, da_value))
                                 da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
                                 da_item.setData(inc_file.path_or_str, self.DATA_FILE)
                                 da_item.setData(inc_file.inc_path, self.DATA_INC_FILE)

@@ -112,8 +112,8 @@ class Editor(QMainWindow):
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowFlags(Qt.Window)
         self.mIcon = QIcon(":/icons/crystal_clear_edit_launch.png")
-        self._error_icon = QIcon(":/icons/crystal_clear_warning.png")
-        self._info_icon = QIcon(":/icons/crystal_clear_info.png")
+        self._error_icon = QIcon(":/icons/warning.png")
+        self._info_icon = QIcon(":/icons/info.png")
         self._empty_icon = QIcon()
         self.setWindowIcon(self.mIcon)
         window_title = "ROSLaunch Editor"
