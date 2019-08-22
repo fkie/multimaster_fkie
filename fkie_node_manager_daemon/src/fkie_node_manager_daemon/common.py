@@ -279,7 +279,6 @@ def get_internal_args(content, path=None, only_default=False):
     :rtype: {str: str}
     '''
     new_content = content
-    value_types = ['default'] if only_default else ['value', 'default']
     try:
         resolve_args_intern = {}
         xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
@@ -288,13 +287,17 @@ def get_internal_args(content, path=None, only_default=False):
                 if child.localName == 'arg' and child.hasAttributes():
                     aname = ''
                     aval = ''
+                    add_arg = True
                     for argi in range(child.attributes.length):
                         arg_attr = child.attributes.item(argi)
                         if arg_attr.localName == 'name':
                             aname = arg_attr.value
-                        elif arg_attr.localName in value_types:
+                        elif arg_attr.localName in ['value', 'default']:
                             aval = arg_attr.value
-                    if aname:
+                            # do not add this argument to the result list if value is set and 'only_default' is True
+                            if only_default and arg_attr.localName == 'value':
+                                add_arg = False
+                    if aname and add_arg:
                         resolve_args_intern[aname] = aval
     except Exception as err:
         print("%s while get_internal_args %s" % (utf8(err), path))
