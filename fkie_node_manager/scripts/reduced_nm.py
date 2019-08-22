@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
 import os
 import shlex
 import socket
@@ -66,7 +67,7 @@ def get_ros_home():
         else:
             from rospkg import get_ros_home
             return get_ros_home()
-    except:
+    except Exception:
         from roslib import rosenv
         return rosenv.get_ros_home()
 
@@ -110,7 +111,7 @@ class StartHandler(object):
             machine_addr = socket.gethostbyname(hostname)
         except socket.gaierror:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             return False
         local_addresses = ['localhost'] + get_local_addresses()
         # check 127/8 and local addresses
@@ -128,11 +129,11 @@ class StartHandler(object):
             socket.setdefaulttimeout(3)
             master = xmlrpclib.ServerProxy(masteruri)
             master.getUri(rospy.get_name())
-        except:
+        except Exception:
             # run a roscore
             master_host = get_hostname(masteruri)
             if cls.is_local(master_host, True):
-                print "Start ROS-Master with", masteruri, "..."
+                print("Start ROS-Master with %s ..." % masteruri)
                 master_port = get_port(masteruri)
                 new_env = dict(os.environ)
                 new_env['ROS_MASTER_URI'] = masteruri
@@ -147,17 +148,17 @@ class StartHandler(object):
                     count = 1
                     while result == -1 and count < 11:
                         try:
-                            print "  retry connect to ROS master", count, '/', 10
+                            print("  retry connect to ROS master %d/10" % count)
                             master = xmlrpclib.ServerProxy(masteruri)
                             result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
-                        except:
+                        except Exception:
                             time.sleep(1)
                             count += 1
                     if count >= 11:
                         raise StartException('Cannot connect to the ROS-Master: ' + str(masteruri))
                 except Exception as e:
                     import sys
-                    print >> sys.stderr, e
+                    sys.stderr.write("%s\n" % e)
                     raise
             else:
                 raise Exception("ROS master '%s' is not reachable" % masteruri)

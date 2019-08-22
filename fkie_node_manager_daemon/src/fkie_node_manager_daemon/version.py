@@ -38,6 +38,7 @@ import subprocess
 import sys
 import xml.dom.minidom as dom
 
+from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
 
 VERSION = 'unknown'
@@ -66,7 +67,7 @@ def detect_version(package):
                     if datetag:
                         date = datetag[0]
             except Exception as err:
-                print >> sys.stderr, "version detection error: %s" % err
+                sys.stderr.write("version detection error: %s" % utf8(err))
         elif os.path.isdir("%s/../.git" % pkg_path):
             try:
                 os.chdir(pkg_path)
@@ -78,7 +79,7 @@ def detect_version(package):
                 if output:
                     date = output[0]
             except Exception as err:
-                print >> sys.stderr, "version detection error: %s" % err
+                sys.stderr.write("version detection error: %s" % utf8(err))
         else:
             ppath = roslib.packages.find_resource(package, 'package.xml')
             if ppath:
@@ -88,11 +89,11 @@ def detect_version(package):
                     version = version_tags[0].firstChild.data
                     version = version
                 else:
-                    print >> sys.stderr, "version detection: no version tag in package.xml found!"
+                    sys.stderr.write("version detection: no version tag in package.xml found!")
             else:
-                print >> sys.stderr, "version detection: package.xml not found!"
+                sys.stderr.write("version detection: package.xml not found!")
     except Exception as err:
-        print >> sys.stderr, "version detection error: %s" % err
+        sys.stderr.write("version detection error: %s" % utf8(err))
     VERSION = version
     DATE = date
     return version, date

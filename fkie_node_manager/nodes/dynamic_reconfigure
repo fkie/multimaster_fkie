@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import division, absolute_import, print_function, unicode_literals
 import sys
 
 from rqt_reconfigure.dynreconf_client_widget import DynreconfClientWidget
@@ -51,7 +52,7 @@ def main(argv=sys.argv):
     try:
       from python_qt_binding.QtWidgets import QApplication, QScrollArea
     except:
-      print >> sys.stderr, "please install 'python_qt_binding' package!!"
+      sys.stderr.write("please install 'python_qt_binding' package!!")
       sys.exit(-1)
   rospy.init_node(node.replace(rospy.names.SEP, '_').strip('_'), log_level=rospy.DEBUG)
   setTerminalName(rospy.get_name())
@@ -77,6 +78,7 @@ def main(argv=sys.argv):
   exit_code = -1
   rospy.on_shutdown(finish)
   exit_code = app.exec_()
+
 
 if __name__ == '__main__':
   main()

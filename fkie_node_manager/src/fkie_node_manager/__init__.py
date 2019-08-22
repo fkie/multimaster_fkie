@@ -215,7 +215,7 @@ def finish(*arg):
         try:
             _HISTORY.storeAll()
         except Exception as err:
-            print >> sys.stderr, "Error while store history: %s" % err
+            sys.stderr.write("Error while store history: %s" % err)
     from fkie_node_manager.main_window import MainWindow
     # stop all threads in the main window
     if isinstance(_MAIN_FORM, MainWindow):
@@ -352,7 +352,7 @@ def main(name):
         try:
             from python_qt_binding.QtWidgets import QApplication
         except Exception:
-            print >> sys.stderr, "please install 'python_qt_binding' package!!"
+            sys.stderr.write("please install 'python_qt_binding' package!!")
             sys.exit(-1)
     init_settings()
     global __version__

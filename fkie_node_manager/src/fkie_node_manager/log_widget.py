@@ -45,7 +45,7 @@ import sys
 try:
     from roscpp.srv import GetLoggers, SetLoggerLevel, SetLoggerLevelRequest
 except ImportError as err:
-    print >> sys.stderr, "Cannot import GetLoggers service definition: %s" % err
+    sys.stderr.write("Cannot import GetLoggers service definition: %s" % err)
 
 from fkie_node_manager_daemon.common import utf8
 from .rosout_listener import RosoutListener

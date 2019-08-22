@@ -91,7 +91,7 @@ try:
     DIAGNOSTICS_AVAILABLE = True
 except Exception:
     import sys
-    print >> sys.stderr, "Cannot import 'diagnostic_msgs', feature disabled."
+    sys.stderr.write("Cannot import 'diagnostic_msgs', feature disabled.")
     DIAGNOSTICS_AVAILABLE = False
 
 

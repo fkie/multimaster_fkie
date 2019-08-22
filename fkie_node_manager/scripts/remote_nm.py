@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import division, absolute_import, print_function, unicode_literals
 import os
 import shlex
 import socket
@@ -17,7 +18,7 @@ from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
 try:
     import fkie_node_manager as nm
-except:
+except Exception:
     import reduced_nm as nm
 
 
@@ -37,7 +38,7 @@ def _get_optparse():
     parser.add_option('--ros_logs', metavar='ros_logs', default=-1,
                       help='request for the list of available log nodes')
     parser.add_option('--delete_logs', metavar='delete_logs', default='',
-                      elp='Delete the log files of the given node')
+                      help='Delete the log files of the given node')
     parser.add_option('--node', metavar='node', default='',
                       help='Type of the node to run')
     parser.add_option('--node_name', metavar='node_name', default='',
@@ -99,44 +100,43 @@ def getCwdArg(arg, argv):
 def main(argv=sys.argv):
     try:
         options, args = parse_options(argv)
-        if args:
-            if options['show_screen_log']:
-                logfile = screen.get_logfile(node=options['show_screen_log'])
-                p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
-                p.wait()
-            elif options['show_ros_log']:
-                logfile = screen.get_ros_logfile(node=options['show_ros_log'])
-                p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
-                p.wait()
-            elif options['ros_log_path']:
-                if options['ros_log_path'] == '[]':
-                    print nm.get_ros_home()
-                else:
-                    print screen.get_logfile(node=options['ros_log_path'])
-            elif options['delete_logs']:
-                logfile = screen.get_logfile(node=options['delete_logs'])
-                pidfile = screen.get_pidfile(node=options['delete_logs'])
-                roslog = screen.get_ros_logfile(node=options['delete_logs'])
-                if os.path.isfile(logfile):
-                    os.remove(logfile)
-                if os.path.isfile(pidfile):
-                    os.remove(pidfile)
-                if os.path.isfile(roslog):
-                    os.remove(roslog)
-            elif options['node_type'] and options['package'] and options['node_name']:
-                runNode(options['package'], options['node_type'], options['node_name'],
-                        args, options['prefix'], options['node_respawn'], options['masteruri'], loglevel=options['loglevel'])
-            elif options['pidkill']:
-                import signal
-                os.kill(int(options['pidkill']), signal.SIGKILL)
-            elif options['package']:
-                print roslib.packages.get_pkg_dir(options['package'])
+        if options['show_screen_log']:
+            logfile = screen.get_logfile(node=options['show_screen_log'])
+            p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
+            p.wait()
+        elif options['show_ros_log']:
+            logfile = screen.get_ros_logfile(node=options['show_ros_log'])
+            p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
+            p.wait()
+        elif options['ros_log_path']:
+            if options['ros_log_path'] == '[]':
+                print(nm.get_ros_home())
+            else:
+                print(screen.get_logfile(node=options['ros_log_path']))
+        elif options['delete_logs']:
+            logfile = screen.get_logfile(node=options['delete_logs'])
+            pidfile = screen.get_pidfile(node=options['delete_logs'])
+            roslog = screen.get_ros_logfile(node=options['delete_logs'])
+            if os.path.isfile(logfile):
+                os.remove(logfile)
+            if os.path.isfile(pidfile):
+                os.remove(pidfile)
+            if os.path.isfile(roslog):
+                os.remove(roslog)
+        elif options['node_type'] and options['package'] and options['node_name']:
+            runNode(options['package'], options['node_type'], options['node_name'],
+                    args, options['prefix'], options['node_respawn'], options['masteruri'], loglevel=options['loglevel'])
+        elif options['pidkill']:
+            import signal
+            os.kill(int(options['pidkill']), signal.SIGKILL)
+        elif options['package']:
+            print(roslib.packages.get_pkg_dir(options['package']))
         else:
             parser = _get_optparse()
             parser.print_help()
             time.sleep(3)
-    except Exception, e:
-        print >> sys.stderr, e
+    except Exception as e:
+        sys.stderr.write("%s\n" % e)
 
 
 def rosconsole_cfg_file(package, loglevel='INFO'):
@@ -171,7 +171,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     # create string for node parameter. Set arguments with spaces into "'".
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
     cmd_args = [screen.get_cmd(name), RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
-    print 'run on remote host:', ' '.join(cmd_args)
+    print('run on remote host:', ' '.join(cmd_args))
     # determine the current working path
     arg_cwd = getCwdArg('__cwd', args)
     cwd = nm.get_ros_home()
@@ -193,5 +193,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
     if len(cmd) > 1:
         rospy.logwarn('Multiple executables are found! The first one was started! Exceutables:\n%s', str(cmd))
+
+
 if __name__ == '__main__':
     main()

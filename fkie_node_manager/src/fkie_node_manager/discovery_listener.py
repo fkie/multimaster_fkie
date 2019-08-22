@@ -48,9 +48,9 @@ try:
     import std_srvs.srv
     from fkie_multimaster_msgs.msg import LinkStatesStamped, MasterState, ROSMaster  # , LinkState, SyncMasterInfo, SyncTopicInfo
     from fkie_multimaster_msgs.srv import DiscoverMasters  # , GetSyncInfo
-except ImportError, e:
+except ImportError as e:
     import sys
-    print >> sys.stderr, "Can't import messages and services of fkie_multimaster_msgs. Is fkie_multimaster_msgs package compiled?"
+    sys.stderr.write("Can't import messages and services of fkie_multimaster_msgs. Is fkie_multimaster_msgs package compiled?")
     raise ImportError(utf8(e))
 
 
