@@ -317,10 +317,10 @@ def replace_internal_args(content, resolve_args={}, path=None):
     try:
         for arg_key, args_val in resolve_args.items():
             replaced = True
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+            new_content = new_content.decode('utf-8').replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
         resolve_args_intern = get_internal_args(content)
         for arg_key, args_val in resolve_args_intern.items():
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+            new_content = new_content.decode('utf-8').replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
             replaced = True
     except Exception as err:
         print("%s in %s" % (utf8(err), path))
@@ -474,7 +474,7 @@ def find_included_files(string,
                         if publish:
                             my_unique_files.append(filename)
                             # transform found position to line number
-                            position = content.count("\n", 0, groups.start()) + 1
+                            position = content.decode('utf-8').count("\n", 0, groups.start()) + 1
                             yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:

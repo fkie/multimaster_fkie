@@ -140,7 +140,7 @@ class FileStub(object):
     def _gen_save_content_list(self, path, content, mtime, package=''):
         minone = True
         try:
-            send_content = content.encode('utf-8')
+            send_content = content  # .encode('utf-8')
             while send_content or minone:
                 minone = False
                 chunk = send_content

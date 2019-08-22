@@ -200,7 +200,7 @@ class TextSearchThread(QObject, threading.Thread):
     def _get_launch_element(self, content, path):
         result = None
         try:
-            xml_nodes = minidom.parseString(content).getElementsByTagName('launch')
+            xml_nodes = minidom.parseString(content.encode('utf-8')).getElementsByTagName('launch')
             if xml_nodes:
                 result = xml_nodes[-1]
         except Exception as err:

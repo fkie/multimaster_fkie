@@ -243,7 +243,7 @@ class GraphViewWidget(QDockWidget):
                 arg_item = QStandardItem('arguments')
                 arg_item.setData(self.ITEM_TYPE_INC_GROUP_ARG, self.ITEM_TYPE)
                 for da_name, da_value in launch_args.items():
-                    da_item = QStandardItem('-> %s: %s' % (da_name, da_value))
+                    da_item = QStandardItem('<arg>%s: %s' % (da_name, da_value))
                     da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
                     da_item.setData(self._root_path, self.DATA_FILE)
                     da_item.setData(da_name, self.DATA_ARG_NAME)
@@ -412,7 +412,7 @@ class GraphThread(QObject, threading.Thread):
             _, _, data = nm.nmd().file.get_file_content(path)
             launch_node = None
             # create xml node
-            xml_nodes = minidom.parseString(data).getElementsByTagName('launch')
+            xml_nodes = minidom.parseString(data.encode('utf-8')).getElementsByTagName('launch')
             if xml_nodes:
                 launch_node = xml_nodes[-1]
             if launch_node is not None:
