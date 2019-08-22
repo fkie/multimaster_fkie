@@ -113,6 +113,7 @@ class Editor(QMainWindow):
         self.setWindowFlags(Qt.Window)
         self.mIcon = QIcon(":/icons/crystal_clear_edit_launch.png")
         self._error_icon = QIcon(":/icons/crystal_clear_warning.png")
+        self._info_icon = QIcon(":/icons/crystal_clear_info.png")
         self._empty_icon = QIcon()
         self.setWindowIcon(self.mIcon)
         window_title = "ROSLaunch Editor"
@@ -442,7 +443,7 @@ class Editor(QMainWindow):
     def on_graph_finished(self):
         self.on_graph_info("build tree: finished", False)
         if self.graph_view.has_warnings:
-            self.graphButton.setIcon(self._error_icon)
+            self.graphButton.setIcon(self._info_icon)
         else:
             self.graphButton.setIcon(self._empty_icon)
         if self._search_thread:

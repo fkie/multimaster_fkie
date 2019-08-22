@@ -87,7 +87,7 @@ class GraphViewWidget(QDockWidget):
         loadUi(graph_ui_file, self)
         self.setObjectName('LaunchGraph')
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        self._warning_icon = QIcon(":/icons/crystal_clear_warning.png")
+        self._info_icon = QIcon(":/icons/crystal_clear_info.png")
         self._tabwidget = tabwidget
         self._current_path = None
         self._root_path = None
@@ -304,7 +304,7 @@ class GraphViewWidget(QDockWidget):
                         arg_item.setData(self.ITEM_TYPE_INC_GROUP_ARG, self.ITEM_TYPE)
                         if inc_file.unset_default_args:
                             self.has_warnings = True
-                            arg_item.setIcon(self._warning_icon)
+                            arg_item.setIcon(self._info_icon)
                             for da_name, da_value in inc_file.unset_default_args.items():
                                 da_item = QStandardItem('! %s: %s' % (da_name, da_value))
                                 da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
