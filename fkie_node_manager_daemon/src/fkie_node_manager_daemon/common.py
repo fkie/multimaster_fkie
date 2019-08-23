@@ -281,7 +281,7 @@ def get_internal_args(content, path=None, only_default=False):
     new_content = content
     try:
         resolve_args_intern = {}
-        xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
+        xml_nodes = minidom.parseString(new_content.encode('utf-8')).getElementsByTagName('launch')
         for node in xml_nodes:
             for child in node.childNodes:
                 if child.localName == 'arg' and child.hasAttributes():

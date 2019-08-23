@@ -60,6 +60,10 @@ class FileChannel(ChannelInterface):
     '''
     :ivar str packages_available: this signal is emitted on new list with packages  {grpc_url}.
     '''
+    file_content = Signal(str, int, float, str)
+    '''
+    :ivar str,int,int,str file_content: gets the content of the file  {grpc_url, size, mtime, content}.
+    '''
 
     def __init__(self):
         ChannelInterface.__init__(self)
@@ -203,20 +207,26 @@ class FileChannel(ChannelInterface):
         if hasattr(self, '_threads'):
             self._threads.finished("gmt_%s_%d" % (grpc_url_or_path, clear_ros_cache))
 
+    def get_file_content_threaded(self, grpc_path='grpc://localhost:12321', force=False):
+        self._threads.start_thread("gfc_%s_%d" % (grpc_path, force), target=self.get_file_content, args=(grpc_path, force))
+
     def get_file_content(self, grpc_path='grpc://localhost:12321', force=False):
-        result = ''
+        file_size, file_mtime, file_content = (0, 0, '')
         try:
             if force:
                 del self._cache_file_content[grpc_path]
-            result = self._cache_file_content[grpc_path]
+            file_size, file_mtime, file_content = self._cache_file_content[grpc_path]
         except KeyError:
             rospy.logdebug("get file content for %s:" % grpc_path)
             uri, path = nmdurl.split(grpc_path)
             fm, channel = self.get_file_manager(uri)
-            result = fm.get_file_content(path)
-            self._cache_file_content[grpc_path] = result
+            file_size, file_mtime, file_content = fm.get_file_content(path)
+            self._cache_file_content[grpc_path] = (file_size, file_mtime, file_content)
             self.close_channel(channel, uri)
-        return result
+        if hasattr(self, '_threads'):
+            self._threads.finished("gfc_%s_%d" % (grpc_path, force))
+        self.file_content.emit(grpc_path, file_size, file_mtime, file_content)
+        return file_size, file_mtime, file_content
 
     def save_file(self, grpc_path, content, mtime):
         rospy.logdebug("save_file_content: %s" % grpc_path)

@@ -111,21 +111,29 @@ class TextEdit(QTextEdit):
         self._search_thread = None
         self._stop = False
         self._internal_args = {}
-        ext = os.path.splitext(filename)
+        self._ext = os.path.splitext(filename)[1]
+        self.setEnabled(False)
+
+        nm.nmd().file.file_content.connect(self._apply_file_content)
         if self.filename:
+            nm.nmd().file.get_file_content_threaded(filename)
+
+    def _apply_file_content(self, filename, file_size, file_mtime, content):
+        if self.filename == filename:
             self.setText("")
-            _, self.file_mtime, file_content = nm.nmd().file.get_file_content(filename)
-            if ext[1] in ['.launch', '.xml']:
-                self._internal_args = get_internal_args(file_content)
-            self.setText(file_content)
+            self.file_mtime = file_mtime
+            if self._ext in ['.launch', '.xml']:
+                self._internal_args = get_internal_args(content)
+            self.setText(content)
         self._is_launchfile = False
-        if ext[1] in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
-            if ext[1] in ['.launch']:
+        if self._ext in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
+            if self._ext in ['.launch']:
                 self._is_launchfile = True
             self.hl = XmlHighlighter(self.document(), is_launch=False)
             self.cursorPositionChanged.connect(self._document_position_changed)
         else:
             self.hl = YamlHighlighter(self.document())
+        self.setEnabled(True)
 
     def _document_position_changed(self):
         if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:
@@ -331,7 +339,7 @@ class TextEdit(QTextEdit):
                                                 nm.nmd().file.save_file(path, '<launch>\n\n</launch>', 0)
                                                 event.setAccepted(True)
                                                 self.load_request_signal.emit(path)
-                                except Exception, e:
+                                except Exception as e:
                                     MessageBox.critical(self, "Error", "File not found %s" % path, detailed_text=utf8(e))
                         except exceptions.ResourceNotFound as not_found:
                             MessageBox.critical(self, "Error", "Resource not found %s" % search_for, detailed_text=utf8(not_found.error))

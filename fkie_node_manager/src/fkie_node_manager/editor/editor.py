@@ -375,7 +375,6 @@ class Editor(QMainWindow):
             return
         self.tabWidget.setUpdatesEnabled(False)
         try:
-            path_text = {}
             if filename not in self.files:
                 tab_name = self.__getTabName(filename)
                 editor = TextEdit(filename, parent=self)
@@ -394,13 +393,11 @@ class Editor(QMainWindow):
 #                editor.textChanged.connect(self.on_text_changed)
                 editor.undoAvailable.connect(self.on_text_changed)
                 self.tabWidget.setCurrentIndex(tab_index)
-                path_text[filename] = editor.document().toPlainText()
 #                self.find_dialog.set_search_path(filename)
             else:
                 for i in range(self.tabWidget.count()):
                     if self.tabWidget.widget(i).filename == filename:
                         self.tabWidget.setCurrentIndex(i)
-                        path_text[filename] = self.tabWidget.widget(i).document().toPlainText()
                         break
             self.tabWidget.setUpdatesEnabled(True)
             if search_text:
@@ -410,7 +407,7 @@ class Editor(QMainWindow):
                 except Exception:
                     pass
                 # TODO: put all text of all tabs into path_text
-                self._search_thread = TextSearchThread(search_text, filename, path_text=path_text, recursive=True, only_launch=only_launch, count_results=count_results)
+                self._search_thread = TextSearchThread(search_text, filename, recursive=True, only_launch=only_launch, count_results=count_results)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
                 self._search_thread.warning_signal.connect(self.on_search_result_warning)
                 self._last_search_request = (filename, search_text, insert_index, goto_line, only_launch)
