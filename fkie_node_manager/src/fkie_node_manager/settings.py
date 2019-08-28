@@ -177,7 +177,7 @@ class Settings(object):
         self._current_dialog_path = self.CURRENT_DIALOG_PATH
         self._log_viewer = self.LOG_VIEWER
         self._start_remote_script = self.STARTER_SCRIPT
-        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self.launch_view_file_ext))
+        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self.str2list(self.launch_view_file_ext)))
         # setup logging
         self._rosconsole_cfg_file = 'rosconsole.config'
         self.logging = LoggingConfig()
@@ -244,10 +244,9 @@ class Settings(object):
                                        '(<span style=" font-weight:600;">.png</span>).'
                                        ' The images with robot name will be displayed in the info bar.',
                                        },
-                  'Show files extensions:': {':value': ', '.join(self.str2list(settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)))),
+                  'Show files extensions:': {':value': settings.value('launch_view_file_ext', ', '.join(self.LAUNCH_VIEW_EXT)),
                                              ':var': 'launch_view_file_ext',
                                              ':default': ', '.join(self.LAUNCH_VIEW_EXT),
-                                             ':type': 'list',
                                              ':hint': 'Files that are displayed next to Launch'
                                              ' files in the <span style="font-weight:600;">launch files</span> view.',
                                              },
@@ -403,9 +402,6 @@ class Settings(object):
     def __getattr__(self, name):
         for value in self._data.itervalues():
             if value[':var'] == name:
-                if ':type' in value:
-                    if value[':type'] == 'list':
-                        return self.str2list(value[':value'])
                 return value[':value']
         raise AttributeError("'Settings' has no attribute '%s'" % name)
 
