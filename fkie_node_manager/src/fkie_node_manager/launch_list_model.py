@@ -122,7 +122,7 @@ class PathItem(QStandardItem):
         _filename, file_extension = os.path.splitext(path)
         if not file_extension:
             return default
-        if file_extension == '.launch':
+        if file_extension == '.launch' or path.find('.launch') > 0:
             return PathItem.LAUNCH_FILE
         elif file_extension == '.nmprofile':
             return PathItem.PROFILE
@@ -454,7 +454,7 @@ class LaunchListModel(QStandardItemModel):
             path_id = PathItem.NOT_FOUND
             if FileItem.FILE == path_item.type:
                 _, ext = os.path.splitext(path_item.path)
-                if ext in nm.settings().launch_view_file_ext:
+                if ext in nm.settings().launch_view_file_ext or path_item.path.find('.launch') > 0:
                     path_id = PathItem.FILE
             elif FileItem.DIR == path_item.type:
                 path_id = PathItem.FOLDER

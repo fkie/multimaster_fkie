@@ -403,7 +403,7 @@ class GraphThread(QObject, threading.Thread):
         :rtype: dict(str: str)
         '''
         not_set_args = {}
-        if path and not path.endswith('.launch'):
+        if path and not (path.endswith('.launch') or path.find('.launch.') > 0):
             return not_set_args
         if rospy.is_shutdown():
             return not_set_args

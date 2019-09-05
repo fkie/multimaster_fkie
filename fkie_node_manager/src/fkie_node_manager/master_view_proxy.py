@@ -814,7 +814,7 @@ class MasterViewProxy(QWidget):
 
     def question_reload_changed_file(self, changed, affected):
         _filename, file_extension = os.path.splitext(changed)
-        if file_extension in nm.settings().launch_view_file_ext:
+        if file_extension in nm.settings().launch_view_file_ext or changed.find('.launch.') > 0:
             changed_res = "%s[%s]" % (os.path.basename(changed), utf8(package_name(os.path.dirname(changed))[0]))
             self.message_frame.show_question(MessageFrame.TYPE_LAUNCH_FILE, 'Reload <b>%s</b>?<br>Changed files:' % os.path.basename(affected), MessageData(affected, [changed_res]))
 

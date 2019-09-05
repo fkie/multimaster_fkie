@@ -126,12 +126,12 @@ class TextEdit(QTextEdit):
         if self.filename == filename:
             self.setText("")
             self.file_mtime = file_mtime
-            if self._ext in ['.launch', '.xml']:
+            if self._ext in self.CONTEXT_FILE_EXT:
                 self._internal_args = get_internal_args(content)
             self.setText(content)
         self._is_launchfile = False
         if self._ext in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
-            if self._ext in ['.launch']:
+            if self._ext in self.CONTEXT_FILE_EXT:
                 self._is_launchfile = True
             self.hl = XmlHighlighter(self.document(), is_launch=False)
             self.cursorPositionChanged.connect(self._document_position_changed)
