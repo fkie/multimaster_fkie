@@ -531,7 +531,7 @@ class MasterViewProxy(QWidget):
 #      cputime = cputimes[0] + cputimes[1] - cputime_init
 #      print "  update on ", self.__master_info.mastername if not self.__master_info is None else self.__master_state.name, cputime
         except Exception:
-            print(traceback.format_exc(1))
+            print(traceback.format_exc(3))
 
     def perform_nmd_requests(self):
         nmd_uri = nmdurl.nmduri(self.masteruri)

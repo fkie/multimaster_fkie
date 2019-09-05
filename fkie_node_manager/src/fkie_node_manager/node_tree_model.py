@@ -123,6 +123,7 @@ class GroupItem(QStandardItem):
         self._state = NodeItem.STATE_OFF
         self.diagnostic_array = []
         self.is_system_group = name == 'SYSTEM'
+        self._clearup_mark_delete = False
 
     @property
     def name(self):
@@ -334,6 +335,28 @@ class GroupItem(QStandardItem):
             pass
         return result
 
+    def exists_capability_group(self, ns, group_name):
+        '''
+        Returns True if the group exists in capability list.
+
+        :param str ns: Namespace of the group
+        :param str group_name: The name of the group
+        :return: True if the group exists in capability list.
+        :rtype: bool
+        '''
+        try:
+            if type(self) == HostItem:
+                for _cfg, cap in self._capcabilities.items():
+                    for gns, groups in cap.items():
+                        for group, _decription in groups.items():
+                            if ns.rstrip('/') == gns and group == group_name:
+                                return True
+            elif self.parent_item is not None:
+                return self.parent_item.exists_capability_group(ns, group_name)
+        except Exception:
+            pass
+        return False
+
     def clear_multiple_screens(self):
         for i in range(self.rowCount()):
             item = self.child(i)
@@ -402,7 +425,7 @@ class GroupItem(QStandardItem):
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, GroupItem):
-                if item == lns:
+                if item == lns and not item._clearup_mark_delete:
                     if rns:
                         return item.get_group_item(rns, is_group)
                     return item
@@ -428,7 +451,7 @@ class GroupItem(QStandardItem):
             return newItem.get_group_item(rns, is_group)
         return newItem
 
-    def add_node(self, node, cfg=''):
+    def add_node(self, node, cfg=None):
         '''
         Adds a new node with given name.
 
@@ -473,8 +496,8 @@ class GroupItem(QStandardItem):
         :param list(str) fixed_node_names: If the list is not None, the node not in the list are set to not running!
         '''
         self._clearup(fixed_node_names)
-        self._clearup_reinsert()
-        self._clearup_riseup()
+        self._mark_groups_to_delete()
+        self._remove_marked_groups()
 
     def _clearup(self, fixed_node_names=None):
         '''
@@ -493,21 +516,6 @@ class GroupItem(QStandardItem):
                 if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
                     removed = True
                     self.removeRow(i)
-                elif not isinstance(self, HostItem):
-                    has_launches = NodeItem.has_launch_cfgs(item.cfgs)
-                    has_defaults = NodeItem.has_default_cfgs(item.cfgs)
-                    has_std_cfg = item.has_std_cfg()
-                    if item.state == NodeItem.STATE_RUN and not (has_launches or has_defaults or has_std_cfg):
-                        # if it is in a group, is running, but has no configuration, move it to the host
-                        if self.parent_item is not None and type(self.parent_item) == HostItem:
-                            items_in_host = self.parent_item.get_node_items_by_name(item.name, True)
-                            if len(items_in_host) == 1:
-                                row = self.takeRow(i)
-                                self.parent_item._add_row_sorted(row)
-                            else:
-                                # remove item
-                                removed = True
-                                self.removeRow(i)
             else:  # if type(item) == GroupItem:
                 removed = item._clearup(fixed_node_names) or removed
         if self.rowCount() == 0 and self.parent_item is not None:
@@ -516,45 +524,57 @@ class GroupItem(QStandardItem):
             self.updateIcon()
         return removed
 
-    def _clearup_reinsert(self):
-        inserted = False
-        for i in reversed(range(self.rowCount())):
-            item = self.child(i)
-            if isinstance(item, NodeItem):
-                if item.with_namespace:
-                        group_item = self.get_group_item(namespace(item.name), False, nocreate=True)
-                        if group_item is not None and group_item != self:
-                            inserted = True
-                            row = self.takeRow(i)
-                            group_item._add_row_sorted(row)
-                            group_item.updateIcon()
-            else:
-                inserted = item._clearup_reinsert() or inserted
-        return inserted
-
-    def _clearup_riseup(self):
-        changed = False
-        for i in reversed(range(self.rowCount())):
+    def _mark_groups_to_delete(self):
+        for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, NodeItem):
                 # remove group if only one node is inside
-                if self.rowCount() == 1:
-                    if not self.is_group and not isinstance(self, HostItem):
-                        changed = True
-                        row = self.takeRow(i)
-                        if self.parent_item is not None:
-                            self.parent_item._add_row_sorted(row)
-                            self.parent_item._remove_group(self.name)
-                            self.parent_item._clearup_riseup()
+                if not isinstance(self, HostItem):
+                    if self.parent_item is not None:
+                        if self.is_group:
+                            # check to remove capability group
+                            if not self.exists_capability_group(self.parent_item.get_namespace(), self.name):
+                                self._clearup_mark_delete = True
+                        elif self.rowCount() == 1:
+                            self._clearup_mark_delete = True
             else:
-                changed = item._clearup_riseup() or changed
-        return changed
+                item._mark_groups_to_delete()
+                if self.rowCount() == 1:
+                    # remove if subgroup marked to remove and this has only this group
+                    self._clearup_mark_delete = item._clearup_mark_delete
+
+    def _remove_marked_groups(self):
+        rows2add = []
+        for i in reversed(range(self.rowCount())):
+            item = self.child(i)
+            if isinstance(item, GroupItem):
+                if item._clearup_mark_delete:
+                    rows = self._take_node_rows(item)
+                    if rows:
+                        rows2add = rows2add + rows
+                        self.removeRow(i)
+                else:
+                    item._remove_marked_groups()
+        for row in rows2add:
+            self._add_row_sorted(row)
+            self.updateIcon()
+
+    def _take_node_rows(self, group):
+        result = []
+        for i in reversed(range(group.rowCount())):
+            item = group.child(i)
+            if isinstance(item, NodeItem):
+                result.append(group.takeRow(i))
+            else:
+                result = result + item._take_node_rows(item)
+        return result
 
     def _remove_group(self, name):
-        for i in reversed(range(self.rowCount())):
+        for i in range(self.rowCount()):
             item = self.child(i)
             if type(item) == GroupItem and item == name and item.rowCount() == 0:
                 self.removeRow(i)
+                return  # we assume only one group with same name can exists
 
     def reset_remote_launched_nodes(self):
         self._remote_launched_nodes_updated = False
@@ -1521,6 +1541,22 @@ class NodeItem(QStandardItem):
             self.update_displayed_config()
         return result
 
+    def readd(self):
+        '''
+        Remove this node from current group and put it in new one, defined by namespace.
+        This is only executed if parent_item is valid and the name of this node has namespace.
+        '''
+        if self.parent_item is not None and self.with_namespace:
+            row = None
+            for i in reversed(range(self.parent_item.rowCount())):
+                item = self.parent_item.child(i)
+                if (type(item) == NodeItem) and item.name == self.name:
+                    row = self.parent_item.takeRow(i)
+                    break
+            group_item = self.parent_item.get_group_item(namespace(item.name), False)
+            group_item._add_row_sorted(row)
+            group_item.updateIcon()
+
     def type(self):
         return NodeItem.ITEM_TYPE
 
@@ -1545,7 +1581,7 @@ class NodeItem(QStandardItem):
         return items
 
     def has_configs(self):
-        return not (len(self._cfgs) == 0)  # and self._std_config is None)
+        return not (len(self._cfgs) == 0)
 
     def is_running(self):
         return not (self._node_info.pid is None and self._node_info.uri is None)
@@ -1901,6 +1937,7 @@ class NodeTreeModel(QStandardItemModel):
                     if item.parent_item is not None:
                         groups.add(item.parent_item)
                     item.add_config(cfg)
+                    item.readd()
                 if not items:
                     # create the new node
                     node_info = NodeInfo(name, masteruri)

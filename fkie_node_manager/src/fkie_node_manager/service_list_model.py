@@ -93,10 +93,10 @@ class ServiceItem(QStandardItem):
     def parent_item(self, parent_item):
         self._parent_item = parent_item
         if parent_item is None:
-            self.setText(self.text())
+            self.setText(self.service.name)
             self._with_namespace = rospy.names.SEP in self.text()
         else:
-            new_name = self.text().replace(parent_item.get_namespace(), '', 1)
+            new_name = self.service.name.replace(parent_item.get_namespace(), '', 1)
             self.setText(new_name)
             self._with_namespace = rospy.names.SEP in new_name
 
@@ -247,6 +247,7 @@ class ServiceGroupItem(QStandardItem):
         self._name = name
         self._is_group = is_group
         self.is_system_group = name == 'SYSTEM'
+        self._clearup_mark_delete = False
 
     @property
     def name(self):
@@ -421,8 +422,8 @@ class ServiceGroupItem(QStandardItem):
         :param list(str) fixed_node_names: If the list is not None, the node not in the list are set to not running!
         '''
         self._clearup(fixed_node_names)
-        self._clearup_reinsert()
-        self._clearup_riseup()
+        self._mark_groups_to_delete()
+        self._remove_marked_groups()
 
     def _clearup(self, fixed_node_names=None):
         '''
@@ -442,44 +443,52 @@ class ServiceGroupItem(QStandardItem):
             self.parent_item._remove_group(self.name)
         return removed
 
-    def _clearup_reinsert(self):
-        inserted = False
-        for i in reversed(range(self.rowCount())):
+    def _remove_group(self, name):
+        for i in range(self.rowCount()):
             item = self.child(i)
-            if isinstance(item, ServiceItem):
-                if item.with_namespace:
-                        group_item = self.get_group_item(namespace(item.name), False, nocreate=True)
-                        if group_item is not None and group_item != self:
-                            inserted = True
-                            row = self.takeRow(i)
-                            group_item._add_row(row)
-            else:
-                inserted = item._clearup_reinsert() or inserted
-        return inserted
+            if type(item) == ServiceGroupItem and item == name and item.rowCount() == 0:
+                self.removeRow(i)
+                return  # we assume only one group with same name can exists
 
-    def _clearup_riseup(self):
-        changed = False
-        for i in reversed(range(self.rowCount())):
+    def _mark_groups_to_delete(self):
+        for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, ServiceItem):
                 # remove group if only one node is inside
                 if self.rowCount() == 1:
                     if not self.is_group and not type(self) == QStandardItem:
-                        changed = True
-                        row = self.takeRow(i)
                         if self.parent_item is not None:
-                            self.parent_item._add_row(row)
-                            self.parent_item._remove_group(self.name)
-                            self.parent_item._clearup_riseup()
+                            self._clearup_mark_delete = True
             else:
-                changed = item._clearup_riseup() or changed
-        return changed
+                item._mark_groups_to_delete()
+                if self.rowCount() == 1:
+                    # remove if subgroup marked to remove and this has only this group
+                    self._clearup_mark_delete = item._clearup_mark_delete
 
-    def _remove_group(self, name):
+    def _remove_marked_groups(self):
+        rows2add = []
         for i in reversed(range(self.rowCount())):
             item = self.child(i)
-            if type(item) == ServiceGroupItem and item == name and item.rowCount() == 0:
-                self.removeRow(i)
+            if isinstance(item, ServiceGroupItem):
+                if item._clearup_mark_delete:
+                    row = self._take_node_row(item)
+                    if row is not None:
+                        rows2add.append(row)
+                        self.removeRow(i)
+                else:
+                    item._remove_marked_groups()
+        for row in rows2add:
+            self._add_row(row)
+
+    def _take_node_row(self, group):
+        result = None
+        if group.rowCount() == 1:
+            item = group.child(0)
+            if isinstance(item, ServiceItem):
+                result = group.takeRow(0)
+            else:
+                result = group._take_node_row(item)
+        return result
 
     def remove_node(self, name):
         removed = False
@@ -642,13 +651,8 @@ class ServiceModel(QStandardItemModel):
         :type removed_srvs: list or set
         '''
         # first: remove services
-        parents = set()
-        for rm_topic in removed_srvs:
-            new_parent = self._remove_node(rm_topic)
-            if type(new_parent) == ServiceGroupItem:
-                parents.add(new_parent)
-        for parent in parents:
-            parent.clearup()
+        for rm_service in removed_srvs:
+            self._remove_node(rm_service)
         #  second: update the existing items
         root = self.invisibleRootItem()
         for i in reversed(range(root.rowCount())):
@@ -658,20 +662,25 @@ class ServiceModel(QStandardItemModel):
         # last: add new services
         for name in added_srvs:
             try:
-                topic = services[name]
+                service = services[name]
                 # first: add to system group
                 sys_group = self.get_cap_group(name)
                 if sys_group is not None:
-                    sys_group.add_node(topic)
+                    sys_group.add_node(service)
                 else:
                     # second add to the root group
                     root_group = self.get_root_group()
                     if root_group is not None:
-                        root_group.add_node(topic)
+                        root_group.add_node(service)
             except Exception:
                 import traceback
                 print(traceback.format_exc())
                 pass
+        # remove empty groups
+        for i in range(root.rowCount()):
+            item = root.child(i)
+            if type(item) == ServiceGroupItem:
+                item.clearup()
 
     def index_from_names(self, services):
         '''
@@ -697,9 +706,9 @@ class ServiceModel(QStandardItemModel):
         for i in range(root.rowCount()):
             item = root.child(i)
             if type(item) == ServiceGroupItem:
-                parent = item.remove_node(name)
-                if parent is not None:
-                    return parent
+                removed = item.remove_node(name)
+                if removed:
+                    return item
         return None
 
     def _pyqt_workaround_add(self, name, item):
