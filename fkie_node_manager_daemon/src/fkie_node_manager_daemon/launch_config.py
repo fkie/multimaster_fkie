@@ -242,7 +242,7 @@ class LaunchConfig(object):
         # get only the args in the top launch file
         for filename in [self.filename]:
             try:
-                if filename.endswith('.launch'):
+                if filename.endswith('.launch') or filename.find('.launch.') > 0:
                     args[len(args):-1] = parse(filename).getElementsByTagName('arg')
             except Exception as e:
                 raise roslaunch.XmlParseException("Invalid roslaunch XML syntax: %s" % e)

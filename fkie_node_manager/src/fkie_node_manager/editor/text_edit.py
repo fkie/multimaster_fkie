@@ -33,7 +33,7 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtCore import QRegExp, Qt, Signal
-from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor
+from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor, QTextDocument
 import os
 import re
 import rospy
@@ -113,12 +113,16 @@ class TextEdit(QTextEdit):
         self._internal_args = {}
         self._ext = os.path.splitext(filename)[1]
         self.setEnabled(False)
-
+        self._applied_content = True
+        self._to_select = []
         nm.nmd().file.file_content.connect(self._apply_file_content)
         if self.filename:
+            self._applied_content = False
             nm.nmd().file.get_file_content_threaded(filename)
 
     def _apply_file_content(self, filename, file_size, file_mtime, content):
+        if self._applied_content:
+            return
         if self.filename == filename:
             self.setText("")
             self.file_mtime = file_mtime
@@ -134,6 +138,35 @@ class TextEdit(QTextEdit):
         else:
             self.hl = YamlHighlighter(self.document())
         self.setEnabled(True)
+        self._applied_content = True
+        self._select()
+
+    def select(self, startpos, endpos, isnode):
+        self._to_select.append((startpos, endpos, isnode))
+        if self._applied_content:
+            self._select()
+
+    def _select(self):
+        if self._to_select:
+            startpos, endpos, isnode = self._to_select[0]
+            if isnode:
+                comment_start = self.document().find('<!--', startpos, QTextDocument.FindBackward)
+                if not comment_start.isNull():
+                    comment_end = self.document().find('-->', comment_start)
+                    if not comment_end.isNull() and comment_end.position() > endpos:
+                        # commented -> return
+                        self._to_select.pop(0)
+                        return
+            cursor = self.textCursor()
+            cursor.beginEditBlock()
+            cursor.setPosition(startpos, QTextCursor.MoveAnchor)
+            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, endpos - startpos)
+            cursor.endEditBlock()
+            self.setTextCursor(cursor)
+            cursor_y = self.cursorRect(cursor).top()
+            vbar = self.verticalScrollBar()
+            vbar.setValue(vbar.value() + cursor_y * 0.8)
+            self._to_select.pop(0)
 
     def _document_position_changed(self):
         if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:

@@ -35,6 +35,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 from python_qt_binding.QtCore import QObject, Signal
 import re
 import rospy
+import os
 import threading
 from xml.dom import minidom
 
@@ -115,7 +116,7 @@ class TextSearchThread(QObject, threading.Thread):
                 doemit = True
                 line = self._strip_text(data, pos)
                 if self._only_launch:
-                    doemit = path.endswith('.launch')
+                    doemit = path.endswith('.launch') or path.find('.launch.') > 0
                 if doemit:
                     self._found += 1
                     self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, line)
@@ -139,7 +140,7 @@ class TextSearchThread(QObject, threading.Thread):
                     new_dict = dict(args)
                     new_dict.update(include_args)
                     # test search string for 'name=' and skip search in not launch files
-                    if self._only_launch or inc_path.endswith('.launch'):
+                    if self._only_launch or inc_path.endswith('.launch') or path.find('.launch.') > 0:
                         self.search(search_text, inc_path, recursive, new_dict, count + 1)
         if self._path == path and self._found == 0:
             self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
@@ -151,7 +152,7 @@ class TextSearchThread(QObject, threading.Thread):
         :return: the list with all files contain the text
         :rtype: [str, ...]
         '''
-        if path and not path.endswith('.launch'):
+        if path and not (path.endswith('.launch') or path.find('.launch.') > 0):
             return
         if not self._isrunning:
             return
@@ -163,6 +164,7 @@ class TextSearchThread(QObject, threading.Thread):
             self.search(search_text, path, recursive, args, count)
         else:
             # read XML content and update the arguments
+            rospy.logdebug("search for node '%s' in %s with args: %s, recursive: %s" % (search_text, path, args, recursive))
             resolve_args = dict(args)
             if not resolve_args:
                 resolve_args.update(nm.nmd().launch.launch_args(path))
@@ -180,19 +182,21 @@ class TextSearchThread(QObject, threading.Thread):
                 occur_idx += 1
             if self._isrunning and recursive:
                 queue = []
-                inc_files = nm.nmd().launch.get_included_files(path, False, include_args=args)
+                inc_files = nm.nmd().launch.get_included_files(path, False, include_args=args, search_in_ext=['.launch', '.xml'])
                 # read first all included files in current file
                 for inc_file in inc_files:
                     if not self._isrunning:
                         return
                     if inc_file.exists:
                         queue.append((search_text, inc_file.inc_path, recursive, inc_file.args))
+                    elif inc_file.inc_path.endswith('.launch') or inc_file.inc_path.find('.launch.') > 0:
+                        rospy.logwarn("skip parsing of not existing included file: %s" % inc_file.inc_path)
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(my_resolved_args)
                     new_dict.update(include_args)
                     # skip search in not launch files
-                    if inc_path.endswith('.launch'):
+                    if inc_path.endswith('.launch') or inc_path.find('.launch.') > 0:
                         self.search_for_node(search_text, inc_path, recursive, new_dict, count + 1)
         if self._path == path and self._found == 0:
             self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
@@ -246,6 +250,7 @@ class TextSearchThread(QObject, threading.Thread):
         re_nodes = re.compile(r"<node[\w\W\S\s]*?name=\"(?P<name>.*?)\"")
         for groups in re_nodes.finditer(content):
             aname = groups.group("name")
+            rospy.logdebug("  check node name '%s' for '%s' in group %s" % (aname, node_name, groups.span("name")))
             if aname == node_name:
                 yield node_name, aname, groups.span("name")
             else:

@@ -33,7 +33,7 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal
-from python_qt_binding.QtGui import QColor, QIcon, QKeySequence, QTextCursor, QTextDocument
+from python_qt_binding.QtGui import QColor, QIcon, QKeySequence, QTextCursor
 import os
 
 import rospy
@@ -407,6 +407,7 @@ class Editor(QMainWindow):
                 except Exception:
                     pass
                 # TODO: put all text of all tabs into path_text
+                rospy.logdebug("serach for '%s'" % search_text)
                 self._search_thread = TextSearchThread(search_text, filename, recursive=True, only_launch=only_launch, count_results=count_results)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
                 self._search_thread.warning_signal.connect(self.on_search_result_warning)
@@ -723,13 +724,7 @@ class Editor(QMainWindow):
                 focus_widget = QApplication.focusWidget()
                 self.on_load_request(path)
                 focus_widget.setFocus()
-            cursor = self.tabWidget.currentWidget().textCursor()
-            cursor.setPosition(startpos, QTextCursor.MoveAnchor)
-            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, endpos - startpos)
-            self.tabWidget.currentWidget().setTextCursor(cursor)
-            cursor_y = self.tabWidget.currentWidget().cursorRect().top()
-            vbar = self.tabWidget.currentWidget().verticalScrollBar()
-            vbar.setValue(vbar.value() + cursor_y * 0.8)
+            self.tabWidget.currentWidget().select(startpos, endpos, False)
 
     def on_search_result_on_open(self, search_text, found, path, startpos, endpos, linenr, line_text):
         '''
@@ -739,16 +734,11 @@ class Editor(QMainWindow):
             self.on_graph_info("search thread: found %s in '%s'" % (search_text, path))
             if self.tabWidget.currentWidget().filename != path:
                 focus_widget = QApplication.focusWidget()
+                self.on_load_request(path)
                 if focus_widget is not None:
                     focus_widget.setFocus()
-                self.on_load_request(path)
-            comment_start = self.tabWidget.currentWidget().document().find('<!--', startpos, QTextDocument.FindBackward)
-            if not comment_start.isNull():
-                comment_end = self.tabWidget.currentWidget().document().find('-->', comment_start)
-                if not comment_end.isNull() and comment_end.position() > endpos:
-                    # commented -> retrun
-                    return
-        self.on_search_result(search_text, found, path, startpos, endpos, linenr, line_text)
+            self.tabWidget.currentWidget().select(startpos, endpos, True)
+        # self.on_search_result(search_text, found, path, startpos, endpos, linenr, line_text)
 
     def on_search_result_warning(self, msg):
         self.on_graph_info("search thread: %s" % (msg), True)

@@ -437,7 +437,7 @@ def find_included_files(string,
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
-    if (string.endswith(".launch")):
+    if (string.endswith('.launch') or string.find('.launch') > 0):
         _replaced, content_resolved, resolve_args_intern = replace_internal_args(content, resolve_args=resolve_args, path=string)
         # intern args use only internal
         inc_files_forward_args = __get_include_args(content_resolved, resolve_args)
