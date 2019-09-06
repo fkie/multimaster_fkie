@@ -349,7 +349,7 @@ class GroupItem(QStandardItem):
                 for _cfg, cap in self._capcabilities.items():
                     for gns, groups in cap.items():
                         for group, _decription in groups.items():
-                            if ns.rstrip('/') == gns and group == group_name:
+                            if ns == gns and group == group_name:
                                 return True
             elif self.parent_item is not None:
                 return self.parent_item.exists_capability_group(ns, group_name)
@@ -1674,16 +1674,16 @@ class NodeTreeModel(QStandardItemModel):
         self.setHorizontalHeaderLabels([label for label, _ in NodeTreeModel.header])
         self._local_host_address = host_address
         self._local_masteruri = masteruri
-        self._std_capabilities = {'': {'SYSTEM': {'images': [],
-                                                  'nodes': ['/rosout',
-                                                            '/master_discovery',
-                                                            '/zeroconf',
-                                                            '/master_sync',
-                                                            '/node_manager',
-                                                            '/node_manager_daemon',
-                                                            '/dynamic_reconfigure/*'],
-                                                  'type': '',
-                                                  'description': 'This group contains the system management nodes.'}}}
+        self._std_capabilities = {'/': {'SYSTEM': {'images': [],
+                                                   'nodes': ['/rosout',
+                                                             '/master_discovery',
+                                                             '/zeroconf',
+                                                             '/master_sync',
+                                                             '/node_manager',
+                                                             '/node_manager_daemon',
+                                                             '/dynamic_reconfigure/*'],
+                                                   'type': '',
+                                                   'description': 'This group contains the system management nodes.'}}}
 
         # create a handler to request the parameter
         self.parameterHandler = ParameterHandler()
@@ -1704,8 +1704,8 @@ class NodeTreeModel(QStandardItemModel):
         if host_item is not None:
             cap = self._std_capabilities
             mastername = roslib.names.SEP.join(['', host_item.mastername, '*', 'default_cfg'])
-            if mastername not in cap['']['SYSTEM']['nodes']:
-                cap['']['SYSTEM']['nodes'].append(mastername)
+            if mastername not in cap['/']['SYSTEM']['nodes']:
+                cap['/']['SYSTEM']['nodes'].append(mastername)
             host_item.add_capabilities('', cap, host_item.masteruri)
             return cap
         return dict(self._std_capabilities)
@@ -1792,7 +1792,7 @@ class NodeTreeModel(QStandardItemModel):
     def _requestCapabilityGroupParameter(self, host_item):
         if host_item is not None:
             items = host_item.get_node_items()
-            params = [roslib.names.ns_join(item.name, 'capability_group') for item in items if not item.has_configs() and item.is_running() and not host_item.is_in_cap_group(item.name, '', '', 'SYSTEM')]
+            params = [roslib.names.ns_join(item.name, 'capability_group') for item in items if not item.has_configs() and item.is_running() and not host_item.is_in_cap_group(item.name, '', '/', 'SYSTEM')]
             if params:
                 self.parameterHandler.requestParameterValues(host_item.masteruri, params)
 
@@ -1814,7 +1814,7 @@ class NodeTreeModel(QStandardItemModel):
         changed = False
         if hostItem is not None and code == 1:
             capabilities = self._set_std_capabilities(hostItem)
-            available_ns = set([''])
+            available_ns = set(['/'])
             available_groups = set(['SYSTEM'])
             # assumption: all parameter are 'capability_group' parameter
             for p, (code_n, _, val) in params.items():  # _:=msg_n
