@@ -228,14 +228,12 @@ class FileServicer(fms_grpc.FileServiceServicer):
         result = fms.ReturnStatus()
         try:
             path = request.path
-            dest_uri, _dest_path = nmdurl.split(request.uri)
+            dest_uri, dest_path = nmdurl.split(request.uri)
             # get package from path
-            dpath = path
-            if os.path.basename(path) == os.path.basename(_dest_path):
-                dpath = _dest_path
-            pname, ppath = package_name(dpath)
+            pname, ppath = package_name(dest_path)
             if pname is not None:
-                prest = dpath.replace(ppath, '')
+                # we need relative package path without leading slash
+                prest = dest_path.replace(ppath, '').lstrip(os.path.sep)
                 with open(path, 'r') as outfile:
                     mtime = 0.0 if request.overwrite else os.path.getmtime(path)
                     content = outfile.read()

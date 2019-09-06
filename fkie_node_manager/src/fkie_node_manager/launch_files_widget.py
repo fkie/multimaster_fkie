@@ -317,6 +317,11 @@ class LaunchFilesWidget(QDockWidget):
                         nm.settings().launch_history_remove(item.path)
                         self.launchlist_model.reload_current_path()
                     else:
+                        rem_uri, rem_path = nmdurl.split(item.path)
+                        host = rem_uri.split(':')
+                        result = MessageBox.question(self, "Delete Question", "Delete %s\n@ %s" % (rem_path, host[0]), buttons=MessageBox.Yes | MessageBox.No)
+                        if result == MessageBox.Yes:
+                            print("delete")
                         rospy.logwarn("Delete files not implemented!")
             elif not key_mod and event.key() == Qt.Key_F4 and self.ui_button_edit.isEnabled():
                 # open selected launch file in xml editor by F4

@@ -32,6 +32,7 @@
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
+import rospy
 from python_qt_binding.QtCore import QMimeData, Qt, Signal
 try:
     from python_qt_binding.QtGui import QApplication, QInputDialog, QLineEdit
@@ -246,7 +247,7 @@ class PathItem(QStandardItem):
                                        "        </node>\n"
                                        "    </group>\n"
                                        "</launch>\n")
-                        nm.nmd().file.save_file(new_path, content, 0)
+                        nm.nmd().file.save_file(new_path, bytes(content), 0)
                         self._isnew = False
                     else:
                         nm.nmd().file.rename(self.path, new_path)
@@ -260,6 +261,8 @@ class PathItem(QStandardItem):
                     self.name = value
                     self._path = new_path
                 except Exception as err:
+                    import traceback
+                    rospy.logwarn("Error while save new file: %s" % traceback.format_exc())
                     MessageBox.warning(None, "Rename failed", utf8(err))
         return QStandardItem.setData(self, value, role)
 
@@ -305,6 +308,13 @@ class PathItem(QStandardItem):
         :rtype: bool
         '''
         return self.path is not None and self.id in [self.PROFILE, self.RECENT_PROFILE, self.RECENT_FILE] and self.path.endswith('.nmprofile')
+
+    def is_file(self):
+        '''
+        :return: True if it is a file
+        :rtype: bool
+        '''
+        return self.path is not None and self.id in [self.PROFILE, self.RECENT_PROFILE, self.RECENT_FILE, self.LAUNCH_FILE, self.CFG_FILE, self.FILE]
 
     def __eq__(self, item):
         '''
@@ -633,6 +643,10 @@ class LaunchListModel(QStandardItemModel):
                 basename = os.path.basename(text)
                 dest_path = os.path.join(self._current_path, basename)
                 try:
+                    if text == dest_path:
+                        dest_path = self._autorename(dest_path)
+                        rospy.logdebug("Autorename destination from %s to %s" % (text, dest_path))
+                    rospy.logdebug("Copy %s to %s" % (text, dest_path))
                     nm.nmd().file.copy(text, dest_path)
                     self.reload_current_path(clear_cache=True)
                 except Exception:
@@ -680,7 +694,7 @@ class LaunchListModel(QStandardItemModel):
             return path_item
         except Exception:
             import traceback
-            print(traceback.format_exc(2))
+            rospy.logwarn("Error while add new file: %s" % traceback.format_exc())
         return []
 
     def _exists(self, name):
@@ -754,3 +768,12 @@ class LaunchListModel(QStandardItemModel):
                 import traceback
                 print(traceback.format_exc(2))
             return False
+
+    def _autorename(self, path):
+        idx = 1
+        renamed_path = path
+        while self._exists(renamed_path):
+            root, ext = os.path.splitext(path)
+            renamed_path = "%s_%d%s" % (root, idx, ext)
+            idx += 1
+        return renamed_path
