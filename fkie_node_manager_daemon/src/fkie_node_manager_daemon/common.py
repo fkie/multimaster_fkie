@@ -242,9 +242,11 @@ def interpret_path(path, pwd='.'):
             pkg_name = groups.groups()[index]
             if pkg_name:
                 pkg = get_pkg_path(pkg_name)
+                rospy.logdebug("rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))
                 path_suffix = path[groups.end():].rstrip("'")
                 if path_suffix.startswith('/'):
-                    paths = roslib.packages.find_resource(pkg_name, path_suffix.strip(os.path.sep))
+                    paths = roslib.packages._find_resource(pkg, path_suffix.strip(os.path.sep))
+                    rospy.logdebug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (path_suffix.strip(os.path.sep), paths))
                     if len(paths) > 0:
                         # if more then one launch file is found, take the first one
                         return paths[0]
