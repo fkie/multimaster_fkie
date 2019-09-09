@@ -227,7 +227,7 @@ class SSHhandler(object):
                     session.connect(host, username=user, password=pw, timeout=3, compress=True)
                     self.SSH_AUTH[host] = user
                 except Exception as e:
-                    if utf8(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted']:
+                    if utf8(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted', 'No existing session']:
                         if auto_pw_request:
                             res, user, pw = self._requestPW(user, host)
                             if not res:
