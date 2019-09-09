@@ -34,6 +34,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 import os
 import rospy
+import shutil
 
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fms_grpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fms
@@ -58,6 +59,7 @@ REMOVED_FILE = fms.ReturnStatus.StatusType.Value('REMOVED_FILE')
 PATH_PACKAGE = fms.PathObj.PathType.Value('PACKAGE')
 PATH_DIR = fms.PathObj.PathType.Value('DIR')
 PATH_FILE = fms.PathObj.PathType.Value('FILE')
+PATH_SYMLINK = fms.PathObj.PathType.Value('SYMLINK')
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
 
@@ -199,6 +201,12 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 result.error_code = ose.errno
             result.error_msg = utf8(ose.strerror)
             result.error_file = utf8(request.old)
+        except IOError as ioe:
+            result.code = IO_ERROR
+            if ioe.errno:
+                result.error_code = ioe.errno
+            result.error_msg = utf8(ioe.strerror)
+            result.error_file = utf8(ioe.filename)
         except Exception as err:
             result.code = ERROR
             result.error_msg = utf8(err)
@@ -267,6 +275,12 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 result.error_code = ose.errno
             result.error_msg = utf8(ose.strerror)
             result.error_file = utf8(request.path)
+        except IOError as ioe:
+            result.code = IO_ERROR
+            if ioe.errno:
+                result.error_code = ioe.errno
+            result.error_msg = utf8(ioe.strerror)
+            result.error_file = utf8(ioe.filename)
         except Exception as err:
             result.code = ERROR
             result.error_msg = utf8(err)
@@ -403,4 +417,99 @@ class FileServicer(fms_grpc.FileServiceServicer):
             import traceback
             print(traceback.format_exc())
             pass
+        return result
+
+    def Delete(self, request, context):
+        result = fms.ReturnStatus()
+        try:
+            if self._is_in_ros_root(request.path):
+                if os.path.isfile(request.path):
+                    os.remove(request.path)
+                    result.code = OK
+                elif os.path.isdir(request.path):
+                    if not self._contains_packages(request.path):
+                        shutil.rmtree(request.path)
+                        result.code = OK
+                    else:
+                        result.code = ERROR
+                        result.error_msg = utf8("path contains packages")
+                        result.error_file = utf8(request.path)
+            else:
+                result.code = ERROR
+                result.error_msg = utf8("path not in ROS_PACKAGE_PATH")
+                result.error_file = utf8(request.path)
+        except OSError as ose:
+            result.code = OS_ERROR
+            if ose.errno:
+                result.error_code = ose.errno
+            result.error_msg = utf8(ose.strerror)
+            result.error_file = utf8(request.path)
+        except IOError as ioe:
+            result.code = IO_ERROR
+            if ioe.errno:
+                result.error_code = ioe.errno
+            result.error_msg = utf8(ioe.strerror)
+            result.error_file = utf8(ioe.filename)
+        except Exception as err:
+            result.code = ERROR
+            result.error_msg = utf8(err)
+            result.error_file = utf8(request.path)
+        return result
+
+    def _is_in_ros_root(self, path):
+        # list ROS root items
+        for p in os.getenv('ROS_PACKAGE_PATH').split(':'):
+            root = os.path.abspath(p)
+            if path.startswith(root):
+                rest = path.replace(root, '').strip(os.path.sep)
+                if rest:
+                    return True
+        return False
+
+    def _contains_packages(self, path):
+        # list ROS root items
+        path = os.path.abspath(path)
+        for d, dirs, files in os.walk(path, topdown=True):
+            if PACKAGE_FILE in files or MANIFEST_FILE in files:
+                del dirs[:]
+                return True
+            elif 'rospack_nosubdirs' in files:
+                del dirs[:]
+                continue #leaf
+            # small optimization
+            elif '.svn' in dirs:
+                dirs.remove('.svn')
+            elif '.git' in dirs:
+                dirs.remove('.git')
+        return False
+
+    def New(self, request, context):
+        result = fms.ReturnStatus()
+        try:
+            if request.type == PATH_FILE:
+                new_file = open(request.path, "w+")
+                new_file.close()
+            elif request.type == PATH_DIR:
+                os.mkdir(request.path)
+            elif request.type == PATH_SYMLINK:
+                raise Exception("creation of symlinks not supported")
+            elif request.type == PATH_PACKAGE:
+                raise Exception("creation of packages not supported")
+            result.code = OK
+        except OSError as ose:
+            result.code = OS_ERROR
+            if ose.errno:
+                result.error_code = ose.errno
+            result.error_msg = utf8(ose.strerror)
+            result.error_file = utf8(request.path)
+        except IOError as ioe:
+            result.code = IO_ERROR
+            if ioe.errno:
+                result.error_code = ioe.errno
+            result.error_msg = utf8(ioe.strerror)
+            result.error_file = utf8(ioe.filename)
+        except Exception as err:
+            result.code = ERROR
+            result.error_msg = utf8(err)
+            result.error_file = utf8(request.path)
         return result

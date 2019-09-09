@@ -310,19 +310,28 @@ class LaunchFilesWidget(QDockWidget):
         key_mod = QApplication.keyboardModifiers()
         if not self.ui_file_view.state() == QAbstractItemView.EditingState:
             # remove history file from list by pressing DEL
-            if event == QKeySequence.Delete:
+            if event == QKeySequence.Delete or (event.key() == Qt.Key_Delete and key_mod & Qt.ShiftModifier):
                 selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
                 for item in selected:
                     if item in nm.settings().launch_history:
                         nm.settings().launch_history_remove(item.path)
                         self.launchlist_model.reload_current_path()
-                    else:
-                        rem_uri, rem_path = nmdurl.split(item.path)
-                        host = rem_uri.split(':')
-                        result = MessageBox.question(self, "Delete Question", "Delete %s\n@ %s" % (rem_path, host[0]), buttons=MessageBox.Yes | MessageBox.No)
-                        if result == MessageBox.Yes:
-                            print("delete")
-                        rospy.logwarn("Delete files not implemented!")
+                    elif not self.launchlist_model.is_in_root:
+                        if key_mod & Qt.ShiftModifier:
+                            rem_uri, rem_path = nmdurl.split(item.path)
+                            host = rem_uri.split(':')
+                            result = MessageBox.question(self, "Delete Question", "Delete %s\n@ %s" % (rem_path, host[0]), buttons=MessageBox.No | MessageBox.Yes)
+                            if result == MessageBox.Yes:
+                                try:
+                                    nm.nmd().file.delete(item.path)
+                                    self.launchlist_model.reload_current_path(clear_cache=True)
+                                except Exception as e:
+                                    rospy.logwarn("Error while delete %s: %s" % (item.path, utf8(e)))
+                                    MessageBox.warning(self, "Delete error",
+                                                    'Error while delete:\n%s' % item.name,
+                                                   "%s" % utf8(e))
+                        else:
+                            MessageBox.information(self, "Delete Info", "Use Shift+Del to delete files or directories", buttons=MessageBox.Ok)
             elif not key_mod and event.key() == Qt.Key_F4 and self.ui_button_edit.isEnabled():
                 # open selected launch file in xml editor by F4
                 self.on_edit_xml_clicked()

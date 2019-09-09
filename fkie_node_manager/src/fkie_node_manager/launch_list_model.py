@@ -247,7 +247,9 @@ class PathItem(QStandardItem):
                                        "        </node>\n"
                                        "    </group>\n"
                                        "</launch>\n")
-                        nm.nmd().file.save_file(new_path, bytes(content), 0)
+                            nm.nmd().file.save_file(new_path, bytes(content), 0)
+                        else:
+                            nm.nmd().file.new(new_path, 0)
                         self._isnew = False
                     else:
                         nm.nmd().file.rename(self.path, new_path)
@@ -649,7 +651,8 @@ class LaunchListModel(QStandardItemModel):
                     rospy.logdebug("Copy %s to %s" % (text, dest_path))
                     nm.nmd().file.copy(text, dest_path)
                     self.reload_current_path(clear_cache=True)
-                except Exception:
+                except Exception as err:
+                    MessageBox.warning(None, "Copy failed", "Copy failed: %s" % utf8(err))
                     import traceback
                     print(traceback.format_exc())
 
@@ -771,9 +774,10 @@ class LaunchListModel(QStandardItemModel):
 
     def _autorename(self, path):
         idx = 1
-        renamed_path = path
+        basename = os.path.basename(path)
+        renamed_path = basename
         while self._exists(renamed_path):
-            root, ext = os.path.splitext(path)
+            root, ext = os.path.splitext(basename)
             renamed_path = "%s_%d%s" % (root, idx, ext)
             idx += 1
-        return renamed_path
+        return os.path.join(os.path.dirname(path), renamed_path)

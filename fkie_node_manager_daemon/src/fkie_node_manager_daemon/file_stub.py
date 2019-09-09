@@ -227,7 +227,7 @@ class FileStub(object):
         elif response.code in [IO_ERROR]:
             raise IOError(response.error_code, response.error_msg, response.error_file)
         elif response.code == ERROR:
-            raise Exception("%s %s" % (response.error_msg, response.error_file))
+            raise Exception("%s, path: %s" % (response.error_msg, response.error_file))
 
     def changed_files(self, files):
         '''
@@ -257,3 +257,42 @@ class FileStub(object):
         request = fmsg.PackageObj(name=pkgname)
         response = self.fm_stub.GetPackageBinaries(request, timeout=settings.GRPC_TIMEOUT)
         return response.items
+
+    def delete(self, path):
+        '''
+        Delete path.
+
+        :param str path: existing path
+        :raise OSError:
+        :raise IOError:
+        :raise Exception:
+        '''
+        response = self.fm_stub.Delete(fmsg.PathObj(path=path), timeout=settings.GRPC_TIMEOUT)
+        if response.code == OK:
+            pass
+        elif response.code == OS_ERROR:
+            raise OSError(response.error_code, response.error_msg, response.error_file)
+        elif response.code in [IO_ERROR]:
+            raise IOError(response.error_code, response.error_msg, response.error_file)
+        elif response.code == ERROR:
+            raise Exception("%s, path: %s" % (response.error_msg, response.error_file))
+
+    def new(self, path, path_type):
+        '''
+        Create a new path.
+
+        :param str path: existing path
+        :param int path_type: path type, 0=file, 1=directory
+        :raise OSError:
+        :raise IOError:
+        :raise Exception:
+        '''
+        response = self.fm_stub.New(fmsg.PathObj(path=path, type=path_type), timeout=settings.GRPC_TIMEOUT)
+        if response.code == OK:
+            pass
+        elif response.code == OS_ERROR:
+            raise OSError(response.error_code, response.error_msg, response.error_file)
+        elif response.code in [IO_ERROR]:
+            raise IOError(response.error_code, response.error_msg, response.error_file)
+        elif response.code == ERROR:
+            raise Exception("%s, path: %s" % (response.error_msg, response.error_file))

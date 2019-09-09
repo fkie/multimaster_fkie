@@ -268,3 +268,22 @@ class FileChannel(ChannelInterface):
             result[nmdurl.join(url, item.path)] = item.mtime
         self.close_channel(channel, uri)
         return result
+
+    def delete(self, grpc_path='grpc://localhost:12321'):
+        uri, path = nmdurl.split(grpc_path)
+        rospy.logdebug("delete '%s' @ %s" % (path, uri))
+        fm, channel = self.get_file_manager(uri)
+        result = fm.delete(path)
+        self.close_channel(channel, uri)
+        return result
+
+    def new(self, grpc_path='grpc://localhost:12321', path_type=0):
+        '''
+        :param int path_type: 0=file, 1=dir
+        '''
+        uri, path = nmdurl.split(grpc_path)
+        rospy.logdebug("create new '%s' @ %s" % (path, uri))
+        fm, channel = self.get_file_manager(uri)
+        result = fm.new(path, path_type)
+        self.close_channel(channel, uri)
+        return result
