@@ -346,6 +346,9 @@ class GroupItem(QStandardItem):
         '''
         try:
             if type(self) == HostItem:
+                # replace last namespace separator if it is not the only one
+                if len(ns) > 1:
+                    ns = ns.rstrip(rospy.names.SEP)
                 for _cfg, cap in self._capcabilities.items():
                     for gns, groups in cap.items():
                         for group, _decription in groups.items():
