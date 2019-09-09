@@ -34,16 +34,16 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
-from python_qt_binding.QtGui import QColor, QKeySequence, QPalette
+from python_qt_binding.QtGui import QColor, QKeySequence, QIcon, QPalette
 
 try:
     from python_qt_binding.QtGui import QSortFilterProxyModel, QItemSelectionModel
 except Exception:
     from python_qt_binding.QtCore import QSortFilterProxyModel, QItemSelectionModel
 try:
-    from python_qt_binding.QtGui import QAbstractItemView, QApplication, QDockWidget, QWidget
+    from python_qt_binding.QtGui import QAbstractItemView, QApplication, QDockWidget, QWidget, QAction, QMenu
 except Exception:
-    from python_qt_binding.QtWidgets import QAbstractItemView, QApplication, QDockWidget, QWidget
+    from python_qt_binding.QtWidgets import QAbstractItemView, QApplication, QDockWidget, QWidget, QAction, QMenu
 
 import os
 import rospy
@@ -111,10 +111,17 @@ class LaunchFilesWidget(QDockWidget):
         # connect to the button signals
         self.ui_button_reload.clicked.connect(self.on_reload_clicked)
         self.ui_button_edit.clicked.connect(self.on_edit_xml_clicked)
-        self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
+        #self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
         self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
         self.ui_button_save_profile.clicked.connect(self.on_save_profile_clicked)
         self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
+        # add menu to create fiel or directory
+        self._menu_add = QMenu()
+        create_file_action = QAction(QIcon(':/icons/crystal_clear_launch_file_new.png'), "create file", self, statusTip="", triggered=self.on_new_xml_clicked)
+        create_dir_action = QAction(QIcon(':/icons/crystal_clear_folder.png'), "create directory", self, statusTip="", triggered=self.on_new_dir_clicked)
+        self._menu_add.addAction(create_file_action)
+        self._menu_add.addAction(create_dir_action)
+        self.ui_button_new.setMenu(self._menu_add)
         self._masteruri2name = {}
         self._reload_timer = None
 
@@ -255,7 +262,20 @@ class LaunchFilesWidget(QDockWidget):
         '''
         # get new file from open dialog, use last path if one exists
         if not self.launchlist_model.is_in_root:
-            items = self.launchlist_model.add_new_launch()
+            items = self.launchlist_model.add_new_item("new.launch", PathItem.LAUNCH_FILE)
+            if items:
+                index = self.launchlist_proxy_model.mapFromSource(self.launchlist_model.index(1, 0))
+                self.ui_file_view.selectionModel().select(index, QItemSelectionModel.Select)
+                self.ui_file_view.setCurrentIndex(index)
+                self.ui_file_view.edit(index)
+
+    def on_new_dir_clicked(self):
+        '''
+        Creates a new directory.
+        '''
+        # get new file from open dialog, use last path if one exists
+        if not self.launchlist_model.is_in_root:
+            items = self.launchlist_model.add_new_item("new", PathItem.FOLDER)
             if items:
                 index = self.launchlist_proxy_model.mapFromSource(self.launchlist_model.index(1, 0))
                 self.ui_file_view.selectionModel().select(index, QItemSelectionModel.Select)

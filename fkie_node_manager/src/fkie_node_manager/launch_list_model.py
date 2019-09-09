@@ -238,7 +238,9 @@ class PathItem(QStandardItem):
                     content = ''
                     new_id = self._identify_path_on_ext(new_path, self.id)
                     if self._isnew:
-                        if new_id in [self.LAUNCH_FILE]:
+                        if new_id in [self.FOLDER]:
+                            nm.nmd().file.new(new_path, 1)
+                        elif new_id in [self.LAUNCH_FILE]:
                             content = ("<launch>\n"
                                        "    <arg name=\"robot_ns\" default=\"my_robot\"/>\n"
                                        "    <group ns=\"$(arg robot_ns)\">\n"
@@ -670,25 +672,18 @@ class LaunchListModel(QStandardItemModel):
         mimeData.setData('text/plain', text.encode('utf-8'))
         QApplication.clipboard().setMimeData(mimeData)
 
-    def add_new_launch(self):
+    def add_new_item(self, name='new', path_id=PathItem.LAUNCH_FILE):
         '''
         Inserts the given item in the list model.
 
-        :param str path: the path of the item combined with the url of the node manager daemon
         :param int path_id: the id (constants of PathItem) of the item, which represents whether it is a file, package or stack
-        :param int mtime: modification time
-        :param int size: file size
         :param str name: the displayed name
         '''
         root = self.invisibleRootItem()
-        new_name = 'new.launch'
-        cc = 0
-        while self._exists(new_name):
-            cc += 1
-            new_name = 'new_%d.launch' % cc
+        new_name = self._autorename(name)
         # add sorted a new entry
         try:
-            path_item = PathItem.create_row_items(nmdurl.join(self._current_path, new_name), PathItem.LAUNCH_FILE, 0, 0, new_name, isnew=True)
+            path_item = PathItem.create_row_items(nmdurl.join(self._current_path, new_name), path_id, 0, 0, new_name, isnew=True)
             if root.rowCount() > 1:
                 root.insertRow(1, path_item)
             else:
@@ -697,7 +692,7 @@ class LaunchListModel(QStandardItemModel):
             return path_item
         except Exception:
             import traceback
-            rospy.logwarn("Error while add new file: %s" % traceback.format_exc())
+            rospy.logwarn("Error while add new item: %s" % traceback.format_exc())
         return []
 
     def _exists(self, name):
