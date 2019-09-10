@@ -1019,7 +1019,7 @@ class ParameterDialog(QDialog):
         sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
         sidebarframe_verticalLayout.setContentsMargins(3, 3, 3, 3)
         self._sidebar_selected = 0
-        if len(values) > 1 and sidebar_var in params:
+        if len(values) > 0 and sidebar_var in params:
             self.horizontalLayout.addWidget(self.sidebar_frame)
             try:
                 self.sidebar_default_val = params[sidebar_var][1]
