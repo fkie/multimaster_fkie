@@ -250,6 +250,8 @@ def interpret_path(path, pwd='.'):
                     if len(paths) > 0:
                         # if more then one launch file is found, take the first one
                         return paths[0]
+                    else:
+                        return path
                 if path_suffix:
                     return os.path.normpath(os.path.join(pkg, path_suffix))
                 else:
