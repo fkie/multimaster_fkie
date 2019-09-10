@@ -881,6 +881,8 @@ class Editor(QMainWindow):
         return tag_menu
 
     def _insert_text(self, text, cursor_pose=None, selection_len=None):
+        if self.tabWidget.currentWidget().isReadOnly():
+            return
         cursor = self.tabWidget.currentWidget().textCursor()
         if not cursor.isNull():
             cursor.beginEditBlock()

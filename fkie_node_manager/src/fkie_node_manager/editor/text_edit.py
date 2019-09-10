@@ -105,23 +105,20 @@ class TextEdit(QTextEdit):
 #                 self.setText(unicode(f.readAll(), "utf-8"))
 
         self.path = '.'
-        # enables drop events
-        self.setAcceptDrops(True)
         # variables for threaded search
         self._search_thread = None
         self._stop = False
         self._internal_args = {}
         self._ext = os.path.splitext(filename)[1]
-        self.setEnabled(False)
-        self._applied_content = True
+        self.setText("Loading file content ... press F5 to reload!")
+        self.setReadOnly(True)
         self._to_select = []
         nm.nmd().file.file_content.connect(self._apply_file_content)
         if self.filename:
-            self._applied_content = False
             nm.nmd().file.get_file_content_threaded(filename)
 
     def _apply_file_content(self, filename, file_size, file_mtime, content):
-        if self._applied_content:
+        if not self.isReadOnly():
             return
         if self.filename == filename:
             self.setText("")
@@ -129,21 +126,22 @@ class TextEdit(QTextEdit):
             if self._ext in self.CONTEXT_FILE_EXT:
                 self._internal_args = get_internal_args(content)
             self.setText(content)
-        self._is_launchfile = False
-        if self._ext in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
-            if self._ext in self.CONTEXT_FILE_EXT:
-                self._is_launchfile = True
-            self.hl = XmlHighlighter(self.document(), is_launch=False)
-            self.cursorPositionChanged.connect(self._document_position_changed)
-        else:
-            self.hl = YamlHighlighter(self.document())
-        self.setEnabled(True)
-        self._applied_content = True
-        self._select()
+            self._is_launchfile = False
+            if self._ext in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
+                if self._ext in self.CONTEXT_FILE_EXT:
+                    self._is_launchfile = True
+                self.hl = XmlHighlighter(self.document(), is_launch=False)
+                self.cursorPositionChanged.connect(self._document_position_changed)
+            else:
+                self.hl = YamlHighlighter(self.document())
+            self.setReadOnly(False)
+            # enables drop events
+            self.setAcceptDrops(True)
+            self._select()
 
     def select(self, startpos, endpos, isnode):
         self._to_select.append((startpos, endpos, isnode))
-        if self._applied_content:
+        if not self.isReadOnly():
             self._select()
 
     def _select(self):
@@ -182,6 +180,8 @@ class TextEdit(QTextEdit):
         :return: saved, errors, msg
         :rtype: bool, bool, str
         '''
+        if self.isReadOnly():
+            return False, True, "Cannot save, the content was not loaded properly!"
         if force or self.document().isModified():
             try:
                 mtime = nm.nmd().file.save_file(self.filename, self.toPlainText().encode('utf-8'), 0 if force else self.file_mtime)
@@ -317,6 +317,9 @@ class TextEdit(QTextEdit):
         Opens the new editor, if the user clicked on the included file and sets the
         default cursor.
         '''
+        if self.isReadOnly():
+            event.accept()
+            return
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
             try:
@@ -401,6 +404,12 @@ class TextEdit(QTextEdit):
         '''
         Enable the mouse tracking by X{setMouseTracking()} if the control key is pressed.
         '''
+        if self.isReadOnly():
+            if event.key() == Qt.Key_F5:
+                nm.nmd().file.get_file_content_threaded(self.filename)
+            else:
+                event.accept()
+                return
         if event.key() == Qt.Key_Control or event.key() == Qt.Key_Shift:
             self.setMouseTracking(True)
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_7:
@@ -434,7 +443,6 @@ class TextEdit(QTextEdit):
                 if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
                     self.indentCurrentLine(ident - self.getIdentOfCurretLine())
         else:
-            event.accept()
             QTextEdit.keyPressEvent(self, event)
 
     def keyReleaseEvent(self, event):
@@ -446,7 +454,6 @@ class TextEdit(QTextEdit):
             self.setMouseTracking(False)
             self.viewport().setCursor(Qt.IBeamCursor)
         else:
-            event.accept()
             QTextEdit.keyReleaseEvent(self, event)
 
     def _has_uncommented(self):
@@ -685,6 +692,8 @@ class TextEdit(QTextEdit):
         e.accept()
 
     def dropEvent(self, e):
+        if self.isReadOnly():
+            return
         cursor = self.cursorForPosition(e.pos())
         if not cursor.isNull():
             text = e.mimeData().text()
@@ -711,6 +720,8 @@ class TextEdit(QTextEdit):
     # ############################################################################
 
     def show_custom_context_menu(self, pos):
+        if self.isReadOnly():
+            return
         menu = QTextEdit.createStandardContextMenu(self)
         formattext_action = None
         if isinstance(self.hl, XmlHighlighter):
