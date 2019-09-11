@@ -1022,7 +1022,13 @@ class ParameterDialog(QDialog):
         if len(values) > 0 and sidebar_var in params:
             self.horizontalLayout.addWidget(self.sidebar_frame)
             try:
-                self.sidebar_default_val = params[sidebar_var][1]
+                if ':value' in params[sidebar_var]:
+                    self.sidebar_default_val = params[sidebar_var][':value']
+                else:
+                    self.sidebar_default_val = params[sidebar_var][1]
+                # add default value to sidebar
+                if self.sidebar_default_val and self.sidebar_default_val not in values:
+                    values.append(self.sidebar_default_val)
             except Exception:
                 self.sidebar_default_val = ''
             values.sort()
