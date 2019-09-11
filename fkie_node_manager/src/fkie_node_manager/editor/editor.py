@@ -954,7 +954,8 @@ class Editor(QMainWindow):
         self._insert_text('<rosparam param="name"\n'
                           '       file="$(find pkg-name)/path/foo.yaml"\n'
                           '       command="load|dump|delete"\n'
-                          '       ns="namespace">\n'
+                          '       ns="namespace"\n'
+                          '       subst_value="true|false">\n'
                           '</rosparam>', 17, 4)
 
     def _on_add_arg_tag_default(self):
