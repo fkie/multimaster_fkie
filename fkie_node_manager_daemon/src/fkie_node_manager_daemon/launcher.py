@@ -332,7 +332,7 @@ def _load_parameters(masteruri, params, clear_params):
         for pkey, pval in params.items():
             value = pval
             # resolve path elements
-            if isinstance(value, types.StringTypes) and (value.startswith('$') or value.startswith('pkg://') or value.startswith('package://')):
+            if isinstance(value, types.StringTypes) and (value.startswith('$') or value.startswith('pkg://')):
                 value = interpret_path(value)
                 rospy.logdebug("interpret parameter '%s' to '%s'" % (value, pval))
             # add parameter to the multicall
