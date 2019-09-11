@@ -983,6 +983,8 @@ class MainWindow(QMainWindow):
                         usr = username
                         if username == 'last used':
                             usr = nm.settings().host_user(hostname)
+                        else:
+                            nm.settings().set_host_user(hostname, usr)
                         if log_master_discovery:
                             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                            '%s: show log of master discovery' % hostname,
@@ -1540,6 +1542,8 @@ class MainWindow(QMainWindow):
                         usr = username
                         if username == 'last used':
                             usr = nm.settings().host_user(hostname)
+                        else:
+                            nm.settings().set_host_user(hostname, usr)
                         muri = None if masteruri == 'ROS_MASTER_URI' else utf8(masteruri)
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start discovering on %s' % hostname,
