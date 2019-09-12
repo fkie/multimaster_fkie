@@ -1129,9 +1129,6 @@ class MasterViewProxy(QWidget):
         for node in nodes:
             node.append_diagnostic_status(diagnostic_status)
         if nodes:
-            # get node by selected items
-            if self._is_current_tab_name('Nodes'):
-                return
             selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
             if len(selectedNodes) == 1:
@@ -3365,6 +3362,17 @@ class MasterViewProxy(QWidget):
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    def focus_filter_line(self):
+        if self._is_current_tab_name('tabNodes'):
+            self.masterTab.nodeFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+        elif self._is_current_tab_name('tabTopics'):
+            self.masterTab.topicFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+        elif self._is_current_tab_name('tabServices'):
+            self.masterTab.serviceFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+        elif self._is_current_tab_name('tabParameter'):
+            self.masterTab.parameterFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+
 
     def select_host_block(self, index):
         '''
