@@ -223,6 +223,9 @@ def get_pkg_path(package_name):
             _get_pkg_path_var = roslib.packages.get_pkg_dir
     return _get_pkg_path_var(package_name)
 
+def reset_package_cache():
+    global _get_pkg_path_var
+    _get_pkg_path_var = None
 
 def interpret_path(path, pwd='.'):
     '''

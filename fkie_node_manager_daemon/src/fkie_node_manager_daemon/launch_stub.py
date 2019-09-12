@@ -292,3 +292,7 @@ class LaunchStub(object):
         elif response.status.code == CONNECTION_ERROR:
             raise exceptions.ConnectionException(response.name, response.status.error_msg)
         return startcfg
+
+    def reset_package_path(self):
+        request = lmsg.Empty()
+        self.lm_stub.ResetPackageCache(request, timeout=settings.GRPC_TIMEOUT)

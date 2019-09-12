@@ -460,3 +460,19 @@ class LaunchChannel(ChannelInterface):
             raise err
         finally:
             self.close_channel(channel, uri)
+
+    def reset_package_path_threaded(self, grpc_path='grpc://localhost:12321'):
+        self._threads.start_thread("rpp_%s" % (grpc_path), target=self._reset_package_path, args=(grpc_path,))
+
+    def _reset_package_path(self, grpc_path='grpc://localhost:12321'):
+        uri, _ = nmdurl.split(grpc_path)
+        rospy.logdebug("[thread] reset package path on %s" % uri)
+        lm, channel = self.get_launch_manager(uri)
+        try:
+            lm.reset_package_path()
+        except Exception as err:
+            self.error.emit("_reset_package_path", grpc_path, "", err)
+        finally:
+            self.close_channel(channel, uri)
+        if hasattr(self, '_threads'):
+            self._threads.finished("rpp_%s" % (grpc_path))

@@ -49,7 +49,7 @@ import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from . import exceptions
 from . import launcher
 from . import url
-from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, find_included_files, interpret_path, utf8
+from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, find_included_files, interpret_path, utf8, reset_package_cache
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 
@@ -651,4 +651,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param)
         startcfg.fill_msg(result.startcfg)
         result.status.code = OK
+        return result
+
+    def ResetPackageCache(self, request, context):
+        result = lmsg.Empty()
+        reset_package_cache()
         return result

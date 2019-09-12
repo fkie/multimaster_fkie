@@ -47,6 +47,7 @@ service LaunchService {
 	rpc GetMtime (LaunchFile) returns (MtimeReply);
 	rpc GetChangedBinaries (Nodes) returns (MtimeNodes);
 	rpc GetStartCfg (Node) returns (StartCfgReply);
+	rpc ResetPackageCache (Empty) returns (Empty);
 }
 
 message Empty {

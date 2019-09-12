@@ -554,6 +554,7 @@ class LaunchListModel(QStandardItemModel):
         self.expand_item(self._current_path, PathItem.FOLDER, clear_cache)
         if clear_cache:
             nm.nmd().clear_cache()
+            nm.nmd().launch.reset_package_path_threaded(self._current_path)
 
     def expand_item(self, path, path_id, clear_cache=False):
         '''
