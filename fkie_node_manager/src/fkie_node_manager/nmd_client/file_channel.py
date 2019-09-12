@@ -220,9 +220,14 @@ class FileChannel(ChannelInterface):
             rospy.logdebug("get file content for %s:" % grpc_path)
             uri, path = nmdurl.split(grpc_path)
             fm, channel = self.get_file_manager(uri)
-            file_size, file_mtime, file_content = fm.get_file_content(path)
-            self._cache_file_content[grpc_path] = (file_size, file_mtime, file_content)
-            self.close_channel(channel, uri)
+            try:
+                file_size, file_mtime, file_content = fm.get_file_content(path)
+                self._cache_file_content[grpc_path] = (file_size, file_mtime, file_content)
+            except Exception as e:
+                self.error.emit("get_file_content", "grpc://%s" % uri, grpc_path, e)
+                raise e
+            finally:
+                self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("gfc_%s_%d" % (grpc_path, force))
         self.file_content.emit(grpc_path, file_size, file_mtime, file_content)

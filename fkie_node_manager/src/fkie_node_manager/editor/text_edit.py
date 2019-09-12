@@ -114,6 +114,7 @@ class TextEdit(QTextEdit):
         self.setReadOnly(True)
         self._to_select = []
         nm.nmd().file.file_content.connect(self._apply_file_content)
+        nm.nmd().file.error.connect(self._on_nmd_error)
         if self.filename:
             nm.nmd().file.get_file_content_threaded(filename)
 
@@ -138,6 +139,11 @@ class TextEdit(QTextEdit):
             # enables drop events
             self.setAcceptDrops(True)
             self._select()
+
+    def _on_nmd_error(self, method, url, path, msg):
+        if self.isReadOnly():
+            if path == self.filename:
+                self.setText("%s\n\npress F5 to reload!" % msg)
 
     def select(self, startpos, endpos, isnode):
         self._to_select.append((startpos, endpos, isnode))
