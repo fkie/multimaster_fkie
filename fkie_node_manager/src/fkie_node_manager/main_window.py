@@ -63,6 +63,7 @@ from .capability_table import CapabilityTable
 from .detailed_msg_box import MessageBox
 from .discovery_listener import MasterListService, MasterStateTopic, MasterStatisticTopic, OwnMasterMonitoring
 from .editor.editor import Editor
+from .launch_enhanced_line_edit import EnhancedLineEdit
 from .launch_files_widget import LaunchFilesWidget
 from .log_widget import LogWidget
 from .master_list_model import MasterModel, MasterIconsDelegate
@@ -1824,7 +1825,7 @@ class MainWindow(QMainWindow):
             stored_vpos = vbar.value()
             self.descriptionTextEdit.setText(text)
             vbar.setValue(stored_vpos)
-            if text and force:  # and not (self.launch_dock.hasFocus() or self.launch_dock.xmlFileView.hasFocus()):
+            if text and force:
                 self.descriptionDock.raise_()
 
     def on_description_update_cap(self, title, text):
@@ -1963,6 +1964,12 @@ class MainWindow(QMainWindow):
         '''
         '''
         QMainWindow.keyPressEvent(self, event)
+        if event == QKeySequence.Find:
+            focus_widget = QApplication.focusWidget()
+            if not isinstance(focus_widget, EnhancedLineEdit):
+                # set focus to filter line
+                if self.currentMaster is not None:
+                    self.currentMaster.focus_filter_line()
 
     def _show_section_menu(self, event=None):
         # self._timer_alt = None
@@ -1978,7 +1985,7 @@ class MainWindow(QMainWindow):
                     self.currentMaster.masterTab.parameterView.setFocus(Qt.TabFocusReason)
         elif self._select_index == 1:
             self.launch_dock.raise_()
-            self.launch_dock.xmlFileView.setFocus(Qt.TabFocusReason)
+            self.launch_dock.ui_file_view.setFocus(Qt.TabFocusReason)
         elif self._select_index == 2:
             self.descriptionDock.raise_()
             self.descriptionTextEdit.setFocus(Qt.TabFocusReason)
