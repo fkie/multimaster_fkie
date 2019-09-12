@@ -332,7 +332,7 @@ def _load_parameters(masteruri, params, clear_params):
         for pkey, pval in params.items():
             value = pval
             # resolve path elements
-            if isinstance(value, types.StringTypes) and (value.startswith('$') or value.startswith('pkg://')):
+            if isinstance(value, types.StringTypes) and (value.startswith('$')):
                 value = interpret_path(value)
                 rospy.logdebug("interpret parameter '%s' to '%s'" % (value, pval))
             # add parameter to the multicall
@@ -346,6 +346,8 @@ def _load_parameters(masteruri, params, clear_params):
                 raise exceptions.StartException("Failed to set parameter: %s" % (msg))
     except roslaunch.core.RLException, e:
         raise exceptions.StartException(e)
+    except rospkg.ResourceNotFound as rnf:
+        raise exceptions.StartException("Failed to set parameter. ResourceNotFound: %s" % (rnf))
     except Exception as e:
         raise exceptions.StartException("Failed to set parameter. ROS Parameter Server "
                                         "reports: %s\n\n%s" % (e, '\n'.join(param_errors)))
@@ -377,7 +379,7 @@ def _abs_to_package_path(path):
     result = path
     pname, ppath = package_name(path)
     if pname is not None:
-        result = path.replace(ppath, 'pkg://%s' % pname)
+        result = path.replace(ppath, '$(find %s)' % pname)
         rospy.logdebug("replace abs path '%s' by '%s'" % (path, result))
     return result
 
