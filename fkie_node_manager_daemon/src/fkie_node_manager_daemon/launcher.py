@@ -154,7 +154,7 @@ def run_node(startcfg):
         args = []
         for arg in startcfg.args:
             new_arg = arg
-            if arg.startswith('pkg://'):
+            if arg.startswith('$(find'):
                 new_arg = interpret_path(arg)
                 rospy.logdebug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
