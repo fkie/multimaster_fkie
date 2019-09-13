@@ -1154,28 +1154,21 @@ class MasterInfo(object):
         serviceProvider = []
         added_nodes = []
         nodes_last_check = set()
-        # process the node filtering first, but the nodelist to send will be created later
-        for name, node in self.nodes.items():
-            if not iffilter.is_ignored_node(name):
-                if filter_interface is None or node.isLocal or (iffilter.sync_remote_nodes() and self.masteruri == str(node.masteruri)):
-                    added_nodes.append(name)
 
         # filter the topics
         for name, topic in self.topics.items():
             pn = []
             for n in topic.publisherNodes:
-                if n in added_nodes:
-                    if not iffilter.is_ignored_publisher(n, name, topic.type):
-                        pn.append(n)
-                        nodes_last_check.add(n)
+                if not iffilter.is_ignored_publisher(n, name, topic.type):
+                    pn.append(n)
+                    nodes_last_check.add(n)
             if pn:
                 publishers.append((name, pn))
             sn = []
             for n in topic.subscriberNodes:
-                if n in added_nodes:
-                    if not iffilter.is_ignored_subscriber(n, name, topic.type):
-                        sn.append(n)
-                        nodes_last_check.add(n)
+                if not iffilter.is_ignored_subscriber(n, name, topic.type):
+                    sn.append(n)
+                    nodes_last_check.add(n)
             if sn:
                 subscribers.append((name, sn))
             if pn or sn:
@@ -1185,10 +1178,9 @@ class MasterInfo(object):
         for name, service in self.services.items():
             srv_prov = []
             for sp in service.serviceProvider:
-                if sp in added_nodes:
-                    if not iffilter.is_ignored_service(sp, name):
-                        srv_prov.append(sp)
-                        nodes_last_check.add(sp)
+                if not iffilter.is_ignored_service(sp, name):
+                    srv_prov.append(sp)
+                    nodes_last_check.add(sp)
             if srv_prov:
                 services.append((name, srv_prov))
                 serviceProvider.append((name, service.uri, str(service.masteruri), service.type if service.type is not None else '', 'local' if service.isLocal else 'remote'))
