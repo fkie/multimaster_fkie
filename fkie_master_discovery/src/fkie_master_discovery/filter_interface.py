@@ -191,9 +191,7 @@ class FilterInterface(object):
             return True
         if self._re_ignore_topics.match(topic):
             return True
-        if self._re_sync_nodes.match(node):
-            return False
-        if self._re_sync_topics.match(topic):
+        if self._re_sync_nodes.match(node) or self._re_sync_topics.match(topic):
             return False
         # there are no sync nodes and topic lists defined => return False (=>sync the given topic)
         return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_topics)
@@ -281,9 +279,7 @@ class FilterInterface(object):
             return True
         if self._re_ignore_services.match(service.strip()):
             return True
-        if self._re_sync_nodes.match(node):
-            return False
-        if self._re_sync_services.match(service):
+        if self._re_sync_nodes.match(node) or self._re_sync_services.match(service):
             return False
         return not is_empty_pattern(self._re_sync_nodes) or not is_empty_pattern(self._re_sync_services)
 
