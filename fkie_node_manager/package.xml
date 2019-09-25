@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>fkie_node_manager</name>
+  <replace>node_manager_fkie</replace>
   <description>
      Graphical interface, written in PySide, to manage the running and 
      configured ROS nodes on different hosts. For discovering 
