@@ -405,7 +405,8 @@ class ParameterDescription(object):
                         rvalue = value
                     else:
                         try:
-                            rvalue = ruamel.yaml.load("[%s]" % value, Loader=ruamel.yaml.Loader)
+                            rvalue = value.lstrip('[').rstrip(']')
+                            rvalue = ruamel.yaml.load("[%s]" % rvalue, Loader=ruamel.yaml.Loader)
                             # if there is no YAML, load() will return an
                             # empty string.  We want an empty dictionary instead
                             # for our representation of empty.
