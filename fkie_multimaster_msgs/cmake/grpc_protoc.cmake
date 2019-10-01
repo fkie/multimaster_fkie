@@ -33,7 +33,7 @@ macro(generate_grpc)
     endforeach()
     # create init file
     add_custom_target(
-        ${PROJECT_NAME}_GPRC ALL
+        ${PROJECT_NAME}_GRPC ALL
         DEPENDS ${GRPC_GENERATED_SOURCES}
         COMMAND ${CMAKE_COMMAND} -E touch "${GRPC_GENERATED_SRC_DIR}/__init__.py"
         COMMENT "Create '__init__.py' for generated gRPC module"

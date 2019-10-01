@@ -96,7 +96,7 @@ def masteruri(grpc_path):
 
 def nmdport(uri=''):
     '''
-    Determine the port for GPRC-server from given URI. If empty try to get the ROS-Master URI.
+    Determine the port for GRPC-server from given URI. If empty try to get the ROS-Master URI.
     '''
     muri = uri
     if not muri:
