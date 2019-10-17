@@ -169,7 +169,7 @@ class MessageFrame(QFrame):
         if questionid == 0:
             return
         try:
-            if questionid == self.TYPE_LAUNCH_FILE and not nm.settings().ask_reload_launch:
+            if questionid == self.TYPE_LAUNCH_FILE and nm.settings().autoreload_launch:
                 self.accept_signal.emit(questionid, data)
                 return
             # is it in the list for not ask again?
