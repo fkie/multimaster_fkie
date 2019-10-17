@@ -56,6 +56,7 @@ from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.version import detect_version
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
+from .echo_dialog import EchoDialog
 from .html_delegate import HTMLDelegate
 from .launch_config import LaunchConfig  # , LaunchConfigException
 from .launch_enhanced_line_edit import EnhancedLineEdit
@@ -175,6 +176,7 @@ class MasterViewProxy(QWidget):
         self._on_stop_poweroff = False
         self._start_nodes_after_load_cfg = dict()
         self._cfg_changed_nodes = dict()
+        self._stored_diagnostic_messages = dict()  # dict(time in seconds: diagnostic_status)
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
@@ -516,6 +518,14 @@ class MasterViewProxy(QWidget):
             if update_result[0] or update_result[1] or update_result[2] or self.__force_update:
                 self._update_running_nodes_in_model(self.__master_info)
                 self.on_node_selection_changed(None, None)
+                # update diagnostics
+                new_diagnostic_dict = {}
+                now = time.time()
+                for sec, ds in self._stored_diagnostic_messages.items():
+                    added = self.append_diagnostic(ds, False)
+                    if not added and now - sec < 10:
+                        new_diagnostic_dict[sec] = ds
+                self._stored_diagnostic_messages = new_diagnostic_dict
             # Updates the topic view based on the current master information.
             if update_result[3] or update_result[4] or update_result[5] or self.__force_update:
                 self.topic_model.update_model_data(self.__master_info.topics, update_result[3], update_result[4], update_result[5])
@@ -1124,10 +1134,12 @@ class MasterViewProxy(QWidget):
             if selectedNodes[0].local:
                 self.on_node_selection_changed(None, None)
 
-    def append_diagnostic(self, diagnostic_status):
+    def append_diagnostic(self, diagnostic_status, isnew=True):
+        result = False
         nodes = self.getNode(diagnostic_status.name)
         for node in nodes:
             node.append_diagnostic_status(diagnostic_status)
+            result = True
         if nodes:
             selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
@@ -1135,6 +1147,10 @@ class MasterViewProxy(QWidget):
                 node = selectedNodes[0]
                 if node.name == diagnostic_status.name:
                     self.on_node_selection_changed(None, None)
+        elif isnew:
+            # store to have messages received before node was detected
+            self._stored_diagnostic_messages[time.time()] = diagnostic_status
+        return result
 
     def sysmon_active_update(self):
         if self._sysmon_timer is None:
@@ -1518,7 +1534,8 @@ class MasterViewProxy(QWidget):
                     text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
                 text += ' <a href="unregister-node://%s">unregister</a></dt>' % node.name
             added_diags = []
-            for diag_status in reversed(node.diagnostic_array):
+            if node.diagnostic_array:
+                diag_status = node.diagnostic_array[-1]
                 if node.diagnostic_array:
                     level_str = 'Unknown'
                     if diag_status.level in self.DIAGNOSTIC_LEVELS:
@@ -1534,6 +1551,8 @@ class MasterViewProxy(QWidget):
                     if diag_msg not in added_diags:
                         text += diag_msg
                         added_diags.append(diag_msg)
+#                if len(node.diagnostic_array) > 1:
+                text += '<dt><a href="show-all-diagnostics://%s">show all diagnostic msgs (%s)</a></dt>' % (node.name, len(node.diagnostic_array))
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
             text += '</dl>'
@@ -1553,6 +1572,23 @@ class MasterViewProxy(QWidget):
             # text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
 #      text += '<dt><a href="copy-log-path://%s">copy log path to clipboard</a></dt>'%node.name
         return text
+
+    def show_diagnostic_messages(self, node):
+        found_nodes = []
+        if self.master_info is not None:
+            found_nodes = self.node_tree_model.get_local_node_items_by_name([node])
+            if found_nodes:
+                node_item = found_nodes[0]
+                text = ''
+                for diag in reversed(node_item.diagnostic_array):
+                    msg = EchoDialog.strify_message(diag)
+                    if isinstance(msg, tuple):
+                        msg = msg[0]
+                    msg = msg.replace('<', '&lt;').replace('>', '&gt;')
+                    msg = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (diag.values[-1].value, msg)
+                    text += msg
+                if text:
+                    self.description_signal.emit('%s diagnostic' % node, text, True)
 
     def on_topic_selection_changed(self, selected, deselected, force_emit=False, topic_name=''):
         '''

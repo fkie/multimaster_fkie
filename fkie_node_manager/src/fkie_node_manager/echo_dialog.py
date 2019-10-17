@@ -432,7 +432,7 @@ class EchoDialog(QDialog):
             self._last_received_ts = current_time
         if not self.show_only_rate:
             # convert message to string and reduce line width to current limit
-            msg = self.strify_message(msg, field_filter=self.field_filter_fn)
+            msg = self.strify_message(msg, field_filter=self.field_filter_fn, fixed_numeric_width=self.digits_after_in_array)
             if isinstance(msg, tuple):
                 msg = msg[0]
             msg = self._trim_width(msg)
@@ -683,7 +683,8 @@ class EchoDialog(QDialog):
 # PARTS OF genpy/messages.py
 # #############################################################################
 
-    def strify_message(self, val, indent='', time_offset=None, current_time=None, field_filter=None, fixed_numeric_width=None):
+    @classmethod
+    def strify_message(cls, val, indent='', time_offset=None, current_time=None, field_filter=None, fixed_numeric_width=None, digits_after_in_array=None):
         """
         Convert value to string representation
         :param val: to convert to string representation. Most likely a Message.  ``Value``
@@ -725,8 +726,8 @@ class EchoDialog(QDialog):
             if len(val) == 0:
                 return "[]"
             val0 = val[0]
-            if type(val0) in (int, float) and self.digits_after_in_array is not None:
-                list_str = '[' + ''.join(self.strify_message(v, indent, time_offset, current_time, field_filter, self.digits_after_in_array) + ', ' for v in val).rstrip(', ') + ']'
+            if type(val0) in (int, float) and digits_after_in_array is not None:
+                list_str = '[' + ''.join(cls.strify_message(v, indent, time_offset, current_time, field_filter, digits_after_in_array) + ', ' for v in val).rstrip(', ') + ']'
                 return list_str
             elif type(val0) in (int, float, str, bool):
                 # TODO: escape strings properly
@@ -734,7 +735,7 @@ class EchoDialog(QDialog):
             else:
                 pref = indent + '- '
                 indent = indent + '  '
-                return '\n' + '\n'.join([pref + self.strify_message(v, indent, time_offset, current_time, field_filter, self.digits_after_in_array) for v in val])
+                return '\n' + '\n'.join([pref + cls.strify_message(v, indent, time_offset, current_time, field_filter, digits_after_in_array) for v in val])
         elif isinstance(val, message.Message):
             # allow caller to select which fields of message are strified
             if field_filter is not None:
@@ -756,7 +757,7 @@ class EchoDialog(QDialog):
                         slot_name = f
                         if isinstance(cval, (list, tuple)):
                             slot_name = "%s[%d]" % (f, len(cval))
-                        slots.append(p % (utf8(slot_name), self.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
+                        slots.append(p % (utf8(slot_name), cls.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
                 vals = '\n'.join(slots)
             if indent:
                 return '\n' + vals

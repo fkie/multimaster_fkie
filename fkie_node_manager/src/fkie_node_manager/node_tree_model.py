@@ -38,11 +38,13 @@ try:
     from python_qt_binding.QtGui import QItemDelegate
 except Exception:
     from python_qt_binding.QtWidgets import QItemDelegate
+from datetime import datetime
 import re
 import roslib
 import rospy
 import traceback
 
+from diagnostic_msgs.msg import KeyValue
 from fkie_master_discovery.common import get_hostname, subdomain
 from fkie_master_discovery.master_info import NodeInfo
 from fkie_node_manager_daemon.common import sizeof_fmt, utf8
@@ -1374,6 +1376,13 @@ class NodeItem(QStandardItem):
                 if last_item.level == diagnostic_status.level:
                     if last_item.message == diagnostic_status.message:
                         return
+            dt_key = KeyValue()
+            dt_key.key = 'recvtime'
+            dt_key.value = datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f")
+            if diagnostic_status.values and diagnostic_status.values[-1].key == 'recvtime':
+                diagnostic_status.values[-1].value = dt_key.value
+            else:
+                diagnostic_status.values.append(dt_key)
             self.diagnostic_array.append(diagnostic_status)
         self.update_dispayed_name()
         if self.parent_item is not None and not isinstance(self.parent_item, HostItem):

@@ -348,8 +348,6 @@ class MainWindow(QMainWindow):
 
         self._con_tries = dict()
         self._subscribe()
-        agg_suffix = '_agg' if nm.settings().use_diagnostics_agg else ''
-        self._sub_extended_log = rospy.Subscriber('/diagnostics%s' % agg_suffix, DiagnosticArray, self._callback_diagnostics)
         nm.nmd().monitor.system_diagnostics_signal.connect(self._callback_system_diagnostics)
         nm.nmd().monitor.remote_diagnostics_signal.connect(self._callback_diagnostics)
 
@@ -878,6 +876,9 @@ class MainWindow(QMainWindow):
                                     self._subscribe()
                             if self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
                                 self.setCurrentMaster(master)
+                                if not hasattr(self, "_sub_extended_log"):
+                                    agg_suffix = '_agg' if nm.settings().use_diagnostics_agg else ''
+                                    self._sub_extended_log = rospy.Subscriber('/diagnostics%s' % agg_suffix, DiagnosticArray, self._callback_diagnostics)
                         # update the list view, whether master is synchronized or not
                         if master.master_info.masteruri == minfo.masteruri:
                             self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)
@@ -1800,7 +1801,7 @@ class MainWindow(QMainWindow):
             if self._description_accept != title:
                 if not force:
                     return
-                else:
+                elif not title.endswith(' diagnostic'):  # add 'back'-link if title ends with ' diagnostic'
                     self._description_accept = ''
         wtitle = self.descriptionDock.windowTitle().replace('&', '')
         same_title = wtitle == title
@@ -1922,6 +1923,9 @@ class MainWindow(QMainWindow):
             self.nmd_cfg(url.toString().replace('nmd-cfg', 'http'))
         elif url.toString().startswith('nm-cfg://'):
             self._on_settings_button_clicked()
+        elif url.toString().startswith('show-all-diagnostics://'):
+            if self.currentMaster is not None:
+                self.currentMaster.show_diagnostic_messages(self._url_path(url))
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back
