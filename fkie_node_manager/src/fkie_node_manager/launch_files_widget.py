@@ -132,8 +132,7 @@ class LaunchFilesWidget(QDockWidget):
         '''
         self.progress_queue.stop()
         self.ui_search_line.set_process_active(False)
-        if self._reload_timer is not None and self._reload_timer.is_alive():
-            self._reload_timer.cancel()
+        self._stop_timer_reload()
 
     def set_current_master(self, masteruri, mastername):
         self.launchlist_model.set_current_master(masteruri, mastername)
@@ -194,13 +193,27 @@ class LaunchFilesWidget(QDockWidget):
     def on_pathlist_handled(self, gpath):
         self.ui_search_line.set_process_active(False)
         self.ui_button_new.setEnabled(not self.launchlist_model.is_in_root)
+        self._stop_timer_reload()
 
     def on_error_on_path(self, gpath):
         if gpath == self._current_search or gpath == self.launchlist_model.current_path:
             self.ui_search_line.set_process_active(False)
         if self.launchlist_model.is_in_root:
-            self._reload_timer = threading.Timer(2., nm.nmd().file.list_path_threaded, args=(self.launchlist_model.current_path,))
+            self._reload_timer = threading.Timer(2., nm.nmd().file.list_path_threaded)
             self._reload_timer.start()
+
+    def _stop_timer_reload(self):
+        if self._reload_timer is not None and self._reload_timer.is_alive():
+            try:
+                self._reload_timer.cancel()
+                self._reload_timer = None
+            except Exception:
+                pass
+
+    def _on_timer_reload_callback(self, event=None):
+        nm.nmd().file.list_path_threaded(self.launchlist_model.current_path)
+        self._reload_timer = threading.Timer(2., nm.nmd().file.list_path_threaded)
+        self._reload_timer.start()
 
     def on_launch_selection_changed(self, selected, deselected):
         print("selection launch changed")
