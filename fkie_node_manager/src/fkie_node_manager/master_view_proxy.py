@@ -1072,10 +1072,13 @@ class MasterViewProxy(QWidget):
             if cfg in self._cfg_changed_nodes:
                 changed_nodes = self._cfg_changed_nodes[cfg]
                 del self._cfg_changed_nodes[cfg]
-                restart, ok = SelectDialog.getValue('Restart nodes?', "Select nodes to restart <b>@%s</b>:" % self.mastername, changed_nodes, False, True, '', self, store_geometry='restart_nodes')
-                if ok:
-                    self.stop_nodes_by_name(restart)
-                    self.start_nodes_by_name(restart, cfg, force=True)
+                node_count = ''
+                if len(changed_nodes) > 1:
+                    node_count = 's [%d]' % len(changed_nodes)
+                nodes_text = '<br>'
+                for chn in changed_nodes:
+                    nodes_text += "%s   " % HTMLDelegate.toHTML(chn)
+                self.message_frame.show_question(MessageFrame.TYPE_NODE_CFG, 'Configuration changed for node%s:%s<br>restart?' % (node_count, nodes_text), MessageData((changed_nodes, cfg)))
 
     def on_nmd_version_retrieved(self, nmd_url, version, date):
         if not nmdurl.equal_uri(nmdurl.masteruri(nmd_url), self.masteruri):
@@ -3396,6 +3399,15 @@ class MasterViewProxy(QWidget):
             except Exception as err:
                 rospy.logwarn("Error while restart nodes %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Restart nodes", data.data, '%s' % utf8(err))
+
+        elif questionid == MessageFrame.TYPE_NODE_CFG:
+            try:
+                nodes, cfg = data.data
+                self.stop_nodes_by_name(nodes)
+                self.start_nodes_by_name(nodes, cfg, force=True)
+            except Exception as err:
+                rospy.logwarn("Error while restart nodes %s: %s" % (str(nodes), utf8(err)))
+                MessageBox.warning(self, "Restart nodes", str(nodes), '%s' % utf8(err))
 
     def _on_info_ok(self, questionid, data):
         pass

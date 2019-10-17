@@ -75,7 +75,8 @@ class MessageQueue(object):
             MessageFrame.TYPE_TRANSFER: [],
             MessageFrame.TYPE_BINARY: [],
             MessageFrame.TYPE_NOSCREEN: [],
-            MessageFrame.TYPE_NMD: []
+            MessageFrame.TYPE_NMD: [],
+            MessageFrame.TYPE_NODE_CFG: []
         }
 
     def add(self, questionid, text, data):
@@ -121,6 +122,7 @@ class MessageFrame(QFrame):
     TYPE_BINARY = 7
     TYPE_NOSCREEN = 8
     TYPE_NMD = 9
+    TYPE_NODE_CFG = 10
 
     ICON_SIZE = 32
 
@@ -138,13 +140,16 @@ class MessageFrame(QFrame):
                        6: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        7: QPixmap(":/icons/crystal_clear_binary.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       9: QPixmap(":/icons/crystal_clear_run_zeroconf.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       9: QPixmap(":/icons/crystal_clear_run_zeroconf.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       10: QPixmap(":/icons/crystal_clear_binary.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self.frameui = QFrame()
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MessageFrame.ui')
         loadUi(ui_file, self.frameui)
         color = QColor(255, 207, 121)
+        self.frameui.listLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.frameui.questionLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.frameui.setVisible(False)
         self.frameui.listLabel.setVisible(False)
         self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
