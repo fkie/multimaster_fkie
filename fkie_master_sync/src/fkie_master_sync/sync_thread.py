@@ -30,8 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
 
 import random
+import roslib
+import roslib.message
 import socket
 import threading
 import time
@@ -88,6 +91,9 @@ class SyncThread(object):
         self.__lock_info = threading.RLock()
         self.__lock_intern = threading.RLock()
         self._use_filtered_method = None
+        self._use_md5check_topics = None
+        self._md5warnings = {}  # ditionary of {(topicname, node, nodeuri) : topictype}
+        self._topic_type_warnings = {}  # ditionary of {(topicname, node, nodeuri) : remote topictype}
         # SyncMasterInfo with currently synchronized nodes, publisher (topic, node, nodeuri), subscriber(topic, node, nodeuri) and services
         self.__sync_info = None
         self.__unregistered = False
@@ -307,6 +313,10 @@ class SyncThread(object):
                 rospy.logdebug("SyncThread[%s]: UNPUB %s[%s] %s", 
                               self.name, node, nodeuri, topic)
                 handler.append(('upub', topic, node, nodeuri))
+                # delete from warning list
+                with self.__lock_info:
+                    if (topic, node, nodeuri) in self._md5warnings:
+                        del self._md5warnings[(topic, node, nodeuri)]
             # register new publishers
             for (topic, topictype, node, nodeuri) in publisher_to_register:
                 own_master_multi.registerPublisher(node, topic, topictype, nodeuri)
@@ -338,12 +348,19 @@ class SyncThread(object):
                 rospy.logdebug("SyncThread[%s]: UNSUB %s[%s] %s", 
                               self.name, node, nodeuri, topic)
                 handler.append(('usub', topic, node, nodeuri))
+                # delete from warning list
+                with self.__lock_info:
+                    if (topic, node, nodeuri) in self._md5warnings:
+                        del self._md5warnings[(topic, node, nodeuri)]
             # register new subscriber
             for (topic, topictype, node, nodeuri) in subscriber_to_register:
                 own_master_multi.registerSubscriber(node, topic, topictype, nodeuri)
                 rospy.logdebug("SyncThread[%s]: SUB %s[%s] %s[%s]", 
                               self.name, node, nodeuri, topic, topictype)
                 handler.append(('sub', topic, topictype, node, nodeuri))
+            # check for conflicts with local types before register remote topics
+            with self.__lock_info:
+                self._check_local_topic_types(publisher_to_register + subscriber_to_register)
 
             # sync the services
             services = []
@@ -435,11 +452,75 @@ class SyncThread(object):
                     rospy.logdebug("SyncThread[%s]: invoke next update, remote ts: %.9f", self.name, self.timestamp_remote)
                     self._update_timer = threading.Timer(random.random() * 2., self._request_remote_state, args=(self._apply_remote_state,))
                     self._update_timer.start()
+            # check md5sum for topics
+            with self.__lock_info:
+                self._check_md5sums(publisher_to_register + subscriber_to_register)
         except:
             rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
         finally:
             socket.setdefaulttimeout(None)
         rospy.loginfo("SyncThread[%s] remote state applied.", self.name)
+
+    def _check_md5sums(self, topics_to_register):
+        try:
+            # connect to master_monitor rpc-xml server of remote master discovery
+            socket.setdefaulttimeout(20)
+            remote_monitor = xmlrpclib.ServerProxy(self.monitoruri)
+            # determine the getting method: older versions have not a getTopicsMd5sum method
+            if self._use_md5check_topics is None:
+                try:
+                    self._use_md5check_topics = 'getTopicsMd5sum' in remote_monitor.system.listMethods()
+                except:
+                    self._use_md5check_topics = False
+            if self._use_md5check_topics:
+                rospy.loginfo("SyncThread[%s] Requesting remote md5sums '%s'", self.name, self.monitoruri)
+                topic_types = [topictype for _topic, topictype, _node, _nodeuri in topics_to_register]
+                remote_md5sums_topics = remote_monitor.getTopicsMd5sum(topic_types)
+                for rttype, rtmd5sum in remote_md5sums_topics:
+                    try:
+                        if roslib.message.get_message_class(rttype)._md5sum != rtmd5sum:
+                            for topicname, topictype, node, nodeuri in topics_to_register:
+                                if topictype == rttype:
+                                    if (topicname, node, nodeuri) not in self._md5warnings:
+                                        rospy.logwarn("Different checksum detected for topic: %s, type: %s, host: %s" % (topicname, rttype, self.name))
+                                        self._md5warnings[(topicname, node, nodeuri)] = topictype
+                    except Exception as err:
+                        import traceback
+                        rospy.logwarn(err)
+                        rospy.logwarn(traceback.format_exc())
+        except:
+            rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
+        finally:
+            socket.setdefaulttimeout(None)
+
+    def _check_local_topic_types(self, topics_to_register):
+        try:
+            if self.__own_state is not None:
+                for topicname, topictype, node, nodeuri in topics_to_register:
+                    try:
+                        if topicname in self.__own_state.topics:
+                            own_topictype = self.__own_state.topics[topicname].type
+                            if topictype != own_topictype:
+                                if (topicname, node, nodeuri) not in self._topic_type_warnings:
+                                    rospy.logwarn("Different topic types detected for topic: %s, own type: %s remote type: %s, host: %s" % (topicname, own_topictype, topictype, self.name))
+                                    self._topic_type_warnings[(topicname, node, nodeuri)] = "local: %s, remote: %s" % (own_topictype, topictype)
+                    except Exception as err:
+                        import traceback
+                        rospy.logwarn(err)
+                        rospy.logwarn(traceback.format_exc())
+        except:
+            rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
+        finally:
+            socket.setdefaulttimeout(None)
+
+
+    def get_md5warnigs(self):
+        with self.__lock_info:
+            return dict(self._md5warnings)
+
+    def get_topic_type_warnings(self):
+        with self.__lock_info:
+            return dict(self._topic_type_warnings)
 
     def _unreg_on_finish(self):
         with self.__lock_info:
@@ -487,7 +568,7 @@ class SyncThread(object):
         return None
 
     def _get_serviceuri(self, service, nodes, remote_masteruri):
-        for (servicename, uri, masteruri, topic_type, local) in nodes:
+        for (servicename, uri, masteruri, _topic_type, local) in nodes:
             if (servicename == service) and ((self._filter.sync_remote_nodes() and masteruri == remote_masteruri) or local == 'local'):
                 if masteruri != self.masteruri_local:
                     return uri

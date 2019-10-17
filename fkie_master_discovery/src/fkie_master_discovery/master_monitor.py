@@ -35,6 +35,7 @@ from SocketServer import ThreadingMixIn
 from datetime import datetime
 import cStringIO
 import roslib.network
+import roslib.message
 import rospy
 import socket
 import subprocess
@@ -166,6 +167,7 @@ class MasterMonitor(object):
                 self.rpcServer.register_function(self.getMasterErrors, 'masterErrors')
                 self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
                 self.rpcServer.register_function(self.setTime, 'setTime')
+                self.rpcServer.register_function(self.getTopicsMd5sum, 'getTopicsMd5sum')
                 self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
                 self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
@@ -729,6 +731,25 @@ class MasterMonitor(object):
             if result_err:
                 success = False
         return (str(self.getMasteruri()), success, time.time(), result_err)
+
+    def getTopicsMd5sum(self, topic_types):
+        '''
+        :return: a list with topic type and current md5sum.
+
+                - ``topic types`` is of the form
+
+                    ``[ (topic1, md5sum1) ... ]``
+
+        :rtype:  list
+        '''
+        topic_list = []
+        for ttype in topic_types:
+            try:
+                entry = (ttype, roslib.message.get_message_class(ttype)._md5sum)
+                topic_list.append(entry)
+            except Exception as err:
+                rospy.logwarn(err)
+        return topic_list
 
     def checkState(self, clear_cache=False):
         '''

@@ -30,12 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division, absolute_import, print_function, unicode_literals
+
 import socket
 import threading
 import time
 import uuid
 import xmlrpclib
 
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from fkie_multimaster_msgs.msg import MasterState  # , LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
 from fkie_multimaster_msgs.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
 import rospy
@@ -79,10 +82,13 @@ class Main(object):
         self.__own_state = None
         self.update_timer = None
         self.own_state_getter = None
+        self._timer_update_diagnostics = None
         self._join_threads = dict()  # threads waiting for stopping the sync thread
         # initialize the ROS services
         rospy.Service('~get_sync_info', GetSyncInfo, self._rosservice_get_sync_info)
         rospy.on_shutdown(self.finish)
+        self._current_diagnistic_level = 0
+        self.pub_diag = rospy.Publisher( "/diagnostics", DiagnosticArray, queue_size=10, latch=True)
         self.obtain_masters()
 
     def _rosmsg_callback_master_state(self, data):
@@ -173,10 +179,14 @@ class Main(object):
                                 if self.__own_state is not None:
                                     self.masters[mastername].set_own_masterstate(MasterInfo.from_list(self.__own_state))
                                 self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
-                elif self.__timestamp_local != timestamp_local and self.__sync_topics_on_demand:
+                elif self.__timestamp_local != timestamp_local:  # self.__sync_topics_on_demand:
                     # get the master info from local discovery master and set it to all sync threads
                     self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
                     self.own_state_getter.start()
+                if self._timer_update_diagnostics is None or not self._timer_update_diagnostics.is_alive():
+                    # check for topics type and checksum for all hosts. Not blocking!
+                    self._timer_update_diagnostics = threading.Thread(target=self._update_diagnostics_state)
+                    self._timer_update_diagnostics.start()
         except:
             import traceback
             rospy.logwarn("ERROR while update master[%s]: %s", str(mastername), traceback.format_exc())
@@ -315,3 +325,58 @@ class Main(object):
             if self._re_sync_hosts.match(mastername) is not None:
                 result = True
         return result
+
+    def _update_diagnostics_state(self):
+        md5_warnings = {}
+        ttype_warnings = {}
+        for mname, mth in self.masters.items():
+            warnings = mth.get_md5warnigs()
+            if warnings:
+                md5_warnings[mname] = warnings
+            twarnings = mth.get_topic_type_warnings()
+            if twarnings:
+                ttype_warnings[mname] = twarnings
+        level = 0
+        if md5_warnings or ttype_warnings:
+            level = 1
+        if self._current_diagnistic_level != level:
+            da = DiagnosticArray()
+            if md5_warnings:
+                # add warnings for all hosts with topic types with different md5sum
+                for mname, warnings in md5_warnings.items():
+                    diag_state = DiagnosticStatus()
+                    diag_state.level = level
+                    diag_state.name = rospy.get_name()
+                    diag_state.message = "Wrong topics md5sum @%s" % mname
+                    diag_state.hardware_id = mname
+                    for (topicname, _node, _nodeuri), ttype in warnings.items():
+                        key = KeyValue()
+                        key.key = topicname
+                        key.value = ttype
+                        diag_state.values.append(key)
+                    da.status.append(diag_state)
+            elif ttype_warnings:
+                # add warnings if a topic with different type is synchrinozied to local host
+                for mname, warnings in ttype_warnings.items():
+                    diag_state = DiagnosticStatus()
+                    diag_state.level = level
+                    diag_state.name = rospy.get_name()
+                    diag_state.message = "Wrong topics type @%s" % mname
+                    diag_state.hardware_id = mname
+                    for (topicname, _node, _nodeuri), ttype in warnings.items():
+                        key = KeyValue()
+                        key.key = topicname
+                        key.value = ttype
+                        diag_state.values.append(key)
+                    da.status.append(diag_state)
+            else:
+                # clear all warnings
+                diag_state = DiagnosticStatus()
+                diag_state.level = 0
+                diag_state.name = rospy.get_name()
+                diag_state.message = ""
+                diag_state.hardware_id = ""
+                da.status.append(diag_state)
+            da.header.stamp = rospy.Time.now()
+            self.pub_diag.publish(da)
+            self._current_diagnistic_level = level
