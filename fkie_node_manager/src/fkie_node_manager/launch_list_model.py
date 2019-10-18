@@ -497,7 +497,7 @@ class LaunchListModel(QStandardItemModel):
         detail_msg = utf8(error)
         if hasattr(error, 'details'):
             detail_msg = utf8(error.details())
-        path_item = PathItem.create_row_items(utf8(error), PathItem.NOTHING, 0, 0, utf8("%s, please start node manager daemon" % detail_msg))
+        path_item = PathItem.create_row_items(utf8("%s, please start node manager daemon" % detail_msg), PathItem.NOTHING, 0, 0, 'connecting to daemon...')
         root.appendRow(path_item)
         self.pyqt_workaround[path_item[0].name] = path_item[0]
         self.error_on_path.emit(nmdurl.join(url, path), error)
