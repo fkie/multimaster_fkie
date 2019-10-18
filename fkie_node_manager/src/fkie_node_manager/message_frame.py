@@ -141,7 +141,7 @@ class MessageFrame(QFrame):
                        7: QPixmap(":/icons/crystal_clear_binary.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        9: QPixmap(":/icons/crystal_clear_run_zeroconf.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       10: QPixmap(":/icons/crystal_clear_binary.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       10: QPixmap(":/icons/sekkyumu_restart.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self.frameui = QFrame()
