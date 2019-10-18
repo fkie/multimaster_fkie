@@ -2,6 +2,12 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2019-04-30)
+-------------------
+* added daemon for node manager. The daemon replaces the default_config package and adds support for remote access through gRPC.
+* renamed all packages to fkie_*
+* old version are availabe on branch 'old_master'
+
 0.8.12 (2019-04-30)
 -------------------
 * fixed lost nodes while grouping

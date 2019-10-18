@@ -37,6 +37,7 @@ import grpc
 import rospy
 import time
 
+from fkie_multimaster_msgs.srv import LoadLaunch, LoadLaunchResponse
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
@@ -60,6 +61,8 @@ class GrpcServer:
         self.settings_servicer = SettingsServicer()
         self.launch_servicer = LaunchServicer()
         self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
+        rospy.Service('~start_launch', LoadLaunch, self._rosservice_start_launch)
+        rospy.Service('~load_launch', LoadLaunch, self._rosservice_load_launch)
 
     def __del__(self):
         self.server.stop(3)
@@ -101,3 +104,13 @@ class GrpcServer:
 
     def load_launch_file(self, path, autostart=False):
         self.launch_servicer.load_launch_file(interpret_path(path), autostart)
+
+    def _rosservice_start_launch(self, request):
+        rospy.loginfo("Service request to load and start %s" % request.path)
+        self.launch_servicer.load_launch_file(interpret_path(request.path), True)
+        return LoadLaunchResponse()
+
+    def _rosservice_load_launch(self, request):
+        rospy.loginfo("Service request to load %s" % request.path)
+        self.launch_servicer.load_launch_file(interpret_path(request.path), False)
+        return LoadLaunchResponse()
