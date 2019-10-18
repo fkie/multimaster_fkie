@@ -1638,6 +1638,11 @@ class MainWindow(QMainWindow):
                                            'rosclean `%s`' % nuri,
                                            nm.starter().rosclean,
                                            ('%s' % nuri,))
+            master = self.getMaster(masteruri, create_new=False)
+            if master is not None:
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                            'update `%s`' % nuri,
+                                            master.perform_nmd_requests)
             self._progress_queue.start()
             self.launch_dock.raise_()
         except (Exception, nm.StartException), e:

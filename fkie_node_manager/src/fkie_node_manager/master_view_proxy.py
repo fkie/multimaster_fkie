@@ -548,7 +548,7 @@ class MasterViewProxy(QWidget):
         if self._has_nmd:
             # only try to get updates from daemon if it is running
             nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
-            self.set_diagnostic_ok('/node_manager_daemon')
+            # self.set_diagnostic_ok('/node_manager_daemon')
             nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
             nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
             nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
@@ -1552,7 +1552,10 @@ class MasterViewProxy(QWidget):
                         diag_color = '#FFCC00'
                     elif diag_status.level > 3:
                         diag_color = '#0000CC'
-                    diag_msg = '<dt><font color="%s"><b>%s: %s</b></font></dt>' % (diag_color, level_str, diag_status.message)
+                    if diag_status.message:
+                        diag_msg = '<dt><font color="%s"><b>%s: %s</b></font></dt>' % (diag_color, level_str, diag_status.message)
+                    else:
+                        diag_msg = '<dt><font color="%s"><b>%s</b></font></dt>' % (diag_color, level_str)
                     if diag_msg not in added_diags:
                         text += diag_msg
                         added_diags.append(diag_msg)
