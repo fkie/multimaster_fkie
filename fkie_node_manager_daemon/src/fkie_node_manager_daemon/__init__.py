@@ -78,9 +78,12 @@ def set_process_name(name):
 def init_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--load", nargs=1, help="loads given file on start;"
-                                                      "comma separated for multiple files")
+                                                      " statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;"
+                                                      " comma separated for multiple files")
     parser.add_argument("-a", "--autostart", nargs=1, help="loads given file on start and launch nodes after load launch file;"
-                                                           "comma separated for multiple files")
+
+                                                           " statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;"
+                                                           " comma separated for multiple files")
     return parser
 
 
