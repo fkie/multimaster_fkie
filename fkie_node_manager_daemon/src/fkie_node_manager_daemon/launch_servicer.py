@@ -166,6 +166,18 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         else:
             rospy.logwarn("load %s failed!" % (path))
 
+    def start_node(self, node_name):
+        global IS_RUNNING
+        if not IS_RUNNING:
+            return
+        for _cfgid, launchcfg in self._loaded_files.items():
+            n = launchcfg.get_node(node_name)
+            if n is not None:
+                startcfg = launcher.create_start_config(node_name, launchcfg, '', masteruri='', loglevel='', reload_global_param=False)
+                launcher.run_node(startcfg)
+                return
+        raise Exception("Node '%s' not found!" % node_name)
+
     def _autostart_nodes_threaded(self, cfg):
         global IS_RUNNING
         for item in cfg.roscfg.nodes:
