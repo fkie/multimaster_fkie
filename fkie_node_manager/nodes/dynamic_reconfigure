@@ -3,7 +3,11 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 import sys
 
-from rqt_reconfigure.dynreconf_client_widget import DynreconfClientWidget
+try:
+  # renamed in commit #973d0d8 -> https://github.com/ros-visualization/rqt_reconfigure/commit/973d0d8bf614e27fdb6ce12aaaf8e65dce348ff1#diff-3809107d101d214d37251fe0bff88d74
+  from rqt_reconfigure.param_client_widget import ParamClientWidget as DynreconfClientWidget
+except ImportError:
+  from rqt_reconfigure.dynreconf_client_widget import DynreconfClientWidget
 import dynamic_reconfigure.client
 import rospy
 
@@ -72,7 +76,7 @@ def main(argv=sys.argv):
 
   _scroll_area = QScrollArea()
   _dynreconf_client = DynreconfClientWidget(dynreconf_client, node)
-  _scroll_area.resize(_dynreconf_client.width() + 20, 480 if _dynreconf_client.height() > 480 else _dynreconf_client.height())
+  _scroll_area.resize(_dynreconf_client.width() + 30, 480 if _dynreconf_client.height() > 480 else _dynreconf_client.height())
   _scroll_area.setWidget(_dynreconf_client)
   _scroll_area.show()
   exit_code = -1
