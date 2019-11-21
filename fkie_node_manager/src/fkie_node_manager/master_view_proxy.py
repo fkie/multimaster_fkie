@@ -1879,7 +1879,7 @@ class MasterViewProxy(QWidget):
         finally:
             self.setCursor(cursor)
 
-    def start_node(self, node, force, config, force_host=None, logging=None, opt_binary='', cmd_prefix=''):
+    def start_node(self, node, force, config, force_host=None, logging=None, cmd_prefix='', opt_binary=''):
 
         if node is None:
             raise DetailedError("Start error", 'None is not valid node name!')
@@ -1916,7 +1916,7 @@ class MasterViewProxy(QWidget):
             except nm.InteractionNeededError as _:
                 raise
             except nm.BinarySelectionRequest as bsr:
-                raise nm.InteractionNeededError(bsr, self.start_node, (node, force, config, force_host, logging, '', cmd_prefix))
+                raise nm.InteractionNeededError(bsr, self.start_node, (node, force, config, force_host, logging, cmd_prefix))
             except (exceptions.StartException, nm.StartException) as e:
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
                 lines = utf8(e).splitlines()
@@ -2024,7 +2024,7 @@ class MasterViewProxy(QWidget):
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    ''.join(['start ', node.node_info.name]),
                                                    self.start_node,
-                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, '', cmd_prefix))
+                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, cmd_prefix))
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):
