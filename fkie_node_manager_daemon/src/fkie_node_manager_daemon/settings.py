@@ -215,7 +215,7 @@ class Settings:
         :return: Create YAML string representation from configuration dictionary structure.
         :rtype: str
         '''
-        return ruamel.yaml.dump(self._cfg)
+        return ruamel.yaml.dump(self._cfg, Dumper=ruamel.yaml.RoundTripDumper)
 
     def apply(self, data):
         '''
