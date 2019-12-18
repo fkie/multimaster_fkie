@@ -487,7 +487,7 @@ class LaunchListModel(QStandardItemModel):
         self.pathlist_handled.emit(root_path)
 
     def _nmd_error(self, method, url, path, error):
-        if not self.is_current_nmd(url):
+        if method != 'list_path' or not self.is_current_nmd(url):
             return
         root = self.invisibleRootItem()
         while root.rowCount():
