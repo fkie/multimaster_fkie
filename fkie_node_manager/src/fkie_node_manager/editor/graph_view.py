@@ -229,6 +229,9 @@ class GraphViewWidget(QDockWidget):
             self.graphTreeView.model().clear()
             pkg, _ = package_name(os.path.dirname(self._root_path))
             if pkg is None:
+                if pkg is None:
+                    # we print full path if package name was not found
+                    pkg = os.path.dirname(self._root_path)
                 has_none_packages = True
             itemstr = '%s [%s]' % (os.path.basename(self._root_path), pkg)
             inc_item = QStandardItem('%s' % itemstr)
@@ -284,6 +287,9 @@ class GraphViewWidget(QDockWidget):
                     inc_item = None
                 if inc_item is None:
                     pkg, _ = package_name(os.path.dirname(inc_file.inc_path))
+                    if pkg is None:
+                        # we print full path if package name was not found
+                        pkg = os.path.dirname(inc_file.inc_path)
                     size_color = 'gray'
                     if inc_file.size == 0 or inc_file.size > 1000000:
                         size_color = 'orange'
@@ -373,7 +379,7 @@ class GraphThread(QObject, threading.Thread):
             result = []
             filelist = nm.nmd().launch.get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
             for inc_file in filelist:
-                rospy.logdebug("build tree: append file: %s" % inc_file)
+                rospy.logdebug("build tree: append file: %s" % inc_file.inc_path)
                 inc_file.unset_default_args = self.find_default_args(inc_file.inc_path, inc_file.args)
                 result.append(inc_file)
                 if not inc_file.exists:

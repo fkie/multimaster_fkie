@@ -63,6 +63,7 @@ _get_pkg_path_var = None
 
 
 PACKAGE_CACHE = {}
+SOURCE_PATH_TO_PACKAGES = {}
 
 
 class IncludedFile():
@@ -226,6 +227,10 @@ def get_pkg_path(package_name):
 def reset_package_cache():
     global _get_pkg_path_var
     _get_pkg_path_var = None
+    global PACKAGE_CACHE
+    PACKAGE_CACHE = {}
+    global SOURCE_PATH_TO_PACKAGES
+    SOURCE_PATH_TO_PACKAGES = {}
 
 def interpret_path(path, pwd='.'):
     '''
@@ -253,10 +258,23 @@ def interpret_path(path, pwd='.'):
                     if len(paths) > 0:
                         # if more then one launch file is found, take the first one
                         return paths[0]
-                    else:
-                        return path
+                full_path = os.path.normpath(os.path.join(pkg, path_suffix))
                 if path_suffix:
-                    return os.path.normpath(os.path.join(pkg, path_suffix))
+                    if not os.path.exists(full_path):
+                        # we try to find the specific path in share via catkin
+                        # which will search in install/devel space and the source folder of the package
+                        try:
+                            from catkin.find_in_workspaces import find_in_workspaces
+                            global SOURCE_PATH_TO_PACKAGES
+                            paths = find_in_workspaces(
+                                ['share'], project=pkg_name, path=path_suffix.strip(os.path.sep), first_matching_workspace_only=True,
+                                first_match_only=True, source_path_to_packages=SOURCE_PATH_TO_PACKAGES)
+                            if paths:
+                                return paths[0]
+                        except Exception:
+                            import traceback
+                            rospy.logwarn("search in install/devel space failed: %s" % traceback.format_exc())
+                    return full_path
                 else:
                     return "%s%s" % (os.path.normpath(pkg), os.path.sep)
     if path.startswith('file://'):
