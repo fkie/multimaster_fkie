@@ -279,6 +279,7 @@ class SyncThread(object):
     def _apply_remote_state(self, remote_state):
         rospy.loginfo("SyncThread[%s] Applying remote state...", self.name)
         try:
+            rospy.logdebug("SyncThread[%s]: remote state: %s" % (self.name, remote_state))
             stamp = float(remote_state[0])
             stamp_local = float(remote_state[1])
             remote_masteruri = remote_state[2]
