@@ -2021,6 +2021,8 @@ class MasterViewProxy(QWidget):
             # put into the queue and start
             for node in nodes:
                 if node.name in cfg_nodes:
+                    # remove node from question
+                    self.message_frame.hide_question([MessageFrame.TYPE_BINARY], MessageData(node))
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    ''.join(['start ', node.node_info.name]),
                                                    self.start_node,

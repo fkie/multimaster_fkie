@@ -57,10 +57,14 @@ class MessageData(object):
         return utf8(self.data)
 
     def __eq__(self, other):
-        return self.data == other.data
+        if other is not None:
+            return self.data == other.data
+        return False
 
     def __ne__(self, other):
-        return self.data != other.data
+        if other is not None:
+            return self.data != other.data
+        return False
 
 
 class MessageQueue(object):
@@ -99,9 +103,17 @@ class MessageQueue(object):
                 return (qid, text, data)
         return (0, '', None)
 
-    def remove(self, questionid, text=None):
+    def remove(self, questionid, data=None):
         if questionid in self._queue.keys():
-            del self._queue[questionid][:]
+            if data == None:
+                del self._queue[questionid][:]
+            else:
+                # remove all question with same data
+                for idx in range(len(self._queue[questionid])):
+                    _txt, dt = self._queue[questionid][idx]
+                    if dt == data:
+                        self._queue[questionid].remove(idx)
+
 
 
 class MessageFrame(QFrame):
@@ -207,17 +219,18 @@ class MessageFrame(QFrame):
         except Exception:
             return False
 
-    def hide_question(self, questionids):
+    def hide_question(self, questionids, data=None):
         for qid in questionids:
-            self._queue.remove(qid)
-        if self.questionid in questionids:
-            self._new_request = False
-            self.frameui.setVisible(False)
-            self.cancel_signal.emit(self.questionid, self.data)
-            self.questionid = 0
-            self._update_list_label([])
-            self._new_request = self._read_next_item()
-            self._frameui_4_request(self._new_request)
+            self._queue.remove(qid, data)
+        if data is None or data == self.data:
+            if self.questionid in questionids:
+                self._new_request = False
+                self.frameui.setVisible(False)
+                self.cancel_signal.emit(self.questionid, self.data)
+                self.questionid = 0
+                self._update_list_label([])
+                self._new_request = self._read_next_item()
+                self._frameui_4_request(self._new_request)
 
     def _update_list_label(self, items=[]):
         '''
