@@ -937,7 +937,11 @@ class Editor(QMainWindow):
         self._insert_text('<env name="variable" value="value"/>', 11, 8)
 
     def _on_add_param_clipboard_tag(self):
-        self._insert_text('<param name="%s" value="value" />' % QApplication.clipboard().mimeData().text(), 13, 4)
+        lines = QApplication.clipboard().mimeData().text().splitlines()
+        name = ""
+        if len(lines) == 1:
+            name = lines[0]
+        self._insert_text('<param name="%s" value="value" />' % name, 13, len(name))
 
     def _on_add_param_tag(self):
         self._insert_text('<param name="name" value="value" />', 13, 4)
