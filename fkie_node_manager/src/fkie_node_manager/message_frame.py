@@ -105,15 +105,18 @@ class MessageQueue(object):
 
     def remove(self, questionid, data=None):
         if questionid in self._queue.keys():
-            if data == None:
+            if data is None:
                 del self._queue[questionid][:]
             else:
                 # remove all question with same data
-                for idx in range(len(self._queue[questionid])):
-                    _txt, dt = self._queue[questionid][idx]
-                    if dt == data:
-                        self._queue[questionid].remove(idx)
-
+                try:
+                    for idx in range(len(self._queue[questionid])):
+                        _txt, dt = self._queue[questionid][idx]
+                        if dt == data:
+                            del self._queue[questionid][idx]
+                            break
+                except Exception:
+                    pass
 
 
 class MessageFrame(QFrame):

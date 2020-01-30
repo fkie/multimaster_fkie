@@ -852,7 +852,7 @@ class GroupItem(QStandardItem):
         '''
         if isinstance(item, str) or isinstance(item, unicode):
             return self.name.lower() == item.lower()
-        elif not (item is None):
+        elif item is not None and type(item) == GroupItem:
             return self.name.lower() == item.name.lower()
         return False
 
@@ -871,7 +871,7 @@ class GroupItem(QStandardItem):
             elif item.lower() == 'system':
                 return False
             return self.name.lower() > item.lower()
-        elif not (item is None):
+        elif item is not None and type(item) == GroupItem:
             # put the group with SYSTEM nodes at the end
             if item.is_system_group:
                 if self.name.lower() != item.lower():
@@ -1636,7 +1636,7 @@ class NodeItem(QStandardItem):
         '''
         if isinstance(item, str) or isinstance(item, unicode):
             return self.name == item
-        elif not (item is None):
+        elif item is not None and type(item) == NodeItem:
             return self.name == item.name
         return False
 
@@ -1646,7 +1646,7 @@ class NodeItem(QStandardItem):
         '''
         if isinstance(item, str) or isinstance(item, unicode):
             return self.name > item
-        elif not (item is None):
+        elif item is not None and type(item) == NodeItem:
             return self.name > item.name
         return False
 
