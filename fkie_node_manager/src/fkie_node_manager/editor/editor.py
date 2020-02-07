@@ -941,7 +941,7 @@ class Editor(QMainWindow):
         name = ""
         if len(lines) == 1:
             name = lines[0]
-        self._insert_text('<param name="%s" value="value" />' % name, 13, len(name))
+        self._insert_text('<param name="%s" value="value" />' % name, 22 + len(name), 5)
 
     def _on_add_param_tag(self):
         self._insert_text('<param name="name" value="value" />', 13, 4)
