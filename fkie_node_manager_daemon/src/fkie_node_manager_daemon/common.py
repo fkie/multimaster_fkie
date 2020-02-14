@@ -140,7 +140,7 @@ def sizeof_fmt(num, suffix='B'):
         if abs(num) < 1024.0:
             return "%.0f%s%s" % (num, unit, suffix)
         num /= 1024.0
-    return "%.0%s%s" % (num, 'YiB', suffix)
+    return "%.0f%s%s" % (num, 'YiB', suffix)
 
 
 def formated_ts(stamp, with_date=True, with_nanosecs=True, tz=None):
