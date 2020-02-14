@@ -489,6 +489,7 @@ class MainWindow(QMainWindow):
 
     def _are_master_in_process(self):
         for _uri, m in self.masters.items():
+            m.stop_echo_dialogs()
             if m.in_process():
                 return True
         return False

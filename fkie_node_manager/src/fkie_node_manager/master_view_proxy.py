@@ -161,8 +161,7 @@ class MasterViewProxy(QWidget):
 #    self.__uses_confgs = dict() # stores the decisions of the user for used configuration to start of node
         ''':ivar list(str) __in_question: stored the question dialogs for changed files '''
         self._stop_ignores = ['rosout', rospy.get_name(), 'node_manager', 'node_manager_daemon', 'master_discovery', 'master_sync', 'default_cfg', 'zeroconf']
-        self.__echo_topics_dialogs = dict()  # [topic name] = EchoDialog
-        ''':ivar dict(str:EchoDialog) __echo_topics_dialogs: stores the open EchoDialogs '''
+        self.__echo_topics_dialogs = set()  # set with subscibed topics
         self.__last_info_text = None
         self.__use_sim_time = False
         self.__current_user = nm.settings().host_user(self.mastername)
@@ -410,13 +409,14 @@ class MasterViewProxy(QWidget):
         self._progress_queue.stop()
         if self._on_stop_kill_roscore:
             self.killall_roscore()
-        for ps in self.__echo_topics_dialogs.values():
-            try:
-                ps.terminate()
-            except Exception:
-                pass
         QWidget.closeEvent(self, event)
         print("  Master", self.masteruri, " is down!")
+
+    def stop_echo_dialogs(self):
+        # stop launched echo dialogs
+        if self.__echo_topics_dialogs:
+            self.stop_nodes_by_name(self.__echo_topics_dialogs, only_local=False)
+            self.__echo_topics_dialogs.clear()
 
     @property
     def current_user(self):
@@ -1584,7 +1584,7 @@ class MasterViewProxy(QWidget):
     def show_diagnostic_messages(self, node):
         found_nodes = []
         if self.master_info is not None:
-            found_nodes = self.node_tree_model.get_local_node_items_by_name([node])
+            found_nodes = self.node_tree_model.get_node_items_by_name([node])
             if found_nodes:
                 node_item = found_nodes[0]
                 text = ''
@@ -2253,7 +2253,7 @@ class MasterViewProxy(QWidget):
                                            (node, (len(nodes) == 1) or force))
         self._start_queue(self._progress_queue)
 
-    def stop_nodes_by_name(self, nodes, force=False, ignore=[]):
+    def stop_nodes_by_name(self, nodes, force=False, ignore=[], only_local=True):
         '''
         Stop nodes given in a list by their names.
 
@@ -2266,7 +2266,7 @@ class MasterViewProxy(QWidget):
             for n in nodes:
                 if n not in ignore:
                     req_nodes.append(n)
-            found_nodes = self.node_tree_model.get_local_node_items_by_name(req_nodes)
+            found_nodes = self.node_tree_model.get_node_items_by_name(req_nodes, only_local)
         self.stop_nodes(found_nodes, force)
 
     def kill_node(self, node, force=False):
@@ -2939,27 +2939,25 @@ class MasterViewProxy(QWidget):
 
     def _add_topic_output2queue(self, topic, show_hz_only, use_ssh=False):
         try:
-                # connect to topic on remote host
-            import shlex
-            env = dict(os.environ)
-            env["ROS_MASTER_URI"] = utf8(self.masteruri)
             namespace = rospy.names.namespace(topic.name)
             nodename = os.path.basename(topic.name)
-            namespace = 'echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', utf8(get_hostname(self.masteruri)), namespace)
-            cmd = 'rosrun fkie_node_manager node_manager --echo %s %s %s %s __name:=%s __ns:=%s' % (topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else '', nodename, namespace)
-            rospy.loginfo("Echo topic: %s" % cmd)
-            ps = SupervisedPopen(shlex.split(cmd), env=env, stderr=None, close_fds=True, object_id=topic.name, description='Echo topic: %s' % topic.name)
-            ps.finished.connect(self._topic_dialog_closed)
-            self.__echo_topics_dialogs[topic.name] = ps
+            namespace = '/echo_%s%s%s%s' % ('hz_' if show_hz_only else '', 'ssh_' if use_ssh else '', utf8(get_hostname(self.masteruri)), namespace)
+            args = []
+            # subscription parameter
+            args.append("--echo %s %s %s %s" % (topic.name, topic.type, '--hz' if show_hz_only else '', '--ssh' if use_ssh else ''))
+            args.append("__ns:=%s" % namespace)
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                            'start subcriber for %s' % topic.name,
+                                            nm.starter().runNodeWithoutConfig,
+                                            ('localhost',
+                                            'fkie_node_manager', 'node_manager', nodename, args, self.masteruri, False, False, self.current_user))
+            self._start_queue(self._progress_queue)
+            self.__echo_topics_dialogs.add(rospy.names.ns_join(namespace, nodename))
         except Exception, e:
             rospy.logwarn("Echo topic '%s' failed: %s" % (topic.name, utf8(e)))
             MessageBox.warning(self, "Echo of topic error",
                                'Echo of topic %s failed!' % topic.name,
                                '%s' % utf8(e))
-
-    def _topic_dialog_closed(self, topic_name):
-        if topic_name in self.__echo_topics_dialogs:
-            del self.__echo_topics_dialogs[topic_name]
 
     def on_service_call_clicked(self, services=[]):
         '''

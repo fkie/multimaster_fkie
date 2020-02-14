@@ -257,7 +257,7 @@ class ProgressQueue(QObject):
                 self._progress_thread_finished(ident)
                 return
         elif isinstance(req.request, nm.NoScreenOpenLogRequest):
-            self.no_screen_error_signal.emit(req.request. node, req.request.host)
+            self.no_screen_error_signal.emit(req.request.node, req.request.host)
             self._progress_thread_finished(ident)
 
 
@@ -315,7 +315,7 @@ class ProgressThread(QObject, threading.Thread):
             while not last_line and len(formatted_lines) > index:
                 index += 1
                 last_line = formatted_lines[-index]
+            rospy.logwarn("%s failed:\n\t%s", utf8(self.descr), utf8(last_line))
             self.error_signal.emit(self._id, 'Progress Job Error',
                                    "%s failed:\n%s" % (utf8(self.descr), utf8(last_line)),
                                    utf8(traceback.format_exc(4)))
-            rospy.logwarn("%s failed:\n\t%s", utf8(self.descr), utf8(last_line))
