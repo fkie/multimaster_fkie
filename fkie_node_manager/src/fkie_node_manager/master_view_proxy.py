@@ -3392,7 +3392,7 @@ class MasterViewProxy(QWidget):
                 MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
         elif questionid == MessageFrame.TYPE_BINARY:
             try:
-                self.stop_nodes_by_name(data.data.name)
+                self.stop_nodes_by_name([data.data.name])
                 if data.data.next_start_cfg:
                     self.start_node(data.data, force=True, config=data.data.next_start_cfg)
                 else:

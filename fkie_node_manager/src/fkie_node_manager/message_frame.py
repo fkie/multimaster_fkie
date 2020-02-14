@@ -159,6 +159,7 @@ class MessageFrame(QFrame):
                        10: QPixmap(":/icons/sekkyumu_restart.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
+        self._in_resp_process = False
         self.frameui = QFrame()
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MessageFrame.ui')
         loadUi(ui_file, self.frameui)
@@ -223,6 +224,10 @@ class MessageFrame(QFrame):
             return False
 
     def hide_question(self, questionids, data=None):
+        if self._in_resp_process:
+            # do not handle if we are in _on_question_ok() or _on_question_cancel().
+            # we avoid call _frameui_4_request() multiple times
+            return
         for qid in questionids:
             self._queue.remove(qid, data)
         if data is None or data == self.data:
@@ -263,6 +268,7 @@ class MessageFrame(QFrame):
             self.frameui.listLabel.setVisible(False)
 
     def _on_question_ok(self):
+        self._in_resp_process = True
         self._new_request = False
         self.frameui.setVisible(False)
         try:
@@ -276,8 +282,10 @@ class MessageFrame(QFrame):
         self._update_list_label([])
         self._new_request = self._read_next_item()
         self._frameui_4_request(self._new_request)
+        self._in_resp_process = False
 
     def _on_question_cancel(self):
+        self._in_resp_process = True
         self._new_request = False
         self.frameui.setVisible(False)
         try:
@@ -291,6 +299,7 @@ class MessageFrame(QFrame):
         self._update_list_label([])
         self._new_request = self._read_next_item()
         self._frameui_4_request(self._new_request)
+        self._in_resp_process = False
 
     def _is_launch_data_in_queue(self, newdata):
         for _, data, _ in self._queue_launchfile:
