@@ -193,6 +193,12 @@ def run_node(startcfg):
         cwd = get_cwd(startcfg.cwd, cmd_type)
         # set environment
         new_env = dict(os.environ)
+        # set display variable to local display
+        if 'DISPLAY' in startcfg.env:
+            if not startcfg.env['DISPLAY'] or startcfg.env['DISPLAY'] == 'remote':
+                del startcfg.env['DISPLAY']
+        else:
+            new_env['DISPLAY'] = ':0'
         # add environment from launch
         new_env.update(startcfg.env)
         if startcfg.namespace:
