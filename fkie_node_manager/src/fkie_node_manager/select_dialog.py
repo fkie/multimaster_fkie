@@ -53,6 +53,8 @@ class SelectDialog(QDialog):
     This dialog creates an input mask for a string list and return selected entries.
     '''
 
+    MODAL_DIALOG = None
+
     def __init__(self, items=list(), buttons=QDialogButtonBox.Cancel | QDialogButtonBox.Ok, exclusive=False,
                  preselect_all=False, title='', description='', icon='', parent=None, select_if_single=True,
                  checkitem1='', checkitem2='', closein=0, store_geometry=''):
@@ -207,6 +209,7 @@ class SelectDialog(QDialog):
     def cancel_autoclose(self):
         if self._close_timer is not None:
             self._close_timer.cancel()
+            self._close_timer = None
             self.closein_label.setVisible(False)
 
     def getSelected(self):
@@ -216,6 +219,7 @@ class SelectDialog(QDialog):
     def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2='', closein=0, store_geometry=''):
         selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein, store_geometry=store_geometry)
         selectDia.setWindowTitle(title)
+        SelectDialog.MODAL_DIALOG = selectDia
         if selectDia.exec_():
             if selectDia.checkitem2:
                 return selectDia.getSelected(), True, selectDia.checkitem1_result, selectDia.checkitem2_result
@@ -262,6 +266,7 @@ class SelectDialog(QDialog):
         '''
         self.cancel_autoclose()
         self.setAttribute(Qt.WA_DeleteOnClose, True)
+        SelectDialog.MODAL_DIALOG = None
         QDialog.closeEvent(self, event)
 
 

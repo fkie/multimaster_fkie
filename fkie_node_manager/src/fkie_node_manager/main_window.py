@@ -114,6 +114,7 @@ class MainWindow(QMainWindow):
         Creates the window, connects the signals and init the class.
         '''
         QMainWindow.__init__(self)
+        self.close_event_count = 0
         self.default_load_launch = os.path.abspath(resolve_url(files[0])) if files else ''
         self.default_profile_load = os.path.isfile(self.default_load_launch) and self.default_load_launch.endswith('.nmprofile')
         restricted_to_one_master = False
@@ -441,19 +442,25 @@ class MainWindow(QMainWindow):
             settings.endGroup()
 
     def closeEvent(self, event):
+        if self.close_event_count > 0:
+            # we handle force first
+            self.finish()
+            QMainWindow.closeEvent(self, event)
+            return
+        self.close_event_count += 1
         # ask to close nodes on exit
         # self.close_without_ask is changes in on_shutdown method in __init__.py
         if self._close_on_exit and nm.settings().confirm_exit_when_closing and not self.close_without_ask:
             masters = [uri for uri, m in self.masters.items() if m.online]
             res = SelectDialog.getValue('Stop nodes?', "Select masters where to stop:",
-                                        masters, False, False, '', self,
+                                        masters, False, False, '', parent=self,
                                         select_if_single=False,
                                         checkitem1="don't show this dialog again",
                                         closein=nm.settings().timeout_close_dialog,
                                         store_geometry='stop_nodes')
             masters2stop, self._close_on_exit = res[0], res[1]
             nm.settings().confirm_exit_when_closing = not res[2]
-            if self._close_on_exit:
+            if self._close_on_exit or rospy.is_shutdown():
                 self.on_finish = True
                 self._stop_local_master = None
                 for uri in masters2stop:
@@ -469,15 +476,20 @@ class MainWindow(QMainWindow):
                     except Exception as e:
                         rospy.logwarn("Error while stop nodes on %s: %s" % (uri, utf8(e)))
                 QTimer.singleShot(200, self._test_for_finish)
+                if masters2stop:
+                    event.ignore()
+                else:
+                    event.accept()
             else:
                 self._close_on_exit = True
-            event.ignore()
+                self.close_event_count = 0
+                event.ignore()
         elif self._are_master_in_process():
             QTimer.singleShot(200, self._test_for_finish)
             self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s ...closing...</span>' % self.masternameLabel.text())
             rospy.loginfo("Wait for running processes are finished...")
             event.ignore()
-        else:
+        if event.isAccepted():
             self.on_finish = True
             self.master_timecheck_timer.stop()
             try:
@@ -524,10 +536,19 @@ class MainWindow(QMainWindow):
             self._finished = True
             print("Mainwindow finish...")
             self._stop_updating()
-            for _, editor in self.editor_dialogs.items():
-                editor.close()
+            try:
+                editors = [e for e in self.editor_dialogs.values()]
+                for editor in editors:
+                    editor.close()
+            except Exception as _err:
+                import traceback
+                print(traceback.format_exc())
             for _, master in self.masters.iteritems():
-                master.close()
+                try:
+                    master.close()
+                except Exception as _err:
+                    import traceback
+                    print(traceback.format_exc())
             print("Mainwindow finished!")
 
     def getMasteruri(self):

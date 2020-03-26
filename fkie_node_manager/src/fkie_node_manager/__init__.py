@@ -51,6 +51,7 @@ from fkie_node_manager.nmd_client import NmdClient
 from fkie_node_manager.nmd_client.launch_channel import BinarySelectionRequest, LaunchArgsSelectionRequest
 from .progress_queue import InteractionNeededError
 from .screen_handler import ScreenHandler, ScreenSelectionRequest, NoScreenOpenLogRequest
+from .select_dialog import SelectDialog
 from .settings import Settings
 from .ssh_handler import SSHhandler, AuthenticationRequest
 from .start_handler import StartException
@@ -207,21 +208,30 @@ def finish(*arg):
     '''
     Callback called on exit of the ros node.
     '''
+    rospy.signal_shutdown('')
     # close all ssh sessions
+    global _SSH_HANDLER
     if _SSH_HANDLER is not None:
         _SSH_HANDLER.close()
+        _SSH_HANDLER = None
     # save the launch history
+    global _HISTORY
     if _HISTORY is not None:
         try:
             _HISTORY.storeAll()
         except Exception as err:
             sys.stderr.write("Error while store history: %s" % err)
+        _HISTORY = None
     from fkie_node_manager.main_window import MainWindow
     # stop all threads in the main window
+    global _MAIN_FORM
     if isinstance(_MAIN_FORM, MainWindow):
         if not hasattr(_MAIN_FORM, "on_finish"):
             _MAIN_FORM.close_without_ask = True
-            _MAIN_FORM.close_signal.emit()
+            if SelectDialog.MODAL_DIALOG is not None:
+                SelectDialog.MODAL_DIALOG.reject()
+            _MAIN_FORM.hide()
+            _MAIN_FORM.close()
 
 
 def set_terminal_name(name):
@@ -335,6 +345,7 @@ def init_main_window(prog_name, masteruri, launch_files=[], port=22622):
     local_master = init_globals(masteruri)
     return MainWindow(launch_files, not local_master, port)
 
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%                 MAIN                               %%%%%%%%
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -381,6 +392,10 @@ def main(name):
                                           parsed_args.ssh)
         else:
             _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file, parsed_args.port)
+        thread = threading.Thread(target=rospy.spin)
+        thread.daemon = True
+        thread.start()
+        rospy.on_shutdown(finish)
     except Exception as err:
         import traceback
         print(traceback.format_exc())
@@ -400,7 +415,6 @@ def main(name):
             _MAIN_FORM.show()
         exit_code = -1
         try:
-            rospy.on_shutdown(finish)
             exit_code = _QAPP.exec_()
             if nmd() is not None:
                 nmd().stop()

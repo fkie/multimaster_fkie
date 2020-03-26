@@ -488,7 +488,7 @@ class Editor(QMainWindow):
                     self.tabWidget.currentWidget().save()
                 elif result == MessageBox.No:
                     pass
-                else:
+                elif rospy.is_shutdown():
                     doremove = False
             if doremove:
                 # remove the indexed files
@@ -544,7 +544,7 @@ class Editor(QMainWindow):
                 event.accept()
             elif result == MessageBox.No:
                 event.accept()
-            else:
+            elif rospy.is_shutdown():
                 event.ignore()
         else:
             event.accept()
