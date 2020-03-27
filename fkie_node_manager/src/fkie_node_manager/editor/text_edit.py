@@ -378,7 +378,8 @@ class TextEdit(QTextEdit):
                                             # create a new file, if it does not exists
                                             result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
                                             if result == MessageBox.Yes:
-                                                nm.nmd().file.save_file(path, '<launch>\n\n</launch>', 0)
+                                                content = '<launch>\n\n</launch>' if path.endswith('.launch') else ''
+                                                nm.nmd().file.save_file(path, content.encode(), 0)
                                                 event.setAccepted(True)
                                                 self.load_request_signal.emit(path)
                                 except Exception as e:
