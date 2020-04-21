@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 from multimaster_msgs_fkie.msg import Capability
 from multimaster_msgs_fkie.srv import ListDescription, ListNodes, Task, ListDescriptionResponse, ListNodesResponse  # , LoadLaunch
 from rosgraph.rosenv import ROS_NAMESPACE
@@ -46,7 +48,7 @@ import subprocess
 import sys
 import threading
 
-from screen_handler import ScreenHandler  # , ScreenHandlerException
+from .screen_handler import ScreenHandler  # , ScreenHandlerException
 
 
 class LoadException(Exception):
@@ -161,11 +163,11 @@ class DefaultCfg(object):
                 if param.endswith('robots'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 5:
-                            print "WRONG format, expected: ['host(ROS master Name)', 'type', 'name', 'images', 'description']  -> ignore", param
+                            print("WRONG format, expected: ['host(ROS master Name)', 'type', 'name', 'images', 'description']  -> ignore", param)
                         else:
                             for entry in p.value:
                                 try:
-                                    print entry[0], rospy.get_param('/mastername', '')
+                                    print(entry[0], rospy.get_param('/mastername', ''))
                                     if not entry[0] or entry[0] == rospy.get_param('/mastername', ''):
                                         dr.robot_name = self._decode(entry[2])
                                         dr.robot_type = entry[1]
@@ -250,7 +252,7 @@ class DefaultCfg(object):
                 if param.endswith('capabilities'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 4:
-                            print "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param
+                            print("WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore", param)
                         else:
                             for entry in p.value:
                                 capabilies_descr[entry[0]] = {'type': ''.join([entry[1]]), 'images': entry[2].split(','), 'description': self._decode(entry[3])}
@@ -325,7 +327,7 @@ class DefaultCfg(object):
                     self.listService = rospy.Service('~list_nodes', ListNodes, self.rosservice_list_nodes)
             except:
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
 
     def getPath(self, path, package=''):
         '''
@@ -533,8 +535,12 @@ class DefaultCfg(object):
         except Exception as e:
             raise StartException(str(e))
         # handle different result types str or array of string
-        import types
-        if isinstance(cmd, types.StringTypes):
+        if sys.version_info[0] <= 2:
+            import types
+            string_types = types.StringTypes
+        else
+            string_types = (str,)
+        if isinstance(cmd, string_types):
             cmd = [cmd]
         if cmd is None or len(cmd) == 0:
             raise StartException('%s in package [%s] not found!' % (filename, pkg))
@@ -606,7 +612,7 @@ class DefaultCfg(object):
                 return rospkg.get_ros_home()
         except:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             import roslib.rosenv
             return roslib.rosenv.get_ros_home()
 
@@ -615,7 +621,10 @@ class DefaultCfg(object):
         """
         Load parameters onto the parameter server
         """
-        import xmlrpclib
+        try:
+            import xmlrpclib
+        except ImportError:
+            import xmlrpc.client as xmlrpclib
         param_server = xmlrpclib.ServerProxy(masteruri)
         p = None
         try:
