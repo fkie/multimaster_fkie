@@ -30,6 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import re
 
 import rospy
@@ -367,7 +369,7 @@ class FilterInterface(object):
             return result
         except:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
         return None
 
 

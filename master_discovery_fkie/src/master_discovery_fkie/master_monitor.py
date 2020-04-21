@@ -30,10 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from SimpleXMLRPCServer import SimpleXMLRPCServer
-from SocketServer import ThreadingMixIn
+from __future__ import print_function
+
+try:
+    from SimpleXMLRPCServer import SimpleXMLRPCServer
+except ImportError:
+    from xmlrpc.server import SimpleXMLRPCServer
+try:
+    from SocketServer import ThreadingMixIn
+except ImportError:
+    from socketserver import ThreadingMixIn
 from datetime import datetime
-import cStringIO
+from io import StringIO;
 import roslib.network
 import rospy
 import socket
@@ -41,9 +49,12 @@ import subprocess
 import threading
 import time
 import traceback
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
 
-import interface_finder
+from . import interface_finder
 
 from .common import masteruri_from_ros, get_hostname
 from .filter_interface import FilterInterface
@@ -176,7 +187,7 @@ class MasterMonitor(object):
                 rospy.logwarn("Error while start RPC-XML server on port %d: %s\nTry again..." % (rpcport, e))
                 time.sleep(1)
             except:
-                print traceback.format_exc()
+                print(traceback.format_exc())
                 if not do_retry:
                     raise
 
@@ -337,7 +348,7 @@ class MasterMonitor(object):
                     header = {'probe': '1', 'md5sum': '*',
                               'callerid': self.ros_node_name, 'service': service}
                     roslib.network.write_ros_handshake_header(s, header)
-                    stype = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
+                    stype = roslib.network.read_ros_handshake_header(s, StringIO(), 2048)
                     with self._lock:
                         self.__new_master_state.getService(service).type = stype['type']
                         self.__cached_services[service] = (uri, stype['type'], time.time())
@@ -374,7 +385,7 @@ class MasterMonitor(object):
                 with self._state_access_lock:
                     result = self.__master_state.listedState()
             except:
-                print traceback.format_exc()
+                print(traceback.format_exc())
         return result
 
     def getListedMasterInfoFiltered(self, filter_list):
@@ -390,7 +401,7 @@ class MasterMonitor(object):
                 with self._state_access_lock:
                     result = self.__master_state.listedState(FilterInterface.from_list(filter_list))
             except:
-                print traceback.format_exc()
+                print(traceback.format_exc())
         return result
 
     def getCurrentState(self):
@@ -530,7 +541,7 @@ class MasterMonitor(object):
                     threads.append(pidThread)
 
                 master_state.timestamp = now
-            except socket.error, e:
+            except socket.error as e:
                 if isinstance(e, tuple):
                     (errn, msg) = e
                     if errn not in [100, 101, 102]:
@@ -615,7 +626,7 @@ class MasterMonitor(object):
                         get_sync_info = rospy.ServiceProxy(service.name, GetSyncInfo)
                         try:
                             sync_info = get_sync_info()
-                        except rospy.ServiceException, e:
+                        except rospy.ServiceException as e:
                             rospy.logwarn("ERROR Service call 'get_sync_info' failed: %s", str(e))
                         finally:
                             socket.setdefaulttimeout(None)
@@ -669,7 +680,10 @@ class MasterMonitor(object):
             try:
                 self.__mastername = get_hostname(self.getMasteruri())
                 try:
-                    from urlparse import urlparse
+                    try:
+                        from urlparse import urlparse
+                    except ImportError:
+                        from urllib.parse import urlparse
                     master_port = urlparse(self.__masteruri).port
                     if master_port != 11311:
                         self.__mastername = '%s_%d' % (self.__mastername, master_port)

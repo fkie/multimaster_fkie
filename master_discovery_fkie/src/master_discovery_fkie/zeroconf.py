@@ -33,6 +33,8 @@
 #
 # Roughly based on the code here; http://avahi.org/wiki/PythonPublishExample
 
+from __future__ import print_function
+
 from datetime import datetime
 from dbus.mainloop.glib import DBusGMainLoop
 import avahi
@@ -117,7 +119,10 @@ class MasterInfo(object):
 
         :rtype:  (str, str)
         '''
-        from urlparse import urlparse
+        try:
+            from urlparse import urlparse
+        except ImportError:
+            from urllib.parse import urlparse
         o = urlparse(masteruri)
         return (o.hostname, o.port)
 
@@ -327,7 +332,7 @@ class Zeroconf(threading.Thread):
                                     dbus.UInt16(str(self.masterInfo.port)),
                                     avahi.string_array_to_txt_array(self.masterInfo.txt))
             self.__group.Commit()
-        except dbus.DBusException, e:
+        except dbus.DBusException as e:
             rospy.logfatal(''.join(['registerService: ', str(e)]))
             self.on_group_collision()
 
@@ -349,7 +354,7 @@ class Zeroconf(threading.Thread):
         except dbus.DBusException:
             result = None
         except Exception:
-            print traceback.format_exc()
+            print(traceback.format_exc())
         finally:
             self._lock.release()
             return result
@@ -382,14 +387,14 @@ class Zeroconf(threading.Thread):
             if not self.isStopped():
                 self.__main_loop.run()
         except KeyboardInterrupt or rospy.ROSInterruptException:
-            print "Ctrl + C"
+            print("Ctrl + C")
 
     def stop(self):
         self.stopped = True
         rospy.logdebug("Zeroconf stop")
-        print "Zeroconf stop"
+        print("Zeroconf stop")
         self.__main_loop.quit()
-        print "MainLoop quit executed"
+        print("MainLoop quit executed")
         if self.__group is not None:
             self.__group.Free()
             self.__group = None
@@ -715,7 +720,7 @@ class MasterList(object):
         masters = list()
         self.__lock.acquire(True)
         try:
-            for _key, master in self.__masters.iteritems():
+            for _key, master in self.__masters.items():
                 masters.append(ROSMaster(str(master.name),
                                          master.getMasterUri(),
                                          master.getRosTimestamp(),
@@ -798,15 +803,15 @@ class Discoverer(Zeroconf):
         Removes all remote masters and unregister their topics and services. Stops
         the QMainLoop of avahi.
         '''
-        print "Stop zeroconf DBusGMainLoop"
+        print("Stop zeroconf DBusGMainLoop")
         if hasattr(self.master_monitor, 'rpcServer'):
-            print "  shutdown rpcServer"
+            print("  shutdown rpcServer")
             self.master_monitor.rpcServer.shutdown()
-        print "remove all masters"
+        print("remove all masters")
         self.masters.removeAll()
-        print "stop Discoverer"
+        print("stop Discoverer")
         self.stop()
-        print "finished"
+        print("finished")
 
     def __repr__(self):
         '''

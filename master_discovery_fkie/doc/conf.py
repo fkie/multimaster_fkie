@@ -11,6 +11,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from __future__ import unicode_literals
+
 #import catkin_sphinx
 import sys, os
 from xml.etree.ElementTree import ElementTree
@@ -46,8 +48,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'master_discovery_fkie'
-copyright = u'2013, Alexander Tiderko'
+project = 'master_discovery_fkie'
+copyright = '2013, Alexander Tiderko'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -186,8 +188,8 @@ htmlhelp_basename = 'master_discovery_fkiedoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'master_discovery_fkie.tex', u'master\\_discovery\\_fkie Documentation',
-   u'Alexander Tiderko', 'manual'),
+  ('index', 'master_discovery_fkie.tex', 'master\\_discovery\\_fkie Documentation',
+   'Alexander Tiderko', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -219,8 +221,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'master_discovery_fkie', u'master_discovery_fkie Documentation',
-     [u'Alexander Tiderko'], 1)
+    ('index', 'master_discovery_fkie', 'master_discovery_fkie Documentation',
+     ['Alexander Tiderko'], 1)
 ]
 
 

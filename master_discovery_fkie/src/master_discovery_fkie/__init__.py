@@ -32,6 +32,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import os
 import signal
 import sys
@@ -50,11 +52,14 @@ def get_default_rtcp_port(zeroconf=False):
         from master_discovery_fkie.common import masteruri_from_ros
         masteruri = masteruri_from_ros()
         rospy.loginfo("ROS Master URI: %s", masteruri)
-        from urlparse import urlparse
+        try:
+            from urlparse import urlparse
+        except ImportError:
+            from urllib.parse import urlparse
         return urlparse(masteruri).port + (600 if zeroconf else 300)
     except:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         return 11911 if zeroconf else 11611
 
 
@@ -92,7 +97,7 @@ def main():
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
-        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO
     rospy.init_node(PROCESS_NAME, log_level=log_level)
     set_terminal_name(PROCESS_NAME)
@@ -122,7 +127,7 @@ def main_zeroconf():
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
-        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO
     rospy.init_node(PROCESS_NAME, log_level=log_level)
     set_terminal_name(rospy.get_name())

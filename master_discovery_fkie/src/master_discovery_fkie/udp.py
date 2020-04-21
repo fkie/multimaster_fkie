@@ -30,7 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import Queue
+from __future__ import print_function
+
+try:
+    import Queue
+except ImportError:
+    import queue as Queue
 import array
 import errno
 import fcntl
@@ -265,7 +270,7 @@ class DiscoverSocket(socket.socket):
             self._send_queue.put(QueueSendItem(msg, destinations), timeout=1)
         except Queue.Full as full:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             rospy.logwarn("Can't send message: %s" % full)
         except Exception as e:
             rospy.logwarn("Error while put message into queue: %s" % e)
@@ -424,7 +429,7 @@ class DiscoverSocket(socket.socket):
                                                        ))[0]
             namestr = names.tostring()
             return [(namestr[i:i + var1].split('\0', 1)[0], socket.inet_ntoa(namestr[i + 20:i + 24]))
-                    for i in xrange(0, outbytes, var2)]
+                    for i in range(0, outbytes, var2)]
 
     def recv_loop_multicast(self):
         '''
