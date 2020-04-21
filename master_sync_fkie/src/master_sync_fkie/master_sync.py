@@ -34,7 +34,10 @@ import socket
 import threading
 import time
 import uuid
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
 
 from multimaster_msgs_fkie.msg import MasterState  # , LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
 from multimaster_msgs_fkie.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
@@ -127,7 +130,7 @@ class Main(object):
                                 self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri, m.online)
                             for key in set(self.masters.keys()) - set(masters):
                                 self.remove_master(self.masters[key].name)
-                        except rospy.ServiceException, e:
+                        except rospy.ServiceException as e:
                             rospy.logwarn("ERROR Service call 'list_masters' failed: %s", str(e))
                 except:
                     import traceback
@@ -193,7 +196,7 @@ class Main(object):
             socket.setdefaulttimeout(None)
             with self.__lock:
                 # update the state for all sync threads
-                for (_, s) in self.masters.iteritems():
+                for (_, s) in self.masters.items():
                     s.set_own_masterstate(own_state, self.__sync_topics_on_demand)
                 self.__timestamp_local = own_state.timestamp_local
         except:
@@ -244,7 +247,7 @@ class Main(object):
                 self.update_timer.cancel()
             # unregister from update topics
             rospy.loginfo("  Unregister from master discovery...")
-            for (_, v) in self.sub_changes.iteritems():
+            for (_, v) in self.sub_changes.items():
                 v.unregister()
             self.own_state_getter = None
             # Stop all sync threads
@@ -264,7 +267,7 @@ class Main(object):
         masters = list()
         try:
             with self.__lock:
-                for (_, s) in self.masters.iteritems():
+                for (_, s) in self.masters.items():
                     masters.append(s.get_sync_info())
         except:
             import traceback
