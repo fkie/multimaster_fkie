@@ -31,12 +31,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import sys
 
 import roslib
 import rospy
 
-import master_sync
+from . import master_sync
 
 PROCESS_NAME = "master_sync"
 
@@ -74,7 +76,7 @@ def main():
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
-        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO
     rospy.init_node(PROCESS_NAME, log_level=log_level)
     set_terminal_name(PROCESS_NAME)

@@ -30,7 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import Queue
+from __future__ import print_function
+
+try:
+    import Queue
+except ImportError:
+    import queue as Queue
 import errno
 import roslib.network
 import rospy
@@ -41,7 +46,10 @@ import sys
 import threading
 import time
 import traceback
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
 
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
@@ -648,7 +656,7 @@ class Discoverer(object):
         with self.__lock:
             # finish the RPC server and timer
             self.master_monitor.shutdown()
-            for (_, master) in self.masters.iteritems():
+            for (_, master) in self.masters.items():
                 if master.mastername is not None:
                     self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
                                                          ROSMaster(str(master.mastername),
@@ -748,7 +756,7 @@ class Discoverer(object):
                 rospy.logdebug('Send request as unicast to all robot hosts %s' % self.robots)
                 self.socket.send_queued(msg, self.robots)
         except Exception as e:
-            print traceback.format_exc()
+            print(traceback.format_exc())
             rospy.logwarn("Send with addresses '%s' failed: %s" % (addresses, e))
 
     def _create_current_state_msg(self):
@@ -818,7 +826,7 @@ class Discoverer(object):
             current_time = time.time()
             to_remove = []
             multi_address = []
-            for (k, v) in self.masters.iteritems():
+            for (k, v) in self.masters.items():
                 ts_since_last_hb = current_time - v.last_heartbeat_ts
                 ts_since_last_request = current_time - max(v.ts_last_request, v.last_heartbeat_ts)
                 if self.REMOVE_AFTER > 0 and ts_since_last_hb > self.REMOVE_AFTER:
@@ -934,7 +942,7 @@ class Discoverer(object):
                                                                         callback_master_state=self.publish_masterstate)
                             if via == QueueReceiveItem.LOOPBACK:
                                 self._publish_current_state(address[0])
-                except Exception, e:
+                except Exception as e:
                     rospy.logwarn("Error while decode message: %s", str(e))
 
     def _check_timejump(self):
@@ -999,7 +1007,7 @@ class Discoverer(object):
         result.header.stamp.secs = int(current_time)
         result.header.stamp.nsecs = int((current_time - result.header.stamp.secs) * 1000000000)
         with self.__lock:
-            for (_, v) in self.masters.iteritems():
+            for (_, v) in self.masters.items():
                 quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
                 if not (v.mastername is None) and v.online:
                     result.links.append(LinkState(v.mastername, quality))
@@ -1052,7 +1060,7 @@ class Discoverer(object):
         with self.__lock:
             try:
                 current_errors = self.master_monitor.getMasterErrors()[1]
-                for (_, v) in self.masters.iteritems():
+                for (_, v) in self.masters.items():
                     # add all errors to the responce
                     for _, msg in v.errors.items():
                         result.append(msg)
@@ -1088,7 +1096,7 @@ class Discoverer(object):
         masters = list()
         with self.__lock:
             try:
-                for (_, v) in self.masters.iteritems():
+                for (_, v) in self.masters.items():
                     if v.mastername is not None:
                         masters.append(ROSMaster(str(v.mastername),
                                                  v.masteruri,
@@ -1108,7 +1116,7 @@ class Discoverer(object):
         '''
         with self.__lock:
             try:
-                for (k, v) in self.masters.iteritems():
+                for (k, v) in self.masters.items():
                     if v.mastername is not None:
                         # send an active unicast request
                         self._request_state(k[0][0], [v])

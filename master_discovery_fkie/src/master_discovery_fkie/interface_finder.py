@@ -31,7 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import time
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
 
 import rospy
 from .common import get_hostname
