@@ -538,7 +538,7 @@ class DefaultCfg(object):
         if sys.version_info[0] <= 2:
             import types
             string_types = types.StringTypes
-        else
+        else:
             string_types = (str,)
         if isinstance(cmd, string_types):
             cmd = [cmd]
