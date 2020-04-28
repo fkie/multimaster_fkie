@@ -83,7 +83,7 @@ class ScreenHandler(object):
     '''
 
     @classmethod
-    def open_screen_terminal(cls, host, screen_name, nodename, user=None):
+    def open_screen_terminal(cls, host, screen_name, nodename, use_log_widget=False, user=None):
         '''
         Open the screen output in a new terminal.
         :param str host: the host name or ip where the screen is running.
@@ -93,6 +93,9 @@ class ScreenHandler(object):
         :see: L{fkie_node_manager.is_local()}
         '''
         # create a title of the terminal
+        if use_log_widget:
+            nm._MAIN_FORM.screen_dock.connect(host, screen_name, nodename, user)
+            return
         title_opt = 'SCREEN %s on %s' % (nodename, host)
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd([screen.SCREEN, '-x', screen_name], title_opt)
@@ -103,7 +106,7 @@ class ScreenHandler(object):
             _ps = nm.ssh().ssh_x11_exec(host, [screen.SCREEN, '-x', screen_name], title_opt, user)
 
     @classmethod
-    def open_screen(cls, node, grpc_url, auto_item_request=False, user=None, pw=None, items=[], use_nmd=True):
+    def open_screen(cls, node, grpc_url, auto_item_request=False, use_log_widget=False, user=None, pw=None, items=[], use_nmd=True):
         '''
         Searches for the screen associated with the given node and open the screen
         output in a new terminal.
@@ -119,7 +122,7 @@ class ScreenHandler(object):
             if items:
                 for item in items:
                     # open the selected screen
-                    cls.open_screen_terminal(host, item, node, user)
+                    cls.open_screen_terminal(host, item, node, use_log_widget, user)
             else:
                 # get the available screens
                 screens = {}
@@ -132,7 +135,7 @@ class ScreenHandler(object):
                     rospy.logwarn("can not connect to node manager daemon, detect screens using ssh...")
                     screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
                 if len(screens) == 1:
-                    cls.open_screen_terminal(host, screens.keys()[0], node, user)
+                    cls.open_screen_terminal(host, screens.keys()[0], node, use_log_widget,user)
                 else:
                     # create a list to let the user make a choice, which screen must be open
                     choices = {}
@@ -142,22 +145,22 @@ class ScreenHandler(object):
                     # Open selection
                     if len(choices) > 0:
                         if len(choices) == 1:
-                            cls.open_screen_terminal(host, choices[0], node, user)
+                            cls.open_screen_terminal(host, choices[0], node, use_log_widget, user)
                         elif auto_item_request:
                             from select_dialog import SelectDialog
                             items, _ = SelectDialog.getValue('Show screen', '', choices.keys(), False, store_geometry='show_screens')
                             for item in items:
                                 # open the selected screen
-                                cls.open_screen_terminal(host, choices[item], node, user)
+                                cls.open_screen_terminal(host, choices[item], node, use_log_widget, user)
                         else:
                             raise ScreenSelectionRequest(choices, 'Show screen')
                     else:
                         raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, (node, host, user))
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request))
+            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, use_log_widget))
         except ScreenSelectionRequest as e:
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, user, pw))
+            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, use_log_widget, user, pw))
 
     @classmethod
     def kill_screens(cls, node, grpc_url, auto_ok_request=True, user=None, pw=None):

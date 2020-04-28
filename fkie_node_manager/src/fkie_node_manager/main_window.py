@@ -73,6 +73,7 @@ from .network_discovery_dialog import NetworkDiscoveryDialog
 from .parameter_dialog import ParameterDialog
 from .profile_widget import ProfileWidget
 from .progress_queue import ProgressQueue
+from .screen_widget import ScreenWidget
 from .select_dialog import SelectDialog
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
@@ -172,6 +173,10 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
         self.logButton.clicked.connect(self._on_log_button_clicked)
         self.settingsButton.clicked.connect(self._on_settings_button_clicked)
+        # setup screen dock
+        self.screen_widget = ScreenWidget()
+        self.screen_widget.hide()
+        # self.addDockWidget(Qt.BottomDockWidgetArea, self.screen_dock)
         # setup the launch files view
         self.launch_dock = LaunchFilesWidget()
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
@@ -535,6 +540,7 @@ class MainWindow(QMainWindow):
         if not self._finished:
             self._finished = True
             print("Mainwindow finish...")
+            self.screen_widget.finish()
             self._stop_updating()
             try:
                 editors = [e for e in self.editor_dialogs.values()]

@@ -31,6 +31,8 @@ def _get_optparse():
     parser = optparse.OptionParser(usage='usage: %prog [options] [args]')
     parser.add_option('--show_screen_log', metavar='show_screen_log', default='',
                       help='Shows the screen log of the given node')
+    parser.add_option('--tail_screen_log', metavar='tail_screen_log', default='',
+                      help='Tail the screen log of the given node')
     parser.add_option('--show_ros_log', metavar='show_ros_log', default='',
                       help='Shows the ros log of the given node')
     parser.add_option('--ros_log_path', metavar='ros_log_path', default=-1,
@@ -60,6 +62,7 @@ def _get_optparse():
 
 def parse_options(args):
     result = {'show_screen_log': '',
+              'tail_screen_log': '',
               'show_ros_log': '',
               'ros_log_path': '',
               'ros_logs': '',
@@ -103,6 +106,10 @@ def main(argv=sys.argv):
         if options['show_screen_log']:
             logfile = screen.get_logfile(node=options['show_screen_log'])
             p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
+            p.wait()
+        if options['tail_screen_log']:
+            logfile = screen.get_logfile(node=options['tail_screen_log'])
+            p = subprocess.Popen(shlex.split(' '.join(['tail', '-f', '-n', '25', str(logfile)])))
             p.wait()
         elif options['show_ros_log']:
             logfile = screen.get_ros_logfile(node=options['show_ros_log'])

@@ -1271,7 +1271,7 @@ class MasterViewProxy(QWidget):
         if has_stopped:
             self.on_start_clicked()
         elif has_running and not has_invalid:
-            self.on_io_clicked()
+            self.on_io_clicked(activated=True)
         else:
             self.on_log_clicked()
 
@@ -2457,7 +2457,7 @@ class MasterViewProxy(QWidget):
                     return url
         return nmdurl.nmduri(self.masteruri)
 
-    def on_io_clicked(self):
+    def on_io_clicked(self, activated=False):
         '''
         Shows IO of the selected nodes.
         '''
@@ -2484,7 +2484,7 @@ class MasterViewProxy(QWidget):
                         queue.add2queue(utf8(uuid.uuid4()),
                                         'show IO of %s' % node.name,
                                         nm.screen().open_screen,
-                                        (node.name, self._grpc_from_node(node), False, self.current_user, None, [], self._has_nmd))
+                                        (node.name, self._grpc_from_node(node), False, activated, self.current_user, None, [], self._has_nmd))
                     self._start_queue(queue)
             else:
                 self.on_show_all_screens()
@@ -2541,7 +2541,7 @@ class MasterViewProxy(QWidget):
             host = get_hostname(self.masteruri)
             for screen in sel_screen:
                 try:
-                    if not nm.screen().open_screen_terminal(host, screen, screen, self.current_user):
+                    if not nm.screen().open_screen_terminal(host, screen, screen, False, self.current_user):
                         pass
                 except Exception, e:
                     rospy.logwarn("Error while show IO for %s: %s", utf8(screen), utf8(e))
