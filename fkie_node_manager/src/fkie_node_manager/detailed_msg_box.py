@@ -51,11 +51,11 @@ class DetailedError(Exception):
 
     def __init__(self, title, text, detailed_text=""):
         self.title = title
-        self.value = text
+        self.text = text
         self.detailed_text = detailed_text
 
     def __str__(self):
-        return repr(self.text) + ":::" + self.detailed_text
+        return repr(self.text) + "::" + self.detailed_text
 
 
 class MessageBox(QDialog):

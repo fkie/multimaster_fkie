@@ -305,7 +305,7 @@ class ProgressThread(QObject, threading.Thread):
         except InteractionNeededError as ine:
             self.request_interact_signal.emit(self._id, self.descr, ine)
         except DetailedError as err:
-            self.error_signal.emit(self._id, err.title, err.value, err.detailed_text)
+            self.error_signal.emit(self._id, err.title, err.text, err.detailed_text)
         except Exception:
             import traceback
 #      print traceback.print_exc()

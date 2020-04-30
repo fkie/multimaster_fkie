@@ -1056,10 +1056,6 @@ class MasterViewProxy(QWidget):
                     for nn in nlet_nodes:
                         nn.nodelet_mngr = mngr
             self._nodelets[ld.path] = ld.nodelets
-            for node, nlist in ld.associations.items():
-                associated_nodes = self.node_tree_model.get_tree_node(node, self.masteruri)
-                for mn in associated_nodes:
-                    mn.associated_nodes = nlist
             with self._associations_lock:
                 self._associations[ld.path] = ld.associations
             if ld.path in self._start_nodes_after_load_cfg:
@@ -1898,18 +1894,6 @@ class MasterViewProxy(QWidget):
                 raise DetailedError("Start error",
                                     'Error while start %s:\nNo configuration found!' % node.name)
             try:
-                # add associated nodes to start
-                print("start node", node.name)
-                with self._associations_lock:
-                    if config in self._associations:
-                        associations = self._associations[config]
-                        if node.name in associations:
-                            found_nodes = self.node_tree_model.get_node_items_by_name(associations[node.name])
-                            for found_node in found_nodes:
-                                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                            ''.join(['start ', found_node.node_info.name]),
-                                                            self.start_node,
-                                                            (found_node.node_info, force, config, force_host))
                 reload_global_param = False
                 if not self.__configs[config].global_param_done:
                     reload_global_param = True
@@ -2038,6 +2022,7 @@ class MasterViewProxy(QWidget):
             if check_nodelets:
                 pass
                 # self._check_for_nodelets(nodes)
+            all2start = set()
             # put into the queue and start
             for node in nodes:
                 if node.name in cfg_nodes:
@@ -2047,6 +2032,15 @@ class MasterViewProxy(QWidget):
                                                    ''.join(['start ', node.node_info.name]),
                                                    self.start_node,
                                                    (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, cmd_prefix))
+                    # add associated nodes to stop
+                    associated2start = self._get_associated_nodes([node.name], ignore=all2start)
+                    all2start |= associated2start
+                    found_nodes = self._get_nodes_by_name(list(associated2start))
+                    for anode in found_nodes:
+                        self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                       'start %s' % anode.name,
+                                                       self.start_node,
+                                                       (anode.node_info, force, cfg_nodes[node.node_info.name], force_host))
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):
@@ -2271,12 +2265,15 @@ class MasterViewProxy(QWidget):
                                            'stop %s' % node.name,
                                            self.stop_node,
                                            (node, (len(nodes) == 1) or force))
+        self._start_queue(self._progress_queue)
         # add associated nodes to stop
-        with self._associations_lock:
-            for node in nodes:
-                for _cfg, associations in self._associations.items():
-                    if node.name in associations:
-                        self.stop_nodes_by_name(associations[node.name])
+        associated2stop = self._get_associated_nodes([node.name for node in nodes])
+        found_nodes = self._get_nodes_by_name(list(associated2stop))
+        for node in found_nodes:
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                           'stop %s' % node.name,
+                                           self.stop_node,
+                                           (node, (len(nodes) == 1) or force))
         self._start_queue(self._progress_queue)
 
     def stop_nodes_by_name(self, nodes, force=False, ignore=[], only_local=True):
@@ -2286,6 +2283,10 @@ class MasterViewProxy(QWidget):
         :param nodes: a list with full node names
         :type nodes: list(str)
         '''
+        found_nodes = self._get_nodes_by_name(nodes, ignore, only_local)
+        self.stop_nodes(found_nodes, force)
+
+    def _get_nodes_by_name(self, nodes, ignore=[], only_local=True):
         found_nodes = []
         if self.master_info is not None:
             req_nodes = []
@@ -2293,7 +2294,28 @@ class MasterViewProxy(QWidget):
                 if n not in ignore:
                     req_nodes.append(n)
             found_nodes = self.node_tree_model.get_node_items_by_name(req_nodes, only_local)
-        self.stop_nodes(found_nodes, force)
+        return found_nodes
+
+    def _get_associated_nodes(self, nodenames, config='', ignore=set()):
+        result = set()
+        ignore_all = set(nodenames) | ignore
+        with self._associations_lock:
+            for nodename in nodenames:
+                if config:
+                    if config in self._associations:
+                        associations = self._associations[config]
+                        associated_nodes = set(associations[nodename])
+                        result |= associated_nodes - ignore_all
+                        result |= self._get_associated_nodes(list(result), config, ignore=ignore_all)
+                else:
+                    for _cfg, associations in self._associations.items():
+                        if nodename in associations:
+                            associated_nodes = set(associations[nodename])
+                            new_nodes = associated_nodes - ignore_all
+                            ignore_all |= new_nodes
+                            result |= new_nodes
+                            result |= self._get_associated_nodes(list(new_nodes), config, ignore_all)
+        return result
 
     def kill_node(self, node, force=False):
         if node is not None and node.uri is not None and (not self._is_in_ignore_list(node.name) or force):

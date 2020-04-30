@@ -482,7 +482,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
                 associations_param = roslib.names.ns_join(node_fullname, 'associations')
                 if associations_param in lc.roscfg.params:
-                    splits = lc.roscfg.params[associations_param].value.split(' ,;')
+                    line = lc.roscfg.params[associations_param].value
+                    splits = re.split(r'[;,\s]\s*', line)
                     values = []
                     for split in splits:
                         values.append(roslib.names.ns_join(item.namespace, split))
