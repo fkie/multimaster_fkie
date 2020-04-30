@@ -765,7 +765,7 @@ class Discoverer(object):
         if not self.master_monitor.getCurrentState() is None:
             t = self.master_monitor.getCurrentState().timestamp
             local_t = self.master_monitor.getCurrentState().timestamp_local
-            return struct.pack(Discoverer.HEARTBEAT_FMT, 'R', Discoverer.VERSION,
+            return struct.pack(Discoverer.HEARTBEAT_FMT, b'R', Discoverer.VERSION,
                                int(self.HEARTBEAT_HZ * 10),
                                int(t), int((t - (int(t))) * 1000000000),
                                self.master_monitor.rpcport,
@@ -774,7 +774,7 @@ class Discoverer(object):
 
     def _create_request_update_msg(self):
         version = Discoverer.VERSION if Discoverer.VERSION > 2 else 3
-        msg = struct.pack(Discoverer.HEARTBEAT_FMT, 'R', version,
+        msg = struct.pack(Discoverer.HEARTBEAT_FMT, b'R', version,
                           int(self.HEARTBEAT_HZ * 10), 0, 0,
                           self.master_monitor.rpcport, 0, 0)
         return msg
@@ -980,10 +980,10 @@ class Discoverer(object):
         :rtype: (``unsigned char``, tuple corresponding to :mod:`master_discovery_fkie.master_discovery.Discoverer.HEARTBEAT_FMT`)
         '''
         if len(msg) > 2:
-            (r,) = struct.unpack('c', msg[0])
-            (version,) = struct.unpack('B', msg[1])
+            (r,) = struct.unpack('c', msg[0:1])
+            (version,) = struct.unpack('B', msg[1:2])
             if (version in [Discoverer.VERSION, 2, 3]):
-                if (r == 'R'):
+                if (r == b'R'):
                     if len(msg) == struct.calcsize(Discoverer.HEARTBEAT_FMT):
                         return (version, struct.unpack(Discoverer.HEARTBEAT_FMT, msg))
                 else:
