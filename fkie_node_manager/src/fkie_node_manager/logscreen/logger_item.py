@@ -114,17 +114,17 @@ class LoggerItem(QFrame):
             self.set_level('FATAL')
 
     def set_level(self, level):
-        if level == 'DEBUG':
+        if level.upper() == 'DEBUG':
             self.debug.setChecked(True)
-        elif level == 'INFO':
+        elif level.upper() == 'INFO':
             self.info.setChecked(True)
-        elif level == 'WARN':
+        elif level.upper() == 'WARN':
             self.warn.setChecked(True)
-        elif level == 'ERROR':
+        elif level.upper() == 'ERROR':
             self.error.setChecked(True)
-        elif level == 'FATAL':
+        elif level.upper() == 'FATAL':
             self.fatal.setChecked(True)
-        else:
+        elif level:
             rospy.logwarn("loglevel not found '%s'" % (level))
         if self._current_level is not None:
             if self._callback is not None:
