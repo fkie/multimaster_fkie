@@ -126,6 +126,7 @@ class ScreenWidget(QWidget):
         self._ssh_output_file = None
         self._ssh_error_file = None
         self._ssh_input_file = None
+        self._on_pause = False
         self.loggers.setVisible(False)
         self.loglevelButton.toggled.connect(self.on_toggle_loggers)
         self.logger_handler = None
@@ -135,7 +136,8 @@ class ScreenWidget(QWidget):
         self.error_signal.connect(self._on_error)
         self.auth_signal.connect(self.on_request_pw)
         self.clearCloseButton.clicked.connect(self.clear)
-        self.closeButton.clicked.connect(self.stop)
+        # self.pauseButton.clicked.connect(self.stop)
+        self.pauseButton.toggled.connect(self.pause)
         self.clear_signal.connect(self.clear)
         self.textBrowser.verticalScrollBar().valueChanged.connect(self.on_scrollbar_position_changed)
         self.textBrowser.verticalScrollBar().rangeChanged.connect(self.on_scrollbar_range_changed)
@@ -236,6 +238,8 @@ class ScreenWidget(QWidget):
         except Exception:
             pass
 
+    def pause(self, state):
+        self._on_pause = state
 
     def _connect(self, host, screen_name, nodename, user=None):
         if self.qfile is not None and self.qfile.isOpen():
@@ -321,7 +325,7 @@ class ScreenWidget(QWidget):
         '''
         This text will be prepended
         '''
-        if self.finished:
+        if self.finished or self._on_pause:
             return
         if msg:
             lines = msg.splitlines()
@@ -346,7 +350,7 @@ class ScreenWidget(QWidget):
         '''
         This text will be appended.
         '''
-        if self.finished:
+        if self.finished or self._on_pause:
             return
         if msg:
             at_end = self.textBrowser.verticalScrollBar().value() > self.textBrowser.verticalScrollBar().maximum() - 20

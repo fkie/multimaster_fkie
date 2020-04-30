@@ -256,7 +256,7 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>289</width>
+          <width>40</width>
           <height>20</height>
          </size>
         </property>
@@ -291,7 +291,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="closeButton">
+       <widget class="QPushButton" name="pauseButton">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -303,7 +303,10 @@
         </property>
         <property name="icon">
          <iconset resource="../GUI.qrc">
-          <normaloff>:/icons/sekkyumu_stop.png</normaloff>:/icons/sekkyumu_stop.png</iconset>
+          <normaloff>:/icons/sekkyumu_pause.png</normaloff>:/icons/sekkyumu_pause.png</iconset>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
         </property>
         <property name="flat">
          <bool>true</bool>
