@@ -441,3 +441,5 @@ class ScreenWidget(QWidget):
 
     def on_toggle_loggers(self, state):
         self.loggers.setVisible(state)
+        if state:
+            self.loggers.update()
