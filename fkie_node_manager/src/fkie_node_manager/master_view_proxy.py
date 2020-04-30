@@ -44,6 +44,7 @@ import ruamel.yaml
 import socket
 import time
 import traceback
+import threading
 import uuid
 import xmlrpclib
 
@@ -179,6 +180,8 @@ class MasterViewProxy(QWidget):
         # store the running_nodes to update to duplicates after load a launch file
         self.__running_nodes = dict()  # dict (node name : masteruri)
         self._nodelets = dict()  # dict(launchfile: dict(nodelet manager: list(nodes))
+        self._associations_lock = threading.RLock()
+        self._associations = dict()  # dict(launchfile: dict(node: list(nodes))
         self._first_launch = True
         self._has_nmd = False
         self._changed_binaries = dict()
@@ -1053,6 +1056,12 @@ class MasterViewProxy(QWidget):
                     for nn in nlet_nodes:
                         nn.nodelet_mngr = mngr
             self._nodelets[ld.path] = ld.nodelets
+            for node, nlist in ld.associations.items():
+                associated_nodes = self.node_tree_model.get_tree_node(node, self.masteruri)
+                for mn in associated_nodes:
+                    mn.associated_nodes = nlist
+            with self._associations_lock:
+                self._associations[ld.path] = ld.associations
             if ld.path in self._start_nodes_after_load_cfg:
                 self.start_nodes_by_name(self._start_nodes_after_load_cfg[ld.path], ld.path, True)
                 del self._start_nodes_after_load_cfg[ld.path]
@@ -1889,6 +1898,18 @@ class MasterViewProxy(QWidget):
                 raise DetailedError("Start error",
                                     'Error while start %s:\nNo configuration found!' % node.name)
             try:
+                # add associated nodes to start
+                print("start node", node.name)
+                with self._associations_lock:
+                    if config in self._associations:
+                        associations = self._associations[config]
+                        if node.name in associations:
+                            found_nodes = self.node_tree_model.get_node_items_by_name(associations[node.name])
+                            for found_node in found_nodes:
+                                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                            ''.join(['start ', found_node.node_info.name]),
+                                                            self.start_node,
+                                                            (found_node.node_info, force, config, force_host))
                 reload_global_param = False
                 if not self.__configs[config].global_param_done:
                     reload_global_param = True
@@ -1912,7 +1933,6 @@ class MasterViewProxy(QWidget):
                 raise DetailedError("Start error",
                                     'Error while start %s\n\nStart canceled!' % node.name,
                                     '%s' % utf8(se))
-                return False
             except nm.InteractionNeededError as _:
                 raise
             except nm.BinarySelectionRequest as bsr:
@@ -2251,6 +2271,12 @@ class MasterViewProxy(QWidget):
                                            'stop %s' % node.name,
                                            self.stop_node,
                                            (node, (len(nodes) == 1) or force))
+        # add associated nodes to stop
+        with self._associations_lock:
+            for node in nodes:
+                for _cfg, associations in self._associations.items():
+                    if node.name in associations:
+                        self.stop_nodes_by_name(associations[node.name])
         self._start_queue(self._progress_queue)
 
     def stop_nodes_by_name(self, nodes, force=False, ignore=[], only_local=True):

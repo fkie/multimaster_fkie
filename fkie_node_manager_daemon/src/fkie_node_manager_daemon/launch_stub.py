@@ -151,7 +151,15 @@ class LaunchStub(object):
             for nitem in response.nodelets:
                 nlist = [item for item in nitem.nodes]
                 nodelets[nitem.manager] = nlist
-            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(response.node), descriptions, nodelets)
+            associations = {}
+            try:
+                for nitem in response.associations:
+                    nlist = [item for item in nitem.nodes]
+                    associations[nitem.node] = nlist
+            except Exception:
+                # ignore messages without associations
+                pass
+            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(response.node), descriptions, nodelets, associations)
             result.append(ld)
         return result
 

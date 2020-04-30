@@ -35,7 +35,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 class LaunchDescription:
 
-    def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[], nodelets={}):
+    def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[], nodelets={}, associations={}):
         '''
         Description of the robot configured by this launch file.
 
@@ -49,6 +49,8 @@ class LaunchDescription:
          :type robot_descriptions: [RobotDescription]
          :param nodelets: a dictionary with nodelets manager and controlled nodelet clients
          :type nodelets: {str: [str]}
+         :param associations: a dictionary with associations of nodes
+         :type associations: {str: [str]}
         '''
         self.path = path
         self.masteruri = masteruri
@@ -56,6 +58,7 @@ class LaunchDescription:
         self.nodes = nodes if nodes else []  # create a new array to a void to fill a default one
         self.robot_descriptions = robot_descriptions if robot_descriptions else []  # create a new array to a void to fill a default one
         self.nodelets = nodelets if nodelets else {}
+        self.associations = associations if associations else {}
 
     def __repr__(self):
         return "<%s[%s, masteruri: %s, host: %s], with %d nodes>" % (self.__class__, self.path, self.masteruri, self.host, len(self.nodes))

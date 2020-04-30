@@ -164,6 +164,7 @@ message LaunchContent {
 	repeated string node = 4;
 	repeated RobotDescription description = 5;
 	repeated Nodelets nodelets = 6;
+	repeated Associations associations = 7;
 }
 
 /** Description of the robot configured by this launch file.
@@ -222,6 +223,14 @@ message Node {
  * :param nodes: list with nodes (full name) controlled by nodelet manager. */
 message Nodelets {
 	string manager = 1;
+	repeated string nodes = 2;
+}
+
+/** Represents the associations specified in Launchfile.
+ * :param node: node (full name)
+ * :param nodes: list with associated nodes (full name). */
+message Associations {
+	string node = 1;
 	repeated string nodes = 2;
 }
 

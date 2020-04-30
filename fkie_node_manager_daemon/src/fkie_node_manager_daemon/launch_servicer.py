@@ -476,6 +476,21 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 nlmsg = lmsg.Nodelets(manager=mngr)
                 nlmsg.nodes.extend(ndl)
                 reply.nodelets.extend([nlmsg])
+            # create association description
+            associations = {}
+            for n in lc.roscfg.nodes:
+                node_fullname = roslib.names.ns_join(n.namespace, n.name)
+                associations_param = roslib.names.ns_join(node_fullname, 'associations')
+                if associations_param in lc.roscfg.params:
+                    splits = lc.roscfg.params[associations_param].value.split(' ,;')
+                    values = []
+                    for split in splits:
+                        values.append(roslib.names.ns_join(item.namespace, split))
+                    associations[node_fullname] = values
+            for node, ass in associations.items():
+                assmsg = lmsg.Associations(node=node)
+                assmsg.nodes.extend(ass)
+                reply.associations.extend([assmsg])
             yield reply
 
     def StartNode(self, request_iterator, context):
