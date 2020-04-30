@@ -72,29 +72,44 @@ class ScreenDock(DetachableTabDock):
         self.connect_signal.connect(self._on_connect)
         self.tab_widget.close_tab_request_signal.connect(self.close_tab_requested)
         self.tab_widget.tab_removed_signal.connect(self.tab_removed)
-        self._nodes = []  # tuple of (host, nodename)
+        self._nodes = {}  # tuple of (host, nodename) : ScreenWidget
 
     def connect(self, host, screen_name, nodename, user=''):
         self.connect_signal.emit(host, screen_name, nodename, user)
 
     def _on_connect(self, host, screen_name, nodename, user=''):
         if (host, nodename) not in self._nodes:
-            self._nodes.append((host, nodename))
             sw = ScreenWidget(host, screen_name, nodename, str(user))
             tab_index = self.tab_widget.addTab(sw, nodename)
             self.tab_widget.setCurrentIndex(tab_index)
+            self._nodes[(host, nodename)] = sw
+        else:
+            index = self.tab_widget.indexOf(self._nodes[(host, nodename)])
+            if index >= 0:
+                self.tab_widget.setCurrentIndex(index)
+            else:
+                for dia in self._open_dialogs:
+                    index = dia.tab_widget.indexOf(self._nodes[(host, nodename)])
+                    if index >= 0:
+                        dia.tab_widget.setCurrentIndex(index)
+                        dia.raise_()
+                        dia.activateWindow()
+                        break
         self.show()
 
     def close_tab_requested(self, tab_widget, index):
         tab_widget.removeTab(index)
 
     def tab_removed(self, widget):
-        self._nodes.remove((widget.host(), widget.name()))
+        try:
+            del self._nodes[(widget.host(), widget.name())]
+        except Exception:
+            pass
         widget.close()
 
     def finish(self):
         self.tab_widget.clear()
-        del self._nodes[:]
+        self._nodes.clear()
 
     def closeEvent(self, event):
         # close tabs on hide
