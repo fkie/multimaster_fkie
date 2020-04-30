@@ -51,15 +51,17 @@ import pty
 import time
 
 from .screen_highlighter import ScreenHighlighter
+from .terminal_formats import TerminalFormats
+from .logger_handler import LoggerHandler
 import fkie_node_manager as nm
 from fkie_node_manager_daemon import screen
 
 
 class ScreenTextBrowser(QTextBrowser):
 
-    def __init__(self, reader, parent=None):
+    def __init__(self, parent=None):
         QTextBrowser.__init__(self, parent)
-        self._reader = reader
+        self._reader = None
         self.setUndoRedoEnabled(False)
         # self.textBrowser.document().setMaximumBlockCount(100)
         p = QPalette()
@@ -67,17 +69,22 @@ class ScreenTextBrowser(QTextBrowser):
         p.setColor(QPalette.Text, Qt.white)
         self.setPalette(p)
 
+    def set_reader(self, reader):
+        self._reader = reader
+
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_PageUp and self.verticalScrollBar().value() == 0:
-            self._reader.reverse_read(self.verticalScrollBar().pageStep() / 10)
-        elif event.key() == Qt.Key_Home and event.modifiers() == Qt.ShiftModifier:
-            self._reader.reverse_read(-1)
+        if self._reader is not None:
+            if event.key() == Qt.Key_PageUp and self.verticalScrollBar().value() == 0:
+                self._reader.reverse_read(self.verticalScrollBar().pageStep() / 10)
+            elif event.key() == Qt.Key_Home and event.modifiers() == Qt.ShiftModifier:
+                self._reader.reverse_read(-1)
         QTextBrowser.keyPressEvent(self, event)
 
     def wheelEvent(self, event):
-        lines = event.angleDelta().y() / 40
-        if lines > 0 and self.verticalScrollBar().value() == 0:
-            self._reader.reverse_read(lines)
+        if self._reader is not None:
+            lines = event.angleDelta().y() / 40
+            if lines > 0 and self.verticalScrollBar().value() == 0:
+                self._reader.reverse_read(lines)
         QTextBrowser.wheelEvent(self, event)
 
 
@@ -94,7 +101,7 @@ class ScreenWidget(QWidget):
     error_signal = Signal(str)
     auth_signal = Signal(str, str, str)  # host, nodename, user
 
-    def __init__(self, parent=None):
+    def __init__(self, host, screen_name, nodename, user=None, parent=None):
         '''
         Creates the window, connects the signals and init the class.
         '''
@@ -119,6 +126,9 @@ class ScreenWidget(QWidget):
         self._ssh_output_file = None
         self._ssh_error_file = None
         self._ssh_input_file = None
+        self.loggers.setVisible(False)
+        self.loglevelButton.toggled.connect(self.on_toggle_loggers)
+        self.logger_handler = None
         # connect to the button signals
         self.output.connect(self._on_output)
         self.output_prefix.connect(self._on_output_prefix)
@@ -128,7 +138,9 @@ class ScreenWidget(QWidget):
         self.closeButton.clicked.connect(self.stop)
         self.clear_signal.connect(self.clear)
         self.textBrowser.verticalScrollBar().valueChanged.connect(self.on_scrollbar_position_changed)
-        self.hl = ScreenHighlighter(self.textBrowser.document())
+        self.textBrowser.set_reader(self)
+        self.tf = TerminalFormats()
+        # self.hl = ScreenHighlighter(self.textBrowser.document())
         self.searchFrame.setVisible(False)
         self._shortcut_search = QShortcut(QKeySequence(self.tr("Ctrl+F", "Activate search")), self)
         self._shortcut_search.activated.connect(self.on_search)
@@ -136,6 +148,13 @@ class ScreenWidget(QWidget):
         self.searchNextButton.clicked.connect(self.on_search_next)
         self.searchPrevButton.clicked.connect(self.on_search_prev)
         # self.visibilityChanged.connect(self.stop)
+        self._connect(host, screen_name, nodename, user)
+
+    def host(self):
+        return self._host
+
+    def name(self):
+        return self._nodename
 
     def clear(self):
         '''
@@ -153,10 +172,7 @@ class ScreenWidget(QWidget):
 
     def closeEvent(self, event):
         self.stop()
-        if self.finished:
-            QWidget.closeEvent(self, event)
-        else:
-            QWidget.hide(self)
+        QWidget.closeEvent(self, event)
 
     def hide(self):
         self.stop()
@@ -203,7 +219,6 @@ class ScreenWidget(QWidget):
     def stop(self):
         '''
         '''
-        #self._rosout_listener.stop()
         if self.qfile is not None and self.qfile.isOpen():
             self.qfile.close()
             self.qfile = None
@@ -221,7 +236,7 @@ class ScreenWidget(QWidget):
             pass
 
 
-    def connect(self, host, screen_name, nodename, use_log_widget=False, user=None):
+    def _connect(self, host, screen_name, nodename, user=None):
         if self.qfile is not None and self.qfile.isOpen():
             self.qfile.close()
             self.clear_signal.emit()
@@ -241,6 +256,8 @@ class ScreenWidget(QWidget):
                 self.thread.start()
         else:
             self._connect_ssh(host, nodename, user)
+        self.logger_handler = LoggerHandler(nodename, self.scrollAreaWidgetContents.layout())
+        self.logger_handler.update()
         return False
 
     def lread(self, lines=80):
@@ -306,11 +323,20 @@ class ScreenWidget(QWidget):
         if self.finished:
             return
         if msg:
-            out = self.escape_ansi(msg)
-            # at_top = self.textBrowser.verticalScrollBar().value() < 20
+            lines = msg.splitlines()
             cursor = self.textBrowser.textCursor()
             cursor.movePosition(QTextCursor.Start)
-            cursor.insertText(out)
+            if lines and not lines[0]:
+                lines = lines[1:]
+            for line in lines:
+                #out = self.escape_ansi(msg)
+                # at_top = self.textBrowser.verticalScrollBar().value() < 20
+                formated_lines = self.tf.get_formats(line)
+                for fmt, ll in formated_lines:
+                    cursor = self.textBrowser.textCursor()
+                    cursor.setCharFormat(fmt)
+                    cursor.insertText(ll)
+                cursor.insertText('\n')
             self.textBrowser.setTextCursor(cursor)
             self.textBrowser.moveCursor(QTextCursor.Start)
             self._update_info_label()
@@ -322,20 +348,24 @@ class ScreenWidget(QWidget):
         if self.finished:
             return
         if msg:
-            out = self.escape_ansi(msg)
             at_end = self.textBrowser.verticalScrollBar().value() > self.textBrowser.verticalScrollBar().maximum() - 20
-            cursor = self.textBrowser.textCursor()
-            cursor_select = None
+            cursor_select = self.textBrowser.textCursor()
             # store selection and do not scroll to the appended text
-            if cursor.hasSelection():
-                cursor_select = self.textBrowser.textCursor()
-            cursor.movePosition(QTextCursor.End)
-            cursor.insertText(out + '\n')
+            if not cursor_select.hasSelection():
+                cursor_select = None
+            lines = msg.splitlines()
+            for line in lines:
+                formated_lines = self.tf.get_formats(line)
+                for fmt, ll in formated_lines:
+                    cursor = self.textBrowser.textCursor()
+                    cursor.movePosition(QTextCursor.End)
+                    cursor.setCharFormat(fmt)
+                    cursor.insertText(ll)
+                cursor.insertText('\n')
             if cursor_select is not None:
                 # restore selection
                 self.textBrowser.setTextCursor(cursor_select)
             elif at_end:
-                cursor.movePosition(QTextCursor.End)
                 self.textBrowser.moveCursor(QTextCursor.End)
             if not self._first_fill:
                 self._update_info_label('NEW %d' % len(msg))
@@ -361,16 +391,6 @@ class ScreenWidget(QWidget):
             else:
                 info_text = "%d / %d" % (vbar_value / 20, self.textBrowser.verticalScrollBar().maximum() / 20)
         self.infoLabel.setText(info_text)
-
-    def _formated_ts(self, stamp):
-        ts = stamp.secs + stamp.secs / 1000000000.
-        return datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M:%S.%f")
-
-    def escape_ansi(self, line):
-        # remove console escape characters
-        ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
-        result = ansi_escape.sub('', line)
-        return result.rstrip()
 
     def _connect_ssh(self, host, nodename, user=None, pw=None):
         try:
@@ -414,3 +434,6 @@ class ScreenWidget(QWidget):
                     self.error_signal.emit(text)
         except Exception:
             pass
+
+    def on_toggle_loggers(self, state):
+        self.loggers.setVisible(state)

@@ -73,7 +73,7 @@ from .network_discovery_dialog import NetworkDiscoveryDialog
 from .parameter_dialog import ParameterDialog
 from .profile_widget import ProfileWidget
 from .progress_queue import ProgressQueue
-from .screen_widget import ScreenWidget
+from .logscreen.screen_dock import ScreenDock
 from .select_dialog import SelectDialog
 from .sync_dialog import SyncDialog
 from .update_handler import UpdateHandler
@@ -81,10 +81,10 @@ from .update_handler import UpdateHandler
 
 try:
     from python_qt_binding.QtGui import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget, QStyle
-    from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
+    from python_qt_binding.QtGui import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton, QDockWidget
 except Exception:
     from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget, QStyle
-    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton
+    from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton, QDockWidget
 
 from fkie_node_manager import gui_resources
 
@@ -174,9 +174,9 @@ class MainWindow(QMainWindow):
         self.logButton.clicked.connect(self._on_log_button_clicked)
         self.settingsButton.clicked.connect(self._on_settings_button_clicked)
         # setup screen dock
-        self.screen_widget = ScreenWidget()
-        self.screen_widget.hide()
-        # self.addDockWidget(Qt.BottomDockWidgetArea, self.screen_dock)
+        self.screen_dock = ScreenDock()
+        self.screen_dock.hide()
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.screen_dock)
         # setup the launch files view
         self.launch_dock = LaunchFilesWidget()
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
@@ -540,7 +540,7 @@ class MainWindow(QMainWindow):
         if not self._finished:
             self._finished = True
             print("Mainwindow finish...")
-            self.screen_widget.finish()
+            self.screen_dock.finish()
             self._stop_updating()
             try:
                 editors = [e for e in self.editor_dialogs.values()]
@@ -645,6 +645,9 @@ class MainWindow(QMainWindow):
 
     def on_remove_config(self, cfg):
         self.capabilitiesTable.removeConfig(cfg)
+
+    def open_screen_dock(self, host, screen_name, nodename, user=''):
+        self.screen_dock.connect(host, screen_name, nodename, user)
 
 # ======================================================================================================================
 # Handling of local monitoring

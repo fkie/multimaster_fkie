@@ -59,7 +59,6 @@ install(
         src/${PROJECT_NAME}/MessageFrame.ui
         src/${PROJECT_NAME}/PasswordInput.ui
         src/${PROJECT_NAME}/ProfileWidget.ui
-        src/${PROJECT_NAME}/ScreenWidget.ui
         src/${PROJECT_NAME}/SettingsDockWidget.ui
         src/${PROJECT_NAME}/TimeInput.ui
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
@@ -69,6 +68,12 @@ install(
    FILES
         src/${PROJECT_NAME}/editor/GraphDockWidget.ui
    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
+)
+
+install(
+   FILES
+        src/${PROJECT_NAME}/logscreen/ScreenWidget.ui
+   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/logscreen/
 )
 
 install(

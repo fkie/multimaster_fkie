@@ -6,12 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>844</width>
-    <height>445</height>
+    <width>746</width>
+    <height>588</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Screen Log</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>true</bool>
   </property>
   <property name="floating" stdset="0">
    <bool>true</bool>
@@ -33,15 +36,101 @@
     <number>3</number>
    </property>
    <item>
-    <widget class="ScreenTextBrowser" name="textBrowser"/>
-   </item>
-   <item>
-    <widget class="QFrame" name="frame">
+    <widget class="QFrame" name="frameMain">
      <property name="frameShape">
       <enum>QFrame::NoFrame</enum>
      </property>
      <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
+      <enum>QFrame::Plain</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="ScreenTextBrowser" name="textBrowser"/>
+      </item>
+      <item>
+       <widget class="QScrollArea" name="loggers">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>68</width>
+           <height>552</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="loggerLayout">
+          <property name="spacing">
+           <number>3</number>
+          </property>
+          <property name="leftMargin">
+           <number>3</number>
+          </property>
+          <property name="topMargin">
+           <number>3</number>
+          </property>
+          <property name="rightMargin">
+           <number>3</number>
+          </property>
+          <property name="bottomMargin">
+           <number>3</number>
+          </property>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Panel</enum>
+     </property>
+     <property name="lineWidth">
+      <number>0</number>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
@@ -89,7 +178,8 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset theme="previous"/>
+            <iconset theme="previous">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="flat">
             <bool>true</bool>
@@ -102,7 +192,8 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset theme="next"/>
+            <iconset theme="next">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="flat">
             <bool>true</bool>
@@ -211,10 +302,20 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="GUI.qrc">
+         <iconset resource="../GUI.qrc">
           <normaloff>:/icons/sekkyumu_stop.png</normaloff>:/icons/sekkyumu_stop.png</iconset>
         </property>
         <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="loglevelButton">
+        <property name="text">
+         <string>loglevel</string>
+        </property>
+        <property name="checkable">
          <bool>true</bool>
         </property>
        </widget>
@@ -228,11 +329,11 @@
   <customwidget>
    <class>ScreenTextBrowser</class>
    <extends>QTextBrowser</extends>
-   <header>fkie_node_manager/screen_widget</header>
+   <header>fkie_node_manager/logscreen/screen_widget</header>
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="GUI.qrc"/>
+  <include location="../GUI.qrc"/>
  </resources>
  <connections/>
 </ui>

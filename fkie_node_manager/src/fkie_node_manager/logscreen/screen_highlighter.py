@@ -34,7 +34,7 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtCore import QRegExp, Qt
-from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
+from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextCursor
 
 
 class ScreenHighlighter(QSyntaxHighlighter):
@@ -44,15 +44,16 @@ class ScreenHighlighter(QSyntaxHighlighter):
 
     def __init__(self, parent=None):
         QSyntaxHighlighter.__init__(self, parent)
-        self.default_format = QTextCharFormat()
-        self.default_format.setForeground(QColor(24, 24, 24))
+        self.format_default = self._create_format(QColor('#FFFAFA'))  #Snow  https://www.w3schools.com/colors/colors_names.asp
+        # self.format_default.setForeground(QColor(24, 24, 24))
         self.rules = []
-        self.rules.append((self._create_regexp(r"\[DEBUG\].*$"), self._create_format(QColor('#2ECC40'))))  #2ECC40 green from https://clrs.cc/
-        self.rules.append((self._create_regexp(r"\[INFO\].*$"), self._create_format(QColor('#CACFD2'))))  #CACFD2
-        self.rules.append((self._create_regexp(r"\[WARN\].*$"), self._create_format(QColor('#FF851B'))))  #FF851B orange from https://clrs.cc/
-        self.rules.append((self._create_regexp(r"WARNING:.*$"), self._create_format(QColor('#FF851B'))))  #FF851B orange from https://clrs.cc/
-        self.rules.append((self._create_regexp(r"\[ERROR\].*$"), self._create_format(QColor('#FF4136'))))  #FF4136 red from https://clrs.cc/
-        self.rules.append((self._create_regexp(r"\[FATAL\].*$"), self._create_format(QColor('#FF0000'))))  #FF0000 red
+        self.format_warn = self._create_format(QColor('#FFA500'))  #Orange orange from https://clrs.cc/
+        #self.rules.append((self._create_regexp(r"\[DEBUG\].*$"), self._create_format(QColor('#2ECC40'))))  #2ECC40 green from https://clrs.cc/
+        #self.rules.append((self._create_regexp(r"\[INFO\].*$"), self._create_format(QColor('#CACFD2'))))  #CACFD2
+        #self.rules.append((self._create_regexp(r"\[WARN\].*$"), self.format_warn))
+        #self.rules.append((self._create_regexp(r"WARNING:.*$"), self._create_format(QColor('#FF851B'))))  #FF851B orange from https://clrs.cc/
+        #self.rules.append((self._create_regexp(r"\[ERROR\].*$"), self._create_format(QColor('#FF4136'))))  #FF4136 red from https://clrs.cc/
+        #self.rules.append((self._create_regexp(r"\[FATAL\].*$"), self._create_format(QColor('#FF0000'))))  #FF0000 red
 
     def _create_regexp(self, pattern=''):
         _regexp = QRegExp()

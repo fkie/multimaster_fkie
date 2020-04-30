@@ -94,7 +94,7 @@ class ScreenHandler(object):
         '''
         # create a title of the terminal
         if use_log_widget:
-            nm._MAIN_FORM.screen_widget.connect(host, screen_name, nodename, user)
+            nm._MAIN_FORM.open_screen_dock(host, screen_name, nodename, user)
             return
         title_opt = 'SCREEN %s on %s' % (nodename, host)
         if nm.is_local(host):
