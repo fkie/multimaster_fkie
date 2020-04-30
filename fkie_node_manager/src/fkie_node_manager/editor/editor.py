@@ -764,7 +764,8 @@ class Editor(QMainWindow):
     ##############################################################################
 
     def _show_custom_parameter_dialog(self):
-        methods = {'capability_group': self._on_add_cp_capability_group,
+        methods = {'associations': self._on_add_cp_associations,
+                   'capability_group': self._on_add_cp_capability_group,
                    'kill_on_stop': self._on_add_cp_kill_on_stop,
                    'autostart/delay': self._on_add_cp_as_delay,
                    'autostart/exclude': self._on_add_cp_as_exclude,
@@ -780,7 +781,6 @@ class Editor(QMainWindow):
                                     store_geometry='insert_param')
         tags2insert = res[0]
         for tag in tags2insert:
-            print("Insert", tag)
             methods[tag]()
 
     def _create_tag_button(self, parent=None):
@@ -852,6 +852,10 @@ class Editor(QMainWindow):
         show_cp_dialog_action = QAction("Show Dialog", self, statusTip="", triggered=self._show_custom_parameter_dialog)
         show_cp_dialog_action.setShortcuts(QKeySequence("Ctrl+Shift+d"))
         sub_cp_menu.addAction(show_cp_dialog_action)
+
+        add_cp_associations_action = QAction("associations", self, statusTip="", triggered=self._on_add_cp_associations)
+        add_cp_associations_action.setShortcuts(QKeySequence("Ctrl+Alt+a"))
+        sub_cp_menu.addAction(add_cp_associations_action)
 
         sub_cp_as_menu = QMenu("Autostart", parent)
         add_cp_as_delay_action = QAction("delay", self, statusTip="", triggered=self._on_add_cp_as_delay)
@@ -989,6 +993,9 @@ class Editor(QMainWindow):
 
     def _on_add_cp_kill_on_stop(self):
         self._insert_text('<param name="kill_on_stop" value="100" hint="[ms]" />', 34, 3)
+
+    def _on_add_cp_associations(self):
+        self._insert_text('<param name="associations" value="node1,node2" hint="list of nodes" />', 34, 11)
 
     def _on_add_cp_as_delay(self):
         self._insert_text('<param name="autostart/delay" value="1" hint="[seconds]" />', 37, 1)
