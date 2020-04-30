@@ -138,6 +138,7 @@ class ScreenWidget(QWidget):
         self.closeButton.clicked.connect(self.stop)
         self.clear_signal.connect(self.clear)
         self.textBrowser.verticalScrollBar().valueChanged.connect(self.on_scrollbar_position_changed)
+        self.textBrowser.verticalScrollBar().rangeChanged.connect(self.on_scrollbar_range_changed)
         self.textBrowser.set_reader(self)
         self.tf = TerminalFormats()
         # self.hl = ScreenHighlighter(self.textBrowser.document())
@@ -225,7 +226,7 @@ class ScreenWidget(QWidget):
             self._seek_start = -1
             self._seek_end = -1
             self._pause_read_end = False
-            self.clear()
+            # self.clear()
         try:
             self._ssh_output_file.close()
             self._ssh_error_file.close()
@@ -374,6 +375,9 @@ class ScreenWidget(QWidget):
                 self.show()
 
     def on_scrollbar_position_changed(self, value):
+        self._update_info_label()
+
+    def on_scrollbar_range_changed(self, min, max):
         self._update_info_label()
 
     def _on_error(self, msg):
