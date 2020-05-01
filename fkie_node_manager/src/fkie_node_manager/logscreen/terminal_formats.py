@@ -34,10 +34,31 @@
 from __future__ import division, absolute_import, print_function, unicode_literals
 
 from python_qt_binding.QtCore import QRegExp, Qt, QObject
-from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextCursor
+from python_qt_binding.QtGui import QColor, QFont, QFontDatabase, QTextCharFormat, QTextCursor
 
 import re
 import rospy
+
+
+class FormatHelper(QObject):
+
+    def __init__(self, fmt):
+        self.fmt = fmt
+        self.font_db = QFontDatabase()
+        self.font_family = fmt.fontFamily()
+        self.point_size = fmt.font().pointSize()
+        self.font_styles = self.font_db.styles(self.font_family)
+
+    def background(self):
+        return self.fmt.background()
+
+    def foreground(self):
+        return self.fmt.foreground()
+
+    def font_style(self, index):
+        if index < len(self.font_styles):
+            self.font_db.font(self.font_family, self.font_styles.at(0), self.point_size)
+        return self.fmt.font()
 
 
 class TerminalFormats(QObject):
@@ -66,9 +87,30 @@ class TerminalFormats(QObject):
         self.formats[4] = {'setFontUnderline': True, 'setUnderlineStyle': QTextCharFormat.SingleUnderline}  # Underscore (single underlined)
         self.formats[5] = {'setFontWeight': QFont.Bold}  # Blink (slow, appears as Bold)
         self.formats[6] = {'setFontWeight': QFont.Black}  # Blink (rapid, appears as very Bold)
-        self.formats[22] = {'setFontWeight': QFont.Normal}
+        self.formats[7] = {'setForeground': ('background',), 'setBackground': ('foreground',)}  # Reverse/Inverse (swap foreground and background)
+        self.formats[8] = {'setForeground': ('background',)}  # Concealed/Hidden/Invisible (usefull for passwords)
+        self.formats[9] = {'setFontStrikeOut': True}  # Crossed-out characters
+        self.formats[10] = {'setFont': QTextCharFormat().font()}  # Primary (default) font
+        # font styles
+        self.formats[11] = {'setFont': ('font_style', 0)}
+        self.formats[12] = {'setFont': ('font_style', 1)}
+        self.formats[13] = {'setFont': ('font_style', 2)}
+        self.formats[14] = {'setFont': ('font_style', 3)}
+        self.formats[15] = {'setFont': ('font_style', 4)}
+        self.formats[16] = {'setFont': ('font_style', 5)}
+        self.formats[17] = {'setFont': ('font_style', 6)}
+        self.formats[18] = {'setFont': ('font_style', 7)}
+        self.formats[19] = {'setFont': ('font_style', 8)}
+        # self.formats[20] = {}  # Fraktur (unsupported)
+        self.formats[21] = {'setFontWeight': QFont.Normal}  # Set Bold off
+        self.formats[22] = {'setFontWeight': QFont.Normal}  # Set Dim off
         self.formats[23] = {'setFontItalic': False}
-        self.formats[24] = {'setFontUnderline': False}
+        self.formats[24] = {'setFontUnderline': False, 'setUnderlineStyle': QTextCharFormat.NoUnderline}  # Unset underlining
+        self.formats[25] = {'setFontWeight': QFont.Normal}  # Unset Blink/Bold
+        # self.formats[26] = {}  # Reserved
+        self.formats[27] = {'setBackground': ('foreground',), 'setForeground': ('background',)}  # Positive (non-inverted)
+        self.formats[28] = {'setForeground': ('foreground',), 'setBackground': ('background',)}  # Concealed/Hidden/Invisible (usefull for passwords)
+        self.formats[29] = {'setFontStrikeOut': False}  # Crossed-out characters
         # foreground colors
         self.formats[30] = {'setForeground': QColor(1, 1, 1)}  # Black
         self.formats[31] = {'setForeground': QColor(222, 56, 43)}  # Red
@@ -106,11 +148,18 @@ class TerminalFormats(QObject):
         self.formats[106] = {'setBackground': QColor(0, 255, 255)}  # Bright Cyan
         self.formats[107] = {'setBackground': QColor(255, 255, 255)}  # Bright White
 
-    def _update_format(self, fmt, updates={}):
+    def _update_format(self, fmt, updates={}, font_helper=None):
         for attr, args in updates.items():
             try:
                 if isinstance(args, list):
                     getattr(fmt, attr)(*args)
+                elif isinstance(args, tuple):
+                    if font_helper is not None:
+                        # call getter method
+                        if len(attr) > 1:
+                            getattr(fmt, attr)(getattr(font_helper, attr[0])(attr[1]))
+                        else:
+                            getattr(fmt, attr)(getattr(font_helper, attr[0])())
                 else:
                     getattr(fmt, attr)(args)
             except AttributeError:
@@ -131,7 +180,8 @@ class TerminalFormats(QObject):
             cursor.insertText(text[cidx:match.start()], current_char_format)
             if code in self.formats:
                 try:
-                    self._update_format(current_char_format, self.formats[code])
+                    font_helper = FormatHelper(current_char_format)
+                    self._update_format(current_char_format, self.formats[code], font_helper=FormatHelper(current_char_format))
                 except Exception as err:
                     rospy.logwarn("Failed update format for ANSI_escape_code %d: %s" % (code, err))
             cidx = match.end()
