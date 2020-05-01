@@ -34,20 +34,18 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 from datetime import datetime
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import Qt, Signal, QFile, QIODevice
+from python_qt_binding.QtCore import Qt, Signal, QFile, QIODevice, QRegExp
 from python_qt_binding.QtGui import QColor, QIcon, QPalette, QTextCursor, QTextCharFormat, QTextDocument, QKeySequence
 try:
-    from python_qt_binding.QtGui import QWidget, QTextBrowser, QDialog, QShortcut
+    from python_qt_binding.QtGui import QWidget, QTextEdit, QDialog, QShortcut
 except ImportError:
-    from python_qt_binding.QtWidgets import QWidget, QTextBrowser, QDialog, QShortcut
+    from python_qt_binding.QtWidgets import QWidget, QTextEdit, QDialog, QShortcut
 import os
-import re
 import rospy
 import shlex
 import sys
 import subprocess
 import threading
-import pty
 import time
 
 from .screen_highlighter import ScreenHighlighter
@@ -55,19 +53,26 @@ from .terminal_formats import TerminalFormats
 from .logger_handler import LoggerHandler
 import fkie_node_manager as nm
 from fkie_node_manager_daemon import screen
+from fkie_node_manager_daemon.common import sizeof_fmt
 
 
-class ScreenTextBrowser(QTextBrowser):
+class ScreenTextBrowser(QTextEdit):
 
     def __init__(self, parent=None):
-        QTextBrowser.__init__(self, parent)
+        QTextEdit.__init__(self, parent)
         self._reader = None
+        self.setAutoFillBackground(False)
+        self.setReadOnly(True)
         self.setUndoRedoEnabled(False)
+        self.setAutoFormatting(QTextEdit.AutoNone)
+        self.setAcceptRichText(False)
         # self.textBrowser.document().setMaximumBlockCount(100)
         p = QPalette()
         p.setColor(QPalette.Base, Qt.black)
         p.setColor(QPalette.Text, Qt.white)
         self.setPalette(p)
+        # self.setFontFamily('Monospace')
+        # self.setFontPointSize(12)
 
     def set_reader(self, reader):
         self._reader = reader
@@ -78,14 +83,14 @@ class ScreenTextBrowser(QTextBrowser):
                 self._reader.reverse_read(self.verticalScrollBar().pageStep() / 10)
             elif event.key() == Qt.Key_Home and event.modifiers() == Qt.ShiftModifier:
                 self._reader.reverse_read(-1)
-        QTextBrowser.keyPressEvent(self, event)
+        QTextEdit.keyPressEvent(self, event)
 
     def wheelEvent(self, event):
         if self._reader is not None:
             lines = event.angleDelta().y() / 40
             if lines > 0 and self.verticalScrollBar().value() == 0:
                 self._reader.reverse_read(lines)
-        QTextBrowser.wheelEvent(self, event)
+        QTextEdit.wheelEvent(self, event)
 
 
 class ScreenWidget(QWidget):
@@ -127,6 +132,7 @@ class ScreenWidget(QWidget):
         self._ssh_error_file = None
         self._ssh_input_file = None
         self._on_pause = False
+        self._char_format_end = None
         self.loggers.setVisible(False)
         self.loglevelButton.toggled.connect(self.on_toggle_loggers)
         self.logger_handler = None
@@ -254,7 +260,7 @@ class ScreenWidget(QWidget):
             if self.qfile.open(QIODevice.ReadOnly):
                 self._first_fill = True
                 self.qfile.seek(self.qfile.size()-1)
-                self.lread()
+                # self.lread()
                 self._info = "END"
                 self.thread = threading.Thread(target=self._read_log, kwargs={"filename": screen_log})
                 self.thread.setDaemon(True)
@@ -265,25 +271,26 @@ class ScreenWidget(QWidget):
         self.logger_handler.update()
         return False
 
-    def lread(self, lines=80):
-        with self._lock:
-            if self.qfile is not None and self.qfile.isOpen():
-                chars_count = self._seek_count_lines(lines)
-                self._seek_start = self.qfile.pos()
-                self.output.emit(self.qfile.read(chars_count))
-                self._seek_end = self.qfile.pos()
-
-    def _read_log(self, filename):
+    def _read_log(self, filename, lines=80):
         while self.qfile is not None and self.qfile.isOpen():
             with self._lock:
-                if self._seek_end != -1:
-                    self.qfile.seek(self._seek_end)
-                if (not self._pause_read_end and self.qfile.bytesAvailable()):
-                    start = self.qfile.pos()
-                    self.output.emit(self.qfile.readAll().data())
+                if self._first_fill:
+                    chars_count = self._seek_count_lines(lines)
+                    self._seek_start = self.qfile.pos()
+                    data = self.qfile.read(chars_count)
+                    self.output.emit(data)
                     self._seek_end = self.qfile.pos()
-                    self._info = "NEW: %d" % (self._seek_end - start)
-            time.sleep(1)                    
+                    self._first_fill = False
+                else:
+                    if self._seek_end != -1:
+                        self.qfile.seek(self._seek_end)
+                    if (not self._pause_read_end and self.qfile.bytesAvailable()):
+                        start = self.qfile.pos()
+                        data = self.qfile.readAll().data()
+                        self.output.emit(data)
+                        self._seek_end = self.qfile.pos()
+                        self._info = "NEW: %d" % (self._seek_end - start)
+            time.sleep(0.25)
 
     def reverse_read(self, lines=20):
         with self._lock:
@@ -295,7 +302,8 @@ class ScreenWidget(QWidget):
                     self.qfile.seek(self._seek_start)
                     chars_count = self._seek_count_lines(lines)
                 self._seek_start = self.qfile.pos()
-                self.output_prefix.emit(self.qfile.read(chars_count))
+                data = self.qfile.read(chars_count)
+                self.output_prefix.emit(data)
 
     def _seek_count_lines(self, lines=20):
         if self.qfile.pos() < 2:
@@ -328,20 +336,8 @@ class ScreenWidget(QWidget):
         if self.finished or self._on_pause:
             return
         if msg:
-            lines = msg.splitlines()
-            cursor = self.textBrowser.textCursor()
-            cursor.movePosition(QTextCursor.Start)
-            if lines and not lines[0]:
-                lines = lines[1:]
-            for line in lines:
-                #out = self.escape_ansi(msg)
-                # at_top = self.textBrowser.verticalScrollBar().value() < 20
-                formated_lines = self.tf.get_formats(line)
-                for fmt, ll in formated_lines:
-                    cursor = self.textBrowser.textCursor()
-                    cursor.setCharFormat(fmt)
-                    cursor.insertText(ll)
-                cursor.insertText('\n')
+            cursor = QTextCursor(self.textBrowser.document())
+            self.tf.insert_formated(cursor, msg.rstrip())
             self.textBrowser.setTextCursor(cursor)
             self.textBrowser.moveCursor(QTextCursor.Start)
             self._update_info_label()
@@ -358,23 +354,15 @@ class ScreenWidget(QWidget):
             # store selection and do not scroll to the appended text
             if not cursor_select.hasSelection():
                 cursor_select = None
-            lines = msg.splitlines()
-            for line in lines:
-                formated_lines = self.tf.get_formats(line)
-                for fmt, ll in formated_lines:
-                    cursor = self.textBrowser.textCursor()
-                    cursor.movePosition(QTextCursor.End)
-                    cursor.setCharFormat(fmt)
-                    cursor.insertText(ll)
-                cursor.insertText('\n')
+            cursor = self.textBrowser.textCursor()
+            cursor.movePosition(QTextCursor.End)
+            self._char_format_end = self.tf.insert_formated(cursor, msg, char_format=self._char_format_end)
             if cursor_select is not None:
                 # restore selection
                 self.textBrowser.setTextCursor(cursor_select)
             elif at_end:
                 self.textBrowser.moveCursor(QTextCursor.End)
-            if not self._first_fill:
-                self._update_info_label('NEW %d' % len(msg))
-                self._first_fill = False
+            self._update_info_label()
             if not self.finished:
                 self.show()
 
@@ -393,12 +381,15 @@ class ScreenWidget(QWidget):
         vbar_value = self.textBrowser.verticalScrollBar().value()
         if not info_text:
             if vbar_value == 0:
-                info_text += "%d %%" % (self._seek_start * 100 / self._seek_end)
+                if self._seek_start == 0:
+                    info_text = 'START'
+                else:
+                    info_text += "%d %%" % (self._seek_start * 100 / self._seek_end)
             elif vbar_value == self.textBrowser.verticalScrollBar().maximum():
                 info_text = 'END'
             else:
                 info_text = "%d / %d" % (vbar_value / 20, self.textBrowser.verticalScrollBar().maximum() / 20)
-        self.infoLabel.setText(info_text)
+        self.infoLabel.setText(info_text + '\t%s / %s' % (sizeof_fmt(self._seek_end - self._seek_start), sizeof_fmt(self._seek_end)))
 
     def _connect_ssh(self, host, nodename, user=None, pw=None):
         try:
