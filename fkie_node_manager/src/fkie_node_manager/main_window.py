@@ -174,9 +174,9 @@ class MainWindow(QMainWindow):
         self.logButton.clicked.connect(self._on_log_button_clicked)
         self.settingsButton.clicked.connect(self._on_settings_button_clicked)
         # setup screen dock
-        self.screen_dock = ScreenDock()
-        self.screen_dock.hide()
+        self.screen_dock = ScreenDock(self)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.screen_dock)
+        self.screen_dock.hide()
         # setup the launch files view
         self.launch_dock = LaunchFilesWidget()
         self.launch_dock.load_signal.connect(self.on_load_launch_file)
@@ -191,13 +191,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Node Manager")
         self.setWindowIcon(self.mIcon)
 #    self.setCentralWidget(mainWindow)
-
         # init the stack layout which contains the information about different ros master
         self.stackedLayout = QStackedLayout()
         self.stackedLayout.setObjectName('stackedLayout')
-        emptyWidget = QWidget()
-        emptyWidget.setObjectName('emptyWidget')
-        self.stackedLayout.addWidget(emptyWidget)
         self.tabWidget.currentChanged.connect(self.on_currentChanged_tab)
         self.tabLayout = QVBoxLayout(self.tabPlace)
         self.tabLayout.setObjectName("tabLayout")
