@@ -60,6 +60,7 @@ class ScreenDock(DetachableTabDock):
     '''
 
     connect_signal = Signal(str, str, str, str)  # host, screen_name, nodename, user
+    closed_signal = Signal(DetachableTabDock)
 
     def __init__(self, parent=None):
         '''
@@ -109,9 +110,12 @@ class ScreenDock(DetachableTabDock):
 
     def finish(self):
         self.tab_widget.clear()
+        for od in self._open_dialogs:
+            od.tab_widget.clear()
         self._nodes.clear()
 
     def closeEvent(self, event):
         # close tabs on hide
-        self.finish()
+        self.tab_widget.clear()
+        self.closed_signal.emit(self)
         DetachableTabDock.closeEvent(self, event)

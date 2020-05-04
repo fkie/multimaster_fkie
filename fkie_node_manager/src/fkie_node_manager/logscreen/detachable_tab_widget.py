@@ -50,7 +50,7 @@ class DetachableTabWidget(QTabWidget):
     '''
     This class was overloaded to close tabs on middle mouse click
     '''
-    detach_signal = Signal(str, QWidget, QPoint, QRect)
+    detach_signal = Signal(str, QWidget, QPoint, QRect, bool)  # bool: True if double click
     close_tab_request_signal = Signal(QTabWidget, int)
     tab_removed_signal = Signal(QWidget)
     empty_tabbar_signal = Signal()
@@ -116,17 +116,18 @@ class DetachableTabWidget(QTabWidget):
         self.insertTab(toIndex, widget, icon, text)
         self.setCurrentIndex(toIndex)
 
-    def detach_tab(self, index, point):
+    def detach_tab(self, index, point, by_double_click):
         '''
         Detach the tab by removing it's contents and placing them in
         a DetachedTab dialog
 
         :param index:    the index location of the tab to be detached
         :param point:    the screen position for creating the new DetachedTab dialog
+        :param by_double_click:  True if detach comes from double click
         '''
         content_widget = self.widget(index)
         if content_widget is not None:
-            self.detach_signal.emit(self.tabText(index), content_widget, point, content_widget.frameGeometry())
+            self.detach_signal.emit(self.tabText(index), content_widget, point, content_widget.frameGeometry(), by_double_click)
 
     # def event(self, event):
 

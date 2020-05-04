@@ -47,7 +47,7 @@ class DetachableTabBar(QTabBar):
     '''
     The TabBar class re-implements some of the functionality of the QTabBar widget
     '''
-    detach_tab_signal = Signal(int, QPoint)
+    detach_tab_signal = Signal(int, QPoint, bool)  # tab at pos, mouse cursor position, by double click
     move_tab_signal = Signal(int, int)
     empty_signal = Signal()
 
@@ -68,7 +68,7 @@ class DetachableTabBar(QTabBar):
         Send the detach_tab_signal when a tab is double clicked
         '''
         event.accept()
-        self.detach_tab_signal.emit(self.tabAt(event.pos()), self.mouse_cursor.pos())
+        self.detach_tab_signal.emit(self.tabAt(event.pos()), self.mouse_cursor.pos(), True)
 
     def mousePressEvent(self, event):
         '''
@@ -121,14 +121,14 @@ class DetachableTabBar(QTabBar):
             # the content to the current cursor position
             if dropAction == Qt.IgnoreAction:
                 event.accept()
-                self.detach_tab_signal.emit(self.tabAt(self.drag_start_pos), self.mouse_cursor.pos())
+                self.detach_tab_signal.emit(self.tabAt(self.drag_start_pos), self.mouse_cursor.pos(), False)
             elif dropAction == Qt.MoveAction:
                 # else if the drag completed inside the tab bar, move the selected tab to the new position
                 if not self.drag_droped_pos.isNull():
                     self.move_tab_signal.emit(self.tabAt(self.drag_start_pos), self.tabAt(self.drag_droped_pos))
                 else:
                     # else if the drag completed inside the tab bar new TabBar, move the selected tab to the new TabBar
-                    self.detach_tab_signal.emit(self.tabAt(self.drag_start_pos), self.mouse_cursor.pos())
+                    self.detach_tab_signal.emit(self.tabAt(self.drag_start_pos), self.mouse_cursor.pos(), False)
                 event.accept()
         else:
             QTabBar.mouseMoveEvent(self, event)
