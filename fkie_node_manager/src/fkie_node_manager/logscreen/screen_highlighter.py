@@ -44,38 +44,33 @@ class ScreenHighlighter(QSyntaxHighlighter):
 
     def __init__(self, parent=None):
         QSyntaxHighlighter.__init__(self, parent)
-        self.format_default = self._create_format(QColor('#FFFAFA'))  #Snow  https://www.w3schools.com/colors/colors_names.asp
-        # self.format_default.setForeground(QColor(24, 24, 24))
-        self.rules = []
-        self.format_warn = self._create_format(QColor('#FFA500'))  #Orange orange from https://clrs.cc/
-        #self.rules.append((self._create_regexp(r"\[DEBUG\].*$"), self._create_format(QColor('#2ECC40'))))  #2ECC40 green from https://clrs.cc/
-        #self.rules.append((self._create_regexp(r"\[INFO\].*$"), self._create_format(QColor('#CACFD2'))))  #CACFD2
-        #self.rules.append((self._create_regexp(r"\[WARN\].*$"), self.format_warn))
-        #self.rules.append((self._create_regexp(r"WARNING:.*$"), self._create_format(QColor('#FF851B'))))  #FF851B orange from https://clrs.cc/
-        #self.rules.append((self._create_regexp(r"\[ERROR\].*$"), self._create_format(QColor('#FF4136'))))  #FF4136 red from https://clrs.cc/
-        #self.rules.append((self._create_regexp(r"\[FATAL\].*$"), self._create_format(QColor('#FF0000'))))  #FF0000 red
-
-    def _create_regexp(self, pattern=''):
-        _regexp = QRegExp()
-        _regexp.setMinimal(True)
-        _regexp.setPattern(pattern)
-        return _regexp
-
-    def _create_format(self, color, style=''):
-        _format = QTextCharFormat()
-        _format.setForeground(color)
-        if 'bold' in style:
-            _format.setFontWeight(QFont.Bold)
-        else:
-            _format.setFontWeight(QFont.Normal)
-        if 'italic' in style:
-            _format.setFontItalic(True)
-        return _format
+        self._grep_format = QTextCharFormat()
+        self._grep_rule = None
 
     def highlightBlock(self, text):
-        for pattern, form in self.rules:
-            index = pattern.indexIn(text)
+        if self._grep_rule is not None:
+            index = self._grep_rule.indexIn(text)
             while index >= 0:
-                length = pattern.matchedLength()
-                self.setFormat(index, length, form)
-                index = pattern.indexIn(text, index + length)
+                length = self._grep_rule.matchedLength()
+                self.setFormat(index, length, self._grep_format)
+                index = self._grep_rule.indexIn(text, index + length)
+
+    def has_grep_text(self):
+        return self._grep_rule is not None
+
+    def set_grep_text(self, text):
+        if text:
+            self._grep_rule = self._create_regexp(text)
+            self._grep_format.setBackground(Qt.darkGreen)
+        else:
+            self._grep_format = QTextCharFormat()
+            self._grep_rule = None
+
+    def contains_grep_text(self, text):
+        if self._grep_rule is not None:
+            return self._grep_rule.indexIn(text) >= 0
+
+    def _create_regexp(self, pattern='', cs=Qt.CaseInsensitive, syntax=QRegExp.Wildcard, minimal=False):
+        _regexp = QRegExp(pattern, cs, syntax)
+        _regexp.setMinimal(minimal)
+        return _regexp

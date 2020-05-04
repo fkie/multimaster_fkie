@@ -149,10 +149,14 @@ class ScreenWidget(QWidget):
         self.textBrowser.verticalScrollBar().rangeChanged.connect(self.on_scrollbar_range_changed)
         self.textBrowser.set_reader(self)
         self.tf = TerminalFormats()
-        # self.hl = ScreenHighlighter(self.textBrowser.document())
+        self.hl = ScreenHighlighter(self.textBrowser.document())
         self.searchFrame.setVisible(False)
+        self.grepFrame.setVisible(False)
+        self.grepLineEdit.textChanged.connect(self.on_grep_changed)
         self._shortcut_search = QShortcut(QKeySequence(self.tr("Ctrl+F", "Activate search")), self)
         self._shortcut_search.activated.connect(self.on_search)
+        self._shortcut_grep = QShortcut(QKeySequence(self.tr("Ctrl+G", "Activate grep")), self)
+        self._shortcut_grep.activated.connect(self.on_grep)
         self.searchLineEdit.editingFinished.connect(self.on_search_prev)
         self.searchNextButton.clicked.connect(self.on_search_next)
         self.searchPrevButton.clicked.connect(self.on_search_prev)
@@ -224,6 +228,20 @@ class ScreenWidget(QWidget):
                 self.searchLabel.setText('no results')
         else:
             self.searchLabel.setText('')
+
+    def on_grep(self):
+        self.grepFrame.setVisible(not self.grepFrame.isVisible())
+        if self.grepFrame.isVisible():
+            self.grepLineEdit.setFocus()
+            self.on_grep_changed(self.grepLineEdit.text())
+            self.hl.set_grep_text('')
+            self.grepLineEdit.selectAll()
+        else:
+            self.on_grep_changed('')
+            self.textBrowser.setFocus()
+
+    def on_grep_changed(self, text):
+        self.hl.set_grep_text(text)
 
     def stop(self):
         '''
@@ -356,7 +374,14 @@ class ScreenWidget(QWidget):
                 cursor_select = None
             cursor = self.textBrowser.textCursor()
             cursor.movePosition(QTextCursor.End)
-            self._char_format_end = self.tf.insert_formated(cursor, msg, char_format=self._char_format_end)
+            if self.hl.has_grep_text():
+                # grep new text
+                lines = msg.splitlines(True)
+                for line in lines:
+                    if self.hl.contains_grep_text(line):
+                        self._char_format_end = self.tf.insert_formated(cursor, line, char_format=None)
+            else:
+                self._char_format_end = self.tf.insert_formated(cursor, msg, char_format=self._char_format_end)
             if cursor_select is not None:
                 # restore selection
                 self.textBrowser.setTextCursor(cursor_select)

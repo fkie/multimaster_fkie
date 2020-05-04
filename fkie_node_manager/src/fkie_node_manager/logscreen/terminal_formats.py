@@ -181,7 +181,7 @@ class TerminalFormats(QObject):
             if code in self.formats:
                 try:
                     font_helper = FormatHelper(current_char_format)
-                    self._update_format(current_char_format, self.formats[code], font_helper=FormatHelper(current_char_format))
+                    self._update_format(current_char_format, self.formats[code], font_helper=font_helper)
                 except Exception as err:
                     rospy.logwarn("Failed update format for ANSI_escape_code %d: %s" % (code, err))
             cidx = match.end()
