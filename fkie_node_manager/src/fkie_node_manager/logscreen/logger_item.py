@@ -53,6 +53,9 @@ class LoggerItem(QFrame):
     Represents one ROS logger and offers methods to change the logger level.
     '''
 
+    success_signal = Signal(str)
+    error_signal = Signal(str)
+
     def __init__(self, nodename, loggername, level='INFO', parent=None):
         '''
         Creates a new item.
@@ -61,6 +64,7 @@ class LoggerItem(QFrame):
         self.setObjectName("LoggerItem")
         self.nodename = nodename
         self.loggername = loggername
+        self.current_level = None
         layout = QHBoxLayout(self)
         layout.setContentsMargins(1, 1, 1, 1)
         self.debug = QRadioButton()
@@ -86,8 +90,9 @@ class LoggerItem(QFrame):
         self.label = QLabel(loggername)
         layout.addWidget(self.label)
         layout.addStretch()
-        self._callback = None
-        self._current_level = None
+        self._callback = None  # used to set all logger
+        self.success_signal.connect(self.on_succes_update)
+        self.error_signal.connect(self.on_error_update)
         self.set_level(level)
 
     def set_callback(self, callback):
@@ -113,7 +118,7 @@ class LoggerItem(QFrame):
         if state:
             self.set_level('FATAL')
 
-    def set_level(self, level):
+    def on_succes_update(self, level):
         if level.upper() == 'DEBUG':
             self.debug.setChecked(True)
         elif level.upper() == 'INFO':
@@ -126,23 +131,39 @@ class LoggerItem(QFrame):
             self.fatal.setChecked(True)
         elif level:
             rospy.logwarn("loglevel not found '%s'" % (level))
-        if self._current_level is not None:
+            return
+        self.current_level = level
+
+    def on_error_update(self, level):
+        self.on_succes_update(level)
+
+    def set_level(self, level):
+        if self.current_level is not None:
             if self._callback is not None:
                 self._callback(level)
             else:
                 # call set loglevel service
-                thread = threading.Thread(target=self._set_level, kwargs={'level': level})
+                thread = threading.Thread(target=self._set_level, kwargs={'level': level, 'current_level': self.current_level})
                 thread.setDaemon(True)
                 thread.start()
                 pass
-        self._current_level = level
+        else:
+            self.on_succes_update(level)
 
-    def _set_level(self, level):
+    def _set_level(self, level, current_level):
         try:
-            set_logger_level = rospy.ServiceProxy('%s/set_logger_level' % self.nodename, SetLoggerLevel)
-            msg = SetLoggerLevelRequest()
-            msg.logger = self.loggername
-            msg.level = level
-            _resp = set_logger_level(msg)
-        except rospy.ServiceException, e:
+            backup_level = current_level
+            self.call_service_set_level(self.nodename, self.loggername, level)
+            self.success_signal.emit(level)
+        except rospy.ServiceException as e:
             rospy.logwarn("Set logger %s for %s to %s failed: %s" % (self.loggername, self.nodename, level, e))
+            if backup_level is not None:
+                self.error_signal.emit(backup_level)
+
+    @classmethod
+    def call_service_set_level(cls, nodename, loggername, level):
+        set_logger_level = rospy.ServiceProxy('%s/set_logger_level' % nodename, SetLoggerLevel)
+        msg = SetLoggerLevelRequest()
+        msg.logger = loggername
+        msg.level = level
+        _resp = set_logger_level(msg)
