@@ -51,7 +51,7 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
-
+import fkie_node_manager as nm
 
 class SyncHighlighter(YamlHighlighter):
     '''
@@ -82,7 +82,7 @@ class SyncDialog(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
 #    self.host = host
-        self.setWindowIcon(QIcon(":/icons/irondevil_sync.png"))
+        self.setWindowIcon(nm.settings().icon('irondevil_sync.png'))
         self.setWindowTitle('Sync')
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setObjectName("verticalLayout")

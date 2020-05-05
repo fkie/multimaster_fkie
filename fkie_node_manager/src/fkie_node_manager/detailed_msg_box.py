@@ -41,7 +41,7 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QCheckBox, QPushButton, QSpacerItem, QSizePolicy, QTextEdit, QDialog
     from python_qt_binding.QtWidgets import QDialogButtonBox, QVBoxLayout, QHBoxLayout, QLabel, QStyle, QApplication
-
+import fkie_node_manager as nm
 
 IGNORED_ERRORS = []
 
@@ -106,13 +106,13 @@ class MessageBox(QDialog):
         if icon == self.NoIcon:
             pass
         elif icon == self.Question:
-            pixmap = QPixmap(QImage(":icons/question.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            pixmap = nm.settings().pixmap('question.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         elif icon == self.Information:
-            pixmap = QPixmap(QImage(":icons/info.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            pixmap = nm.settings().pixmap('info.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         elif icon == self.Warning:
-            pixmap = QPixmap(QImage(":icons/warning.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            pixmap = nm.settings().pixmap('warning.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         elif icon == self.Critical:
-            pixmap = QPixmap(QImage(":icons/critical.png").scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            pixmap = nm.settings().pixmap('critical.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         spacerItem = QSpacerItem(10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.icon_label = QLabel()

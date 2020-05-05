@@ -83,11 +83,11 @@ class GraphViewWidget(QDockWidget):
 
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "LaunchGraph", parent)
-        graph_ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'GraphDockWidget.ui')
+        graph_ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'ui', 'editor', 'GraphDockWidget.ui')
         loadUi(graph_ui_file, self)
         self.setObjectName('LaunchGraph')
         self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        self._info_icon = QIcon(":/icons/info.png")
+        self._info_icon = nm.settings().icon('info.png')
         self._tabwidget = tabwidget
         self._current_path = None
         self._root_path = None

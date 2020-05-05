@@ -86,8 +86,6 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QFileDialog, QMainWindow, QStackedLayout, QWidget, QStyle
     from python_qt_binding.QtWidgets import QShortcut, QVBoxLayout, QColorDialog, QDialog, QRadioButton, QDockWidget
 
-from fkie_node_manager import gui_resources
-
 try:
     from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
     DIAGNOSTICS_AVAILABLE = True
@@ -122,10 +120,10 @@ class MainWindow(QMainWindow):
         self._finished = False
         self._history_selected_robot = ''
         self.__icons = {'empty': (QIcon(), ''),
-                        'default_pc': (QIcon(':/icons/crystal_clear_miscellaneous.png'), ':/icons/crystal_clear_miscellaneous.png'),
-                        'log_warning': (QIcon(':/icons/crystal_clear_no_io.png'), ':/icons/crystal_clear_no_io.png'),
-                        'show_io': (QIcon(':/icons/crystal_clear_show_io.png'), ':/icons/crystal_clear_show_io.png')
-                        }  # (masnter name : (QIcon, path))
+                        'default_pc': (nm.settings().icon('crystal_clear_miscellaneous.png'), nm.settings().icon_path('crystal_clear_miscellaneous.png')),
+                        'log_warning': (nm.settings().icon('crystal_clear_no_io.png'), nm.settings().icon_path('crystal_clear_no_io.png')),
+                        'show_io': (nm.settings().icon('crystal_clear_show_io.png'), nm.settings().icon_path('crystal_clear_show_io.png'))
+                        }
         self.__current_icon = None
         self.__current_master_label_name = None
         self._syncs_to_start = []  # hostnames
@@ -138,10 +136,27 @@ class MainWindow(QMainWindow):
         self.setObjectName('MainWindow')
 #    self = mainWindow = QMainWindow()
 #    self = mainWindow = loader.load(":/forms/MainWindow.ui")
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MainWindow.ui')
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'MainWindow.ui')
         loadUi(ui_file, self)
         self.setObjectName('MainUI')
         self.setDockOptions(QMainWindow.AllowNestedDocks | QMainWindow.AllowTabbedDocks | QMainWindow.AnimatedDocks | QMainWindow.VerticalTabs)
+         # set icons
+        self.logButton.setIcon(nm.settings().icon('crystal_clear_show_io.png'))
+        self.settingsButton.setIcon(nm.settings().icon('crystal_clear_settings.png'))
+        self.infoButton.setIcon(nm.settings().icon('crystal_clear_info.png'))
+        self.simTimeLabel.setPixmap(nm.settings().pixmap('crystal_clear_xclock.png'))
+        self.launchServerLabel.setPixmap(nm.settings().pixmap('crystal_clear_launch_server.png'))
+        self.user_label.setPixmap(nm.settings().pixmap('crystal_clear_user.png'))
+        self.setTimeButton.setIcon(nm.settings().icon('crystal_clear_set_clock.png'))
+        self.refreshHostButton.setIcon(nm.settings().icon('oxygen_view_refresh.png'))
+        self.runButton.setIcon(nm.settings().icon('crystal_clear_clicknrun.png'))
+        self.syncButton.setIcon(nm.settings().icon('irondevil_sync.png'))
+        self.progressCancelButton_sync.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.progressCancelButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.refreshAllButton.setIcon(nm.settings().icon('oxygen_view_refresh.png'))
+        self.discoveryButton.setIcon(nm.settings().icon('crystal_clear_discovery.png'))
+        self.masterLogButton.setIcon(nm.settings().icon('crystal_clear_show_log.png'))
+        self.startRobotButton.setIcon(nm.settings().icon('crystal_clear_run_zeroconf.png'))
         self.close_signal.connect(self.close)
         self.close_without_ask = False
         self.user_frame.setVisible(False)
@@ -186,7 +201,7 @@ class MainWindow(QMainWindow):
         self.launch_dock.save_profile_signal.connect(self.profiler.on_save_profile)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.launch_dock)
 
-        self.mIcon = QIcon(":/icons/crystal_clear_prop_run.png")
+        self.mIcon = nm.settings().icon('crystal_clear_prop_run.png')
         # self.style().standardIcon(QStyle.SP_FileIcon)
         self.setWindowTitle("Node Manager")
         self.setWindowIcon(self.mIcon)
@@ -1045,7 +1060,7 @@ class MainWindow(QMainWindow):
     def on_set_time_clicked(self):
         if self.currentMaster is not None:  # and not self.currentMaster.is_local:
             time_dialog = QDialog()
-            ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'TimeInput.ui')
+            ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'TimeInput.ui')
             loadUi(ui_file, time_dialog)
             host = get_hostname(self.currentMaster.master_state.uri)
             time_dialog.setWindowTitle('Set time on %s' % host)
@@ -1155,14 +1170,14 @@ class MainWindow(QMainWindow):
                     binary = 'record'
                     prefix = ''
                     topic_names = []
-                    current_tab = self.currentMaster.masterTab.tabWidget.tabText(self.currentMaster.masterTab.tabWidget.currentIndex())
+                    current_tab = self.currentMaster.ui.tabWidget.tabText(self.currentMaster.ui.tabWidget.currentIndex())
                     if (current_tab == 'Nodes'):
-                        nodes = self.currentMaster.nodesFromIndexes(self.currentMaster.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+                        nodes = self.currentMaster.nodesFromIndexes(self.currentMaster.ui.nodeTreeView.selectionModel().selectedIndexes())
                         if nodes:
                             for n in nodes:
                                 topic_names.extend(n.published)
                     else:
-                        topics = self.currentMaster.topicsFromIndexes(self.currentMaster.masterTab.topicsView.selectionModel().selectedIndexes())
+                        topics = self.currentMaster.topicsFromIndexes(self.currentMaster.ui.topicsView.selectionModel().selectedIndexes())
                         if topics:
                             topic_names.extend([t.name for t in topics])
                     count_topics = 'ALL'
@@ -1851,7 +1866,6 @@ class MainWindow(QMainWindow):
             if self._description_history:
                 if len(self._description_history) > 15:
                     self._description_history.pop(0)
-                # text = '<a href="back://" title="back"><img src=":icons/back.png" alt="back"></a><br>%s' % text
                 text = '<a href="back://" title="back">back</a>%s' % text
             self.descriptionDock.setWindowTitle(title)
             vbar = self.descriptionTextEdit.verticalScrollBar()
@@ -2012,13 +2026,13 @@ class MainWindow(QMainWindow):
         if self._select_index == 0:
             if self.currentMaster is not None:
                 if self.currentMaster._is_current_tab_name('tabNodes'):
-                    self.currentMaster.masterTab.nodeTreeView.setFocus(Qt.TabFocusReason)
+                    self.currentMaster.ui.nodeTreeView.setFocus(Qt.TabFocusReason)
                 elif self.currentMaster._is_current_tab_name('tabTopics'):
-                    self.currentMaster.masterTab.topicsView.setFocus(Qt.TabFocusReason)
+                    self.currentMaster.ui.topicsView.setFocus(Qt.TabFocusReason)
                 elif self.currentMaster._is_current_tab_name('tabServices'):
-                    self.currentMaster.masterTab.servicesView.setFocus(Qt.TabFocusReason)
+                    self.currentMaster.ui.servicesView.setFocus(Qt.TabFocusReason)
                 elif self.currentMaster._is_current_tab_name('tabParameter'):
-                    self.currentMaster.masterTab.parameterView.setFocus(Qt.TabFocusReason)
+                    self.currentMaster.ui.parameterView.setFocus(Qt.TabFocusReason)
         elif self._select_index == 1:
             self.launch_dock.raise_()
             self.launch_dock.ui_file_view.setFocus(Qt.TabFocusReason)
@@ -2039,13 +2053,13 @@ class MainWindow(QMainWindow):
         list view or topics view.
         '''
         key_mod = QApplication.keyboardModifiers()
-        if self.currentMaster is not None and self.currentMaster.masterTab.nodeTreeView.hasFocus():
+        if self.currentMaster is not None and self.currentMaster.ui.nodeTreeView.hasFocus():
             if event.key() == Qt.Key_F4 and not key_mod:
-                if self.currentMaster.masterTab.editConfigButton.isEnabled():
+                if self.currentMaster.ui.editConfigButton.isEnabled():
                     self.currentMaster.on_edit_config_clicked()
-                elif self.currentMaster.masterTab.editRosParamButton.isEnabled():
+                elif self.currentMaster.ui.editRosParamButton.isEnabled():
                     self.currentMaster.on_edit_rosparam_clicked()
-            elif event.key() == Qt.Key_F3 and not key_mod and self.currentMaster.masterTab.ioButton.isEnabled():
+            elif event.key() == Qt.Key_F3 and not key_mod and self.currentMaster.ui.ioButton.isEnabled():
                 self.currentMaster.on_io_clicked()
         QMainWindow.keyReleaseEvent(self, event)
 

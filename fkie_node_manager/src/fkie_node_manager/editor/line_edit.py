@@ -39,6 +39,8 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QLineEdit, QToolButton, QStyle
 
+import fkie_node_manager as nm
+
 
 class EnhancedLineEdit(QLineEdit):
 
@@ -46,7 +48,7 @@ class EnhancedLineEdit(QLineEdit):
         QLineEdit.__init__(self, parent)
         # Create a clear button with icon
         self.clearBtn = clearBtn = QToolButton(self)
-        icon = QIcon.fromTheme("edit-clear", QIcon(":/icons/crystal_clear_button_close.png"))
+        icon = QIcon.fromTheme("edit-clear", nm.settings().icon('crystal_clear_button_close.png'))
         clearBtn.setIcon(icon)
         clearBtn.setCursor(Qt.ArrowCursor)
         clearBtn.setStyleSheet("QToolButton { border: none; padding: 0px; }")

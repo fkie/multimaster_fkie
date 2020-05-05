@@ -84,8 +84,15 @@ class LaunchFilesWidget(QDockWidget):
         # initialize parameter
         self.__current_path = os.path.expanduser('~')
         # load the UI file
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'LaunchFilesDockWidget.ui')
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'LaunchFilesDockWidget.ui')
         loadUi(ui_file, self, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
+        self.ui_button_progress_cancel_cfg.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui_button_reload.setIcon(nm.settings().icon('oxygen_view_refresh.png'))
+        self.ui_button_edit.setIcon(nm.settings().icon('crystal_clear_edit_launch.png'))
+        self.ui_button_new.setIcon(nm.settings().icon('crystal_clear_add.png'))
+        self.ui_button_transfer.setIcon(nm.settings().icon('crystal_clear_launch_file_transfer.png'))
+        self.ui_button_save_profile.setIcon(nm.settings().icon('crystal_clear_profile_new.png'))
+        self.ui_button_load.setIcon(nm.settings().icon('crystal_clear_launch_file.png'))
         self._current_search = ''
         pal = self.palette()
         self._default_color = pal.color(QPalette.Window)
@@ -117,8 +124,8 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
         # add menu to create fiel or directory
         self._menu_add = QMenu()
-        create_file_action = QAction(QIcon(':/icons/crystal_clear_launch_file_new.png'), "create file", self, statusTip="", triggered=self.on_new_xml_clicked)
-        create_dir_action = QAction(QIcon(':/icons/crystal_clear_folder.png'), "create directory", self, statusTip="", triggered=self.on_new_dir_clicked)
+        create_file_action = QAction(nm.settings().icon('crystal_clear_launch_file_new.png'), "create file", self, statusTip="", triggered=self.on_new_xml_clicked)
+        create_dir_action = QAction(nm.settings().icon('crystal_clear_folder.png'), "create directory", self, statusTip="", triggered=self.on_new_dir_clicked)
         self._menu_add.addAction(create_file_action)
         self._menu_add.addAction(create_dir_action)
         self.ui_button_new.setMenu(self._menu_add)

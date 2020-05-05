@@ -51,7 +51,6 @@ from roslib import message
 from genpy.rostime import Time, TVal
 import rospy
 
-from . import gui_resources
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
 
@@ -130,12 +129,15 @@ class EchoDialog(QDialog):
         QDialog.__init__(self, parent=parent)
         self._masteruri = masteruri
         masteruri_str = '' if masteruri is None else '[%s]' % masteruri
-        echo_dialog_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'EchoDialog.ui')
+        echo_dialog_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'EchoDialog.ui')
         loadUi(echo_dialog_file, self)
         self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowFlags(Qt.Window)
         self.setWindowTitle('%s %s %s' % ('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
+        self.setWindowIcon(nm.settings().icon('crystal_clear_prop_run_echo.png'))
+        self.clearButton.setIcon(nm.settings().icon('crystal_clear_show_delete_log.png'))
+        self.topicControlButton.setIcon(nm.settings().icon('sekkyumu_stop.png'))
         self.resize(900, 512)
 
         self.topic = topic
@@ -376,7 +378,7 @@ class EchoDialog(QDialog):
                     self._start_time = time.time()
                 else:
                     self._on_display_anchorClicked(QUrl(self._masteruri))
-                self.topicControlButton.setIcon(QIcon(':/icons/sekkyumu_stop.png'))
+                self.topicControlButton.setIcon(nm.settings().icon('sekkyumu_stop.png'))
             else:
                 if self.sub is not None:
                     self.sub.unregister()
@@ -385,7 +387,7 @@ class EchoDialog(QDialog):
                     self.ssh_output_file.close()
                     self.ssh_error_file.close()
                     self.ssh_output_file = None
-                self.topicControlButton.setIcon(QIcon(':/icons/sekkyumu_play.png'))
+                self.topicControlButton.setIcon(nm.settings().icon('sekkyumu_play.png'))
         except Exception as e:
             rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, utf8(e)))
 

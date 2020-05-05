@@ -189,13 +189,13 @@ class TopicItem(QStandardItem):
 #          cfg_col.setToolTip(tooltip)
 
     def _on_wait_for_publishing(self):
-        self.updateIconView(QIcon(':/icons/state_off.png'))
+        self.updateIconView(nm.settings().icon('state_off.png'))
 
     def _on_partial_publishing(self):
-        self.updateIconView(QIcon(':/icons/state_part.png'))
+        self.updateIconView(nm.settings().icon('state_part.png'))
 
     def _on_publishing(self):
-        self.updateIconView(QIcon(':/icons/state_run.png'))
+        self.updateIconView(nm.settings().icon('state_run.png'))
 
     def _publish_finished(self):
         self._publish_thread = None

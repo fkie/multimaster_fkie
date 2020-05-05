@@ -147,10 +147,6 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <property name="icon">
-            <iconset resource="GUI.qrc">
-             <normaloff>:/icons/crystal_clear_button_apply.png</normaloff>:/icons/crystal_clear_button_apply.png</iconset>
-           </property>
            <property name="flat">
             <bool>true</bool>
            </property>
@@ -163,10 +159,6 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
-           </property>
-           <property name="icon">
-            <iconset resource="GUI.qrc">
-             <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
            </property>
            <property name="flat">
             <bool>true</bool>
@@ -181,8 +173,5 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="GUI.qrc"/>
- </resources>
  <connections/>
 </ui>

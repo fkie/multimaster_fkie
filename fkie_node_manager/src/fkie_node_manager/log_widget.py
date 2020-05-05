@@ -49,6 +49,7 @@ except ImportError as err:
 
 from fkie_node_manager_daemon.common import utf8
 from .rosout_listener import RosoutListener
+import fkie_node_manager as nm
 
 
 class LogWidget(QDockWidget):
@@ -76,9 +77,10 @@ class LogWidget(QDockWidget):
         self._log_err_count = 0
         self._log_fatal_count = 0
         # load the UI file
-        log_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'LogDockWidget.ui')
+        log_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'LogDockWidget.ui')
         loadUi(log_dock_file, self)
         self.setObjectName("LogWidget")
+        self.closeButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
         self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         # connect to the button signals
         self.clearCloseButton.clicked.connect(self._on_log_clear_close_clicked)

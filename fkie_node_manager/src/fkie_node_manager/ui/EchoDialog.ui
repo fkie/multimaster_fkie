@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>Set Time</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="GUI.qrc">
-    <normaloff>:/icons/crystal_clear_prop_run_echo.png</normaloff>:/icons/crystal_clear_prop_run_echo.png</iconset>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
     <number>0</number>
@@ -566,10 +562,6 @@
         <property name="text">
          <string/>
         </property>
-        <property name="icon">
-         <iconset resource="GUI.qrc">
-          <normaloff>:/icons/crystal_clear_show_delete_log.png</normaloff>:/icons/crystal_clear_show_delete_log.png</iconset>
-        </property>
         <property name="flat">
          <bool>true</bool>
         </property>
@@ -585,10 +577,6 @@
         </property>
         <property name="text">
          <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="GUI.qrc">
-          <normaloff>:/icons/sekkyumu_stop.png</normaloff>:/icons/sekkyumu_stop.png</iconset>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -619,8 +607,5 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="GUI.qrc"/>
- </resources>
  <connections/>
 </ui>

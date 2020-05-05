@@ -127,10 +127,6 @@
          <property name="text">
           <string/>
          </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
-         </property>
          <property name="flat">
           <bool>true</bool>
          </property>
@@ -142,8 +138,5 @@
    </layout>
   </widget>
  </widget>
- <resources>
-  <include location="GUI.qrc"/>
- </resources>
  <connections/>
 </ui>

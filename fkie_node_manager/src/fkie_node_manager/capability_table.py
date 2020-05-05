@@ -274,7 +274,7 @@ class CapabilityControlWidget(QFrame):
         warning_layout.setContentsMargins(0, 0, 0, 0)
         warning_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.warning_label = QLabel()
-        icon = QIcon(':/icons/crystal_clear_warning.png')
+        icon = nm.settings().icon('crystal_clear_warning.png')
         self.warning_label.setPixmap(icon.pixmap(QSize(40, 40)))
         self.warning_label.setToolTip('Multiple configuration for same node found!\nA first one will be selected for the start a node!')
         warning_layout.addWidget(self.warning_label)

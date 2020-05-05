@@ -112,11 +112,12 @@ class ScreenWidget(QWidget):
         '''
         QWidget.__init__(self, parent)
         # load the UI file
-        screen_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ScreenWidget.ui')
+        screen_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'ui', 'logscreen', 'ScreenWidget.ui')
         loadUi(screen_dock_file, self)
         self.setObjectName("ScreenWidget")
-        self.setWindowIcon(QIcon(':/icons/crystal_clear_show_io.png'))
+        self.setWindowIcon(nm.settings().icon('crystal_clear_show_io.png'))
         # self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+        self.pauseButton.setIcon(nm.settings().icon('sekkyumu_pause.png'))
         self._lock = threading.RLock()
         self.finished = False
         self.qfile = None

@@ -108,10 +108,6 @@
          <property name="text">
           <string/>
          </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_show_io.png</normaloff>:/icons/crystal_clear_show_io.png</iconset>
-         </property>
          <property name="iconSize">
           <size>
            <width>16</width>
@@ -133,10 +129,6 @@
          </property>
          <property name="text">
           <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_settings.png</normaloff>:/icons/crystal_clear_settings.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -162,10 +154,6 @@
            <width>16</width>
            <height>20</height>
           </size>
-         </property>
-         <property name="icon">
-          <iconset resource="GUI.qrc">
-           <normaloff>:/icons/crystal_clear_info.png</normaloff>:/icons/crystal_clear_info.png</iconset>
          </property>
          <property name="flat">
           <bool>true</bool>
@@ -390,9 +378,6 @@
                    <property name="text">
                     <string/>
                    </property>
-                   <property name="pixmap">
-                    <pixmap resource="GUI.qrc">:/icons/crystal_clear_xclock.png</pixmap>
-                   </property>
                   </widget>
                  </item>
                  <item>
@@ -414,9 +399,6 @@
                    </property>
                    <property name="text">
                     <string/>
-                   </property>
-                   <property name="pixmap">
-                    <pixmap resource="GUI.qrc">:/icons/crystal_clear_launch_server.png</pixmap>
                    </property>
                    <property name="scaledContents">
                     <bool>true</bool>
@@ -478,9 +460,6 @@ p, li { white-space: pre-wrap; }
                      <widget class="QLabel" name="user_label">
                       <property name="text">
                        <string/>
-                      </property>
-                      <property name="pixmap">
-                       <pixmap resource="GUI.qrc">:/icons/crystal_clear_user.png</pixmap>
                       </property>
                      </widget>
                     </item>
@@ -556,10 +535,6 @@ p, li { white-space: pre-wrap; }
                    <property name="text">
                     <string/>
                    </property>
-                   <property name="icon">
-                    <iconset resource="GUI.qrc">
-                     <normaloff>:/icons/crystal_clear_set_clock.png</normaloff>:/icons/crystal_clear_set_clock.png</iconset>
-                   </property>
                    <property name="shortcut">
                     <string>F5</string>
                    </property>
@@ -607,10 +582,6 @@ p, li { white-space: pre-wrap; }
              <property name="text">
               <string/>
              </property>
-             <property name="icon">
-              <iconset resource="GUI.qrc">
-               <normaloff>:/icons/oxygen_view_refresh.png</normaloff>:/icons/oxygen_view_refresh.png</iconset>
-             </property>
              <property name="shortcut">
               <string>F5</string>
              </property>
@@ -638,10 +609,6 @@ p, li { white-space: pre-wrap; }
              </property>
              <property name="text">
               <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="GUI.qrc">
-               <normaloff>:/icons/crystal_clear_clicknrun.png</normaloff>:/icons/crystal_clear_clicknrun.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -697,20 +664,16 @@ p, li { white-space: pre-wrap; }
               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Enables / Disables the synchronization to discovered hosts. &lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This is done by running the &lt;span style=&quot; font-weight:600;&quot;&gt;master_sync&lt;/span&gt; node of &lt;span style=&quot; font-weight:600;&quot;&gt;fkie_master_sync&lt;/span&gt; package.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;The checkbox next to each host name in ROS network indicates whether the master_sync node is running.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; This button is disabled, if the local ROS_MASTER_URI is referenced to a remote host.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;Enables / Disables the synchronization to discovered hosts. &lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;This is done by running the &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:600;&quot;&gt;master_sync&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt; node of &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:600;&quot;&gt;fkie_master_sync&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt; package.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu';&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;The checkbox next to each host name in ROS network indicates whether the master_sync node is running.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu';&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;/!\&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt; This button is disabled, if the local ROS_MASTER_URI is referenced to a remote host.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="GUI.qrc">
-               <normaloff>:/icons/irondevil_sync.png</normaloff>:/icons/irondevil_sync.png</iconset>
              </property>
              <property name="shortcut">
               <string>Ctrl+S</string>
@@ -907,7 +870,7 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>987</width>
-     <height>30</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
@@ -1024,10 +987,6 @@ p, li { white-space: pre-wrap; }
         </item>
         <item>
          <widget class="QPushButton" name="progressCancelButton_sync">
-          <property name="icon">
-           <iconset resource="GUI.qrc">
-            <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
-          </property>
           <property name="flat">
            <bool>true</bool>
           </property>
@@ -1067,10 +1026,6 @@ p, li { white-space: pre-wrap; }
         </item>
         <item>
          <widget class="QPushButton" name="progressCancelButton">
-          <property name="icon">
-           <iconset resource="GUI.qrc">
-            <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
-          </property>
           <property name="flat">
            <bool>true</bool>
           </property>
@@ -1114,10 +1069,6 @@ p, li { white-space: pre-wrap; }
           <property name="toolTip">
            <string>Requests the master status from all robots</string>
           </property>
-          <property name="icon">
-           <iconset resource="GUI.qrc">
-            <normaloff>:/icons/oxygen_view_refresh.png</normaloff>:/icons/oxygen_view_refresh.png</iconset>
-          </property>
           <property name="flat">
            <bool>true</bool>
           </property>
@@ -1148,17 +1099,13 @@ p, li { white-space: pre-wrap; }
            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Launches the a network discovery dialog. This scan the networks {0..99} for running master_discovery nodes and allows an easy join to this networks.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; This currently does not work, if &lt;span style=&quot; font-weight:600;&quot;&gt;zeroconf&lt;/span&gt; nodes is used for discovering.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;Launches the a network discovery dialog. This scan the networks {0..99} for running master_discovery nodes and allows an easy join to this networks.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu';&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;/!\ This currently does not work, if &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:600;&quot;&gt;zeroconf&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt; nodes is used for discovering.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="GUI.qrc">
-            <normaloff>:/icons/crystal_clear_discovery.png</normaloff>:/icons/crystal_clear_discovery.png</iconset>
           </property>
           <property name="flat">
            <bool>true</bool>
@@ -1190,17 +1137,13 @@ p, li { white-space: pre-wrap; }
            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Launches the a network discovery dialog. This scan the networks {0..99} for running master_discovery nodes and allows an easy join to this networks.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; This currently does not work, if &lt;span style=&quot; font-weight:600;&quot;&gt;zeroconf&lt;/span&gt; nodes is used for discovering.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;Launches the a network discovery dialog. This scan the networks {0..99} for running master_discovery nodes and allows an easy join to this networks.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu';&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;/!\&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt; This currently does not work, if &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:600;&quot;&gt;zeroconf&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt; nodes is used for discovering.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="GUI.qrc">
-            <normaloff>:/icons/crystal_clear_show_log.png</normaloff>:/icons/crystal_clear_show_log.png</iconset>
           </property>
           <property name="flat">
            <bool>true</bool>
@@ -1227,21 +1170,17 @@ p, li { white-space: pre-wrap; }
            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Initiate the discovery process . The discovery node can also be started on a remote host. Click on the Start button and enter the &lt;span style=&quot; font-weight:600;&quot;&gt;hostname&lt;/span&gt; or &lt;span style=&quot; font-weight:600;&quot;&gt;IP address&lt;/span&gt;. Additionally, you can enter a &lt;span style=&quot; font-weight:600;&quot;&gt;network number (0..99)&lt;/span&gt; to create your own multi robot network. Thus you avoid the redundant synchronization to non-participant robots. The roscore will be run automatically via SSH if it is not currently available.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Shortcut: &lt;span style=&quot; font-weight:600;&quot;&gt;Strg+R&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-weight:600;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; This runs a &lt;span style=&quot; font-weight:600;&quot;&gt;master_discovery&lt;/span&gt; node. Change the &lt;span style=&quot; font-weight:600;&quot;&gt;discovery type&lt;/span&gt; to &lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;zeroconf&lt;/span&gt; to use zeroconf for discovery. In this case some features are not available. &lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;img src=&quot;:/icons/crystal_clear_warning.png&quot; /&gt; If no multicast communication is available use the run dialog in host description panel to run &lt;span style=&quot; font-weight:600;&quot;&gt;master_discovery&lt;/span&gt; and sets the &lt;span style=&quot; font-weight:600;&quot;&gt;static hosts&lt;/span&gt; parameter to the list of availabele hosts separeted by comma. This also increases the network load!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:600; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt;Initiate the discovery process . The discovery node can also be started on a remote host. Click on the Start button and enter the &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;hostname&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; or &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;IP address&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt;. Additionally, you can enter a &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;network number (0..99)&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; to create your own multi robot network. Thus you avoid the redundant synchronization to non-participant robots. The roscore will be run automatically via SSH if it is not currently available.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu'; font-weight:400;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt;Shortcut: &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;Strg+R&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu';&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;/!\&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; This runs a &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;master_discovery&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; node. Change the &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;discovery type&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; to &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-style:italic;&quot;&gt;zeroconf&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; to use zeroconf for discovery. In this case some features are not available. &lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu'; font-weight:400;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;/!\&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; If no multicast communication is available use the run dialog in host description panel to run &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;master_discovery&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; and sets the &lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu';&quot;&gt;static hosts&lt;/span&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-weight:400;&quot;&gt; parameter to the list of availabele hosts separeted by comma. This also increases the network load!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string>Start</string>
-          </property>
-          <property name="icon">
-           <iconset resource="GUI.qrc">
-            <normaloff>:/icons/crystal_clear_run_zeroconf.png</normaloff>:/icons/crystal_clear_run_zeroconf.png</iconset>
           </property>
           <property name="shortcut">
            <string>Ctrl+R</string>
@@ -1356,6 +1295,13 @@ p, li { white-space: pre-wrap; }
    </widget>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QWebView</class>
+   <extends>QWidget</extends>
+   <header>QtWebKitWidgets/QWebView</header>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>hideDocksButton</tabstop>
   <tabstop>tabWidget</tabstop>
@@ -1376,8 +1322,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>masterTableView</tabstop>
   <tabstop>descriptionTextEdit</tabstop>
  </tabstops>
- <resources>
-  <include location="GUI.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

@@ -35,13 +35,6 @@ install(
 )
 
 install(
-    DIRECTORY
-        images
-        rqt_icons
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(
    FILES
         README.rst
         plugin.xml
@@ -50,42 +43,18 @@ install(
 
 install(
     DIRECTORY
-    doc
+        doc
+        images
+        launch
+        rqt_icons
+        src/${PROJECT_NAME}/icons
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(
-   FILES
-        src/${PROJECT_NAME}/EchoDialog.ui
-        src/${PROJECT_NAME}/GUI.qrc
-        src/${PROJECT_NAME}/LaunchFilesDockWidget.ui
-        src/${PROJECT_NAME}/LogDockWidget.ui
-        src/${PROJECT_NAME}/MainWindow.ui
-        src/${PROJECT_NAME}/MasterTab.ui
-        src/${PROJECT_NAME}/MessageFrame.ui
-        src/${PROJECT_NAME}/PasswordInput.ui
-        src/${PROJECT_NAME}/ProfileWidget.ui
-        src/${PROJECT_NAME}/SettingsDockWidget.ui
-        src/${PROJECT_NAME}/TimeInput.ui
-   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
-)
-
-install(
-   FILES
-        src/${PROJECT_NAME}/editor/GraphDockWidget.ui
-   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/editor/
-)
-
-install(
-   FILES
-        src/${PROJECT_NAME}/logscreen/ScreenWidget.ui
-   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}/logscreen/
 )
 
 install(
     DIRECTORY
-    launch
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+        src/${PROJECT_NAME}/ui
+    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
 
 # install generated version files; cmake from multimaster_msgs

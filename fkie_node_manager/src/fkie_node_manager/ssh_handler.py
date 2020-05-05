@@ -257,7 +257,7 @@ class SSHhandler(object):
         result = False
         pw = None
         pwInput = QDialog()
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'PasswordInput.ui')
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'PasswordInput.ui')
         loadUi(ui_file, pwInput)
         pwInput.setWindowTitle(''.join(['Access for ', host]))
         pwInput.userLine.setText(utf8(user))

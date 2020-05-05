@@ -32,8 +32,11 @@
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
-from python_qt_binding.QtGui import QColor
-from python_qt_binding.QtCore import QSettings
+from python_qt_binding.QtGui import QColor  # pylint: disable=no-name-in-module, import-error
+from python_qt_binding.QtGui import QIcon  # pylint: disable=no-name-in-module, import-error
+from python_qt_binding.QtGui import QImage  # pylint: disable=no-name-in-module, import-error
+from python_qt_binding.QtGui import QPixmap  # pylint: disable=no-name-in-module, import-error
+from python_qt_binding.QtCore import QSettings  # pylint: disable=no-name-in-module, import-error
 
 import os
 import roslib
@@ -194,6 +197,7 @@ class Settings(object):
         settings.endGroup()
         self.init_hosts_color_list()
         self._launch_history = None  # list with file names
+        self._icons_dir = os.path.join(self.PACKAGE_DIR, 'icons')
 
     def masteruri(self):
         return self._masteruri
@@ -428,6 +432,18 @@ class Settings(object):
                 settings.setValue(name, setval)
                 return
         object.__setattr__(self, name, value)
+
+    def icon_path(self, name):
+        return os.path.join(self._icons_dir, name)
+
+    def icon(self, name):
+        return QIcon(self.icon_path(name))
+
+    def image(self, name):
+        return QImage(self.icon_path(name))
+
+    def pixmap(self, name):
+        return QPixmap(self.icon_path(name))
 
     def host_user(self, host):
         if host in self._default_user_hosts:

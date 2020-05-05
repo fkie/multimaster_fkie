@@ -134,27 +134,27 @@ class PathItem(QStandardItem):
     def _update_icon(self):
         if self.id in [self.NOTHING, self.NOT_FOUND]:
             return
-        icon_path = ""
+        icon_pixmap = ''
         if self.id == self.FOLDER:
-            icon_path = ":/icons/crystal_clear_folder.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_folder.png')
         elif self.id == self.PACKAGE:
-            icon_path = ":/icons/crystal_clear_package.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_package.png')
         elif self.id == self.LAUNCH_FILE:
-            icon_path = ":/icons/crystal_clear_launch_file.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_launch_file.png')
         elif self.id == self.RECENT_FILE:
-            icon_path = ":/icons/crystal_clear_launch_file_recent.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_launch_file_recent.png')
         elif self.id == self.STACK:
-            icon_path = ":/icons/crystal_clear_stack.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_stack.png')
         elif self.id == self.PROFILE:
-            icon_path = ":/icons/crystal_clear_profile.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_profile.png')
         elif self.id == self.RECENT_PROFILE:
-            icon_path = ":/icons/crystal_clear_profile_recent.png"
+            icon_pixmap = nm.settings().pixmap('crystal_clear_profile_recent.png')
         elif self.id == self.REMOTE_DAEMON:
-            icon_path = ":/icons/stock_connect.png"
+            icon_pixmap = nm.settings().pixmap('stock_connect.png')
         elif self.id == self.ROOT:
-            icon_path = ":/icons/back.png"
-        if icon_path:
-            self.setIcon(QIcon(QPixmap(icon_path).scaled(16, 16)))
+            icon_pixmap = nm.settings().pixmap('back.png')
+        if icon_pixmap:
+            self.setIcon(QIcon(icon_pixmap.scaled(16, 16)))
 
     @property
     def name(self):

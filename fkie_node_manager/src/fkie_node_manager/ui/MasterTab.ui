@@ -270,10 +270,6 @@
                 </item>
                 <item>
                  <widget class="QPushButton" name="progressCancelPrioButton">
-                  <property name="icon">
-                   <iconset resource="GUI.qrc">
-                    <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
-                  </property>
                   <property name="flat">
                    <bool>true</bool>
                   </property>
@@ -328,10 +324,6 @@
                 </item>
                 <item>
                  <widget class="QPushButton" name="progressCancelButton">
-                  <property name="icon">
-                   <iconset resource="GUI.qrc">
-                    <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
-                  </property>
                   <property name="flat">
                    <bool>true</bool>
                   </property>
@@ -404,10 +396,6 @@ p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Start  selected service if it is not already running&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_play.png</normaloff>:/icons/sekkyumu_play.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -448,10 +436,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Note:&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; if a node was killed on a remote host, it shows still as running. Unregister it manually!&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;&quot;&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Note:&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; The stop button is disabled on errors&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_stop.png</normaloff>:/icons/sekkyumu_stop.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -500,10 +484,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Note:&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; if a node was killed on a remote host, it shows still as running. Unregister it manually!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_show_io.png</normaloff>:/icons/crystal_clear_show_io.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -538,10 +518,6 @@ p, li { white-space: pre-wrap; }
                <property name="text">
                 <string/>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_show_log.png</normaloff>:/icons/crystal_clear_show_log.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -572,10 +548,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="toolTip">
                 <string>Delete log file of selected service</string>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_show_delete_log.png</normaloff>:/icons/crystal_clear_show_delete_log.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -615,10 +587,6 @@ p, li { white-space: pre-wrap; }
                <property name="toolTip">
                 <string>Edit the configuration of the node using dynamic reconfigure</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_dyncfg.png</normaloff>:/icons/crystal_clear_dyncfg.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -650,10 +618,6 @@ p, li { white-space: pre-wrap; }
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Edit configuration of selected service in ROS parameter server&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/default_cfg_edit.png</normaloff>:/icons/default_cfg_edit.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -684,10 +648,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Edit configuration of selected service in launch file&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;F4&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_edit_launch.png</normaloff>:/icons/crystal_clear_edit_launch.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -732,10 +692,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt;Closes open configurations, stop ROS with roscore or shotdown this host&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Shift+F4&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_button_close.png</normaloff>:/icons/crystal_clear_button_close.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -891,10 +847,6 @@ p, li { white-space: pre-wrap; }
                <property name="text">
                 <string/>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_topic_echo.png</normaloff>:/icons/sekkyumu_topic_echo.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -926,10 +878,6 @@ p, li { white-space: pre-wrap; }
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show only the receive rate of the topic&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_topic_hz.png</normaloff>:/icons/sekkyumu_topic_hz.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -960,10 +908,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show only the receive rate of the topic. Uses an SSH connection to execute 'rostopic hz'  on remote host.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_topic_echo_ssh_hz.png</normaloff>:/icons/sekkyumu_topic_echo_ssh_hz.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1000,10 +944,6 @@ p, li { white-space: pre-wrap; }
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Start a publisher for selected topic or creates a new topic, if no selected&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_topic_pub.png</normaloff>:/icons/sekkyumu_topic_pub.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -1031,10 +971,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stop a running publisher of selected topic&lt;/p&gt;&lt;p&gt;Publishers are all nodes which starts with &lt;span style=&quot; font-style:italic;&quot;&gt;/rostopic_pub[topicname]&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_topic_pub_stop.png</normaloff>:/icons/sekkyumu_topic_pub_stop.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1193,10 +1129,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="text">
                 <string/>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/sekkyumu_call_service.png</normaloff>:/icons/sekkyumu_call_service.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1365,10 +1297,6 @@ p, li { white-space: pre-wrap; }
                <property name="toolTip">
                 <string>Get the parameter list from the Parameter server</string>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_action_db_update.png</normaloff>:/icons/crystal_clear_action_db_update.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -1400,10 +1328,6 @@ p, li { white-space: pre-wrap; }
                <property name="text">
                 <string/>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_action_db_add.png</normaloff>:/icons/crystal_clear_action_db_add.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -1431,10 +1355,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="text">
                 <string/>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_action_db_remove.png</normaloff>:/icons/crystal_clear_action_db_remove.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1470,10 +1390,6 @@ p, li { white-space: pre-wrap; }
                <property name="text">
                 <string/>
                </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/save.png</normaloff>:/icons/save.png</iconset>
-               </property>
                <property name="iconSize">
                 <size>
                  <width>32</width>
@@ -1507,10 +1423,6 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="text">
                 <string/>
-               </property>
-               <property name="icon">
-                <iconset resource="GUI.qrc">
-                 <normaloff>:/icons/crystal_clear_launch_file_transfer.png</normaloff>:/icons/crystal_clear_launch_file_transfer.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1555,8 +1467,5 @@ p, li { white-space: pre-wrap; }
    <header>fkie_node_manager/editor/line_edit</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="GUI.qrc"/>
- </resources>
  <connections/>
 </ui>

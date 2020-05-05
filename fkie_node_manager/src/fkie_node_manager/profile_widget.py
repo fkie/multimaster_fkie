@@ -66,7 +66,7 @@ class ProfileWidget(QDockWidget):
         '''
         QDockWidget.__init__(self, parent)
         # load the UI file
-        profile_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ProfileWidget.ui')
+        profile_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ProfileWidget.ui')
         loadUi(profile_dock_file, self)
         self._main_window = main_window
         self.setVisible(False)

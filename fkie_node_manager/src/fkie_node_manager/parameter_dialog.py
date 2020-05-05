@@ -107,7 +107,7 @@ class ValueWidget(QWidget):
         hlayout.addWidget(self._create_input_widget())
         if parameter_description.hint:
             # add help button if hint is available
-            self.help_button = QPushButton(QIcon(':/icons/info.png'), '')
+            self.help_button = QPushButton(nm.settings().icon('info.png'), '')
             self.help_button.setFlat(True)
             self.help_button.setMaximumSize(20, 20)
             self.help_button.setCheckable(True)
@@ -1079,14 +1079,14 @@ class ParameterDialog(QDialog):
 
     def showLoadSaveButtons(self):
         self.load_button = QPushButton()
-        self.load_button.setIcon(QIcon(':/icons/load.png'))
+        self.load_button.setIcon(nm.settings().icon('load.png'))
         self.load_button.clicked.connect(self._load_parameter)
         self.load_button.setToolTip('Load parameters from YAML file')
         self.load_button.setFlat(True)
         self.buttonBox.addButton(self.load_button, QDialogButtonBox.ActionRole)
         self.save_button = QPushButton()
         self.save_button.clicked.connect(self._save_parameter)
-        self.save_button.setIcon(QIcon(':/icons/save.png'))
+        self.save_button.setIcon(nm.settings().icon('save.png'))
         self.save_button.setToolTip('Save parameters to YAML file')
         self.save_button.setFlat(True)
         self.buttonBox.addButton(self.save_button, QDialogButtonBox.ActionRole)
@@ -1296,11 +1296,11 @@ class MasterParameterDialog(ParameterDialog):
         self.ns = ns
         self.is_delivered = False
         self.is_send = False
-        self.mIcon = QIcon(":/icons/default_cfg.png")
+        self.mIcon = nm.settings().icon('default_cfg.png')
         self.setWindowIcon(self.mIcon)
         # self.resize(450, 300)
         self.add_new_button = QPushButton()
-        self.add_new_button.setIcon(QIcon(':/icons/crystal_clear_add.png'))
+        self.add_new_button.setIcon(nm.settings().icon('crystal_clear_add.png'))
         self.add_new_button.clicked.connect(self._on_add_parameter)
         self.add_new_button.setToolTip('Adds a new parameter to the list')
         self.add_new_button.setFlat(True)

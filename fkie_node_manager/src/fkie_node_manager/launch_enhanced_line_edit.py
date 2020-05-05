@@ -38,7 +38,7 @@ try:
     from python_qt_binding.QtGui import QLineEdit, QToolButton, QStyle
 except Exception:
     from python_qt_binding.QtWidgets import QLineEdit, QToolButton, QStyle
-
+import fkie_node_manager as nm
 
 class EnhancedLineEdit(QLineEdit):
 
@@ -53,14 +53,14 @@ class EnhancedLineEdit(QLineEdit):
         self.process_active = False
         # create a reload button with icon
         self.button_reload = button_reload = QToolButton(self)
-        icon = QIcon.fromTheme("view-refresh", QIcon(":/icons/oxygen_view_refresh.png"))
+        icon = QIcon.fromTheme("view-refresh", nm.settings().icon('oxygen_view_refresh.png'))
         button_reload.setIcon(icon)
         button_reload.setCursor(Qt.ArrowCursor)
         button_reload.setStyleSheet("QToolButton { border: none; padding: 0px; }")
 
         # create a stop button with icon
         self.button_stop = button_stop = QToolButton(self)
-        icon = QIcon.fromTheme("process-stop", QIcon(":/icons/oxygen_view_refresh.png"))
+        icon = QIcon.fromTheme("process-stop", nm.settings().icon('oxygen_view_refresh.png'))
         button_stop.setIcon(icon)
         button_stop.setCursor(Qt.ArrowCursor)
         button_stop.setStyleSheet("QToolButton { border: none; padding: 0px; }")

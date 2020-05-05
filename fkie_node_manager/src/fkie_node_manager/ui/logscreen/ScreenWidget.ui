@@ -353,10 +353,6 @@
         <property name="text">
          <string/>
         </property>
-        <property name="icon">
-         <iconset resource="../GUI.qrc">
-          <normaloff>:/icons/sekkyumu_pause.png</normaloff>:/icons/sekkyumu_pause.png</iconset>
-        </property>
         <property name="checkable">
          <bool>true</bool>
         </property>
@@ -387,8 +383,5 @@
    <header>fkie_node_manager/logscreen/screen_widget</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../GUI.qrc"/>
- </resources>
  <connections/>
 </ui>

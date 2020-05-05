@@ -79,7 +79,7 @@ class MenuRqt(QMenu):
                                               'that is connected to the selected master.</p>"',
                                               triggered=self.on_show_tf_tree_clicked)
             self.addAction(self.action_rqt_tf_tree)
-            self.action_rqt_ros_graph = QAction(QIcon(":/icons/button_graph.png"),
+            self.action_rqt_ros_graph = QAction(nm.settings().icon('button_graph.png'),
                                                 "Ros &Graph", self,
                                                 statusTip='"<p>Starts a python GUI plugin for visualizing the ROS computation graph'
                                                 'that is connected to the selected master</p>"',
@@ -102,7 +102,7 @@ class MenuRqt(QMenu):
                                       'that is connected to the selected master</p>"',
                                       triggered=self.on_start_rqt_clicked)
             self.addAction(self.action_rqt)
-            self.action_terminal = QAction(QIcon(":/icons/crystal_clear_show_io.png"),
+            self.action_terminal = QAction(nm.settings().icon('crystal_clear_show_io.png'),
                                            "&Terminal", self,
                                            statusTip='"<p>Start terminal on selected host</p>"',
                                            triggered=self.on_start_terminal)

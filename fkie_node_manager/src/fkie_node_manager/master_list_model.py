@@ -64,9 +64,9 @@ class MasterSyncButtonHelper(QObject):
         self.name = master.name
         self._master = master
         self._syncronized = MasterSyncButtonHelper.NOT_SYNC
-        self.ICONS = {MasterSyncButtonHelper.SYNC: QIcon(":/icons/%s_sync.png" % self.ICON_PREFIX),
-                      MasterSyncButtonHelper.NOT_SYNC: QIcon(":/icons/%s_not_sync.png" % self.ICON_PREFIX),
-                      MasterSyncButtonHelper.SWITCHED: QIcon(":/icons/%s_start_sync.png" % self.ICON_PREFIX)}
+        self.ICONS = {MasterSyncButtonHelper.SYNC: nm.settings().icon("%s_sync.png" % self.ICON_PREFIX),
+                      MasterSyncButtonHelper.NOT_SYNC: nm.settings().icon("%s_not_sync.png" % self.ICON_PREFIX),
+                      MasterSyncButtonHelper.SWITCHED: nm.settings().icon("%s_start_sync.png" % self.ICON_PREFIX)}
         self.widget = QPushButton()
 #    self.widget.setFlat(True)
         self.widget.setIcon(self.ICONS[MasterSyncButtonHelper.NOT_SYNC])
@@ -153,13 +153,13 @@ class MasterItem(QStandardItem):
         self.local = local
         self.__quality = quality
         self.descr = ''
-        self.ICONS = {'green': QIcon(":/icons/stock_connect_green.png"),
-                      'yellow': QIcon(":/icons/stock_connect_yellow.png"),
-                      'red': QIcon(":/icons/stock_connect_red.png"),
-                      'grey': QIcon(":/icons/stock_connect.png"),
-                      'disconnected': QIcon(":/icons/stock_disconnect.png"),
-                      'warning': QIcon(':/icons/crystal_clear_warning.png'),
-                      'clock_warn': QIcon(':/icons/crystal_clear_xclock_fail.png')}
+        self.ICONS = {'green': nm.settings().icon('stock_connect_green.png'),
+                      'yellow': nm.settings().icon('stock_connect_yellow.png'),
+                      'red': nm.settings().icon('stock_connect_red.png'),
+                      'grey': nm.settings().icon('stock_connect.png'),
+                      'disconnected': nm.settings().icon('stock_disconnect.png'),
+                      'warning': nm.settings().icon('crystal_clear_warning.png'),
+                      'clock_warn': nm.settings().icon('crystal_clear_xclock_fail.png')}
         self.master_ip = None
         self._master_errors = []
         self._diagnostics = []
@@ -602,18 +602,18 @@ class MasterIconsDelegate(QItemDelegate):
     def _scale_icons(self, icon_size):
         self._icon_size = icon_size
         params = (self._icon_size, self._icon_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-        self.IMAGES = {'green': QImage(":/icons/stock_connect_green.png").scaled(*params),
-                       'yellow': QImage(":/icons/stock_connect_yellow.png").scaled(*params),
-                       'red': QImage(":/icons/stock_connect_red.png").scaled(*params),
-                       'grey': QImage(":/icons/stock_connect.png").scaled(*params),
-                       'disconnected': QImage(":/icons/stock_disconnect.png").scaled(*params),
-                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(*params),
-                       'clock_warn': QImage(':/icons/crystal_clear_xclock_fail.png').scaled(*params),
-                       'cpu_warn': QImage(':/icons/hight_load.png').scaled(*params),
-                       'cpu_temp_warn': QImage(':/icons/temperatur_warn.png').scaled(*params),
-                       'hdd_warn': QImage(':/icons/crystal_clear_hdd_warn.png').scaled(*params),
-                       'net_warn': QImage(':/icons/sekkyumu_net_warn.png').scaled(*params),
-                       'mem_warn': QImage(':/icons/mem_warn.png').scaled(*params)
+        self.IMAGES = {'green': nm.settings().image('stock_connect_green.png').scaled(*params),
+                       'yellow': nm.settings().image('stock_connect_yellow.png').scaled(*params),
+                       'red': nm.settings().image('stock_connect_red.png').scaled(*params),
+                       'grey': nm.settings().image('stock_connect.png').scaled(*params),
+                       'disconnected': nm.settings().image('stock_disconnect.png').scaled(*params),
+                       'warning': nm.settings().image('crystal_clear_warning.png').scaled(*params),
+                       'clock_warn': nm.settings().image('crystal_clear_xclock_fail.png').scaled(*params),
+                       'cpu_warn': nm.settings().image('hight_load.png').scaled(*params),
+                       'cpu_temp_warn': nm.settings().image('temperatur_warn.png').scaled(*params),
+                       'hdd_warn': nm.settings().image('crystal_clear_hdd_warn.png').scaled(*params),
+                       'net_warn': nm.settings().image('sekkyumu_net_warn.png').scaled(*params),
+                       'mem_warn': nm.settings().image('mem_warn.png').scaled(*params)
                        }
 
     def set_enabled(self, value):

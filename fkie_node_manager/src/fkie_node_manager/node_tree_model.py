@@ -111,7 +111,7 @@ class GroupItem(QStandardItem):
         QStandardItem.__init__(self, dname)
         self.parent_item = parent
         self._name = name
-        self.setIcon(QIcon(':/icons/state_off.png'))
+        self.setIcon(nm.settings().icon('state_off.png'))
         self.descr_type = self.descr_name = self.descr = ''
         self.descr_images = []
         self._capcabilities = dict()
@@ -667,7 +667,7 @@ class GroupItem(QStandardItem):
             item = self.child(i)
             if isinstance(item, (GroupItem, NodeItem)):
                 if item.state == NodeItem.STATE_WARNING:
-                    self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
+                    self.setIcon(nm.settings().icon('crystal_clear_warning.png'))
                     self._state = NodeItem.STATE_WARNING
                     if self.parent_item is not None:
                         self.parent_item.updateIcon()
@@ -694,25 +694,25 @@ class GroupItem(QStandardItem):
             diag_icon = NodeItem._diagnostic_level2icon(diag_level)
         if has_duplicate:
             self._state = NodeItem.STATE_DUPLICATE
-            self.setIcon(QIcon(':/icons/imacadam_stop.png'))
+            self.setIcon(nm.settings().icon('imacadam_stop.png'))
         elif has_ghosts:
             self._state = NodeItem.STATE_GHOST
-            self.setIcon(QIcon(':/icons/state_ghost.png'))
+            self.setIcon(nm.settings().icon('state_ghost.png'))
         elif has_running and has_off:
             if diag_icon is not None:
                 self.setIcon(diag_icon)
             else:
                 self._state = NodeItem.STATE_PARTS
-                self.setIcon(QIcon(':/icons/state_part.png'))
+                self.setIcon(nm.settings().icon('state_part.png'))
         elif not has_running:
             self._state = NodeItem.STATE_OFF
-            self.setIcon(QIcon(':/icons/state_off.png'))
+            self.setIcon(nm.settings().icon('state_off.png'))
         elif not has_off and has_running:
             if diag_icon is not None:
                 self.setIcon(diag_icon)
             else:
                 self._state = NodeItem.STATE_RUN
-                self.setIcon(QIcon(':/icons/state_run.png'))
+                self.setIcon(nm.settings().icon('state_run.png'))
         if self.parent_item is not None:
             self.parent_item.updateIcon()
 
@@ -809,11 +809,11 @@ class GroupItem(QStandardItem):
                 has_launches = NodeItem.has_launch_cfgs(cfgs)
                 has_defaults = NodeItem.has_default_cfgs(cfgs)
                 if has_launches and has_defaults:
-                    cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
+                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file_def_cfg.png'))
                 elif has_launches:
-                    cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file.png'))
+                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file.png'))
                 elif has_defaults:
-                    cfg_col.setIcon(QIcon(':/icons/default_cfg.png'))
+                    cfg_col.setIcon(nm.settings().icon('default_cfg.png'))
                 else:
                     cfg_col.setIcon(QIcon())
 
@@ -913,9 +913,9 @@ class HostItem(GroupItem):
             self.setIcon(QIcon(image_file))
         else:
             if local:
-                self.setIcon(QIcon(':/icons/crystal_clear_miscellaneous.png'))
+                self.setIcon(nm.settings().icon('crystal_clear_miscellaneous.png'))
             else:
-                self.setIcon(QIcon(':/icons/remote.png'))
+                self.setIcon(nm.settings().icon('remote.png'))
         self.descr_type = self.descr_name = self.descr = ''
         self.sysmon_state = False
 
@@ -1035,7 +1035,8 @@ class HostItem(GroupItem):
             tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
             tooltip += '<p>'
             if self.local:
-                sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
+                icon_path_settings = nm.settings().icon_path('crystal_clear_settings_24.png')
+                sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src="%s" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''), icon_path_settings)
                 sysmon_state_str = 'disable' if self.sysmon_state else 'enable'
                 sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
                 tooltip += '<h3>System Monitoring: (%s) %s</h3>' % (sysmon_switch_str, sysmon_setup_str)
@@ -1176,13 +1177,13 @@ class NodeItem(QStandardItem):
         self._parent_item = None
         self._node_info = node_info.copy()
 #    self.ICONS = {'empty' : QIcon(),
-#                  'run'    : QIcon(':/icons/state_run.png'),
-#                  'off'     :QIcon(':/icons/state_off.png'),
-#                  'warning' : QIcon(':/icons/crystal_clear_warning.png'),
+#                  'run'    : nm.settings().icon('state_run.png'),
+#                  'off'     :nm.settings().icon('state_off.png'),
+#                  'warning' : nm.settings().icon('crystal_clear_warning.png'),
 #                  'stop'    : QIcon('icons/imacadam_stop.png'),
-#                  'cfg+def' : QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'),
-#                  'cfg'     : QIcon(':/icons/crystal_clear_launch_file.png'),
-#                  'default_cfg' : QIcon(':/icons/default_cfg.png')
+#                  'cfg+def' : nm.settings().icon('crystal_clear_launch_file_def_cfg.png'),
+#                  'cfg'     : nm.settings().icon('crystal_clear_launch_file.png'),
+#                  'default_cfg' : nm.settings().icon('default_cfg.png')
 #                  }
         self._cfgs = []
         self.launched_cfg = None  # is used to store the last configuration to launch the node
@@ -1190,7 +1191,7 @@ class NodeItem(QStandardItem):
         self._std_config = None  # it's config with empty name. for default proposals
         self._is_ghost = False
         self._has_running = False
-        self.setIcon(QIcon(':/icons/state_off.png'))
+        self.setIcon(nm.settings().icon('state_off.png'))
         self._state = NodeItem.STATE_OFF
         self.diagnostic_array = []
         self.nodelet_mngr = ''
@@ -1396,13 +1397,13 @@ class NodeItem(QStandardItem):
     @staticmethod
     def _diagnostic_level2icon(level):
         if level == 1:
-            return QIcon(':/icons/state_diag_warn.png')
+            return nm.settings().icon('state_diag_warn.png')
         elif level == 2:
-            return QIcon(':/icons/state_diag_error.png')
+            return nm.settings().icon('state_diag_error.png')
         elif level == 3:
-            return QIcon(':/icons/state_diag_stale.png')
+            return nm.settings().icon('state_diag_stale.png')
         else:
-            return QIcon(':/icons/state_diag_other.png')
+            return nm.settings().icon('state_diag_other.png')
 
     def _on_kill_param_values(self, masteruri, code, msg, params):
         if code == 1:
@@ -1434,46 +1435,46 @@ class NodeItem(QStandardItem):
                 self.setIcon(self._diagnostic_level2icon(level))
                 self.setToolTip(self.diagnostic_array[-1].message)
             else:
-                self.setIcon(QIcon(':/icons/state_run.png'))
+                self.setIcon(nm.settings().icon('state_run.png'))
                 self.setToolTip('')
         elif self.node_info.uri is not None and not self.node_info.isLocal:
             self._state = NodeItem.STATE_RUN
-            self.setIcon(QIcon(':/icons/state_unknown.png'))
+            self.setIcon(nm.settings().icon('state_unknown.png'))
             tooltip += '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'
             tooltip += '</dl>'
             self.setToolTip('<div>%s</div>' % tooltip)
 #    elif not self.node_info.isLocal and not master_discovered and not self.node_info.uri is None:
 # #    elif not local and not master_discovered and not self.node_info.uri is None:
 #      self._state = NodeItem.STATE_RUN
-#      self.setIcon(QIcon(':/icons/state_run.png'))
+#      self.setIcon(nm.settings().icon('state_run.png'))
 #      tooltip = ''.join([tooltip, '<dl><dt>(Remote nodes will not be ping, so they are always marked running)</dt></dl>'])
 #      tooltip = ''.join([tooltip, '</dl>'])
 #      self.setToolTip(''.join(['<div>', tooltip, '</div>']))
         elif self.node_info.pid is None and self.node_info.uri is None and (self.node_info.subscribedTopics or self.node_info.publishedTopics or self.node_info.services):
-            self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
+            self.setIcon(nm.settings().icon('crystal_clear_warning.png'))
             self._state = NodeItem.STATE_WARNING
             tooltip += '<dl><dt>Can\'t get node contact information, but there exists publisher, subscriber or services of this node.</dt></dl>'
             tooltip += '</dl>'
             self.setToolTip('<div>%s</div>' % tooltip)
         elif self.node_info.uri is not None:
             self._state = NodeItem.STATE_WARNING
-            self.setIcon(QIcon(':/icons/crystal_clear_warning.png'))
+            self.setIcon(nm.settings().icon('crystal_clear_warning.png'))
             if not self.node_info.isLocal and master_discovered:
                 tooltip = '<h4>%s is not local, however the ROS master on this host is discovered, but no information about this node received!</h4>' % self.node_info.name
                 self.setToolTip('<div>%s</div>' % tooltip)
         elif self.is_ghost:
             self._state = NodeItem.STATE_GHOST
-            self.setIcon(QIcon(':/icons/state_ghost.png'))
+            self.setIcon(nm.settings().icon('state_ghost.png'))
             tooltip = '<h4>The node is running, but not synchronized because of filter or errors, see master_sync log.</h4>'
             self.setToolTip('<div>%s</div>' % tooltip)
         elif self.has_running:
             self._state = NodeItem.STATE_DUPLICATE
-            self.setIcon(QIcon(':/icons/imacadam_stop.png'))
+            self.setIcon(nm.settings().icon('imacadam_stop.png'))
             tooltip = '<h4>There are nodes with the same name on remote hosts running. These will be terminated, if you run this node! (Only if master_sync is running or will be started somewhere!)</h4>'
             self.setToolTip('<div>%s</div>' % tooltip)
         else:
             self._state = NodeItem.STATE_OFF
-            self.setIcon(QIcon(':/icons/state_off.png'))
+            self.setIcon(nm.settings().icon('state_off.png'))
             self.setToolTip('')
         # removed common tooltip for clarity !!!
 #    self.setToolTip(''.join(['<div>', tooltip, '</div>']))
@@ -1501,11 +1502,11 @@ class NodeItem(QStandardItem):
                 has_launches = NodeItem.has_launch_cfgs(self._cfgs)
                 has_defaults = NodeItem.has_default_cfgs(self._cfgs)
                 if has_launches and has_defaults:
-                    cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file_def_cfg.png'))
+                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file_def_cfg.png'))
                 elif has_launches:
-                    cfg_col.setIcon(QIcon(':/icons/crystal_clear_launch_file.png'))
+                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file.png'))
                 elif has_defaults:
-                    cfg_col.setIcon(QIcon(':/icons/default_cfg.png'))
+                    cfg_col.setIcon(nm.settings().icon('default_cfg.png'))
                 else:
                     cfg_col.setIcon(QIcon())
             # the update of the group will be perform in node_tree_model to reduce calls
@@ -1660,13 +1661,6 @@ class NodeTreeModel(QStandardItemModel):
     The model to show the nodes running in a ROS system or loaded by a launch
     configuration.
     '''
-#  ICONS = {'default'        : QIcon(),
-#           'run'            : QIcon(":/icons/state_run.png"),
-#           'warning'        : QIcon(":/icons/crystal_clear_warning.png"),
-#           'def_launch_cfg' : QIcon(":/icons/crystal_clear_launch_file_def_cfg.png"),
-#           'launch_cfg'     : QIcon(":/icons/crystal_clear_launch_file.png"),
-#           'def_cfg'        : QIcon(":/icons/default_cfg.png") }
-
     header = [('Name', 450),
               ('Info', -1)]
 #            ('URI', -1)]
@@ -2107,22 +2101,22 @@ class NodeInfoIconsDelegate(QItemDelegate):
     def _scale_icons(self, icon_size):
         self._icon_size = icon_size
         params = (self._icon_size, self._icon_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-        self.IMAGES = {'launchfile': QImage(':/icons/crystal_clear_launch_file.png').scaled(*params),
-                       'defaultcfg': QImage(":/icons/default_cfg.png").scaled(*params),
-                       'nodelet': QImage(":/icons/crystal_clear_nodelet.png").scaled(*params),
-                       'nodelet_mngr': QImage(":/icons/crystal_clear_nodelet_mngr.png").scaled(*params),
-                       'warning': QImage(':/icons/crystal_clear_warning.png').scaled(*params),
-                       'noscreen': QImage(':/icons/crystal_clear_no_io.png').scaled(*params),
-                       'misc': QImage(':/icons/crystal_clear_miscellaneous.png').scaled(*params),
-                       'group': QImage(':/icons/crystal_clear_group.png').scaled(*params),
-                       'mscreens': QImage(':/icons/crystal_clear_mscreens.png').scaled(*params),
-                       'sysmon': QImage(':/icons/crystal_clear_get_parameter.png').scaled(*params),
-                       'clock_warn': QImage(':/icons/crystal_clear_xclock_fail.png').scaled(*params),
-                       'cpu_warn': QImage(':/icons/hight_load.png').scaled(*params),
-                       'cpu_temp_warn': QImage(':/icons/temperatur_warn.png').scaled(*params),
-                       'hdd_warn': QImage(':/icons/crystal_clear_hdd_warn.png').scaled(*params),
-                       'net_warn': QImage(':/icons/sekkyumu_net_warn.png').scaled(*params),
-                       'mem_warn': QImage(':/icons/mem_warn.png').scaled(*params)
+        self.IMAGES = {'launchfile': nm.settings().image('crystal_clear_launch_file.png').scaled(*params),
+                       'defaultcfg': nm.settings().image('default_cfg.png').scaled(*params),
+                       'nodelet': nm.settings().image('crystal_clear_nodelet.png').scaled(*params),
+                       'nodelet_mngr': nm.settings().image('crystal_clear_nodelet_mngr.png').scaled(*params),
+                       'warning': nm.settings().image('crystal_clear_warning.png').scaled(*params),
+                       'noscreen': nm.settings().image('crystal_clear_no_io.png').scaled(*params),
+                       'misc': nm.settings().image('crystal_clear_miscellaneous.png').scaled(*params),
+                       'group': nm.settings().image('crystal_clear_group.png').scaled(*params),
+                       'mscreens': nm.settings().image('crystal_clear_mscreens.png').scaled(*params),
+                       'sysmon': nm.settings().image('crystal_clear_get_parameter.png').scaled(*params),
+                       'clock_warn': nm.settings().image('crystal_clear_xclock_fail.png').scaled(*params),
+                       'cpu_warn': nm.settings().image('hight_load.png').scaled(*params),
+                       'cpu_temp_warn': nm.settings().image('temperatur_warn.png').scaled(*params),
+                       'hdd_warn': nm.settings().image('crystal_clear_hdd_warn.png').scaled(*params),
+                       'net_warn': nm.settings().image('sekkyumu_net_warn.png').scaled(*params),
+                       'mem_warn': nm.settings().image('mem_warn.png').scaled(*params)
                        }
 
     def paint(self, painter, option, index):

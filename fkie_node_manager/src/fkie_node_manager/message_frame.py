@@ -148,36 +148,38 @@ class MessageFrame(QFrame):
         self.text = ""
         self.data = MessageData(None)
         self.IMAGES = {1: QPixmap(),
-                       2: QPixmap(':/icons/question.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       3: QPixmap(':/icons/crystal_clear_launch_file.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       4: QPixmap(":/icons/default_cfg.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       5: QPixmap(":/icons/crystal_clear_nodelet_q.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       6: QPixmap(":/icons/crystal_clear_launch_file_transfer.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       7: QPixmap(":/icons/crystal_clear_binary.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       8: QPixmap(":/icons/crystal_clear_no_io.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       9: QPixmap(":/icons/crystal_clear_run_zeroconf.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       10: QPixmap(":/icons/sekkyumu_restart.png").scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       2: nm.settings().pixmap('question.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       3: nm.settings().pixmap('crystal_clear_launch_file.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       4: nm.settings().pixmap('default_cfg.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       5: nm.settings().pixmap('crystal_clear_nodelet_q.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       6: nm.settings().pixmap('crystal_clear_launch_file_transfer.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       7: nm.settings().pixmap('crystal_clear_binary.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       8: nm.settings().pixmap('crystal_clear_no_io.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       9: nm.settings().pixmap('crystal_clear_run_zeroconf.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       10: nm.settings().pixmap('sekkyumu_restart.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self._in_resp_process = False
-        self.frameui = QFrame()
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MessageFrame.ui')
-        loadUi(ui_file, self.frameui)
+        self.ui = QFrame()
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'MessageFrame.ui')
+        loadUi(ui_file, self.ui)
         color = QColor(255, 207, 121)
-        self.frameui.listLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.frameui.questionLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.frameui.setVisible(False)
-        self.frameui.listLabel.setVisible(False)
-        self.frameui.questionOkButton.clicked.connect(self._on_question_ok)
-        self.frameui.questionCancelButton.clicked.connect(self._on_question_cancel)
-        self.frameui.checkBox_dnaa.stateChanged.connect(self._on_checkbox_state_changed)
+        self.ui.questionOkButton.setIcon(nm.settings().icon('crystal_clear_button_apply.png'))
+        self.ui.questionCancelButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui.listLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.ui.questionLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.ui.setVisible(False)
+        self.ui.listLabel.setVisible(False)
+        self.ui.questionOkButton.clicked.connect(self._on_question_ok)
+        self.ui.questionCancelButton.clicked.connect(self._on_question_cancel)
+        self.ui.checkBox_dnaa.stateChanged.connect(self._on_checkbox_state_changed)
         self._ask = 'ask'
         if info:
             color = QColor(232, 104, 80)
-            self.frameui.questionCancelButton.setVisible(False)
+            self.ui.questionCancelButton.setVisible(False)
             self._ask = 'show'
         bg_style = "QFrame#questionFame { background-color: %s;}" % color.name()
-        self.frameui.setStyleSheet("%s" % (bg_style))
+        self.ui.setStyleSheet("%s" % (bg_style))
         self._queue = MessageQueue()
         self._do_not_ask = {}
 
@@ -209,9 +211,9 @@ class MessageFrame(QFrame):
             self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
             if self.questionid in [self.TYPE_NODELET, self.TYPE_NOSCREEN]:
-                self.frameui.checkBox_dnaa.setText("don't %s again, never!" % self._ask)
+                self.ui.checkBox_dnaa.setText("don't %s again, never!" % self._ask)
             else:
-                self.frameui.checkBox_dnaa.setText("don't %s again, for session" % self._ask)
+                self.ui.checkBox_dnaa.setText("don't %s again, for session" % self._ask)
 
     def show_info(self, infoid, text, data=MessageData(None), color=None):
         self.show_question(infoid, text=text, data=data, color=color)
@@ -233,7 +235,7 @@ class MessageFrame(QFrame):
         if data is None or data == self.data:
             if self.questionid in questionids:
                 self._new_request = False
-                self.frameui.setVisible(False)
+                self.ui.setVisible(False)
                 self.cancel_signal.emit(self.questionid, self.data)
                 self.questionid = 0
                 self._update_list_label([])
@@ -245,35 +247,35 @@ class MessageFrame(QFrame):
         Put list elements into the list label in the question frame
         '''
         if items:
-            self.frameui.listLabel.setText('')
+            self.ui.listLabel.setText('')
             for item in items:
-                ltext = self.frameui.listLabel.text()
+                ltext = self.ui.listLabel.text()
                 if ltext:
-                    self.frameui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item)))
+                    self.ui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item)))
                 else:
-                    self.frameui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item)))
-            self.frameui.listLabel.setVisible(True)
+                    self.ui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item)))
+            self.ui.listLabel.setVisible(True)
         else:
-            self.frameui.listLabel.setText('')
-            self.frameui.listLabel.setVisible(False)
+            self.ui.listLabel.setText('')
+            self.ui.listLabel.setVisible(False)
 
     def _frameui_4_request(self, request):
         if request:
-            self.frameui.checkBox_dnaa.setChecked(False)
-            self.frameui.setVisible(True)
-            self.frameui.listLabel.setVisible(True)
+            self.ui.checkBox_dnaa.setChecked(False)
+            self.ui.setVisible(True)
+            self.ui.listLabel.setVisible(True)
         else:
             self.questionid = 0
-            self.frameui.setVisible(False)
-            self.frameui.listLabel.setVisible(False)
+            self.ui.setVisible(False)
+            self.ui.listLabel.setVisible(False)
 
     def _on_question_ok(self):
         self._in_resp_process = True
         self._new_request = False
-        self.frameui.setVisible(False)
+        self.ui.setVisible(False)
         try:
             # set action for do not ask again
-            if self.frameui.checkBox_dnaa.isChecked():
+            if self.ui.checkBox_dnaa.isChecked():
                 self._do_not_ask[self.questionid] = 1
         except Exception:
             pass
@@ -287,10 +289,10 @@ class MessageFrame(QFrame):
     def _on_question_cancel(self):
         self._in_resp_process = True
         self._new_request = False
-        self.frameui.setVisible(False)
+        self.ui.setVisible(False)
         try:
             # set action for do not ask again
-            if self.frameui.checkBox_dnaa.isChecked():
+            if self.ui.checkBox_dnaa.isChecked():
                 self._do_not_ask[self.questionid] = 0
         except Exception:
             pass
@@ -325,22 +327,22 @@ class MessageFrame(QFrame):
             self.questionid = qid
             self.text = text
             self.data = data
-            self.frameui.questionIcon.setPixmap(self.IMAGES[qid])
-            self.frameui.questionLabel.setText(text)
+            self.ui.questionIcon.setPixmap(self.IMAGES[qid])
+            self.ui.questionLabel.setText(text)
             self._update_list_label(self.data.data_list)
         return qid != self.TYPE_INVALID
 
     def _on_checkbox_state_changed(self, state):
         if self.questionid == self.TYPE_NODELET:
-            self.frameui.questionOkButton.setVisible(not state)
+            self.ui.questionOkButton.setVisible(not state)
             nm.settings().check_for_nodelets_at_start = not state
         elif self.questionid == self.TYPE_NOSCREEN:
-            self.frameui.questionCancelButton.setVisible(not state)
+            self.ui.questionCancelButton.setVisible(not state)
             nm.settings().show_noscreen_error = not state
 
     def _clear_scroll_area(self):
-        child = self.frameui.scrollAreaLayout.takeAt(0)
+        child = self.ui.scrollAreaLayout.takeAt(0)
         while child:
             child.widget().setParent(None)
             del child
-            child = self.frameui.scrollAreaLayout.takeAt(0)
+            child = self.ui.scrollAreaLayout.takeAt(0)

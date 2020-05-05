@@ -203,14 +203,38 @@ class MasterViewProxy(QWidget):
         self.launch_server_handler.launch_server_signal.connect(self.on_launch_server_retrieved)
         self.launch_server_handler.error_signal.connect(self.on_launch_server_err)
 
-        self.masterTab = QWidget()
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'MasterTab.ui')
-        loadUi(ui_file, self.masterTab, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
+        self.ui = QWidget()
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'MasterTab.ui')
+        loadUi(ui_file, self.ui, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
         tabLayout = QVBoxLayout(self)
         tabLayout.setContentsMargins(0, 0, 0, 0)
-        tabLayout.addWidget(self.masterTab)
-        self._progress_queue_prio = ProgressQueue(self.masterTab.progressPrioFrame, self.masterTab.progressPrioBar, self.masterTab.progressCancelPrioButton, 'Prio Master - %s' % self.mastername)
-        self._progress_queue = ProgressQueue(self.masterTab.progressFrame, self.masterTab.progressBar, self.masterTab.progressCancelButton, 'Master - %s' % self.mastername)
+        tabLayout.addWidget(self.ui)
+        # set icons
+        self.ui.progressCancelPrioButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui.progressCancelButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui.startButton.setIcon(nm.settings().icon('sekkyumu_play.png'))
+        self.ui.stopButton.setIcon(nm.settings().icon('sekkyumu_stop.png'))
+        self.ui.ioButton.setIcon(nm.settings().icon('crystal_clear_show_io.png'))
+        self.ui.logButton.setIcon(nm.settings().icon('crystal_clear_show_log.png'))
+        self.ui.logDeleteButton.setIcon(nm.settings().icon('crystal_clear_show_delete_log.png'))
+        self.ui.dynamicConfigButton.setIcon(nm.settings().icon('crystal_clear_dyncfg.png'))
+        self.ui.editRosParamButton.setIcon(nm.settings().icon('default_cfg_edit.png'))
+        self.ui.editConfigButton.setIcon(nm.settings().icon('crystal_clear_edit_launch.png'))
+        self.ui.closeCfgButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui.echoTopicButton.setIcon(nm.settings().icon('sekkyumu_topic_echo.png'))
+        self.ui.hzTopicButton.setIcon(nm.settings().icon('sekkyumu_topic_hz.png'))
+        self.ui.hzSshTopicButton.setIcon(nm.settings().icon('sekkyumu_topic_echo_ssh_hz.png'))
+        self.ui.pubTopicButton.setIcon(nm.settings().icon('sekkyumu_topic_pub.png'))
+        self.ui.pubStopTopicButton.setIcon(nm.settings().icon('sekkyumu_topic_pub_stop.png'))
+        self.ui.callServiceButton.setIcon(nm.settings().icon('sekkyumu_call_service.png'))
+        self.ui.getParameterButton.setIcon(nm.settings().icon('crystal_clear_action_db_update.png'))
+        self.ui.addParameterButton.setIcon(nm.settings().icon('crystal_clear_action_db_add.png'))
+        self.ui.deleteParameterButton.setIcon(nm.settings().icon('crystal_clear_action_db_remove.png'))
+        self.ui.saveParameterButton.setIcon(nm.settings().icon('save.png'))
+        self.ui.transferParameterButton.setIcon(nm.settings().icon('crystal_clear_launch_file_transfer.png'))
+
+        self._progress_queue_prio = ProgressQueue(self.ui.progressPrioFrame, self.ui.progressPrioBar, self.ui.progressCancelPrioButton, 'Prio Master - %s' % self.mastername)
+        self._progress_queue = ProgressQueue(self.ui.progressFrame, self.ui.progressBar, self.ui.progressCancelButton, 'Master - %s' % self.mastername)
         self._progress_queue_prio.no_screen_error_signal.connect(self._on_no_screen_error)
         self._progress_queue.no_screen_error_signal.connect(self._on_no_screen_error)
 
@@ -218,108 +242,108 @@ class MasterViewProxy(QWidget):
         self.node_tree_model = NodeTreeModel(nm.nameres().address(self.masteruri), self.masteruri)
         self.node_proxy_model = NodesSortFilterProxyModel(self)
         self.node_proxy_model.setSourceModel(self.node_tree_model)
-        self.masterTab.nodeTreeView.setModel(self.node_proxy_model)
+        self.ui.nodeTreeView.setModel(self.node_proxy_model)
         self.node_tree_model.hostInserted.connect(self.on_host_inserted)
         for i, (_, width) in enumerate(NodeTreeModel.header):  # _:=name
-            self.masterTab.nodeTreeView.setColumnWidth(i, width)
+            self.ui.nodeTreeView.setColumnWidth(i, width)
         check_for_ros_names = not nm.settings().group_nodes_by_namespace
         self.nodeNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
-        self.masterTab.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
+        self.ui.nodeTreeView.setItemDelegateForColumn(0, self.nodeNameDelegate)
         self.node_delegate = NodeInfoIconsDelegate()
-        self.masterTab.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
-        # self.masterTab.nodeTreeView.collapsed.connect(self.on_node_collapsed)
-        self.masterTab.nodeTreeView.expanded.connect(self.on_node_expanded)
-        sm = self.masterTab.nodeTreeView.selectionModel()
+        self.ui.nodeTreeView.setItemDelegateForColumn(1, self.node_delegate)
+        # self.ui.nodeTreeView.collapsed.connect(self.on_node_collapsed)
+        self.ui.nodeTreeView.expanded.connect(self.on_node_expanded)
+        sm = self.ui.nodeTreeView.selectionModel()
         sm.selectionChanged.connect(self.on_node_selection_changed)
-        self.masterTab.nodeTreeView.activated.connect(self.on_node_activated)
-        self.masterTab.nodeTreeView.clicked.connect(self.on_node_clicked)
-#    self.masterTab.nodeTreeView.setAcceptDrops(True)
-#    self.masterTab.nodeTreeWidget.setSortingEnabled(True)
+        self.ui.nodeTreeView.activated.connect(self.on_node_activated)
+        self.ui.nodeTreeView.clicked.connect(self.on_node_clicked)
+#    self.ui.nodeTreeView.setAcceptDrops(True)
+#    self.ui.nodeTreeWidget.setSortingEnabled(True)
 
         # setup the topic view
         self.topic_model = TopicModel()
         self.topic_proxyModel = TopicsSortFilterProxyModel(self)
         self.topic_proxyModel.setSourceModel(self.topic_model)
-        self.masterTab.topicsView.setModel(self.topic_proxyModel)
-        self.masterTab.topicsView.expandAll()
-        self.masterTab.topicsView.sortByColumn(0, Qt.AscendingOrder)
-#    self.masterTab.topicsView.setModel(self.topic_model)
+        self.ui.topicsView.setModel(self.topic_proxyModel)
+        self.ui.topicsView.expandAll()
+        self.ui.topicsView.sortByColumn(0, Qt.AscendingOrder)
+#    self.ui.topicsView.setModel(self.topic_model)
         for i, (_, width) in enumerate(TopicModel.header):  # _:=name
-            self.masterTab.topicsView.setColumnWidth(i, width)
+            self.ui.topicsView.setColumnWidth(i, width)
         self.topicNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
         self.topicTypeDelegate = HTMLDelegate(dec_ascent=True)
-        self.masterTab.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
-        self.masterTab.topicsView.setItemDelegateForColumn(3, self.topicTypeDelegate)
-        sm = self.masterTab.topicsView.selectionModel()
+        self.ui.topicsView.setItemDelegateForColumn(0, self.topicNameDelegate)
+        self.ui.topicsView.setItemDelegateForColumn(3, self.topicTypeDelegate)
+        sm = self.ui.topicsView.selectionModel()
         sm.selectionChanged.connect(self.on_topic_selection_changed)
-        self.masterTab.topicsView.activated.connect(self.on_topic_activated)
-        self.masterTab.topicsView.clicked.connect(self.on_topic_clicked)
-        self.masterTab.topicsView.setSortingEnabled(True)
+        self.ui.topicsView.activated.connect(self.on_topic_activated)
+        self.ui.topicsView.clicked.connect(self.on_topic_clicked)
+        self.ui.topicsView.setSortingEnabled(True)
 
         # setup the service view
         self.service_model = ServiceModel()
         self.service_proxyModel = ServicesSortFilterProxyModel(self)
         self.service_proxyModel.setSourceModel(self.service_model)
-        self.masterTab.servicesView.setModel(self.service_proxyModel)
-        self.masterTab.servicesView.expandAll()
-        self.masterTab.servicesView.sortByColumn(0, Qt.AscendingOrder)
+        self.ui.servicesView.setModel(self.service_proxyModel)
+        self.ui.servicesView.expandAll()
+        self.ui.servicesView.sortByColumn(0, Qt.AscendingOrder)
         for i, (_, width) in enumerate(ServiceModel.header):  # _:=name
-            self.masterTab.servicesView.setColumnWidth(i, width)
+            self.ui.servicesView.setColumnWidth(i, width)
         self.serviceNameDelegate = HTMLDelegate(check_for_ros_names=check_for_ros_names, dec_ascent=True, is_node=True, palette=self.palette())
         self.serviceTypeDelegate = HTMLDelegate(dec_ascent=True)
-        self.masterTab.servicesView.setItemDelegateForColumn(0, self.serviceNameDelegate)
-        self.masterTab.servicesView.setItemDelegateForColumn(1, self.serviceTypeDelegate)
-        sm = self.masterTab.servicesView.selectionModel()
+        self.ui.servicesView.setItemDelegateForColumn(0, self.serviceNameDelegate)
+        self.ui.servicesView.setItemDelegateForColumn(1, self.serviceTypeDelegate)
+        sm = self.ui.servicesView.selectionModel()
         sm.selectionChanged.connect(self.on_service_selection_changed)
-        self.masterTab.servicesView.activated.connect(self.on_service_activated)
-        self.masterTab.servicesView.clicked.connect(self.on_service_clicked)
-        self.masterTab.servicesView.setSortingEnabled(True)
+        self.ui.servicesView.activated.connect(self.on_service_activated)
+        self.ui.servicesView.clicked.connect(self.on_service_clicked)
+        self.ui.servicesView.setSortingEnabled(True)
 
         # setup the parameter view
         self.parameter_model = ParameterModel()
         self.parameter_model.itemChanged.connect(self._on_parameter_item_changed)
         self.parameter_proxyModel = ParameterSortFilterProxyModel(self)
         self.parameter_proxyModel.setSourceModel(self.parameter_model)
-        self.masterTab.parameterView.setModel(self.parameter_proxyModel)
+        self.ui.parameterView.setModel(self.parameter_proxyModel)
         for i, (_, width) in enumerate(ParameterModel.header):  # _:=name
-            self.masterTab.parameterView.setColumnWidth(i, width)
+            self.ui.parameterView.setColumnWidth(i, width)
         self.parameterNameDelegate = HTMLDelegate(dec_ascent=True, palette=self.palette())
-        self.masterTab.parameterView.setItemDelegateForColumn(0, self.parameterNameDelegate)
-        sm = self.masterTab.parameterView.selectionModel()
+        self.ui.parameterView.setItemDelegateForColumn(0, self.parameterNameDelegate)
+        sm = self.ui.parameterView.selectionModel()
         sm.selectionChanged.connect(self.on_parameter_selection_changed)
-        self.masterTab.parameterView.setSortingEnabled(True)
+        self.ui.parameterView.setSortingEnabled(True)
 
 #    self.parameter_proxyModel.filterAcceptsRow = _filterParameterAcceptsRow
-#    self.masterTab.parameterView.activated.connect(self.on_service_activated)
+#    self.ui.parameterView.activated.connect(self.on_service_activated)
 
         # connect the buttons
-        self.masterTab.startButton.clicked.connect(self.on_start_clicked)
-        self.masterTab.stopButton.clicked.connect(self.on_stop_clicked)
-#    self.masterTab.stopContextButton.toggled.connect(self.on_stop_context_toggled)
-        self.masterTab.ioButton.clicked.connect(self.on_io_clicked)
-        self.masterTab.logButton.clicked.connect(self.on_log_clicked)
-        self.masterTab.logDeleteButton.clicked.connect(self.on_log_delete_clicked)
-        self.masterTab.dynamicConfigButton.clicked.connect(self.on_dynamic_config_clicked)
-        self.masterTab.editConfigButton.clicked.connect(self.on_edit_config_clicked)
-        self.masterTab.editRosParamButton.clicked.connect(self.on_edit_rosparam_clicked)
-        self.masterTab.closeCfgButton.clicked.connect(self.on_close_clicked)
+        self.ui.startButton.clicked.connect(self.on_start_clicked)
+        self.ui.stopButton.clicked.connect(self.on_stop_clicked)
+#    self.ui.stopContextButton.toggled.connect(self.on_stop_context_toggled)
+        self.ui.ioButton.clicked.connect(self.on_io_clicked)
+        self.ui.logButton.clicked.connect(self.on_log_clicked)
+        self.ui.logDeleteButton.clicked.connect(self.on_log_delete_clicked)
+        self.ui.dynamicConfigButton.clicked.connect(self.on_dynamic_config_clicked)
+        self.ui.editConfigButton.clicked.connect(self.on_edit_config_clicked)
+        self.ui.editRosParamButton.clicked.connect(self.on_edit_rosparam_clicked)
+        self.ui.closeCfgButton.clicked.connect(self.on_close_clicked)
 
-        self.masterTab.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
-        self.masterTab.hzTopicButton.clicked.connect(self.on_topic_hz_clicked)
-        self.masterTab.hzSshTopicButton.clicked.connect(self.on_topic_hz_ssh_clicked)
-        self.masterTab.pubTopicButton.clicked.connect(self.on_topic_pub_clicked)
-        self.masterTab.pubStopTopicButton.clicked.connect(self.on_topic_pub_stop_clicked)
+        self.ui.echoTopicButton.clicked.connect(self.on_topic_echo_clicked)
+        self.ui.hzTopicButton.clicked.connect(self.on_topic_hz_clicked)
+        self.ui.hzSshTopicButton.clicked.connect(self.on_topic_hz_ssh_clicked)
+        self.ui.pubTopicButton.clicked.connect(self.on_topic_pub_clicked)
+        self.ui.pubStopTopicButton.clicked.connect(self.on_topic_pub_stop_clicked)
 
-        self.masterTab.callServiceButton.clicked.connect(self.on_service_call_clicked)
-        self.masterTab.nodeFilterInput.textChanged.connect(self.on_node_filter_changed)
-        self.masterTab.topicFilterInput.textChanged.connect(self.on_topic_filter_changed)
-        self.masterTab.serviceFilterInput.textChanged.connect(self.on_service_filter_changed)
-        self.masterTab.parameterFilterInput.textChanged.connect(self.on_parameter_filter_changed)
-        self.masterTab.getParameterButton.clicked.connect(self.on_get_parameter_clicked)
-        self.masterTab.addParameterButton.clicked.connect(self.on_add_parameter_clicked)
-        self.masterTab.deleteParameterButton.clicked.connect(self.on_delete_parameter_clicked)
-        self.masterTab.saveParameterButton.clicked.connect(self.on_save_parameter_clicked)
-        self.masterTab.transferParameterButton.clicked.connect(self.on_transfer_parameter_clicked)
+        self.ui.callServiceButton.clicked.connect(self.on_service_call_clicked)
+        self.ui.nodeFilterInput.textChanged.connect(self.on_node_filter_changed)
+        self.ui.topicFilterInput.textChanged.connect(self.on_topic_filter_changed)
+        self.ui.serviceFilterInput.textChanged.connect(self.on_service_filter_changed)
+        self.ui.parameterFilterInput.textChanged.connect(self.on_parameter_filter_changed)
+        self.ui.getParameterButton.clicked.connect(self.on_get_parameter_clicked)
+        self.ui.addParameterButton.clicked.connect(self.on_add_parameter_clicked)
+        self.ui.deleteParameterButton.clicked.connect(self.on_delete_parameter_clicked)
+        self.ui.saveParameterButton.clicked.connect(self.on_save_parameter_clicked)
+        self.ui.transferParameterButton.clicked.connect(self.on_transfer_parameter_clicked)
 
         # create a handler to request the parameter
         self.parameterHandler = ParameterHandler()
@@ -337,8 +361,8 @@ class MasterViewProxy(QWidget):
         self._shortcut_kill_node = QShortcut(QKeySequence(self.tr("Ctrl+Delete", "Removes the registration of selected nodes from ROS master")), self)
         self._shortcut_kill_node.activated.connect(self.on_unregister_nodes)
 
-        self.masterTab.ioButton.setEnabled(True)
-        self.masterTab.tabWidget.currentChanged.connect(self.on_tab_current_changed)
+        self.ui.ioButton.setEnabled(True)
+        self.ui.tabWidget.currentChanged.connect(self.on_tab_current_changed)
         self._shortcut_screen_show_all = QShortcut(QKeySequence(self.tr("Shift+S", "Show all available screens")), self)
         self._shortcut_screen_show_all.activated.connect(self.on_show_all_screens)
         self._shortcut_screen_kill = QShortcut(QKeySequence(self.tr("Shift+Backspace", "Kill Screen")), self)
@@ -366,19 +390,19 @@ class MasterViewProxy(QWidget):
         self._shortcut_collapse_all = QShortcut(QKeySequence(self.tr("Alt+C", "Collapse all groups")), self)
         self._shortcut_collapse_all.activated.connect(self.on_shortcut_collapse_all)
         self._shortcut_expand_all = QShortcut(QKeySequence(self.tr("Alt+E", "Expand all groups")), self)
-        self._shortcut_expand_all.activated.connect(self.masterTab.nodeTreeView.expandAll)
+        self._shortcut_expand_all.activated.connect(self.ui.nodeTreeView.expandAll)
         self._shortcut_run = QShortcut(QKeySequence(self.tr("Alt+R", "run selected nodes")), self)
         self._shortcut_run.activated.connect(self.on_start_clicked)
         self._shortcut_stop = QShortcut(QKeySequence(self.tr("Alt+S", "stop selected nodes")), self)
         self._shortcut_stop.activated.connect(self.on_stop_clicked)
 
         self.message_frame = MessageFrame()
-        self.masterTab.questionFrameLayout.addWidget(self.message_frame.frameui)
+        self.ui.questionFrameLayout.addWidget(self.message_frame.ui)
         self.message_frame.accept_signal.connect(self._on_question_ok)
         self.message_frame.cancel_signal.connect(self._on_question_cancel)
 
         self.info_frame = MessageFrame(info=True)
-        self.masterTab.infoFrameLayout.addWidget(self.info_frame.frameui)
+        self.ui.infoFrameLayout.addWidget(self.info_frame.ui)
         self.info_frame.accept_signal.connect(self._on_info_ok)
 
         nm.nmd().file.changed_file.connect(self.on_changed_file)
@@ -639,7 +663,7 @@ class MasterViewProxy(QWidget):
         '''
         selectedNodes = selected_nodes
         if selectedNodes is None:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
         has_running = False
         has_stopped = False
         for node in selectedNodes:
@@ -647,12 +671,12 @@ class MasterViewProxy(QWidget):
                 has_running = True
             else:
                 has_stopped = True
-        self.masterTab.startButton.setEnabled(True)
-        self.masterTab.stopButton.setEnabled(True)
-#    self.masterTab.ioButton.setEnabled(has_running or has_stopped)
-        self.masterTab.logButton.setEnabled(True)
-#    self.masterTab.logButton.setEnabled(has_running or has_stopped)
-        self.masterTab.logDeleteButton.setEnabled(has_running or has_stopped)
+        self.ui.startButton.setEnabled(True)
+        self.ui.stopButton.setEnabled(True)
+#    self.ui.ioButton.setEnabled(has_running or has_stopped)
+        self.ui.logButton.setEnabled(True)
+#    self.ui.logButton.setEnabled(has_running or has_stopped)
+        self.ui.logDeleteButton.setEnabled(has_running or has_stopped)
         # test for available dynamic reconfigure services
         if self.master_info is not None:
             dyn_cfg_available = False
@@ -661,13 +685,13 @@ class MasterViewProxy(QWidget):
                     if (srv_name.endswith('/set_parameters')) and n.name in srv.serviceProvider:
                         dyn_cfg_available = True
                         break
-            self.masterTab.dynamicConfigButton.setEnabled(dyn_cfg_available)
+            self.ui.dynamicConfigButton.setEnabled(dyn_cfg_available)
         # the configuration is only available, if only one node is selected
-        self.masterTab.editConfigButton.setEnabled(len(selectedNodes) == 1 and selectedNodes[0].has_configs())
-        self.masterTab.editRosParamButton.setEnabled(len(selectedNodes) == 1)
+        self.ui.editConfigButton.setEnabled(len(selectedNodes) == 1 and selectedNodes[0].has_configs())
+        self.ui.editRosParamButton.setEnabled(len(selectedNodes) == 1)
         # enable the close button only for local configurations
-        self.masterTab.closeCfgButton.setEnabled(True)
-#    self.masterTab.closeCfgButton.setEnabled(len([path for path, _ in self.__configs.items() if (isinstance(path, tuple) and path[2] == self.masteruri) or not isinstance(path, tuple)]) > 0) #_:=cfg
+        self.ui.closeCfgButton.setEnabled(True)
+#    self.ui.closeCfgButton.setEnabled(len([path for path, _ in self.__configs.items() if (isinstance(path, tuple) and path[2] == self.masteruri) or not isinstance(path, tuple)]) > 0) #_:=cfg
 
     @property
     def launchfiles(self):
@@ -864,13 +888,13 @@ class MasterViewProxy(QWidget):
         '''
         result = []
         try:
-            for r in range(self.masterTab.nodeTreeView.model().rowCount()):
-                index_host = self.masterTab.nodeTreeView.model().index(r, 0)
-                if index_host.isValid() and self.masterTab.nodeTreeView.isExpanded(index_host):
-                    if self.masterTab.nodeTreeView.model().hasChildren(index_host):
-                        for c in range(self.masterTab.nodeTreeView.model().rowCount(index_host)):
-                            index_cap = self.masterTab.nodeTreeView.model().index(c, 0, index_host)
-                            if index_cap.isValid() and self.masterTab.nodeTreeView.isExpanded(index_cap):
+            for r in range(self.ui.nodeTreeView.model().rowCount()):
+                index_host = self.ui.nodeTreeView.model().index(r, 0)
+                if index_host.isValid() and self.ui.nodeTreeView.isExpanded(index_host):
+                    if self.ui.nodeTreeView.model().hasChildren(index_host):
+                        for c in range(self.ui.nodeTreeView.model().rowCount(index_host)):
+                            index_cap = self.ui.nodeTreeView.model().index(c, 0, index_host)
+                            if index_cap.isValid() and self.ui.nodeTreeView.isExpanded(index_cap):
                                 model_index = self.node_proxy_model.mapToSource(index_cap)
                                 item = self.node_tree_model.itemFromIndex(model_index)
                                 if isinstance(item, (GroupItem, HostItem)):
@@ -885,18 +909,18 @@ class MasterViewProxy(QWidget):
         expands all groups of expanded hosts.
         '''
         try:
-            for r in range(self.masterTab.nodeTreeView.model().rowCount()):
-                index_host = self.masterTab.nodeTreeView.model().index(r, 0)
-                if index_host.isValid() and self.masterTab.nodeTreeView.isExpanded(index_host):
-                    if self.masterTab.nodeTreeView.model().hasChildren(index_host):
-                        for c in range(self.masterTab.nodeTreeView.model().rowCount(index_host)):
-                            index_cap = self.masterTab.nodeTreeView.model().index(c, 0, index_host)
+            for r in range(self.ui.nodeTreeView.model().rowCount()):
+                index_host = self.ui.nodeTreeView.model().index(r, 0)
+                if index_host.isValid() and self.ui.nodeTreeView.isExpanded(index_host):
+                    if self.ui.nodeTreeView.model().hasChildren(index_host):
+                        for c in range(self.ui.nodeTreeView.model().rowCount(index_host)):
+                            index_cap = self.ui.nodeTreeView.model().index(c, 0, index_host)
                             if index_cap.isValid():
                                 model_index = self.node_proxy_model.mapToSource(index_cap)
                                 item = self.node_tree_model.itemFromIndex(model_index)
                                 if isinstance(item, (GroupItem, HostItem)):
                                     if groups is None or item.name in groups:
-                                        self.masterTab.nodeTreeView.setExpanded(index_cap, True)
+                                        self.ui.nodeTreeView.setExpanded(index_cap, True)
         except Exception:
             print(traceback.format_exc(3))
 
@@ -1136,7 +1160,7 @@ class MasterViewProxy(QWidget):
 
     def update_system_diagnostics(self, diagnostics):
         self.node_tree_model.update_system_diagnostics(self.masteruri, diagnostics)
-        selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+        selections = self.ui.nodeTreeView.selectionModel().selectedIndexes()
         selectedNodes = self.hostsFromIndexes(selections)
         if len(selectedNodes) == 1:
             if selectedNodes[0].local:
@@ -1149,7 +1173,7 @@ class MasterViewProxy(QWidget):
             node.append_diagnostic_status(diagnostic_status)
             result = True
         if nodes:
-            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selections = self.ui.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
             if len(selectedNodes) == 1:
                 node = selectedNodes[0]
@@ -1171,7 +1195,7 @@ class MasterViewProxy(QWidget):
             self._sysmon_timer = None
             self.node_tree_model.sysmon_set_state(self.masteruri, False)
             # update host description
-            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selections = self.ui.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.hostsFromIndexes(selections)
             if len(selectedNodes) == 1:
                 if selectedNodes[0].local:
@@ -1260,7 +1284,7 @@ class MasterViewProxy(QWidget):
         '''
         selectedNodes = []
         if index.column() == 0:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes(), False)
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes(), False)
         if not selectedNodes:
             return
         has_running = False
@@ -1319,12 +1343,12 @@ class MasterViewProxy(QWidget):
             index = self.node_tree_model.indexFromItem(item)
             model_index = self.node_proxy_model.mapFromSource(index)
             if model_index.isValid():
-                self.masterTab.nodeTreeView.expand(model_index)
-#        self.masterTab.nodeTreeView.expandAll()
+                self.ui.nodeTreeView.expand(model_index)
+#        self.ui.nodeTreeView.expandAll()
 
     def on_node_collapsed(self, index):
         if not index.parent().isValid():
-            self.masterTab.nodeTreeView.selectionModel().clear()
+            self.ui.nodeTreeView.selectionModel().clear()
 
     def on_node_expanded(self, index):
         pass
@@ -1395,28 +1419,28 @@ class MasterViewProxy(QWidget):
         return result
 
     def on_tab_current_changed(self, index):
-        tab_name = self.masterTab.tabWidget.currentWidget().objectName()
+        tab_name = self.ui.tabWidget.currentWidget().objectName()
         if tab_name == 'tabTopics':
             # select the topics of the selected node in the "Topic" view
-            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selections = self.ui.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
             if len(selectedNodes) == 1:
                 node = selectedNodes[0]
                 selected_topics = self.topic_model.index_from_names(node.published, node.subscribed)
                 for s in selected_topics:
-                    self.masterTab.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
+                    self.ui.topicsView.selectionModel().select(self.topic_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
         elif tab_name == 'tabServices':
             # select the services of the selected node in the "Services" view
-            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selections = self.ui.nodeTreeView.selectionModel().selectedIndexes()
             selectedNodes = self.nodesFromIndexes(selections)
             if len(selectedNodes) == 1:
                 node = selectedNodes[0]
                 selected_services = self.service_model.index_from_names(node.services)
                 for s in selected_services:
-                    self.masterTab.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
+                    self.ui.servicesView.selectionModel().select(self.service_proxyModel.mapFromSource(s), QItemSelectionModel.Select)
 
     def _is_current_tab_name(self, tab_name):
-        return (self.masterTab.tabWidget.currentWidget().objectName() == tab_name)
+        return (self.ui.tabWidget.currentWidget().objectName() == tab_name)
 
     def on_node_selection_changed(self, selected, deselected, force_emit=False, node_name=''):
         '''
@@ -1440,12 +1464,12 @@ class MasterViewProxy(QWidget):
             # get node by selected items
             if not self._is_current_tab_name('tabNodes'):
                 return
-            selections = self.masterTab.nodeTreeView.selectionModel().selectedIndexes()
+            selections = self.ui.nodeTreeView.selectionModel().selectedIndexes()
             selectedHosts = self.hostsFromIndexes(selections)
             selectedNodes = self.nodesFromIndexes(selections)
             selectedGroups = self.groupsFromIndexes(selections)
-        self.masterTab.topicsView.selectionModel().clear()
-        self.masterTab.servicesView.selectionModel().clear()
+        self.ui.topicsView.selectionModel().clear()
+        self.ui.servicesView.selectionModel().clear()
         name = ''
         text = ''
         # add control buttons for more then one selected node
@@ -1458,14 +1482,16 @@ class MasterViewProxy(QWidget):
             if restartable_nodes or killable_nodes or unregisterble_nodes:
                 text += '<b>Selected nodes:</b><br>'
             if restartable_nodes:
-                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes Ctrl+Shift+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
-                text += '&nbsp;<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes Ctrl+Shift+Alt+R"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart">[%d]</a>' % (len(restartable_nodes), len(restartable_nodes))
+                restart_icon_path = nm.settings().icon_path('sekkyumu_restart_24.png')
+                restart_g_icon_path = nm.settings().icon_path('sekkyumu_restart_g_24.png')
+                sekkyumu_kill_screen_24 = nm.settings().icon_path('sekkyumu_kill_screen_24.png')
+                play_alt_icon_path = nm.settings().icon_path('sekkyumu_play_alt_24.png')
+                text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes Ctrl+Shift+R"><img src="%s" alt="restart">[%d]</a>' % (len(restartable_nodes), restart_icon_path, len(restartable_nodes))
+                text += '&nbsp;<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes Ctrl+Shift+Alt+R"><img src="%s" alt="restart">[%d]</a>' % (len(restartable_nodes), restart_g_icon_path, len(restartable_nodes))
             if killable_nodes:
-                # text += '&nbsp;<a href="kill-node://all_selected_nodes" title="Kill %s selected nodes"><img src=":icons/sekkyumu_kill_24.png" alt="kill">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
-                text += '&nbsp;<a href="kill-screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen">[%d]</a>' % (len(killable_nodes), len(killable_nodes))
+                text += '&nbsp;<a href="kill-screen://all_selected_nodes" title="Kill %s screens of selected nodes"><img src="%s" alt="killscreen">[%d]</a>' % (len(killable_nodes), sekkyumu_kill_screen_24, len(killable_nodes))
             if restartable_nodes_with_launchfiles:
-                # text += '&nbsp;<a href="start-node-at-host://all_selected_nodes" title="Start %s nodes at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
-                text += '&nbsp;<a href="start-node-adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt">[%d]</a>' % (len(restartable_nodes_with_launchfiles), len(restartable_nodes_with_launchfiles))
+                text += '&nbsp;<a href="start-node-adv://all_selected_nodes" title="Start %s nodes with additional options, e.g. loglevel"><img src="%s" alt="play alt">[%d]</a>' % (len(restartable_nodes_with_launchfiles), play_alt_icon_path, len(restartable_nodes_with_launchfiles))
             if unregisterble_nodes:
                 text += '<br><a href="unregister-node://all_selected_nodes">unregister [%d]</a>' % len(unregisterble_nodes)
         # add host description, if only the one host is selected
@@ -1505,20 +1531,23 @@ class MasterViewProxy(QWidget):
             text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
+            crystal_clear_settings_24 = nm.settings().icon_path('crystal_clear_settings_24.png')
             if name == 'node_manager_daemon':
-                text += '<a href="nmd-cfg://%s" title="Configure Daemon"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
+                text += '<a href="nmd-cfg://%s" title="Configure Daemon"><img src="%s" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''), crystal_clear_settings_24)
             elif name == 'node_manager' and nm.is_local(self.mastername):
-                text += '<a href="nm-cfg://%s" title="Configure Node Manager"><img src=":icons/crystal_clear_settings_24.png" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''))
+                text += '<a href="nm-cfg://%s" title="Configure Node Manager"><img src="%s" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''), crystal_clear_settings_24)
             if launches or default_cfgs:
-                text += '<a href="restart-node://%s" title="Restart node Ctrl+Shift+R"><img src=":icons/sekkyumu_restart_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
-                text += '&nbsp;<a href="restart-node-g://%s" title="Reload global parameter and restart node Ctrl+Shift+Alt+R"><img src=":icons/sekkyumu_restart_g_24.png" alt="restart"></a>' % node.name  # height="24" width="24"
-            # text += '&nbsp; <a href="kill-node://%s" title="Kill node with pid %s"><img src=":icons/sekkyumu_kill_24.png" alt="kill"></a>' % (node.name, node.pid)
-            text += '&nbsp; <a href="kill-screen://%s" title="Kill screen of the node"><img src=":icons/sekkyumu_kill_screen_24.png" alt="killscreen"></a>' % node.name
+                sekkyumu_restart_24 = nm.settings().icon_path('sekkyumu_restart_24.png')
+                sekkyumu_restart_g_24 = nm.settings().icon_path('sekkyumu_restart_g_24.png')
+                text += '<a href="restart-node://%s" title="Restart node Ctrl+Shift+R"><img src="%s" alt="restart"></a>' % (node.name, sekkyumu_restart_24)
+                text += '&nbsp;<a href="restart-node-g://%s" title="Reload global parameter and restart node Ctrl+Shift+Alt+R"><img src="%s" alt="restart"></a>' % (node.name, sekkyumu_restart_g_24)
+            sekkyumu_kill_screen_24 = nm.settings().icon_path('sekkyumu_kill_screen_24.png')
+            text += '&nbsp; <a href="kill-screen://%s" title="Kill screen of the node"><img src="%s" alt="killscreen"></a>' % (node.name, sekkyumu_kill_screen_24)
             if launches:
-                #    text += '&nbsp; <a href="start-node-at-host://%s"  title="Start node at another host"><img src=":icons/sekkyumu_start_athost_24.png" alt="start@host"></a>' % node.name
-                # if node.node_info.pid is None or node.node_info.uri is None:
-                text += '&nbsp; <a href="start-node-adv://%s" title="Start node with additional options, e.g. loglevel"><img src=":icons/sekkyumu_play_alt_24.png" alt="play alt"></a>' % node.name
-            text += '&nbsp; <a href="copy-log-path://%s" title="copy log path to clipboard"><img src=":icons/crystal_clear_copy_log_path_24.png" alt="copy_log_path"></a>' % node.name
+                sekkyumu_play_alt_24 = nm.settings().icon_path('sekkyumu_play_alt_24.png')
+                text += '&nbsp; <a href="start-node-adv://%s" title="Start node with additional options, e.g. loglevel"><img src="%s" alt="play alt"></a>' % (node.name, sekkyumu_play_alt_24)
+            crystal_clear_copy_log_path_24 = nm.settings().icon_path('crystal_clear_copy_log_path_24.png')
+            text += '&nbsp; <a href="copy-log-path://%s" title="copy log path to clipboard"><img src="%s" alt="copy_log_path"></a>' % (node.name, crystal_clear_copy_log_path_24)
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % node.node_info.uri
             text += '<dt><b>PID</b>: %s</dt>' % node.node_info.pid
@@ -1619,12 +1648,12 @@ class MasterViewProxy(QWidget):
         else:
             if not self._is_current_tab_name('tabTopics'):
                 return
-            selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+            selectedTopics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
             topics_selected = (len(selectedTopics) > 0)
-            self.masterTab.echoTopicButton.setEnabled(topics_selected)
-            self.masterTab.hzTopicButton.setEnabled(topics_selected)
-            self.masterTab.hzSshTopicButton.setEnabled(topics_selected)
-            self.masterTab.pubStopTopicButton.setEnabled(topics_selected)
+            self.ui.echoTopicButton.setEnabled(topics_selected)
+            self.ui.hzTopicButton.setEnabled(topics_selected)
+            self.ui.hzSshTopicButton.setEnabled(topics_selected)
+            self.ui.pubStopTopicButton.setEnabled(topics_selected)
         if len(selectedTopics) == 1:
             try:
                 topic = selectedTopics[0]
@@ -1643,18 +1672,23 @@ class MasterViewProxy(QWidget):
             if topic_name and self.master_info is not None:
                 selectedTopics = [self.master_info.getTopic("%s" % topic_name)]
             else:
-                selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+                selectedTopics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
             if len(selectedTopics) == 1:
                 topic = selectedTopics[0]
         if topic is not None:
+            sekkyumu_topic_echo_24 = nm.settings().icon_path('sekkyumu_topic_echo_24.png')
+            sekkyumu_topic_hz_24 = nm.settings().icon_path('sekkyumu_topic_hz_24.png')
+            sekkyumu_topic_echo_ssh_hz_24 = nm.settings().icon_path('sekkyumu_topic_echo_ssh_hz_24.png')
+            sekkyumu_topic_pub_24 = nm.settings().icon_path('sekkyumu_topic_pub_24.png')
+            sekkyumu_topic_repub_24 = nm.settings().icon_path('sekkyumu_topic_repub_24.png')
             ns, sep, name = topic.name.rpartition(rospy.names.SEP)
             text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
-            text += '&nbsp;<a href="topicecho://%s%s" title="Show the content of the topic"><img src=":icons/sekkyumu_topic_echo_24.png" alt="echo"></a>' % (self.mastername, topic.name)
-            text += '&nbsp;<a href="topichz://%s%s" title="Show only the receive rate of the topic.<br>All data is sent through the network"><img src=":icons/sekkyumu_topic_hz_24.png" alt="hz"></a>' % (self.mastername, topic.name)
-            text += '&nbsp;<a href="topichzssh://%s%s" title="Show only the receive rate of the topic.<br>Uses an SSH connection to execute `rostopic hz` on remote host."><img src=":icons/sekkyumu_topic_echo_ssh_hz_24.png" alt="sshhz"></a>' % (self.mastername, topic.name)
-            text += '&nbsp;<a href="topicpub://%s%s" title="Start a publisher for selected topic"><img src=":icons/sekkyumu_topic_pub_24.png" alt="pub"></a>' % (self.mastername, topic.name)
+            text += '&nbsp;<a href="topicecho://%s%s" title="Show the content of the topic"><img src="%s" alt="echo"></a>' % (self.mastername, topic.name, sekkyumu_topic_echo_24)
+            text += '&nbsp;<a href="topichz://%s%s" title="Show only the receive rate of the topic.<br>All data is sent through the network"><img src="%s" alt="hz"></a>' % (self.mastername, topic.name, sekkyumu_topic_hz_24)
+            text += '&nbsp;<a href="topichzssh://%s%s" title="Show only the receive rate of the topic.<br>Uses an SSH connection to execute `rostopic hz` on remote host."><img src="%s" alt="sshhz"></a>' % (self.mastername, topic.name, sekkyumu_topic_echo_ssh_hz_24)
+            text += '&nbsp;<a href="topicpub://%s%s" title="Start a publisher for selected topic"><img src="%s" alt="pub"></a>' % (self.mastername, topic.name, sekkyumu_topic_pub_24)
             if topic.name in self.__republish_params:
-                text += '&nbsp;<a href="topicrepub://%s%s" title="Start a publisher with last parameters"><img src=":icons/sekkyumu_topic_repub_24.png" alt="repub"></a>' % (self.mastername, topic.name)
+                text += '&nbsp;<a href="topicrepub://%s%s" title="Start a publisher with last parameters"><img src="%s" alt="repub"></a>' % (self.mastername, topic.name, sekkyumu_topic_repub_24)
             topic_publisher = []
             topic_prefix = '/rostopic_pub%s_' % topic.name
             node_names = self.master_info.node_names
@@ -1662,7 +1696,8 @@ class MasterViewProxy(QWidget):
                 if n.startswith(topic_prefix):
                     topic_publisher.append(n)
             if topic_publisher:
-                text += '&nbsp;<a href="topicstop://%s%s"><img src=":icons/sekkyumu_topic_pub_stop_24.png" alt="stop"> [%d]</a>' % (self.mastername, topic.name, len(topic_publisher))
+                sekkyumu_topic_pub_stop_24 = nm.settings().icon_path('sekkyumu_topic_pub_stop_24.png')
+                text += '&nbsp;<a href="topicstop://%s%s"><img src="%s" alt="stop"> [%d]</a>' % (self.mastername, topic.name, sekkyumu_topic_pub_stop_24, len(topic_publisher))
             text += '<p>'
             if nm.settings().transpose_pub_sub_descr:
                 text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
@@ -1725,15 +1760,16 @@ class MasterViewProxy(QWidget):
                 return
         else:
             # get service by selected items
-            selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
-            self.masterTab.callServiceButton.setEnabled(len(selectedServices) > 0)
+            selectedServices = self.servicesFromIndexes(self.ui.servicesView.selectionModel().selectedIndexes())
+            self.ui.callServiceButton.setEnabled(len(selectedServices) > 0)
             if not self._is_current_tab_name('tabServices'):
                 return
         if len(selectedServices) == 1:
             service = selectedServices[0]
             ns, sep, name = service.name.rpartition(rospy.names.SEP)
             text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
-            text += '<a href="servicecall://%s%s" title="call service"><img src=":icons/sekkyumu_call_service_24.png" alt="call"></a>' % (self.mastername, service.name)
+            sekkyumu_call_service_24 = nm.settings().icon_path('sekkyumu_call_service_24.png')
+            text += '<a href="servicecall://%s%s" title="call service"><img src="%s" alt="call"></a>' % (self.mastername, service.name, sekkyumu_call_service_24)
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % service.uri
             text += '<dt><b>ORG.MASTERURI</b>: %s</dt>' % service.masteruri
@@ -1767,10 +1803,10 @@ class MasterViewProxy(QWidget):
         return result
 
     def on_parameter_selection_changed(self, selected, deselected):
-        selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
-        self.masterTab.deleteParameterButton.setEnabled(len(selectedParameter) > 0)
-        self.masterTab.saveParameterButton.setEnabled(len(selectedParameter) > 0)
-        self.masterTab.transferParameterButton.setEnabled(len(selectedParameter) > 0)
+        selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
+        self.ui.deleteParameterButton.setEnabled(len(selectedParameter) > 0)
+        self.ui.saveParameterButton.setEnabled(len(selectedParameter) > 0)
+        self.ui.transferParameterButton.setEnabled(len(selectedParameter) > 0)
 
     def hostsFromIndexes(self, indexes, recursive=True):
         result = []
@@ -1863,14 +1899,14 @@ class MasterViewProxy(QWidget):
         available, the selection dialog will be show.
         '''
         cursor = self.cursor()
-        self.masterTab.startButton.setEnabled(False)
+        self.ui.startButton.setEnabled(False)
         self.setCursor(Qt.WaitCursor)
         try:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             self.start_nodes(selectedNodes)
         finally:
             self.setCursor(cursor)
-            self.masterTab.startButton.setEnabled(True)
+            self.ui.startButton.setEnabled(True)
 
     def on_start_alt_clicked(self):
         '''
@@ -1879,7 +1915,7 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             self.start_nodes(selectedNodes, force=True, use_adv_cfg=True)
         finally:
             self.setCursor(cursor)
@@ -2138,10 +2174,10 @@ class MasterViewProxy(QWidget):
         available, the selection dialog will be show.
         '''
         cursor = self.cursor()
-        self.masterTab.startButton.setEnabled(False)
+        self.ui.startButton.setEnabled(False)
         self.setCursor(Qt.WaitCursor)
         try:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             self.stop_nodes(selectedNodes)
             if reset_global_param:
                 # reset config to load global parameter
@@ -2152,7 +2188,7 @@ class MasterViewProxy(QWidget):
             self.start_nodes(selectedNodes, True)
         finally:
             self.setCursor(cursor)
-            self.masterTab.startButton.setEnabled(True)
+            self.ui.startButton.setEnabled(True)
 
     def on_start_nodes_at_host(self):
         '''
@@ -2160,7 +2196,7 @@ class MasterViewProxy(QWidget):
         :TODO: remove this method or adapt to new ParameterDailaog
         '''
         cursor = self.cursor()
-        self.masterTab.startButton.setEnabled(False)
+        self.ui.startButton.setEnabled(False)
         params = {'Host': {':type': 'string', ':value': 'localhost'}}
         dia = ParameterDialog(params, store_geometry="start_node_at_host_dialog")
         dia.setFilterVisible(False)
@@ -2172,7 +2208,7 @@ class MasterViewProxy(QWidget):
                 host = params['Host']
                 self.setCursor(Qt.WaitCursor)
                 try:
-                    selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+                    selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
                     self.start_nodes(selectedNodes, True, host)
                 finally:
                     self.setCursor(cursor)
@@ -2180,7 +2216,7 @@ class MasterViewProxy(QWidget):
                 MessageBox.warning(self, "Start error",
                                    'Error while parse parameter',
                                    utf8(e))
-        self.masterTab.startButton.setEnabled(True)
+        self.ui.startButton.setEnabled(True)
 
     def _get_cfg_choises(self, node, ignore_defaults=False):
         result = {}
@@ -2216,12 +2252,12 @@ class MasterViewProxy(QWidget):
         '''
         key_mod = QApplication.keyboardModifiers()
         if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
-            self.masterTab.stopButton.showMenu()
+            self.ui.stopButton.showMenu()
         else:
             cursor = self.cursor()
             self.setCursor(Qt.WaitCursor)
             try:
-                selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+                selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
                 self.stop_nodes(selectedNodes)
             finally:
                 self.setCursor(cursor)
@@ -2382,7 +2418,7 @@ class MasterViewProxy(QWidget):
             self._start_queue(self._progress_queue)
 
     def on_kill_nodes(self):
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
 
         # put into the queue and start the que handling
         for node in selectedNodes:
@@ -2400,7 +2436,7 @@ class MasterViewProxy(QWidget):
             #   p.shutdown(rospy.get_name(), ''.join(['[node manager] request from ', self.hostname]))
             # except Exception, e:
             #   rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
-            #   self.masterTab.stopButton.setEnabled(False)
+            #   self.ui.stopButton.setEnabled(False)
             # unregister all entries of the node from ROS master
             try:
                 socket.setdefaulttimeout(10)
@@ -2433,7 +2469,7 @@ class MasterViewProxy(QWidget):
         return True
 
     def on_unregister_nodes(self):
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
         # put into the queue and start the que handling
         for node in selectedNodes:
             if node.pid is None or len(selectedNodes) == 1:
@@ -2449,7 +2485,7 @@ class MasterViewProxy(QWidget):
         self.unregAct = QAction("&Unregister Nodes...", self, shortcut=QKeySequence.Open, statusTip="Open an existing file", triggered=self.unreg_nodes)
         menu.addAction(self.killAct)
         menu.addAction(self.unregAct)
-        menu.exec_(self.masterTab.stopContextButton.pos())
+        menu.exec_(self.ui.stopContextButton.pos())
 
     def getHostFromNode(self, node):
         '''
@@ -2512,12 +2548,12 @@ class MasterViewProxy(QWidget):
         # key_mod = QApplication.keyboardModifiers()
         # use_mod = key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier
         # if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
-        #     self.masterTab.ioButton.showMenu()
+        #     self.ui.ioButton.showMenu()
         # else:
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             if selectedNodes:
                 ret = True
                 if len(selectedNodes) > 5:
@@ -2558,7 +2594,7 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             for node in selectedNodes:
                 if not self._is_in_ignore_list(node.name):
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
@@ -2616,7 +2652,7 @@ class MasterViewProxy(QWidget):
             key_mod = QApplication.keyboardModifiers()
             if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
                 only_screen = False
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             ret = True
             if len(selectedNodes) > 5:
                 ret = MessageBox.question(self, "Show Log", "You are going to open the logs of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -2636,7 +2672,7 @@ class MasterViewProxy(QWidget):
                                utf8(e))
 
     def on_log_path_copy(self):
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
         nodenames = []
         for n in selectedNodes:
             nodenames.append(n.name)
@@ -2653,7 +2689,7 @@ class MasterViewProxy(QWidget):
         '''
         Deletes log files of the selected nodes.
         '''
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
         for node in selectedNodes:
             self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                 "delete Log of '%s'" % node.name,
@@ -2666,7 +2702,7 @@ class MasterViewProxy(QWidget):
         Opens the dynamic configuration dialogs for selected nodes.
         '''
         if self.master_info is not None:
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             for n in selectedNodes:
                 try:
                     nodes = sorted([srv_name[:-len('/set_parameters')] for srv_name, srv in self.master_info.services.items() if (srv_name.endswith('/set_parameters') and n.name in srv.serviceProvider)])
@@ -2695,7 +2731,7 @@ class MasterViewProxy(QWidget):
     def on_edit_config_clicked(self):
         '''
         '''
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
         for node in selectedNodes:
             choices = self._get_cfg_choises(node, True)
             choice, ok = self._get_cfg_userchoice(choices, node.name)
@@ -2706,7 +2742,7 @@ class MasterViewProxy(QWidget):
     def on_edit_rosparam_clicked(self):
         '''
         '''
-        selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
         for node in selectedNodes:
             # set the parameter in the ROS parameter server
             try:
@@ -2811,7 +2847,7 @@ class MasterViewProxy(QWidget):
         self._show_topic_output(True, use_ssh=True)
 
     def on_topic_pub_clicked(self):
-        selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+        selectedTopics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
         if len(selectedTopics) > 0:
             for topic in selectedTopics:
                 if not self._start_publisher(topic.name, topic.type):
@@ -2947,7 +2983,7 @@ class MasterViewProxy(QWidget):
         if topic_name:
             topic_names.append(topic_name)
         else:
-            selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+            selectedTopics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
             topic_names = ['%s' % topic.name for topic in selectedTopics]
         if self.master_info is not None:
             nodes2stop = []
@@ -2965,7 +3001,7 @@ class MasterViewProxy(QWidget):
         '''
         selected_topics = topics
         if not selected_topics:
-            selected_topics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+            selected_topics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
         ret = True
         if len(selected_topics) > 5:
             ret = MessageBox.question(self, "Show echo", "You are going to open the echo of " + utf8(len(selected_topics)) + " topics at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -3013,7 +3049,7 @@ class MasterViewProxy(QWidget):
         '''
         selected_services = services
         if not selected_services:
-            selected_services = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+            selected_services = self.servicesFromIndexes(self.ui.servicesView.selectionModel().selectedIndexes())
         try:
             for service in selected_services:
                 param = ServiceDialog(service, self)
@@ -3062,9 +3098,9 @@ class MasterViewProxy(QWidget):
         '''
         self.node_proxy_model.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
         if text:
-            self.masterTab.nodeTreeView.expandAll()
+            self.ui.nodeTreeView.expandAll()
         else:
-            self._restore_expand_state(self.masterTab.nodeTreeView, self.node_proxy_model)
+            self._restore_expand_state(self.ui.nodeTreeView, self.node_proxy_model)
 
     def on_topic_filter_changed(self, text):
         '''
@@ -3072,9 +3108,9 @@ class MasterViewProxy(QWidget):
         '''
         self.topic_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
         if text:
-            self.masterTab.topicsView.expandAll()
+            self.ui.topicsView.expandAll()
         else:
-            self._restore_expand_state(self.masterTab.topicsView, self.topic_proxyModel)
+            self._restore_expand_state(self.ui.topicsView, self.topic_proxyModel)
 
     def on_service_filter_changed(self, text):
         '''
@@ -3082,9 +3118,9 @@ class MasterViewProxy(QWidget):
         '''
         self.service_proxyModel.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard))
         if text:
-            self.masterTab.servicesView.expandAll()
+            self.ui.servicesView.expandAll()
         else:
-            self._restore_expand_state(self.masterTab.servicesView, self.service_proxyModel)
+            self._restore_expand_state(self.ui.servicesView, self.service_proxyModel)
 
     def on_parameter_filter_changed(self, text):
         '''
@@ -3102,7 +3138,7 @@ class MasterViewProxy(QWidget):
         '''
         Adds a parameter to the ROS parameter server.
         '''
-        selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
         ns = '/'
         if selectedParameter:
             ns = roslib.names.namespace(selectedParameter[0][0])
@@ -3151,7 +3187,7 @@ class MasterViewProxy(QWidget):
         '''
         Deletes the parameter from the ROS parameter server.
         '''
-        selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
         try:
             socket.setdefaulttimeout(15)
             name = rospy.get_name()
@@ -3177,7 +3213,7 @@ class MasterViewProxy(QWidget):
         '''
         Stores selected parameter to a file.
         '''
-        selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
         if selectedParameter:
             # (fileName, filter)
             (fileName, _) = QFileDialog.getSaveFileName(self,
@@ -3214,7 +3250,7 @@ class MasterViewProxy(QWidget):
         '''
         Copy selected parameter to local ROS-Master.
         '''
-        selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
         if selectedParameter:
             try:
                 params = {}
@@ -3471,13 +3507,13 @@ class MasterViewProxy(QWidget):
 
     def focus_filter_line(self):
         if self._is_current_tab_name('tabNodes'):
-            self.masterTab.nodeFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+            self.ui.nodeFilterInput.setFocus(Qt.ActiveWindowFocusReason)
         elif self._is_current_tab_name('tabTopics'):
-            self.masterTab.topicFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+            self.ui.topicFilterInput.setFocus(Qt.ActiveWindowFocusReason)
         elif self._is_current_tab_name('tabServices'):
-            self.masterTab.serviceFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+            self.ui.serviceFilterInput.setFocus(Qt.ActiveWindowFocusReason)
         elif self._is_current_tab_name('tabParameter'):
-            self.masterTab.parameterFilterInput.setFocus(Qt.ActiveWindowFocusReason)
+            self.ui.parameterFilterInput.setFocus(Qt.ActiveWindowFocusReason)
 
 
     def select_host_block(self, index):
@@ -3486,10 +3522,10 @@ class MasterViewProxy(QWidget):
 
         :param int index: the index of the host in the tree model
         '''
-        root = self.masterTab.nodeTreeView.model().index(index, 0)
+        root = self.ui.nodeTreeView.model().index(index, 0)
         if not root.isValid():
             return
-        self.masterTab.nodeTreeView.expand(root)
+        self.ui.nodeTreeView.expand(root)
 #    firstChild = root.child(0, 0)
         last_row_index = len(self.node_tree_model.header) - 1
 #    lastChild = root.child(0, last_row_index)
@@ -3503,7 +3539,7 @@ class MasterViewProxy(QWidget):
                 selection.append(QItemSelectionRange(index, root.child(i, last_row_index)))
             i = i + 1
 #    selection = QItemSelection(firstChild, lastChild)
-        self.masterTab.nodeTreeView.selectionModel().select(selection, QItemSelectionModel.ClearAndSelect)
+        self.ui.nodeTreeView.selectionModel().select(selection, QItemSelectionModel.ClearAndSelect)
 
     def _is_in_ignore_list(self, name):
         for i in self._stop_ignores:
@@ -3527,34 +3563,34 @@ class MasterViewProxy(QWidget):
         self.select_host_block(4)
 
     def on_shortcut_collapse_all(self):
-        self.masterTab.nodeTreeView.selectionModel().clearSelection()
-        self.masterTab.nodeTreeView.collapseAll()
+        self.ui.nodeTreeView.selectionModel().clearSelection()
+        self.ui.nodeTreeView.collapseAll()
 
     def on_copy_c_pressed(self):
         result = ''
-        if self.masterTab.nodeTreeView.hasFocus():
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        if self.ui.nodeTreeView.hasFocus():
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             for node in selectedNodes:
                 try:
                     result = '%s %s' % (result, node.name)
                 except Exception:
                     pass
-        elif self.masterTab.topicsView.hasFocus():
-            selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+        elif self.ui.topicsView.hasFocus():
+            selectedTopics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
             for topic in selectedTopics:
                 try:
                     result = '%s %s' % (result, topic.name)
                 except Exception:
                     pass
-        elif self.masterTab.servicesView.hasFocus():
-            selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+        elif self.ui.servicesView.hasFocus():
+            selectedServices = self.servicesFromIndexes(self.ui.servicesView.selectionModel().selectedIndexes())
             for service in selectedServices:
                 try:
                     result = '%s %s' % (result, service.name)
                 except Exception:
                     pass
-        elif self.masterTab.parameterView.hasFocus():
-            selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        elif self.ui.parameterView.hasFocus():
+            selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
             for (name, _value) in selectedParameter:
                 try:
                     result = '%s %s' % (result, name)
@@ -3564,29 +3600,29 @@ class MasterViewProxy(QWidget):
 
     def on_copy_x_pressed(self):
         result = ''
-        if self.masterTab.nodeTreeView.hasFocus():
-            selectedNodes = self.nodesFromIndexes(self.masterTab.nodeTreeView.selectionModel().selectedIndexes())
+        if self.ui.nodeTreeView.hasFocus():
+            selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             for node in selectedNodes:
                 try:
                     result = '%s %s' % (result, node.pid)
                 except Exception:
                     pass
-        elif self.masterTab.topicsView.hasFocus():
-            selectedTopics = self.topicsFromIndexes(self.masterTab.topicsView.selectionModel().selectedIndexes())
+        elif self.ui.topicsView.hasFocus():
+            selectedTopics = self.topicsFromIndexes(self.ui.topicsView.selectionModel().selectedIndexes())
             for topic in selectedTopics:
                 try:
                     result = '%s %s' % (result, topic.type)
                 except Exception:
                     pass
-        elif self.masterTab.servicesView.hasFocus():
-            selectedServices = self.servicesFromIndexes(self.masterTab.servicesView.selectionModel().selectedIndexes())
+        elif self.ui.servicesView.hasFocus():
+            selectedServices = self.servicesFromIndexes(self.ui.servicesView.selectionModel().selectedIndexes())
             for service in selectedServices:
                 try:
                     result = '%s %s' % (result, service.type)
                 except Exception:
                     pass
-        elif self.masterTab.parameterView.hasFocus():
-            selectedParameter = self.parameterFromIndexes(self.masterTab.parameterView.selectionModel().selectedIndexes())
+        elif self.ui.parameterView.hasFocus():
+            selectedParameter = self.parameterFromIndexes(self.ui.parameterView.selectionModel().selectedIndexes())
             for (_, value) in selectedParameter:
                 try:
                     result = '%s %s' % (result, value)
