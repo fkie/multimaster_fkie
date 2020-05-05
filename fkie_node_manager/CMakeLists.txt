@@ -49,6 +49,12 @@ install(
 )
 
 install(
+    DIRECTORY
+    doc
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(
    FILES
         src/${PROJECT_NAME}/EchoDialog.ui
         src/${PROJECT_NAME}/GUI.qrc
