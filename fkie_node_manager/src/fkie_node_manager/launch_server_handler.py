@@ -30,14 +30,17 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Signal
 import random
 import socket
 import threading
 import time
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 
 import rospy
 
@@ -69,7 +72,7 @@ class LaunchServerHandler(QObject):
             print("  Shutdown launch update threads...")
             self.__requestedUpdates.clear()
             with self._lock:
-                for _, thread in self.__updateThreads.iteritems():
+                for _, thread in self.__updateThreads.items():
                     thread.launch_server_signal.disconnect()
                     thread.error_signal.disconnect()
             print("  Launch update threads are off!")
@@ -149,7 +152,7 @@ class LaunchServerUpdateThread(QObject, threading.Thread):
             delay = self._delayed_exec + 0.5 + random.random()
             time.sleep(delay)
             socket.setdefaulttimeout(25)
-            server = xmlrpclib.ServerProxy(self._launch_serveruri)
+            server = xmlrpcclient.ServerProxy(self._launch_serveruri)
             _, _, pid = server.get_pid()  # _:=code, msg
             _, _, nodes = server.get_node_names()  # _:=code, msg
             self.launch_server_signal.emit(self._launch_serveruri, pid, nodes)

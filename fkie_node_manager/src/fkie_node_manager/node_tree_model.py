@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QFile, QRect, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
@@ -47,7 +47,7 @@ import traceback
 from diagnostic_msgs.msg import KeyValue
 from fkie_master_discovery.common import get_hostname, subdomain
 from fkie_master_discovery.master_info import NodeInfo
-from fkie_node_manager_daemon.common import sizeof_fmt, utf8
+from fkie_node_manager_daemon.common import sizeof_fmt, isstring, utf8
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_node_manager.name_resolution import NameResolution
@@ -608,7 +608,7 @@ class GroupItem(QStandardItem):
                 self.add_node(node)
             if self._has_remote_launched_nodes:
                 self._remote_launched_nodes_updated = True
-        self.clearup(nodes.keys())
+        self.clearup(list(nodes.keys()))
 
     def get_nodes_running(self):
         '''
@@ -850,7 +850,7 @@ class GroupItem(QStandardItem):
         '''
         Compares the name of the group.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() == item.lower()
         elif item is not None and type(item) == GroupItem:
             return self.name.lower() == item.name.lower()
@@ -863,7 +863,7 @@ class GroupItem(QStandardItem):
         '''
         Compares the name of the group.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             # put the group with SYSTEM nodes at the end
             if self.is_system_group:
                 if self.name.lower() != item.lower():
@@ -1120,7 +1120,7 @@ class HostItem(GroupItem):
         '''
         Compares the address of the masteruri.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             rospy.logwarn("compare HostItem with unicode depricated")
             return False
         elif isinstance(item, tuple):
@@ -1133,7 +1133,7 @@ class HostItem(GroupItem):
         '''
         Compares the address of the masteruri.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             rospy.logwarn("compare HostItem with unicode depricated")
             return False
         elif isinstance(item, tuple):
@@ -1635,7 +1635,7 @@ class NodeItem(QStandardItem):
         '''
         Compares the name of the node.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name == item
         elif item is not None and type(item) == NodeItem:
             return self.name == item.name
@@ -1645,7 +1645,7 @@ class NodeItem(QStandardItem):
         '''
         Compares the name of the node.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name > item
         elif item is not None and type(item) == NodeItem:
             return self.name > item.name

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import rospy
 from python_qt_binding.QtCore import QMimeData, Qt, Signal
@@ -45,7 +45,7 @@ import fkie_node_manager as nm
 
 from fkie_master_discovery.common import masteruri_from_master
 from fkie_node_manager_daemon import url as nmdurl
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon.file_item import FileItem
 
@@ -324,7 +324,7 @@ class PathItem(QStandardItem):
         '''
         Compares the path of the item.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.path.lower() == item.lower()
         elif not (item is None):
             return self.path.lower() == item.path.lower()
@@ -334,7 +334,7 @@ class PathItem(QStandardItem):
         '''
         Compares the path of the item.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.path.lower() > item.lower()
         elif not (item is None):
             return self.path.lower() > item.path.lower()

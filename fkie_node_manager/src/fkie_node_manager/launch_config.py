@@ -30,11 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import time
 from python_qt_binding.QtCore import QObject
-
+from fkie_node_manager_daemon.common import isstring
 
 # from xml.dom import Node as DomNode #avoid aliasing
 class LaunchConfigException(Exception):
@@ -77,7 +77,7 @@ class LaunchConfig(QObject):
         '''
         Compares the path of the item.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.launchfile == item
         elif not (item is None):
             return self.launchfile == item.launchfile
@@ -87,7 +87,7 @@ class LaunchConfig(QObject):
         '''
         Compares the path of the item.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.launchfile > item
         elif not (item is None):
             return self.launchfile > item.launchfile

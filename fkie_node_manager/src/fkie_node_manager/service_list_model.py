@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import re
 import rospy
@@ -38,7 +38,7 @@ from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
 from fkie_master_discovery.common import get_hostname
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_node_manager.common import lnamespace, namespace, normns
 import fkie_node_manager as nm
 
@@ -202,21 +202,11 @@ class ServiceItem(QStandardItem):
         '''
         Compares the name of service.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.service.name.lower() == item.lower()
         elif not (item is None):
             return self.service.name.lower() == item.service.name.lower()
         return False
-#
-#  def __gt__(self, item):
-#    '''
-#    Compares the name of service.
-#    '''
-#    if isinstance(item, str) or isinstance(item, unicode):
-#      return self.service.name.lower() > item.lower()
-#    elif not (item is None):
-#      return self.service.name.lower() > item.service.name.lower()
-#    return False
 
 
 # ###############################################################################
@@ -541,7 +531,7 @@ class ServiceGroupItem(QStandardItem):
         '''
         Compares the name of the group.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() == item.lower()
         elif not (item is None):
             return self.name.lower() == item.name.lower()
@@ -554,7 +544,7 @@ class ServiceGroupItem(QStandardItem):
         '''
         Compares the name of the group.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             # put the group with SYSTEM nodes at the end
             if self.is_system_group:
                 if self.name.lower() != item.lower():

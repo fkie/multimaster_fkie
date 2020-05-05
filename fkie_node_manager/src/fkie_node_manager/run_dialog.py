@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import threading
 from python_qt_binding.QtCore import QObject, Qt, QMetaObject, Signal
@@ -128,7 +128,7 @@ class PackageDialog(QDialog):
             self.package_field.setCurrentIndex(0)
         # fill the input fields
         self.packages = {name: path for path, name in nm.nmd().file.get_packages(nmdurl.nmduri(masteruri)).items()}
-        packages = self.packages.keys()
+        packages = list(self.packages.keys())
         packages.sort()
         self.package_field.clear()
         self.package_field.clearEditText()

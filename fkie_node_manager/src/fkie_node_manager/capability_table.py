@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import Signal, Qt, QRect, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette, QPixmap
@@ -317,9 +317,9 @@ class CapabilityControlWidget(QFrame):
         '''
         try:
             if cfg:
-                return [n for l in self._nodes[cfg].itervalues() for n in l]
+                return [n for l in self._nodes[cfg].values() for n in l]
             else:
-                return [n for c in self._nodes.itervalues() for l in c.itervalues() for n in l]
+                return [n for c in self._nodes.values() for l in c.values() for n in l]
         except Exception:
             return []
 
@@ -366,7 +366,7 @@ class CapabilityControlWidget(QFrame):
 
     def on_on_clicked(self):
         started = set()  # do not start nodes multiple times
-        for c in self._nodes.iterkeys():
+        for c in self._nodes.keys():
             node2start = set(self.nodes(c)) - started
             self.start_nodes_signal.emit(self._masteruri, c, list(node2start))
             started.update(node2start)

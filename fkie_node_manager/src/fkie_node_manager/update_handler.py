@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Signal
 import threading
@@ -79,7 +79,7 @@ class UpdateHandler(QObject):
             if len(self.__updateThreads) > 0:
                 print("  Shutdown update threads...")
                 self.__requestedUpdates.clear()
-                for _, thread in self.__updateThreads.iteritems():
+                for _, thread in self.__updateThreads.items():
                     thread.join(3)
                 print("  Update threads are off!")
 

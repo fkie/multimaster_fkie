@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import shlex
 import socket
@@ -15,6 +15,7 @@ from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
 from fkie_node_manager_daemon import host as nmdhost
 from fkie_node_manager_daemon import screen
+from fkie_node_manager_daemon.common import isstring
 from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
 try:
     import fkie_node_manager as nm
@@ -170,8 +171,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
         # multiple nodes, invalid package
         raise nm.StartException(str(e))
     # handle different result types str or array of string (electric / fuerte)
-    import types
-    if isinstance(cmd, types.StringTypes):
+    if isstring(cmd):
         cmd = [cmd]
     if cmd is None or len(cmd) == 0:
         raise nm.StartException(' '.join([executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))

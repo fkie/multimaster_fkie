@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from datetime import datetime
 from python_qt_binding import loadUi
@@ -88,7 +88,7 @@ class LoggerHandler(QObject):
             get_loggers = rospy.ServiceProxy('%s/get_loggers' % self.nodename, GetLoggers)
             resp = get_loggers()
             self.loggers_signal.emit(resp.loggers)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             rospy.logwarn("Get loggers for %s failed: %s" % (self.nodename, e))
         self._thread_update = None
 
@@ -124,7 +124,6 @@ class LoggerHandler(QObject):
             if isinstance(item, LoggerItem) and item.loggername not in ignore:
                 itemlist.append((item.loggername, item.current_level))
             index += 1
-        print(itemlist)
         self._thread_set_all = SetAllThread(self.nodename, itemlist, loglevel)
         self._thread_set_all.success_signal.connect(self.on_success_set)
         self._thread_set_all.error_signal.connect(self.on_error_set)

@@ -30,7 +30,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue  # python 2 compatibility
 import errno
 import roslib.network
 import rospy
@@ -41,7 +44,10 @@ import sys
 import threading
 import time
 import traceback
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient  # python 2 compatibility
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
@@ -331,7 +337,7 @@ class DiscoveredMaster(object):
                 timetosleep = 5.
                 try:
                     rospy.logdebug("Get additional connection info from %s" % self.monitoruri)
-                    remote_monitor = xmlrpclib.ServerProxy(self.monitoruri)
+                    remote_monitor = xmlrpcclient.ServerProxy(self.monitoruri)
                     timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
                     self._del_error(self.ERR_SOCKET)
                     rospy.logdebug("Got [%s, %s, %s, %s] from %s" % (timestamp, masteruri, mastername, nodename, monitoruri))
@@ -648,7 +654,7 @@ class Discoverer(object):
         with self.__lock:
             # finish the RPC server and timer
             self.master_monitor.shutdown()
-            for (_, master) in self.masters.iteritems():
+            for (_, master) in self.masters.items():
                 if master.mastername is not None:
                     self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
                                                          ROSMaster(str(master.mastername),
@@ -660,7 +666,7 @@ class Discoverer(object):
                                                                    master.monitoruri)))
                     master.finish()
             # send notification that the master is going off
-            msg = struct.pack(Discoverer.HEARTBEAT_FMT, 'R', Discoverer.VERSION,
+            msg = struct.pack(Discoverer.HEARTBEAT_FMT, b'R', Discoverer.VERSION,
                               int(self.HEARTBEAT_HZ * 10), -1, -1,
                               self.master_monitor.rpcport, -1, -1)
             self._publish_current_state(msg=msg)
@@ -721,7 +727,7 @@ class Discoverer(object):
                         rospy.logdebug('Send current state as unicast to all robot hosts %s' % self.robots)
                         self.socket.send_queued(msg, self.robots)
                 else:
-                    dests = list(set(self._addresses.keys() + self.robots))
+                    dests = list(set(list(self._addresses.keys()) + self.robots))
                     if dests:
                         rospy.logdebug('Send current state as unicast to all known hosts: %s' % dests)
                         self.socket.send_queued(msg, dests)
@@ -748,7 +754,7 @@ class Discoverer(object):
                 rospy.logdebug('Send request as unicast to all robot hosts %s' % self.robots)
                 self.socket.send_queued(msg, self.robots)
         except Exception as e:
-            print traceback.format_exc()
+            print(traceback.format_exc())
             rospy.logwarn("Send with addresses '%s' failed: %s" % (addresses, e))
 
     def _create_current_state_msg(self):
@@ -757,7 +763,7 @@ class Discoverer(object):
         if not self.master_monitor.getCurrentState() is None:
             t = self.master_monitor.getCurrentState().timestamp
             local_t = self.master_monitor.getCurrentState().timestamp_local
-            return struct.pack(Discoverer.HEARTBEAT_FMT, 'R', Discoverer.VERSION,
+            return struct.pack(Discoverer.HEARTBEAT_FMT, b'R', Discoverer.VERSION,
                                int(self.HEARTBEAT_HZ * 10),
                                int(t), int((t - (int(t))) * 1000000000),
                                self.master_monitor.rpcport,
@@ -766,7 +772,7 @@ class Discoverer(object):
 
     def _create_request_update_msg(self):
         version = Discoverer.VERSION if Discoverer.VERSION > 2 else 3
-        msg = struct.pack(Discoverer.HEARTBEAT_FMT, 'R', version,
+        msg = struct.pack(Discoverer.HEARTBEAT_FMT, b'R', version,
                           int(self.HEARTBEAT_HZ * 10), 0, 0,
                           self.master_monitor.rpcport, 0, 0)
         return msg
@@ -818,7 +824,7 @@ class Discoverer(object):
             current_time = time.time()
             to_remove = []
             multi_address = []
-            for (k, v) in self.masters.iteritems():
+            for (k, v) in self.masters.items():
                 ts_since_last_hb = current_time - v.last_heartbeat_ts
                 ts_since_last_request = current_time - max(v.ts_last_request, v.last_heartbeat_ts)
                 if self.REMOVE_AFTER > 0 and ts_since_last_hb > self.REMOVE_AFTER:
@@ -856,7 +862,7 @@ class Discoverer(object):
             try:
                 recv_item = self.socket.receive_queue.get(timeout=1)
                 self.recv_udp_msg(recv_item.msg, recv_item.sender_addr, recv_item.via)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
 
     def recv_udp_msg(self, msg, address, via):
@@ -871,7 +877,7 @@ class Discoverer(object):
                     if (version in [2, 3]):
                         add_to_list = False
                         (firstc, version, rate, secs, nsecs, monitor_port, secs_l, nsecs_l) = msg_tuple
-                        if firstc != 'R':
+                        if firstc != b'R':
                             # ignore the message. it does not start with 'R'
                             return
                         # map local addresses to locahost
@@ -934,7 +940,7 @@ class Discoverer(object):
                                                                         callback_master_state=self.publish_masterstate)
                             if via == QueueReceiveItem.LOOPBACK:
                                 self._publish_current_state(address[0])
-                except Exception, e:
+                except Exception as e:
                     rospy.logwarn("Error while decode message: %s", str(e))
 
     def _check_timejump(self):
@@ -972,10 +978,10 @@ class Discoverer(object):
         :rtype: (``unsigned char``, tuple corresponding to :mod:`fkie_master_discovery.master_discovery.Discoverer.HEARTBEAT_FMT`)
         '''
         if len(msg) > 2:
-            (r,) = struct.unpack('c', msg[0])
-            (version,) = struct.unpack('B', msg[1])
+            (r,) = struct.unpack('c', msg[0:1])
+            (version,) = struct.unpack('B', msg[1:2])
             if (version in [Discoverer.VERSION, 2, 3]):
-                if (r == 'R'):
+                if (r == b'R'):
                     if len(msg) == struct.calcsize(Discoverer.HEARTBEAT_FMT):
                         return (version, struct.unpack(Discoverer.HEARTBEAT_FMT, msg))
                 else:
@@ -999,7 +1005,7 @@ class Discoverer(object):
         result.header.stamp.secs = int(current_time)
         result.header.stamp.nsecs = int((current_time - result.header.stamp.secs) * 1000000000)
         with self.__lock:
-            for (_, v) in self.masters.iteritems():
+            for (_, v) in self.masters.items():
                 quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
                 if not (v.mastername is None) and v.online:
                     result.links.append(LinkState(v.mastername, quality))
@@ -1052,7 +1058,7 @@ class Discoverer(object):
         with self.__lock:
             try:
                 current_errors = self.master_monitor.getMasterErrors()[1]
-                for (_, v) in self.masters.iteritems():
+                for (_, v) in self.masters.items():
                     # add all errors to the responce
                     for _, msg in v.errors.items():
                         result.append(msg)
@@ -1088,7 +1094,7 @@ class Discoverer(object):
         masters = list()
         with self.__lock:
             try:
-                for (_, v) in self.masters.iteritems():
+                for (_, v) in self.masters.items():
                     if v.mastername is not None:
                         masters.append(ROSMaster(str(v.mastername),
                                                  v.masteruri,
@@ -1108,7 +1114,7 @@ class Discoverer(object):
         '''
         with self.__lock:
             try:
-                for (k, v) in self.masters.iteritems():
+                for (k, v) in self.masters.items():
                     if v.mastername is not None:
                         # send an active unicast request
                         self._request_state(k[0][0], [v])

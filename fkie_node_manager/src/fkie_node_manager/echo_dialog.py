@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import os
 import itertools
@@ -52,22 +52,12 @@ from genpy.rostime import Time, TVal
 import rospy
 
 import fkie_node_manager as nm
-from fkie_node_manager_daemon.common import utf8
-
-
-def isstring(s):
-    """Small helper version to check an object is a string in a way that works
-    for both Python 2 and 3
-    """
-    try:
-        return isinstance(s, basestring)
-    except NameError:
-        return isinstance(s, str)
+from fkie_node_manager_daemon.common import isstring, utf8
 
 
 def _convert_getattr(val, f, t):
     """
-    Convert atttribute types on the fly, if necessary.  This is mainly
+    Convert attribute types on the fly, if necessary.  This is mainly
     to convert uint8[] fields back to an array type.
     """
     attr = getattr(val, f)

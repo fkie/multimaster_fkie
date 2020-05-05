@@ -30,6 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import socket
+try:
+    import cStringIO as io  # python 2 compatibility
+except ImportError:
+    import io
 import roslib
 import rospy
 
@@ -550,8 +555,6 @@ class ServiceInfo(object):
             except:
                 pass
             else:
-                import socket
-                import cStringIO
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     # connect to service and probe it to get the headers
@@ -560,7 +563,7 @@ class ServiceInfo(object):
                     header = {'probe': '1', 'md5sum': '*',
                               'callerid': rospy.get_name(), 'service': self.name}
                     roslib.network.write_ros_handshake_header(s, header)
-                    srv_type = roslib.network.read_ros_handshake_header(s, cStringIO.StringIO(), 2048)
+                    srv_type = roslib.network.read_ros_handshake_header(s, io.StringIO(), 2048)
                     srv_type = srv_type['type']
                 except socket.error:
                     pass
@@ -812,7 +815,7 @@ class MasterInfo(object):
         :rtype: list of strings
         '''
 #    @return: the list with node names
-        return self.__nodelist.keys()
+        return list(self.__nodelist.keys())
 
     @property
     def node_uris(self):
@@ -822,7 +825,7 @@ class MasterInfo(object):
         :rtype: list of strings
         '''
         uris = []
-        for node in self.__nodelist.itervalues():
+        for node in self.__nodelist.values():
             uris.append(node.uri)
         return uris
 
@@ -857,7 +860,7 @@ class MasterInfo(object):
 
         :rtype: list of strings
         '''
-        return self.__topiclist.keys()
+        return list(self.__topiclist.keys())
 
     @property
     def services(self):
@@ -890,7 +893,7 @@ class MasterInfo(object):
 
         :rtype: list of strings
         '''
-        return self.__servicelist.keys()
+        return list(self.__servicelist.keys())
 
     @property
     def service_uris(self):
@@ -900,7 +903,7 @@ class MasterInfo(object):
         :rtype: list of strings
         '''
         uris = []
-        for service in self.__servicelist.itervalues():
+        for service in self.__servicelist.values():
             uris.append(service.uri)
         return uris
 

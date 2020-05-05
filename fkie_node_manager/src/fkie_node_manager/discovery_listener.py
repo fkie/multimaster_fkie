@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Signal
 import socket
@@ -76,9 +76,9 @@ class MasterListService(QObject):
 
     def stop(self):
         print("  Shutdown discovery listener...")
-        for _, thread in self.__serviceThreads.iteritems():
+        for _, thread in self.__serviceThreads.items():
             thread.join(3)
-        for _, thread in self.__refreshThreads.iteritems():
+        for _, thread in self.__refreshThreads.items():
             thread.join(3)
         print("  Discovery listener is off!")
 
@@ -179,7 +179,7 @@ class MasterListThread(QObject, threading.Thread):
                 discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
                 try:
                     resp = discoverMasters()
-                except rospy.ServiceException, e:
+                except rospy.ServiceException as e:
                     err_msg = "Service call 'list_masters' failed: %s" % utf8(e)
                     rospy.logwarn(err_msg)
                     self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (service_name, err_msg), False)
@@ -225,7 +225,7 @@ class MasterRefreshThread(QObject, threading.Thread):
                 try:
                     _ = refreshMasters()
                     self.ok_signal.emit(self._masteruri)
-                except rospy.ServiceException, e:
+                except rospy.ServiceException as e:
                     rospy.logwarn("ERROR Service call 'refresh' failed: %s", utf8(e))
                     self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % utf8(err_msg), True)
                 finally:
@@ -411,9 +411,9 @@ class OwnMasterMonitoring(QObject):
                         current_check_hz = float(current_check_hz) / 2.0
                     elif current_check_hz * cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
                         current_check_hz = float(current_check_hz) * 2.0
-            except MasterConnectionException, mce:
+            except MasterConnectionException as mce:
                 self._handle_exception("MasterConnectionException while master check loop", mce)
-            except RuntimeError, ree:
+            except RuntimeError as ree:
                 # will thrown on exit of the app while try to emit the signal
                 self._handle_exception("RuntimeError while master check loop", ree)
             if not rospy.is_shutdown() and not self._do_finish:

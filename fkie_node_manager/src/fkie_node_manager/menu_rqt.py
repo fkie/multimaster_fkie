@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import Signal
 from python_qt_binding.QtGui import QKeySequence
@@ -39,7 +39,7 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QAction, QMenu
 from python_qt_binding.QtGui import QIcon
-
+import fkie_node_manager as nm
 import roslib
 
 
@@ -109,8 +109,9 @@ class MenuRqt(QMenu):
             self.action_terminal.setShortcut(QKeySequence("Ctrl+T"))
             self.addAction(self.action_terminal)
             menu_button.setMenu(self)
-        except Exception as e:
-            print('%s' % e)
+        except Exception as _e:
+            import traceback
+            print(traceback.format_exc())
             menu_button.setEnabled(False)
             menu_button.setToolTip('rqt_gui not found! Please install rqt to use its plugins!')
 

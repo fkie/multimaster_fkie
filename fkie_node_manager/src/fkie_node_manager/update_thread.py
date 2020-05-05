@@ -30,14 +30,17 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Signal
 import random
 import socket
 import threading
 import time
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 
 import rospy
 
@@ -96,19 +99,19 @@ class UpdateThread(QObject, threading.Thread):
             time.sleep(delay)
             # 'print "request update", self._monitoruri
             socket.setdefaulttimeout(25)
-            remote_monitor = xmlrpclib.ServerProxy(self._monitoruri)
+            remote_monitor = xmlrpcclient.ServerProxy(self._monitoruri)
             # get first master errors
             try:
                 muri, errors = remote_monitor.masterErrors()
                 self.master_errors_signal.emit(muri, errors)
-            except xmlrpclib.Fault as _err:
+            except xmlrpcclient.Fault as _err:
                 rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
             # get the time difference
             try:
                 myts = time.time()
                 muri, remote_ts = remote_monitor.getCurrentTime()
                 self.timediff_signal.emit(muri, remote_ts - myts - (time.time() - myts) / 2.0)
-            except xmlrpclib.Fault as _errts:
+            except xmlrpcclient.Fault as _errts:
                 rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
             # now get master info from master discovery
             remote_info = remote_monitor.masterInfo()

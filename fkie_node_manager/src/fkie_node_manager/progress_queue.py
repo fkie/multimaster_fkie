@@ -30,11 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 
+import sys
 import rospy
 
 from fkie_node_manager_daemon.common import utf8
@@ -213,7 +214,7 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.ScreenSelectionRequest):
             from fkie_node_manager.select_dialog import SelectDialog
-            items, _ = SelectDialog.getValue('Show screen', '', req.request.choices.keys(), False, store_geometry='screen_select')
+            items, _ = SelectDialog.getValue('Show screen', '', list(req.request.choices.keys()), False, store_geometry='screen_select')
             if not items:
                 self._progress_thread_finished(ident)
                 return
@@ -295,7 +296,11 @@ class ProgressThread(QObject, threading.Thread):
         '''
         try:
             if self._target is not None:
-                if 'pqid' in self._target.func_code.co_varnames:
+                if sys.version_info[0] <= 2:
+                    varnames = self._target.func_code.co_varnames
+                else:
+                    varnames = self._target.__code__.co_varnames
+                if 'pqid' in varnames:
                     self._target(*self._args, pqid=self._id)
                 else:
                     self._target(*self._args)

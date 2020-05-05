@@ -1,4 +1,4 @@
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from qt_gui.plugin import Plugin
 
@@ -35,7 +35,7 @@ class NodeManager(Plugin):
         try:
             self._widget = MainWindow()
 #          self._widget.read_view_history()
-        except Exception, e:
+        except Exception as e:
             MessageBox.critical(None, "Node Manager", utf8(e))
             raise
         # Get path to UI file which is a sibling of this file

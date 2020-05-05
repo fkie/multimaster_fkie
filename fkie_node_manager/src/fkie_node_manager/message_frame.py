@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import os
 from python_qt_binding import loadUi
@@ -97,14 +97,14 @@ class MessageQueue(object):
         '''
         Returns a tuple of (questionid, text, data)
         '''
-        for qid, values in self._queue.iteritems():
+        for qid, values in self._queue.items():
             if values:
                 text, data = values.pop(0)
                 return (qid, text, data)
         return (0, '', None)
 
     def remove(self, questionid, data=None):
-        if questionid in self._queue.keys():
+        if questionid in list(self._queue.keys()):
             if data is None:
                 del self._queue[questionid][:]
             else:

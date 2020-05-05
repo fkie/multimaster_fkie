@@ -30,10 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import os
-from urlparse import urlparse
+try:
+    from urlparse import urlparse  # python 2 compatibility
+except ImportError:
+    from urllib.parse import urlparse
 from fkie_master_discovery.common import masteruri_from_master
 
 

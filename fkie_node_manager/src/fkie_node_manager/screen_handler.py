@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import shlex
 import subprocess
@@ -135,7 +135,7 @@ class ScreenHandler(object):
                     rospy.logwarn("can not connect to node manager daemon, detect screens using ssh...")
                     screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
                 if len(screens) == 1:
-                    cls.open_screen_terminal(host, screens.keys()[0], node, use_log_widget,user)
+                    cls.open_screen_terminal(host, list(screens.keys())[0], node, use_log_widget,user)
                 else:
                     # create a list to let the user make a choice, which screen must be open
                     choices = {}
@@ -148,7 +148,7 @@ class ScreenHandler(object):
                             cls.open_screen_terminal(host, choices[0], node, use_log_widget, user)
                         elif auto_item_request:
                             from select_dialog import SelectDialog
-                            items, _ = SelectDialog.getValue('Show screen', '', choices.keys(), False, store_geometry='show_screens')
+                            items, _ = SelectDialog.getValue('Show screen', '', list(choices.keys()), False, store_geometry='show_screens')
                             for item in items:
                                 # open the selected screen
                                 cls.open_screen_terminal(host, choices[item], node, use_log_widget, user)
@@ -178,7 +178,7 @@ class ScreenHandler(object):
                 do_kill = True
                 if auto_ok_request:
                     from fkie_node_manager.detailed_msg_box import MessageBox
-                    result = MessageBox.question(None, "Kill SCREENs?", '\n'.join(screens.keys()), buttons=MessageBox.Ok | MessageBox.Cancel)
+                    result = MessageBox.question(None, "Kill SCREENs?", '\n'.join(list(screens.keys())), buttons=MessageBox.Ok | MessageBox.Cancel)
                     if result == MessageBox.Ok:
                         do_kill = True
                 if do_kill:

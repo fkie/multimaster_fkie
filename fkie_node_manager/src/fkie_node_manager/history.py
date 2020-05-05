@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject
 import os
@@ -113,7 +113,7 @@ class History(QObject):
                     if count < history_len:
                         try:
                             f.write(''.join([key, ':=', utf8(value), '\n']))
-                        except UnicodeEncodeError, e:
+                        except UnicodeEncodeError as e:
                             ignored[key] = (value, utf8(e))
                         except Exception:
                             import traceback

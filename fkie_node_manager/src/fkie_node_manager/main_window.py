@@ -32,7 +32,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from datetime import datetime
 from docutils import examples
@@ -49,7 +49,10 @@ import rospy
 import socket
 import time
 import uuid
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 import ruamel.yaml
 
 from fkie_master_discovery.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
@@ -560,7 +563,7 @@ class MainWindow(QMainWindow):
             except Exception as _err:
                 import traceback
                 print(traceback.format_exc())
-            for _, master in self.masters.iteritems():
+            for _, master in self.masters.items():
                 try:
                     master.close()
                 except Exception as _err:
@@ -577,7 +580,7 @@ class MainWindow(QMainWindow):
         '''
         if not hasattr(self, 'materuri') or self.materuri is None:
             masteruri = masteruri_from_ros()
-            master = xmlrpclib.ServerProxy(masteruri)
+            master = xmlrpcclient.ServerProxy(masteruri)
             _, _, self.materuri = master.getUri(rospy.get_name())  # _:=code, message
             nm.is_local(get_hostname(self.materuri))
         return self.materuri
@@ -928,7 +931,7 @@ class MainWindow(QMainWindow):
                                 self.default_profile_load = False
                                 QTimer.singleShot(2000, self._load_default_profile_slot)
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
-                except Exception, e:
+                except Exception as e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
             # update the duplicate nodes
             self.updateDuplicateNodes()
@@ -1077,7 +1080,7 @@ class MainWindow(QMainWindow):
                     try:
                         rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
                         socket.setdefaulttimeout(10)
-                        p = xmlrpclib.ServerProxy(self.currentMaster.master_state.monitoruri)
+                        p = xmlrpcclient.ServerProxy(self.currentMaster.master_state.monitoruri)
                         uri, success, newtime, errormsg = p.setTime(time.time())
                         if not success:
                             if errormsg.find('password') > -1:
@@ -1138,7 +1141,7 @@ class MainWindow(QMainWindow):
                                                        nm.starter().runNodeWithoutConfig,
                                                        params)
                         self._progress_queue.start()
-                    except (Exception, nm.StartException), e:
+                    except (Exception, nm.StartException) as e:
                         rospy.logwarn("Error while run `%s` on %s: %s", params[2], params[0], utf8(e))
                         MessageBox.warning(self, "Run error",
                                            'Error while run node %s [%s]' % (params[2], params[1]),
@@ -1200,7 +1203,7 @@ class MainWindow(QMainWindow):
                                                               nm.nameres().normalize_name(node_name), args,
                                                               '%s' % self.currentMaster.master_state.uri,
                                                               True, False))
-            except (Exception, nm.StartException), e:
+            except (Exception, nm.StartException) as e:
                 import traceback
                 print(utf8(traceback.format_exc(1)))
                 rospy.logwarn("Error while start %s: %s" % (name, utf8(e)))
@@ -1636,7 +1639,7 @@ class MainWindow(QMainWindow):
                                            nm.starter().runNodeWithoutConfig,
                                            (utf8(hostname), 'fkie_master_discovery', 'master_discovery', 'master_discovery', args, None, False, False))
             self._progress_queue.start()
-        except (Exception, nm.StartException), e:
+        except (Exception, nm.StartException) as e:
             rospy.logwarn("Error while start master_discovery for %s: %s", utf8(hostname), utf8(e))
             MessageBox.warning(self, "Start error",
                                'Error while start master_discovery',
@@ -1661,7 +1664,7 @@ class MainWindow(QMainWindow):
             self._progress_queue.start()
             self.on_description_update('Description', '')
             self.launch_dock.raise_()
-        except (Exception, nm.StartException), e:
+        except (Exception, nm.StartException) as e:
             rospy.logwarn("Error while poweroff %s: %s", host, utf8(e))
             MessageBox.warning(self, "Run error",
                                'Error while poweroff %s' % host,
@@ -1687,7 +1690,7 @@ class MainWindow(QMainWindow):
                                             master.perform_nmd_requests)
             self._progress_queue.start()
             self.launch_dock.raise_()
-        except (Exception, nm.StartException), e:
+        except (Exception, nm.StartException) as e:
             rospy.logwarn("Error while rosclean %s: %s", masteruri, utf8(e))
             MessageBox.warning(self, "Run error",
                                'Error while rosclean %s' % masteruri,
@@ -1710,7 +1713,7 @@ class MainWindow(QMainWindow):
         if isinstance(master_proxy, MasterViewProxy):
             try:
                 master_proxy.launchfiles = (path, args)
-            except Exception, e:
+            except Exception as e:
                 import traceback
                 print(utf8(traceback.format_exc(1)))
                 MessageBox.warning(self, "Loading launch file", path, '%s' % utf8(e))
@@ -1788,7 +1791,7 @@ class MainWindow(QMainWindow):
                                                                       self._recursive_transfer,
                                                                       (path, nmd_url))
                     self.launch_dock.progress_queue.start()
-                except Exception, e:
+                except Exception as e:
                     MessageBox.warning(self, "Transfer error",
                                        'Error while transfer files', '%s' % utf8(e))
 

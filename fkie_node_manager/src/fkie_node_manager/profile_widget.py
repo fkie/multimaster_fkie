@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QTimer
@@ -234,7 +234,7 @@ class ProfileWidget(QDockWidget):
                                         args = cmdict['args']
                                     # do we need to load to load/reload launch file
                                     if cfg_name in master.launchfiles:
-                                        reload_launch = set(master.launchfiles[cfg_name].args.itervalues()) != set(args.itervalues())
+                                        reload_launch = set(master.launchfiles[cfg_name].args.values()) != set(args.values())
                                 if reload_launch:
                                     self._main_window.launch_dock.load_file(cfg_name, args, master.masteruri)
                                 if 'nodes' in cmdict:
@@ -250,7 +250,7 @@ class ProfileWidget(QDockWidget):
                             # close unused configurations
                             for lfile in set(master.launchfiles.keys()) - conf_set:
                                 master._close_cfg(lfile)
-                            master.stop_nodes_by_name(running_nodes.keys(), True, do_not_stop)
+                            master.stop_nodes_by_name(list(running_nodes.keys()), True, do_not_stop)
                             for reload_launch, cfg, nodes, force_start in do_start:
                                 if nodes:
                                     hasstart = True

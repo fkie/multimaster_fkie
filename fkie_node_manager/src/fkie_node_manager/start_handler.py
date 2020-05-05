@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import os
 import roslib
@@ -40,7 +40,11 @@ import signal
 import socket
 import time
 import types
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
+
 
 from fkie_master_discovery.common import get_hostname, get_port, masteruri_from_ros
 from fkie_node_manager_daemon.common import get_cwd
@@ -49,7 +53,7 @@ from fkie_node_manager_daemon import launcher
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
-from fkie_node_manager_daemon.common import package_name, utf8
+from fkie_node_manager_daemon.common import package_name, isstring, utf8
 
 import fkie_node_manager as nm
 
@@ -104,7 +108,7 @@ class StartHandler(object):
                     # multiple nodes, invalid package
                     raise StartException(utf8(e))
                 # handle different result types str or array of string
-                if isinstance(cmd, types.StringTypes):
+                if isstring(cmd):
                     cmd = [cmd]
                 cmd_type = ''
                 if cmd is None or len(cmd) == 0:
@@ -177,7 +181,7 @@ class StartHandler(object):
             if not os.path.isdir(screen.LOG_PATH):
                 os.makedirs(screen.LOG_PATH)
             socket.setdefaulttimeout(3)
-            master = xmlrpclib.ServerProxy(masteruri)
+            master = xmlrpcclient.ServerProxy(masteruri)
             master.getUri(rospy.get_name())
             # restart ROSCORE on different masteruri?, not now...
 #      master_uri = master.getUri(rospy.get_name())
@@ -209,7 +213,7 @@ class StartHandler(object):
                         count = 1
                         while result == -1 and count < 11:
                             try:
-                                master = xmlrpclib.ServerProxy(masteruri)
+                                master = xmlrpcclient.ServerProxy(masteruri)
                                 result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
                                 return
                             except Exception:
@@ -291,7 +295,7 @@ class StartHandler(object):
                 raise StartException("node shutdown interrupted service call")
             else:
                 raise StartException("transport error completing service call: %s" % (utf8(e)))
-        except ServiceException, e:
+        except ServiceException as e:
             raise StartException("Service error: %s" % (utf8(e)))
         finally:
             transport.close()
@@ -763,7 +767,7 @@ class StartHandler(object):
 
         :return: value, is absolute path, remote package found (ignore it on local host or if is not absolute path!), package name (if absolute path and remote package NOT found)
         '''
-        if isinstance(value, types.StringTypes) and value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
+        if isstring(value) and value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
             if nm.is_local(host):
                 return value, True, True, ''
             else:

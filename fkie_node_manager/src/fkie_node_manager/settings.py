@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtGui import QColor  # pylint: disable=no-name-in-module, import-error
 from python_qt_binding.QtGui import QIcon  # pylint: disable=no-name-in-module, import-error
@@ -43,7 +43,7 @@ import roslib
 import rospy
 
 from fkie_master_discovery.common import masteruri_from_ros
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
@@ -378,7 +378,7 @@ class Settings(object):
         reset = False
         reset_cache = False
         need_restart = False
-        for value in data.itervalues():
+        for value in data.values():
             setattr(self, value[':var'], value[':value'])
             if ':need_restart' in value:
                 if value[':need_restart']:
@@ -405,7 +405,7 @@ class Settings(object):
                 pass
 
     def __getattr__(self, name):
-        for value in self._data.itervalues():
+        for value in self._data.values():
             if value[':var'] == name:
                 if ':return_type' in value:
                     if value[':return_type'] == 'list':
@@ -416,7 +416,7 @@ class Settings(object):
     def __setattr__(self, name, value):
         if name == '_data':
             object.__setattr__(self, name, value)
-        for val in self._data.itervalues():
+        for val in self._data.values():
             if val[':var'] == name:
                 setval = value
                 val[':value'] = setval
@@ -503,8 +503,8 @@ class Settings(object):
             # get the color from settings file
             if host in self._host_colors:
                 result = self._host_colors[host]
-                if isinstance(result, (unicode, str)):
-                    return long(result)
+                if isstring(result):
+                    return int(result)
                 return result
             else:
                 # determine a color

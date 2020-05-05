@@ -30,13 +30,16 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QSize, Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
-from xmlrpclib import Binary
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import isstring, utf8
 
 
 class ParameterValueItem(QStandardItem):
@@ -58,12 +61,12 @@ class ParameterValueItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        QStandardItem.__init__(self, utf8(value) if not isinstance(value, Binary) else utf8(value))
+        QStandardItem.__init__(self, utf8(value) if not isinstance(value, xmlrpcclient.Binary) else utf8(value))
         self._name = name
         '''@ivar: the name of parameter '''
         self._value = value
         '''@ivar: the value of the parameter '''
-        if isinstance(value, (str, unicode)) and value.find('\n') > -1:
+        if isstring(value) and value.find('\n') > -1:
             self.setSizeHint(QSize(-1, 45))
 
     @property
@@ -77,7 +80,7 @@ class ParameterValueItem(QStandardItem):
     @value.setter
     def value(self, value):
         self._value = value
-        if isinstance(value, (str, unicode)) and value.find('\n') > -1:
+        if isstring(value) and value.find('\n') > -1:
             self.setSizeHint(QSize(-1, 45))
 
     def type(self):
@@ -97,7 +100,7 @@ class ParameterValueItem(QStandardItem):
         '''
         Compares the value of parameter.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return utf8(self.value) == utf8(item)
         elif not (item is None):
             return utf8(self.value) == utf8(item.value)
@@ -107,7 +110,7 @@ class ParameterValueItem(QStandardItem):
         '''
         Compares the value of parameter.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return utf8(self.value) > utf8(item)
         elif not (item is None):
             return utf8(self.value) > utf8(item.value)
@@ -169,7 +172,7 @@ class ParameterNameItem(QStandardItem):
         '''
         Compares the name of parameter.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() == item.lower()
         elif not (item is None):
             return self.name.lower() == item.name.lower()
@@ -179,7 +182,7 @@ class ParameterNameItem(QStandardItem):
         '''
         Compares the name of parameter.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() > item.lower()
         elif not (item is None):
             return self.name.lower() > item.name.lower()
@@ -241,7 +244,7 @@ class ParameterTypeItem(QStandardItem):
         '''
         Compares the name of parameter.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() == item.lower()
         elif not (item is None):
             return self.name.lower() == item.name.lower()
@@ -251,7 +254,7 @@ class ParameterTypeItem(QStandardItem):
         '''
         Compares the name of parameter.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() > item.lower()
         elif not (item is None):
             return self.name.lower() > item.name.lower()
@@ -296,7 +299,7 @@ class ParameterModel(QStandardItemModel):
         @param parameters: The dictionary with parameter
         @type parameters: C{dict(parameter name : value)}
         '''
-        parameter_names = parameters.keys()
+        parameter_names = list(parameters.keys())
         root = self.invisibleRootItem()
         # remove not available items
         for i in reversed(range(root.rowCount())):

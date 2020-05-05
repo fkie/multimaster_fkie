@@ -30,9 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
-import abc
+
 import rospy
 import threading
 
@@ -41,7 +40,6 @@ from fkie_node_manager_daemon.common import formated_ts
 
 
 class SensorInterface(object):
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, hostname='', sensorname='noname', interval=1.0):
         self.hostname = hostname
@@ -57,11 +55,11 @@ class SensorInterface(object):
         self._ts_last = 0
         self._start_check_sensor()
 
-    @abc.abstractmethod
+    # @abc.abstractmethod
     def check_sensor(self):
         pass
 
-    @abc.abstractmethod
+    # @abc.abstractmethod
     def reload_parameter(self, settings):
         pass
 

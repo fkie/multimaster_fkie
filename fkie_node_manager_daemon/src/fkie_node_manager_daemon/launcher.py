@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import os
 import roslib
@@ -38,9 +38,13 @@ import rospkg
 import rospy
 import shlex
 import socket
+import sys
 import types
-import xmlrpclib
 import roslaunch
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
@@ -51,7 +55,7 @@ from . import remote
 from . import screen
 from . import settings
 from .launch_stub import LaunchStub
-from .common import get_cwd, package_name, interpret_path, utf8
+from .common import get_cwd, package_name, interpret_path, isstring, utf8
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 
@@ -175,7 +179,7 @@ def run_node(startcfg):
                 # multiple nodes, invalid package
                 rospy.logwarn("resource not found: %s" % utf8(e))
                 raise exceptions.ResourceNotFound(startcfg.package, "resource not found: %s" % utf8(e))
-            if isinstance(cmd, types.StringTypes):
+            if isstring(cmd):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
                 raise exceptions.StartException('%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
@@ -236,7 +240,7 @@ def run_node(startcfg):
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
-        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args)))
+        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, list(startcfg.env.keys())), cmd_type, ' '.join(args)))
         rospy.loginfo("%s (launch_file: '%s', masteruri: %s)" % (cmd_str, startcfg.config_path, masteruri))
         rospy.logdebug("environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
@@ -312,7 +316,7 @@ def _load_parameters(masteruri, params, clear_params):
     """
     Load parameters onto the parameter server
     """
-    param_server = xmlrpclib.ServerProxy(masteruri)
+    param_server = xmlrpcclient.ServerProxy(masteruri)
     p = None
     abs_paths = list()  # tuples of (parameter name, old value, new value)
     not_found_packages = list()  # packages names
@@ -320,7 +324,7 @@ def _load_parameters(masteruri, params, clear_params):
     try:
         socket.setdefaulttimeout(6 + len(clear_params))
         # multi-call style xmlrpc
-        param_server_multi = xmlrpclib.MultiCall(param_server)
+        param_server_multi = xmlrpcclient.MultiCall(param_server)
 
         # clear specified parameter namespaces
         # #2468 unify clear params to prevent error
@@ -334,11 +338,11 @@ def _load_parameters(masteruri, params, clear_params):
 
         # multi-call objects are not reusable
         socket.setdefaulttimeout(6 + len(params))
-        param_server_multi = xmlrpclib.MultiCall(param_server)
+        param_server_multi = xmlrpcclient.MultiCall(param_server)
         for pkey, pval in params.items():
             value = pval
             # resolve path elements
-            if isinstance(value, types.StringTypes) and (value.startswith('$')):
+            if isstring(value) and (value.startswith('$')):
                 value = interpret_path(value)
                 rospy.logdebug("interpret parameter '%s' to '%s'" % (value, pval))
             # add parameter to the multicall
@@ -350,7 +354,7 @@ def _load_parameters(masteruri, params, clear_params):
         for code, msg, _ in r:
             if code != 1:
                 raise exceptions.StartException("Failed to set parameter: %s" % (msg))
-    except roslaunch.core.RLException, e:
+    except roslaunch.core.RLException as e:
         raise exceptions.StartException(e)
     except rospkg.ResourceNotFound as rnf:
         raise exceptions.StartException("Failed to set parameter. ResourceNotFound: %s" % (rnf))
@@ -393,7 +397,7 @@ def _abs_to_package_path(path):
 def _params_to_package_path(params):
     result = {}
     for name, value in params.items():
-        if isinstance(value, types.StringTypes):
+        if isstring(value):
             if value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
                 result[name] = _abs_to_package_path(value)
     return result

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from xml.dom.minidom import parse  # , parseString
 import os
@@ -187,7 +187,7 @@ class LaunchConfig(object):
             if 'arg' in loader.root_context.resolve_dict:
                 self.resolve_dict = loader.root_context.resolve_dict['arg']
             self.changed = True
-        except roslaunch.XmlParseException, e:
+        except roslaunch.XmlParseException as e:
             test = list(re.finditer(r"environment variable '\w+' is not set", utf8(e)))
             message = utf8(e)
             if test:

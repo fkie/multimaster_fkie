@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import grpc
 import os
@@ -258,7 +258,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 
     def GetLoadedFiles(self, request, context):
         # self._register_callback(context)
-        for _cfgid, lf in self._loaded_files.iteritems():
+        for _cfgid, lf in self._loaded_files.items():
             reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, masteruri=lf.masteruri, host=lf.host)
             reply.args.extend(lmsg.Argument(name=name, value=value) for name, value in lf.resolve_dict.items())
             yield reply
@@ -297,7 +297,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     return result
         result.path.append(launchfile)
         # it is already loaded?
-        if (launchfile, request.masteruri) in self._loaded_files.keys():
+        if (launchfile, request.masteruri) in list(self._loaded_files.keys()):
             result.status.code = ALREADY_OPEN
             result.status.error_msg = utf8("Launch file %s already loaded!" % (launchfile))
             rospy.logdebug("..load aborted, ALREADY_OPEN")
@@ -414,7 +414,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         for lfile in lfiles:
             requested_files.append(CfgId(lfile, request.masteruri))
         if not requested_files:
-            requested_files = self._loaded_files.keys()
+            requested_files = list(self._loaded_files.keys())
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
             reply = lmsg.LaunchContent(launch_file=cfgid.path, masteruri=lc.masteruri, host=lc.host)

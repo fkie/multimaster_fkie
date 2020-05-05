@@ -11,7 +11,7 @@ import rospy
 
 rospy.init_node("launch_test_node", log_level=rospy.DEBUG)
 try:
-    print "os.environ:", os.environ
+    print("os.environ:", os.environ)
     if 'ROS_NAMESPACE' not in os.environ:
         raise Exception("'ROS_NAMESPACE' not in environment of the node")
 except Exception:

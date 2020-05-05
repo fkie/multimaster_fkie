@@ -30,9 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
-import Queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue  # python 2 compatibility
 from datetime import datetime
 from python_qt_binding.QtCore import Qt, Signal
 try:
@@ -146,7 +149,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                             recv_item = msock.receive_queue.get(False)
                             self._received_msgs += 1
                             self.on_heartbeat_received(recv_item.msg, recv_item.sender_addr, (recv_item.via == QueueReceiveItem.MULTICAST))
-                        except Queue.Empty:
+                        except queue.Empty:
                             received = False
                 status_text = 'received messages: %d' % (self._received_msgs)
                 self.status_text_signal.emit(status_text)

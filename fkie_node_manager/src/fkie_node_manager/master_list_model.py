@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
+import sys
 from python_qt_binding.QtCore import QObject, QRect, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
 try:
@@ -42,6 +42,7 @@ from socket import getaddrinfo, AF_INET6
 import threading
 
 from fkie_master_discovery.common import get_hostname
+from fkie_node_manager_daemon.common import isstring
 import fkie_node_manager as nm
 
 
@@ -92,14 +93,14 @@ class MasterSyncButtonHelper(QObject):
                 self.widget.setChecked(value == MasterSyncButtonHelper.SYNC)
 
     def __eq__(self, item):
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.master.name.lower() == item.lower()
         elif not (item is None):
             return self.master.name.lower() == item.master.name.lower()
         return False
 
     def __gt__(self, item):
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.master.name.lower() > item.lower()
         elif not (item is None):
             return self.master.name.lower() > item.master.name.lower()
@@ -331,14 +332,14 @@ class MasterItem(QStandardItem):
         return MasterItem.ITEM_TYPE
 
     def __eq__(self, item):
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.master.name.lower() == item.lower()
         elif not (item is None):
             return self.master.name.lower() == item.master.name.lower()
         return False
 
     def __gt__(self, item):
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             local = False
             try:
                 local = nm.is_local(item)

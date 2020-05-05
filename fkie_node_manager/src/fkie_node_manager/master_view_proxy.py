@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QRegExp, Qt, QTimer, Signal
@@ -46,11 +46,15 @@ import time
 import traceback
 import threading
 import uuid
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
+
 
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.master_info import NodeInfo
-from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, utf8
+from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring, utf8
 from fkie_node_manager_daemon.host import get_hostname, get_port
 from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon import url as nmdurl
@@ -425,7 +429,7 @@ class MasterViewProxy(QWidget):
 #        print "    ", self.objectName(), "destroyed"
 
     def closeEvent(self, event):
-        print("  Shutdown master", self.masteruri, "...")
+        print('  Shutdown master %s ...' % self.masteruri)
         if self._sysmon_timer is not None:
             self._sysmon_timer.stop()
         self._sysmon_timer_idle.stop()
@@ -437,7 +441,7 @@ class MasterViewProxy(QWidget):
         if self._on_stop_kill_roscore:
             self.killall_roscore()
         QWidget.closeEvent(self, event)
-        print("  Master", self.masteruri, " is down!")
+        print('  Master %s is down!' % self.masteruri)
 
     def stop_echo_dialogs(self):
         # stop launched echo dialogs
@@ -811,7 +815,7 @@ class MasterViewProxy(QWidget):
                 nm.nmd().screen.multiple_screens_threaded(grpc_url)
             nodes = self.get_nodes_runningIfLocal(True)
             if nodes:
-                nm.nmd().launch.get_changed_binaries_threaded(grpc_url, nodes.keys())
+                nm.nmd().launch.get_changed_binaries_threaded(grpc_url, list(nodes.keys()))
 
     def get_files_for_change_check(self):
         result = {}
@@ -865,19 +869,19 @@ class MasterViewProxy(QWidget):
             if nodename in self._nodelets[configname]:
                 return self._nodelets[configname][nodename]
         else:
-            for configname, mngrs in self._nodelets.iteritems():
+            for configname, mngrs in self._nodelets.items():
                 if nodename in mngrs:
                     return mngrs[nodename]
         return []
 
     def _get_nodelet_manager(self, nodename, configname=''):
         if configname and configname in self._nodelets:
-            for mngr, nodelets in self._nodelets[configname].iteritems():
+            for mngr, nodelets in self._nodelets[configname].items():
                 if nodename in nodelets:
                     return mngr
         else:
-            for configname, mngrs in self._nodelets.iteritems():
-                for mngr, nodelets in mngrs.iteritems():
+            for configname, mngrs in self._nodelets.items():
+                for mngr, nodelets in mngrs.items():
                     if nodename in nodelets:
                         return mngr
         return None
@@ -1481,11 +1485,11 @@ class MasterViewProxy(QWidget):
             # add description for multiple selected nodes
             if restartable_nodes or killable_nodes or unregisterble_nodes:
                 text += '<b>Selected nodes:</b><br>'
+            restart_icon_path = nm.settings().icon_path('sekkyumu_restart_24.png')
+            restart_g_icon_path = nm.settings().icon_path('sekkyumu_restart_g_24.png')
+            sekkyumu_kill_screen_24 = nm.settings().icon_path('sekkyumu_kill_screen_24.png')
+            play_alt_icon_path = nm.settings().icon_path('sekkyumu_play_alt_24.png')
             if restartable_nodes:
-                restart_icon_path = nm.settings().icon_path('sekkyumu_restart_24.png')
-                restart_g_icon_path = nm.settings().icon_path('sekkyumu_restart_g_24.png')
-                sekkyumu_kill_screen_24 = nm.settings().icon_path('sekkyumu_kill_screen_24.png')
-                play_alt_icon_path = nm.settings().icon_path('sekkyumu_play_alt_24.png')
                 text += '<a href="restart-node://all_selected_nodes" title="Restart %s selected nodes Ctrl+Shift+R"><img src="%s" alt="restart">[%d]</a>' % (len(restartable_nodes), restart_icon_path, len(restartable_nodes))
                 text += '&nbsp;<a href="restart-node-g://all_selected_nodes" title="Reload global parameter and restart %s selected nodes Ctrl+Shift+Alt+R"><img src="%s" alt="restart">[%d]</a>' % (len(restartable_nodes), restart_g_icon_path, len(restartable_nodes))
             if killable_nodes:
@@ -1732,7 +1736,7 @@ class MasterViewProxy(QWidget):
                                 constants[m] = getattr(mclass, m)
                     if constants:
                         text += '<b><u>Constants:</u></b><br>'
-                        for n in sorted(constants.iterkeys()):
+                        for n in sorted(constants.keys()):
                             text += '%s: <span style="color:gray;">%s</span><br>' % (n, constants[n])
             except ValueError:
                 pass
@@ -1999,11 +2003,11 @@ class MasterViewProxy(QWidget):
                     node.next_start_cfg = None
                 else:
                     choices = self._get_cfg_choises(node)
-                    ch_keys = choices.keys()
+                    ch_keys = list(choices.keys())
                     if ch_keys:
                         ch_keys.sort()
                         choises_str = utf8(ch_keys)
-                        if choises_str not in cfg_choices.keys():
+                        if choises_str not in list(cfg_choices.keys()):
                             choice, ok = self._get_cfg_userchoice(choices, node.name)
                             if choice is not None:
                                 cfg_choices[choises_str] = choices[choice]
@@ -2048,7 +2052,7 @@ class MasterViewProxy(QWidget):
                     nm.settings().store_logging()
                     logging = nm.settings().logging
                     cmd_prefix = params['Prefix']
-                except Exception, e:
+                except Exception as e:
                     diag_canceled = True
                     MessageBox.warning(self, "Get advanced start parameter",
                                        'Error while parse parameter',
@@ -2212,7 +2216,7 @@ class MasterViewProxy(QWidget):
                     self.start_nodes(selectedNodes, True, host)
                 finally:
                     self.setCursor(cursor)
-            except Exception, e:
+            except Exception as e:
                 MessageBox.warning(self, "Start error",
                                    'Error while parse parameter',
                                    utf8(e))
@@ -2236,10 +2240,10 @@ class MasterViewProxy(QWidget):
         ok = False
         # Open selection
         if len(choices) == 1:
-            value = choices.keys()[0]
+            value = list(choices.keys())[0]
             ok = True
         elif len(choices) > 0:
-            items, ok = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>' % nodename, choices.keys(), True, store_geometry='cfg_select')
+            items, ok = SelectDialog.getValue('Configuration selection', 'Select configuration to launch <b>%s</b>' % nodename, list(choices.keys()), True, store_geometry='cfg_select')
             if items:
                 value = items[0]
         return value, ok
@@ -2267,14 +2271,14 @@ class MasterViewProxy(QWidget):
             try:
                 rospy.loginfo("Stop node '%s'[%s]", utf8(node.name), utf8(node.uri))
                 socket.setdefaulttimeout(10)
-                p = xmlrpclib.ServerProxy(node.uri)
+                p = xmlrpcclient.ServerProxy(node.uri)
                 p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
                 if node.kill_on_stop and node.pid:
                     # wait kill_on_stop is an integer
                     if isinstance(node.kill_on_stop, (int, float)):
                         time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
-            except Exception, e:
+            except Exception as e:
                 rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
                 if utf8(e).find(' 111') == 1:
                     raise DetailedError("Stop error",
@@ -2360,7 +2364,7 @@ class MasterViewProxy(QWidget):
                 # try to get the process id of the node
                 try:
                     socket.setdefaulttimeout(10)
-                    rpc_node = xmlrpclib.ServerProxy(node.uri)
+                    rpc_node = xmlrpcclient.ServerProxy(node.uri)
                     _, _, pid = rpc_node.getPid(rospy.get_name())  # _:=code, msg
                 except Exception:
                     pass
@@ -2440,8 +2444,8 @@ class MasterViewProxy(QWidget):
             # unregister all entries of the node from ROS master
             try:
                 socket.setdefaulttimeout(10)
-                master = xmlrpclib.ServerProxy(node.masteruri)
-                master_multi = xmlrpclib.MultiCall(master)
+                master = xmlrpcclient.ServerProxy(node.masteruri)
+                master_multi = xmlrpcclient.MultiCall(master)
 #        master_multi.deleteParam(node.name, node.name)
                 for p in node.published:
                     rospy.loginfo("unregister publisher '%s' [%s] from ROS master: %s", p, node.name, node.masteruri)
@@ -2459,7 +2463,7 @@ class MasterViewProxy(QWidget):
                 for code, msg, _ in r:
                     if code != 1:
                         rospy.logwarn("unregistration failed: %s", msg)
-            except Exception, e:
+            except Exception as e:
                 rospy.logwarn("Error while unregister node %s: %s", utf8(node.name), utf8(e))
                 raise DetailedError("Unregister error",
                                     ''.join(['Error while Unregister node ', node.name]),
@@ -2506,7 +2510,7 @@ class MasterViewProxy(QWidget):
         # try to get it from the configuration,
         # TODO: get it from node manager daemon?
         for c in node.cfgs:
-            if isinstance(c, (str, unicode)):
+            if isstring(c):
                 launch_config = self.__configs[c]
                 if node.name in launch_config.nodes:
                     url, _path = nmdurl.split(c, with_scheme=True)
@@ -2534,7 +2538,7 @@ class MasterViewProxy(QWidget):
         # try to get it from the configuration,
         # TODO: get it from node manager daemon?
         for c in node.cfgs:
-            if isinstance(c, (str, unicode)):
+            if isstring(c):
                 launch_config = self.__configs[c]
                 if node.name in launch_config.nodes:
                     url, _path = nmdurl.split(c, with_scheme=True)
@@ -2616,8 +2620,8 @@ class MasterViewProxy(QWidget):
             sel_screen = []
             try:
                 screens = nm.nmd().screen.get_all_screens(grpc_url)
-                sel_screen, _ok = SelectDialog.getValue('Open screen', '', screens.keys(), False, False, self, store_geometry='open_screen')
-            except Exception, e:
+                sel_screen, _ok = SelectDialog.getValue('Open screen', '', list(screens.keys()), False, False, self, store_geometry='open_screen')
+            except Exception as e:
                 rospy.logwarn("Error while get screen list: %s", utf8(e))
                 MessageBox.warning(self, "Screen list error",
                                    "Error while get screen list from '%s'" % grpc_url,
@@ -2627,7 +2631,7 @@ class MasterViewProxy(QWidget):
                 try:
                     if not nm.screen().open_screen_terminal(host, screen, screen, False, self.current_user):
                         pass
-                except Exception, e:
+                except Exception as e:
                     rospy.logwarn("Error while show IO for %s: %s", utf8(screen), utf8(e))
                     MessageBox.warning(self, "Show IO error",
                                        "Error while show IO '%s' on '%s'" % (screen, host),
@@ -2664,7 +2668,7 @@ class MasterViewProxy(QWidget):
                                                         nm.starter().openLog,
                                                         (node.name, self.getHostFromNode(node), self.current_user, only_screen))
                 self._start_queue(self._progress_queue_prio)
-        except Exception, e:
+        except Exception as e:
             print(traceback.format_exc(3))
             rospy.logwarn("Error while show log: %s", utf8(e))
             MessageBox.warning(self, "Show log error",
@@ -2722,7 +2726,7 @@ class MasterViewProxy(QWidget):
                         env["ROS_MASTER_URI"] = utf8(self.master_info.masteruri)
                         rospy.loginfo("Start dynamic reconfiguration for '%s'" % node)
                         _ = SupervisedPopen(['rosrun', 'fkie_node_manager', 'dynamic_reconfigure', node, '__ns:=dynamic_reconfigure'], env=env, object_id=node, description='Start dynamic reconfiguration for %s failed' % node)
-                except Exception, e:
+                except Exception as e:
                     rospy.logwarn("Start dynamic reconfiguration for '%s' failed: %s" % (n.name, utf8(e)))
                     MessageBox.warning(self, "Start dynamic reconfiguration error",
                                        'Start dynamic reconfiguration for %s failed!' % n.name,
@@ -2767,7 +2771,7 @@ class MasterViewProxy(QWidget):
                 choices['%s [%s]' % (os.path.basename(grpc_path), package)] = grpc_path
             except ValueError as val_err:
                 rospy.logwarn(val_err)
-        cfg_items = choices.keys()
+        cfg_items = list(choices.keys())
         cfg_items.sort()
         res = SelectDialog.getValue('Close/Stop/Shutdown', '',
                                     cfg_items, False, False,
@@ -2810,7 +2814,7 @@ class MasterViewProxy(QWidget):
                                            nm.starter().poweroff,
                                            ('%s' % self.mastername,))
             self._start_queue(self._progress_queue)
-        except (Exception, nm.StartException), emsg:
+        except (Exception, nm.StartException) as emsg:
             rospy.logwarn("Error while poweroff %s: %s", self.mastername, utf8(emsg))
             MessageBox.warning(self, "Run error",
                                'Error while poweroff %s' % self.mastername,
@@ -2875,7 +2879,7 @@ class MasterViewProxy(QWidget):
                     if params['Name'] and params['Type']:
                         try:
                             self._start_publisher(params['Name'], params['Type'])
-                        except Exception, e:
+                        except Exception as e:
                             print(traceback.format_exc(1))
                             rospy.logwarn("Publish topic '%s' failed: %s", utf8(params['Name']), utf8(e))
                             MessageBox.warning(self, "Publish topic error",
@@ -2884,7 +2888,7 @@ class MasterViewProxy(QWidget):
                     else:
                         MessageBox.warning(self, "Invalid name or type",
                                            "Can't publish to topic '%s' with type '%s'!" % (params['Name'], params['Type']))
-                except (KeyError, ValueError), e:
+                except (KeyError, ValueError) as e:
                     MessageBox.warning(self, "Warning",
                                        'Error while add a parameter to the ROS parameter server',
                                        utf8(e))
@@ -2961,7 +2965,7 @@ class MasterViewProxy(QWidget):
                 return True
             else:
                 return False
-        except Exception, e:
+        except Exception as e:
             rospy.logwarn("Publish topic '%s' failed: %s", utf8(topic_name), utf8(e))
             MessageBox.warning(self, "Publish topic error",
                                ''.join(['Publish topic ', topic_name, ' failed!']),
@@ -2971,7 +2975,7 @@ class MasterViewProxy(QWidget):
 
     def _rem_empty_lists(self, param_dict):
         result = dict()
-        for key, value in param_dict.iteritems():
+        for key, value in param_dict.items():
             if isinstance(value, dict):
                 result[key] = self._rem_empty_lists(value)
             elif not (isinstance(value, list) and not value):
@@ -3037,7 +3041,7 @@ class MasterViewProxy(QWidget):
                                             'fkie_node_manager', 'node_manager', nodename, args, self.masteruri, False, False, self.current_user))
             self._start_queue(self._progress_queue)
             self.__echo_topics_dialogs.add(rospy.names.ns_join(namespace, nodename))
-        except Exception, e:
+        except Exception as e:
             rospy.logwarn("Echo topic '%s' failed: %s" % (topic.name, utf8(e)))
             MessageBox.warning(self, "Echo of topic error",
                                'Echo of topic %s failed!' % topic.name,
@@ -3054,7 +3058,7 @@ class MasterViewProxy(QWidget):
             for service in selected_services:
                 param = ServiceDialog(service, self)
                 param.show()
-        except Exception, e:
+        except Exception as e:
             rospy.logwarn("Call service '%s' failed: %s" % (service.name, utf8(e)))
             MessageBox.warning(self, "Call service error",
                                'Call service %s failed!' % service.name,
@@ -3066,7 +3070,7 @@ class MasterViewProxy(QWidget):
             try:
                 param = ServiceDialog(service, self)
                 param.show()
-            except Exception, e:
+            except Exception as e:
                 rospy.logwarn("Call service '%s' failed: %s" % (service.name, utf8(e)))
                 MessageBox.warning(self, "Call service error",
                                    'Call service %s failed!' % service.name,
@@ -3170,7 +3174,7 @@ class MasterViewProxy(QWidget):
                         # for our representation of empty.
                         if value is None:
                             value = []
-                    except ruamel.yaml.MarkedYAMLError, e:
+                    except ruamel.yaml.MarkedYAMLError as e:
                         MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), buttons=MessageBox.Ok)
                         return
                 else:
@@ -3178,7 +3182,7 @@ class MasterViewProxy(QWidget):
                 self.parameterHandler.deliverParameter(self.masteruri, {params['name']: value})
                 self.parameterHandler.requestParameterList(self.masteruri)
                 self.sender().close()
-            except (KeyError, ValueError), e:
+            except (KeyError, ValueError) as e:
                 MessageBox.warning(self, "Warning",
                                    'Error while add a parameter to the ROS parameter server',
                                    utf8(e))
@@ -3191,8 +3195,8 @@ class MasterViewProxy(QWidget):
         try:
             socket.setdefaulttimeout(15)
             name = rospy.get_name()
-            master = xmlrpclib.ServerProxy(self.masteruri)
-            master_multi = xmlrpclib.MultiCall(master)
+            master = xmlrpcclient.ServerProxy(self.masteruri)
+            master_multi = xmlrpcclient.MultiCall(master)
             for (key, _) in selectedParameter:  # _ := value
                 master_multi.deleteParam(name, key)
             r = master_multi()
@@ -3280,7 +3284,7 @@ class MasterViewProxy(QWidget):
             result = []
             for l in liste:
                 val = l
-                if isinstance(l, (str, unicode)):
+                if isstring(l):
                     val = l.replace("\\n", "\n")
 #          result.append("".join([val]))
                 elif isinstance(l, list):
@@ -3310,7 +3314,7 @@ class MasterViewProxy(QWidget):
                         if value is None:
                             value = []
                         value = self._replaceDoubleSlash(value)
-                    except ruamel.yaml.MarkedYAMLError, e:
+                    except ruamel.yaml.MarkedYAMLError as e:
                         MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e), buttons=MessageBox.Ok)
                         item.setText(utf8(item.value))
                         return
@@ -3318,7 +3322,7 @@ class MasterViewProxy(QWidget):
                     value = item.text()
                 self.parameterHandler.deliverParameter(self.masteruri, {item.name: value})
                 item.value = value
-            except ValueError, e:
+            except ValueError as e:
                 MessageBox.warning(self, "Warning",
                                    'Error while add changes to the ROS parameter server',
                                    utf8(e))
@@ -3423,7 +3427,7 @@ class MasterViewProxy(QWidget):
         '''
         if not hasattr(self, '_nm_materuri') or self._nm_materuri is None:
             masteruri = masteruri_from_ros()
-            master = xmlrpclib.ServerProxy(masteruri)
+            master = xmlrpcclient.ServerProxy(masteruri)
             _, _, self._nm_materuri = master.getUri(rospy.get_name())  # reuslt: code, message, self._nm_materuri
         return self._nm_materuri
 
@@ -3437,7 +3441,7 @@ class MasterViewProxy(QWidget):
     def _on_question_ok(self, questionid, data):
         if questionid == MessageFrame.TYPE_NODELET:
             try:
-                for cfgs, nodes in data.data.iteritems():
+                for cfgs, nodes in data.data.items():
                     self.stop_nodes_by_name(nodes)
                     self.start_nodes_by_name(nodes, cfgs, force=True, check_nodelets=False)
             except Exception as err:

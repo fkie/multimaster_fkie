@@ -38,6 +38,11 @@ import sys
 
 import roslib
 import rospy
+try:
+    from urlparse import urlparse  # python 2 compatibility
+except ImportError:
+    from urllib.parse import urlparse
+
 
 # MCAST_GROUP = "ff02::1"# ipv6 multicast group
 MCAST_GROUP = "226.0.0.0"  # ipv4 multicast group
@@ -50,11 +55,10 @@ def get_default_rtcp_port(zeroconf=False):
         from fkie_master_discovery.common import masteruri_from_ros
         masteruri = masteruri_from_ros()
         rospy.loginfo("ROS Master URI: %s", masteruri)
-        from urlparse import urlparse
         return urlparse(masteruri).port + (600 if zeroconf else 300)
     except:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         return 11911 if zeroconf else 11611
 
 
@@ -96,7 +100,7 @@ def main():
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
-        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO
     rospy.init_node(PROCESS_NAME, log_level=log_level)
     set_terminal_name(PROCESS_NAME)
@@ -126,7 +130,7 @@ def main_zeroconf():
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
-        print "Error while set the log level: %s\n->INFO level will be used!" % e
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO
     rospy.init_node(PROCESS_NAME, log_level=log_level)
     set_terminal_name(rospy.get_name())

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from datetime import datetime
 from python_qt_binding import loadUi
@@ -107,7 +107,7 @@ class LogWidget(QDockWidget):
                         elif logger.level == 'INFO':
                             self.checkBox_info.setChecked(True)
                         break
-            except rospy.ServiceException, e:
+            except rospy.ServiceException as e:
                 err_msg = "Service call '%s' failed: %s" % (service_name, utf8(e))
                 rospy.logwarn(err_msg)
         self.checkBox_debug.stateChanged.connect(self._on_checkbox_debug_state_changed)
@@ -120,7 +120,7 @@ class LogWidget(QDockWidget):
             msg.logger = 'rosout'
             msg.level = 'DEBUG' if state else 'INFO'
             _resp = log_level_srvs(msg)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             err_msg = "Service call '%s' failed: %s" % (service_name, utf8(e))
             rospy.logwarn(err_msg)
 

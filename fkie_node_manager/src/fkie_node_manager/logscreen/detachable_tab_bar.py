@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 import fkie_node_manager as nm
 
 from python_qt_binding.QtCore import QPoint, Qt, Signal, QMimeData, QEvent

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 import re
 import rospy
@@ -39,7 +39,7 @@ from python_qt_binding.QtGui import QIcon, QStandardItem, QStandardItemModel
 
 from fkie_master_discovery.master_info import TopicInfo
 
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_node_manager.detailed_msg_box import MessageBox
 import fkie_node_manager as nm
@@ -246,21 +246,11 @@ class TopicItem(QStandardItem):
         '''
           Compares the name of topic.
           '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.topic.name.lower() == item.lower()
         elif not (item is None):
             return self.topic.name.lower() == item.topic.name.lower()
         return False
-#
-#  def __gt__(self, item):
-#    '''
-#    Compares the name of topic.
-#    '''
-#    if isinstance(item, str) or isinstance(item, unicode):
-#      return self.topic.name.lower() > item.lower()
-#    elif not (item is None):
-#      return self.topic.name.lower() > item.topic.name.lower()
-#    return False
 
 
 # ###############################################################################
@@ -594,7 +584,7 @@ class TopicGroupItem(QStandardItem):
         '''
         Compares the name of the group.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             return self.name.lower() == item.lower()
         elif not (item is None):
             return self.name.lower() == item.name.lower()
@@ -607,7 +597,7 @@ class TopicGroupItem(QStandardItem):
         '''
         Compares the name of the group.
         '''
-        if isinstance(item, str) or isinstance(item, unicode):
+        if isstring(item):
             # put the group with SYSTEM nodes at the end
             if self.is_system_group:
                 if self.name.lower() != item.lower():

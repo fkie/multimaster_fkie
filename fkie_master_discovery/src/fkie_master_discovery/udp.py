@@ -30,7 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue  # python 2 compatibility
+
 import array
 import errno
 import fcntl
@@ -112,8 +116,8 @@ class DiscoverSocket(socket.socket):
         @type listen_mcast: bool (Default: True)
         '''
         self.port = port
-        self.receive_queue = Queue.Queue()
-        self._send_queue = Queue.Queue()
+        self.receive_queue = queue.Queue()
+        self._send_queue = queue.Queue()
         self._lock = threading.RLock()
         self.send_mcast = send_mcast
         self.listen_mcast = listen_mcast
@@ -263,9 +267,9 @@ class DiscoverSocket(socket.socket):
     def send_queued(self, msg, destinations=[]):
         try:
             self._send_queue.put(QueueSendItem(msg, destinations), timeout=1)
-        except Queue.Full as full:
+        except queue.Full as full:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             rospy.logwarn("Can't send message: %s" % full)
         except Exception as e:
             rospy.logwarn("Error while put message into queue: %s" % e)
@@ -278,7 +282,7 @@ class DiscoverSocket(socket.socket):
             try:
                 send_item = self._send_queue.get(timeout=1)
                 return send_item
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except Exception as e:
                 rospy.logwarn("Error while get send item from queue: %s" % e)
@@ -424,7 +428,7 @@ class DiscoverSocket(socket.socket):
                                                        ))[0]
             namestr = names.tostring()
             return [(namestr[i:i + var1].split('\0', 1)[0], socket.inet_ntoa(namestr[i + 20:i + 24]))
-                    for i in xrange(0, outbytes, var2)]
+                    for i in range(0, outbytes, var2)]
 
     def recv_loop_multicast(self):
         '''
@@ -437,7 +441,7 @@ class DiscoverSocket(socket.socket):
                     self.receive_queue.put(QueueReceiveItem(msg, address, QueueReceiveItem.MULTICAST), timeout=1)
             except socket.timeout:
                 pass
-            except Queue.Full as full_error:
+            except queue.Full as full_error:
                 rospy.logwarn("Error while process recevied multicast message: %s", full_error)
             except socket.error:
                 import traceback
@@ -455,7 +459,7 @@ class DiscoverSocket(socket.socket):
                         self.receive_queue.put(QueueReceiveItem(msg, address, QueueReceiveItem.UNICAST), timeout=1)
                 except socket.timeout:
                     pass
-                except Queue.Full as full_error:
+                except queue.Full as full_error:
                     rospy.logwarn("Error while process recevied unicast message: %s", full_error)
                 except socket.error:
                     import traceback

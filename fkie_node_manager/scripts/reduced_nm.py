@@ -30,13 +30,16 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 import os
 import shlex
 import socket
 import subprocess
 import time
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 
 from roslib.network import get_local_addresses
 import rospy
@@ -127,7 +130,7 @@ class StartHandler(object):
             if not os.path.isdir(screen.LOG_PATH):
                 os.makedirs(screen.LOG_PATH)
             socket.setdefaulttimeout(3)
-            master = xmlrpclib.ServerProxy(masteruri)
+            master = xmlrpcclient.ServerProxy(masteruri)
             master.getUri(rospy.get_name())
         except Exception:
             # run a roscore
@@ -149,7 +152,7 @@ class StartHandler(object):
                     while result == -1 and count < 11:
                         try:
                             print("  retry connect to ROS master %d/10" % count)
-                            master = xmlrpclib.ServerProxy(masteruri)
+                            master = xmlrpcclient.ServerProxy(masteruri)
                             result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
                         except Exception:
                             time.sleep(1)

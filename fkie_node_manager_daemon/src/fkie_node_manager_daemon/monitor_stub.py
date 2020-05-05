@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from fkie_node_manager_daemon.monitor import ros_msg
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Qt, Signal
 from python_qt_binding.QtGui import QIcon
@@ -282,7 +282,7 @@ class SyncDialog(QDialog):
         self._interfaces_files = interfaces_files
         self.interface_field.clear()
         self.interface_field.clearEditText()
-        self.interface_field.addItems(self._interfaces_files.keys())
+        self.interface_field.addItems(list(self._interfaces_files.keys()))
 
     def _on_interface_selected(self, interface):
         if self._interfaces_files and interface in self._interfaces_files:

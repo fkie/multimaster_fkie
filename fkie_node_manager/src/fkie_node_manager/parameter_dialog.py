@@ -30,12 +30,16 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function
+
 # unicode_literals are not included to avoid problems with publish to ROS topics
 
 from python_qt_binding.QtCore import Qt, Signal, QPoint, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette
-from xmlrpclib import Binary
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
+
 import os
 import roslib.msgs
 import roslib.names
@@ -207,7 +211,7 @@ class ValueWidget(QWidget):
                     items[len(items):] = value
             else:
                 if value is not None and value:
-                    items.append(utf8(value) if not isinstance(value, Binary) else '{binary data!!! updates will be ignored!!!}')
+                    items.append(utf8(value) if not isinstance(value, xmlrpcclient.Binary) else '{binary data!!! updates will be ignored!!!}')
                 elif pd.isTimeType():
                     items.append('now')
             if ':alt' in pd._tags:
@@ -412,7 +416,7 @@ class ParameterDescription(object):
                             # for our representation of empty.
                             if rvalue is None:
                                 rvalue = []
-                        except ruamel.yaml.MarkedYAMLError, e:
+                        except ruamel.yaml.MarkedYAMLError as e:
                             raise Exception("Field [%s] yaml error: %s" % (self.fullName(), utf8(e)))
                     if self.arrayLength() is not None and self.arrayLength() != len(rvalue):
                         raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(rvalue)), " != ", str(self.arrayLength())]))
@@ -461,7 +465,7 @@ class ParameterDescription(object):
                         rvalue = {'secs': 0, 'nsecs': 0}
                     else:
                         rvalue = ''
-        except Exception, e:
+        except Exception as e:
             raise Exception("Error while set value '%s', for '%s': %s" % (utf8(value), self.fullName(), utf8(e)))
         if self._min is not None:
             if rvalue < self._min:
@@ -1333,7 +1337,7 @@ class MasterParameterDialog(ParameterDialog):
                     self.parameterHandler.deliverParameter(self.masteruri, ros_params)
                 else:
                     self.close()
-            except Exception, e:
+            except Exception as e:
                 print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
         elif self.masteruri is None:
@@ -1370,14 +1374,14 @@ class MasterParameterDialog(ParameterDialog):
                             # for our representation of empty.
                             if value is None:
                                 value = []
-                        except ruamel.yaml.MarkedYAMLError, e:
+                        except ruamel.yaml.MarkedYAMLError as e:
                             MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e))
                     else:
                         value = params['value']
                     self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)}, new_param=True)
                 else:
                     MessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!')
-            except ValueError, e:
+            except ValueError as e:
                 print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
 
@@ -1423,7 +1427,7 @@ class MasterParameterDialog(ParameterDialog):
                         if len(value) > 0:
                             value = value + ', '
                         value = value + utf8(v)
-                elif isinstance(val, Binary):
+                elif isinstance(val, xmlrpcclient.Binary):
                     type_str = 'binary'
                 param = p.replace(self.ns, '')
                 param = param.strip(roslib.names.SEP)
@@ -1523,7 +1527,7 @@ class ServiceDialog(ParameterDialog):
             thread = threading.Thread(target=self._callService, args=((params,)))
             thread.setDaemon(True)
             thread.start()
-        except Exception, e:
+        except Exception as e:
             rospy.logwarn("Error while reading parameter for %s service: %s", utf8(self.service.name), utf8(e))
             self.setText(''.join(['Error while reading parameter:\n', utf8(e)]))
 
@@ -1532,7 +1536,7 @@ class ServiceDialog(ParameterDialog):
         try:
             req, resp = nm.starter().callService(self.service.uri, self.service.name, self.service.get_service_class(), [params])
             self.service_resp_signal.emit(utf8(repr(req)), utf8(repr(resp)))
-        except Exception, e:
+        except Exception as e:
             print(traceback.format_exc(2))
             rospy.logwarn("Error while call service '%s': %s", utf8(self.service.name), utf8(e))
             self.service_resp_signal.emit(utf8(repr(req)), utf8(e))
@@ -1563,7 +1567,7 @@ class ServiceDialog(ParameterDialog):
                         else:
                             subresult[':type'] = msg_type
                             result[slot] = subresult
-                except ValueError, e:
+                except ValueError as e:
                     print(traceback.format_exc())
                     rospy.logwarn("Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result

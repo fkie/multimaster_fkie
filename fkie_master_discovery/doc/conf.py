@@ -46,8 +46,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'fkie_master_discovery'
-copyright = u'2013, Alexander Tiderko'
+project = 'fkie_master_discovery'
+copyright = '2013, Alexander Tiderko'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -186,8 +186,8 @@ htmlhelp_basename = 'fkie_master_discoverydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'fkie_master_discovery.tex', u'master\\_discovery\\_fkie Documentation',
-   u'Alexander Tiderko', 'manual'),
+  ('index', 'fkie_master_discovery.tex', 'master\\_discovery\\_fkie Documentation',
+   'Alexander Tiderko', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -219,8 +219,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'fkie_master_discovery', u'fkie_master_discovery Documentation',
-     [u'Alexander Tiderko'], 1)
+    ('index', 'fkie_master_discovery', 'fkie_master_discovery Documentation',
+     ['Alexander Tiderko'], 1)
 ]
 
 

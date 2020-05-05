@@ -30,11 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+
 
 from python_qt_binding.QtCore import QObject, Signal
 import threading
-import xmlrpclib
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
+
 
 import rospy
 
@@ -183,7 +187,7 @@ class RequestListThread(QObject, threading.Thread):
         if self._masteruri:
             try:
                 name = rospy.get_name()
-                master = xmlrpclib.ServerProxy(self._masteruri)
+                master = xmlrpcclient.ServerProxy(self._masteruri)
                 code, msg, params = master.getParamNames(name)
                 # filter the parameter
                 result = []
@@ -222,8 +226,8 @@ class RequestValuesThread(QObject, threading.Thread):
                 result[p] = None
             try:
                 name = rospy.get_name()
-                master = xmlrpclib.ServerProxy(self._masteruri)
-                param_server_multi = xmlrpclib.MultiCall(master)
+                master = xmlrpcclient.ServerProxy(self._masteruri)
+                param_server_multi = xmlrpcclient.MultiCall(master)
                 for p in self._params:
                     param_server_multi.getParam(name, p)
                 r = param_server_multi()
@@ -263,13 +267,13 @@ class DeliverValuesThread(QObject, threading.Thread):
         '''
         if self._masteruri:
             result = dict()
-            names = self._params.keys()
+            names = list(self._params.keys())
             for p in names:
                 result[p] = None
             try:
                 name = rospy.get_name()
-                master = xmlrpclib.ServerProxy(self._masteruri)
-                param_server_multi = xmlrpclib.MultiCall(master)
+                master = xmlrpcclient.ServerProxy(self._masteruri)
+                param_server_multi = xmlrpcclient.MultiCall(master)
                 for p, v in self._params.items():
                     param_server_multi.setParam(name, p, v)
                 r = param_server_multi()
