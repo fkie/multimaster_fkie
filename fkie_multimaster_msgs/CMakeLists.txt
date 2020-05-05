@@ -52,6 +52,6 @@ install(
 
 install(
     DIRECTORY
-    protos
+    grpc
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

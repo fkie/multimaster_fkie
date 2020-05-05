@@ -2,12 +2,17 @@ include(CMakeParseArguments)
 
 macro(generate_grpc)
     find_program(PYTHON python)
-    set(GRPC_GENERATED_SRC_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/grpc")
+
+    # we need (for code generation) the root where the package lib goes to
+    get_filename_component(DST_ROOT ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION} DIRECTORY)
+    # and also the multimaster_fkie absolute path
+    get_filename_component(MM_ROOT ${PROJECT_SOURCE_DIR} DIRECTORY)
+    set(GRPC_GENERATED_SRC_DIR "${DST_ROOT}/${PROJECT_NAME}/grpc")
     # set(GRPC_GENERATED_SRC_DIR "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}")
     cmake_parse_arguments(proto_arg "" "" "PROTO_FILES" ${ARGN})
     message(STATUS "gRPC proto files: ${proto_arg_PROTO_FILES}")
     set(GRPC_GENERATED_SOURCES "")
-    set(ABS_PROTO_PATH "${PROJECT_SOURCE_DIR}/protos")
+    set(ABS_PROTO_PATH "${PROJECT_SOURCE_DIR}/grpc")
     # command to create generated directory
     add_custom_command(
         OUTPUT ${GRPC_GENERATED_SRC_DIR}
@@ -22,12 +27,12 @@ macro(generate_grpc)
         message(STATUS "generate gRPC code from ${ABS_PROTO_FILE}")
         add_custom_command(
             OUTPUT ${GRPC_GENERATED_SRC_DIR}/${PROTO_FILE}_pb2.py
-            COMMAND "${PYTHON}" -m grpc_tools.protoc -I${ABS_PROTO_PATH} --python_out=${GRPC_GENERATED_SRC_DIR}/. ${ABS_PROTO_FILE}
+            COMMAND "${PYTHON}" -m grpc_tools.protoc -I${MM_ROOT} --python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
             DEPENDS ${GRPC_GENERATED_SRC_DIR} ${ABS_PROTO_FILE}
         )
         add_custom_command(
             OUTPUT ${GRPC_GENERATED_SRC_DIR}/${PROTO_FILE}_pb2_grpc.py 
-            COMMAND "${PYTHON}" -m grpc_tools.protoc -I${ABS_PROTO_PATH} --grpc_python_out=${GRPC_GENERATED_SRC_DIR}/. ${ABS_PROTO_FILE}
+            COMMAND "${PYTHON}" -m grpc_tools.protoc -I${MM_ROOT} --grpc_python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
             DEPENDS ${GRPC_GENERATED_SRC_DIR} ${ABS_PROTO_FILE}
         )
     endforeach()
