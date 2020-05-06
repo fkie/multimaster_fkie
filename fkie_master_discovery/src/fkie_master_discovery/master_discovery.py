@@ -35,7 +35,6 @@ try:
 except ImportError:
     import Queue as queue  # python 2 compatibility
 import errno
-import roslib.network
 import rospy
 import socket
 import std_srvs.srv
@@ -49,7 +48,7 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from .common import get_hostname
+from .common import get_hostname, get_local_addresses, get_local_address
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
 
@@ -576,7 +575,7 @@ class Discoverer(object):
         self.current_check_hz = self.ROSMASTER_HZ
         self.pubstats = rospy.Publisher("~linkstats", LinkStatesStamped, queue_size=1)
         # test the reachability of the ROS master
-        local_addr = roslib.network.get_local_address()
+        local_addr = get_local_address()
         if (local_addr in ['localhost', '127.0.0.1']):
             rospy.logwarn("'%s' is not reachable for other systems. Change the ROS_MASTER_URI!" % local_addr)
         self.mcast_port = mcast_port
@@ -881,7 +880,7 @@ class Discoverer(object):
                             # ignore the message. it does not start with 'R'
                             return
                         # map local addresses to locahost
-                        if address[0] in roslib.network.get_local_addresses():
+                        if address[0] in get_local_addresses():
                             address = ('localhost', address[1])
                         master_key = (address, monitor_port)
                         if version >= 3 and secs == 0 and nsecs == 0:
@@ -931,7 +930,7 @@ class Discoverer(object):
                         if add_to_list:
                             rospy.loginfo("Detected master discovery: http://%s:%s" % (address[0], monitor_port))
                             self._add_address(address[0])
-                            is_local = address[0].startswith('127.') or address[0] in roslib.network.get_local_addresses()
+                            is_local = address[0].startswith('127.') or address[0] in get_local_addresses()
                             self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0], ':', str(monitor_port)]),
                                                                         is_local=is_local,
                                                                         heartbeat_rate=float(rate) / 10.0,
@@ -1068,7 +1067,7 @@ class Discoverer(object):
                             if v.masteruriaddr != v.monitor_hostname:
                                 msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_discovery!" % (v.master_hostname, v.masteruriaddr, v.monitor_hostname)
                                 if v.masteruriaddr is None or not v.masteruriaddr.startswith('127.'):
-                                    local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+                                    local_addresses = ['localhost'] + get_local_addresses()
                                     # check 127/8 and local addresses
                                     if v.masteruriaddr not in local_addresses:
                                         if msg not in current_errors:

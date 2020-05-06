@@ -40,7 +40,6 @@ import errno
 import fcntl
 import os
 import platform
-import roslib.network
 import rospy
 import socket
 import struct
@@ -52,6 +51,7 @@ try:
 except:
     _use_netifaces = False
 
+from .common import get_local_addresses
 
 SEND_ERRORS = {}
 
@@ -123,7 +123,7 @@ class DiscoverSocket(socket.socket):
         self.listen_mcast = listen_mcast
         self.unicast_only = not (send_mcast or listen_mcast)
         self._closed = False
-        self._locals = [ip for ifname, ip in DiscoverSocket.localifs()]
+        self._locals = get_local_addresses()
         self._locals.append('localhost')
         self.sock_5_error_printed = []
         self.SOKET_ERRORS_NEEDS_RECONNECT = False
@@ -258,7 +258,7 @@ class DiscoverSocket(socket.socket):
                                     socket.IPV6_LEAVE_GROUP,
                                     self.group_bing)
             rospy.loginfo("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
-            self.sendto('', ('localhost', self.port))
+            self.sendto(b'', ('localhost', self.port))
             socket.socket.close(self)
         # close the unicast socket
         if self.unicast_socket is not None:
@@ -371,7 +371,7 @@ class DiscoverSocket(socket.socket):
             SIOCGIFFLAGS = 0x8913
             IFF_MULTICAST = 0x1000  # Supports multicast.
             IFF_UP = 0x1  # Interface is up.
-            for (ifname, _) in DiscoverSocket.localifs():
+            for (ifname, _) in self.localifs():
                 args = (ifname + '\0' * 32)[:32]
                 try:
                     result = fcntl.ioctl(self.fileno(), SIOCGIFFLAGS, args)
@@ -421,7 +421,7 @@ class DiscoverSocket(socket.socket):
             else:
                 raise OSError("Unknown architecture: %s" % arch)
             sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            names = array.array('B', '\0' * MAXBYTES)
+            names = array.array(b'B', [0 for i in range(MAXBYTES)])
             outbytes = struct.unpack('iL', fcntl.ioctl(sockfd.fileno(),
                                                        SIOCGIFCONF,
                                                        struct.pack('iL', MAXBYTES, names.buffer_info()[0])
@@ -483,7 +483,7 @@ class UcastSocket(socket.socket):
         # If interface isn't specified, try to find an non localhost interface to
         # get some info for binding. Otherwise use localhost
         if not self.interface:
-            ifaces = roslib.network.get_local_addresses()
+            ifaces = get_local_addresses()
             self.interface = 'localhost'
             for iface in ifaces:
                 if not (iface.startswith('127') or iface.startswith('::1')):

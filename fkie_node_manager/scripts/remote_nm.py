@@ -193,7 +193,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     ros_hostname = nmdhost.get_ros_hostname(masteruri)
     if ros_hostname:
         addr = socket.gethostbyname(ros_hostname)
-        if addr in set(ip for _n, ip in DiscoverSocket.localifs()):
+        if addr in set(ip for ip in nmdhost.get_local_addresses()):
             new_env['ROS_HOSTNAME'] = ros_hostname
     if loglevel:
         new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)

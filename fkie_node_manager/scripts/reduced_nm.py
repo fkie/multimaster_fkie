@@ -41,7 +41,6 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from roslib.network import get_local_addresses
 import rospy
 
 from fkie_master_discovery.common import masteruri_from_ros
@@ -97,7 +96,7 @@ class StartHandler(object):
             return True
         try:
             socket.inet_aton(hostname)
-            local_addresses = ['localhost'] + get_local_addresses()
+            local_addresses = ['localhost'] + nmdhost.get_local_addresses()
             # check 127/8 and local addresses
             result = hostname.startswith('127.') or hostname in local_addresses
             return result
@@ -116,7 +115,7 @@ class StartHandler(object):
             import traceback
             print(traceback.format_exc())
             return False
-        local_addresses = ['localhost'] + get_local_addresses()
+        local_addresses = ['localhost'] + nmdhost.get_local_addresses()
         # check 127/8 and local addresses
         result = machine_addr.startswith('127.') or machine_addr in local_addresses
         return result

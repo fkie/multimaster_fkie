@@ -45,12 +45,12 @@ from xml.dom import minidom
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
 EMPTY_PATTERN = re.compile('\b', re.I)
-INCLUDE_PATTERN = ["\s*(\$\(find.*?\)[^ \"]*)",
-                   "file=\"(.*?)\"",
-                   "textfile=\"(.*?)\"",
-                   "binfile=\"(.*?)\"",
-                   "\"\s*(pkg:\/\/.*?)\"",
-                   "\"\s*(package:\/\/.*?)\""]
+INCLUDE_PATTERN = [r"\s*(\$\(find.*?\)[^ \"]*)",
+                   r"file=\"(.*?)\"",
+                   r"textfile=\"(.*?)\"",
+                   r"binfile=\"(.*?)\"",
+                   r"\"\s*(pkg:\/\/.*?)\"",
+                   r"\"\s*(package:\/\/.*?)\""]
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
 try:

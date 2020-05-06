@@ -35,7 +35,6 @@
 
 import argparse
 import os
-import roslib.network
 import rospy
 import socket
 import sys
@@ -166,7 +165,7 @@ def is_local(hostname, wait=False):
             return HOSTS_CACHE[hostname]
     try:
         socket.inet_aton(hostname)
-        local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+        local_addresses = ['localhost'] + nmdhost.get_local_addresses()
         # check 127/8 and local addresses
         result = hostname.startswith('127.') or hostname in local_addresses
         with _LOCK:
@@ -196,7 +195,7 @@ def __is_local(hostname):
         with _LOCK:
             HOSTS_CACHE[hostname] = False
         return False
-    local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+    local_addresses = ['localhost'] + nmdhost.get_local_addresses()
     # check 127/8 and local addresses
     result = machine_addr.startswith('127.') or machine_addr in local_addresses
     with _LOCK:
