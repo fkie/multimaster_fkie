@@ -82,6 +82,8 @@ class TestFileServiceServicer(unittest.TestCase):
     def setUp(self):
         self.current_pose = 0
         path = interpret_path("$(find fkie_node_manager_daemon)/../../../build")
+        if not os.path.exists(path):
+            os.mkdir(path)
         self.test_get_content_path = "%s/tmp_get_content_test.txt" % path
         self.test_save_content_path = "%s/tmp_save_content_test.txt" % path
         self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % path
@@ -175,11 +177,11 @@ class TestFileServiceServicer(unittest.TestCase):
         content.file.mtime = 1.0  # something not zero to update a not existing file
         content.file.size = len(test_data)
         content.file.data = test_data
-        save_response = fs.SaveFileContent([content], DummyContext()).next()
+        save_response = next(fs.SaveFileContent([content], DummyContext()))
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('REMOVED_FILE'), "wrong status code '%d' if file was removed in meantime." % save_response.status.code)
         # save new file
         content.file.mtime = 0
-        save_response = fs.SaveFileContent([content], DummyContext()).next()
+        save_response = next(fs.SaveFileContent([content], DummyContext()))
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "new file was not saved")
         self.assertTrue(os.path.exists(self.test_save_content_path), "new file was not saved to %s" % self.test_save_content_path)
         self.assertEqual(save_response.ack.mtime, os.path.getmtime(self.test_save_content_path), "wrong mtime returned after create a new file")
@@ -192,11 +194,11 @@ class TestFileServiceServicer(unittest.TestCase):
         content.file.mtime = save_response.ack.mtime
         content.file.size = len(new_test_data)
         content.file.data = new_test_data
-        save_response = fs.SaveFileContent([content], DummyContext()).next()
+        save_response = next(fs.SaveFileContent([content], DummyContext()))
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('CHANGED_FILE'), "wrong status code if file was changed in meantime.")
         # overwrite the changed file
         content.overwrite = True
-        save_response = fs.SaveFileContent([content], DummyContext()).next()
+        save_response = next(fs.SaveFileContent([content], DummyContext()))
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten")
         self.assertEqual(save_response.ack.mtime, os.path.getmtime(self.test_save_content_path), "wrong mtime returned after overwrite file")
         with open(self.test_save_content_path, 'r') as outfile:
@@ -204,11 +206,11 @@ class TestFileServiceServicer(unittest.TestCase):
         # try to save in root folder
         content.file.path = '/content_test.txt'
         content.file.mtime = 0
-        save_response = fs.SaveFileContent([content], DummyContext()).next()
+        save_response = next(fs.SaveFileContent([content], DummyContext()))
         if save_response.status.code == fmsg.ReturnStatus.StatusType.Value('OK'):
             # test in industrial ci, use source folder
             content.file.path = interpret_path("$(find fkie_node_manager_daemon)/") + content.file.path
-            save_response = fs.SaveFileContent([content], DummyContext()).next()
+            save_response = next(fs.SaveFileContent([content], DummyContext()))
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), "save in root folder returns a wrong result: %d, expected: %d" % (save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR')))
         # save file in more chunks
         test_data = ["First line.\n", "Second line.\n", "Third line.\n"]
