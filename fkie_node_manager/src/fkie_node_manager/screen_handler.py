@@ -229,9 +229,9 @@ class ScreenHandler(object):
             stdout.close()
         if output:
             splits = output.split()
-            session = utf8(nodename).replace('/', '_') if nodename is not None else ''
+            session = screen.create_session_name(nodename)
             for i in splits:
-                sname = i.replace('__', '_')
+                sname = str(i, 'utf-8')
                 if sname.count('.') > 0 and sname.endswith(session) and sname.find('._') >= 0:
                     result[i] = nodename
         return result

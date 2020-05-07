@@ -39,6 +39,7 @@ from python_qt_binding.QtGui import QPixmap  # pylint: disable=no-name-in-module
 from python_qt_binding.QtCore import QSettings  # pylint: disable=no-name-in-module, import-error
 
 import os
+import hashlib
 import roslib
 import rospy
 
@@ -197,7 +198,7 @@ class Settings(object):
         settings.endGroup()
         self.init_hosts_color_list()
         self._launch_history = None  # list with file names
-        self._icons_dir = os.path.join(self.PACKAGE_DIR, 'icons')
+        self._icons_dir = os.path.join(os.path.dirname(__file__), 'icons')
 
     def masteruri(self):
         return self._masteruri
@@ -508,7 +509,9 @@ class Settings(object):
                 return result
             else:
                 # determine a color
-                index = abs(hash(host)) % len(self.DEAFULT_HOST_COLORS)
+                hash_str = hashlib.md5(host.encode('utf-8')).hexdigest()
+                hash_int = int(hash_str, 16)
+                index = abs(hash_int) % len(self.DEAFULT_HOST_COLORS)
                 return self.DEAFULT_HOST_COLORS[index]
         return default_color
 

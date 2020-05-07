@@ -110,9 +110,13 @@ def utf8(s, errors='replace'):
     '''
     if sys.version_info[0] <= 2:
         if isinstance(s, (str, buffer)):
-            return unicode(s, "utf-8", errors=errors)
+            return unicode(s, 'utf-8', errors=errors)
         elif not isinstance(s, unicode):
             return unicode(str(s))
+    elif isinstance(s, bytes):
+        return s.decode('utf-8')
+    elif not isinstance(s, str):
+        return str(s)
     return s
 
 
@@ -181,7 +185,7 @@ def get_packages(path):
             return {}
         for f in fileList:
             ret = get_packages(os.path.join(path, f))
-            result = dict(ret.items() + result.items())
+            result.update(ret)
     return result
 
 
@@ -351,12 +355,14 @@ def replace_internal_args(content, resolve_args={}, path=None):
     replaced = False
     resolve_args_intern = {}
     try:
+        if sys.version_info < (3, 0):
+            new_content = new_content.decode('utf-8')
         for arg_key, args_val in resolve_args.items():
             replaced = True
-            new_content = new_content.decode('utf-8').replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
         resolve_args_intern = get_internal_args(content)
         for arg_key, args_val in resolve_args_intern.items():
-            new_content = new_content.decode('utf-8').replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
             replaced = True
     except Exception as err:
         print("%s in %s" % (utf8(err), path))
@@ -510,7 +516,10 @@ def find_included_files(string,
                         if publish:
                             my_unique_files.append(filename)
                             # transform found position to line number
-                            position = content.decode('utf-8').count("\n", 0, groups.start()) + 1
+                            content_tmp = content
+                            if sys.version_info < (3, 0):
+                                content_tmp = content.decode('utf-8')
+                            position = content_tmp.count("\n", 0, groups.start()) + 1
                             yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:

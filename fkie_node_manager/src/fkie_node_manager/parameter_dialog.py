@@ -447,7 +447,10 @@ class ParameterDescription(object):
                             except Exception:
                                 rvalue = {'secs': 0, 'nsecs': 0}
                     else:
-                        rvalue = value.encode(sys.getfilesystemencoding())
+                        if sys.version_info[0] <= 2:
+                            rvalue = value.encode(sys.getfilesystemencoding())
+                        else:
+                            rvalue = value
             else:
                 if self.isArrayType():
                     arr = []

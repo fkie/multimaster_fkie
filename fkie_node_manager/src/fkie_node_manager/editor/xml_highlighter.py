@@ -199,7 +199,7 @@ class XmlHighlighter(QSyntaxHighlighter):
         self.string_format = self._create_format(Qt.blue)
         # part to select an XML block
         self._tag_hl_range = []  # list with puples (start, length)
-        self._tag_hl_last = set()  # set with blocks of last highlighted tags
+        self._tag_hl_last = list()  # set with blocks of last highlighted tags
         self._color_hl_tag = QColor(255, 128, 0)
 
     def _create_regexp(self, pattern=''):
@@ -356,11 +356,11 @@ class XmlHighlighter(QSyntaxHighlighter):
         self._end_tag_found = rindex != -1
         if self._tag_hl_range and block != next_block:
             self.rehighlightBlock(block)
-            self._tag_hl_last.add(block)
+            self._tag_hl_last.append(block)
         if rindex != -1:
             self._tag_hl_range.append((rindex, tag_len))
             self.rehighlightBlock(next_block)
-            self._tag_hl_last.add(next_block)
+            self._tag_hl_last.append(next_block)
 
     def _get_braces_count(self, text):
         closed_short = text.count('/>')

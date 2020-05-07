@@ -1933,12 +1933,12 @@ class NodeTreeModel(QStandardItemModel):
         '''
         hostItem = self.get_hostitem(masteruri, host_address)
         if hostItem is not None:
-            groups = set()
+            groups = {}
             for (name, cfg) in nodes.items():
                 items = hostItem.get_node_items_by_name(name)
                 for item in items:
                     if item.parent_item is not None:
-                        groups.add(item.parent_item)
+                        groups[item.parent_item.get_namespace()] = item.parent_item
                     item.add_config(cfg)
                     item.readd()
                 if not items:
@@ -1949,9 +1949,9 @@ class NodeTreeModel(QStandardItemModel):
                     items = hostItem.get_node_items_by_name(name)
                     for item in items:
                         if item.parent_item is not None:
-                            groups.add(item.parent_item)
+                            groups[item.parent_item.get_namespace()] = item.parent_item
             # update the changed groups
-            for g in groups:
+            for _name, g in groups.items():
                 g.update_displayed_config()
             hostItem.clearup()
         self._remove_empty_hosts()
@@ -1969,12 +1969,12 @@ class NodeTreeModel(QStandardItemModel):
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             items = host.get_node_items()
-            groups = set()
+            groups = {}
             for item in items:
                 removed = item.rem_config(cfg)
                 if removed and item.parent_item is not None:
-                    groups.add(item.parent_item)
-            for g in groups:
+                    groups[item.parent_item.get_namespace()] = item.parent_item
+            for _name, g in groups.items():
                 g.update_displayed_config()
             host.rem_capablities(cfg)
             host.clearup()

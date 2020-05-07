@@ -2247,7 +2247,7 @@ class MainWindow(QMainWindow):
                     fpath = link.toLocalFile()
                     if fpath.endswith('.rst'):
                         # render .rst files
-                        with file(fpath) as f:
+                        with open(fpath) as f:
                             self.ui_help_web_view.setHtml(examples.html_body(utf8(f.read())), link)
                     else:
                         self.ui_help_web_view.setUrl(link)

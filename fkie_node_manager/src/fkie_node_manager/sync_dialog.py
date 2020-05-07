@@ -431,7 +431,7 @@ class InterfacesThread(QObject, threading.Thread):
             self._interfaces_files = {}
             for p in self.root_paths:
                 ret = self._get_interfaces(p)
-                self._interfaces_files = dict(ret.items() + self._interfaces_files.items())
+                self._interfaces_files.update(ret)
             self.interfaces.emit(self._interfaces_files)
         except Exception:
             import traceback
@@ -450,7 +450,7 @@ class InterfacesThread(QObject, threading.Thread):
                     package = os.path.basename(path)
             for f in fileList:
                 ret = self._get_interfaces(os.path.join(path, f), package)
-                result = dict(ret.items() + result.items())
+                result.update(ret)
         elif package and os.path.isfile(path) and path.endswith('.sync'):
             # create a selection for binaries
             return {'pkg://%s///%s' % (package, os.path.basename(path)): path}

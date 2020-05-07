@@ -176,7 +176,7 @@ class FileStub(object):
         :raise Exception:
         '''
         result = []
-        response_stream = self.fm_stub.SaveFileContent(self._gen_save_content_list(path, content.encode(), mtime, package), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.fm_stub.SaveFileContent(self._gen_save_content_list(path, content, mtime, package), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == OK:
                 result.append(response.ack)

@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from io import FileIO
 import os
 import grpc
 import unittest
@@ -138,7 +139,7 @@ class TestFileServiceServicer(unittest.TestCase):
         self.assertEqual(content_response.next().status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), "wrong status code if path not exists")
         # create a test file
         test_data = "This is a test file for get content test."
-        with open(self.test_get_content_path, 'w') as testfile:
+        with FileIO(self.test_get_content_path, 'w') as testfile:
             testfile.write(test_data)
         received_data = ''
         content_response = fs.GetFileContent(fmsg.GetFileContentRequest(path=self.test_get_content_path), DummyContext())
@@ -201,7 +202,7 @@ class TestFileServiceServicer(unittest.TestCase):
         save_response = next(fs.SaveFileContent([content], DummyContext()))
         self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten")
         self.assertEqual(save_response.ack.mtime, os.path.getmtime(self.test_save_content_path), "wrong mtime returned after overwrite file")
-        with open(self.test_save_content_path, 'r') as outfile:
+        with FileIO(self.test_save_content_path, 'r') as outfile:
             self.assertEqual(new_test_data, outfile.read(), "wrong content in file")
         # try to save in root folder
         content.file.path = '/content_test.txt'
@@ -217,11 +218,11 @@ class TestFileServiceServicer(unittest.TestCase):
         for resp in fs.SaveFileContent(self._read_from_list(test_data, self.test_save_content_path), DummyContext()):
             self.assertEqual(resp.status.code, fmsg.ReturnStatus.StatusType.Value('OK'), "file was not overwritten, result code: %d" % resp.status.code)
             self.assertEqual(resp.ack.size, self.current_pose, "incorrect transferred file size: %d, expected: %d" % (resp.ack.size, self.current_pose))
-        with open(self.test_save_content_path, 'r') as outfile:
+        with FileIO(self.test_save_content_path, 'r') as outfile:
             self.assertEqual(str(test_data), str(outfile.readlines()), "wrong content in file")
 
     def test_rename_file(self):
-        with open(self.test_rename_from_file, 'w') as testfile:
+        with FileIO(self.test_rename_from_file, 'w') as testfile:
             testfile.write('test content for file which will be renamed')
         fs = FileServicer()
         # test rename of not existing file

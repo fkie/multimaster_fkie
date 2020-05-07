@@ -79,7 +79,7 @@ class TextEdit(QTextEdit):
 #        self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.setAcceptRichText(False)
         font = QFont()
-        font.setFamily("Fixed".decode("utf-8"))
+        font.setFamily('Fixed')
         font.setPointSize(12)
         self.setFont(font)
         self.setLineWrapMode(QTextEdit.NoWrap)

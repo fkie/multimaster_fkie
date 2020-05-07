@@ -1477,7 +1477,7 @@ class MasterViewProxy(QWidget):
         name = ''
         text = ''
         # add control buttons for more then one selected node
-        if len(selectedNodes) > 1 or selectedGroups > 0:
+        if len(selectedNodes) > 1 or len(selectedGroups) > 0:
             restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
             restartable_nodes_with_launchfiles = [sn for sn in selectedNodes if sn.has_launch_cfgs(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
             killable_nodes = [sn for sn in selectedNodes if sn.node_info.pid is not None and not self._is_in_ignore_list(sn.name)]

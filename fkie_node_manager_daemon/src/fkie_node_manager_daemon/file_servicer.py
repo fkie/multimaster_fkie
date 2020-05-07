@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
+from io import FileIO
 import os
 import rospy
 import shutil
@@ -87,7 +87,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
     def GetFileContent(self, request, context):
         result = fms.GetFileContentReply()
         try:
-            with open(request.path, 'r') as outfile:
+            with FileIO(request.path, 'r') as outfile:
                 result.file.path = interpret_path(request.path)
                 a = os.path.getmtime(request.path)
                 result.file.mtime = a
@@ -131,7 +131,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     if os.path.exists(path):
                         # checks for mtime
                         if chunk.overwrite or chunk.file.mtime == os.path.getmtime(path):
-                            file_tmp = open("%s.tmp" % path, 'w')
+                            file_tmp = FileIO("%s.tmp" % path, 'w')
                             dest_size = chunk.file.size
                         else:
                             result.status.code = CHANGED_FILE
@@ -144,7 +144,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                             os.makedirs(os.path.dirname(path))
                         except OSError:
                             pass
-                        file_tmp = open("%s.tmp" % path, 'w')
+                        file_tmp = FileIO("%s.tmp" % path, 'w')
                         dest_size = chunk.file.size
                     else:
                         result.status.code = REMOVED_FILE
@@ -242,7 +242,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
             if pname is not None:
                 # we need relative package path without leading slash
                 prest = dest_path.replace(ppath, '').lstrip(os.path.sep)
-                with open(path, 'r') as outfile:
+                with FileIO(path, 'r') as outfile:
                     mtime = 0.0 if request.overwrite else os.path.getmtime(path)
                     content = outfile.read()
                     # get channel to the remote grpc server
@@ -354,7 +354,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 return {}
             for f in fileList:
                 ret = self._get_packages(os.path.join(path, f))
-                result = dict(ret.items() + result.items())
+                result.update(ret)
         return result
 
     def ListPackages(self, request, context):
@@ -487,7 +487,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
         result = fms.ReturnStatus()
         try:
             if request.type == PATH_FILE:
-                new_file = open(request.path, "w+")
+                new_file = FileIO(request.path, "w+")
                 new_file.close()
             elif request.type == PATH_DIR:
                 os.mkdir(request.path)

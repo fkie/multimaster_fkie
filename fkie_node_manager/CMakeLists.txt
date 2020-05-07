@@ -47,12 +47,12 @@ install(
         images
         launch
         rqt_icons
-        src/${PROJECT_NAME}/icons
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
 install(
     DIRECTORY
+        src/${PROJECT_NAME}/icons
         src/${PROJECT_NAME}/ui
     DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
