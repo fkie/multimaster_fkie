@@ -34,6 +34,7 @@
 
 import shlex
 import subprocess
+import sys
 
 import grpc
 import rospy
@@ -231,7 +232,7 @@ class ScreenHandler(object):
             splits = output.split()
             session = screen.create_session_name(nodename)
             for i in splits:
-                sname = str(i, 'utf-8')
+                sname = i if sys.version_info[0] <= 2 else str(i, 'utf-8')
                 if sname.count('.') > 0 and sname.endswith(session) and sname.find('._') >= 0:
                     result[i] = nodename
         return result

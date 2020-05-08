@@ -199,7 +199,7 @@ class XmlHighlighter(QSyntaxHighlighter):
         self.string_format = self._create_format(Qt.blue)
         # part to select an XML block
         self._tag_hl_range = []  # list with puples (start, length)
-        self._tag_hl_last = list()  # set with blocks of last highlighted tags
+        self._tag_hl_last = []  # set with blocks of last highlighted tags
         self._color_hl_tag = QColor(255, 128, 0)
 
     def _create_regexp(self, pattern=''):
@@ -300,7 +300,7 @@ class XmlHighlighter(QSyntaxHighlighter):
         word, idx_word = self._get_current_word(text, position)
         for hlblock in self._tag_hl_last:
             self.rehighlightBlock(hlblock)
-        self._tag_hl_last.clear()
+        del self._tag_hl_last[:]
         self._tag_hl_range = [(idx_word, len(word))]
         next_block = block
         open_braces = 0
