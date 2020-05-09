@@ -47,6 +47,7 @@ import roslib.message
 import rospy
 import socket
 import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -350,7 +351,8 @@ class MasterMonitor(object):
                     header = {'probe': '1', 'md5sum': '*',
                               'callerid': self.ros_node_name, 'service': service}
                     roslib.network.write_ros_handshake_header(s, header)
-                    stype = roslib.network.read_ros_handshake_header(s, io.StringIO(), 2048)
+                    buf = io.StringIO() if sys.version_info < (3, 0) else io.BytesIO()
+                    stype = roslib.network.read_ros_handshake_header(s, buf, 2048)
                     with self._lock:
                         self.__new_master_state.getService(service).type = stype['type']
                         self.__cached_services[service] = (uri, stype['type'], time.time())
