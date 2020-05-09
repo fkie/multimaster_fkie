@@ -297,6 +297,8 @@ class ScreenWidget(QWidget):
                     chars_count = self._seek_count_lines(lines)
                     self._seek_start = self.qfile.pos()
                     data = self.qfile.read(chars_count)
+                    if sys.version_info > (3, 0):
+                        data = data.decode('utf-8')
                     self.output.emit(data)
                     self._seek_end = self.qfile.pos()
                     self._first_fill = False
@@ -306,6 +308,8 @@ class ScreenWidget(QWidget):
                     if (not self._pause_read_end and self.qfile.bytesAvailable()):
                         start = self.qfile.pos()
                         data = self.qfile.readAll().data()
+                        if sys.version_info > (3, 0):
+                            data = data.decode('utf-8')
                         self.output.emit(data)
                         self._seek_end = self.qfile.pos()
                         self._info = "NEW: %d" % (self._seek_end - start)
@@ -322,6 +326,8 @@ class ScreenWidget(QWidget):
                     chars_count = self._seek_count_lines(lines)
                 self._seek_start = self.qfile.pos()
                 data = self.qfile.read(chars_count)
+                if sys.version_info > (3, 0):
+                    data = data.decode('utf-8')
                 self.output_prefix.emit(data)
 
     def _seek_count_lines(self, lines=20):
