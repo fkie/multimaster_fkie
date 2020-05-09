@@ -48,7 +48,8 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from .common import get_hostname, get_local_addresses, get_local_address
+from rosgraph.network import get_local_addresses, get_local_address
+from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
 
@@ -872,6 +873,8 @@ class Discoverer(object):
             with self.__lock:
                 self._check_timejump()
                 try:
+                    if len(msg) == 0:
+                        return
                     (version, msg_tuple) = self.msg2masterState(msg, address)
                     if (version in [2, 3]):
                         add_to_list = False

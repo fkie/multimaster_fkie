@@ -46,6 +46,7 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
+from rosgraph.network import get_local_addresses
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
 
@@ -56,7 +57,7 @@ from . import screen
 from . import settings
 from .launch_stub import LaunchStub
 from .common import get_cwd, package_name, interpret_path, isstring, utf8
-from .host import get_local_addresses
+
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 

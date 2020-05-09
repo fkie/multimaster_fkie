@@ -51,7 +51,7 @@ try:
 except:
     _use_netifaces = False
 
-from .common import get_local_addresses
+from rosgraph.network import get_local_addresses
 
 SEND_ERRORS = {}
 

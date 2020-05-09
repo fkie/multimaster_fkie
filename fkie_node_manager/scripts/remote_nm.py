@@ -10,6 +10,7 @@ import time
 
 import roslib
 import rospy
+from rosgraph.network import get_local_addresses
 
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
@@ -193,7 +194,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     ros_hostname = nmdhost.get_ros_hostname(masteruri)
     if ros_hostname:
         addr = socket.gethostbyname(ros_hostname)
-        if addr in set(ip for ip in nmdhost.get_local_addresses()):
+        if addr in set(ip for ip in get_local_addresses()):
             new_env['ROS_HOSTNAME'] = ros_hostname
     if loglevel:
         new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)
