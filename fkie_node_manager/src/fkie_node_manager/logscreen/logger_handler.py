@@ -93,9 +93,13 @@ class LoggerHandler(QObject):
         self._thread_update = None
 
     def _handle_loggers(self, loggers):
+        stored_values = {}
         while self.layout.count() > 1:
             item = self.layout.takeAt(0)
-            item.widget().setParent(None)
+            wd = item.widget()
+            if wd.current_level is not None:
+                stored_values[wd.loggername] = wd.current_level
+            wd.setParent(None)
         self._logger_items.clear()
         all_item = LoggerItem(self.nodename, 'all', '')
         all_item.set_callback(self.change_all)
@@ -105,6 +109,8 @@ class LoggerHandler(QObject):
             item = LoggerItem(self.nodename, logger.name, logger.level)
             self._logger_items[logger.name] = item
             self.layout.insertWidget(index, item)
+            if logger.name in stored_values and stored_values[logger.name] != logger.level:
+                item.set_level(stored_values[logger.name])
             index += 1
 
     def change_all(self, loglevel, ignore=['ros.roscpp.roscpp_internal',
