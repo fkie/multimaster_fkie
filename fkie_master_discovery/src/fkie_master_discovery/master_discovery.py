@@ -193,8 +193,8 @@ class DiscoveredMaster(object):
                     self.callback_master_state(MasterState(MasterState.STATE_CHANGED,
                                                            ROSMaster(str(self.mastername),
                                                                      self.masteruri,
-                                                                     self.timestamp,
-                                                                     self.timestamp_local,
+                                                                     rospy.Time(self.timestamp),
+                                                                     rospy.Time(self.timestamp_local),
                                                                      self.online,
                                                                      self.discoverername,
                                                                      self.monitoruri)))
@@ -261,8 +261,8 @@ class DiscoveredMaster(object):
             self.callback_master_state(MasterState(MasterState.STATE_CHANGED,
                                                    ROSMaster(str(self.mastername),
                                                              self.masteruri,
-                                                             self.timestamp,
-                                                             self.timestamp_local,
+                                                             rospy.Time(self.timestamp),
+                                                             rospy.Time(self.timestamp_local),
                                                              False,
                                                              self.discoverername,
                                                              self.monitoruri)))
@@ -383,8 +383,8 @@ class DiscoveredMaster(object):
                                 self.callback_master_state(MasterState(MasterState.STATE_NEW,
                                                                        ROSMaster(str(self.mastername),
                                                                                  self.masteruri,
-                                                                                 self.timestamp,
-                                                                                 self.timestamp,
+                                                                                 rospy.Time(self.timestamp),
+                                                                                 rospy.Time(self.timestamp),
                                                                                  self.online,
                                                                                  self.discoverername,
                                                                                  self.monitoruri)))
@@ -659,8 +659,8 @@ class Discoverer(object):
                     self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
                                                          ROSMaster(str(master.mastername),
                                                                    master.masteruri,
-                                                                   master.timestamp,
-                                                                   master.timestamp_local,
+                                                                   rospy.Time(master.timestamp),
+                                                                   rospy.Time(master.timestamp_local),
                                                                    master.online,
                                                                    master.discoverername,
                                                                    master.monitoruri)))
@@ -833,8 +833,8 @@ class Discoverer(object):
                         self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
                                                              ROSMaster(str(v.mastername),
                                                                        v.masteruri,
-                                                                       v.timestamp,
-                                                                       v.timestamp_local,
+                                                                       rospy.Time(v.timestamp),
+                                                                       rospy.Time(v.timestamp_local),
                                                                        v.online,
                                                                        v.discoverername,
                                                                        v.monitoruri)))
@@ -910,8 +910,8 @@ class Discoverer(object):
                                     state_remove = MasterState(MasterState.STATE_REMOVED,
                                                                ROSMaster(str(master.mastername),
                                                                          master.masteruri,
-                                                                         master.timestamp,
-                                                                         master.timestamp_local,
+                                                                         rospy.Time(master.timestamp),
+                                                                         rospy.Time(master.timestamp_local),
                                                                          False,
                                                                          master.discoverername,
                                                                          master.monitoruri))
@@ -1098,8 +1098,8 @@ class Discoverer(object):
                     if v.mastername is not None:
                         masters.append(ROSMaster(str(v.mastername),
                                                  v.masteruri,
-                                                 v.timestamp,
-                                                 v.timestamp_local,
+                                                 rospy.Time(v.timestamp),
+                                                 rospy.Time(v.timestamp_local),
                                                  v.online,
                                                  v.discoverername,
                                                  v.monitoruri))

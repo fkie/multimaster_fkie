@@ -109,7 +109,7 @@ class Main(object):
                     self.remove_master(data.master.name)
                 elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
                     m = data.master
-                    self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri, m.online)
+                    self.update_master(m.name, m.uri, m.last_change.to_sec(), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
 
     def obtain_masters(self):
         '''
@@ -134,7 +134,7 @@ class Main(object):
                             for m in resp.masters:
                                 if self._can_sync(m.name):  # do not sync to the master, if it is in ignore list or not in filled sync list
                                     masters.append(m.name)
-                                self.update_master(m.name, m.uri, m.timestamp, m.timestamp_local, m.discoverer_name, m.monitoruri, m.online)
+                                self.update_master(m.name, m.uri, m.last_change.to_sec(), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
                             for key in set(self.masters.keys()) - set(masters):
                                 self.remove_master(self.masters[key].name)
                         except rospy.ServiceException as e:

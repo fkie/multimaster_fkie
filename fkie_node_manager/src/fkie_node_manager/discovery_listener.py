@@ -398,8 +398,8 @@ class OwnMasterMonitoring(QObject):
                         state = MasterState(MasterState.STATE_CHANGED,
                                             ROSMaster(utf8(self._local_addr),
                                                       utf8(self._masteruri),
-                                                      mon_state.timestamp,
-                                                      mon_state.timestamp_local,
+                                                      rospy.Time(mon_state.timestamp),
+                                                      rospy.Time(mon_state.timestamp_local),
                                                       True,
                                                       rospy.get_name(),
                                                       ''.join(['http://localhost:', utf8(self._master_monitor.rpcport)])))
