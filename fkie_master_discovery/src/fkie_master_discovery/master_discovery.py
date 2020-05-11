@@ -1010,7 +1010,7 @@ class Discoverer(object):
             for (_, v) in self.masters.items():
                 quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
                 if not (v.mastername is None) and v.online:
-                    result.links.append(LinkState(v.mastername, quality))
+                    result.links.append(LinkState(v.mastername, quality, v.last_heartbeat_ts))
                 if v.is_local:
                     result.header.frame_id = v.mastername
         # publish the results
