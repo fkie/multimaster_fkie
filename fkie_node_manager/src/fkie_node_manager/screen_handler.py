@@ -146,13 +146,13 @@ class ScreenHandler(object):
                     # Open selection
                     if len(choices) > 0:
                         if len(choices) == 1:
-                            cls.open_screen_terminal(host, choices[0], node, use_log_widget, user)
+                            cls.open_screen_terminal(host, choices[0], node, use_log_widget=False, user=user)
                         elif auto_item_request:
                             from select_dialog import SelectDialog
                             items, _ = SelectDialog.getValue('Show screen', '', list(choices.keys()), False, store_geometry='show_screens')
                             for item in items:
                                 # open the selected screen
-                                cls.open_screen_terminal(host, choices[item], node, use_log_widget, user)
+                                cls.open_screen_terminal(host, choices[item], node, use_log_widget=False, user=user)
                         else:
                             raise ScreenSelectionRequest(choices, 'Show screen')
                     else:
@@ -161,7 +161,8 @@ class ScreenHandler(object):
         except nm.AuthenticationRequest as e:
             raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, use_log_widget))
         except ScreenSelectionRequest as e:
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, use_log_widget, user, pw))
+            # set use_log_widget to False on multiple screens for same node
+            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, False, user, pw))
 
     @classmethod
     def kill_screens(cls, node, grpc_url, auto_ok_request=True, user=None, pw=None):
