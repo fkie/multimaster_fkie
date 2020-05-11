@@ -1592,6 +1592,8 @@ class MainWindow(QMainWindow):
                         else:
                             nm.settings().set_host_user(hostname, usr)
                         muri = None if masteruri == 'ROS_MASTER_URI' else utf8(masteruri)
+                        # stop if master_discovery already running
+                        self._append_stop_for('/%s' % utf8(discovery_type), hostname, muri, self._progress_queue)
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start discovering on %s' % hostname,
                                                        nm.starter().runNodeWithoutConfig,
@@ -1607,6 +1609,7 @@ class MainWindow(QMainWindow):
                                                      '_ignore_topics:=[]', '_sync_topics:=[]',
                                                      '_ignore_services:=[]', '_sync_services:=[]',
                                                      '_sync_remote_nodes:=False']
+                                self._append_stop_for('/master_sync', hostname, muri, self._progress_queue_sync)
                                 self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                                     'start sync on %s' % hostname,
                                                                     nm.starter().runNodeWithoutConfig,
@@ -1627,6 +1630,25 @@ class MainWindow(QMainWindow):
                 MessageBox.warning(self, "Start error",
                                    'Error while parse parameter',
                                    utf8(e))
+
+    def _append_stop_for(self, nodename, hostname, muri, queue):
+        '''
+        Appends stop command to given queue for given node
+        '''
+        cmuri = muri
+        if hostname == 'localhost':
+            lmuri = self.getMasteruri()
+            if cmuri is None:
+                cmuri = lmuri
+            else:
+                cmuri = cmuri.replace('localhost', get_hostname(lmuri))
+        elif cmuri is None:
+            cmuri = nm.nameres().masteruri(utf8(hostname))
+        master = self.getMaster(cmuri.rstrip('/') + '/', create_new=False)
+        if master is not None:
+            found_nodes = master._get_nodes_by_name([nodename])
+            for node in found_nodes:
+                queue.add2queue(utf8(uuid.uuid4()), 'stop %s' % node.name, master.stop_node, (node, True))
 
     def _join_network(self, network):
         try:
