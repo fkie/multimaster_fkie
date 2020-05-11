@@ -1003,14 +1003,12 @@ class Discoverer(object):
          2. calculate the quality of known links
         '''
         result = LinkStatesStamped()
-        current_time = time.time()
-        result.header.stamp.secs = int(current_time)
-        result.header.stamp.nsecs = int((current_time - result.header.stamp.secs) * 1000000000)
+        result.header.stamp = rospy.Time.from_sec(time.time())
         with self.__lock:
             for (_, v) in self.masters.items():
                 quality = v.get_quality(self.MEASUREMENT_INTERVALS, self.TIMEOUT_FACTOR)
                 if not (v.mastername is None) and v.online:
-                    result.links.append(LinkState(v.mastername, quality, v.last_heartbeat_ts))
+                    result.links.append(LinkState(v.mastername, quality, rospy.Time.from_sec(v.last_heartbeat_ts)))
                 if v.is_local:
                     result.header.frame_id = v.mastername
         # publish the results
