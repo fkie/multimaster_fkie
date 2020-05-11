@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS message_generation std_msgs)
 add_message_files(
   DIRECTORY msg
   FILES
-  Capability.msg
   LinkState.msg
   LinkStatesStamped.msg
   MasterState.msg
@@ -27,8 +26,6 @@ add_service_files(
   FILES
   DiscoverMasters.srv
   GetSyncInfo.srv
-  ListDescription.srv
-  ListNodes.srv
   LoadLaunch.srv
   Task.srv
 )

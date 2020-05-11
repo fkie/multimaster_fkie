@@ -416,7 +416,7 @@ class CapabilityTable(QTableWidget):
         :param str masteruri: the ROS master URI of updated ROS master.
         :param str cfg_name: The name of the node provided the capabilities description.
         :param description: The capabilities description object.
-        :type description: U{fkie_multimaster_msgs.srv.ListDescription<http://docs.ros.org/api/fkie_multimaster_msgs/html/srv/ListDescription.html>} Response
+        :type description: fkie_node_manager_daemon.launch_description.LaunchDescription
         '''
         # if it is a new masteruri add a new column
         robot_name = description.robot_name
