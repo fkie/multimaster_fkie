@@ -95,7 +95,6 @@ class LoggerHandler(QObject):
     def _handle_loggers(self, loggers):
         while self.layout.count() > 1:
             item = self.layout.takeAt(0)
-            print("remove", item.widget())
             item.widget().setParent(None)
         self._logger_items.clear()
         all_item = LoggerItem(self.nodename, 'all', '')
