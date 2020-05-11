@@ -176,7 +176,7 @@ class TextSearchThread(QObject, threading.Thread):
                 # found, now test in XML for if and unless statements
                 if self._check_node_conditions(launch_node, search_for_name, occur_idx, my_resolved_args, path):
                     self._found += 1
-                    self.search_result_signal.emit(search_text, True, path, span[0], span[1], -1, aname)
+                    self.search_result_signal.emit(search_text, True, path, span[0], span[1], data.count('\n', 0, span[0]) + 1, aname)
                 else:
                     self.warning_signal.emit("%s in %s ignored because of conditions." % (search_text, path))
                 occur_idx += 1

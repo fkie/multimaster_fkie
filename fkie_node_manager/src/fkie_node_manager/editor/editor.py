@@ -121,6 +121,7 @@ class Editor(QMainWindow):
             window_title = self.__getTabName(filenames[0])
         self.setWindowTitle(window_title)
         self.init_filenames = filenames
+        self._search_node_count = 0
         self._search_thread = None
         self._last_search_request = None
         # list with all open files
@@ -407,6 +408,7 @@ class Editor(QMainWindow):
                     pass
                 # TODO: put all text of all tabs into path_text
                 rospy.logdebug("serach for '%s'" % search_text)
+                self._search_node_count = 0
                 self._search_thread = TextSearchThread(search_text, filename, recursive=True, only_launch=only_launch, count_results=count_results)
                 self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
                 self._search_thread.warning_signal.connect(self.on_search_result_warning)
@@ -653,12 +655,18 @@ class Editor(QMainWindow):
             self.graph_view.setVisible(False)
             self.tabWidget.currentWidget().setFocus()
 
-    def on_toggled_find(self, value):
+    def on_toggled_find(self, value, only_results=False):
         '''
         Shows the search frame
         '''
         if value:
             self.find_dialog.enable()
+            self.find_dialog.find_frame.setVisible(not only_results)
+            self.find_dialog.recursive_search_box.setVisible(not only_results)
+            if not only_results:
+                # clear results if not search text exists and we show not only search results
+                if not self.find_dialog.search_field.text():
+                    self.find_dialog.found_files_list.clear()
         else:
             self.replaceButton.setChecked(False)
             self.find_dialog.setVisible(False)
@@ -730,7 +738,12 @@ class Editor(QMainWindow):
         Like on_search_result, but skips the text in comments.
         '''
         if found:
-            self.on_graph_info("search thread: found %s in '%s'" % (search_text, path))
+            self._search_node_count += 1
+            if self._search_node_count > 1:
+                self.on_toggled_find(True, only_results=True)
+            self.find_dialog.current_search_text = search_text
+            self.find_dialog.on_search_result(search_text, found, path, startpos, endpos, linenr, line_text)
+            self.on_graph_info("search thread: found %s in '%s:%d'" % (search_text, path, linenr))
             if self.tabWidget.currentWidget().filename != path:
                 focus_widget = QApplication.focusWidget()
                 self.on_load_request(path)

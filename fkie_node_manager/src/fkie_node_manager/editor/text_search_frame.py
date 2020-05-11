@@ -79,8 +79,8 @@ class TextSearchFrame(QDockWidget):
         find_replace_vbox_layout.setSpacing(1)
 #        find_replace_vbox_layout.addSpacerItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding))
         # create frame with find row
-        find_frame = self._create_find_frame()
-        find_replace_vbox_layout.addWidget(find_frame)
+        self.find_frame = self._create_find_frame()
+        find_replace_vbox_layout.addWidget(self.find_frame)
         rplc_frame = self._create_replace_frame()
         find_replace_vbox_layout.addWidget(rplc_frame)
         # frame for find&replace and search results
@@ -257,7 +257,7 @@ class TextSearchFrame(QDockWidget):
             item = (search_text, found, path, startpos)
             if item not in self.search_results:
                 self.search_results.append((id_path, search_text, found, path, startpos, endpos, linenr, line))
-            if self._wait_for_result:
+            if hasattr(self, '_wait_for_result') and self._wait_for_result:
                 self._search_result_index += 1
                 if startpos >= self._tabwidget.currentWidget().textCursor().position() or self._tabwidget.currentWidget().filename != path:
                     self._wait_for_result = False
