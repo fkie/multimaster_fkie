@@ -9,7 +9,7 @@
      The alternative is to use a zeroconf/avahi daemon to register the ROS 
      master as service and discover other ROS masters.
   </description>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
@@ -28,7 +28,7 @@
   <exec_depend>roslib</exec_depend>
   <exec_depend>rosgraph</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-avahi</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-avahi</exec_depend>
+  <!-- <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-avahi</exec_depend> -->
   <exec_depend>avahi-daemon</exec_depend>
 
   <export>
