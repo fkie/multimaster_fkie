@@ -273,7 +273,10 @@ class ScreenWidget(QWidget):
         if nm.is_local(host):
             self._host = host
             self._nodename = nodename
-            screen_log = screen.get_logfile(node=nodename)
+            if screen_name:
+                screen_log = screen.get_logfile(node=nodename)
+            else:
+                screen_log = screen.get_ros_logfile(node=nodename)
             self.qfile = QFile(screen_log)
             self.setWindowTitle(nodename)
             if self.qfile.open(QIODevice.ReadOnly):

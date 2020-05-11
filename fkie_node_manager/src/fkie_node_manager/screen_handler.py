@@ -156,6 +156,8 @@ class ScreenHandler(object):
                         else:
                             raise ScreenSelectionRequest(choices, 'Show screen')
                     else:
+                        if use_log_widget:
+                            nm._MAIN_FORM.open_screen_dock(host, '', node, user)
                         raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, (node, host, user))
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:

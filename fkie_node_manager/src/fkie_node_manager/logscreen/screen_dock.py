@@ -81,7 +81,7 @@ class ScreenDock(DetachableTabDock):
     def _on_connect(self, host, screen_name, nodename, user=''):
         if (host, nodename) not in self._nodes:
             sw = ScreenWidget(host, screen_name, nodename, str(user))
-            tab_index = self.tab_widget.addTab(sw, nodename)
+            tab_index = self.tab_widget.addTab(sw, nodename + ('' if screen_name else ' ROSLOG'))
             self.tab_widget.setCurrentIndex(tab_index)
             self._nodes[(host, nodename)] = sw
         else:
