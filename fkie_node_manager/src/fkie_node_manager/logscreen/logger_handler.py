@@ -115,7 +115,8 @@ class LoggerHandler(QObject):
 
     def change_all(self, loglevel, ignore=['ros.roscpp.roscpp_internal',
                                            'ros.roscpp.roscpp_internal.connections',
-                                           'ros.roscpp.superdebug']):
+                                           'ros.roscpp.superdebug',
+                                           'rospy.tcpros']):
         '''
         Change the log level of all logger in a new thread.
         '''
