@@ -691,12 +691,18 @@ class EchoDialog(QDialog):
         :returns: string (YAML) representation of message, ``str``
         """
         type_ = type(val)
-        if type_ in (int, long, float) and fixed_numeric_width is not None:
+        if sys.version_info[0] <= 2:
+            types = (int, long, float)
+            types_wb = (int, long, float, bool)
+        else:
+            types = (int, float)
+            types_wb = (int, float, bool)
+        if type_ in types and fixed_numeric_width is not None:
             if type_ is float:
                 return ('%.' + str(fixed_numeric_width) + 'f') % val
             else:
                 return ('%d') % val
-        elif type_ in (int, long, float, bool):
+        elif type_ in types_wb:
             return utf8(val)
         elif isstring(val):
             # TODO: need to escape strings correctly
@@ -742,15 +748,15 @@ class EchoDialog(QDialog):
                 python_zip = zip
             else:  # Python2
                 python_zip = itertools.izip
-                slots = []
-                for f, t in python_zip(val.__slots__, val._slot_types):
-                    if f in fields:
-                        cval = _convert_getattr(val, f, t)
-                        slot_name = f
-                        if isinstance(cval, (list, tuple)):
-                            slot_name = "%s[%d]" % (f, len(cval))
-                        slots.append(p % (utf8(slot_name), cls.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
-                vals = '\n'.join(slots)
+            slots = []
+            for f, t in python_zip(val.__slots__, val._slot_types):
+                if f in fields:
+                    cval = _convert_getattr(val, f, t)
+                    slot_name = f
+                    if isinstance(cval, (list, tuple)):
+                        slot_name = "%s[%d]" % (f, len(cval))
+                    slots.append(p % (utf8(slot_name), cls.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
+            vals = '\n'.join(slots)
             if indent:
                 return '\n' + vals
             else:
