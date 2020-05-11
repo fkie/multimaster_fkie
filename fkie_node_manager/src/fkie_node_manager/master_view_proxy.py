@@ -175,6 +175,7 @@ class MasterViewProxy(QWidget):
         self.__current_parameter_robot_icon = ''
         self.__republish_params = {}  # { topic : params, created by dialog}
         self.__last_selection = 0
+        self.__last_node_activation = 0
         self.__last_question_start_nmd = 0
         self._on_stop_kill_roscore = False
         self._on_stop_poweroff = False
@@ -1286,6 +1287,7 @@ class MasterViewProxy(QWidget):
         :param index: The index of the activated node
         :type index: :class:`QtCore.QModelIndex` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QModelIndex.html>
         '''
+        self.__last_node_activation = time.time()
         selectedNodes = []
         if index.column() == 0:
             selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes(), False)
@@ -1309,8 +1311,9 @@ class MasterViewProxy(QWidget):
             self.on_log_clicked()
 
     def on_node_clicked(self, index):
-        self.message_frame.hide_question([MessageFrame.TYPE_NODELET])
-        self.info_frame.hide_question([MessageFrame.TYPE_NOSCREEN])
+        if time.time() - self.__last_node_activation > 1.:
+            self.message_frame.hide_question([MessageFrame.TYPE_NODELET])
+            self.info_frame.hide_question([MessageFrame.TYPE_NOSCREEN])
         if time.time() - self.__last_selection > 1.:
             self.on_node_selection_changed(None, None, True)
 
