@@ -48,7 +48,7 @@ try:
 except ImportError as err:
     sys.stderr.write("Cannot import GetLoggers service definition: %s" % err)
 
-
+from fkie_node_manager_daemon.host import get_hostname
 from .detachable_tab_dock import DetachableTabDock
 from .screen_widget import ScreenWidget
 
@@ -97,6 +97,21 @@ class ScreenDock(DetachableTabDock):
                         dia.activateWindow()
                         break
         self.show()
+
+    def update_node(self, node):
+        '''
+        Updates the logger state of the given node.
+
+        :param node: Node object
+        :type node: node_tree_model.NodeItem
+        '''
+        if not node.isLocal:
+            # update only notifications from 'local' nodes. While sync we avoid multiple updates
+            return
+        host = get_hostname(node.uri)
+        name = node.name
+        if (host, name) in self._nodes:
+            self._nodes[(host, name)].logger_handler.update()
 
     def close_tab_requested(self, tab_widget, index):
         tab_widget.removeTab(index)

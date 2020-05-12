@@ -479,7 +479,7 @@ class GroupItem(QStandardItem):
             # insert in order
             new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
             group_item._add_row_sorted(new_item_row)
-            new_item_row[0].node_info = node
+            new_item_row[0].set_node_info(node)
             if cfg or cfg == '':
                 new_item_row[0].add_config(cfg)
             group_item.updateIcon()
@@ -517,7 +517,7 @@ class GroupItem(QStandardItem):
             if isinstance(item, NodeItem):
                 # set the running state of the node to None
                 if fixed_node_names is not None and item.name not in fixed_node_names:
-                    item.node_info = NodeInfo(item.name, item.node_info.masteruri)
+                    item.set_node_info(NodeInfo(item.name, item.node_info.masteruri))
                 if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
                     removed = True
                     self.removeRow(i)
@@ -595,20 +595,26 @@ class GroupItem(QStandardItem):
 
         :param nodes: A dictionary with node names and their running state described by L{NodeInfo}.
         :type nodes: dict(str: :class:`fkie_master_discovery.NodeInfo` <http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#fkie_master_discovery.master_info.NodeInfo>)
+        :return: a list with :class:`fkie_master_discovery.NodeInfo` items, which are changed their PID or URI.
         '''
+        updated_nodes = []
         for (name, node) in nodes.items():
             # get the node items
             items = self.get_node_items_by_name(name)
             if items:
                 for item in items:
                     # update the node item
-                    item.node_info = node
+                    run_changed = item.set_node_info(node)
+                    if run_changed:
+                        updated_nodes.append(node)
             else:
                 # create the new node
                 self.add_node(node)
+                updated_nodes.append(node)
             if self._has_remote_launched_nodes:
                 self._remote_launched_nodes_updated = True
         self.clearup(list(nodes.keys()))
+        return updated_nodes
 
     def get_nodes_running(self):
         '''
@@ -1255,8 +1261,7 @@ class NodeItem(QStandardItem):
         '''
         return self._node_info
 
-    @node_info.setter
-    def node_info(self, node_info):
+    def set_node_info(self, node_info):
         '''
         Sets the NodeInfo and updates the view, if needed.
         '''
@@ -1290,6 +1295,8 @@ class NodeItem(QStandardItem):
                 self.parent_item.updateIcon()
         if run_changed and self.is_running():
             self._kill_parameter_handler.requestParameterValues(self.masteruri, [roslib.names.ns_join(self.name, 'kill_on_stop')])
+            return True
+        return False
 
     @property
     def uri(self):
@@ -1765,6 +1772,7 @@ class NodeTreeModel(QStandardItemModel):
         # separate into different hosts
         hosts = dict()
         addresses = []
+        updated_nodes = []
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
@@ -1780,7 +1788,7 @@ class NodeTreeModel(QStandardItemModel):
             hostItem = self.get_hostitem(masteruri, host)
             # rename the host item if needed
             if hostItem is not None:
-                hostItem.update_running_state(nodes_filtered)
+                updated_nodes.extend(hostItem.update_running_state(nodes_filtered))
             # request for all nodes in host the parameter capability_group
             self._requestCapabilityGroupParameter(hostItem)
         # update nodes of the hosts, which are not more exists
@@ -1789,6 +1797,7 @@ class NodeTreeModel(QStandardItemModel):
             if host.masteruri not in addresses:
                 host.update_running_state({})
         self._remove_empty_hosts()
+        return updated_nodes
         # update the duplicate state
 #    self.set_duplicate_nodes(self.get_nodes_running())
 

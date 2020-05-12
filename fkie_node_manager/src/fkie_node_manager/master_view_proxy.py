@@ -650,7 +650,10 @@ class MasterViewProxy(QWidget):
         :type master_info: :class:`fkie_master_discovery.msg.MasterInfo` <http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#module-fkie_master_discovery.master_info>
         '''
         if master_info is not None:
-            self.node_tree_model.update_model_data(master_info.nodes)
+            updated_nodes = self.node_tree_model.update_model_data(master_info.nodes)
+            if updated_nodes:
+                for node in updated_nodes:
+                    self.main_window.screen_dock.update_node(node)
             self.updateButtons()
 
     def getNode(self, node_name):
