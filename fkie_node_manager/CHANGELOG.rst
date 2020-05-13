@@ -2,8 +2,41 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2020-05-13)
+------------------
+* fkie_node_manager: added detection for restarted nodes and update loglevel for open log screens
+* fkie_node_manager: log screen: added rules to colorize logs without terminal escape characters
+* fkie_node_manager: set loglevel after restart of node while screen widget is open
+* fkie_node_manager: open ROSLOG if no screen is available
+* fkie_node_manager: fixed fast hide of screen info
+* fkie_node_manager: fixed compatibility of echo dialog to python 3
+* fkie_node_manger: prepend stop while start master_discovery from node_manager
+  it is a workaround because all nodes with same are stopped by roscore.
+  Also the new one.
+* prepared conditions for python3  in package xml
+* fkie_multimaster_msgs: changed timestamp in MasterState from float to time
+* fkie_node_manager: editor: if found multiple node with same name show both
+* fkie_multimaster_fkie: removed unused messages and services
+* fkie_node_manager: on multiple screen for a node open it in terminal instead of log widget
+* fkie_multimaster_fkie: got get_local_address from rosgraph.network
+* fkie_multimaster: a lot of merges for python 3 compatibility
+* fkie_node_manager: removed dependency from GUI.qrc
+* fkie_node_manager: install doc directory
+* fkie_node_manager: change all loglevel in a new thread
+* fkie_node_manager: added posibility to open in mulitple screen docks
+* fkie_node_manager: added grep functionality to screen logger view
+* fkie_node_manager: logscreen: changed highlighting and increased performance
+* fkie_node_manager: added associations to custom dialog in editor
+* fkie_node_manager: added associations parameter
+* fkie_node_manager: update logger on view
+* fkie_node_manager: select screen log tab on activate
+* fkie_node_manager: added tabbed behaviour
+* fkie_node_manager: added a screen log widget
+  alternative view of current screen output with only window
+* Contributors: Alexander Tiderko
+
 1.0.0 (2019-04-30)
--------------------
+------------------
 * added daemon for node manager. The daemon replaces the default_config package and adds support for remote access through gRPC.
 * renamed all packages to fkie_*
 * old version are availabe on branch 'old_master'

@@ -2,6 +2,10 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2020-05-13)
+------------------
+* Contributors: Alexander Tiderko
+
 1.0.0 (2019-04-30)
 -------------------
 * added daemon for node manager. The daemon replaces the default_config package and adds support for remote access through gRPC.

@@ -2,6 +2,16 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2020-05-13)
+------------------
+* prepared conditions for python3  in package xml
+* fkie_multimaster_msgs: changed timestamp in MasterState from float to time
+* fkie_multimaster_msgs: changed timestamp in LinkState from float to time
+* fkie_multimaster: added timestamp of last heartbeat to LinkState message
+* fkie_multimaster_fkie: got get_local_address from rosgraph.network
+* fkie_multimaster: a lot of merges for python 3 compatibility
+* Contributors: Alexander Tiderko
+
 0.8.12 (2019-04-30)
 -------------------
 * Merge pull request `#100 <https://github.com/fkie/multimaster_fkie/issues/100>`_ from stertingen/patch-1

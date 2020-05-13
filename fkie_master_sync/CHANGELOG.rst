@@ -2,6 +2,13 @@
 Changelog for package fkie_master_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2020-05-13)
+------------------
+* prepared conditions for python3  in package xml
+* fkie_multimaster_msgs: changed timestamp in MasterState from float to time
+* fkie_multimaster: a lot of merges for python 3 compatibility
+* Contributors: Alexander Tiderko
+
 0.8.12 (2019-04-30)
 -------------------
 

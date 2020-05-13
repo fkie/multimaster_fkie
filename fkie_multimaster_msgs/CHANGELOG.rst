@@ -2,6 +2,16 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2020-05-13)
+------------------
+* prepared conditions for python3  in package xml
+* fkie_multimaster_msgs: changed timestamp in MasterState from float to time
+* fkie_multimaster_msgs: changed timestamp in LinkState from float to time
+* fkie_multimaster: added timestamp of last heartbeat to LinkState message
+* fkie_multimaster_fkie: removed unused messages and services
+* fkie_multimaster_msgs: fixed install grpc files in python3 environment
+* Contributors: Alexander Tiderko
+
 0.8.12 (2019-04-30)
 -------------------
 
