@@ -108,13 +108,14 @@ class DetachableTabWidget(QTabWidget):
         :param fromIndex:    the original index location of the tab
         :param toIndex:      the new index location of the tab
         '''
-        widget = self.widget(fromIndex)
-        icon = self.tabIcon(fromIndex)
-        text = self.tabText(fromIndex)
+        if fromIndex != toIndex:
+            widget = self.widget(fromIndex)
+            icon = self.tabIcon(fromIndex)
+            text = self.tabText(fromIndex)
 
-        self.removeTab(fromIndex, detach=True)
-        self.insertTab(toIndex, widget, icon, text)
-        self.setCurrentIndex(toIndex)
+            self.removeTab(fromIndex, detach=True)
+            self.insertTab(toIndex, widget, icon, text)
+            self.setCurrentIndex(toIndex)
 
     def detach_tab(self, index, point, by_double_click):
         '''

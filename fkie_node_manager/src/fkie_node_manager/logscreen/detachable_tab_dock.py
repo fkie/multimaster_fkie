@@ -104,7 +104,7 @@ class DetachableTabDock(QDockWidget):
 
     def on_detach(self, name, widget, point, geometry, by_double_click):
         if self._parent_dock is not None:
-            # lets handle on_detach ba parent dock
+            # lets handle on_detach by parent dock
             self._parent_dock.on_detach(name, widget, point, geometry, by_double_click)
             return
         attached = False

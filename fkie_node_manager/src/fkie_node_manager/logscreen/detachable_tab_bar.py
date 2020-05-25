@@ -74,10 +74,10 @@ class DetachableTabBar(QTabBar):
         '''
         Set the starting position for a drag event when the mouse button is pressed
         '''
-        if event.button() == Qt.LeftButton:
-            self.drag_start_pos = event.pos()
         self.drag_droped_pos = QPoint(0, 0)
         self.drag_initiated = False
+        if event.button() == Qt.LeftButton:
+            self.drag_start_pos = event.pos()
         QTabBar.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
@@ -87,7 +87,7 @@ class DetachableTabBar(QTabBar):
         bar, emit an detach_tab_signal.
         '''
         # Determine if the current movement is detected as a drag
-        if not self.drag_start_pos.isNull() and ((event.pos() - self.drag_start_pos).manhattanLength() < QApplication.startDragDistance()):
+        if not self.drag_start_pos.isNull() and ((event.pos() - self.drag_start_pos).manhattanLength() > QApplication.startDragDistance()):
             self.drag_initiated = True
 
         # If the current movement is a drag initiated by the left button
