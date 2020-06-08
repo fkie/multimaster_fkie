@@ -482,7 +482,11 @@ class SyncThread(object):
                 remote_md5sums_topics = remote_monitor.getTopicsMd5sum(topic_types)
                 for rttype, rtmd5sum in remote_md5sums_topics:
                     try:
-                        if roslib.message.get_message_class(rttype)._md5sum != rtmd5sum:
+                        lmd5sum = None
+                        msg_class = roslib.message.get_message_class(rttype)
+                        if msg_class is not None:
+                            lmd5sum = msg_class._md5sum 
+                        if lmd5sum != rtmd5sum:
                             for topicname, topictype, node, nodeuri in topics_to_register:
                                 if topictype == rttype:
                                     if (topicname, node, nodeuri) not in self._md5warnings:
@@ -493,6 +497,7 @@ class SyncThread(object):
                         rospy.logwarn(err)
                         rospy.logwarn(traceback.format_exc())
         except:
+            import traceback
             rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
         finally:
             socket.setdefaulttimeout(None)
@@ -504,15 +509,17 @@ class SyncThread(object):
                     try:
                         if topicname in self.__own_state.topics:
                             own_topictype = self.__own_state.topics[topicname].type
-                            if topictype != own_topictype:
-                                if (topicname, node, nodeuri) not in self._topic_type_warnings:
-                                    rospy.logwarn("Different topic types detected for topic: %s, own type: %s remote type: %s, host: %s" % (topicname, own_topictype, topictype, self.name))
-                                    self._topic_type_warnings[(topicname, node, nodeuri)] = "local: %s, remote: %s" % (own_topictype, topictype)
+                            if own_topictype not in ['*', None] and topictype not in ['*', None] :
+                                if topictype != own_topictype:
+                                    if (topicname, node, nodeuri) not in self._topic_type_warnings:
+                                        rospy.logwarn("Different topic types detected for topic: %s, own type: %s remote type: %s, host: %s" % (topicname, own_topictype, topictype, self.name))
+                                        self._topic_type_warnings[(topicname, node, nodeuri)] = "local: %s, remote: %s" % (own_topictype, topictype)
                     except Exception as err:
                         import traceback
                         rospy.logwarn(err)
                         rospy.logwarn(traceback.format_exc())
         except:
+            import traceback
             rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
         finally:
             socket.setdefaulttimeout(None)
