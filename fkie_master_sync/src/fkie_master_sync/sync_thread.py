@@ -403,7 +403,7 @@ class SyncThread(object):
                 result = own_master_multi()
                 # analyze the results of the registration call
                 # HACK param to reduce publisher creation, see line 372
-                hack_pub = set()
+                publiser_to_update = {}
                 for h, (code, statusMessage, r) in zip(handler, result):
                     try:
                         if h[0] == 'sub':
@@ -412,8 +412,8 @@ class SyncThread(object):
                             else:
                                 rospy.logdebug("SyncThread[%s] topic subscribed: %s, %s %s, node: %s", self.name, h[1], str(code), str(statusMessage), h[3])
                         if h[0] == 'sub' and code == 1 and len(r) > 0:
-                            # Horrible hack: see line 372
-                            hack_pub.add(h[1])
+                            # topic, nodeuri, node : list of publisher uris
+                            publiser_to_update[(h[1], h[4], h[3])] = r
                         elif h[0] == 'pub':
                             if code == -1:
                                 rospy.logwarn("SyncThread[%s] topic advertise error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
@@ -432,22 +432,19 @@ class SyncThread(object):
                             rospy.logdebug("SyncThread[%s] service unregistered: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
                     except:
                         rospy.logerr("SyncThread[%s] ERROR while analyzing the results of the registration call [%s]: %s", self.name, h[1], traceback.format_exc())
-                # Horrible hack: the response from registerSubscriber() can contain a
-                # list of current publishers.  But we don't have a way of injecting them
-                # into rospy here.  Now, if we get a publisherUpdate() from the master,
-                # everything will work.  So, we ask the master if anyone is currently
-                # publishing the topic, grab the advertised type, use it to advertise
-                # ourselves, then unadvertise, triggering a publisherUpdate() along the
-                # way.
-                # We create publisher locally as a hack, to get callback set up properly for already registered local publishers
-                for m in hack_pub:
+                # hack:
+                # update publisher since they are not updated while registration of a subscriber
+                # https://github.com/ros/ros_comm/blob/9162b32a42b5569ae42a94aa6426aafcb63021ae/tools/rosmaster/src/rosmaster/master_api.py#L195
+                for (sub_topic, api, node), pub_uris in publiser_to_update.items():
+                    msg = "SyncThread[%s] publisherUpdate[%s] -> node: %s [%s], publisher uris: %s" % (self.name, sub_topic, api, node, pub_uris)
                     try:
-                        rospy.loginfo("SyncThread[%s] Create and delete publisher to trigger publisherUpdate for %s", self.name, m)
-                        topicPub = rospy.Publisher(m, rospy.msg.AnyMsg, queue_size=1)
-                        topicPub.unregister()
-                        del topicPub
-                    except:
-                        rospy.logerr("SyncThread[%s] ERROR while hack subscriber[%s]: %s", self.name, h[1], traceback.format_exc())
+                        pub_client = xmlrpcclient.ServerProxy(api)
+                        ret = pub_client.publisherUpdate('/master', sub_topic, pub_uris)
+                        msg_suffix = "result=%s" % ret
+                        rospy.logdebug("%s: %s", msg, msg_suffix)
+                    except Exception as ex:
+                        msg_suffix = "exception=%s" % ex
+                        rospy.logwarn("%s: %s", msg, msg_suffix)
                 # set the last synchronization time
                 self.timestamp = stamp
                 self.timestamp_local = stamp_local
@@ -543,10 +540,15 @@ class SyncThread(object):
                 own_master_multi = xmlrpcclient.MultiCall(own_master)
                 # end routine if the master was removed
                 for topic, node, uri in self.__subscriber:
+                    rospy.logdebug("    SyncThread[%s]   unsibscribe %s [%s]" % (self.name, topic, node))
                     own_master_multi.unregisterSubscriber(node, topic, uri)
+                    # TODO: unregister a remote subscriber while local publisher is still there
+                    # Note: the connection between running components after unregistration is stil there!
                 for topic, node, uri in self.__publisher:
+                    rospy.logdebug("    SyncThread[%s]   unadvertise %s [%s]" % (self.name, topic, node))
                     own_master_multi.unregisterPublisher(node, topic, uri)
                 for service, serviceuri, node, uri in self.__services:
+                    rospy.logdebug("    SyncThread[%s]   unregister service %s [%s]" % (self.name, service, node))
                     own_master_multi.unregisterService(node, service, serviceuri)
                 rospy.logdebug("    SyncThread[%s] execute a MultiCall", self.name)
                 _ = own_master_multi()
