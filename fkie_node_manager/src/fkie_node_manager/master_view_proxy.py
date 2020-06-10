@@ -2072,11 +2072,7 @@ class MasterViewProxy(QWidget):
                 if node.name in cfg_nodes:
                     # remove node from question
                     self.message_frame.hide_question([MessageFrame.TYPE_BINARY], MessageData(node))
-                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   ''.join(['start ', node.node_info.name]),
-                                                   self.start_node,
-                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, cmd_prefix))
-                    # add associated nodes to stop
+                    # add associated nodes to start
                     associated2start = self._get_associated_nodes([node.name], ignore=all2start)
                     all2start |= associated2start
                     found_nodes = self._get_nodes_by_name(list(associated2start))
@@ -2085,6 +2081,10 @@ class MasterViewProxy(QWidget):
                                                        'start %s' % anode.name,
                                                        self.start_node,
                                                        (anode.node_info, force, cfg_nodes[node.node_info.name], force_host))
+                    self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                   ''.join(['start ', node.node_info.name]),
+                                                   self.start_node,
+                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, cmd_prefix))
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):
