@@ -1308,10 +1308,8 @@ class MasterViewProxy(QWidget):
                 has_stopped = True
         if has_stopped:
             self.on_start_clicked()
-        elif has_running and not has_invalid:
+        elif has_running:
             self.on_io_clicked(activated=True)
-        else:
-            self.on_log_clicked()
 
     def on_node_clicked(self, index):
         if time.time() - self.__last_node_activation > 1.:
@@ -2587,7 +2585,7 @@ class MasterViewProxy(QWidget):
 
     def _on_no_screen_error(self, nodename, host):
         msg = nm.NoScreenOpenLogRequest(nodename, host).msg()
-        rospy.logwarn("%s" % msg)
+        rospy.loginfo('%s' % msg)
         muris = nm.nameres().masterurisbyaddr(host)
         for muri in muris:
             if muri == self.masteruri:

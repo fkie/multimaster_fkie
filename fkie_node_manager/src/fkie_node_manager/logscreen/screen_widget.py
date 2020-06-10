@@ -119,6 +119,7 @@ class ScreenWidget(QWidget):
         self.setWindowIcon(nm.settings().icon('crystal_clear_show_io.png'))
         # self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.pauseButton.setIcon(nm.settings().icon('sekkyumu_pause.png'))
+        self._valid = True
         self._lock = threading.RLock()
         self.finished = False
         self.qfile = None
@@ -267,6 +268,9 @@ class ScreenWidget(QWidget):
     def pause(self, state):
         self._on_pause = state
 
+    def valid(self):
+        return self._valid
+
     def _connect(self, masteruri, screen_name, nodename, user=None):
         self._masteruri = masteruri
         if self.qfile is not None and self.qfile.isOpen():
@@ -289,6 +293,8 @@ class ScreenWidget(QWidget):
                 self.thread = threading.Thread(target=self._read_log, kwargs={"filename": screen_log})
                 self.thread.setDaemon(True)
                 self.thread.start()
+            else:
+                self._valid = False
         else:
             self._connect_ssh(host, nodename, user)
         self.logger_handler = LoggerHandler(nodename, masteruri=masteruri, layout=self.scrollAreaWidgetContents.layout())

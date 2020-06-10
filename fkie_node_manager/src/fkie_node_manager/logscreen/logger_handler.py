@@ -98,8 +98,10 @@ class LoggerHandler(QObject):
             if code == 1:
                 _req, resp = nm.starter().callService(serviceuri, service_name, GetLoggers, service_args=[])
                 self.loggers_signal.emit(resp.loggers)
-        except rospy.ServiceException as e:
+        except (rospy.ServiceException, nm.StartException) as e:
             rospy.logwarn("Get loggers for %s failed: %s" % (self.nodename, e))
+        except IOError as err:
+            rospy.logwarn("Get loggers for %s failed; cannot get service URI from %s: %s" % (self.nodename, self.masteruri, err))
         self._thread_update = None
 
     def _handle_loggers(self, loggers):

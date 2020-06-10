@@ -56,7 +56,7 @@ class NoScreenOpenLogRequest(Exception):
         self.host = host
 
     def msg(self):
-        return 'No screen for %s on %s found! See log for details!' % (self.node, self.host)
+        return 'No screen for %s on %s found' % (self.node, self.host)
 
     def __str__(self):
         return "NoScreenOpenLogRequest for %s on %s" % (self.node, self.host)
@@ -163,7 +163,7 @@ class ScreenHandler(object):
                             raise ScreenSelectionRequest(choices, 'Show screen')
                     else:
                         if use_log_widget:
-                            nm._MAIN_FORM.open_screen_dock(host, '', node, user)
+                            nm._MAIN_FORM.open_screen_dock(muri, '', node, user)
                         raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, (node, host, user))
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:
