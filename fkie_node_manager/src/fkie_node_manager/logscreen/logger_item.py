@@ -39,13 +39,18 @@ try:
 except ImportError:
     from python_qt_binding.QtWidgets import QFrame, QHBoxLayout, QLabel, QRadioButton
     import rospy
-
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
 import threading
 import sys
 try:
     from roscpp.srv import SetLoggerLevel, SetLoggerLevelRequest
 except ImportError as err:
     sys.stderr.write("Cannot import SetLoggerLevel service definition: %s" % err)
+
+import fkie_node_manager as nm
 
 
 class LoggerItem(QFrame):
@@ -56,13 +61,14 @@ class LoggerItem(QFrame):
     success_signal = Signal(str)
     error_signal = Signal(str)
 
-    def __init__(self, nodename, loggername, level='INFO', parent=None):
+    def __init__(self, nodename, masteruri, loggername, level='INFO', parent=None):
         '''
         Creates a new item.
         '''
         QFrame.__init__(self, parent)
         self.setObjectName("LoggerItem")
         self.nodename = nodename
+        self.masteruri = masteruri
         self.loggername = loggername
         self.current_level = None
         layout = QHBoxLayout(self)
@@ -153,17 +159,18 @@ class LoggerItem(QFrame):
     def _set_level(self, level, current_level):
         try:
             backup_level = current_level
-            self.call_service_set_level(self.nodename, self.loggername, level)
-            self.success_signal.emit(level)
+            service_name = '%s/set_logger_level' % self.nodename
+            # get service URI from ROS-Master
+            master = xmlrpcclient.ServerProxy(self.masteruri)
+            code, _, serviceuri = master.lookupService(rospy.get_name(), service_name)
+            if code == 1:
+                self.call_service_set_level(serviceuri, service_name, self.loggername, level)
+                self.success_signal.emit(level)
         except rospy.ServiceException as e:
             rospy.logwarn("Set logger %s for %s to %s failed: %s" % (self.loggername, self.nodename, level, e))
             if backup_level is not None:
                 self.error_signal.emit(backup_level)
 
     @classmethod
-    def call_service_set_level(cls, nodename, loggername, level):
-        set_logger_level = rospy.ServiceProxy('%s/set_logger_level' % nodename, SetLoggerLevel)
-        msg = SetLoggerLevelRequest()
-        msg.logger = loggername
-        msg.level = level
-        _resp = set_logger_level(msg)
+    def call_service_set_level(cls, serviceuri, servicename, loggername, level):
+        _req, _resp = nm.starter().callService(serviceuri, servicename, SetLoggerLevel, service_args=[loggername, level])

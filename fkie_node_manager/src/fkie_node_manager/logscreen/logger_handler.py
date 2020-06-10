@@ -41,6 +41,11 @@ try:
 except ImportError:
     from python_qt_binding.QtWidgets import QFrame, QHBoxLayout, QLabel, QRadioButton
 
+try:
+    import xmlrpclib as xmlrpcclient
+except ImportError:
+    import xmlrpc.client as xmlrpcclient
+
 import os
 import rospy
 import threading
@@ -53,6 +58,7 @@ except ImportError as err:
 import rospy
 
 from .logger_item import LoggerItem
+import fkie_node_manager as nm
 
 
 class LoggerHandler(QObject):
@@ -63,13 +69,14 @@ class LoggerHandler(QObject):
     loggers_signal = Signal(list)
     level_changed_signal = Signal(list)
 
-    def __init__(self, nodename, layout, parent=None):
+    def __init__(self, nodename, masteruri, layout, parent=None):
         '''
         Creates a new item.
         '''
         QObject.__init__(self, parent)
         self.setObjectName("LoggerHandler")
         self.nodename = nodename
+        self.masteruri = masteruri
         self._logger_items = {}  # logger name: LoggerItem
         self.layout = layout
         self._change_all_cancel = False
@@ -85,9 +92,12 @@ class LoggerHandler(QObject):
 
     def _update_loggers(self):
         try:
-            get_loggers = rospy.ServiceProxy('%s/get_loggers' % self.nodename, GetLoggers)
-            resp = get_loggers()
-            self.loggers_signal.emit(resp.loggers)
+            service_name = '%s/get_loggers' % self.nodename
+            master = xmlrpcclient.ServerProxy(self.masteruri)
+            code, _, serviceuri = master.lookupService(rospy.get_name(), service_name)
+            if code == 1:
+                _req, resp = nm.starter().callService(serviceuri, service_name, GetLoggers, service_args=[])
+                self.loggers_signal.emit(resp.loggers)
         except rospy.ServiceException as e:
             rospy.logwarn("Get loggers for %s failed: %s" % (self.nodename, e))
         self._thread_update = None
@@ -101,12 +111,12 @@ class LoggerHandler(QObject):
                 stored_values[wd.loggername] = wd.current_level
             wd.setParent(None)
         self._logger_items.clear()
-        all_item = LoggerItem(self.nodename, 'all', '')
+        all_item = LoggerItem(self.nodename, self.masteruri, 'all', '')
         all_item.set_callback(self.change_all)
         self.layout.insertWidget(0, all_item)
         index = 1
         for logger in loggers:
-            item = LoggerItem(self.nodename, logger.name, logger.level)
+            item = LoggerItem(self.nodename, self.masteruri, logger.name, logger.level)
             self._logger_items[logger.name] = item
             self.layout.insertWidget(index, item)
             if logger.name in stored_values and stored_values[logger.name] != logger.level:
@@ -131,7 +141,7 @@ class LoggerHandler(QObject):
             if isinstance(item, LoggerItem) and item.loggername not in ignore:
                 itemlist.append((item.loggername, item.current_level))
             index += 1
-        self._thread_set_all = SetAllThread(self.nodename, itemlist, loglevel)
+        self._thread_set_all = SetAllThread(self.nodename, self.masteruri, itemlist, loglevel)
         self._thread_set_all.success_signal.connect(self.on_success_set)
         self._thread_set_all.error_signal.connect(self.on_error_set)
         self._thread_set_all.setDaemon(True)
@@ -154,15 +164,17 @@ class SetAllThread(QObject, threading.Thread):
     success_signal = Signal(str, str, str)
     error_signal = Signal(str, str, str)
 
-    def __init__(self, nodename, loggers, newlevel):
+    def __init__(self, nodename, masteruri, loggers, newlevel):
         '''
         :param str nodename: the name of the node
+        :param str masteruri: the master where the service is registered
         :param list logger: list with tuple of (logger and current level)
         :param str newlevel: new log level
         '''
         QObject.__init__(self)
         threading.Thread.__init__(self)
         self._nodename = nodename
+        self._masteruri = masteruri
         self._loggers = loggers
         self._newlevel = newlevel
         self._cancel = False
@@ -171,15 +183,19 @@ class SetAllThread(QObject, threading.Thread):
     def run(self):
         '''
         '''
-        for logger, level in self._loggers:
-            try:
-                if not self._cancel:
-                    LoggerItem.call_service_set_level(self._nodename, logger, self._newlevel)
-                    self.success_signal.emit(self._nodename, logger, self._newlevel)
-            except Exception as err:
-                rospy.logwarn("Set logger %s for %s to %s failed: %s" % (logger, self._nodename, self._newlevel, err))
-                if level is not None:
-                    self.error_signal.emit(self._nodename, logger, level)
+        service_name = '%s/set_logger_level' % self._nodename
+        master = xmlrpcclient.ServerProxy(self._masteruri)
+        code, _, serviceuri = master.lookupService(rospy.get_name(), service_name)
+        if code == 1:
+            for logger, level in self._loggers:
+                try:
+                    if not self._cancel:
+                        LoggerItem.call_service_set_level(serviceuri, service_name, logger, self._newlevel)
+                        self.success_signal.emit(self._nodename, logger, self._newlevel)
+                except Exception as err:
+                    rospy.logwarn("Set logger %s for %s to %s failed: %s" % (logger, self._nodename, self._newlevel, err))
+                    if level is not None:
+                        self.error_signal.emit(self._nodename, logger, level)
 
     def cancel(self):
         self._cancel = True

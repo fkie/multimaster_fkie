@@ -2635,7 +2635,7 @@ class MasterViewProxy(QWidget):
             host = get_hostname(self.masteruri)
             for screen in sel_screen:
                 try:
-                    if not nm.screen().open_screen_terminal(host, screen, screen, False, self.current_user):
+                    if not nm.screen().open_screen_terminal(self.masteruri, screen, screen, False, self.current_user):
                         pass
                 except Exception as e:
                     rospy.logwarn("Error while show IO for %s: %s", utf8(screen), utf8(e))

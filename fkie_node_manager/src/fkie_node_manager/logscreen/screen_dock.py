@@ -75,22 +75,22 @@ class ScreenDock(DetachableTabDock):
         self.tab_widget.tab_removed_signal.connect(self.tab_removed)
         self._nodes = {}  # tuple of (host, nodename) : ScreenWidget
 
-    def connect(self, host, screen_name, nodename, user=''):
-        self.connect_signal.emit(host, screen_name, nodename, user)
+    def connect(self, masteruri, screen_name, nodename, user=''):
+        self.connect_signal.emit(masteruri, screen_name, nodename, user)
 
-    def _on_connect(self, host, screen_name, nodename, user=''):
-        if (host, nodename) not in self._nodes:
-            sw = ScreenWidget(host, screen_name, nodename, str(user))
+    def _on_connect(self, masteruri, screen_name, nodename, user=''):
+        if (masteruri, nodename) not in self._nodes:
+            sw = ScreenWidget(masteruri, screen_name, nodename, str(user))
             tab_index = self.tab_widget.addTab(sw, nodename + ('' if screen_name else ' ROSLOG'))
             self.tab_widget.setCurrentIndex(tab_index)
-            self._nodes[(host, nodename)] = sw
+            self._nodes[(masteruri, nodename)] = sw
         else:
-            index = self.tab_widget.indexOf(self._nodes[(host, nodename)])
+            index = self.tab_widget.indexOf(self._nodes[(masteruri, nodename)])
             if index >= 0:
                 self.tab_widget.setCurrentIndex(index)
             else:
                 for dia in self._open_dialogs:
-                    index = dia.tab_widget.indexOf(self._nodes[(host, nodename)])
+                    index = dia.tab_widget.indexOf(self._nodes[(masteruri, nodename)])
                     if index >= 0:
                         dia.tab_widget.setCurrentIndex(index)
                         dia.raise_()
@@ -105,20 +105,19 @@ class ScreenDock(DetachableTabDock):
         :param node: Node object
         :type node: node_tree_model.NodeItem
         '''
-        if not node.isLocal:
-            # update only notifications from 'local' nodes. While sync we avoid multiple updates
-            return
-        host = get_hostname(node.uri)
+        # if not node.isLocal:
+        #     # update only notifications from 'local' nodes. While sync we avoid multiple updates
+        #     return
         name = node.name
-        if (host, name) in self._nodes:
-            self._nodes[(host, name)].logger_handler.update()
+        if (node.masteruri, name) in self._nodes:
+            self._nodes[(node.masteruri, name)].logger_handler.update()
 
     def close_tab_requested(self, tab_widget, index):
         tab_widget.removeTab(index)
 
     def tab_removed(self, widget):
         try:
-            del self._nodes[(widget.host(), widget.name())]
+            del self._nodes[(widget.masteruri(), widget.name())]
         except Exception:
             pass
         widget.close()

@@ -54,6 +54,7 @@ from .logger_handler import LoggerHandler
 import fkie_node_manager as nm
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon.common import sizeof_fmt
+from fkie_node_manager_daemon.host import get_hostname
 
 
 class ScreenTextBrowser(QTextEdit):
@@ -106,7 +107,7 @@ class ScreenWidget(QWidget):
     error_signal = Signal(str)
     auth_signal = Signal(str, str, str)  # host, nodename, user
 
-    def __init__(self, host, screen_name, nodename, user=None, parent=None):
+    def __init__(self, masteruri, screen_name, nodename, user=None, parent=None):
         '''
         Creates the window, connects the signals and init the class.
         '''
@@ -122,9 +123,9 @@ class ScreenWidget(QWidget):
         self.finished = False
         self.qfile = None
         self.thread = None
-        self._info = ""
-        self._host = ""
-        self._nodename = ""
+        self._info = ''
+        self._masteruri = ''
+        self._nodename = ''
         self._first_fill = True
         self._seek_start = -1
         self._seek_end = -1
@@ -162,10 +163,10 @@ class ScreenWidget(QWidget):
         self.searchNextButton.clicked.connect(self.on_search_next)
         self.searchPrevButton.clicked.connect(self.on_search_prev)
         # self.visibilityChanged.connect(self.stop)
-        self._connect(host, screen_name, nodename, user)
+        self._connect(masteruri, screen_name, nodename, user)
 
-    def host(self):
-        return self._host
+    def masteruri(self):
+        return self._masteruri
 
     def name(self):
         return self._nodename
@@ -266,12 +267,13 @@ class ScreenWidget(QWidget):
     def pause(self, state):
         self._on_pause = state
 
-    def _connect(self, host, screen_name, nodename, user=None):
+    def _connect(self, masteruri, screen_name, nodename, user=None):
+        self._masteruri = masteruri
         if self.qfile is not None and self.qfile.isOpen():
             self.qfile.close()
             self.clear_signal.emit()
+        host = get_hostname(masteruri)
         if nm.is_local(host):
-            self._host = host
             self._nodename = nodename
             if screen_name:
                 screen_log = screen.get_logfile(node=nodename)
@@ -289,7 +291,7 @@ class ScreenWidget(QWidget):
                 self.thread.start()
         else:
             self._connect_ssh(host, nodename, user)
-        self.logger_handler = LoggerHandler(nodename, self.scrollAreaWidgetContents.layout())
+        self.logger_handler = LoggerHandler(nodename, masteruri=masteruri, layout=self.scrollAreaWidgetContents.layout())
         self.logger_handler.update()
         return False
 
@@ -447,7 +449,7 @@ class ScreenWidget(QWidget):
         except nm.AuthenticationRequest as e:
             self.auth_signal.emit(host, nodename, user)
         except Exception as e:
-            self._append_error_text('%s\n' % e)
+            self.error_signal.emit('%s\n' % e)
 
     def on_request_pw(self, host, nodename, user):
         res, user, pw = nm.ssh()._requestPW(user, host)

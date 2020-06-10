@@ -42,6 +42,7 @@ import rospy
 from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import screen
+from fkie_node_manager_daemon import url
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
 
@@ -84,10 +85,10 @@ class ScreenHandler(object):
     '''
 
     @classmethod
-    def open_screen_terminal(cls, host, screen_name, nodename, use_log_widget=False, user=None):
+    def open_screen_terminal(cls, masteruri, screen_name, nodename, use_log_widget=False, user=None):
         '''
         Open the screen output in a new terminal.
-        :param str host: the host name or ip where the screen is running.
+        :param str masteruri: the masteruri where the screen is running.
         :param str screen_name: the name of the screen to show
         :param str nodename: the name of the node is used for the title of the terminal
         :raise Exception: on errors while resolving host
@@ -95,8 +96,9 @@ class ScreenHandler(object):
         '''
         # create a title of the terminal
         if use_log_widget:
-            nm._MAIN_FORM.open_screen_dock(host, screen_name, nodename, user)
+            nm._MAIN_FORM.open_screen_dock(masteruri, screen_name, nodename, user)
             return
+        host = get_hostname(masteruri)
         title_opt = 'SCREEN %s on %s' % (nodename, host)
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd([screen.SCREEN, '-x', screen_name], title_opt)
@@ -120,10 +122,14 @@ class ScreenHandler(object):
             return False
         try:
             host = get_hostname(grpc_url)
+            try:
+                muri = url.masteruri(grpc_url)
+            except ValueError:
+                muri = host
             if items:
                 for item in items:
                     # open the selected screen
-                    cls.open_screen_terminal(host, item, node, use_log_widget, user)
+                    cls.open_screen_terminal(muri, item, node, use_log_widget, user)
             else:
                 # get the available screens
                 screens = {}
@@ -136,7 +142,7 @@ class ScreenHandler(object):
                     rospy.logwarn("can not connect to node manager daemon, detect screens using ssh...")
                     screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
                 if len(screens) == 1:
-                    cls.open_screen_terminal(host, list(screens.keys())[0], node, use_log_widget,user)
+                    cls.open_screen_terminal(muri, list(screens.keys())[0], node, use_log_widget,user)
                 else:
                     # create a list to let the user make a choice, which screen must be open
                     choices = {}
@@ -146,13 +152,13 @@ class ScreenHandler(object):
                     # Open selection
                     if len(choices) > 0:
                         if len(choices) == 1:
-                            cls.open_screen_terminal(host, choices[0], node, use_log_widget=False, user=user)
+                            cls.open_screen_terminal(muri, choices[0], node, use_log_widget=False, user=user)
                         elif auto_item_request:
                             from select_dialog import SelectDialog
                             items, _ = SelectDialog.getValue('Show screen', '', list(choices.keys()), False, store_geometry='show_screens')
                             for item in items:
                                 # open the selected screen
-                                cls.open_screen_terminal(host, choices[item], node, use_log_widget=False, user=user)
+                                cls.open_screen_terminal(muri, choices[item], node, use_log_widget=False, user=user)
                         else:
                             raise ScreenSelectionRequest(choices, 'Show screen')
                     else:

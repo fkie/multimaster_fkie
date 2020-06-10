@@ -660,8 +660,8 @@ class MainWindow(QMainWindow):
     def on_remove_config(self, cfg):
         self.capabilitiesTable.removeConfig(cfg)
 
-    def open_screen_dock(self, host, screen_name, nodename, user=''):
-        self.screen_dock.connect(host, screen_name, nodename, user)
+    def open_screen_dock(self, masteruri, screen_name, nodename, user=''):
+        self.screen_dock.connect(masteruri, screen_name, nodename, user)
 
 # ======================================================================================================================
 # Handling of local monitoring
