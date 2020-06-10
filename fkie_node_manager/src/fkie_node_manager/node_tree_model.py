@@ -1286,6 +1286,9 @@ class NodeItem(QStandardItem):
         if self._node_info.uri != node_info.uri:
             self._node_info.uri = node_info.uri
             run_changed = True
+        # delete diagnostics messages on stop or start nodes
+        if run_changed:
+            del self.diagnostic_array[:]
         # update the tooltip and icon
         if run_changed and (self.is_running() or self.has_configs) or abbos_changed:
             self.has_screen = True
