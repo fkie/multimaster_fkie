@@ -433,8 +433,10 @@ def get_global_params(roscfg):
         nodesparam = False
         for n in nodes:
             if name.startswith(n):
-                nodesparam = True
-                break
+                # load global parameter which has names equal to node names
+                if name != n:
+                    nodesparam = True
+                    break
         if not nodesparam:
             result[name] = param.value
     return result
