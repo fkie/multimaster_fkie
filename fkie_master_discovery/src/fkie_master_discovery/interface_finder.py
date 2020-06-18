@@ -124,21 +124,29 @@ def _get_topic(masteruri, ttype, wait=True, check_host=True):
         # read topic types
         code, msg, val = master.getPublishedTopics(rospy.get_name(), '')
         if code == 1:
+            own_host = get_hostname(masteruri)
+            nodes_host = []
             # search for a topic with type MasterState
             for topic, topic_type in val:
                 if topic_type.endswith(ttype):
                     # get the name of the publisher node
                     for t, l in state[0]:
                         if topic == t:
-                            # get the URI of the publisher node
-                            for n in l:
-                                code, msg, val = master.lookupNode(rospy.get_name(), n)
-                                # only local publisher will be tacked
-                                if code == 1:
-                                    if not check_host or get_hostname(val) == get_hostname(masteruri):
-                                        result.append(topic)
+                            if check_host:
+                                # get the URI of the publisher node
+                                for n in l:
+                                    code, msg, val = master.lookupNode(rospy.get_name(), n)
+                                    # only local publisher will be tacked
+                                    if code == 1:
+                                        hode_host = get_hostname(val)
+                                        if hode_host == own_host:
+                                            result.append(topic)
+                                        else:
+                                            nodes_host.append(hode_host)
+                            else:
+                                result.append(topic)
             if not result and wait:
-                rospy.logwarn("Master_discovery node appear not to running. Wait for topic with type '%s." % ttype)
+                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for topic with type '%s' @%s." % (own_host, nodes_host, ttype, own_host))
                 time.sleep(1)
         elif not result and wait:
             rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!" % (code, msg))
@@ -230,16 +238,24 @@ def _get_service(masteruri, name, wait=True, check_host=True):
         code, msg, val = master.getSystemState(rospy.get_name())
         if code == 1:
             pubs, subs, srvs = val
+            own_host = get_hostname(masteruri)
+            nodes_host = []
             # search for a service
             for srv, providers in srvs:
                 if srv.endswith(name):
                     # only local service will be tacked
-                    code, msg, val = master.lookupService(rospy.get_name(), srv)
-                    if code == 1:
-                        if not check_host or get_hostname(val) == get_hostname(masteruri):
-                            result.append(srv)
+                    if check_host:
+                        code, msg, val = master.lookupService(rospy.get_name(), srv)
+                        if code == 1:
+                            hode_host = get_hostname(val)
+                            if hode_host == own_host:
+                                result.append(srv)
+                            else:
+                                nodes_host.append(hode_host)
+                    else:
+                        result.append(srv)
             if not result and wait:
-                rospy.logwarn("Master_discovery node appear not to running. Wait for service '%s'." % name)
+                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for service '%s' @%s." % (own_host, nodes_host, name, own_host))
                 time.sleep(1)
         elif not result and wait:
             rospy.logwarn("can't get state from ROS master: %s, %s" % (code, msg))
