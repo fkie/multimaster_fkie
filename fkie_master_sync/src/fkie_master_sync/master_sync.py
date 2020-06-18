@@ -90,7 +90,7 @@ class Main(object):
         # initialize the ROS services
         rospy.Service('~get_sync_info', GetSyncInfo, self._rosservice_get_sync_info)
         rospy.on_shutdown(self.finish)
-        self._current_diagnistic_level = 0
+        self._current_diagnistic_level = None
         self.pub_diag = rospy.Publisher( "/diagnostics", DiagnosticArray, queue_size=10, latch=True)
         self.obtain_masters()
 

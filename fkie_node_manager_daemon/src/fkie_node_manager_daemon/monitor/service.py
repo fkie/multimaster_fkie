@@ -119,7 +119,6 @@ class Service:
                     diag_obj.timestamp = stamp
                 except Exception:
                     diag_obj = DiagnosticObj(status, stamp)
-                    diag_obj.timestamp = stamp
                     self._diagnostics.append(diag_obj)
 
     def get_system_diagnostics(self, filter_level=0, filter_ts=0):
