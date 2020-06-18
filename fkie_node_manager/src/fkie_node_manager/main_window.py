@@ -1644,11 +1644,12 @@ class MainWindow(QMainWindow):
                 cmuri = cmuri.replace('localhost', get_hostname(lmuri))
         elif cmuri is None:
             cmuri = nm.nameres().masteruri(utf8(hostname))
-        master = self.getMaster(cmuri.rstrip('/') + '/', create_new=False)
-        if master is not None:
-            found_nodes = master._get_nodes_by_name([nodename])
-            for node in found_nodes:
-                queue.add2queue(utf8(uuid.uuid4()), 'stop %s' % node.name, master.stop_node, (node, True))
+        if cmuri is not None:
+            master = self.getMaster(cmuri.rstrip('/') + '/', create_new=False)
+            if master is not None:
+                found_nodes = master._get_nodes_by_name([nodename])
+                for node in found_nodes:
+                    queue.add2queue(utf8(uuid.uuid4()), 'stop %s' % node.name, master.stop_node, (node, True))
 
     def _join_network(self, network):
         try:
