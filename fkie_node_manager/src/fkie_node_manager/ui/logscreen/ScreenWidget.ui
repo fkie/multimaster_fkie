@@ -63,56 +63,93 @@
        <widget class="ScreenTextBrowser" name="textBrowser"/>
       </item>
       <item>
-       <widget class="QScrollArea" name="loggers">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+       <widget class="QFrame" name="logframe">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
-        <property name="widgetResizable">
-         <bool>true</bool>
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
         </property>
-        <widget class="QWidget" name="scrollAreaWidgetContents">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>68</width>
-           <height>552</height>
-          </rect>
+        <layout class="QVBoxLayout" name="logframeLayout">
+         <property name="spacing">
+          <number>3</number>
          </property>
-         <layout class="QVBoxLayout" name="loggerLayout">
-          <property name="spacing">
-           <number>3</number>
-          </property>
-          <property name="leftMargin">
-           <number>3</number>
-          </property>
-          <property name="topMargin">
-           <number>3</number>
-          </property>
-          <property name="rightMargin">
-           <number>3</number>
-          </property>
-          <property name="bottomMargin">
-           <number>3</number>
-          </property>
-          <item>
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <widget class="EnhancedLineEdit" name="loggerFilterInput">
+            <property name="visible">
+              <bool>true</bool>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
+            <property name="placeholderText">
+              <string>logger filter</string>
             </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
+          </widget>
+         </item>
+         <item>
+          <widget class="QScrollArea" name="loggers">
+           <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+           </property>
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="scrollAreaWidgetContents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>68</width>
+              <height>552</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="loggerLayout">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="leftMargin">
+              <number>3</number>
+             </property>
+             <property name="topMargin">
+              <number>3</number>
+             </property>
+             <property name="rightMargin">
+              <number>3</number>
+             </property>
+             <property name="bottomMargin">
+              <number>3</number>
+             </property>
+             <item>
+              <spacer name="verticalSpacer">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
@@ -382,6 +419,12 @@
    <extends>QTextBrowser</extends>
    <header>fkie_node_manager/logscreen/screen_widget</header>
   </customwidget>
- </customwidgets>
+  <customwidget>
+   <class>EnhancedLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>fkie_node_manager/editor/line_edit</header>
+  </customwidget>
+</customwidgets>
+ <resources/>
  <connections/>
 </ui>

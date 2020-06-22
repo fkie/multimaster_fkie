@@ -136,7 +136,7 @@ class ScreenWidget(QWidget):
         self._ssh_input_file = None
         self._on_pause = False
         self._char_format_end = None
-        self.loggers.setVisible(False)
+        self.logframe.setVisible(False)
         self.loglevelButton.toggled.connect(self.on_toggle_loggers)
         self.logger_handler = None
         # connect to the button signals
@@ -148,6 +148,7 @@ class ScreenWidget(QWidget):
         # self.pauseButton.clicked.connect(self.stop)
         self.pauseButton.toggled.connect(self.pause)
         self.clear_signal.connect(self.clear)
+        self.loggerFilterInput.textChanged.connect(self.on_logger_filter_changed)
         self.textBrowser.verticalScrollBar().valueChanged.connect(self.on_scrollbar_position_changed)
         self.textBrowser.verticalScrollBar().rangeChanged.connect(self.on_scrollbar_range_changed)
         self.textBrowser.set_reader(self)
@@ -478,6 +479,13 @@ class ScreenWidget(QWidget):
             pass
 
     def on_toggle_loggers(self, state):
-        self.loggers.setVisible(state)
+        self.logframe.setVisible(state)
         if state:
             self.logger_handler.update()
+
+    def on_logger_filter_changed(self, text):
+        '''
+        Filter the displayed loggers
+        '''
+        if self.logger_handler is not None:
+            self.logger_handler.filter(text)

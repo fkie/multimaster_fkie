@@ -34,7 +34,7 @@
 
 from datetime import datetime
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QObject, Qt, Signal
+from python_qt_binding.QtCore import QObject, QRegExp, Qt, Signal
 from python_qt_binding.QtGui import QColor
 try:
     from python_qt_binding.QtGui import QFrame, QHBoxLayout, QLabel, QRadioButton
@@ -77,6 +77,7 @@ class LoggerHandler(QObject):
         self.setObjectName("LoggerHandler")
         self.nodename = nodename
         self.masteruri = masteruri
+        self._filter = QRegExp('', Qt.CaseInsensitive, QRegExp.Wildcard)
         self._logger_items = {}  # logger name: LoggerItem
         self.layout = layout
         self._change_all_cancel = False
@@ -124,6 +125,8 @@ class LoggerHandler(QObject):
             if logger.name in self._stored_values and self._stored_values[logger.name] != logger.level:
                 item.set_level(self._stored_values[logger.name])
             index += 1
+            if self._filter.indexIn(logger.name) == -1:
+                item.setVisible(False)
 
     def change_all(self, loglevel, ignore=['ros.roscpp.roscpp_internal',
                                            'ros.roscpp.roscpp_internal.connections',
@@ -156,6 +159,12 @@ class LoggerHandler(QObject):
     def on_error_set(self, nodename, logger, level):
         if logger in self._logger_items:
             self._logger_items[logger].on_error_update(level)
+
+    def filter(self, text):
+        self._filter = QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard)
+        for name, item in self._logger_items.items():
+            hidden = self._filter.indexIn(name) != -1
+            item.setVisible(hidden)
 
 
 class SetAllThread(QObject, threading.Thread):
