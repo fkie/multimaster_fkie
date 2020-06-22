@@ -1278,10 +1278,10 @@ p, li { white-space: pre-wrap; }
         </palette>
        </property>
        <property name="lineWrapMode">
-        <enum>QTextEdit::FixedColumnWidth</enum>
+        <enum>QTextEdit::NoWrap</enum>
        </property>
-       <property name="lineWrapColumnOrWidth">
-        <number>160</number>
+       <property name="cursorWidth">
+        <number>2</number>
        </property>
        <property name="textInteractionFlags">
         <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>

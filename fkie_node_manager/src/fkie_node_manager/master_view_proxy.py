@@ -1368,10 +1368,10 @@ class MasterViewProxy(QWidget):
         '''
         result = ''
         if items:
-            result = '%s<b><u>%s</u></b>' % (result, title)
+            result = '<b><u>%s</u></b>' % (title)
             if len(items) > 1:
                 result = '%s <span style="color:gray;">[%d]</span>' % (result, len(items))
-            result = '%s<br><ul><span></span>' % result
+            result = '%s<table style="display: inline-table">' % result
             items.sort()
             for i in items:
                 item = i
@@ -1384,7 +1384,9 @@ class MasterViewProxy(QWidget):
                     if item_name.startswith(ns) and ns != roslib.names.SEP:
                         item_name = item_name.replace(ns, '', 1)
                 if list_type in ['NODE']:
-                    item = '<a href="node://%s%s">%s</a>' % (self.mastername, i, item_name)
+                    item = '<tr>'
+                    item += '<td><a href="node://%s%s">%s</a><td>' % (self.mastername, i, item_name)
+                    item += '</tr>'
                 elif list_type in ['TOPIC_PUB', 'TOPIC_SUB']:
                     # determine the count of publisher or subscriber
                     count = None
@@ -1402,28 +1404,42 @@ class MasterViewProxy(QWidget):
                         pass
                     # add the count
                     if count is not None:
-                        item = '<a href="topic://%s">%s</a>' % (i, item_name)
-                        item += '   <a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a>' % (self.mastername, i)
-                        item = '<span style="color:gray;">_%d_: </span>%s' % (count, item)
+                        item = '<tr>'
+                        item += '<td><span style="color:gray;">%d</span><td>' % (count)
+                        item += '<td><a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a><td>' % (self.mastername, i)
+                        item += '<td><a href="topic://%s">%s</a><td>' % (i, item_name)
+                        #sekkyumu_topic_echo_24 = nm.settings().icon_path('sekkyumu_topic_echo_24.png')
+                        #item += '<td><a href="topicecho://%s%s" title="Show the content of the topic"><img src="%s" alt="echo"></a></td>' % (self.mastername, i, sekkyumu_topic_echo_24)
+                        item += '</tr>'
                     else:
-                        item = '<a>%s</a>' % (item_name)
-                        item = '<span style="color:red;">!sync </span>%s' % (item)
+                        item = '<tr>'
+                        item += '<td colspan="3" style="float:left"><span style="color:red;">!sync </span><a>%s</a><td>' % (item_name)
+                        item += '</tr>'
                 elif list_type == 'SERVICE':
                     try:
                         srv = self.__master_info.getService(i)
                         if name in srv.serviceProvider:
-                            item = '<a href="service://%s%s">%s</a>' % (self.mastername, i, item_name)
-                            item += '   <a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a>' % (self.mastername, i)
+                            item = '<tr>'
+                            item += '<td><a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a><td>' % (self.mastername, i)
+                            item += '<td><a href="service://%s%s">%s</a><td>' % (self.mastername, i, item_name)
+                            item += '</tr>'
                         else:
-                            item = '<span style="color:red;">!sync </span>%s' % (item_name)
+                            item = '<tr>'
+                            item += '<td colspan="2" style="float:left"><span style="color:red;">!sync </span>%s<td>' % (item_name)
+                            item += '</tr>'
                     except Exception:
-                        item = '<span style="color:red;">!sync </span>%s' % (item_name)
+                        item = '<tr>'
+                        item += '<td colspan="2" style="float:left"><span style="color:red;">?sync </span>%s<td>' % (item_name)
+                        item += '</tr>'
                 elif list_type == 'LAUNCH':
-                    item = '<a href="%s">%s</a>' % (i, item_name)
+                    item_ref = '<a href="%s">%s</a>' % (i.replace('grpc://', 'open-edit://'), os.path.basename(item_name))
                     if i in self.__configs and self.__configs[i].global_param_done:
-                        item = '%s<br><a href="reload-globals://%s"><font color="#339900">reload global parameter @next start</font></a>' % (item, i.replace('grpc://', ''))
-                result += '\n%s<br>' % (item)
-            result += '</ul>'
+                        item = '<tr>'
+                        item += '<td>%s<td>' % (item_ref)
+                        item += '<td><i>%s</i><td>' % (item_name)
+                        item += '</tr>'
+                result += item
+            result += '</table>\n<br>'
         return result
 
     def on_tab_current_changed(self, index):
@@ -1519,7 +1535,8 @@ class MasterViewProxy(QWidget):
         if len(selectedHosts) != 1 and len(selectedNodes) == 1 and len(selectedGroups) == 0:
             node = selectedNodes[0]
             text = '<div>%s</div>' % self.get_node_description(node_name, node)
-            name = node.name
+            # name = node.name
+            name = 'Node - Info'
         if (self._is_current_tab_name('tabNodes') and self.__last_info_text != text) or force_emit:
             self.__last_info_text = text
             self.description_signal.emit(name, text, True if selected or deselected or force_emit else False)
@@ -1536,7 +1553,6 @@ class MasterViewProxy(QWidget):
         if node is not None:
             # create description for a node
             ns, sep, name = node.name.rpartition(rospy.names.SEP)
-            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
             default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
             crystal_clear_settings_24 = nm.settings().icon_path('crystal_clear_settings_24.png')
@@ -1556,6 +1572,8 @@ class MasterViewProxy(QWidget):
                 text += '&nbsp; <a href="start-node-adv://%s" title="Start node with additional options, e.g. loglevel"><img src="%s" alt="play alt"></a>' % (node.name, sekkyumu_play_alt_24)
             crystal_clear_copy_log_path_24 = nm.settings().icon_path('crystal_clear_copy_log_path_24.png')
             text += '&nbsp; <a href="copy-log-path://%s" title="copy log path to clipboard"><img src="%s" alt="copy_log_path"></a>' % (node.name, crystal_clear_copy_log_path_24)
+            text += '<br><font size="+2"><b>%s</b></font>' % (name)
+            text += '<br><span style="color:gray;">ns: </span><b>%s%s</b>' % (ns, sep)
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % node.node_info.uri
             text += '<dt><b>PID</b>: %s</dt>' % node.node_info.pid
@@ -1605,20 +1623,20 @@ class MasterViewProxy(QWidget):
                 text += '<dt><a href="show-all-diagnostics://%s">show all diagnostic msgs (%s)</a></dt>' % (node.name, len(node.diagnostic_array))
 #        if len(node.diagnostic_array) > 1:
 #          text += '<dt><font color="#FF6600"><a href="view_diagnostics://%s">view recent %d items</a></font></dt>'%(node.name, len(node.diagnostic_array))
-            text += '</dl>'
             if node.nodelet_mngr:
                 text += '<dt><b>Nodelet manager</b>: %s</dt>' % self._create_html_list('', [node.nodelet_mngr], 'NODE')
             if node.nodelets:
                 text += '<dt>Manager for <b>%d</b> nodelets</dt>' % len(node.nodelets)
+            text += '</dl>'
             if nm.settings().transpose_pub_sub_descr:
-                text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
-                text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
+                text += self._create_html_list('<br>Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
+                text += self._create_html_list('<br>Published Topics:', node.published, 'TOPIC_PUB', node.name)
             else:
-                text += self._create_html_list('Published Topics:', node.published, 'TOPIC_PUB', node.name)
-                text += self._create_html_list('Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
-            text += self._create_html_list('Services:', node.services, 'SERVICE', node.name)
+                text += self._create_html_list('<br>Published Topics:', node.published, 'TOPIC_PUB', node.name)
+                text += self._create_html_list('<br>Subscribed Topics:', node.subscribed, 'TOPIC_SUB', node.name)
+            text += self._create_html_list('<br>Services:', node.services, 'SERVICE', node.name)
             # set loaunch file paths
-            text += self._create_html_list('Launch Files:', launches, 'LAUNCH')
+            text += self._create_html_list('<br>Launch Files:', launches, 'LAUNCH')
             # text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
 #      text += '<dt><a href="copy-log-path://%s">copy log path to clipboard</a></dt>'%node.name
         return text
@@ -1650,7 +1668,7 @@ class MasterViewProxy(QWidget):
             self.__last_selection = time.time()
         selectedTopics = []
         if topic_name and self.master_info is not None:
-            selectedTopics = [self.master_info.getTopic("%s" % topic_name)]
+            selectedTopics = [self.master_info.getTopic('%s' % topic_name)]
             if len(selectedTopics) == 0:
                 return
         else:
@@ -1669,7 +1687,7 @@ class MasterViewProxy(QWidget):
                 info_text = '<div>%s</div>' % text
                 if (self._is_current_tab_name('tabTopics') and self.__last_info_text != info_text) or force_emit:
                     self.__last_info_text = info_text
-                    self.description_signal.emit(topic.name, info_text, True if selected or deselected or force_emit else False)
+                    self.description_signal.emit('Topic - Info', info_text, True if selected or deselected or force_emit else False)
             except Exception as _:
                 pass
 
@@ -1690,7 +1708,7 @@ class MasterViewProxy(QWidget):
             sekkyumu_topic_pub_24 = nm.settings().icon_path('sekkyumu_topic_pub_24.png')
             sekkyumu_topic_repub_24 = nm.settings().icon_path('sekkyumu_topic_repub_24.png')
             ns, sep, name = topic.name.rpartition(rospy.names.SEP)
-            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
+            # text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
             text += '&nbsp;<a href="topicecho://%s%s" title="Show the content of the topic"><img src="%s" alt="echo"></a>' % (self.mastername, topic.name, sekkyumu_topic_echo_24)
             text += '&nbsp;<a href="topichz://%s%s" title="Show only the receive rate of the topic.<br>All data is sent through the network"><img src="%s" alt="hz"></a>' % (self.mastername, topic.name, sekkyumu_topic_hz_24)
             text += '&nbsp;<a href="topichzssh://%s%s" title="Show only the receive rate of the topic.<br>Uses an SSH connection to execute `rostopic hz` on remote host."><img src="%s" alt="sshhz"></a>' % (self.mastername, topic.name, sekkyumu_topic_echo_ssh_hz_24)
@@ -1706,13 +1724,16 @@ class MasterViewProxy(QWidget):
             if topic_publisher:
                 sekkyumu_topic_pub_stop_24 = nm.settings().icon_path('sekkyumu_topic_pub_stop_24.png')
                 text += '&nbsp;<a href="topicstop://%s%s"><img src="%s" alt="stop"> [%d]</a>' % (self.mastername, topic.name, sekkyumu_topic_pub_stop_24, len(topic_publisher))
-            text += '<p>'
+            text += '<br><font size="+2"><b>%s</b></font>' % (name)
+            text += '<br><span style="color:gray;">ns: </span><b>%s%s</b>' % (ns, sep)
+            text += '<br>'
             if nm.settings().transpose_pub_sub_descr:
-                text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
-                text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
+                text += self._create_html_list('<br>Subscriber:', topic.subscriberNodes, 'NODE')
+                text += self._create_html_list('<br>Publisher:', topic.publisherNodes, 'NODE')
             else:
-                text += self._create_html_list('Publisher:', topic.publisherNodes, 'NODE')
-                text += self._create_html_list('Subscriber:', topic.subscriberNodes, 'NODE')
+                text += self._create_html_list('<br>Publisher:', topic.publisherNodes, 'NODE')
+                text += self._create_html_list('<br>Subscriber:', topic.subscriberNodes, 'NODE')
+            text += '<br>'
             text += '<b><u>Type:</u></b> %s' % self._href_from_msgtype(topic.type)
             text += '<dl>'
             try:
@@ -1773,15 +1794,18 @@ class MasterViewProxy(QWidget):
             if not self._is_current_tab_name('tabServices'):
                 return
         if len(selectedServices) == 1:
+            text = ''
             service = selectedServices[0]
             ns, sep, name = service.name.rpartition(rospy.names.SEP)
-            text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
+            # text = '<font size="+1"><b><span style="color:gray;">%s%s</span><b>%s</b></font><br>' % (ns, sep, name)
             sekkyumu_call_service_24 = nm.settings().icon_path('sekkyumu_call_service_24.png')
             text += '<a href="servicecall://%s%s" title="call service"><img src="%s" alt="call"></a>' % (self.mastername, service.name, sekkyumu_call_service_24)
+            text += '<br><font size="+2"><b>%s</b></font>' % (name)
+            text += '<br><span style="color:gray;">ns: </span><b>%s%s</b>' % (ns, sep)
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % service.uri
             text += '<dt><b>ORG.MASTERURI</b>: %s</dt>' % service.masteruri
-            text += self._create_html_list('Provider:', service.serviceProvider, 'NODE')
+            text += self._create_html_list('<br>Provider:', service.serviceProvider, 'NODE')
             if service.masteruri != self.masteruri:
                 text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
             text += '</dl>'
@@ -1802,7 +1826,7 @@ class MasterViewProxy(QWidget):
             self._is_current_tab_name('tabServices')
             if (self._is_current_tab_name('tabServices') and self.__last_info_text != info_text) or force_emit:
                 self.__last_info_text = info_text
-                self.description_signal.emit(service.name, info_text, True if selected or deselected or force_emit else False)
+                self.description_signal.emit('Service - Info', info_text, True if selected or deselected or force_emit else False)
 
     def _href_from_svrtype(self, srv_type):
         result = srv_type

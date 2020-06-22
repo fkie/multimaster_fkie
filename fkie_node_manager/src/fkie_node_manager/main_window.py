@@ -1998,6 +1998,8 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('show-all-diagnostics://'):
             if self.currentMaster is not None:
                 self.currentMaster.show_diagnostic_messages(self._url_path(url))
+        elif url.toString().startswith('open-edit://'):
+            self.on_launch_edit(url.toString().replace('open-edit://', 'grpc://'))
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back
