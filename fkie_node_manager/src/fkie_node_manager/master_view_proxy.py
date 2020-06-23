@@ -1432,11 +1432,12 @@ class MasterViewProxy(QWidget):
                         item += '<td colspan="2" style="float:left"><span style="color:red;">?sync </span>%s<td>' % (item_name)
                         item += '</tr>'
                 elif list_type == 'LAUNCH':
-                    item_ref = '<a href="%s">%s</a>' % (i.replace('grpc://', 'open-edit://'), os.path.basename(item_name))
                     if i in self.__configs and self.__configs[i].global_param_done:
                         item = '<tr>'
+                        item_ref = '<a href="%s">%s</a>' % (i.replace('grpc://', 'open-edit://'), os.path.basename(item_name))
                         item += '<td>%s<td>' % (item_ref)
-                        item += '<td><i>%s</i><td>' % (item_name)
+                        pkg, _path = nm.nmd().file.package_name(i)
+                        item += '<td><i>%s</i><td>' % (os.path.dirname(item_name) if pkg is None else pkg)
                         item += '</tr>'
                 result += item
             result += '</table>\n<br>'
@@ -1554,13 +1555,12 @@ class MasterViewProxy(QWidget):
             # create description for a node
             ns, sep, name = node.name.rpartition(rospy.names.SEP)
             launches = [c for c in node.cfgs if not isinstance(c, tuple)]
-            default_cfgs = [c[0] for c in node.cfgs if isinstance(c, tuple)]
             crystal_clear_settings_24 = nm.settings().icon_path('crystal_clear_settings_24.png')
             if name == 'node_manager_daemon':
                 text += '<a href="nmd-cfg://%s" title="Configure Daemon"><img src="%s" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''), crystal_clear_settings_24)
             elif name == 'node_manager' and nm.is_local(self.mastername):
                 text += '<a href="nm-cfg://%s" title="Configure Node Manager"><img src="%s" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''), crystal_clear_settings_24)
-            if launches or default_cfgs:
+            if launches:
                 sekkyumu_restart_24 = nm.settings().icon_path('sekkyumu_restart_24.png')
                 sekkyumu_restart_g_24 = nm.settings().icon_path('sekkyumu_restart_g_24.png')
                 text += '<a href="restart-node://%s" title="Restart node Ctrl+Shift+R"><img src="%s" alt="restart"></a>' % (node.name, sekkyumu_restart_24)
