@@ -43,13 +43,16 @@ from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
 
-import Crypto.Cipher.AES
-orig_new = Crypto.Cipher.AES.new
+try:
+    import Cryptodome.Cipher.AES as AES
+except ImportError:
+    import Crypto.Cipher.AES as AES
+orig_new = AES.new
 
 
 # workaround for https://github.com/paramiko/paramiko/pull/714
 def fixed_AES_new(key, mode, IV='', counter=None, segment_size=0):
-    if Crypto.Cipher.AES.MODE_CTR == mode:
+    if AES.MODE_CTR == mode:
         IV = ''
     return orig_new(key, mode, IV, counter, segment_size)
 
@@ -76,7 +79,7 @@ class SSHhandler(object):
 
     def __init__(self):
         # workaround for https://github.com/paramiko/paramiko/pull/714
-        Crypto.Cipher.AES.new = fixed_AES_new
+        AES.new = fixed_AES_new
         self.mutex = threading.RLock()
 
     def remove(self, host):
