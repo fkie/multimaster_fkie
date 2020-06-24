@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(fkie_node_manager_daemon)
 
 # python -m grpc_tools.protoc -Iprotos --python_out=./src/fkie_node_manager_daemon/. --grpc_python_out=./src/fkie_node_manager_daemon/. protos/launch_manager.proto 

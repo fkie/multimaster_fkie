@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(fkie_node_manager)
 find_package(catkin REQUIRED COMPONENTS
     diagnostic_msgs
@@ -30,6 +30,11 @@ catkin_install_python(
         nodes/script_runner.py
         scripts/reduced_nm.py
         scripts/remote_nm.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(
+    PROGRAMS
         scripts/respawn
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
