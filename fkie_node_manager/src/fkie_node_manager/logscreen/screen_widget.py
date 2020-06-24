@@ -359,7 +359,7 @@ class ScreenWidget(QWidget):
             if line_size > 120:
                 count += 1
                 line_size = 0
-            if ch == '\n':
+            if ch == b'\n':
                 count += 1  
                 line_size = 0
                 if count >= lines:
