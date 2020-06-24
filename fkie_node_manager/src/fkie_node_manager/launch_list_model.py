@@ -235,21 +235,21 @@ class PathItem(QStandardItem):
                 new_path = os.path.join(os.path.dirname(self.path), value)
                 try:
                     # save a new file or rename existing file?
-                    content = ''
+                    content = b''
                     new_id = self._identify_path_on_ext(new_path, self.id)
                     if self._isnew:
                         if new_id in [self.FOLDER]:
                             nm.nmd().file.new(new_path, 1)
                         elif new_id in [self.LAUNCH_FILE]:
-                            content = ("<launch>\n"
-                                       "    <arg name=\"robot_ns\" default=\"my_robot\"/>\n"
-                                       "    <group ns=\"$(arg robot_ns)\">\n"
-                                       "        <node pkg=\"my_pkg\" type=\"my_node\" name=\"my_name\" >\n"
-                                       "            <param name=\"capability_group\" value=\"MY_GROUP\"/>\n"
-                                       "        </node>\n"
-                                       "    </group>\n"
-                                       "</launch>\n")
-                            nm.nmd().file.save_file(new_path, bytes(content), 0)
+                            content = (b'<launch>\n'
+                                       b'    <arg name="robot_ns" default="my_robot"/>\n'
+                                       b'    <group ns="$(arg robot_ns)">\n'
+                                       b'        <node pkg="my_pkg" type="my_node" name="my_name" >\n'
+                                       b'            <param name="capability_group" value="MY_GROUP"/>\n'
+                                       b'        </node>\n'
+                                       b'    </group>\n'
+                                       b'</launch>\n')
+                            nm.nmd().file.save_file(new_path, content, 0)
                         else:
                             nm.nmd().file.new(new_path, 0)
                         self._isnew = False
