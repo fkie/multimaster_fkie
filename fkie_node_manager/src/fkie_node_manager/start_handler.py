@@ -116,11 +116,32 @@ class StartHandler(object):
                 cmd_type = ''
                 if cmd is None or len(cmd) == 0:
                     raise StartException('%s in package [%s] not found!' % (binary, package))
-                if len(cmd) > 1 and binary not in ['node_manager_daemon', 'master_discovery', 'master_sync', 'zeroconf']:
-                    # Open selection for executables
-                    err = [''.join(['Multiple executables with same name in package [', package, ']  found:'])]
-                    err.extend(cmd)
-                    raise StartException('\n'.join(err))
+                if len(cmd) > 1:
+                    if binary in ['node_manager_daemon', 'master_discovery', 'master_sync', 'zeroconf']:
+                        # use path located not in src folder
+                        for c in cmd:
+                            if c.find('/src/') == -1:
+                                cmd_type = c
+                                break
+                        # should not happen
+                        cmd_type = cmd[0]
+                    else:
+                        # Open selection for executables
+                        err = 'Multiple executables with same name in package [%s] found' % package
+                        bsel = nm.BinarySelectionRequest(cmd, err)
+                        raise nm.InteractionNeededError(bsel, cls.runNodeWithoutConfig,
+                                                                {'host': host,
+                                                                'package': package,
+                                                                'binary': binary,
+                                                                'name': name,
+                                                                'args': args,
+                                                                'masteruri': masteruri,
+                                                                'use_nmd': use_nmd,
+                                                                'auto_pw_request': auto_pw_request,
+                                                                'user': user,
+                                                                'pw': pw,
+                                                                'path': path
+                                                                })
                 else:
                     cmd_type = cmd[0]
             new_env = {}  # dict(os.environ)

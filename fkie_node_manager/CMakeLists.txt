@@ -23,7 +23,7 @@ generate_version(TARGETS version_TARGETS)
 include(cmake/build_launcher.cmake)
 build_launcher()
 
-install(
+catkin_install_python(
     PROGRAMS 
         nodes/dynamic_reconfigure
         nodes/node_manager

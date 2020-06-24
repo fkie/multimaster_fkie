@@ -55,7 +55,7 @@ class BinarySelectionRequest(Exception):
         self.error = error
 
     def __str__(self):
-        return "BinarySelectionRequest from " + self.choices + "::" + repr(self.error)
+        return 'BinarySelectionRequest from %s::%s' % (self.choices, repr(self.error))
 
 
 class LaunchArgsSelectionRequest(Exception):

@@ -21,7 +21,7 @@ generate_version(TARGETS version_TARGETS)
 ## Install ##
 #############
 
-install(
+catkin_install_python(
     PROGRAMS 
         nodes/node_manager_daemon
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
