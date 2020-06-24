@@ -330,7 +330,16 @@ class ProfileWidget(QDockWidget):
                 self._main_window._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                             'start %s on %s' % (binary, hostname),
                                                             nm.starter().runNodeWithoutConfig,
-                                                            (utf8(hostname), pkg, utf8(binary), utf8(binary), args, master.masteruri, False, False, usr))
+                                                            {'host': utf8(hostname),
+                                                             'package': pkg,
+                                                             'binary': utf8(binary),
+                                                             'name': utf8(binary),
+                                                             'args': args,
+                                                             'masteruri': master.masteruri,
+                                                             'use_nmd': False,
+                                                             'auto_pw_request': False,
+                                                             'user': usr
+                                                            })
                 self._main_window._progress_queue.start()
         except Exception as me:
             rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, utf8(me)))

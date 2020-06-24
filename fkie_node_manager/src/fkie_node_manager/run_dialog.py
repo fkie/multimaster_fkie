@@ -252,8 +252,14 @@ class RunDialog(PackageDialog):
             nm.history().addParamCache('run_dialog/Args', args)
         if self.package and self.binary:
             nm.history().addParamCache('/Host', self.host)
-            return (self.host, self.package, self.binary, self.name_field.text(), ('__ns:=%s %s' % (ns, args)).split(' '), None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri)
-        return ()
+            result = {'host': self.host,
+                      'package': self.package,
+                      'binary': self.binary,
+                      'name': self.name_field.text(),
+                      'args': ('__ns:=%s %s' % (ns, args)).split(' '),
+                      'masteruri': None if self.masteruri == 'ROS_MASTER_URI' else self.masteruri}
+            return result
+        return {}
 
     def on_package_selected(self, package):
         PackageDialog.on_package_selected(self, package)

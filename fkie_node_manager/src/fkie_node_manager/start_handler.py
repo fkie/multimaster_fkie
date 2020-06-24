@@ -75,7 +75,7 @@ class StartHandler(object):
         pass
 
     @classmethod
-    def runNodeWithoutConfig(cls, host, package, binary, name, args=[], masteruri=None, use_nmd=True, auto_pw_request=False, user=None, pw=None):
+    def runNodeWithoutConfig(cls, host, package, binary, name, args=[], masteruri=None, use_nmd=True, auto_pw_request=False, user=None, pw=None, path=''):
         '''
         Start a node with using a launch configuration.
 
@@ -102,18 +102,21 @@ class StartHandler(object):
         # run on local host
         if nm.is_local(host, wait=True):
             if not use_nmd:
-                try:
-                    cmd = roslib.packages.find_node(package, binary)
-                except roslib.packages.ROSPkgException as e:
-                    # multiple nodes, invalid package
-                    raise StartException(utf8(e))
-                # handle different result types str or array of string
-                if isstring(cmd):
-                    cmd = [cmd]
+                if path:
+                    cmd = [path]
+                else:
+                    try:
+                        cmd = roslib.packages.find_node(package, binary)
+                    except roslib.packages.ROSPkgException as e:
+                        # multiple nodes, invalid package
+                        raise StartException(utf8(e))
+                    # handle different result types str or array of string
+                    if isstring(cmd):
+                        cmd = [cmd]
                 cmd_type = ''
                 if cmd is None or len(cmd) == 0:
                     raise StartException('%s in package [%s] not found!' % (binary, package))
-                if len(cmd) > 1:
+                if len(cmd) > 1 and binary not in ['node_manager_daemon', 'master_discovery', 'master_sync', 'zeroconf']:
                     # Open selection for executables
                     err = [''.join(['Multiple executables with same name in package [', package, ']  found:'])]
                     err.extend(cmd)
@@ -170,7 +173,7 @@ class StartHandler(object):
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
                         raise StartException(''.join(['The host "', host, '" reports:\n', error]))
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, (host, package, binary, name, args, masteruri, use_nmd, auto_pw_request))
+                raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, {'host': host, 'package': package, 'binary': binary, 'name': name, 'args': args, 'masteruri': masteruri, 'use_nmd': use_nmd, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw, 'path': path})
 
     @classmethod
     def _prepareROSMaster(cls, masteruri):
@@ -329,7 +332,7 @@ class StartHandler(object):
                 else:
                     raise StartException(utf8(''.join(['Get log path from "', host, '" failed'])))
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.get_log_path, (host, nodes, auto_pw_request))
+                raise nm.InteractionNeededError(e, cls.get_log_path, {'host': host, 'nodes': nodes, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
             finally:
                 socket.setdefaulttimeout(None)
 
@@ -403,7 +406,7 @@ class StartHandler(object):
                         stdout.readlines()
                         stdout.close()
                 except nm.AuthenticationRequest as e:
-                    raise nm.InteractionNeededError(e, cls.delete_log, (nodename, host, auto_pw_request))
+                    raise nm.InteractionNeededError(e, cls.delete_log, {'nodename': nodename, 'grpc_uri': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def kill(self, host, pid, auto_pw_request=False, user=None, pw=None):
         '''
@@ -418,7 +421,7 @@ class StartHandler(object):
         try:
             self._kill_wo(host, pid, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.kill, (host, pid, auto_pw_request))
+            raise nm.InteractionNeededError(e, self.kill, {'host': host, 'pid': pid, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _kill_wo(self, host, pid, auto_pw_request=False, user=None, pw=None):
         rospy.loginfo("kill %s on %s", utf8(pid), host)
@@ -452,7 +455,7 @@ class StartHandler(object):
         try:
             self._killall_roscore_wo(host, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.killall_roscore, (host, auto_pw_request))
+            raise nm.InteractionNeededError(e, self.killall_roscore, {'host': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _killall_roscore_wo(self, host, auto_pw_request=False, user=None, pw=None):
         rospy.loginfo("killall roscore on %s", host)
@@ -485,7 +488,7 @@ class StartHandler(object):
         try:
             self._poweroff_wo(host, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.poweroff, (host, auto_pw_request))
+            raise nm.InteractionNeededError(e, self.poweroff, {'host': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _poweroff_wo(self, host, auto_pw_request=False, user=None, pw=None):
         if nm.is_local(host):
@@ -509,7 +512,7 @@ class StartHandler(object):
         try:
             self._rosclean_wo(grpc_uri, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.poweroff, (grpc_uri, auto_pw_request))
+            raise nm.InteractionNeededError(e, self.poweroff, {'grpc_uri': grpc_uri, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _rosclean_wo(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
         try:
@@ -582,7 +585,7 @@ class StartHandler(object):
                 else:
                     raise StartException("Can't get path from remote host. Is there the new version of node_manager installed?")
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.transfer_files, (host, path, auto_pw_request))
+                raise nm.InteractionNeededError(e, cls.transfer_files, {'host': host, 'path': path, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     @classmethod
     def ntpdate(cls, host, cmd, user=None, pw=None):
@@ -705,8 +708,14 @@ class StartHandler(object):
                                 not_found_packages.append(package)
                     env_command = "env " + ' '.join(["%s=\'%s\'" % (k, v) for (k, v) in new_env.items()])
                 except nm.AuthenticationRequest as e:
-                    raise nm.InteractionNeededError(e, cls.bc_run_node, (name, grpc_path, masteruri, reload_global_param, loglevel, logformat, auto_pw_request))
-
+                    raise nm.InteractionNeededError(e, cls.bc_run_node, {'name': name,
+                                                                         'grpc_path': grpc_path,
+                                                                         'masteruri': masteruri,
+                                                                         'reload_global_param': reload_global_param,
+                                                                         'loglevel': loglevel,
+                                                                         'logformat': logformat,
+                                                                         'auto_pw_request': auto_pw_request,
+                                                                         'user': user, 'pw': pw})
             startcmd = [env_command, nm.settings().start_remote_script,
                         '--package', utf8(startcfg.package),
                         '--node_type', utf8(startcfg.binary),
@@ -743,8 +752,14 @@ class StartHandler(object):
                 stdout.close()
                 stderr.close()
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.bc_run_node, (name, grpc_path, masteruri, reload_global_param, loglevel, logformat, auto_pw_request))
-
+                raise nm.InteractionNeededError(e, cls.bc_run_node,{'name': name,
+                                                                    'grpc_path': grpc_path,
+                                                                    'masteruri': masteruri,
+                                                                    'reload_global_param': reload_global_param,
+                                                                    'loglevel': loglevel,
+                                                                    'logformat': logformat,
+                                                                    'auto_pw_request': auto_pw_request,
+                                                                    'user': user, 'pw': pw})
             if ok:
                 if error:
                     rospy.logwarn("ERROR while start '%s': %s", startcfg.fullname, error)

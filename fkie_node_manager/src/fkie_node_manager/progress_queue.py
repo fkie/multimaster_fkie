@@ -48,14 +48,14 @@ class InteractionNeededError(Exception):
     request: AuthenticationRequest
     '''
 
-    def __init__(self, request, method, args):
+    def __init__(self, request, method, kwargs):
         Exception.__init__(self)
         self.method = method
         self.request = request
-        self.args = args
+        self.kwargs = kwargs
 
     def __str__(self):
-        return "InteractionNeededError"
+        return "InteractionNeededError %s: %s" % (self.method, self.kwargs)
 
 
 class ProgressQueue(QObject):
@@ -93,7 +93,7 @@ class ProgressQueue(QObject):
             import traceback
             print(utf8(traceback.format_exc()))
 
-    def add2queue(self, ident, descr, target=None, args=()):
+    def add2queue(self, ident, descr, target=None, kwargs={}):
         '''
         Adds new task to the queue. After the task was added you need call start().
         :param ident: the unique identification string
@@ -102,9 +102,10 @@ class ProgressQueue(QObject):
         :type descr: str
         :param target: is the callable object to be invoked in a new thread.
         Defaults to None, meaning nothing is called.
-        :param args: is the argument tuple for the target invocation. Defaults to ()
+        :param kwargs: is the argument dictionary for the function invocation. Defaults to {}
         '''
-        pthread = ProgressThread(ident, descr, target, args)
+        rospy.logdebug("+ add '%s' with %s to %s" % (descr, kwargs, self))
+        pthread = ProgressThread(str(ident), descr, target, kwargs)
         pthread.finished_signal.connect(self._progress_thread_finished)
         pthread.error_signal.connect(self._progress_thread_error)
         pthread.request_interact_signal.connect(self._on_request_interact)
@@ -206,8 +207,9 @@ class ProgressQueue(QObject):
             if not res:
                 self._on_progress_canceled()
                 return
-            req.args = req.args + (user, pw)
-            pt = ProgressThread(ident, descr, req.method, (req.args))
+            req.kwargs['user'] = user
+            req.kwargs['pw'] = pw
+            pt = ProgressThread(ident, descr, req.method, req.kwargs)
             pt.finished_signal.connect(self._progress_thread_finished)
             pt.error_signal.connect(self._progress_thread_error)
             pt.request_interact_signal.connect(self._on_request_interact)
@@ -219,7 +221,8 @@ class ProgressQueue(QObject):
                 self._progress_thread_finished(ident)
                 return
             res = [req.request.choices[i] for i in items]
-            pt = ProgressThread(ident, descr, req.method, (req.args + (res,)))
+            req.kwargs['items'] = res
+            pt = ProgressThread(ident, descr, req.method, req.kwargs)
             pt.finished_signal.connect(self._progress_thread_finished)
             pt.error_signal.connect(self._progress_thread_error)
             pt.request_interact_signal.connect(self._on_request_interact)
@@ -230,9 +233,8 @@ class ProgressQueue(QObject):
             if not items:
                 self._progress_thread_finished(ident)
                 return
-            res = items[0]
-            req.args = req.args + (res,)
-            pt = ProgressThread(ident, descr, req.method, (req.args))
+            req.kwargs['path'] = items[0]
+            pt = ProgressThread(ident, descr, req.method, req.kwargs)
             pt.finished_signal.connect(self._progress_thread_finished)
             pt.error_signal.connect(self._progress_thread_error)
             pt.request_interact_signal.connect(self._on_request_interact)
@@ -248,8 +250,8 @@ class ProgressQueue(QObject):
                 for prm, val in params.items():
                     if val:
                         argv.append('%s:=%s' % (prm, val))
-                res = argv
-                pt = ProgressThread(ident, descr, req.method, (req.args + (params,)))
+                req.kwargs['args_forced'] = input_dia.getKeywords()
+                pt = ProgressThread(ident, descr, req.method, req.kwargs)
                 pt.finished_signal.connect(self._progress_thread_finished)
                 pt.error_signal.connect(self._progress_thread_error)
                 pt.request_interact_signal.connect(self._on_request_interact)
@@ -279,13 +281,13 @@ class ProgressThread(QObject, threading.Thread):
 
     request_interact_signal = Signal(str, str, InteractionNeededError)
 
-    def __init__(self, ident, descr='', target=None, args=()):
+    def __init__(self, ident, descr='', target=None, kwargs={}):
         QObject.__init__(self)
         threading.Thread.__init__(self)
         self._id = ident
         self.descr = descr
         self._target = target
-        self._args = args
+        self._kwargs = kwargs
         self.setDaemon(True)
 
     def id(self):
@@ -295,15 +297,17 @@ class ProgressThread(QObject, threading.Thread):
         '''
         '''
         try:
+            rospy.logdebug("run '%s' with %s" % (self.descr, self._kwargs))
             if self._target is not None:
                 if sys.version_info[0] <= 2:
                     varnames = self._target.func_code.co_varnames
                 else:
                     varnames = self._target.__code__.co_varnames
                 if 'pqid' in varnames:
-                    self._target(*self._args, pqid=self._id)
+                    self._kwargs['pqid'] = self._id
+                    self._target(**self._kwargs)
                 else:
-                    self._target(*self._args)
+                    self._target(**self._kwargs)
                 self.finished_signal.emit(self._id)
             else:
                 self.error_signal.emit(self._id, 'No target specified')

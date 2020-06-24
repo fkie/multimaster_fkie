@@ -1036,17 +1036,29 @@ class MainWindow(QMainWindow):
                             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                            '%s: show log of master discovery' % hostname,
                                                            nm.starter().openLog,
-                                                           ('/master_discovery', hostname, usr, screen_only))
+                                                           {'nodename' : '/master_discovery',
+                                                            'host': hostname,
+                                                            'user': usr,
+                                                            'only_screen': screen_only
+                                                           })
                         if log_master_sync:
                             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                            '%s: show log of master sync' % hostname,
                                                            nm.starter().openLog,
-                                                           ('/master_sync', hostname, usr, screen_only))
+                                                           {'nodename' : '/master_sync',
+                                                            'host': hostname,
+                                                            'user': usr,
+                                                            'only_screen': screen_only
+                                                           })
                         if log_nm_daemon:
                             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                            '%s: show log of nm daemon' % hostname,
                                                            nm.starter().openLog,
-                                                           ('/node_manager_daemon', hostname, usr, screen_only))
+                                                           {'nodename' : '/node_manager_daemon',
+                                                            'host': hostname,
+                                                            'user': usr,
+                                                            'only_screen': screen_only
+                                                           })
                     except (Exception, nm.StartException) as err:
                         import traceback
                         print(traceback.format_exc(1))
@@ -1134,7 +1146,9 @@ class MainWindow(QMainWindow):
             if dia.exec_():
                 params = dia.run_params()
                 if params:
-                    params = params + (True, False, self.currentMaster.current_user,)  # autorequest must be false
+                    params['use_nmd'] = True
+                    params['auto_pw_request'] = False  # autorequest must be false
+                    params['user'] = self.currentMaster.current_user
                     try:
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'run `%s` on %s' % (params[2], params[0]),
@@ -1199,10 +1213,15 @@ class MainWindow(QMainWindow):
                 self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                              'start %s' % name,
                                                              nm.starter().runNodeWithoutConfig,
-                                                             ('localhost', package, binary,
-                                                              nm.nameres().normalize_name(node_name), args,
-                                                              '%s' % self.currentMaster.master_state.uri,
-                                                              True, False))
+                                                             {'host': 'localhost',
+                                                              'package': package,
+                                                              'binary': binary,
+                                                              'name': nm.nameres().normalize_name(node_name),
+                                                              'args': args,
+                                                              'masteruri': '%s' % self.currentMaster.master_state.uri,
+                                                              'use_nmd': True,
+                                                              'auto_pw_request': False
+                                                             })
             except (Exception, nm.StartException) as e:
                 import traceback
                 print(utf8(traceback.format_exc(1)))
@@ -1232,11 +1251,24 @@ class MainWindow(QMainWindow):
                         self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                             'Transfer sync interface to %s' % nmd_uri,
                                                             nm.starter().transfer_file_nmd,
-                                                            ("%s" % nmd_uri, sync_file, False, master.current_user))
+                                                            {'grpc_url': '%s' % nmd_uri,
+                                                             'path': sync_file,
+                                                             'auto_pw_request': False,
+                                                             'user': master.current_user
+                                                            })
                     self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                         'Start sync on %s' % host,
                                                         nm.starter().runNodeWithoutConfig,
-                                                        ("%s" % host, 'fkie_master_sync', 'master_sync', 'master_sync', self._sync_dialog.sync_args, "%s" % master.masteruri, False, False, master.current_user))
+                                                        {'host': '%s' % host,
+                                                         'package': 'fkie_master_sync',
+                                                         'binary': 'master_sync',
+                                                         'name': 'master_sync',
+                                                         'args': self._sync_dialog.sync_args,
+                                                         'masteruri': '%s' % master.masteruri,
+                                                         'use_nmd': False,
+                                                         'auto_pw_request': False,
+                                                         'user': master.current_user
+                                                        })
                     self._progress_queue_sync.start()
                 except Exception:
                     import traceback
@@ -1288,7 +1320,16 @@ class MainWindow(QMainWindow):
                     self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                         'start sync on ' + utf8(host),
                                                         nm.starter().runNodeWithoutConfig,
-                                                        (utf8(host), 'fkie_master_sync', 'master_sync', 'master_sync', default_sync_args, utf8(master.masteruri), False, False, master.current_user))
+                                                        {'host': utf8(host),
+                                                         'package': 'fkie_master_sync',
+                                                         'binary': 'master_sync',
+                                                         'name': 'master_sync',
+                                                         'args': default_sync_args,
+                                                         'masteruri': utf8(master.masteruri),
+                                                         'use_nmd': False,
+                                                         'auto_pw_request': False,
+                                                         'user': master.current_user
+                                                        })
                     self._progress_queue_sync.start()
                 except Exception:
                     pass
@@ -1597,7 +1638,16 @@ class MainWindow(QMainWindow):
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start discovering on %s' % hostname,
                                                        nm.starter().runNodeWithoutConfig,
-                                                       (utf8(hostname), 'fkie_master_discovery', utf8(discovery_type), utf8(discovery_type), args, muri, False, False, usr))
+                                                       {'host': utf8(hostname),
+                                                        'package': 'fkie_master_discovery',
+                                                        'binary': utf8(discovery_type),
+                                                        'name': utf8(discovery_type),
+                                                        'args': args,
+                                                        'masteruri': muri,
+                                                        'use_nmd': False,
+                                                        'auto_pw_request': False,
+                                                        'user': usr
+                                                       })
 
                         # start the master sync with default settings
                         if start_sync:
@@ -1613,7 +1663,16 @@ class MainWindow(QMainWindow):
                                 self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                                     'start sync on %s' % hostname,
                                                                     nm.starter().runNodeWithoutConfig,
-                                                                    (utf8(hostname), 'fkie_master_sync', 'master_sync', 'master_sync', default_sync_args, muri, False, False, usr))
+                                                                    {'host': utf8(hostname),
+                                                                     'package': 'fkie_master_sync',
+                                                                     'binary': 'master_sync',
+                                                                     'name': 'master_sync',
+                                                                     'args': default_sync_args,
+                                                                     'masteruri': muri,
+                                                                     'use_nmd': False,
+                                                                     'auto_pw_request': False,
+                                                                     'user': usr
+                                                                    })
                                 self._progress_queue_sync.start()
                             else:
                                 if hostname not in self._syncs_to_start:
@@ -1649,7 +1708,7 @@ class MainWindow(QMainWindow):
             if master is not None:
                 found_nodes = master._get_nodes_by_name([nodename])
                 for node in found_nodes:
-                    queue.add2queue(utf8(uuid.uuid4()), 'stop %s' % node.name, master.stop_node, (node, True))
+                    queue.add2queue(utf8(uuid.uuid4()), 'stop %s' % node.name, master.stop_node, {'node': node, 'force': True})
 
     def _join_network(self, network):
         try:
@@ -1660,7 +1719,15 @@ class MainWindow(QMainWindow):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'start discovering on ' + utf8(hostname),
                                            nm.starter().runNodeWithoutConfig,
-                                           (utf8(hostname), 'fkie_master_discovery', 'master_discovery', 'master_discovery', args, None, False, False))
+                                           {'host': utf8(hostname),
+                                            'package': 'fkie_master_discovery',
+                                            'binary': 'master_discovery',
+                                            'name': 'master_discovery',
+                                            'args': args,
+                                            'masteruri': None,
+                                            'use_nmd': False,
+                                            'auto_pw_request': False
+                                           })
             self._progress_queue.start()
         except (Exception, nm.StartException) as e:
             rospy.logwarn("Error while start master_discovery for %s: %s", utf8(hostname), utf8(e))
@@ -1679,7 +1746,7 @@ class MainWindow(QMainWindow):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'poweroff `%s`' % host,
                                            nm.starter().poweroff,
-                                           ('%s' % host,))
+                                           {'host': '%s' % host})
             masteruris = nm.nameres().masterurisbyaddr(host)
             for masteruri in masteruris:
                 master = self.getMaster(masteruri)
@@ -1705,12 +1772,13 @@ class MainWindow(QMainWindow):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'rosclean `%s`' % nuri,
                                            nm.starter().rosclean,
-                                           ('%s' % nuri,))
+                                           {'grpc_uri': '%s' % nuri})
             master = self.getMaster(masteruri, create_new=False)
             if master is not None:
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                             'update `%s`' % nuri,
-                                            master.perform_nmd_requests)
+                                            master.perform_nmd_requests,
+                                            {})
             self._progress_queue.start()
             self.launch_dock.raise_()
         except (Exception, nm.StartException) as e:
@@ -1807,12 +1875,15 @@ class MainWindow(QMainWindow):
                         self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
                                                                   'transfer files to %s' % nmd_url,
                                                                   nm.starter().transfer_file_nmd,
-                                                                  ('%s' % nmd_url, path, False))
+                                                                  {'grpc_url': '%s' % nmd_url,
+                                                                   'path': path,
+                                                                   'auto_pw_request': False
+                                                                  })
                         if recursive:
                             self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
                                                                       "transfer recursive '%s' to %s" % (path, nmd_url),
                                                                       self._recursive_transfer,
-                                                                      (path, nmd_url))
+                                                                      {'path': path, 'nmd_url': nmd_url})
                     self.launch_dock.progress_queue.start()
                 except Exception as e:
                     MessageBox.warning(self, "Transfer error",
@@ -1827,7 +1898,9 @@ class MainWindow(QMainWindow):
             self.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
                                                       'transfer file %s to %s' % (cppath, nmd_url),
                                                       nm.starter().transfer_file_nmd,
-                                                      ('%s' % nmd_url, cppath))
+                                                      {'grpc_url': '%s' % nmd_url,
+                                                       'path': cppath
+                                                      })
         self.launch_dock.progress_queue.start()
 
     def _reload_globals_at_next_start(self, launch_file):
@@ -2198,11 +2271,13 @@ class MainWindow(QMainWindow):
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                 '%s: set configuration for daemon' % nmdurl,
                                                 nm.nmd().settings.set_config,
-                                                (nmdurl, buf.getvalue()))
+                                                {'grpc_url': nmdurl,
+                                                 'data': buf.getvalue()
+                                                })
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                 '%s: get system diagnostics' % nmdurl,
                                                 nm.nmd().monitor.get_system_diagnostics_threaded,
-                                                (nmdurl,))
+                                                {'grpc_url': nmdurl})
                 self._progress_queue.start()
             except Exception as err:
                 import traceback

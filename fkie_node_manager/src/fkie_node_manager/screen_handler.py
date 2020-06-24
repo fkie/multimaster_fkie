@@ -164,13 +164,31 @@ class ScreenHandler(object):
                     else:
                         if use_log_widget:
                             nm._MAIN_FORM.open_screen_dock(muri, '', node, user)
-                        raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, (node, host, user))
+                        raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, {'nodename' : node, 'host': host, 'user': user })
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, use_log_widget))
+            raise nm.InteractionNeededError(e, cls.open_screen,
+                                            {'node': node,
+                                             'grpc_url': grpc_url,
+                                             'auto_item_request': auto_item_request,
+                                             'use_log_widget': use_log_widget,
+                                             'user': user,
+                                             'pw': pw,
+                                             'items': items,
+                                             'use_nmd': use_nmd
+                                            })
         except ScreenSelectionRequest as e:
             # set use_log_widget to False on multiple screens for same node
-            raise nm.InteractionNeededError(e, cls.open_screen, (node, grpc_url, auto_item_request, False, user, pw))
+            raise nm.InteractionNeededError(e, cls.open_screen,
+                                            {'node': node,
+                                             'grpc_url': grpc_url,
+                                             'auto_item_request': auto_item_request,
+                                             'use_log_widget': False,
+                                             'user': user,
+                                             'pw': pw,
+                                             'items': items,
+                                             'use_nmd': use_nmd
+                                            })
 
     @classmethod
     def kill_screens(cls, node, grpc_url, auto_ok_request=True, user=None, pw=None):
@@ -208,7 +226,7 @@ class ScreenHandler(object):
                     # else:
                     #     nm.ssh().ssh_exec(host, [screen.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, cls.kill_screens, (node, grpc_url, auto_ok_request))
+            raise nm.InteractionNeededError(e, cls.kill_screens,  {'node': node, 'grpc_url': grpc_url, 'auto_ok_request': auto_ok_request, 'user': user, 'pw': pw})
 
 # #############################################################################
 #         for backward compatibility

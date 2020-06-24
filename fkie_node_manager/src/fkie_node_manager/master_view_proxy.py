@@ -729,7 +729,9 @@ class MasterViewProxy(QWidget):
         self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                             'Loading %s' % os.path.basename(lfile),
                                             self._load_launchfile,
-                                            (lfile, args))
+                                            {'launchfile': lfile,
+                                             'args_forced': args
+                                            })
         self._start_queue(self._progress_queue_prio)
 
     def _load_launchfile(self, launchfile, args_forced={}, pqid=None):
@@ -760,7 +762,7 @@ class MasterViewProxy(QWidget):
                 self.loaded_config.emit(cfg, changed_nodes)
             nm.nmd().launch.get_nodes_threaded(launchfile)
         except nm.LaunchArgsSelectionRequest as lasr:
-            raise nm.InteractionNeededError(lasr, self._load_launchfile, (launchfile,))
+            raise nm.InteractionNeededError(lasr, self._load_launchfile, {'launchfile': launchfile, 'args_forced': args_forced})
         except exceptions.GrpcTimeout as tout:
             raise DetailedError("Timeout", "Timeout while load %s" % tout.remote, "Daemon not responded within %.2f seconds while"
                                 "load launch file. You can try to increase the timeout for GRPC requests in node manager settings." % nm.settings().timeout_grpc)
@@ -1009,7 +1011,9 @@ class MasterViewProxy(QWidget):
                     self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                         'Loading %s' % os.path.basename(lfile),
                                                         self._load_launchfile,
-                                                        (lfile, {}))
+                                                        {'launchfile': lfile,
+                                                         'args_forced': {}
+                                                        })
                     self._start_queue(self._progress_queue)
         masteruri = self.masteruri
         host = get_hostname(masteruri)
@@ -1267,9 +1271,13 @@ class MasterViewProxy(QWidget):
             try:
                 if not self._is_master_launch_server(nodes):
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   ''.join(['kill roslaunch ', lsuri, '(', utf8(pid), ')']),
+                                                   'kill roslaunch %s (%s)' % (lsuri, utf8(pid)),
                                                    nm.starter().kill,
-                                                   (get_hostname(lsuri), pid, False, self.current_user))
+                                                   {'host': get_hostname(lsuri),
+                                                    'pid': pid,
+                                                    'auto_pw_request': False,
+                                                    'user': self.current_user
+                                                   })
                     self.launch_server_handler.updateLaunchServerInfo(lsuri, delayed_exec=3.0)
             except Exception as e:
                 rospy.logwarn("Error while kill roslaunch %s: %s", utf8(lsuri), utf8(e))
@@ -1952,7 +1960,7 @@ class MasterViewProxy(QWidget):
         finally:
             self.setCursor(cursor)
 
-    def start_node(self, node, force, config, force_host=None, logging=None, cmd_prefix='', opt_binary=''):
+    def start_node(self, node, force, config, force_host=None, logging=None, cmd_prefix='', path=''):
 
         if node is None:
             raise DetailedError("Start error", 'None is not valid node name!')
@@ -1975,7 +1983,7 @@ class MasterViewProxy(QWidget):
                         loglevel = logging.loglevel
                 if self._has_nmd:
                     _result = nm.nmd().launch.start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
-                                                         loglevel=loglevel, logformat=logformat, opt_binary=opt_binary, cmd_prefix=cmd_prefix)
+                                                         loglevel=loglevel, logformat=logformat, opt_binary=path, cmd_prefix=cmd_prefix)
                 else:
                     rospy.logwarn("no running daemon found, start '%s' via SSH" % node.name)
                     nm.starter().bc_run_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
@@ -1988,7 +1996,7 @@ class MasterViewProxy(QWidget):
             except nm.InteractionNeededError as _:
                 raise
             except nm.BinarySelectionRequest as bsr:
-                raise nm.InteractionNeededError(bsr, self.start_node, (node, force, config, force_host, logging, cmd_prefix))
+                raise nm.InteractionNeededError(bsr, self.start_node, {'node': node, 'force': force, 'config': config, 'force_host': force_host, 'logging': logging, 'cmd_prefix': cmd_prefix, 'path': path})
             except (exceptions.StartException, nm.StartException) as e:
                 rospy.logwarn("Error while start '%s': %s" % (node.name, utf8(e)))
                 lines = utf8(e).splitlines()
@@ -2104,11 +2112,21 @@ class MasterViewProxy(QWidget):
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start %s' % anode.name,
                                                        self.start_node,
-                                                       (anode.node_info, force, cfg_nodes[node.node_info.name], force_host))
+                                                       {'node': anode.node_info,
+                                                        'force': force,
+                                                        'config': cfg_nodes[node.node_info.name],
+                                                        'force_host': force_host
+                                                       })
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                   ''.join(['start ', node.node_info.name]),
+                                                   'start %s' % node.node_info.name,
                                                    self.start_node,
-                                                   (node.node_info, force, cfg_nodes[node.node_info.name], force_host, logging, cmd_prefix))
+                                                   {'node': node.node_info,
+                                                    'force': force,
+                                                    'config': cfg_nodes[node.node_info.name],
+                                                    'force_host': force_host,
+                                                    'logging': logging,
+                                                    'cmd_prefix': cmd_prefix
+                                                   })
         self._start_queue(self._progress_queue)
 
     def _check_for_nodelets(self, nodes):
@@ -2332,7 +2350,7 @@ class MasterViewProxy(QWidget):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'stop %s' % node.name,
                                            self.stop_node,
-                                           (node, (len(nodes) == 1) or force))
+                                           {'node': node, 'force': (len(nodes) == 1) or force})
         self._start_queue(self._progress_queue)
         # add associated nodes to stop
         associated2stop = self._get_associated_nodes([node.name for node in nodes])
@@ -2341,7 +2359,7 @@ class MasterViewProxy(QWidget):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'stop %s' % node.name,
                                            self.stop_node,
-                                           (node, (len(nodes) == 1) or force))
+                                           {'node': node, 'force': (len(nodes) == 1) or force})
         self._start_queue(self._progress_queue)
 
     def stop_nodes_by_name(self, nodes, force=False, ignore=[], only_local=True):
@@ -2405,12 +2423,16 @@ class MasterViewProxy(QWidget):
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'kill %s (%s)' % (node.name, utf8(pid)),
                                                        nm.nmd().monitor.kill_process,
-                                                       (pid, self._grpc_from_node(node)))
+                                                       {'pid': pid, 'grpc_url': self._grpc_from_node(node)})
                     else:
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'kill %s (%s)' % (node.name, utf8(pid)),
                                                        nm.starter().kill,
-                                                       (self.getHostFromNode(node), pid, False, self.current_user))
+                                                       {'host': self.getHostFromNode(node),
+                                                        'pid': pid,
+                                                        'auto_pw_request': False,
+                                                        'user': self.current_user
+                                                       })
                     self._start_queue(self._progress_queue)
                 except Exception as e:
                     rospy.logwarn("Error while kill the node %s: %s", utf8(node.name), utf8(e))
@@ -2427,7 +2449,7 @@ class MasterViewProxy(QWidget):
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    'killall roscore on %s' % host,
                                                    nm.starter().killall_roscore,
-                                                   (host, self.current_user))
+                                                   {'host': host, 'user': self.current_user})
                     self._start_queue(self._progress_queue)
                 else:
                     nm.starter().killall_roscore(host, self.current_user)
@@ -2446,7 +2468,9 @@ class MasterViewProxy(QWidget):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'kill %d' % pid,
                                            nm.starter().kill,
-                                           (host, pid))
+                                           {'host': host,
+                                            'pid': pid
+                                           })                                           
             self._start_queue(self._progress_queue)
 
     def on_kill_nodes(self):
@@ -2455,9 +2479,9 @@ class MasterViewProxy(QWidget):
         # put into the queue and start the que handling
         for node in selectedNodes:
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                           ''.join(['kill ', node.name]),
+                                           'kill %s' % node.name,
                                            self.kill_node,
-                                           (node, (len(selectedNodes) == 1)))
+                                           {'node': node, 'force': (len(selectedNodes) == 1)})
         self._start_queue(self._progress_queue)
 
     def unregister_node(self, node, force=False):
@@ -2506,9 +2530,9 @@ class MasterViewProxy(QWidget):
         for node in selectedNodes:
             if node.pid is None or len(selectedNodes) == 1:
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               ''.join(['unregister node ', node.name]),
+                                               'unregister node %s' % node.name,
                                                self.unregister_node,
-                                               (node, (len(selectedNodes) == 1)))
+                                               {'node': node, 'force': (len(selectedNodes) == 1)})
         self._start_queue(self._progress_queue)
 
     def on_stop_context_toggled(self, state):
@@ -2600,7 +2624,15 @@ class MasterViewProxy(QWidget):
                         queue.add2queue(utf8(uuid.uuid4()),
                                         'show IO of %s' % node.name,
                                         nm.screen().open_screen,
-                                        (node.name, self._grpc_from_node(node), False, activated, self.current_user, None, [], self._has_nmd))
+                                        {'node': node.name,
+                                         'grpc_url': self._grpc_from_node(node),
+                                         'auto_item_request': False,
+                                         'use_log_widget': activated,
+                                         'user': self.current_user,
+                                         'pw': None,
+                                         'items': [],
+                                         'use_nmd': self._has_nmd
+                                        })
                     self._start_queue(queue)
             else:
                 self.on_show_all_screens()
@@ -2632,7 +2664,11 @@ class MasterViewProxy(QWidget):
                     self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                    "kill screen of %s" % node.name,
                                                    nm.screen().kill_screens,
-                                                   (node.name, self._grpc_from_node(node), False, self.current_user))
+                                                   {'node': node.name,
+                                                    'grpc_url': self._grpc_from_node(node),
+                                                    'auto_ok_request': False,
+                                                    'user': self.current_user
+                                                   })
             self._start_queue(self._progress_queue)
         finally:
             self.setCursor(cursor)
@@ -2694,7 +2730,11 @@ class MasterViewProxy(QWidget):
                     self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                         'show log of %s' % node.name,
                                                         nm.starter().openLog,
-                                                        (node.name, self.getHostFromNode(node), self.current_user, only_screen))
+                                                        {'nodename' : node.name,
+                                                         'host': self.getHostFromNode(node),
+                                                         'user': self.current_user,
+                                                         'only_screen': only_screen
+                                                        })
                 self._start_queue(self._progress_queue_prio)
         except Exception as e:
             print(traceback.format_exc(3))
@@ -2726,7 +2766,11 @@ class MasterViewProxy(QWidget):
             self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
                                                 "delete Log of '%s'" % node.name,
                                                 nm.starter().delete_log,
-                                                (node.name, self._grpc_from_node(node), False, self.current_user))
+                                                {'nodename': node.name,
+                                                 'grpc_uri': self._grpc_from_node(node),
+                                                 'auto_pw_request': False,
+                                                 'user': self.current_user
+                                                })
         self._start_queue(self._progress_queue_prio)
 
     def on_dynamic_config_clicked(self):
@@ -2840,7 +2884,7 @@ class MasterViewProxy(QWidget):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'poweroff `%s`' % self.mastername,
                                            nm.starter().poweroff,
-                                           ('%s' % self.mastername,))
+                                           {'host': '%s' % self.mastername})
             self._start_queue(self._progress_queue)
         except (Exception, nm.StartException) as emsg:
             rospy.logwarn("Error while poweroff %s: %s", self.mastername, utf8(emsg))
@@ -2988,7 +3032,16 @@ class MasterViewProxy(QWidget):
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                'start publisher for %s' % topic_name,
                                                nm.starter().runNodeWithoutConfig,
-                                               (nm.nameres().address(self.masteruri), 'rostopic', 'rostopic', 'rostopic_pub%s%s%s' % (topic_name, opt_name_suf, str(rospy.Time.now())), [pub_cmd], self.masteruri, True, False, self.current_user))
+                                               {'host': nm.nameres().address(self.masteruri),
+                                                'package': 'rostopic',
+                                                'binary': 'rostopic',
+                                                'name': 'rostopic_pub%s%s%s' % (topic_name, opt_name_suf, str(rospy.Time.now())),
+                                                'args': [pub_cmd],
+                                                'masteruri': self.masteruri,
+                                                'use_nmd': True,
+                                                'auto_pw_request': False,
+                                                'user': self.current_user
+                                               })
                 self._start_queue(self._progress_queue)
                 return True
             else:
@@ -3065,8 +3118,16 @@ class MasterViewProxy(QWidget):
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                             'start subcriber for %s' % topic.name,
                                             nm.starter().runNodeWithoutConfig,
-                                            ('localhost',
-                                            'fkie_node_manager', 'node_manager', nodename, args, self.masteruri, False, False, self.current_user))
+                                            {'host': 'localhost',
+                                             'package': 'fkie_node_manager',
+                                             'binary': 'node_manager',
+                                             'name': nodename,
+                                             'args': args,
+                                             'masteruri': self.masteruri,
+                                             'use_nmd': False,
+                                             'auto_pw_request': False,
+                                             'user': self.current_user
+                                            })
             self._start_queue(self._progress_queue)
             self.__echo_topics_dialogs.add(rospy.names.ns_join(namespace, nodename))
         except Exception as e:
@@ -3487,7 +3548,11 @@ class MasterViewProxy(QWidget):
                 self.main_window.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
                                                                       'transfer %s to %s' % (data.data, nmd_uri),
                                                                       nm.starter().transfer_file_nmd,
-                                                                      (nmd_uri, data.data, False, username))
+                                                                      {'grpc_url': nmd_uri,
+                                                                       'path': data.data,
+                                                                       'auto_pw_request': True,
+                                                                       'user': username
+                                                                      })
                 self.main_window.launch_dock.progress_queue.start()
             except Exception as err:
                 rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))
@@ -3500,8 +3565,16 @@ class MasterViewProxy(QWidget):
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                'start node_manager_daemon for %s' % host_addr,
                                                nm.starter().runNodeWithoutConfig,
-                                               (nm.nameres().address(self.masteruri),
-                                                'fkie_node_manager_daemon', 'node_manager_daemon', 'node_manager_daemon', [], self.masteruri, False, False, self.current_user))
+                                               {'host': nm.nameres().address(self.masteruri),
+                                                'package': 'fkie_node_manager_daemon',
+                                                'binary': 'node_manager_daemon',
+                                                'name': 'node_manager_daemon',
+                                                'args': [],
+                                                'masteruri': self.masteruri,
+                                                'use_nmd': False,
+                                                'auto_pw_request': False,
+                                                'user': self.current_user
+                                               })
                 self._start_queue(self._progress_queue)
             except Exception as err:
                 rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
