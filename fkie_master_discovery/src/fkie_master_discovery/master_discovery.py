@@ -984,8 +984,11 @@ class Discoverer(object):
             (version,) = struct.unpack('B', msg[1:2])
             if (version in [Discoverer.VERSION, 2, 3]):
                 if (r == b'R'):
-                    if len(msg) == struct.calcsize(Discoverer.HEARTBEAT_FMT):
+                    struct_size = struct.calcsize(Discoverer.HEARTBEAT_FMT)
+                    if len(msg) == struct_size:
                         return (version, struct.unpack(Discoverer.HEARTBEAT_FMT, msg))
+                    else:
+                        raise Exception("wrong message size; expected %d, got %d from %s" % (struct_size, len(msg), address))
                 else:
                     raise Exception("wrong initial discovery message char %s received from %s" % (r, address))
             elif (version > Discoverer.VERSION):
