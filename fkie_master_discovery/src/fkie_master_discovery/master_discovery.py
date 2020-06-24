@@ -1047,11 +1047,12 @@ class Discoverer(object):
 
         :type stats:  `fkie_master_discovery.msg.LinkStatesStamped <http://www.ros.org/doc/api/fkie_master_discovery/html/msg/LinkStatesStamped.html>`_
         '''
-        with self.__lock:
-            try:
-                self.pubstats.publish(stats)
-            except:
-                traceback.print_exc()
+        if not rospy.is_shutdown():
+            with self.__lock:
+                try:
+                    self.pubstats.publish(stats)
+                except:
+                    traceback.print_exc()
 
     def update_master_errors(self):
         result = []
