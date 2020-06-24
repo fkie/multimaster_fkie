@@ -7,7 +7,7 @@ catkin_python_setup()
 
 catkin_package(CATKIN_DEPENDS fkie_multimaster_msgs std_srvs)
 
-install(
+catkin_install_python(
     PROGRAMS
         nodes/master_discovery
         nodes/zeroconf

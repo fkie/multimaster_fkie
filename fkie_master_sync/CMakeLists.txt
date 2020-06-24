@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS fkie_master_discovery fkie_multimaster_m
 catkin_package(CATKIN_DEPENDS fkie_master_discovery fkie_multimaster_msgs)
 catkin_python_setup()
 
-install(
+catkin_install_python(
     PROGRAMS
         nodes/master_sync
         nodes/param_sync.py

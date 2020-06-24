@@ -23,13 +23,18 @@ generate_version(TARGETS version_TARGETS)
 include(cmake/build_launcher.cmake)
 build_launcher()
 
-install(
+catkin_install_python(
     PROGRAMS 
         nodes/dynamic_reconfigure
         nodes/node_manager
         nodes/script_runner.py
         scripts/reduced_nm.py
         scripts/remote_nm.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(
+    PROGRAMS 
         scripts/respawn
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
