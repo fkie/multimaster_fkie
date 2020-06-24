@@ -541,7 +541,7 @@ class UcastSocket(socket.socket):
 
     def close(self):
         """ Cleanup and close the socket"""
-        self.sendto('', (self.interface, self.port))
+        self.sendto(b'', (self.interface, self.port))
         socket.socket.close(self)
 
     @staticmethod
