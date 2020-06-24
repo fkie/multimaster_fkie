@@ -190,21 +190,6 @@ def get_ros_logfile(node):
     return ''
 
 
-def get_cfgfile(session=None, node=None):
-    '''
-    Generates a configuration file name for the screen session.
-
-    :param str session: the name of the screen session
-    :return: the configuration file name
-    :rtype: str
-    '''
-    if session is not None:
-        return "%s%s.conf" % (LOG_PATH, session)
-    elif node is not None:
-        return "%s%s.conf" % (LOG_PATH, create_session_name(node))
-    return "%s%s.conf" % (LOG_PATH, 'unknown')
-
-
 def get_pidfile(session=None, node=None):
     '''
     Generates a PID file name for the screen session.
@@ -220,50 +205,23 @@ def get_pidfile(session=None, node=None):
     return "%s%s.pid" % (LOG_PATH, 'unknown')
 
 
-def _append_env(cfgfile, arg, env):
-    if arg in env:
-        value = env[arg]
-        if value:
-            cfgfile.write('setenv %s %s\n' % (arg, value))
-            return True
-    return False
-
-
 def get_cmd(node, env=[], keys=[]):
     '''
-    Generates a screen configuration file and return the command prefix to start the given node
+    Return the command prefix to start the given node
     in a screen terminal.
 
     :param str node: the name of the node
     :return: the command prefix
     :rtype: str
     '''
-    filename = get_cfgfile(node=node)
-    f = None
-    try:
-        f = open(filename, 'w')
-    except Exception:
-        os.makedirs(os.path.dirname(filename))
-        f = open(filename, 'w')
-    f.write("logfile %s\n" % get_logfile(node=node))
-    f.write("logfile flush 0\n")
-    f.write("defscrollback 10000\n")
-    addkeys = list(keys)
-    addkeys.append('LD_LIBRARY_PATH')
-    addkeys.append('ROS_ETC_DIR')
-    addkeys.append('ROS_MASTER_URI')
-    addkeys.append('ROS_HOSTNAME')
-    addkeys.append('ROS_NAMESPACE')
-    addkeys.append('ROSCONSOLE_FORMAT')
-    addkeys.append('ROSCONSOLE_CONFIG_FILE')
-    addkeys.append('RESPAWN_DELAY')
-    addkeys.append('RESPAWN_MAX')
-    addkeys.append('RESPAWN_MIN_RUNTIME')
-    for key in addkeys:
-        if not _append_env(f, key, env):
-            _append_env(f, key, os.environ)
-    f.close()
-    return "%s -c %s -L -dmS %s" % (SCREEN, filename, create_session_name(node=node))
+    # see https://www.gnu.org/software/screen/manual/html_node/
+    # If the command begins with a '-' character, the shell will be started as a login-shell.
+    # Typical shells do only minimal initialization when not started as a login-shell. 
+    # E.g. Bash will not read your ~/.bashrc unless it is a login-shell.
+    shell = '-/bin/bash'
+    if 'SHELL' in os.environ:
+        shell = '-%s' % os.environ['SHELL']
+    return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node), shell, create_session_name(node=node))
 
 
 def rosclean():
@@ -298,13 +256,10 @@ def delete_log(nodename):
     :param str nodename: Name of the node.
     '''
     screen_log = get_logfile(node=nodename)
-    screen_conf = get_cfgfile(node=nodename)
     pid_file = get_pidfile(node=nodename)
     roslog = get_ros_logfile(nodename)
     if os.path.isfile(screen_log):
         os.remove(screen_log)
-    if os.path.isfile(screen_conf):
-        os.remove(screen_conf)
     if os.path.isfile(pid_file):
         os.remove(pid_file)
     if os.path.isfile(roslog):
