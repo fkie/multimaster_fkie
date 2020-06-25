@@ -184,10 +184,9 @@ class MasterMonitor(object):
         self._last_clearup_ts = time.time()
 
         self._master_errors = list()
-
         # Create an XML-RPC server
         self.ready = False
-        while not self.ready and (not rospy.is_shutdown()):
+        while not self.ready and not rospy.is_shutdown():
             try:
                 RPCClass = RPCThreading
                 if ipv6:
@@ -250,12 +249,12 @@ class MasterMonitor(object):
         '''
         Shutdown the RPC Server.
         '''
+        if self._timer_update_launch_uris is not None:
+            try:
+                self._timer_update_launch_uris.cancel()
+            except Exception:
+                pass
         if hasattr(self, 'rpcServer'):
-            if self._timer_update_launch_uris is not None:
-                try:
-                    self._timer_update_launch_uris.cancel()
-                except:
-                    pass
             if self._master is not None:
                 rospy.loginfo("Unsubscribe from parameter `/roslaunch/uris`")
                 try:

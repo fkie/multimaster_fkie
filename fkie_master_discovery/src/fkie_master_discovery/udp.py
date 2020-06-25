@@ -152,7 +152,7 @@ class DiscoverSocket(socket.socket):
 
         socket.socket.__init__(self, addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         if not self.unicast_only:
-            rospy.loginfo("Create multicast socket at ('%s', %d)", self.mgroup, port)
+            rospy.logdebug("Create multicast socket at ('%s', %d)", self.mgroup, port)
             # initialize multicast socket
             # Allow multiple copies of this program on one machine
             if hasattr(socket, "SO_REUSEPORT"):
@@ -257,7 +257,7 @@ class DiscoverSocket(socket.socket):
                     self.setsockopt(socket.IPPROTO_IPV6,
                                     socket.IPV6_LEAVE_GROUP,
                                     self.group_bing)
-            rospy.loginfo("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
+            rospy.logdebug("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
             self.sendto(b'', ('localhost', self.port))
             socket.socket.close(self)
         # close the unicast socket
@@ -280,7 +280,7 @@ class DiscoverSocket(socket.socket):
         '''
         while not self._closed:
             try:
-                send_item = self._send_queue.get(timeout=1)
+                send_item = self._send_queue.get(timeout=0.5)
                 return send_item
             except queue.Empty:
                 pass
@@ -291,7 +291,7 @@ class DiscoverSocket(socket.socket):
     def _send_loop_from_queue(self):
         while not self._closed:
             send_item = self._get_next_queue_item()
-            if send_item is not None:
+            if send_item is not None and not self._closed:
                 msg = send_item.msg
                 if send_item.destinations:
                     # send to given addresses

@@ -113,6 +113,7 @@ def main():
         discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port, rpc_addr=rpc_addr)
         discoverer.start()
         rospy.spin()
+        discoverer.finish()
     except Exception as e:
         import traceback
         rospy.logerr("%s\nError while start master_discovery: %s" % (traceback.format_exc(), str(e)))

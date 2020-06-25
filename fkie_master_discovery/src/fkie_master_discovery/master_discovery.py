@@ -144,14 +144,16 @@ class DiscoveredMaster(object):
         self.monitor_hostname = get_hostname(monitoruri)
         self.master_hostname = None
         self.masteruriaddr = None
+        self._on_finish = False
         # create a thread to retrieve additional information about the remote ROS master
-        self._get_into_timer = threading.Timer(0.1, self.__retrieve_masterinfo)
+        self._get_into_timer = threading.Timer(0.1, self._get_info_threaded)
         self._get_into_timer.start()
 
     def finish(self):
+        self._on_finish = True
         try:
             self._get_into_timer.cancel()
-        except:
+        except Exception:
             pass
 
     def add_heartbeat(self, timestamp, timestamp_local, rate):
@@ -322,19 +324,24 @@ class DiscoveredMaster(object):
             pass
 
     def __start_get_info_timer(self, timetosleep):
-        self._get_into_timer = threading.Timer(timetosleep, self.__retrieve_masterinfo)
+        self._get_into_timer = threading.Timer(timetosleep, self._get_info_threaded)
         self._get_into_timer.start()
 
-    def __retrieve_masterinfo(self):
+    def _get_info_threaded(self):
+        thread = threading.Thread(target=self._retrieve_masterinfo)
+        thread.setDaemon(True)
+        thread.start()
+
+    def _retrieve_masterinfo(self):
         '''
         Connects to the remote RPC server of the discoverer node and gets the
         information about the Master URI, name of the service, and other. The
         ``getMasterInfo()`` method will be used. On problems the connection will be
         reestablished until the information will be get successful.
         '''
-        if self.monitoruri is not None:
+        if self.monitoruri is not None and not self._on_finish:
+            timetosleep = 5.
             if not rospy.is_shutdown() and self.mastername is None:
-                timetosleep = 5.
                 try:
                     rospy.logdebug("Get additional connection info from %s" % self.monitoruri)
                     remote_monitor = xmlrpcclient.ServerProxy(self.monitoruri)
@@ -342,18 +349,17 @@ class DiscoveredMaster(object):
                     timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
                     self._del_error(self.ERR_SOCKET)
                     rospy.logdebug("Got [%s, %s, %s, %s] from %s" % (timestamp, masteruri, mastername, nodename, monitoruri))
+                    timetosleep = 0
                 except socket.error as errobj:
                     msg = "can't retrieve connection information using XMLRPC from [%s], socket error: %s" % (self.monitoruri, str(errobj))
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
                     if errobj.errno in [errno.EHOSTUNREACH]:
                         timetosleep = 30
-                    self.__start_get_info_timer(timetosleep)
                 except:
                     msg = "can't retrieve connection information using XMLRPC from [%s]: %s" % (self.monitoruri, traceback.format_exc())
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
-                    self.__start_get_info_timer(timetosleep)
                 else:
                     if float(timestamp) != 0:
                         self.masteruri = masteruri
@@ -371,12 +377,10 @@ class DiscoveredMaster(object):
                             msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(self.masteruri)
                             rospy.logwarn(msg)
                             self._add_error(self.ERR_RESOLVE_NAME, msg)
-                            self.__start_get_info_timer(3.)
                         except:
                             msg = "resolve error [%s]: %s" % (self.monitoruri, traceback.format_exc())
                             rospy.logwarn(msg)
                             self._add_error(self.ERR_SOCKET, msg)
-                            self.__start_get_info_timer(timetosleep)
                         else:
                             # publish new node
                             if self.callback_master_state is not None:
@@ -389,18 +393,19 @@ class DiscoveredMaster(object):
                                                                                  self.online,
                                                                                  self.discoverername,
                                                                                  self.monitoruri)))
+                                timetosleep = 0
                             else:
                                 msg = "calback is None, should not happen...remove master %s" % self.monitoruri
                                 rospy.logwarn(msg)
                                 self._add_error(self.ERR_SOCKET, msg)
-                                self.__start_get_info_timer(timetosleep)
                     else:
                         msg = "Got timestamp=0 from %s, retry... " % self.monitoruri
                         rospy.logwarn(msg)
                         self._add_error(self.ERR_SOCKET, msg)
-                        self.__start_get_info_timer(timetosleep)
                 finally:
                     socket.setdefaulttimeout(None)
+                if not self._on_finish and timetosleep > 0:
+                    self.__start_get_info_timer(timetosleep)
 
 
 class Discoverer(object):
@@ -605,7 +610,7 @@ class Discoverer(object):
             self._current_change_notification_count = self.CHANGE_NOTIFICATION_COUNT
         self._timer_heartbeat = threading.Timer(1.0, self.send_heartbeat)
         # set the callback to finish all running threads
-        rospy.on_shutdown(self.finish)
+        rospy.on_shutdown(self.on_shutdown)
         self._recv_tread = threading.Thread(target=self._recv_loop_from_queue)
 
     def start(self):
@@ -647,14 +652,10 @@ class Discoverer(object):
         except:
             pass
 
-    def finish(self, *arg):
-        '''
-        Callback called on exit of the ros node and publish the empty list of
-        ROSMasters.
-        '''
-        # publish all master as removed
-        rospy.logdebug("Finish master discovery")
+    def on_shutdown(self, *arg):
         with self.__lock:
+            # tell other loops to finish
+            self.do_finish = True
             # finish the RPC server and timer
             self.master_monitor.shutdown()
             for (_, master) in self.masters.items():
@@ -667,18 +668,24 @@ class Discoverer(object):
                                                                    master.online,
                                                                    master.discoverername,
                                                                    master.monitoruri)))
-                    master.finish()
+                master.finish()
             # send notification that the master is going off
             msg = struct.pack(Discoverer.HEARTBEAT_FMT, b'R', Discoverer.VERSION,
                               int(self.HEARTBEAT_HZ * 10), -1, -1,
                               self.master_monitor.rpcport, -1, -1)
             self._publish_current_state(msg=msg)
             time.sleep(0.2)
-            # tell other loops to finish
-            self.do_finish = True
+
+    def finish(self):
+        '''
+        Callback called on exit of the ros node and publish the empty list of
+        ROSMasters.
+        '''
+        # publish all master as removed
+        rospy.logdebug("Finish master discovery")
         self._stop_timers()
         self.socket.close()
-        self._killme_timer = threading.Timer(1., self._killme)
+        self._killme_timer = threading.Timer(19., self._killme)
         self._killme_timer.setDaemon(True)
         self._killme_timer.start()
 
@@ -819,8 +826,9 @@ class Discoverer(object):
             # remove offline hosts or request updates
             self._remove_offline_hosts()
             # setup timer for next ROS master state check
-            self._timer_ros_changes = threading.Timer(1.0 / self.current_check_hz, self.checkROSMaster_loop)
-            self._timer_ros_changes.start()
+            if not rospy.is_shutdown():
+                self._timer_ros_changes = threading.Timer(1.0 / self.current_check_hz, self.checkROSMaster_loop)
+                self._timer_ros_changes.start()
 
     def _remove_offline_hosts(self):
         with self.__lock:
