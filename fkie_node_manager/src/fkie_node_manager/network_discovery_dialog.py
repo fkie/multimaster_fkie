@@ -114,6 +114,8 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.start()
 
     def on_heartbeat_received(self, msg, address, is_multicast):
+        if len(msg) == 0:
+            return
         force_update = False
         with self.mutex:
             try:
@@ -173,11 +175,11 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.display_clear_signal.emit()
         text = '<div style="font-family:Fixedsys,Courier,monospace; padding:10px;">\n'
         for index, addr_dict in self._discovered.items():
-            text = ''.join([text, 'Network <b>', utf8(index), '</b>: <a href="', utf8(index), '">join</a><dl>'])
+            text += 'Network <b>%s</b>: <a href="%s">join</a><dl>' % (utf8(index), utf8(index))
             for addr, (hostname, ts) in addr_dict.items():
-                text = ''.join([text, '<dt>', self._getTsStr(ts), '   <b><u>', utf8(hostname), '</u></b> ', utf8(addr), ', received messages: ', str(self._msg_counts[hostname]), '</dt>\n'])
-            text = ''.join([text, '</dl><br>'])
-        text = ''.join([text, '</div>'])
+                text += '<dt>%s   <b><u>%s</u></b> %s, received messages: %s</dt>\n' % (self._getTsStr(ts), utf8(hostname), utf8(addr), str(self._msg_counts[hostname]))
+            text += '</dl><br>'
+        text += '</div>'
         self.display_append_signal.emit(text)
 
     def _getTsStr(self, timestamp):
@@ -193,7 +195,7 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
             before = diff_dt.strftime('%H:%M:%S std')
         else:
             before = diff_dt.strftime('%d Day(s) %H:%M:%S')
-        return ''.join([dt.strftime('%H:%M:%S'), ' (', before, ')'])
+        return '%s (%s)' % (dt.strftime('%H:%M:%S'), before)
 
     def on_anchorClicked(self, url):
         self._updateDisplay()

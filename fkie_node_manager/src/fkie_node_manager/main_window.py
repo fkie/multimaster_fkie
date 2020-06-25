@@ -1712,6 +1712,11 @@ class MainWindow(QMainWindow):
 
     def _join_network(self, network):
         try:
+            master = self.getMaster(self.getMasteruri())
+            if master is not None:
+                # we need to stop master_discovery node first. In other case the new (and old) one will be stopped by ROS if one is running.
+                master.stop_nodes_by_name(['/master_discovery'])
+                time.sleep(0.5)
             hostname = 'localhost'
             args = []
             if network < 100 and network >= 0:

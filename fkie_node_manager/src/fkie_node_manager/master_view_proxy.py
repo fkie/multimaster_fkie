@@ -2345,7 +2345,7 @@ class MasterViewProxy(QWidget):
         :param nodes: the list with nodes to stop
         :type nodes: list(:class:`fkie_master_discovery.NodeInfo` <http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#fkie_master_discovery.master_info.NodeInfo>)
         '''
-        # put into the queue and start the que handling
+        # put into the queue and start the queue handling
         for node in nodes:
             self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                            'stop %s' % node.name,
