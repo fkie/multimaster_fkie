@@ -143,7 +143,7 @@ class MasterMonitor(object):
 
     INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-    def __init__(self, rpcport=11611, do_retry=True, ipv6=False):
+    def __init__(self, rpcport=11611, do_retry=True, ipv6=False, rpc_addr=''):
         '''
         Initialize method. Creates an XML-RPC server on given port and starts this
         in its own thread.
@@ -192,7 +192,7 @@ class MasterMonitor(object):
                 RPCClass = RPCThreading
                 if ipv6:
                     RPCClass = RPCThreadingV6
-                self.rpcServer = RPCClass(('', rpcport), logRequests=False, allow_none=True)
+                self.rpcServer = RPCClass((rpc_addr, rpcport), logRequests=False, allow_none=True)
                 rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
                 self.rpcServer.register_introspection_functions()
                 self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')

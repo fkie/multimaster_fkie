@@ -108,8 +108,9 @@ def main():
     mcast_group = rospy.get_param('~mcast_group', MCAST_GROUP)
     mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
     rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port())
+    rpc_addr = rospy.get_param('~rpc_addr', '')
     try:
-        discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port)
+        discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port, rpc_addr=rpc_addr)
         discoverer.start()
         rospy.spin()
     except Exception as e:

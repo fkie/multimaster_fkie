@@ -503,7 +503,7 @@ class Discoverer(object):
 
     NETPACKET_SIZE = 68
 
-    def __init__(self, mcast_port, mcast_group, monitor_port):
+    def __init__(self, mcast_port, mcast_group, monitor_port, rpc_addr=''):
         '''
         Initialize method for the Discoverer class
 
@@ -590,7 +590,7 @@ class Discoverer(object):
         # create a thread to monitor the ROS master state
         mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
         is_ip6 = self._is_ipv6_group(mgroup)
-        self.master_monitor = MasterMonitor(monitor_port, ipv6=is_ip6)
+        self.master_monitor = MasterMonitor(monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr)
         # create timer to check for ros master changes
         self._timer_ros_changes = threading.Timer(0.1, self.checkROSMaster_loop)
         # init socket for discovering. Exit on errors!
