@@ -203,8 +203,8 @@ def run_node(startcfg):
         if 'DISPLAY' in startcfg.env:
             if not startcfg.env['DISPLAY'] or startcfg.env['DISPLAY'] == 'remote':
                 del startcfg.env['DISPLAY']
-        else:
-            new_env['DISPLAY'] = ':0'
+        #else:
+        #    new_env['DISPLAY'] = ':0'
         # add environment from launch
         new_env.update(startcfg.env)
         if startcfg.namespace:
