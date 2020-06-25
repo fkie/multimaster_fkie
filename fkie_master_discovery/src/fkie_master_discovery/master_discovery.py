@@ -338,18 +338,19 @@ class DiscoveredMaster(object):
                 try:
                     rospy.logdebug("Get additional connection info from %s" % self.monitoruri)
                     remote_monitor = xmlrpcclient.ServerProxy(self.monitoruri)
+                    socket.setdefaulttimeout(10)
                     timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
                     self._del_error(self.ERR_SOCKET)
                     rospy.logdebug("Got [%s, %s, %s, %s] from %s" % (timestamp, masteruri, mastername, nodename, monitoruri))
                 except socket.error as errobj:
-                    msg = "socket error [%s]: %s" % (self.monitoruri, str(errobj))
+                    msg = "can't retrieve connection information using XMLRPC from [%s], socket error: %s" % (self.monitoruri, str(errobj))
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
                     if errobj.errno in [errno.EHOSTUNREACH]:
                         timetosleep = 30
                     self.__start_get_info_timer(timetosleep)
                 except:
-                    msg = "connection error [%s]: %s" % (self.monitoruri, traceback.format_exc())
+                    msg = "can't retrieve connection information using XMLRPC from [%s]: %s" % (self.monitoruri, traceback.format_exc())
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
                     self.__start_get_info_timer(timetosleep)
@@ -398,6 +399,8 @@ class DiscoveredMaster(object):
                         rospy.logwarn(msg)
                         self._add_error(self.ERR_SOCKET, msg)
                         self.__start_get_info_timer(timetosleep)
+                finally:
+                    socket.setdefaulttimeout(None)
 
 
 class Discoverer(object):
