@@ -30,11 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 try:
-    from SimpleXMLRPCServer import SimpleXMLRPCServer
+    from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
     from SocketServer import ThreadingMixIn
     import cStringIO as io  # python 2 compatibility
 except ImportError:
-    from xmlrpc.server import SimpleXMLRPCServer
+    from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
     from socketserver import ThreadingMixIn
     import io
 try:
@@ -85,12 +85,34 @@ def _succeed(args):
 
 
 class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
-    pass
+    # When inheriting from ThreadingMixIn for threaded connection behavior, you should explicitly
+    # declare how you want your threads to behave on an abrupt shutdown. The ThreadingMixIn class
+    # defines an attribute daemon_threads, which indicates whether or not the server should wait
+    # for thread termination. You should set the flag explicitly if you would like threads to
+    # behave autonomously; the default is False, meaning that Python will not exit until all
+    # threads created by ThreadingMixIn have exited.
+    daemon_threads = True
+
+    def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
+                 logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
+        SimpleXMLRPCServer.__init__(self, addr, requestHandler=requestHandler,
+                 logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
 class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
     address_family = socket.AF_INET6
-    pass
+    # When inheriting from ThreadingMixIn for threaded connection behavior, you should explicitly
+    # declare how you want your threads to behave on an abrupt shutdown. The ThreadingMixIn class
+    # defines an attribute daemon_threads, which indicates whether or not the server should wait
+    # for thread termination. You should set the flag explicitly if you would like threads to
+    # behave autonomously; the default is False, meaning that Python will not exit until all
+    # threads created by ThreadingMixIn have exited.
+    daemon_threads = True
+
+    def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
+                 logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
+        SimpleXMLRPCServer.__init__(self, addr, requestHandler=requestHandler,
+                 logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
 class MasterMonitor(object):

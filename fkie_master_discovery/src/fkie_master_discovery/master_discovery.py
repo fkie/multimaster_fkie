@@ -678,7 +678,7 @@ class Discoverer(object):
             self.do_finish = True
         self._stop_timers()
         self.socket.close()
-        self._killme_timer = threading.Timer(2., self._killme)
+        self._killme_timer = threading.Timer(1., self._killme)
         self._killme_timer.setDaemon(True)
         self._killme_timer.start()
 
