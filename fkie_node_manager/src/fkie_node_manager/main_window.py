@@ -1660,20 +1660,20 @@ class MainWindow(QMainWindow):
                                                      '_ignore_services:=[]', '_sync_services:=[]',
                                                      '_sync_remote_nodes:=False']
                                 self._append_stop_for('/master_sync', hostname, muri, self._progress_queue_sync)
-                                self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
-                                                                    'start sync on %s' % hostname,
-                                                                    nm.starter().runNodeWithoutConfig,
-                                                                    {'host': utf8(hostname),
-                                                                     'package': 'fkie_master_sync',
-                                                                     'binary': 'master_sync',
-                                                                     'name': 'master_sync',
-                                                                     'args': default_sync_args,
-                                                                     'masteruri': muri,
-                                                                     'use_nmd': False,
-                                                                     'auto_pw_request': False,
-                                                                     'user': usr
-                                                                    })
                                 self._progress_queue_sync.start()
+                                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                               'start sync on %s' % hostname,
+                                                               nm.starter().runNodeWithoutConfig,
+                                                               {'host': utf8(hostname),
+                                                                'package': 'fkie_master_sync',
+                                                                'binary': 'master_sync',
+                                                                'name': 'master_sync',
+                                                                'args': default_sync_args,
+                                                                'masteruri': muri,
+                                                                'use_nmd': False,
+                                                                'auto_pw_request': False,
+                                                                'user': usr
+                                                               })
                             else:
                                 if hostname not in self._syncs_to_start:
                                     self._syncs_to_start.append(hostname)
