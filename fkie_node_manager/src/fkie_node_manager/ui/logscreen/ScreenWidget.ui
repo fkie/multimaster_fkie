@@ -64,6 +64,12 @@
       </item>
       <item>
        <widget class="QFrame" name="logframe">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
@@ -88,21 +94,27 @@
          </property>
          <item>
           <widget class="EnhancedLineEdit" name="loggerFilterInput">
-            <property name="visible">
-              <bool>true</bool>
-            </property>
-            <property name="placeholderText">
-              <string>logger filter</string>
-            </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="visible">
+            <bool>true</bool>
+           </property>
+           <property name="placeholderText">
+            <string>logger filter</string>
+           </property>
           </widget>
          </item>
          <item>
           <widget class="QScrollArea" name="loggers">
            <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <property name="widgetResizable">
             <bool>true</bool>
@@ -112,9 +124,15 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>68</width>
-              <height>552</height>
+              <width>140</width>
+              <height>518</height>
              </rect>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
             <layout class="QVBoxLayout" name="loggerLayout">
              <property name="spacing">
@@ -424,7 +442,7 @@
    <extends>QLineEdit</extends>
    <header>fkie_node_manager/editor/line_edit</header>
   </customwidget>
-</customwidgets>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
