@@ -37,11 +37,11 @@
   <exec_depend>rqt_reconfigure</exec_depend>
   <exec_depend>diagnostic_msgs</exec_depend>
 
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-crypto</exec_depend>
+  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-pycryptodome</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-docutils</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-paramiko</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-ruamel.yaml</exec_depend>
-  <!-- <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-crypto</exec_depend>
+  <!-- <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-pycryptodome</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-docutils</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-paramiko</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-ruamel.yaml</exec_depend> -->
