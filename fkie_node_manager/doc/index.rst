@@ -21,3 +21,25 @@ changelog_
 
 .. _shortcuts: manuals/shortcuts.rst
 .. _changelog: ../CHANGELOG.rst
+
+````
+
+**Troubleshooting**
+
+- Error while launch a node on remote host: ``bash: rosrun: command not found``
+
+    To run a node on remote host, an SSH connection will be established without setting any enviroment variables.
+
+    Add ``source /opt/ros/xxx/setup.bash`` to **.bashrc** before ``[ -z "$PS1" ] && return``
+
+- The Node Manager crashes on load a launch file with error: *QSpiAccessible::accessibleEvent not handled: "8008"*
+
+    This "bug" seems to be resolved by removing the **qt-at-spi** package.
+
+- You don't see the correct output of your nodes. Try to change your default terminal:
+
+    ``sudo update-alternatives --config x-terminal-emulator``
+
+- You get an exception on access remote host: *Exception: ssh connection to REMOTE_HOST failed: not a valid RSA private key file*
+
+    Generate an SSH key file with e.g. ``ssh-keygen -p -m PEM -f ~/.ssh/id_rsa``
