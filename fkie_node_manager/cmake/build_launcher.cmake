@@ -4,8 +4,8 @@ macro(build_launcher)
     find_program(DFI desktop-file-install)
     if (NOT DFI)
        message(STATUS "Skip installing Unity desktop launcher: desktop-file-install not found!")
-    else(DFI)
-        if ((${CMAKE_SYSTEM_NAME} STREQUAL Linux) AND (EXISTS ${DFI}))
+    else()
+        if (("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux") AND (EXISTS "${DFI}"))
             # Define where to create the launcher file.
             set(NODE_MANAGER_LAUNCHER ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/node_manager.desktop)
 
