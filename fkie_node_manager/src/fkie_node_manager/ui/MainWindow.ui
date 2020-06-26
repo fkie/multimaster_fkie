@@ -535,9 +535,6 @@ p, li { white-space: pre-wrap; }
                    <property name="text">
                     <string/>
                    </property>
-                   <property name="shortcut">
-                    <string>F5</string>
-                   </property>
                    <property name="flat">
                     <bool>true</bool>
                    </property>
