@@ -193,11 +193,17 @@ class StartHandler(object):
     @classmethod
     def _remove_src_binary(cls, cmdlist):
         result = []
+        count = 0
         if len(cmdlist) > 1:
             for c in cmdlist:
                 if c.find('/src/') == -1:
                     result.append(c)
+                    count += 1
         else:
+            result = cmdlist
+        if count > 1:
+            # we have more binaries in src directory
+            # aks the user
             result = cmdlist
         return result
 
