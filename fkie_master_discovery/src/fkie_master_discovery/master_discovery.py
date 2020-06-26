@@ -344,7 +344,7 @@ class DiscoveredMaster(object):
             if not rospy.is_shutdown() and self.mastername is None:
                 try:
                     rospy.logdebug("Get additional connection info from %s" % self.monitoruri)
-                    remote_monitor = xmlrpcclient.ServerProxy(self.monitoruri, verbose=True)
+                    remote_monitor = xmlrpcclient.ServerProxy(self.monitoruri)
                     socket.setdefaulttimeout(10)
                     timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
                     self._del_error(self.ERR_SOCKET)

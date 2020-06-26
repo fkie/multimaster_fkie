@@ -522,7 +522,8 @@ class MasterMonitor(object):
                             else:
                                 self.__cached_services[service.name] = (uri, None, time.time())
                         else:
-                            self._limited_log(service.name, "can't get contact information. ROS master responds with: %s" % msg)
+                            with self._lock:
+                                self._limited_log(service.name, "can't get contact information. ROS master responds with: %s" % msg)
                 except:
                     traceback.print_exc()
                 if services:
@@ -555,7 +556,8 @@ class MasterMonitor(object):
                             else:
                                 self.__cached_nodes[node.name] = (uri, None, time.time())
                         else:
-                            self._limited_log(node.name, "can't get contact information. ROS master responds with: %s" % msg)
+                            with self._lock:
+                                self._limited_log(node.name, "can't get contact information. ROS master responds with: %s" % msg)
                 except:
                     traceback.print_exc()
 
@@ -610,12 +612,13 @@ class MasterMonitor(object):
 
     def _clearup_cached_logs(self, age=300):
         cts = time.time()
-        for p, msgs in self._printed_errors.items():
-            for msg, ts in msgs.items():
-                if cts - ts > age:
-                    del self._printed_errors[p][msg]
-            if not self._printed_errors[p]:
-                del self._printed_errors[p]
+        with self._lock:
+            for p, msgs in self._printed_errors.items():
+                for msg, ts in msgs.items():
+                    if cts - ts > age:
+                        del self._printed_errors[p][msg]
+                if not self._printed_errors[p]:
+                    del self._printed_errors[p]
 
     def updateSyncInfo(self):
         '''
