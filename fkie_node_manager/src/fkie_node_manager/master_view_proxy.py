@@ -1426,7 +1426,7 @@ class MasterViewProxy(QWidget):
                 elif list_type == 'SERVICE':
                     try:
                         srv = self.__master_info.getService(i)
-                        if name in srv.serviceProvider:
+                        if srv is not None and name in srv.serviceProvider:
                             item = '<tr>'
                             item += '<td><a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a><td>' % (self.mastername, i)
                             item += '<td><a href="service://%s%s">%s</a><td>' % (self.mastername, i, item_name)
