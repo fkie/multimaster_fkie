@@ -621,7 +621,7 @@ class Settings(object):
         :rtype: str
         '''
         if self._terminal_emulator is None:
-            self._terminal_emulator = ""
+            self._terminal_emulator = ''
             for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']:
                 if os.path.isfile(t) and os.access(t, os.X_OK):
                     # workaround to support the command parameter in different terminal
@@ -640,10 +640,13 @@ class Settings(object):
                         self._terminal_title = '-T'
                     self._terminal_emulator = t
                     break
-        if self._terminal_emulator == "":
+        if self._terminal_emulator == '':
             raise Exception("No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
-        self._noclose_str = self._noclose_str if noclose else ""
-        return '%s %s "%s" %s -%s %s' % (self._terminal_emulator, self._terminal_title, title, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
+        self._noclose_str = self._noclose_str if noclose else ''
+        title_opt = ''
+        if title:
+            title_opt = '%s "%s"' % (self._terminal_title, title)
+        return '%s %s %s -%s %s' % (self._terminal_emulator, title_opt, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
         path = settings_file
