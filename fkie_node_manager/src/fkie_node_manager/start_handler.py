@@ -116,32 +116,26 @@ class StartHandler(object):
                 cmd_type = ''
                 if cmd is None or len(cmd) == 0:
                     raise StartException('%s in package [%s] not found!' % (binary, package))
+                # compatibility for python scripts installed with catkin_install_python()
+                # avoid ask for select a binary
+                cmd = cls._remove_src_binary(cmd)
                 if len(cmd) > 1:
-                    if binary in ['node_manager_daemon', 'master_discovery', 'master_sync', 'zeroconf']:
-                        # use path located not in src folder
-                        for c in cmd:
-                            if c.find('/src/') == -1:
-                                cmd_type = c
-                                break
-                        # should not happen
-                        cmd_type = cmd[0]
-                    else:
-                        # Open selection for executables
-                        err = 'Multiple executables with same name in package [%s] found' % package
-                        bsel = nm.BinarySelectionRequest(cmd, err)
-                        raise nm.InteractionNeededError(bsel, cls.runNodeWithoutConfig,
-                                                                {'host': host,
-                                                                'package': package,
-                                                                'binary': binary,
-                                                                'name': name,
-                                                                'args': args,
-                                                                'masteruri': masteruri,
-                                                                'use_nmd': use_nmd,
-                                                                'auto_pw_request': auto_pw_request,
-                                                                'user': user,
-                                                                'pw': pw,
-                                                                'path': path
-                                                                })
+                    # Open selection for executables
+                    err = 'Multiple executables with same name in package [%s] found' % package
+                    bsel = nm.BinarySelectionRequest(cmd, err)
+                    raise nm.InteractionNeededError(bsel, cls.runNodeWithoutConfig,
+                                                              {'host': host,
+                                                               'package': package,
+                                                               'binary': binary,
+                                                               'name': name,
+                                                               'args': args,
+                                                               'masteruri': masteruri,
+                                                               'use_nmd': use_nmd,
+                                                               'auto_pw_request': auto_pw_request,
+                                                               'user': user,
+                                                               'pw': pw,
+                                                               'path': path
+                                                              })
                 else:
                     cmd_type = cmd[0]
             new_env = {}  # dict(os.environ)
@@ -195,6 +189,18 @@ class StartHandler(object):
                         raise StartException(''.join(['The host "', host, '" reports:\n', error]))
             except nm.AuthenticationRequest as e:
                 raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, {'host': host, 'package': package, 'binary': binary, 'name': name, 'args': args, 'masteruri': masteruri, 'use_nmd': use_nmd, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw, 'path': path})
+
+    @classmethod
+    def _remove_src_binary(cls, cmdlist):
+        result = []
+        if len(cmdlist) > 1:
+            for c in cmdlist:
+                if c.find('/src/') == -1:
+                    result.append(c)
+        else:
+            result = cmdlist
+        return result
+
 
     @classmethod
     def _prepareROSMaster(cls, masteruri):
