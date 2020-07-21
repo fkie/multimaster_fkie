@@ -182,6 +182,7 @@ class LaunchConfig(object):
             roscfg = roslaunch.ROSLaunchConfig()
             loader = roslaunch.XmlLoader()
             self.argv = self.resolve_args(argv)
+            loader.ignore_unset_args = False
             loader.load(self.filename, roscfg, verbose=False, argv=self.argv)
             self.__roscfg = roscfg
             if 'arg' in loader.root_context.resolve_dict:
