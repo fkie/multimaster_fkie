@@ -2,6 +2,11 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.1 (2020-07-22)
+------------------
+* fkie_multimaster: added conditions for python3 dependencies in package xml
+* Contributors: Alexander Tiderko
+
 1.2.0 (2020-07-22)
 ------------------
 * fkie_node_manager_daemon: fixed rostest
