@@ -28,7 +28,7 @@
   <exec_depend>roslib</exec_depend>
   <exec_depend>rosgraph</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-avahi</exec_depend>
-  <!-- <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-avahi</exec_depend> -->
+  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-avahi</exec_depend>
   <exec_depend>avahi-daemon</exec_depend>
 
   <export>
