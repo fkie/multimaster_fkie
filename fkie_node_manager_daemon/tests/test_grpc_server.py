@@ -166,8 +166,8 @@ class TestGrpcServer(unittest.TestCase):
             launch_file, _argv = self.ls.load_launch(package, launch, path=path, args=args, request_args=request_args)
             self.fail("`load_launch` did not raises `exceptions.AlreadyOpenException` on load an already loaded file")
         except exceptions.AlreadyOpenException as aoe:
-            request_args = False
-            args = psr.choices
+            ao_path = aoe.path
+            ao_error = aoe.error
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on second reload, got: %s, expected: `exceptions.AlreadyOpenException`: %s" % (type(err), err))
         if unload:
@@ -194,7 +194,7 @@ class TestGrpcServer(unittest.TestCase):
             self.fail("`load_launch` raises wrong Exception on reload launch file, got: %s, expected: `exceptions.ResourceNotFoundt`: %s" % (type(err), err))
 
     def test_save_file_content(self):
-        content = "This is a temporary content to test the save functionality"
+        content = b'This is a temporary content to test the save functionality'
         self.fs.FILE_CHUNK_SIZE = 3
         acks_expected_count = math.ceil(float(len(content)) / float(self.fs.FILE_CHUNK_SIZE))
         acks = self.fs.save_file_content(self.test_save_file, content, 0)
