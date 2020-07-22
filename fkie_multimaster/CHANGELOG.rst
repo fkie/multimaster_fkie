@@ -2,6 +2,11 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2020-07-22)
+------------------
+* fkie_multimaster: fixed warning for cmake_minimum_required
+* Contributors: Alexander Tiderko
+
 1.1.0 (2020-05-13)
 ------------------
 * Contributors: Alexander Tiderko
