@@ -2,6 +2,36 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2020-07-22)
+------------------
+* fkie_node_manager_daemon: fixed rostest
+* fkie_node_manager: editor: fixed recursive search
+* fixed catkin_lint warnings
+* fkie_node_manager: updated description for shortcuts
+* fkie_node_manager: fixed open terminal
+* fkie_node_manager: added troubleshooting to internal help
+* fkie_node_manager: ask user if more then one binary in src
+* fkie_node_manager: avoid ask for binary to select if located in devel and src
+* fkie_node_manager: changed dependency from Crypto to pycryptodome
+* fkie_node_manager: logscreen: show ROS log by {Ctrl,Shift}+Double Click
+* fkie_node_manager: fixed join network from network discovery dialog
+* fkie_node_manager: start master_sync after master_discovery if both are started using start-dialog
+* fkie_node_manager: fixed python3 compatibility in logscreens
+* fkie_multimaster: fixed warning for cmake_minimum_required
+* fkie_node_manager: fixed create new file in launch widget
+* fkie_multimaster: fixed build/start in noetic
+* fkie_node_manager: refactored progress queue, use now kwargs instead of args
+* fkie_node_manager: use Cryptodome or Crypto depending on availability
+* fkie_node_manager: show package name in node-info instead of full path
+* fkie_node_manager: reorganized description of nodes, topics and services
+* fkie_node_manager: added logger filter to logwidget
+* fkie_node_manager: store all loggers states in logscreen while runtime
+* fkie_node_manager: start assosiated nodes first
+* fkie_node_manager: delete diagnostic message of a node on stop/start
+* fkie_node_manager: changed log_widget to get/set log_level depending on masteruri
+* fkie_node_manager: fixed short distance for drag and drop
+* Contributors: Alexander Tiderko
+
 1.1.0 (2020-05-13)
 ------------------
 * fkie_node_manager: added detection for restarted nodes and update loglevel for open log screens

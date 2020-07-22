@@ -2,6 +2,21 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2020-07-22)
+------------------
+* fkie_master_discovery: fixed threading problem
+* fkie_master_discovery: fixed shutdown process
+  set daemon_threads to True in ThreadingMixIn
+* fkie_master_discovery: reduced timeout for connection requests
+* fkie_master_discovery: added exception on wrong message size
+* fkie_multimaster: fixed warning for cmake_minimum_required
+* fkie_multimaster: fixed build/start in noetic
+* fkie_master_discovery: do not publish statistics after shutdown
+* fkie_master_discovery: fixed python3 compatibility on close
+* master_discovery: added more output details to find problems on issue `#130 <https://github.com/fkie/multimaster_fkie/issues/130>`_
+  more details for "master_discovery node appear not to running"
+* Contributors: Alexander Tiderko
+
 1.1.0 (2020-05-13)
 ------------------
 * prepared conditions for python3  in package xml

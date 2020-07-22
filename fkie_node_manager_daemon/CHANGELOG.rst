@@ -2,6 +2,20 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2020-07-22)
+------------------
+* fkie_node_manager_daemon: fixed rostest
+* fkie_node_manager_daemon: fixed tests for python3
+* fkie_node_manager: fixed error message with ignore_unset_args
+* changed screen environment: do not set DISPLAY environment
+* fkie_multimaster: fixed warning for cmake_minimum_required
+* fkie_multimaster: fixed build/start in noetic
+* fkie_node_manager_daemon: changed sreen configuration on node start
+* fkie_node_manager_daemon: fixed read version with python 3
+* fkie_master_sync: send OK diagnostic message on start
+* fkie_node_manager_daemon: load global parameter which has names equal to node names
+* Contributors: Alexander Tiderko
+
 1.1.0 (2020-05-13)
 ------------------
 * prepared conditions for python3  in package xml

@@ -2,6 +2,15 @@
 Changelog for package fkie_master_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2020-07-22)
+------------------
+* fkie_multimaster: fixed warning for cmake_minimum_required
+* fkie_multimaster: fixed build/start in noetic
+* fkie_master_sync: send OK diagnostic message on start
+* fkie_master_sync: changed handling of the issue `#128 <https://github.com/fkie/multimaster_fkie/issues/128>`_
+  Changed update of the publisher after register a remote subscription
+* Contributors: Alexander Tiderko
+
 1.1.0 (2020-05-13)
 ------------------
 * prepared conditions for python3  in package xml
