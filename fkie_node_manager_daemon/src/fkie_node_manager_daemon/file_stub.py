@@ -119,14 +119,14 @@ class FileStub(object):
         response_stream = self.fm_stub.GetFileContent(fmsg.ListPathRequest(path=path))
         file_size = None
         file_mtime = None
-        file_content = ""
+        file_content = b''
         for response in response_stream:
             if self._running:
                 if response.status.code == OK:
                     if response.file.offset == 0:
                         file_size = response.file.size
                         file_mtime = response.file.mtime
-                    file_content += utf8(response.file.data)
+                    file_content += response.file.data
                 elif response.status.code == OS_ERROR:
                     raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
                 elif response.status.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
@@ -149,7 +149,7 @@ class FileStub(object):
                     chunk = send_content[0:self.FILE_CHUNK_SIZE]
                     send_content = send_content[self.FILE_CHUNK_SIZE:]
                 else:
-                    send_content = ''
+                    send_content = b''
                 msg = fmsg.SaveFileContentRequest()
                 msg.overwrite = mtime == 0
                 msg.file.path = path

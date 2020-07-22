@@ -38,6 +38,7 @@ from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.file_stub as fstub
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_node_manager_daemon.common import utf8
 
 from .channel_interface import ChannelInterface
 
@@ -222,6 +223,7 @@ class FileChannel(ChannelInterface):
             fm, channel = self.get_file_manager(uri)
             try:
                 file_size, file_mtime, file_content = fm.get_file_content(path)
+                file_content = utf8(file_content)
                 self._cache_file_content[grpc_path] = (file_size, file_mtime, file_content)
             except Exception as e:
                 self.error.emit("get_file_content", "grpc://%s" % uri, grpc_path, e)
