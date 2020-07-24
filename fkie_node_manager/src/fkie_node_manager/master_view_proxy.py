@@ -1983,7 +1983,7 @@ class MasterViewProxy(QWidget):
                         loglevel = logging.loglevel
                 if self._has_nmd:
                     _result = nm.nmd().launch.start_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,
-                                                         loglevel=loglevel, logformat=logformat, opt_binary=path, cmd_prefix=cmd_prefix)
+                                                         loglevel=loglevel, logformat=logformat, path=path, cmd_prefix=cmd_prefix)
                 else:
                     rospy.logwarn("no running daemon found, start '%s' via SSH" % node.name)
                     nm.starter().bc_run_node(node.name, config, self.masteruri, reload_global_param=reload_global_param,

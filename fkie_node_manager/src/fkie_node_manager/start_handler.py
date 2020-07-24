@@ -545,7 +545,7 @@ class StartHandler(object):
         try:
             self._rosclean_wo(grpc_uri, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.poweroff, {'grpc_uri': grpc_uri, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+            raise nm.InteractionNeededError(e, self.rosclean, {'grpc_uri': grpc_uri, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _rosclean_wo(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
         try:

@@ -397,12 +397,12 @@ class LaunchChannel(ChannelInterface):
         if hasattr(self, '_threads'):
             self._threads.finished("gn_%s_%s" % (grpc_path, masteruri))
 
-    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat='', opt_binary='', cmd_prefix=''):
+    def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat='', path='', cmd_prefix=''):
         rospy.loginfo("start node: %s with %s" % (name, grpc_path))
         uri, opt_launch = nmdurl.split(grpc_path)
         lm, channel = self.get_launch_manager(uri)
         try:
-            return lm.start_node(name, opt_binary=opt_binary, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param, cmd_prefix=cmd_prefix)
+            return lm.start_node(name, opt_binary=path, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param, cmd_prefix=cmd_prefix)
         except grpc.RpcError as gerr:
             rospy.logdebug("remove connection %s" % uri)
             raise gerr
