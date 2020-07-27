@@ -2,6 +2,9 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.2 (2020-07-27)
+------------------
+
 1.2.1 (2020-07-22)
 ------------------
 * fkie_multimaster: added conditions for python3 dependencies in package xml

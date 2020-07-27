@@ -2,6 +2,11 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.2 (2020-07-27)
+------------------
+* changed exec dependecies to build
+* Contributors: Alexander Tiderko
+
 1.2.1 (2020-07-22)
 ------------------
 * fkie_multimaster: added conditions for python3 dependencies in package xml
