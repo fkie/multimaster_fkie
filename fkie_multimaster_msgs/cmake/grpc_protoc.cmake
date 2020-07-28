@@ -1,13 +1,6 @@
 include(CMakeParseArguments)
 
 macro(generate_grpc)
-    find_program(PYTHON python)
-    if (NOT PYTHON)
-        find_program(PYTHON python3)
-    endif()
-    if (NOT PYTHON)
-        message(FATAL_ERROR "python and python3 not found!")
-    endif()
     # we need (for code generation) the root where the package lib goes to
     get_filename_component(DST_ROOT ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION} DIRECTORY)
     # and also the multimaster_fkie absolute path
@@ -31,12 +24,12 @@ macro(generate_grpc)
         message(STATUS "generate gRPC code from ${ABS_PROTO_FILE}")
         add_custom_command(
             OUTPUT ${GRPC_GENERATED_SRC_DIR}/${PROTO_FILE}_pb2.py
-            COMMAND "${PYTHON}" -m grpc_tools.protoc -I${MM_ROOT} --python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
+            COMMAND "${PYTHON_EXECUTABLE}" -m grpc_tools.protoc -I${MM_ROOT} --python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
             DEPENDS ${GRPC_GENERATED_SRC_DIR} ${ABS_PROTO_FILE}
         )
         add_custom_command(
             OUTPUT ${GRPC_GENERATED_SRC_DIR}/${PROTO_FILE}_pb2_grpc.py 
-            COMMAND "${PYTHON}" -m grpc_tools.protoc -I${MM_ROOT} --grpc_python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
+            COMMAND "${PYTHON_EXECUTABLE}" -m grpc_tools.protoc -I${MM_ROOT} --grpc_python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
             DEPENDS ${GRPC_GENERATED_SRC_DIR} ${ABS_PROTO_FILE}
         )
     endforeach()
