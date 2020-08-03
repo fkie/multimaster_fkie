@@ -2,6 +2,9 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.3 (2020-08-03)
+------------------
+
 1.2.2 (2020-07-27)
 ------------------
 * fkie_node_manager: fixed start if multiple binaries are found

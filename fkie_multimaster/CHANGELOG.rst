@@ -2,6 +2,10 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.3 (2020-08-03)
+------------------
+* use ${PYTHON_EXECUTABLE} instead of ${PYTHON}
+
 1.2.2 (2020-07-27)
 ------------------
 
