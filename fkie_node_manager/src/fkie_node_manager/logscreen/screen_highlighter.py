@@ -46,12 +46,12 @@ class ScreenHighlighter(QSyntaxHighlighter):
         self._grep_format = QTextCharFormat()
         self._grep_rule = None
         self.rules = []
-        self.rules.append((self._create_regexp(r'.*\[DEBUG\].*', syntax=QRegExp.RegExp), self._create_format(QColor(57, 181, 74))))
-        self.rules.append((self._create_regexp(r'.*\[INFO\].*', syntax=QRegExp.RegExp), self._create_format(QColor('#FFFAFA'))))
-        self.rules.append((self._create_regexp(r'.*\[WARN\].*', syntax=QRegExp.RegExp), self._create_format(QColor(255, 199, 6))))
-        self.rules.append((self._create_regexp(r'.*WARNING.*', syntax=QRegExp.RegExp), self._create_format(QColor(255, 199, 6))))
-        self.rules.append((self._create_regexp(r'.*\[ERROR\].*', syntax=QRegExp.RegExp), self._create_format(QColor(222, 56, 43))))
-        self.rules.append((self._create_regexp(r'.*\[FATAL\].*', syntax=QRegExp.RegExp), self._create_format(QColor(255, 0, 0))))  #red
+        self.rules.append((self._create_regexp(r'.*\[DEBUG\].', syntax=QRegExp.RegExp), self._create_format(QColor(57, 181, 74))))
+        self.rules.append((self._create_regexp(r'.*\[INFO\].', syntax=QRegExp.RegExp), self._create_format(QColor('#FFFAFA'))))
+        self.rules.append((self._create_regexp(r'.*\[WARN\].', syntax=QRegExp.RegExp), self._create_format(QColor(255, 199, 6))))
+        self.rules.append((self._create_regexp(r'.*WARNING.', syntax=QRegExp.RegExp), self._create_format(QColor(255, 199, 6))))
+        self.rules.append((self._create_regexp(r'.*\[ERROR\].', syntax=QRegExp.RegExp), self._create_format(QColor(222, 56, 43))))
+        self.rules.append((self._create_regexp(r'.*\[FATAL\].', syntax=QRegExp.RegExp), self._create_format(QColor(255, 0, 0))))  #red
 
     def _create_format(self, color, style=''):
         _format = QTextCharFormat()
@@ -66,11 +66,10 @@ class ScreenHighlighter(QSyntaxHighlighter):
 
     def highlightBlock(self, text):
         for pattern, frmt in self.rules:
-            index = pattern.indexIn(text)
-            while index >= 0:
-                length = pattern.matchedLength()
-                self.setFormat(index, length, frmt)
-                index = pattern.indexIn(text, index + length)
+            index = pattern.indexIn(text[:80])
+            if index >= 0:
+                self.setFormat(0, len(text), frmt)
+                break
         if self._grep_rule is not None:
             index = self._grep_rule.indexIn(text)
             while index >= 0:
