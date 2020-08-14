@@ -12,6 +12,13 @@ For configuration click on |settings| icon in bottom middle of the Node Manager.
 .. |settings| image:: images/crystal_clear_settings_24.png
 
 
+Manual
+------
+* Parameter
+    * `Custom parameter in Launch Editor`_
+    * Associations_
+
+
 References
 ----------
 
@@ -19,10 +26,14 @@ shortcuts_
 
 changelog_
 
+
+.. _`Custom parameter in Launch Editor`: manuals/parameter/editor.rst
+.. _Associations: manuals/parameter/associations.rst
 .. _shortcuts: manuals/shortcuts.rst
 .. _changelog: ../CHANGELOG.rst
 
 ````
+
 
 **Troubleshooting**
 
