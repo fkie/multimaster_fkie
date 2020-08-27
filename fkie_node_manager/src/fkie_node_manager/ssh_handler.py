@@ -96,7 +96,8 @@ class SSHhandler(object):
         Closes all open SSH sessions. Used on the closing the node manager.
         '''
         # close all ssh sessions
-        for ssh in SSHhandler.SSH_SESSIONS.keys():
+        keys = list(SSHhandler.SSH_SESSIONS.keys())
+        for ssh in keys:
             s = SSHhandler.SSH_SESSIONS.pop(ssh)
             if s._transport is not None:
                 s.close()

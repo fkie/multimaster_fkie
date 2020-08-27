@@ -126,7 +126,7 @@ class ScreenWidget(QWidget):
         self.thread = None
         self._info = ''
         self._masteruri = ''
-        self._nodename = ''
+        self._nodename = nodename
         self._first_fill = True
         self._seek_start = -1
         self._seek_end = -1
@@ -250,6 +250,8 @@ class ScreenWidget(QWidget):
     def stop(self):
         '''
         '''
+        if self.finished:
+            return
         if self.qfile is not None and self.qfile.isOpen():
             self.qfile.close()
             self.qfile = None
@@ -265,6 +267,7 @@ class ScreenWidget(QWidget):
             self._ssh_input_file.close()
         except Exception:
             pass
+        self.finished = True
 
     def pause(self, state):
         self._on_pause = state
@@ -433,7 +436,12 @@ class ScreenWidget(QWidget):
                 info_text = 'END'
             else:
                 info_text = "%d / %d" % (vbar_value / 20, self.textBrowser.verticalScrollBar().maximum() / 20)
-        self.infoLabel.setText(info_text + '\t%s / %s' % (sizeof_fmt(self._seek_end - self._seek_start), sizeof_fmt(self._seek_end)))
+        seek_info = ''
+        if self._seek_end > -1:
+            seek_info = '\t%s / %s' % (sizeof_fmt(self._seek_end - self._seek_start), sizeof_fmt(self._seek_end))
+        elif self._ssh_output_file is not None:
+            seek_info = '\ttail via SSH'
+        self.infoLabel.setText(info_text + seek_info)
 
     def _connect_ssh(self, host, nodename, user=None, pw=None):
         try:
@@ -442,17 +450,17 @@ class ScreenWidget(QWidget):
             else:
                 self.infoLabel.setText('connecting to %s' % host)
             ok = False
-            self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--tail_screen_log', nodename], user, pw, auto_pw_request=False, get_pty=True)
+            self._ssh_input_file, self._ssh_output_file, self._ssh_error_file, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--tail_screen_log', nodename], user, pw, auto_pw_request=False, get_pty=True)
             if ok:
-                thread = threading.Thread(target=self._read_ssh_output, args=((self.ssh_output_file,)))
+                thread = threading.Thread(target=self._read_ssh_output, args=((self._ssh_output_file,)))
                 thread.setDaemon(True)
                 thread.start()
-                thread = threading.Thread(target=self._read_ssh_error, args=((self.ssh_error_file,)))
+                thread = threading.Thread(target=self._read_ssh_error, args=((self._ssh_error_file,)))
                 thread.setDaemon(True)
                 thread.start()
-            elif self.ssh_output_file:
-                self.ssh_output_file.close()
-                self.ssh_error_file.close()
+            elif self._ssh_output_file:
+                self._ssh_output_file.close()
+                self._ssh_error_file.close()
         except nm.AuthenticationRequest as e:
             self.auth_signal.emit(host, nodename, user)
         except Exception as e:
@@ -467,14 +475,14 @@ class ScreenWidget(QWidget):
         while not output_file.closed:
             text = output_file.readline()
             if text:
-                self.output.emit(text)
+                self.output.emit(text.rstrip() + '\n')
 
     def _read_ssh_error(self, error_file):
         try:
             while not error_file.closed:
                 text = error_file.readline()
                 if text:
-                    self.error_signal.emit(text)
+                    self.error_signal.emit(text.rstrip() + '\n')
         except Exception:
             pass
 
