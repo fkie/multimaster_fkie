@@ -14,6 +14,9 @@ For configuration click on |settings| icon in bottom middle of the Node Manager.
 
 Manual
 ------
+* Logging
+    * `Logs of the nodes`_
+    * Logscreen_
 * Parameter
     * `Custom parameter in Launch Editor`_
     * Associations_
@@ -27,6 +30,8 @@ shortcuts_
 changelog_
 
 
+.. _`Logs of the nodes`: manuals/logging/logs.rst
+.. _Logscreen: manuals/logging/logscreen.rst
 .. _`Custom parameter in Launch Editor`: manuals/parameter/editor.rst
 .. _Associations: manuals/parameter/associations.rst
 .. _shortcuts: manuals/shortcuts.rst
