@@ -45,7 +45,7 @@ from xml.dom import minidom
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
 EMPTY_PATTERN = re.compile('\b', re.I)
-INCLUDE_PATTERN = [r"\s*(\$\(find.*?\)[^ \"]*)",
+INCLUDE_PATTERN = [r"\s*(\$\(find.*?\)[^\"]*)",
                    r"file=\"(.*?)\"",
                    r"textfile=\"(.*?)\"",
                    r"binfile=\"(.*?)\"",
@@ -491,7 +491,7 @@ def find_included_files(string,
         if groups.lastindex is None:
             continue
         for index in range(groups.lastindex):
-            filename = groups.groups()[index]
+            filename = remove_after_space(groups.groups()[index])
             rawname = filename
             if filename:
                 try:
@@ -536,3 +536,19 @@ def find_included_files(string,
                                 rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (filename, utf8(e)))
                 except Exception as e:
                     rospy.logwarn("Error while parse %s for include pattern: %s" % (content_info, utf8(e)))
+
+
+def remove_after_space(filename):
+    result = filename
+    if filename:
+        idx_whitespace = -1
+        idx = len(filename) - 1
+        for c in reversed(filename):
+            if c == '.':
+                break
+            elif c == ' ':
+                idx_whitespace = idx
+            idx -= 1
+        if idx > -1 and idx_whitespace > -1:
+            result = filename[:idx_whitespace]
+    return result
