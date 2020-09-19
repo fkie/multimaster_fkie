@@ -401,6 +401,8 @@ class Editor(QMainWindow):
                         break
             self.tabWidget.setUpdatesEnabled(True)
             if search_text:
+                if only_launch:
+                    self.find_dialog.found_files_list.clear()
                 try:
                     self._search_thread.stop()
                     self._search_thread = None
