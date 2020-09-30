@@ -312,9 +312,10 @@ class NameResolution(object):
                     else:
                         break
         try:
-            if MasterEntry.is_legal_ip(address):
-                (hostname, _, _) = socket.gethostbyaddr(address)
-                return hostname
+            self.add_address(address)
+            # if MasterEntry.is_legal_ip(address):
+            #     (hostname, _, _) = socket.gethostbyaddr(address)
+            #     return hostname
         except Exception:
             import traceback
             print(traceback.format_exc())
