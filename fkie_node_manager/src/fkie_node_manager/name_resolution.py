@@ -312,7 +312,7 @@ class NameResolution(object):
                     else:
                         break
         try:
-            self.add_address(address)
+            #self.add_address(address)
             # if MasterEntry.is_legal_ip(address):
             #     (hostname, _, _) = socket.gethostbyaddr(address)
             #     return hostname
