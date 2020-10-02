@@ -75,9 +75,8 @@ before_install:
   - sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
   - sudo apt-get update -qq
   - sudo apt-get install dpkg
-  - ls -la /usr/lib/python$PY_LIB
-  - ls -la /usr/lib/
   - sudo apt-get install -y $PY_PRFX-catkin-pkg $PY_PRFX-rosdep $PY_PRFX-wstool ros-$ROS_DISTRO-ros-base
+  # fix rosdep resolve problem with rqt_gui in noetic
   - sudo apt-get install -y ros-$ROS_DISTRO-python-qt-binding ros-$ROS_DISTRO-rqt-reconfigure
   - source /opt/ros/$ROS_DISTRO/setup.bash
   # Prepare rosdep to install dependencies.
