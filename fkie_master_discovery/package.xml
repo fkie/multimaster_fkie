@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="3">
+<package format="2">
   <name>fkie_master_discovery</name>
   <replace>master_discovery_fkie</replace>
   <description>
@@ -27,8 +27,7 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>roslib</exec_depend>
   <exec_depend>rosgraph</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-avahi</exec_depend>
-  <!-- <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-avahi</exec_depend> -->
+  <exec_depend>python-avahi</exec_depend>
   <exec_depend>avahi-daemon</exec_depend>
 
   <export>

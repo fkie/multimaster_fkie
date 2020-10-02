@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 2.8)
 project(fkie_node_manager)
 find_package(catkin REQUIRED COMPONENTS
     diagnostic_msgs
