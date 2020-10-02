@@ -1180,6 +1180,9 @@ class MasterViewProxy(QWidget):
 
     def append_diagnostic(self, diagnostic_status, isnew=True):
         result = False
+        if (diagnostic_status.name == '/master_sync'):
+            if get_hostname(self.masteruri) != diagnostic_status.hardware_id:
+                return False
         nodes = self.getNode(diagnostic_status.name)
         for node in nodes:
             node.append_diagnostic_status(diagnostic_status)

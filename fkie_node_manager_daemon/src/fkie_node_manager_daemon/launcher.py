@@ -237,7 +237,8 @@ def run_node(startcfg):
             ros_hostname = host.get_ros_hostname(masteruri, hostname)
             if ros_hostname:
                 addr = socket.gethostbyname(ros_hostname)
-                if addr in set(ip for _n, ip in get_local_addresses()):
+                if addr in set(ip for ip in get_local_addresses()):
+                    rospy.loginfo('set ROS_HOSTNAME to %s' % ros_hostname)
                     new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)

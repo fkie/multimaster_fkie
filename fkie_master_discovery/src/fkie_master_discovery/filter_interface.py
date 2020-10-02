@@ -55,6 +55,9 @@ class FilterInterface(object):
         self.is_valid = False
         self._re_do_not_sync = EMPTY_PATTERN
         self._re_do_not_sync_from_list = EMPTY_PATTERN
+        self._re_hide_nodes = EMPTY_PATTERN
+        self._re_hide_topics = EMPTY_PATTERN
+        self._re_hide_services = EMPTY_PATTERN
 
     def load(self, mastername='',
              ignore_nodes=[], sync_nodes=[],
@@ -99,6 +102,11 @@ class FilterInterface(object):
         else:
             self.read_do_not_sync()
         self.is_valid = True
+
+    def set_hide_pattern(self, re_hide_nodes=EMPTY_PATTERN, re_hide_topics=EMPTY_PATTERN, re_hide_services=EMPTY_PATTERN):
+        self._re_hide_nodes = re_hide_nodes
+        self._re_hide_topics = re_hide_topics
+        self._re_hide_services = re_hide_services
 
     def read_do_not_sync(self):
         _do_not_sync = get_ros_param('do_not_sync', [])
@@ -148,6 +156,8 @@ class FilterInterface(object):
         '''
         if not self.is_valid:
             return False
+        if self._re_hide_nodes.match(node):
+            return True
         if self.do_not_sync(node):
             return True
         if self._re_sync_nodes.match(node):
@@ -226,6 +236,10 @@ class FilterInterface(object):
         :note: If the filter object is not initialized by load() or from_list() the
               returned value is `False`
         '''
+        if self._re_hide_nodes.match(node):
+            return True
+        if self._re_hide_topics.match(topic):
+            return True
         if self.do_not_sync([node, topic, topictype]):
             return True
         return self._re_ignore_subscribers.match(topic) or self._is_ignored_topic(node, topic, topictype)
@@ -254,6 +268,10 @@ class FilterInterface(object):
         :note: If the filter object is not initialized by load() or from_list() the
               returned value is `False`
         '''
+        if self._re_hide_nodes.match(node):
+            return True
+        if self._re_hide_topics.match(topic):
+            return True
         if self.do_not_sync([node, topic, topictype]):
             return True
         return self._re_ignore_publishers.match(topic) or self._is_ignored_topic(node, topic, topictype)
@@ -279,6 +297,10 @@ class FilterInterface(object):
         '''
         if not self.is_valid:
             return False
+        if self._re_hide_nodes.match(node):
+            return True
+        if self._re_hide_services.match(service):
+            return True
         if self.do_not_sync([node, service]):
             return True
         if self._re_ignore_nodes.match(node):

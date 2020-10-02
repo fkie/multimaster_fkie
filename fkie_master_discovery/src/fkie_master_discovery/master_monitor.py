@@ -59,6 +59,7 @@ except ImportError:
 from . import interface_finder
 
 from .common import masteruri_from_ros, get_hostname
+from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 
@@ -216,6 +217,10 @@ class MasterMonitor(object):
                     raise
 
         self._master = xmlrpcclient.ServerProxy(self.getMasteruri())
+        # Hide parameter
+        self._re_hide_nodes = gen_pattern(rospy.get_param('~hide_nodes', []), 'hide_nodes')
+        self._re_hide_topics = gen_pattern(rospy.get_param('~hide_topics', []), 'hide_topics')
+        self._re_hide_services = gen_pattern(rospy.get_param('~hide_services', []), 'hide_services')
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
         rospy.loginfo("Subscribe to parameter `/roslaunch/uris`")
@@ -424,7 +429,9 @@ class MasterMonitor(object):
         if not (self.__master_state is None):
             try:
                 with self._state_access_lock:
-                    result = self.__master_state.listedState(FilterInterface.from_list(filter_list))
+                    fi = FilterInterface.from_list(filter_list)
+                    fi.set_hide_pattern(self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
+                    result = self.__master_state.listedState(fi)
             except:
                 print(traceback.format_exc())
         return result
