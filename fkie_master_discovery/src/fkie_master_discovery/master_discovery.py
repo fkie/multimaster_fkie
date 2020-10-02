@@ -893,9 +893,6 @@ class Discoverer(object):
                         if firstc != b'R':
                             # ignore the message. it does not start with 'R'
                             return
-                        # map local addresses to locahost
-                        if address[0] in get_local_addresses():
-                            address = ('localhost', address[1])
                         master_key = (address, monitor_port)
                         if version >= 3 and secs == 0 and nsecs == 0:
                             # is it a request to update the state
