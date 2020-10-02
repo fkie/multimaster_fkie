@@ -254,12 +254,18 @@ class MasterStateTopic(QObject):
         result = ''
         topic_names = interface_finder.get_changes_topic(masteruri, wait)
         self.stop()
-        self.sub_changes = []
-        for topic_name in topic_names:
-            rospy.loginfo("listen for updates on %s", topic_name)
-            sub_changes = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
-            self.sub_changes.append(sub_changes)
-            result = topic_name
+        if not hasattr(self, 'sub_changes'):
+            self.sub_changes = []
+            self.sub_names = []
+        if set(self.sub_names) != set(topic_names):
+            self.stop()
+            self.sub_changes = []
+            for topic_name in topic_names:
+                rospy.loginfo("listen for updates on %s", topic_name)
+                sub_changes = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
+                self.sub_changes.append(sub_changes)
+                result = topic_name
+            self.sub_names = topic_names
         return result
 
     def stop(self):

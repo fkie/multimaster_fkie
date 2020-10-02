@@ -966,7 +966,7 @@ class MainWindow(QMainWindow):
             if self._con_tries[masteruri] > 2:
                 self._setLocalMonitoring(True)
         master = self.getMaster(masteruri, False)
-        if master and master.master_state is not None:
+        if master and master.master_state is not None and master.online:
             self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri, self.DELAYED_NEXT_REQ_ON_ERR)
 
     def on_conn_stats_updated(self, stats):
