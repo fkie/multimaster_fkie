@@ -966,7 +966,7 @@ class MainWindow(QMainWindow):
             if self._con_tries[masteruri] > 2:
                 self._setLocalMonitoring(True)
         master = self.getMaster(masteruri, False)
-        if master and master.master_state is not None:
+        if master and master.master_state is not None and master.online:
             self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri, self.DELAYED_NEXT_REQ_ON_ERR)
 
     def on_conn_stats_updated(self, stats):
@@ -1151,14 +1151,14 @@ class MainWindow(QMainWindow):
                     params['user'] = self.currentMaster.current_user
                     try:
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                       'run `%s` on %s' % (params[2], params[0]),
+                                                       'run `%s` on %s' % (params['binary'], params['host']),
                                                        nm.starter().runNodeWithoutConfig,
                                                        params)
                         self._progress_queue.start()
                     except (Exception, nm.StartException) as e:
-                        rospy.logwarn("Error while run `%s` on %s: %s", params[2], params[0], utf8(e))
+                        rospy.logwarn("Error while run `%s` on %s: %s" % (params['binary'], params['host'], utf8(e)))
                         MessageBox.warning(self, "Run error",
-                                           'Error while run node %s [%s]' % (params[2], params[1]),
+                                           'Error while run node %s [%s]' % (params['binary'], params['package']),
                                            utf8(e))
                 else:
                     MessageBox.critical(self, "Run error",
@@ -1828,7 +1828,7 @@ class MainWindow(QMainWindow):
             if grpc_path in self.editor_dialogs:
                 try:
                     self.editor_dialogs[grpc_path].on_load_request(grpc_path, search_text, only_launch=True)
-                    # self.editor_dialogs[grpc_path].restore()
+                    self.editor_dialogs[grpc_path].raise_()
                     self.editor_dialogs[grpc_path].activateWindow()
                 except Exception:
                     if trynr > 1:
