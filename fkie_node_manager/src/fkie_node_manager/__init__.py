@@ -165,10 +165,11 @@ def is_local(hostname, wait=False):
                 return False
             return HOSTS_CACHE[hostname]
     try:
-        socket.inet_aton(hostname)
         local_addresses = ['localhost'] + get_local_addresses()
         # check 127/8 and local addresses
         result = hostname.startswith('127.') or hostname in local_addresses
+        if not result:
+            socket.inet_aton(hostname)
         with _LOCK:
             HOSTS_CACHE[hostname] = result
         return result
