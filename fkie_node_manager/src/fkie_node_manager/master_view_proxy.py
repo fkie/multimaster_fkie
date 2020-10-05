@@ -3574,7 +3574,7 @@ class MasterViewProxy(QWidget):
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                'start node_manager_daemon for %s' % host_addr,
                                                nm.starter().runNodeWithoutConfig,
-                                               {'host': nm.nameres().address(self.masteruri),
+                                               {'host': host_addr,
                                                 'package': 'fkie_node_manager_daemon',
                                                 'binary': 'node_manager_daemon',
                                                 'name': 'node_manager_daemon',
