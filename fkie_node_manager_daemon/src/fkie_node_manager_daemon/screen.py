@@ -221,7 +221,8 @@ def get_cmd(node, env=[], keys=[]):
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node), shell, create_session_name(node=node))
+    # return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node), shell, create_session_name(node=node))
+    return '%s -O -L -s %s -dmS %s' % (SCREEN, shell, create_session_name(node=node))
 
 
 def rosclean():
