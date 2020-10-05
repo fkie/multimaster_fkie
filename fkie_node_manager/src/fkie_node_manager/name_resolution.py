@@ -149,10 +149,12 @@ class MasterEntry(object):
     def get_masternames(self):
         return list(self._masternames)
 
-    def get_address(self):
+    def get_address(self, prefer_hostname=True):
         with self.mutex:
             try:
-                return self._addresses[0]
+                if prefer_hostname:
+                    return self._addresses[0]
+                return self._addresses[-1]
             except Exception:
                 return None
 
@@ -292,7 +294,7 @@ class NameResolution(object):
         with self.mutex:
             for m in self._masters:
                 if m.masteruri == masteruri or m.has_mastername(masteruri):
-                    return m.get_address()
+                    return m.get_address(prefer_hostname=False)
             return get_hostname(masteruri)
 
     def addresses(self, masteruri):
