@@ -2725,10 +2725,10 @@ class MasterViewProxy(QWidget):
         Shows log files of the selected nodes.
         '''
         try:
-            only_screen = True
+            only_screen = False
             key_mod = QApplication.keyboardModifiers()
             if (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
-                only_screen = False
+                only_screen = True
             selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
             ret = True
             if len(selectedNodes) > 5:

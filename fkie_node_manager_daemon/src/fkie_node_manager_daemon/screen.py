@@ -35,6 +35,7 @@
 import os
 import subprocess
 import sys
+import re
 from rosclean import get_disk_usage
 import rospy
 import rospkg
@@ -186,7 +187,16 @@ def get_ros_logfile(node):
     :rtype: str
     '''
     if node is not None:
-        return "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
+        logfile = "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
+        if os.path.exists(logfile):
+            return logfile
+        else:
+            # search in latest subfolder
+            logpath = os.path.join(LOG_PATH, "latest")
+            p = re.compile(r"%s-[\d*].log" % (node.strip('/').replace('/', '-')))
+            for fn in os.listdir(logpath):
+                if p.match(fn):
+                    return os.path.join(logpath, fn)
     return ''
 
 

@@ -393,7 +393,7 @@ class StartHandler(object):
                 found = True
             # open roslog file
             roslog = screen.get_ros_logfile(nodename)
-            if os.path.isfile(roslog) and not only_screen:
+            if os.path.isfile(roslog) and (not only_screen or not found):
                 title_opt = title_opt.replace('LOG', 'ROSLOG')
                 cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, roslog], title_opt)
                 rospy.loginfo("open ROS log: %s", cmd)
