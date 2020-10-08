@@ -50,7 +50,7 @@ from fkie_master_discovery.master_info import NodeInfo
 from fkie_node_manager_daemon.common import sizeof_fmt, isstring, utf8
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager.common import lnamespace, namespace, normns
-from fkie_node_manager.name_resolution import NameResolution
+from fkie_node_manager.name_resolution import NameResolution, MasterEntry
 from fkie_node_manager.parameter_handler import ParameterHandler
 import fkie_node_manager as nm
 
@@ -898,7 +898,7 @@ class HostItem(GroupItem):
     '''
     ITEM_TYPE = Qt.UserRole + 26
 
-    def __init__(self, masteruri, address, local, parent=None):
+    def __init__(self, masteruri, address, local, master_entry, parent=None):
         '''
         Initialize the HostItem object with given values.
 
@@ -907,10 +907,11 @@ class HostItem(GroupItem):
         :param bool local: is this host the localhost where the node_manager is running.
         '''
         self._has_remote_launched_nodes = False
-        name = self.create_host_description(masteruri, address)
+        name = self.create_host_description(master_entry)
         self._masteruri = masteruri
         self._host = address
         self._mastername = address
+        self._master_entry = master_entry
         self._local = local
         self._diagnostics = []
         GroupItem.__init__(self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
@@ -934,16 +935,6 @@ class HostItem(GroupItem):
         return nm.nameres().hostname(self._host)
 
     @property
-    def address(self):
-        if NameResolution.is_legal_ip(self._host):
-            return self._host
-        else:
-            result = nm.nameres().resolve_cached(self._host)
-            if result:
-                return result[0]
-        return None
-
-    @property
     def addresses(self):
         return nm.nameres().resolve_cached(self._host)
 
@@ -953,7 +944,7 @@ class HostItem(GroupItem):
 
     @property
     def mastername(self):
-        result = nm.nameres().mastername(self._masteruri, self._host)
+        result = self._master_entry.get_mastername()
         if result is None or not result:
             result = self.hostname
         return result
@@ -972,29 +963,28 @@ class HostItem(GroupItem):
             if diagnostic.hardware_id == self.hostname:
                 self._diagnostics.append(diagnostic)
         self.update_tooltip()
+        self.name = self.create_host_description(self._master_entry)
 
-    def create_host_description(self, masteruri, address):
+    def create_host_description(self, master_entry):
         '''
         Returns the name generated from masteruri and address
 
         :param masteruri: URI of the ROS master assigned to the host
         :param str address: the address of the host
         '''
-        name = nm.nameres().mastername(masteruri, address)
+        name = master_entry.get_mastername()
         if not name:
-            name = address
-        hostname = nm.nameres().hostname(address)
-        if hostname is None:
-            hostname = utf8(address)
+            name = master_entry.get_address()
+        hostname = master_entry.get_address()
         if not nm.settings().show_domain_suffix:
             name = subdomain(name)
         result = '%s@%s' % (name, hostname)
-        maddr = get_hostname(masteruri)
+        maddr = get_hostname(master_entry.masteruri)
         mname = nm.nameres().hostname(maddr)
         if mname is None:
             mname = utf8(maddr)
         if mname != hostname:
-            result += '[%s]' % masteruri
+            result += '[%s]' % master_entry.masteruri
             self._has_remote_launched_nodes = True
         return result
 
@@ -1131,8 +1121,10 @@ class HostItem(GroupItem):
             return False
         elif isinstance(item, tuple):
             return nmdurl.equal_uri(self.masteruri, item[0]) and self.host == item[1]
+        elif isinstance(item, MasterEntry):
+            return self._master_entry == item
         elif isinstance(item, HostItem):
-            return nmdurl.equal_uri(self.masteruri, item.masteruri) and self.host == item.host
+            return self._master_entry == item._master_entry
         return False
 
     def __gt__(self, item):
@@ -1735,6 +1727,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         if masteruri is None:
             return None
+        master_entry = nm.nameres().get_master(masteruri, address)
         resaddr = nm.nameres().hostname(address)
         host = (masteruri, resaddr)
         # [address] + nm.nameres().resolve_cached(address)
@@ -1743,11 +1736,11 @@ class NodeTreeModel(QStandardItemModel):
         # find the host item by address
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
-            if root.child(i) == host:
+            if root.child(i) == master_entry:
                 return root.child(i)
             elif root.child(i) > host:
                 items = []
-                hostItem = HostItem(masteruri, resaddr, local)
+                hostItem = HostItem(masteruri, resaddr, local, master_entry)
                 items.append(hostItem)
                 cfgitem = CellItem(masteruri, hostItem)
                 items.append(cfgitem)
@@ -1756,7 +1749,7 @@ class NodeTreeModel(QStandardItemModel):
                 self._set_std_capabilities(hostItem)
                 return hostItem
         items = []
-        hostItem = HostItem(masteruri, resaddr, local)
+        hostItem = HostItem(masteruri, resaddr, local, master_entry)
         items.append(hostItem)
         cfgitem = CellItem(masteruri, hostItem)
         items.append(cfgitem)

@@ -2059,6 +2059,8 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('copy-log-path://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_log_path_copy()
+        elif url.toString().startswith('copy://'):
+            QApplication.clipboard().setText(url.toString().replace('copy://', ''))
         elif url.toString().startswith('launch://'):
             self.on_launch_edit(self._url_path(url), '')
         elif url.toString().startswith('reload-globals://'):
