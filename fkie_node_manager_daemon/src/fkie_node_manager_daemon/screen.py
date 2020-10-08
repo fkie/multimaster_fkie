@@ -35,6 +35,7 @@
 import os
 import subprocess
 import sys
+import re
 from rosclean import get_disk_usage
 import rospy
 import rospkg
@@ -160,7 +161,7 @@ def test_screen():
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
 
 
-def get_logfile(session=None, node=None):
+def get_logfile(session=None, node=None, for_new_screen=False):
     '''
     Generates a log file name of the ROS log.
 
@@ -171,10 +172,14 @@ def get_logfile(session=None, node=None):
            for the log file (handle the node started using a launch file).
     '''
     if session is not None:
-        return "%s%s.log" % (LOG_PATH, session)
-    elif node is not None:
-        return "%s%s.log" % (LOG_PATH, create_session_name(node))
-    return "%s%s.log" % (LOG_PATH, 'unknown')
+        path = "%s%s.log" % (LOG_PATH, session)
+        if os.path.exists(path):
+            return path
+    if node is not None:
+        path = "%s%s.log" % (LOG_PATH, create_session_name(node))
+            print('RETURN PATH', path)
+            return path
+    return get_ros_logfile(node)
 
 
 def get_ros_logfile(node):
@@ -186,7 +191,21 @@ def get_ros_logfile(node):
     :rtype: str
     '''
     if node is not None:
-        return "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
+        logfile = "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
+        if os.path.exists(logfile):
+            return logfile
+        else:
+            # search in latest subfolder
+            logpath = os.path.join(LOG_PATH, "latest")
+            p = re.compile(r"%s-\d*.log" % (node.strip('/').replace('/', '-')))
+            files = os.listdir(logpath)
+            for fn in files:
+                if p.match(fn):
+                    return os.path.join(logpath, fn)
+            p = re.compile(r"%s-\d*-stdout.log" % (node.strip('/').replace('/', '-')))
+            for fn in files:
+                if p.match(fn):
+                    return os.path.join(logpath, fn)
     return ''
 
 
@@ -221,7 +240,7 @@ def get_cmd(node, env=[], keys=[]):
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node), shell, create_session_name(node=node))
+    return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node, for_new_screen=True), shell, create_session_name(node=node))
 
 
 def rosclean():

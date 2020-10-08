@@ -1584,6 +1584,7 @@ class MasterViewProxy(QWidget):
             crystal_clear_copy_log_path_24 = nm.settings().icon_path('crystal_clear_copy_log_path_24.png')
             text += '&nbsp; <a href="copy-log-path://%s" title="copy log path to clipboard"><img src="%s" alt="copy_log_path"></a>' % (node.name, crystal_clear_copy_log_path_24)
             text += '<br><font size="+2"><b>%s</b></font>' % (name)
+            text += '&nbsp;<font size="-1"><a href="copy://%s" style="color:gray;">copy</a></font>' % (node.name)
             text += '<br><span style="color:gray;">ns: </span><b>%s%s</b>' % (ns, sep)
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % node.node_info.uri
@@ -1736,6 +1737,7 @@ class MasterViewProxy(QWidget):
                 sekkyumu_topic_pub_stop_24 = nm.settings().icon_path('sekkyumu_topic_pub_stop_24.png')
                 text += '&nbsp;<a href="topicstop://%s%s"><img src="%s" alt="stop"> [%d]</a>' % (self.mastername, topic.name, sekkyumu_topic_pub_stop_24, len(topic_publisher))
             text += '<br><font size="+2"><b>%s</b></font>' % (name)
+            text += '&nbsp;<font size="-1"><a href="copy://%s" style="color:gray;">copy</a></font>' % (topic.name)
             text += '<br><span style="color:gray;">ns: </span><b>%s%s</b>' % (ns, sep)
             text += '<br>'
             if nm.settings().transpose_pub_sub_descr:
@@ -1812,6 +1814,7 @@ class MasterViewProxy(QWidget):
             sekkyumu_call_service_24 = nm.settings().icon_path('sekkyumu_call_service_24.png')
             text += '<a href="servicecall://%s%s" title="call service"><img src="%s" alt="call"></a>' % (self.mastername, service.name, sekkyumu_call_service_24)
             text += '<br><font size="+2"><b>%s</b></font>' % (name)
+            text += '&nbsp;<font size="-1"><a href="copy://%s" style="color:gray;">copy</a></font>' % (service.name)
             text += '<br><span style="color:gray;">ns: </span><b>%s%s</b>' % (ns, sep)
             text += '<dl>'
             text += '<dt><b>URI</b>: %s</dt>' % service.uri
@@ -3574,7 +3577,7 @@ class MasterViewProxy(QWidget):
                 self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                'start node_manager_daemon for %s' % host_addr,
                                                nm.starter().runNodeWithoutConfig,
-                                               {'host': nm.nameres().address(self.masteruri),
+                                               {'host': host_addr,
                                                 'package': 'fkie_node_manager_daemon',
                                                 'binary': 'node_manager_daemon',
                                                 'name': 'node_manager_daemon',

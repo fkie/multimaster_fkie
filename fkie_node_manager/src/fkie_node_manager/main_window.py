@@ -966,7 +966,7 @@ class MainWindow(QMainWindow):
             if self._con_tries[masteruri] > 2:
                 self._setLocalMonitoring(True)
         master = self.getMaster(masteruri, False)
-        if master and master.master_state is not None:
+        if master and master.master_state is not None and master.online:
             self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri, self.DELAYED_NEXT_REQ_ON_ERR)
 
     def on_conn_stats_updated(self, stats):
@@ -2059,6 +2059,8 @@ class MainWindow(QMainWindow):
         elif url.toString().startswith('copy-log-path://'):
             if self.currentMaster is not None:
                 self.currentMaster.on_log_path_copy()
+        elif url.toString().startswith('copy://'):
+            QApplication.clipboard().setText(url.toString().replace('copy://', ''))
         elif url.toString().startswith('launch://'):
             self.on_launch_edit(self._url_path(url), '')
         elif url.toString().startswith('reload-globals://'):
