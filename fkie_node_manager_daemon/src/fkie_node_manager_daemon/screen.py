@@ -161,7 +161,7 @@ def test_screen():
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
 
 
-def get_logfile(session=None, node=None):
+def get_logfile(session=None, node=None, for_new_screen=False):
     '''
     Generates a log file name of the ROS log.
 
@@ -177,7 +177,7 @@ def get_logfile(session=None, node=None):
             return path
     if node is not None:
         path = "%s%s.log" % (LOG_PATH, create_session_name(node))
-        if os.path.exists(path):
+            print('RETURN PATH', path)
             return path
     return get_ros_logfile(node)
 
@@ -240,7 +240,7 @@ def get_cmd(node, env=[], keys=[]):
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node), shell, create_session_name(node=node))
+    return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node, for_new_screen=True), shell, create_session_name(node=node))
 
 
 def rosclean():
