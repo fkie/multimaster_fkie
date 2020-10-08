@@ -177,7 +177,7 @@ def get_logfile(session=None, node=None, for_new_screen=False):
             return path
     if node is not None:
         path = "%s%s.log" % (LOG_PATH, create_session_name(node))
-            print('RETURN PATH', path)
+        if os.path.exists(path) or for_new_screen:
             return path
     return get_ros_logfile(node)
 
