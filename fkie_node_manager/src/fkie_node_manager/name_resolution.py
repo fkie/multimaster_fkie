@@ -53,7 +53,8 @@ class MasterEntry(object):
     def __init__(self, masteruri=None, mastername=None, address=None):
         self.masteruri = masteruri
         self._masternames = []
-        self.add_mastername(mastername)
+        if mastername:
+            self.add_mastername(mastername)
         self.mutex = RLock()
         # addresses: hostname (at first place if available), IPv4 or IPv6
         self._addresses = []
@@ -74,7 +75,7 @@ class MasterEntry(object):
 
     def add_mastername(self, mastername):
         if mastername and mastername not in self._masternames:
-            self._masternames.append(mastername)
+            self._masternames.insert(0, mastername)
 
     def add_address(self, address):
         if address and not self.has_address(address):
