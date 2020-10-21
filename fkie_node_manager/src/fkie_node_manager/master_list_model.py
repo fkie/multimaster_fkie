@@ -262,7 +262,6 @@ class MasterItem(QStandardItem):
         @param item: corresponding item in the model
         @type item: L{TopicItem}
         '''
-        return
         tooltip = ''.join(['<html><body>'])
         tooltip = ''.join([tooltip, '<h4>', master.uri, '</h4>'])
         tooltip = ''.join([tooltip, '<dl>'])

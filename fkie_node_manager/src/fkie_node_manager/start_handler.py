@@ -399,6 +399,8 @@ class StartHandler(object):
                 rospy.loginfo("open ROS log: %s", cmd)
                 SupervisedPopen(shlex.split(cmd), object_id="Open log", description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
                 found = True
+            if not found:
+                rospy.logwarn('no log files found for %s' % utf8(nodename))
             return found
         else:
             _ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
