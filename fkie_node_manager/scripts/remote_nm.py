@@ -104,24 +104,41 @@ def getCwdArg(arg, argv):
 
 def main(argv=sys.argv):
     try:
+        print_help = True
         options, args = parse_options(argv)
         if options['show_screen_log']:
             logfile = screen.get_logfile(node=options['show_screen_log'])
-            p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
+            if not logfile:
+                raise Exception('screen logfile not found for: %s' % options['show_screen_log'])
+            cmd = ' '.join([nm.Settings.LOG_VIEWER, str(logfile)])
+            print(cmd)
+            p = subprocess.Popen(shlex.split(cmd))
             p.wait()
+            print_help = False
         if options['tail_screen_log']:
             logfile = screen.get_logfile(node=options['tail_screen_log'])
-            p = subprocess.Popen(shlex.split(' '.join(['tail', '-f', '-n', '25', str(logfile)])))
+            if not logfile:
+                raise Exception('screen logfile not found for: %s' % options['tail_screen_log'])
+            cmd = ' '.join(['tail', '-f', '-n', '25', str(logfile)])
+            print(cmd)
+            p = subprocess.Popen(shlex.split(cmd))
             p.wait()
+            print_help = False
         elif options['show_ros_log']:
             logfile = screen.get_ros_logfile(node=options['show_ros_log'])
-            p = subprocess.Popen(shlex.split(' '.join([nm.Settings.LOG_VIEWER, str(logfile)])))
+            if not logfile:
+                raise Exception('ros logfile not found for: %s' % options['show_ros_log'])
+            cmd = ' '.join([nm.Settings.LOG_VIEWER, str(logfile)])
+            print(cmd)
+            p = subprocess.Popen(shlex.split(cmd))
             p.wait()
+            print_help = False
         elif options['ros_log_path']:
             if options['ros_log_path'] == '[]':
                 print(nm.get_ros_home())
             else:
                 print(screen.get_logfile(node=options['ros_log_path']))
+            print_help = False
         elif options['delete_logs']:
             logfile = screen.get_logfile(node=options['delete_logs'])
             pidfile = screen.get_pidfile(node=options['delete_logs'])
@@ -132,15 +149,19 @@ def main(argv=sys.argv):
                 os.remove(pidfile)
             if os.path.isfile(roslog):
                 os.remove(roslog)
+            print_help = False
         elif options['node_type'] and options['package'] and options['node_name']:
             runNode(options['package'], options['node_type'], options['node_name'],
                     args, options['prefix'], options['node_respawn'], options['masteruri'], loglevel=options['loglevel'])
+            print_help = False
         elif options['pidkill']:
             import signal
             os.kill(int(options['pidkill']), signal.SIGKILL)
+            print_help = False
         elif options['package']:
             print(roslib.packages.get_pkg_dir(options['package']))
-        else:
+            print_help = False
+        if print_help:
             parser = _get_optparse()
             parser.print_help()
             time.sleep(3)
