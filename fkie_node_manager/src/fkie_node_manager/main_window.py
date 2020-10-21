@@ -839,6 +839,7 @@ class MainWindow(QMainWindow):
         if msg.state == MasterState.STATE_REMOVED:
             if msg.master.uri == self.getMasteruri():
                 # switch to locale monitoring, if the local master discovering was removed
+                nm.nameres().remove_master_entry(msg.master.uri)
                 self._setLocalMonitoring(True)
             else:
                 nm.nameres().remove_master_entry(msg.master.uri)
