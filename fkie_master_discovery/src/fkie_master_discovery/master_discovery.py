@@ -904,6 +904,7 @@ class Discoverer(object):
                                     self._ts_received_mcast_request = time.time()
                                     if self._send_mcast:
                                         self._publish_current_state()
+                                    self._publish_current_state(address[0])
                                 elif via in [QueueReceiveItem.LOOPBACK, QueueReceiveItem.UNICAST]:
                                     rospy.logdebug("Received a request for a state update from %s" % (address[0]))
                                     self._publish_current_state(address[0])

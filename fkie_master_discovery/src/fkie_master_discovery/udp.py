@@ -151,6 +151,7 @@ class DiscoverSocket(socket.socket):
         rospy.logdebug("inet: %s", addrinfo)
 
         socket.socket.__init__(self, addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.addrinfo = addrinfo
         if not self.unicast_only:
             rospy.logdebug("Create multicast socket at ('%s', %d)", self.mgroup, port)
             # initialize multicast socket
@@ -169,36 +170,6 @@ class DiscoverSocket(socket.socket):
                 self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, ttl_bin)
                 self.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
 
-            try:
-                if self.listen_mcast:
-                    if addrinfo[0] == socket.AF_INET:  # IPv4
-                        # Create group_bin for de-register later
-                        # Set socket options for multicast specific interface or general
-                        if not self.interface_ip:
-                            self.group_bin = socket.inet_pton(socket.AF_INET, self.mgroup) + struct.pack('=I', socket.INADDR_ANY)
-                            self.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
-                                            self.group_bin)
-                        else:
-                            self.group_bin = socket.inet_aton(self.mgroup) + socket.inet_aton(self.interface_ip)
-                            self.setsockopt(socket.IPPROTO_IP,
-                                            socket.IP_MULTICAST_IF,
-                                            socket.inet_aton(self.interface_ip))
-                            self.setsockopt(socket.IPPROTO_IP,
-                                            socket.IP_ADD_MEMBERSHIP,
-                                            self.group_bin)
-                    else:  # IPv6
-                        # Create group_bin for de-register later
-                        # Set socket options for multicast
-                        self.group_bin = socket.inet_pton(addrinfo[0], self.mgroup) + struct.pack('@I', socket.INADDR_ANY)
-                        self.setsockopt(socket.IPPROTO_IPV6,
-                                        socket.IPV6_JOIN_GROUP,
-                                        self.group_bing)
-            except socket.error as errobj:
-                msg = str(errobj)
-                if errobj.errno in [errno.ENODEV]:
-                    msg = "socket.error[%d]: %s,\nis multicast route set? e.g. sudo route add -net 224.0.0.0 netmask 224.0.0.0 eth0" % (errobj.errno, msg)
-                raise Exception(msg)
-
             # Bind to the port
             try:
                 # bind to default interfaces if not unicast socket was created
@@ -210,7 +181,8 @@ class DiscoverSocket(socket.socket):
                                self.mgroup, msg)
                 raise
 
-        self.addrinfo = addrinfo
+            self.join_group()
+
         if not self.unicast_only:
             # create a thread to handle the received multicast messages
             self._recv_thread = threading.Thread(target=self.recv_loop_multicast)
@@ -221,6 +193,40 @@ class DiscoverSocket(socket.socket):
             self._recv_thread.start()
         self._send_tread = threading.Thread(target=self._send_loop_from_queue)
         self._send_tread.start()
+
+    def join_group(self):
+        try:
+            if self.listen_mcast:
+                rospy.logdebug('join to %s' % self.mgroup)
+                if self.addrinfo[0] == socket.AF_INET:  # IPv4
+                    # Create group_bin for de-register later
+                    # Set socket options for multicast specific interface or general
+                    if not self.interface_ip:
+                        self.group_bin = socket.inet_pton(socket.AF_INET, self.mgroup) + struct.pack('=I', socket.INADDR_ANY)
+                        self.setsockopt(socket.IPPROTO_IP,
+                                        socket.IP_ADD_MEMBERSHIP,
+                                        self.group_bin)
+                    else:
+                        self.group_bin = socket.inet_aton(self.mgroup) + socket.inet_aton(self.interface_ip)
+                        self.setsockopt(socket.IPPROTO_IP,
+                                        socket.IP_MULTICAST_IF,
+                                        socket.inet_aton(self.interface_ip))
+                        self.setsockopt(socket.IPPROTO_IP,
+                                        socket.IP_ADD_MEMBERSHIP,
+                                        self.group_bin)
+                else:  # IPv6
+                    # Create group_bin for de-register later
+                    # Set socket options for multicast
+                    self.group_bin = socket.inet_pton(self.addrinfo[0], self.mgroup) + struct.pack('@I', socket.INADDR_ANY)
+                    self.setsockopt(socket.IPPROTO_IPV6,
+                                    socket.IPV6_JOIN_GROUP,
+                                    self.group_bin)
+        except socket.error as errobj:
+            msg = str(errobj)
+            if errobj.errno in [errno.ENODEV]:
+                msg = "socket.error[%d]: %s,\nis multicast route set? e.g. sudo route add -net 224.0.0.0 netmask 224.0.0.0 eth0" % (errobj.errno, msg)
+            raise Exception(msg)
+
 
     @staticmethod
     def normalize_mgroup(mgroup, getinterface=False):
@@ -256,7 +262,7 @@ class DiscoverSocket(socket.socket):
                 else:  # IPv6
                     self.setsockopt(socket.IPPROTO_IPV6,
                                     socket.IPV6_LEAVE_GROUP,
-                                    self.group_bing)
+                                    self.group_bin)
             rospy.logdebug("Close multicast socket at ('%s', %s)", self.mgroup, self.port)
             self.sendto(b'', ('localhost', self.port))
             socket.socket.close(self)
