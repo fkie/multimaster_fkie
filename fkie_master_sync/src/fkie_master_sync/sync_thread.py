@@ -62,7 +62,7 @@ class SyncThread(object):
 
     MSG_ANY_TYPE = '*'
 
-    def __init__(self, name, uri, discoverer_name, monitoruri, timestamp, sync_on_demand=False):
+    def __init__(self, name, uri, discoverer_name, monitoruri, timestamp, sync_on_demand=False, callback_resync=None):
         '''
         Initialization method for the SyncThread.
         @param name: the name of the ROS master synchronized with.
@@ -109,11 +109,13 @@ class SyncThread(object):
         # the state of the own ROS master is used if `sync_on_demand` is enabled or
         # to determine the type of topic subscribed remote with `Empty` type
         self.__own_state = None
+        self.__callback_resync = callback_resync
+        self.__has_remove_sync = False
 
         # setup the filter
         self._filter = FilterInterface()
         self._filter.load(self.name,
-                          ['/rosout', rospy.get_name(), self.discoverer_name, '/node_manager', '/node_manager_daemon', '/zeroconf', '/param_sync'], [],
+                          ['/rosout', self.discoverer_name, '/node_manager', '/node_manager_daemon', '/zeroconf', '/param_sync'], [],
                           ['/rosout', '/rosout_agg'], ['/'] if sync_on_demand else [],
                           ['/*get_loggers', '/*set_logger_level'], [],
                           # do not sync the bond message of the nodelets!!
@@ -140,10 +142,10 @@ class SyncThread(object):
                 result_publisher = []
                 result_subscriber = []
                 result_services = []
-                for (t_n, n_n, n_uri) in self.__publisher:
+                for (t_n, _t_t, n_n, n_uri) in self.__publisher:
                     result_publisher.append(SyncTopicInfo(t_n, n_n, n_uri))
                     result_set.add(n_n)
-                for (t_n, n_n, n_uri) in self.__subscriber:
+                for (t_n, _t_t, n_n, n_uri) in self.__subscriber:
                     result_subscriber.append(SyncTopicInfo(t_n, n_n, n_uri))
                     result_set.add(n_n)
                 for (s_n, s_uri, n_n, n_uri) in self.__services:
@@ -302,20 +304,27 @@ class SyncThread(object):
             # sync the publishers
             publisher = []
             publisher_to_register = []
+            remove_sync_found = False
+            for (topic, nodes) in publishers:
+                for node in nodes:
+                    if node == rospy.get_name():
+                        self.__has_remove_sync = True
+                        remove_sync_found = True
+                        break
             for (topic, nodes) in publishers:
                 for node in nodes:
                     topictype = self._get_topictype(topic, topicTypes)
                     nodeuri = self._get_nodeuri(node, nodeProviders, remote_masteruri)
                     if topictype and nodeuri and not self._do_ignore_ntp(node, topic, topictype):
                         # register the nodes only once
-                        if not ((topic, node, nodeuri) in self.__publisher):
+                        if not ((topic, topictype, node, nodeuri) in self.__publisher):
                             publisher_to_register.append((topic, topictype, node, nodeuri))
-                        publisher.append((topic, node, nodeuri))
+                        publisher.append((topic, topictype, node, nodeuri))
             # unregister not updated publishers
-            for (topic, node, nodeuri) in set(self.__publisher) - set(publisher):
+            for (topic, topictype, node, nodeuri) in set(self.__publisher) - set(publisher):
                 own_master_multi.unregisterPublisher(node, topic, nodeuri)
-                rospy.logdebug("SyncThread[%s]: UNPUB %s[%s] %s", 
-                              self.name, node, nodeuri, topic)
+                rospy.logdebug("SyncThread[%s]: prepare UNPUB %s[%s] %s",
+                                self.name, node, nodeuri, topic)
                 handler.append(('upub', topic, node, nodeuri))
                 # delete from warning list
                 with self.__lock_info:
@@ -324,8 +333,8 @@ class SyncThread(object):
             # register new publishers
             for (topic, topictype, node, nodeuri) in publisher_to_register:
                 own_master_multi.registerPublisher(node, topic, topictype, nodeuri)
-                rospy.logdebug("SyncThread[%s]: PUB %s[%s] %s[%s]", 
-                              self.name, node, nodeuri, topic, topictype)
+                rospy.logdebug("SyncThread[%s]: prepare PUB %s[%s] %s[%s]",
+                                self.name, node, nodeuri, topic, topictype)
                 handler.append(('pub', topic, topictype, node, nodeuri))
 
             # sync the subscribers
@@ -345,12 +354,12 @@ class SyncThread(object):
                         # register the node as subscriber in local ROS master
                         if not ((topic, node, nodeuri) in self.__subscriber):
                             subscriber_to_register.append((topic, topictype, node, nodeuri))
-                        subscriber.append((topic, node, nodeuri))
+                        subscriber.append((topic, topictype, node, nodeuri))
             # unregister not updated topics
-            for (topic, node, nodeuri) in set(self.__subscriber) - set(subscriber):
+            for (topic, topictype, node, nodeuri) in set(self.__subscriber) - set(subscriber):
                 own_master_multi.unregisterSubscriber(node, topic, nodeuri)
-                rospy.logdebug("SyncThread[%s]: UNSUB %s[%s] %s", 
-                              self.name, node, nodeuri, topic)
+                rospy.logdebug("SyncThread[%s]: prepare UNSUB %s[%s] %s",
+                            self.name, node, nodeuri, topic)
                 handler.append(('usub', topic, node, nodeuri))
                 # delete from warning list
                 with self.__lock_info:
@@ -359,8 +368,8 @@ class SyncThread(object):
             # register new subscriber
             for (topic, topictype, node, nodeuri) in subscriber_to_register:
                 own_master_multi.registerSubscriber(node, topic, topictype, nodeuri)
-                rospy.logdebug("SyncThread[%s]: SUB %s[%s] %s[%s]", 
-                              self.name, node, nodeuri, topic, topictype)
+                rospy.logdebug("SyncThread[%s]: prepare SUB %s[%s] %s[%s]",
+                            self.name, node, nodeuri, topic, topictype)
                 handler.append(('sub', topic, topictype, node, nodeuri))
             # check for conflicts with local types before register remote topics
             with self.__lock_info:
@@ -381,14 +390,14 @@ class SyncThread(object):
             # unregister not updated services
             for (service, serviceuri, node, nodeuri) in set(self.__services) - set(services):
                 own_master_multi.unregisterService(node, service, serviceuri)
-                rospy.logdebug("SyncThread[%s]: UNSRV %s[%s] %s[%s]", 
-                              self.name, node, nodeuri, service, serviceuri)
+                rospy.logdebug("SyncThread[%s]: prepare UNSRV %s[%s] %s[%s]",
+                            self.name, node, nodeuri, service, serviceuri)
                 handler.append(('usrv', service, serviceuri, node, nodeuri))
             # register new services
             for (service, serviceuri, node, nodeuri) in services_to_register:
                 own_master_multi.registerService(node, service, serviceuri, nodeuri)
-                rospy.logdebug("SyncThread[%s]: SRV %s[%s] %s[%s]",
-                              self.name, node, nodeuri, service, serviceuri)
+                rospy.logdebug("SyncThread[%s]: prepare SRV %s[%s] %s[%s]",
+                            self.name, node, nodeuri, service, serviceuri)
                 handler.append(('srv', service, serviceuri, node, nodeuri))
 
             # execute the multicall and update the current publicher, subscriber and services
@@ -401,50 +410,7 @@ class SyncThread(object):
                 # update the local ROS master
                 socket.setdefaulttimeout(3)
                 result = own_master_multi()
-                # analyze the results of the registration call
-                # HACK param to reduce publisher creation, see line 372
-                publiser_to_update = {}
-                for h, (code, statusMessage, r) in zip(handler, result):
-                    try:
-                        if h[0] == 'sub':
-                            if code == -1:
-                                rospy.logwarn("SyncThread[%s] topic subscription error: %s (%s), %s %s, node: %s", self.name, h[1], h[2], str(code), str(statusMessage), h[3])
-                            else:
-                                rospy.logdebug("SyncThread[%s] topic subscribed: %s, %s %s, node: %s", self.name, h[1], str(code), str(statusMessage), h[3])
-                        if h[0] == 'sub' and code == 1 and len(r) > 0:
-                            # topic, nodeuri, node : list of publisher uris
-                            publiser_to_update[(h[1], h[4], h[3])] = r
-                        elif h[0] == 'pub':
-                            if code == -1:
-                                rospy.logwarn("SyncThread[%s] topic advertise error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
-                            else:
-                                rospy.logdebug("SyncThread[%s] topic advertised: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
-                        elif h[0] == 'usub':
-                            rospy.logdebug("SyncThread[%s] topic unsubscribed: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
-                        elif h[0] == 'upub':
-                            rospy.logdebug("SyncThread[%s] topic unadvertised: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
-                        elif h[0] == 'srv':
-                            if code == -1:
-                                rospy.logwarn("SyncThread[%s] service registration error: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
-                            else:
-                                rospy.logdebug("SyncThread[%s] service registered: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
-                        elif h[0] == 'usrv':
-                            rospy.logdebug("SyncThread[%s] service unregistered: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
-                    except:
-                        rospy.logerr("SyncThread[%s] ERROR while analyzing the results of the registration call [%s]: %s", self.name, h[1], traceback.format_exc())
-                # hack:
-                # update publisher since they are not updated while registration of a subscriber
-                # https://github.com/ros/ros_comm/blob/9162b32a42b5569ae42a94aa6426aafcb63021ae/tools/rosmaster/src/rosmaster/master_api.py#L195
-                for (sub_topic, api, node), pub_uris in publiser_to_update.items():
-                    msg = "SyncThread[%s] publisherUpdate[%s] -> node: %s [%s], publisher uris: %s" % (self.name, sub_topic, api, node, pub_uris)
-                    try:
-                        pub_client = xmlrpcclient.ServerProxy(api)
-                        ret = pub_client.publisherUpdate('/master', sub_topic, pub_uris)
-                        msg_suffix = "result=%s" % ret
-                        rospy.logdebug("%s: %s", msg, msg_suffix)
-                    except Exception as ex:
-                        msg_suffix = "exception=%s" % ex
-                        rospy.logwarn("%s: %s", msg, msg_suffix)
+                self._check_multical_result(result, handler)
                 # set the last synchronization time
                 self.timestamp = stamp
                 self.timestamp_local = stamp_local
@@ -456,11 +422,86 @@ class SyncThread(object):
             # check md5sum for topics
             with self.__lock_info:
                 self._check_md5sums(publisher_to_register + subscriber_to_register)
+            # check if remote master_sync was stopped
+            if self.__has_remove_sync and not remove_sync_found:
+                # resync
+                if self.__callback_resync is not None:
+                    self.__callback_resync()
+                self.__has_remove_sync = False
         except:
             rospy.logerr("SyncThread[%s] ERROR: %s", self.name, traceback.format_exc())
         finally:
             socket.setdefaulttimeout(None)
         rospy.loginfo("SyncThread[%s] remote state applied.", self.name)
+
+    def _check_multical_result(self, mresult, handler):
+        if not self.__unregistered:
+            # analyze the results of the registration call
+            # HACK param to reduce publisher creation, see line 372
+            publiser_to_update = {}
+            for h, (code, statusMessage, r) in zip(handler, mresult):
+                try:
+                    if h[0] == 'sub':
+                        if code == -1:
+                            rospy.logwarn("SyncThread[%s]: topic subscription error: %s (%s), %s %s, node: %s", self.name, h[1], h[2], str(code), str(statusMessage), h[3])
+                        else:
+                            rospy.logdebug("SyncThread[%s]: topic subscribed: %s, %s %s, node: %s", self.name, h[1], str(code), str(statusMessage), h[3])
+                    if h[0] == 'sub' and code == 1 and len(r) > 0:
+                        # topic, nodeuri, node : list of publisher uris
+                        publiser_to_update[(h[1], h[4], h[3])] = r
+                    elif h[0] == 'pub':
+                        if code == -1:
+                            rospy.logwarn("SyncThread[%s]: topic advertise error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
+                        else:
+                            rospy.logdebug("SyncThread[%s]: topic advertised: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                    elif h[0] == 'usub':
+                        rospy.logdebug("SyncThread[%s]: topic unsubscribed: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                    elif h[0] == 'upub':
+                        rospy.logdebug("SyncThread[%s]: topic unadvertised: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                    elif h[0] == 'srv':
+                        if code == -1:
+                            rospy.logwarn("SyncThread[%s]: service registration error: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                        else:
+                            rospy.logdebug("SyncThread[%s]: service registered: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                    elif h[0] == 'usrv':
+                        rospy.logdebug("SyncThread[%s]: service unregistered: %s, %s %s", self.name, h[1], str(code), str(statusMessage))
+                except:
+                    rospy.logerr("SyncThread[%s] ERROR while analyzing the results of the registration call [%s]: %s", self.name, h[1], traceback.format_exc())
+            # hack:
+            # update publisher since they are not updated while registration of a subscriber
+            # https://github.com/ros/ros_comm/blob/9162b32a42b5569ae42a94aa6426aafcb63021ae/tools/rosmaster/src/rosmaster/master_api.py#L195
+            for (sub_topic, api, node), pub_uris in publiser_to_update.items():
+                msg = "SyncThread[%s] publisherUpdate[%s] -> node: %s [%s], publisher uris: %s" % (self.name, sub_topic, api, node, pub_uris)
+                try:
+                    pub_client = xmlrpcclient.ServerProxy(api)
+                    ret = pub_client.publisherUpdate('/master', sub_topic, pub_uris)
+                    msg_suffix = "result=%s" % ret
+                    rospy.logdebug("%s: %s", msg, msg_suffix)
+                except Exception as ex:
+                    msg_suffix = "exception=%s" % ex
+                    rospy.logwarn("%s: %s", msg, msg_suffix)
+
+    def perform_resync(self):
+        # # create a multicall object
+        own_master = xmlrpcclient.ServerProxy(self.masteruri_local)
+        own_master_multi = xmlrpcclient.MultiCall(own_master)
+        # fill the multicall object
+        handler = []
+        with self.__lock_info:
+            # reregister subcriptions
+            for (topic, topictype, node, nodeuri) in self.__subscriber:
+                own_master_multi.registerSubscriber(node, topic, topictype, nodeuri)
+                rospy.logdebug("SyncThread[%s]: prepare RESUB %s[%s] %s[%s]",
+                                self.name, node, nodeuri, topic, topictype)
+                handler.append(('sub', topic, topictype, node, nodeuri))
+            # reregister publishers
+            for (topic, topictype, node, nodeuri) in self.__publisher:
+                own_master_multi.registerPublisher(node, topic, topictype, nodeuri)
+                rospy.logdebug("SyncThread[%s]: prepare REPUB %s[%s] %s[%s]",
+                                self.name, node, nodeuri, topic, topictype)
+                handler.append(('pub', topic, topictype, node, nodeuri))
+        result = own_master_multi()
+        self._check_multical_result(result, handler)
 
     def _check_md5sums(self, topics_to_register):
         try:
@@ -539,12 +580,12 @@ class SyncThread(object):
                 own_master = xmlrpcclient.ServerProxy(self.masteruri_local)
                 own_master_multi = xmlrpcclient.MultiCall(own_master)
                 # end routine if the master was removed
-                for topic, node, uri in self.__subscriber:
+                for topic, _topictype, node, uri in self.__subscriber:
                     rospy.logdebug("    SyncThread[%s]   unsibscribe %s [%s]" % (self.name, topic, node))
                     own_master_multi.unregisterSubscriber(node, topic, uri)
                     # TODO: unregister a remote subscriber while local publisher is still there
                     # Note: the connection between running components after unregistration is stil there!
-                for topic, node, uri in self.__publisher:
+                for topic, _topictype, node, uri in self.__publisher:
                     rospy.logdebug("    SyncThread[%s]   unadvertise %s [%s]" % (self.name, topic, node))
                     own_master_multi.unregisterPublisher(node, topic, uri)
                 for service, serviceuri, node, uri in self.__services:
@@ -558,12 +599,18 @@ class SyncThread(object):
             socket.setdefaulttimeout(None)
 
     def _do_ignore_ntp(self, node, topic, topictype):
+        if node == rospy.get_name():
+            return True
         return self._filter.is_ignored_publisher(node, topic, topictype)
 
     def _do_ignore_nts(self, node, topic, topictype):
+        if node == rospy.get_name():
+            return True
         return self._filter.is_ignored_subscriber(node, topic, topictype)
 
     def _do_ignore_ns(self, node, service):
+        if node == rospy.get_name():
+            return True
         return self._filter.is_ignored_service(node, service)
 
     def _get_topictype(self, topic, topic_types):
