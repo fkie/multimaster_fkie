@@ -86,6 +86,7 @@ class Main(object):
         self.__timestamp_local = None
         self.__own_state = None
         self.update_timer = None
+        self.resync_timer = None
         self.own_state_getter = None
         self._timer_update_diagnostics = None
         self._join_threads = dict()  # threads waiting for stopping the sync thread
@@ -112,6 +113,12 @@ class Main(object):
                 elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
                     m = data.master
                     self.update_master(m.name, m.uri, m.last_change.to_sec(), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
+
+    def _callback_perform_resync(self):
+        if self.resync_timer is not None:
+            self.resync_timer.cancel()
+        self.resync_timer = threading.Timer(0.1, self._perform_resync)
+        self.resync_timer.start()
 
     def obtain_masters(self):
         '''
@@ -180,7 +187,7 @@ class Main(object):
                                     # updates only, if local changes are occured
                                 self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
                             else:
-                                self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand)
+                                self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand, callback_resync=self._callback_perform_resync)
                                 if self.__own_state is not None:
                                     self.masters[mastername].set_own_masterstate(MasterInfo.from_list(self.__own_state))
                                 self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
@@ -259,6 +266,8 @@ class Main(object):
             rospy.loginfo("  Stop timers...")
             if self.update_timer is not None:
                 self.update_timer.cancel()
+            if self.resync_timer is not None:
+                self.resync_timer.cancel()
             # unregister from update topics
             rospy.loginfo("  Unregister from master discovery...")
             for (_, v) in self.sub_changes.items():
@@ -273,6 +282,12 @@ class Main(object):
             rospy.loginfo("  Wait for ending of %s threads ...", str(len(self._join_threads)))
             time.sleep(1)
         rospy.loginfo("Synchronization is now off")
+
+    def _perform_resync(self):
+        self.resync_timer = None
+        with self.__lock:
+            for (_, s) in self.masters.items():
+                s.perform_resync()
 
     def _rosservice_get_sync_info(self, req):
         '''
