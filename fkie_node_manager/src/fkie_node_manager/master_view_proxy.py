@@ -2107,7 +2107,7 @@ class MasterViewProxy(QWidget):
             all2start = set()
             # put into the queue and start
             for node in nodes:
-                if node.name in cfg_nodes:
+                if node.name in cfg_nodes and not node.name in all2start:
                     # remove node from question
                     self.message_frame.hide_question([MessageFrame.TYPE_BINARY], MessageData(node))
                     # add associated nodes to start
