@@ -922,9 +922,10 @@ class MainWindow(QMainWindow):
                                     self._subscribe()
                             if self.currentMaster is None and (not self._history_selected_robot or self._history_selected_robot == minfo.mastername):
                                 self.setCurrentMaster(master)
-                                if not hasattr(self, "_sub_extended_log"):
-                                    agg_suffix = '_agg' if nm.settings().use_diagnostics_agg else ''
-                                    self._sub_extended_log = rospy.Subscriber('/diagnostics%s' % agg_suffix, DiagnosticArray, self._callback_diagnostics)
+                                # this info is collected by daemon
+                                # if not hasattr(self, "_sub_extended_log"):
+                                #     agg_suffix = '_agg' if nm.settings().use_diagnostics_agg else ''
+                                #     self._sub_extended_log = rospy.Subscriber('/diagnostics_agg' % agg_suffix, DiagnosticArray, self._callback_diagnostics)
                         # update the list view, whether master is synchronized or not
                         if master.master_info.masteruri == minfo.masteruri:
                             self.master_model.setChecked(master.master_state.name, not minfo.getNodeEndsWith('master_sync') is None)

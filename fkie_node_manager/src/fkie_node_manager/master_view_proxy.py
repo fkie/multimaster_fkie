@@ -584,8 +584,7 @@ class MasterViewProxy(QWidget):
             nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
             nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
             nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
-            if not nm.is_local(self.mastername):
-                nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
