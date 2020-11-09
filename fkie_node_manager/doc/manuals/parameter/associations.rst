@@ -7,7 +7,7 @@ To avoid errors in use because a dependent ROS-Node was not restarted, an **asso
 Add this parameter to your node and list all the nodes which should be started or stopped with this node, e.g.::
 
     <node name="YOUR_NODE_NAME" pkg="...
-        <param name="associations" value="NODE1,NODE2" />
+        <param name="nm/associations" value="NODE1,NODE2" />
     </node>
 
 

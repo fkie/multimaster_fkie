@@ -1117,7 +1117,7 @@ class HostItem(GroupItem):
         Compares the address of the masteruri.
         '''
         if isstring(item):
-            rospy.logwarn("compare HostItem with unicode depricated")
+            rospy.logwarn("compare HostItem with unicode deprecated")
             return False
         elif isinstance(item, tuple):
             return nmdurl.equal_uri(self.masteruri, item[0]) and self.host == item[1]
@@ -1132,7 +1132,7 @@ class HostItem(GroupItem):
         Compares the address of the masteruri.
         '''
         if isstring(item):
-            rospy.logwarn("compare HostItem with unicode depricated")
+            rospy.logwarn("compare HostItem with unicode deprecated")
             return False
         elif isinstance(item, tuple):
             return self.masteruri > item[0]
@@ -1289,7 +1289,8 @@ class NodeItem(QStandardItem):
             if self.parent_item is not None:
                 self.parent_item.updateIcon()
         if run_changed and self.is_running():
-            self._kill_parameter_handler.requestParameterValues(self.masteruri, [roslib.names.ns_join(self.name, 'kill_on_stop')])
+            # 'kill_on_stop' is deprecated
+            self._kill_parameter_handler.requestParameterValues(self.masteruri, [roslib.names.ns_join(self.name, 'kill_on_stop'), roslib.names.ns_join(self.name, 'nm/kill_on_stop')])
             return True
         return False
 
