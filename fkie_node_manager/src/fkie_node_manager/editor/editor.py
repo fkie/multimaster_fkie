@@ -778,8 +778,8 @@ class Editor(QMainWindow):
     ##############################################################################
 
     def _show_custom_parameter_dialog(self):
-                   'capability_group': self._on_add_cp_capability_group,
         methods = {'nm/associations': self._on_add_cp_associations,
+                   'capability_group': self._on_add_cp_capability_group,
                    'nm/kill_on_stop': self._on_add_cp_kill_on_stop,
                    'autostart/delay': self._on_add_cp_as_delay,
                    'autostart/exclude': self._on_add_cp_as_exclude,
