@@ -121,12 +121,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
     Handles GRPC-requests defined in `launch.proto`.
     '''
 
-    def __init__(self):
+    def __init__(self, monitor_servicer):
         rospy.loginfo("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
         self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
+        self._monitor_servicer = monitor_servicer
 
     def _terminated(self):
         rospy.loginfo("terminated launch context")
@@ -155,7 +156,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         :param str path: the absolute path of the launch file
         :param bool autostart: True to start all nodes after the launch file was loaded.
         '''
-        launch_config = LaunchConfig(path)
+        launch_config = LaunchConfig(path, monitor_servicer=self._monitor_servicer)
         loaded, res_argv = launch_config.load([])
         if loaded:
             rospy.logdebug("loaded %s\n  used args: %s" % (path, utf8(res_argv)))
@@ -306,7 +307,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         try:
             # test for required args
             provided_args = ["%s" % arg.name for arg in request.args]
-            launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host)
+            launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
             # get the list with needed launch args
             req_args = launch_config.get_args()
             req_args_dict = launch_config.argv2dict(req_args)
@@ -480,6 +481,15 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             associations = {}
             for n in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
+                associations_param = roslib.names.ns_join(node_fullname, 'nm/associations')
+                if associations_param in lc.roscfg.params:
+                    line = lc.roscfg.params[associations_param].value
+                    splits = re.split(r'[;,\s]\s*', line)
+                    values = []
+                    for split in splits:
+                        values.append(roslib.names.ns_join(item.namespace, split))
+                    associations[node_fullname] = values
+                # DEPRECATED 'associations'
                 associations_param = roslib.names.ns_join(node_fullname, 'associations')
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value

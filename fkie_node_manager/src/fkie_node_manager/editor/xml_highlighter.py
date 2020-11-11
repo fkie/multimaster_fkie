@@ -155,6 +155,9 @@ class XmlHighlighter(QSyntaxHighlighter):
                    'test': LAUNCH_TEST_ATTR,
                    }
 
+    DEPRECATED_PARAMETER = {'associations': 'nm/associations',
+                            'kill_on_stop': 'nm/kill_on_stop',
+                            }
     STATE_COMMENT = 2
     STATE_STRING = 4
 
@@ -194,6 +197,12 @@ class XmlHighlighter(QSyntaxHighlighter):
         # create pattern for digits
         self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
         self.yaml_comment_rule = (self._create_regexp("#[.]*"), self._create_format(Qt.darkGray))
+        # create deprecated
+        self.dep_pattern = []
+        if self.DEPRECATED_PARAMETER:
+            attr_list = '|'.join(set([r'name="%s"' % attr for attr in self.DEPRECATED_PARAMETER.keys()]))
+            print(attr_list)
+            self.dep_pattern.append((self._create_regexp(attr_list), self._create_format(QColor(250, 0, 0), 'bold')))  # red
         # create patterns for strings
         self.string_pattern = QRegExp("\"")
         self.string_format = self._create_format(Qt.blue)
@@ -294,6 +303,21 @@ class XmlHighlighter(QSyntaxHighlighter):
                 length = self.rule_arg[0].matchedLength()
                 self.setFormat(index, length, self.rule_arg[1])
             index = self.rule_arg[0].indexIn(text, index + length)
+        # mark deprecated parameter
+        for pattern, form in self.dep_pattern:
+            index = pattern.indexIn(text)
+            while index >= 0:
+                length = pattern.matchedLength()
+                frmt = form
+                if self._in_hl_range(index, self._tag_hl_range):
+                    frmt = QTextCharFormat(form)
+                    if not self._end_tag_found:
+                        frmt.setForeground(Qt.red)
+                    else:
+                        frmt.setForeground(self._color_hl_tag)
+                    frmt.setFontWeight(QFont.Bold)
+                self.setFormat(index, length, frmt)
+                index = pattern.indexIn(text, index + length)
 
     def mark_block(self, block, position):
         text = block.text()
