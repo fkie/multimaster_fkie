@@ -101,7 +101,7 @@ class MasterInfo(object):
             if not (timestamp is None):
                 return float(timestamp)
         except Exception:
-            # depricated
+            # deprecated
             if not (timestamp is None):
                 t = datetime.strptime(timestamp, '%Y%m%d%H%M%S.%f')
             else:

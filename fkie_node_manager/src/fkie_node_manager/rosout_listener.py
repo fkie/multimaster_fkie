@@ -55,8 +55,8 @@ class RosoutListener(QObject):
         Logs. The retrieved messages will be emitted as *_signal.
         '''
         self.sub_rosout = None
-        rospy.loginfo("listen for logs on %s", '/rosout')
-        self.sub_rosout = rospy.Subscriber('/rosout', Log, self._on_log)
+        rospy.loginfo("listen for logs on %s", '/rosout_agg')
+        self.sub_rosout = rospy.Subscriber('/rosout_agg', Log, self._on_log)
 
     def stop(self):
         '''

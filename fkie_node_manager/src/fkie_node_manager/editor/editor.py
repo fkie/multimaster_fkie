@@ -778,9 +778,9 @@ class Editor(QMainWindow):
     ##############################################################################
 
     def _show_custom_parameter_dialog(self):
-        methods = {'associations': self._on_add_cp_associations,
+        methods = {'nm/associations': self._on_add_cp_associations,
                    'capability_group': self._on_add_cp_capability_group,
-                   'kill_on_stop': self._on_add_cp_kill_on_stop,
+                   'nm/kill_on_stop': self._on_add_cp_kill_on_stop,
                    'autostart/delay': self._on_add_cp_as_delay,
                    'autostart/exclude': self._on_add_cp_as_exclude,
                    'autostart/required_publisher': self._on_add_cp_as_req_publisher,
@@ -867,7 +867,7 @@ class Editor(QMainWindow):
         show_cp_dialog_action.setShortcuts(QKeySequence("Ctrl+Shift+d"))
         sub_cp_menu.addAction(show_cp_dialog_action)
 
-        add_cp_associations_action = QAction("associations", self, statusTip="", triggered=self._on_add_cp_associations)
+        add_cp_associations_action = QAction("nm/associations", self, statusTip="", triggered=self._on_add_cp_associations)
         add_cp_associations_action.setShortcuts(QKeySequence("Ctrl+Alt+a"))
         sub_cp_menu.addAction(add_cp_associations_action)
 
@@ -892,7 +892,7 @@ class Editor(QMainWindow):
         add_cp_capability_group_action = QAction("capability_group", self, statusTip="", triggered=self._on_add_cp_capability_group)
         add_cp_capability_group_action.setShortcuts(QKeySequence("Ctrl+Alt+p"))
         sub_cp_menu.addAction(add_cp_capability_group_action)
-        add_cp_kill_on_stop_action = QAction("kill_on_stop", self, statusTip="True or time to wait in ms", triggered=self._on_add_cp_kill_on_stop)
+        add_cp_kill_on_stop_action = QAction("nm/kill_on_stop", self, statusTip="True or time to wait in ms", triggered=self._on_add_cp_kill_on_stop)
         add_cp_kill_on_stop_action.setShortcuts(QKeySequence("Ctrl+Shift+k"))
         sub_cp_menu.addAction(add_cp_kill_on_stop_action)
         tag_menu.addMenu(sub_cp_menu)
@@ -1006,10 +1006,10 @@ class Editor(QMainWindow):
         self._insert_text('<param name="capability_group" value="demo" />', 38, 4)
 
     def _on_add_cp_kill_on_stop(self):
-        self._insert_text('<param name="kill_on_stop" value="100" hint="[ms]" />', 34, 3)
+        self._insert_text('<param name="nm/kill_on_stop" value="100" hint="[ms]" />', 34, 3)
 
     def _on_add_cp_associations(self):
-        self._insert_text('<param name="associations" value="node1,node2" hint="list of nodes" />', 34, 11)
+        self._insert_text('<param name="nm/associations" value="node1,node2" hint="list of nodes" />', 34, 11)
 
     def _on_add_cp_as_delay(self):
         self._insert_text('<param name="autostart/delay" value="1" hint="[seconds]" />', 37, 1)

@@ -112,14 +112,14 @@ class RunThread(threading.Thread):
                 self._cmd.append(cmd)
         self.setDaemon(True)
         self.spopen = None
-        self.stop = False
+        self.stopped = False
 
     def run(self):
         '''
         '''
         try:
             self.spopen = SupervisedPopen(self._cmd)
-            while not self.stop and self.spopen.popen.returncode is None:
+            while not self.stopped and self.spopen.popen.returncode is None:
                 if self.spopen.popen.stderr is not None:
                     reserr = self.spopen.popen.stderr.read()
                     if reserr:
@@ -131,10 +131,12 @@ class RunThread(threading.Thread):
         except OSError as err:
             rospy.logerr("Error while run '%s': %s" % (self._script, err))
             os.kill(os.getpid(), signal.SIGKILL)
+        rospy.loginfo('script finished with code: %d' % self.spopen.popen.returncode)
+        rospy.signal_shutdown('script finished with code: %d' % self.spopen.popen.returncode)
 
-    def stop(self):
-        self.stop = True
-        if self.spopen is not None:
+    def stop(self, send_sigint=True):
+        self.stopped = True
+        if send_sigint and self.spopen is not None:
             if self.spopen.popen.pid is not None and self.spopen.popen.returncode is None:
                 rospy.loginfo("stop process %d" % self.spopen.popen.pid)
                 self.spopen.popen.send_signal(signal.SIGINT)
@@ -159,7 +161,7 @@ if __name__ == '__main__':
     rospy.spin()
     # stop the script
     if param_stop_script:
-        runthread.stop = True
+        runthread.stop(False)
         rospy.loginfo("stop using %s" % param_stop_script)
         stopthread = RunThread(param_stop_script)
         stopthread.start()
@@ -170,7 +172,7 @@ if __name__ == '__main__':
                 if reserr:
                     rospy.logwarn("stop script has follow exception: %s" % reserr)
     else:
-        runthread.stop = True
+        runthread.stop()
         runthread.join(3)
     if runthread.is_alive():
         rospy.logwarn("Script does not stop, try to kill %d..." % runthread.spopen.popen.pid)
