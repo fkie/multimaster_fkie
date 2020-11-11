@@ -39,6 +39,7 @@
   <exec_depend>python-crypto</exec_depend>
   <exec_depend>python-docutils</exec_depend>
   <exec_depend>python-paramiko</exec_depend>
+  <exec_depend>python-qt-bindings-webkit</exec_depend>
   <exec_depend>python-ruamel.yaml</exec_depend>
 
   <exec_depend>python_qt_binding</exec_depend>
