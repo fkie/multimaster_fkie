@@ -2,17 +2,47 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.3 (2020-08-03)
+1.2.4 (2020-11-11)
 ------------------
-* use ${PYTHON_EXECUTABLE} instead of ${PYTHON}
-
-1.2.2 (2020-07-27)
-------------------
+* fkie_master_discovery: fix discovery in some cases with multicast dropped while running
+* fkie_master_discovery: removed map of local addresses to localhost
+  This caused problems if ROS_IP of ROS_HOSTNAME was used
+* master_discovery: added parameter to hide nodes, topics and services for filtered requests
+* fkie_master_sync: fix problems after stop master_sync on remote hosts
+* updated diagnostic message for warnings in master_sync
+* use ${PYTHON_EXECUTABLE} instead of search by itself
+* renamed 'associations' and 'kill_on_stop' parameter and add dapricated notifications
+  new names: nm/associations nm/kill_on_stop
+* fkie_node_manager: changed from /rosout to /rosout_agg
+  a lot of nodes lead to alot of topic connection and slow gui
+* fkie_node_manager: fix double start of nodes while using associations
+* fkie_node_manager: fixed script runner; stop also node if script dies
+* fkie_node_manager: do not edit parameter with size > 32000
+* fkie_node_manager: added missing webkit dependecy
+* fkie_node_manager: add warning if no log file was found on local host
+* fkie_node_manager: added more output to remote script
+* fkie_node_manager: added copy-link to description to copy topic, service, node names to clipboard
+* fkie_node_manager: changed host comparison; added search for further log files
+* fkie_node_manager: show ROS log from lates folder if no one is available
+* fkie_node_manager: fix start daemon if ROS_IOP is set
+* fkie_node_manager: do not pull offline hosts
+* fix block while name resolution
+* fix for issue `#138 <https://github.com/fkie/multimaster_fkie/issues/138>`_
+* fkie_node_manager: editor: clear search results on activate and search for a node
+* fkie_node_manager: restore editor dialog if it already open and minimized
+* fkie_node_manager: restore editor dialog if it already open and minimized
+* updated diagnostic message for warnings in master_sync
+* fkie_node_manager: fixed detection of included files in 'value' tags
+* added logging setion to local manual
+* fixed close ssh sessions
+* fixed screenlog via ssh
+* added chapter about associations parameter to local help
+* fkie_node_manager: logscreen: improved highlighting speed
+* Contributors: Alexander Tiderko
 
 1.2.1 (2020-07-22)
 ------------------
 * fkie_multimaster: added conditions for python3 dependencies in package xml
-* Contributors: Alexander Tiderko
 
 1.2.0 (2020-07-22)
 ------------------

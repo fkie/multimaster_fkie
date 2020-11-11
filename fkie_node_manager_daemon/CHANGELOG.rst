@@ -2,11 +2,17 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.3 (2020-08-03)
+1.2.4 (2020-11-11)
 ------------------
-
-1.2.2 (2020-07-27)
-------------------
+* renamed 'associations' and 'kill_on_stop' parameter and add dapricated notifications
+  new names: nm/associations nm/kill_on_stop
+* fkie_node_manager: fixed open echo dialog
+* fkie_node_manager: chnaged host comparison; added search for further log files
+* fkie_node_manager: show ROS log from lates folder if no one is available
+* fkie_node_manager_daemon: catch error if no net_if_stats available
+* fix for issue `#138 <https://github.com/fkie/multimaster_fkie/issues/138>`_
+* fkie_node_manager: fixed detection of included files in 'value' tags
+* Contributors: Alexander Tiderko, Robot User
 
 1.2.1 (2020-07-22)
 ------------------

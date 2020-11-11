@@ -2,7 +2,7 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.3 (2020-08-03)
+1.2.4 (2020-11-11)
 ------------------
 * use ${PYTHON_EXECUTABLE} instead of search by itself
 * Contributors: Alexander Tiderko

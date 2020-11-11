@@ -2,16 +2,15 @@
 Changelog for package fkie_master_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.3 (2020-08-03)
+1.2.4 (2020-11-11)
 ------------------
-
-1.2.2 (2020-07-27)
-------------------
+* fkie_master_sync: fix problems after stop master_sync on remote hosts
+* updated diagnostic message for warnings in master_sync
+* Contributors: Alexander Tiderko
 
 1.2.1 (2020-07-22)
 ------------------
 * fkie_multimaster: added conditions for python3 dependencies in package xml
-* Contributors: Alexander Tiderko
 
 1.2.0 (2020-07-22)
 ------------------
