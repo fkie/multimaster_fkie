@@ -2,15 +2,12 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.3 (2020-08-03)
+1.2.4 (2020-11-11)
 ------------------
-
-1.2.2 (2020-07-27)
-------------------
-
-1.2.1 (2020-07-22)
-------------------
-* fkie_multimaster: added conditions for python3 dependencies in package xml
+* fkie_master_discovery: fix discovery in some cases with multicast dropped while running
+* fkie_master_discovery: removed map of local addresses to localhost
+  This caused problems if ROS_IP of ROS_HOSTNAME was used
+* master_discovery: added parameter to hide nodes, topics and services for filtered requests
 * Contributors: Alexander Tiderko
 
 1.2.0 (2020-07-22)

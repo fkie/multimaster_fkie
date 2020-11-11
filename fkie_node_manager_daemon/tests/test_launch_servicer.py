@@ -87,14 +87,14 @@ class TestLaunchServicer(unittest.TestCase):
             pass
 
     def test_get_loaded_files(self):
-        ls = LaunchServicer()
+        ls = LaunchServicer(monitor_servicer=None)
         response_stream = ls.GetLoadedFiles(lmsg.Empty(), DummyContext())
         items = [response for response in response_stream]
         self.assertEqual(len(items), 0, "The list of loaded launch files on startup is not empty!")
 #            self.assertEqual(resp.ack.size, self.current_pose, "incorrect transferred file size: %d, expected: %d" % (resp.ack.size, self.current_pose))
 
     def test_get_included_files(self):
-        ls = LaunchServicer()
+        ls = LaunchServicer(monitor_servicer=None)
         path = interpret_path("$(find fkie_node_manager_daemon)/tests/resources/include_dummy.launch")
         response_stream = ls.GetIncludedFiles(lmsg.IncludedFilesRequest(path=path, recursive=True, unique=True, pattern=[]), DummyContext())
         file_list = [response for response in response_stream]
@@ -113,7 +113,7 @@ class TestLaunchServicer(unittest.TestCase):
         self.assertEqual(file_list[2].linenr, 10, "Wrong line number of third included file, got: %d, expected: %d" % (file_list[2].linenr, 10))
 
     def test_load_launch(self):
-        ls = LaunchServicer()
+        ls = LaunchServicer(monitor_servicer=None)
         path = ''
         args = {}
         request_args = True
@@ -157,7 +157,7 @@ class TestLaunchServicer(unittest.TestCase):
         self.assertEqual(items[0].launch, 'description_example.launch', "Wrong reported loaded launch, got: %s, expected: %s" % (items[0].launch, 'description_example.launch'))
 
     def test_reload_file(self):
-        ls = LaunchServicer()
+        ls = LaunchServicer(monitor_servicer=None)
         path = interpret_path("$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         response = ls.ReloadLaunch(lmsg.LaunchFile(path=path), DummyContext())
         self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND'),
@@ -173,7 +173,7 @@ class TestLaunchServicer(unittest.TestCase):
                          % (response.status.code, lmsg.ReturnStatus.StatusType.Value('OK'), response.status.error_msg))
 
     def test_get_nodes(self):
-        ls = LaunchServicer()
+        ls = LaunchServicer(monitor_servicer=None)
         path = interpret_path("$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         response = ls.LoadLaunch(lmsg.LoadLaunchRequest(package='fkie_node_manager_daemon', launch='description_example.launch', path=path), DummyContext())
         self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('OK'),
