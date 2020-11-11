@@ -41,6 +41,8 @@ import roslaunch
 import roslib
 import rospy
 
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+
 from fkie_master_discovery.common import masteruri_from_master
 from .common import package_name, utf8
 
@@ -54,7 +56,7 @@ class LaunchConfig(object):
     A class to handle the ROS configuration stored in launch file.
     '''
 
-    def __init__(self, launch_file, package=None, masteruri='', host='', argv=None):
+    def __init__(self, launch_file, package=None, masteruri='', host='', argv=None, monitor_servicer=None):
         '''
         Creates the LaunchConfig object. The launch file will be not loaded on
         creation, first on request of roscfg value.
@@ -71,6 +73,7 @@ class LaunchConfig(object):
         :type argv: list(str)
         :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
+        self._monitor_servicer = monitor_servicer
         self.__launchfile = launch_file
         self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
         self.__masteruri = masteruri if masteruri else masteruri_from_master(True)
@@ -188,6 +191,24 @@ class LaunchConfig(object):
             if 'arg' in loader.root_context.resolve_dict:
                 self.resolve_dict = loader.root_context.resolve_dict['arg']
             self.changed = True
+            # check for depricated parameter
+            diag_dep = DiagnosticArray()
+            diag_dep.header.stamp = rospy.Time.now()
+            for n in roscfg.nodes:
+                node_fullname = roslib.names.ns_join(n.namespace, n.name)
+                associations_param = roslib.names.ns_join(node_fullname, 'associations')
+                if associations_param in roscfg.params:
+                    ds = DiagnosticStatus()
+                    ds.level = DiagnosticStatus.WARN
+                    ds.name = node_fullname
+                    ds.message = 'Deprecated parameter detected'
+                    ds.values.append(KeyValue('deprecated', 'associations'))
+                    ds.values.append(KeyValue('new', 'nm/associations'))
+                    rospy.logwarn("'associations' is deprecated, use 'nm/associations'! found for node: %s in %s" % (node_fullname, self.filename))
+                    diag_dep.status.append(ds)
+            if self._monitor_servicer is not None:
+                # set diagnostics
+                self._monitor_servicer._monitor._callback_diagnostics(diag_dep)
         except roslaunch.XmlParseException as e:
             test = list(re.finditer(r"environment variable '\w+' is not set", utf8(e)))
             message = utf8(e)

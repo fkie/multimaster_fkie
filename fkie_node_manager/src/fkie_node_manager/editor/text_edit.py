@@ -32,7 +32,7 @@
 
 
 
-from python_qt_binding.QtCore import QRegExp, Qt, Signal
+from python_qt_binding.QtCore import QRegExp, Qt, Signal, QEvent
 from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor, QTextDocument
 import os
 import re
@@ -51,9 +51,9 @@ from .yaml_highlighter import YamlHighlighter
 
 
 try:
-    from python_qt_binding.QtGui import QAction, QApplication, QMenu, QTextEdit
+    from python_qt_binding.QtGui import QAction, QApplication, QMenu, QTextEdit, QToolTip
 except Exception:
-    from python_qt_binding.QtWidgets import QAction, QApplication, QMenu, QTextEdit
+    from python_qt_binding.QtWidgets import QAction, QApplication, QMenu, QTextEdit, QToolTip
 
 
 class TextEdit(QTextEdit):
@@ -829,3 +829,20 @@ class TextEdit(QTextEdit):
         cursor = self.textCursor()
         if not cursor.isNull():
             cursor.insertText(arg.data())
+
+    # ############################################################################
+    # ######### Tooltip                                                     ######
+    # ############################################################################
+
+    def event(self, event):
+        if event.type() == QEvent.ToolTip:
+            cursor = self.cursorForPosition(event.pos())
+            cursor.select(QTextCursor.BlockUnderCursor)
+            if cursor.selectedText():
+                for dp, np in XmlHighlighter.DEPRECATED_PARAMETER.items():
+                    if 'name="%s"' % dp in cursor.selectedText():
+                        QToolTip.showText(event.globalPos(), ' %s is deprecated, use %s' % (dp, np))
+            else:
+                QToolTip.hideText()
+            return True
+        return QTextEdit.event(self, event)

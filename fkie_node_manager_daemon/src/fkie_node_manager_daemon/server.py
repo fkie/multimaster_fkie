@@ -59,8 +59,8 @@ class GrpcServer:
     def __init__(self):
         self.server = None
         self.settings_servicer = SettingsServicer()
-        self.launch_servicer = LaunchServicer()
         self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
+        self.launch_servicer = LaunchServicer(self.monitor_servicer)
         rospy.Service('~start_launch', LoadLaunch, self._rosservice_start_launch)
         rospy.Service('~load_launch', LoadLaunch, self._rosservice_load_launch)
         rospy.Service('~run', Task, self._rosservice_start_node)

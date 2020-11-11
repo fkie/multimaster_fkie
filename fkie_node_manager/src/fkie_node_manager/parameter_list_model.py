@@ -61,7 +61,13 @@ class ParameterValueItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        QStandardItem.__init__(self, utf8(value) if not isinstance(value, xmlrpcclient.Binary) else utf8(value))
+        value_str = utf8(value) if not isinstance(value, xmlrpcclient.Binary) else utf8(value)
+        self.read_only = False
+        if len(value_str) > 32000:
+            value_str = 'value size > 32000; use Ctrl+X to copy'
+            self.read_only = True
+        QStandardItem.__init__(self, value_str)
+        self.setEditable(not self.read_only)
         self._name = name
         '''@ivar: the name of parameter '''
         self._value = value
@@ -289,6 +295,9 @@ class ParameterModel(QStandardItemModel):
         if not index.isValid():
             return Qt.NoItemFlags
         if index.column() == 2:
+            item = self.itemFromIndex(index)
+            if not item.isEditable():
+                return Qt.ItemIsEnabled | Qt.ItemIsSelectable
             return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
@@ -343,6 +352,5 @@ class ParameterModel(QStandardItemModel):
         item.setEditable(False)
         items.append(item)
         itemValue = ParameterValueItem(name, value)
-        itemValue.setEditable(True)
         items.append(itemValue)
         return items
