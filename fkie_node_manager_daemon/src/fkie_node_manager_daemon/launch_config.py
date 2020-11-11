@@ -193,7 +193,8 @@ class LaunchConfig(object):
             self.changed = True
             # check for depricated parameter
             diag_dep = DiagnosticArray()
-            diag_dep.header.stamp = rospy.Time.now()
+            if self._monitor_servicer is not None:
+                diag_dep.header.stamp = rospy.Time.now()
             for n in roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
                 associations_param = roslib.names.ns_join(node_fullname, 'associations')
