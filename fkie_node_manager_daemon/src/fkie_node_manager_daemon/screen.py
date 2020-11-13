@@ -197,6 +197,10 @@ def get_ros_logfile(node):
         else:
             # search in latest subfolder
             logpath = os.path.join(LOG_PATH, "latest")
+            if not os.path.exists(logpath):
+                logpath = LOG_PATH
+            if not os.path.exists(logpath):
+                return ''
             p = re.compile(r"%s-\d*.log" % (node.strip('/').replace('/', '-')))
             files = os.listdir(logpath)
             for fn in files:
