@@ -30,16 +30,18 @@ add_service_files(
   Task.srv
 )
 
+catkin_python_setup()
+
 generate_messages(DEPENDENCIES std_msgs)
+
+# generate code for gRPC protocols
+include(cmake/grpc_protoc.cmake)
+generate_grpc(PROTO_FILES file launch monitor screen settings version)
 
 catkin_package(
     CFG_EXTRAS version.cmake.in
     CATKIN_DEPENDS message_runtime std_msgs
 )
-
-# generate code for gRPC protocols
-include(cmake/grpc_protoc.cmake)
-generate_grpc(PROTO_FILES file launch monitor screen settings version)
 
 install(
     DIRECTORY
