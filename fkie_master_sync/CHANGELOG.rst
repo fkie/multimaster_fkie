@@ -2,6 +2,9 @@
 Changelog for package fkie_master_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.5 (2020-11-28)
+------------------
+
 1.2.4 (2020-11-11)
 ------------------
 * fkie_master_sync: fix problems after stop master_sync on remote hosts
