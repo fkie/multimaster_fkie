@@ -1577,4 +1577,9 @@ class ServiceDialog(ParameterDialog):
 
     def _handle_resp(self, req, resp):
         self.setWindowTitle(''.join(['Request / Response of ', self.service.name]))
-        self.setText('\n'.join([utf8(req), '---', utf8(resp)]))
+        # replace some of Escape Characters
+        resp_str = utf8(resp).replace('\\r\\n', '\n')
+        resp_str = resp_str.replace('\\n', '\n')
+        resp_str = resp_str.replace('\\t', '\t')
+        resp_str = resp_str.replace('\\v', '\v')
+        self.setText('\n'.join([utf8(req), '---', resp_str]))
