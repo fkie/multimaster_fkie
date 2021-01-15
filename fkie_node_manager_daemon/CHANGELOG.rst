@@ -2,6 +2,10 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.5 (2020-11-28)
+------------------
+* fkie_node_manager_daemon: fixed delete node's log file if no latest folder exists
+
 1.2.4 (2020-11-11)
 ------------------
 * renamed 'associations' and 'kill_on_stop' parameter and add dapricated notifications

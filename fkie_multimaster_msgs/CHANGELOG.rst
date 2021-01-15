@@ -2,6 +2,10 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.5 (2020-11-28)
+------------------
+* fkie_multimaster_msgs.grpc: fix packaging issue
+
 1.2.4 (2020-11-11)
 ------------------
 * use ${PYTHON_EXECUTABLE} instead of search by itself
