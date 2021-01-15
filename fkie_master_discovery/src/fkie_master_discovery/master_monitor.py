@@ -593,7 +593,7 @@ class MasterMonitor(object):
             # wait for all threads are finished
             while threads:
                 th = threads.pop()
-                if th.isAlive():
+                if th.is_alive():
                     th.join()
                 del th
             if time.time() - self._last_clearup_ts > 300:
