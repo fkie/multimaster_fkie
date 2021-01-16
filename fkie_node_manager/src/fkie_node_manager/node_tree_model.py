@@ -1845,7 +1845,7 @@ class NodeTreeModel(QStandardItemModel):
                             changed = True
                 else:
                     try:
-                        for group, _ in capabilities[ns].items():
+                        for group, _ in list(capabilities[ns].items()):
                             try:
                                 # remove the config from item, if parameter was not foun on the ROS parameter server
                                 groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group))
@@ -1866,12 +1866,12 @@ class NodeTreeModel(QStandardItemModel):
                     except Exception:
                         pass
             # clearup namespaces to remove empty groups
-            for ns in capabilities.keys():
+            for ns in list(capabilities.keys()):
                 if ns and ns not in available_ns:
                     del capabilities[ns]
                     changed = True
                 else:
-                    for group in capabilities[ns].keys():
+                    for group in list(capabilities[ns].keys()):
                         if group and group not in available_groups:
                             del capabilities[ns][group]
                             changed = True
