@@ -2,6 +2,11 @@
 Changelog for package fkie_master_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.5 (2021-01-16)
+------------------
+* replaced Thread.isAlive() by .is_alive() according to issue `#149 <https://github.com/fkie/multimaster_fkie/issues/149>`_
+* Contributors: Alexander Tiderko
+
 1.2.4 (2020-11-11)
 ------------------
 * fkie_master_sync: fix problems after stop master_sync on remote hosts

@@ -2,6 +2,15 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.5 (2021-01-16)
+------------------
+* fixed "RuntimeError: dictionary changed size during iteration", issue `#150 <https://github.com/fkie/multimaster_fkie/issues/150>`_
+* replaced Thread.isAlive() by .is_alive() according to issue `#149 <https://github.com/fkie/multimaster_fkie/issues/149>`_
+* fkie_node_manager_daemon: fixed delete node's log file if no latest folder exists
+* added imports to generated grpc init
+* replace escape sequences in service responses
+* Contributors: Alexander Tiderko
+
 1.2.4 (2020-11-11)
 ------------------
 * fkie_master_discovery: fix discovery in some cases with multicast dropped while running
