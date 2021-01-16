@@ -2,6 +2,11 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.6 (2021-01-16)
+------------------
+* added imports to generated grpc init
+* Contributors: Alexander Tiderko
+
 1.2.5 (2020-11-28)
 ------------------
 * fkie_multimaster_msgs.grpc: fix packaging issue

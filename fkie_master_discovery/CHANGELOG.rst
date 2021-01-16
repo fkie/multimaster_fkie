@@ -2,6 +2,12 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.6 (2021-01-16)
+------------------
+* fixed "RuntimeError: dictionary changed size during iteration", issue `#150 <https://github.com/fkie/multimaster_fkie/issues/150>`_
+* replaced Thread.isAlive() by .is_alive() according to issue `#149 <https://github.com/fkie/multimaster_fkie/issues/149>`_
+* Contributors: Alexander Tiderko
+
 1.2.5 (2020-11-28)
 ------------------
 

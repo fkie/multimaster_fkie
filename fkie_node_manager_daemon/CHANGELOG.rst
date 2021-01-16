@@ -2,6 +2,9 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.6 (2021-01-16)
+------------------
+
 1.2.5 (2020-11-28)
 ------------------
 * fkie_node_manager_daemon: fixed delete node's log file if no latest folder exists
@@ -16,7 +19,7 @@ Changelog for package fkie_node_manager_daemon
 * fkie_node_manager_daemon: catch error if no net_if_stats available
 * fix for issue `#138 <https://github.com/fkie/multimaster_fkie/issues/138>`_
 * fkie_node_manager: fixed detection of included files in 'value' tags
-* Contributors: Alexander Tiderko, Robot User
+* Contributors: Alexander Tiderko
 
 1.2.1 (2020-07-22)
 ------------------

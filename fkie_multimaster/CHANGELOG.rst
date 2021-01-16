@@ -2,6 +2,14 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.6 (2021-01-16)
+------------------
+* fixed "RuntimeError: dictionary changed size during iteration", issue `#150 <https://github.com/fkie/multimaster_fkie/issues/150>`_
+* replaced Thread.isAlive() by .is_alive() according to issue `#149 <https://github.com/fkie/multimaster_fkie/issues/149>`_
+* added imports to generated grpc init
+* replace escape sequences in service responses
+* Contributors: Alexander Tiderko
+
 1.2.5 (2020-11-28)
 ------------------
 * fkie_multimaster_msgs.grpc: fix packaging issue
