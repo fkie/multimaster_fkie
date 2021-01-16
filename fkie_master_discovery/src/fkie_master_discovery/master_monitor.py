@@ -620,8 +620,8 @@ class MasterMonitor(object):
     def _clearup_cached_logs(self, age=300):
         cts = time.time()
         with self._lock:
-            for p, msgs in self._printed_errors.items():
-                for msg, ts in msgs.items():
+            for p, msgs in list(self._printed_errors.items()):
+                for msg, ts in list(msgs.items()):
                     if cts - ts > age:
                         del self._printed_errors[p][msg]
                 if not self._printed_errors[p]:
