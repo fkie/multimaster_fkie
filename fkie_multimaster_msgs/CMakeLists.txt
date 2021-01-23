@@ -30,8 +30,6 @@ add_service_files(
   Task.srv
 )
 
-catkin_python_setup()
-
 generate_messages(DEPENDENCIES std_msgs)
 
 # generate code for gRPC protocols
