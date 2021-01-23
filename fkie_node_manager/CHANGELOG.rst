@@ -2,10 +2,16 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.5 (2021-01-16)
+1.2.7 (2021-01-23)
+------------------
+
+1.2.6 (2021-01-16)
 ------------------
 * replace escape sequences in service responses
 * Contributors: Alexander Tiderko
+
+1.2.5 (2021-01-16)
+------------------
 
 1.2.4 (2020-11-11)
 ------------------

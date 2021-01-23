@@ -2,10 +2,16 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.5 (2021-01-16)
+1.2.7 (2021-01-23)
+------------------
+
+1.2.6 (2021-01-16)
 ------------------
 * fkie_node_manager_daemon: fixed delete node's log file if no latest folder exists
 * Contributors: Alexander Tiderko
+
+1.2.5 (2021-01-16)
+------------------
 
 1.2.4 (2020-11-11)
 ------------------
