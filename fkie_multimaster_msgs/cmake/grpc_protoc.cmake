@@ -25,13 +25,11 @@ macro(generate_grpc)
         add_custom_command(
             OUTPUT ${GRPC_GENERATED_SRC_DIR}/${PROTO_FILE}_pb2.py
             COMMAND "${PYTHON_EXECUTABLE}" -m grpc_tools.protoc -I${MM_ROOT} --python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
-            COMMAND ${CMAKE_COMMAND} -E echo "from .${PROTO_FILE}_pb2 import *" >> "${GRPC_GENERATED_SRC_DIR}/__init__.py"
             DEPENDS ${GRPC_GENERATED_SRC_DIR} ${ABS_PROTO_FILE}
         )
         add_custom_command(
             OUTPUT ${GRPC_GENERATED_SRC_DIR}/${PROTO_FILE}_pb2_grpc.py 
             COMMAND "${PYTHON_EXECUTABLE}" -m grpc_tools.protoc -I${MM_ROOT} --grpc_python_out=${DST_ROOT}/. ${ABS_PROTO_FILE}
-            COMMAND ${CMAKE_COMMAND} -E echo "from .${PROTO_FILE}_pb2_grpc import *" >> "${GRPC_GENERATED_SRC_DIR}/__init__.py"
             DEPENDS ${GRPC_GENERATED_SRC_DIR} ${ABS_PROTO_FILE}
         )
     endforeach()
