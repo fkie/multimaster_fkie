@@ -2,6 +2,13 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.7 (2021-01-23)
+------------------
+* Fix install location for generated gRPC submodule
+* Revert "added imports to generated grpc init"
+  This reverts commit 571dd90701b4c48dcd9b5627827f7adc0ce02589.
+* Contributors: Alexander Tiderko, Timo Röhling
+
 1.2.6 (2021-01-16)
 ------------------
 * fixed "RuntimeError: dictionary changed size during iteration", issue `#150 <https://github.com/fkie/multimaster_fkie/issues/150>`_
@@ -10,7 +17,7 @@ Changelog for package fkie_multimaster
 * replace escape sequences in service responses
 * Contributors: Alexander Tiderko
 
-1.2.5 (2020-11-28)
+1.2.5 (2021-01-16)
 ------------------
 * fkie_multimaster_msgs.grpc: fix packaging issue
 * fkie_node_manager_daemon: fixed delete node's log file if no latest folder exists
