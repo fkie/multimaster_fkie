@@ -107,6 +107,10 @@ class LoggerHandler(QObject):
         self._thread_update = None
 
     def _handle_loggers(self, loggers):
+        new_logger = {}
+        for logger in loggers:
+            new_logger[logger.name] = logger.level
+            self._stored_values[logger.name] = logger.level
         while self.layout.count() > 1:
             item = self.layout.takeAt(0)
             wd = item.widget()
@@ -114,16 +118,18 @@ class LoggerHandler(QObject):
                 self._stored_values[wd.loggername] = wd.current_level
             wd.setParent(None)
         self._logger_items.clear()
-        all_item = LoggerItem(self.nodename, self.masteruri, 'all', '')
-        all_item.set_callback(self.change_all)
-        self.layout.insertWidget(0, all_item)
-        index = 1
-        for logger in loggers:
-            item = LoggerItem(self.nodename, self.masteruri, logger.name, logger.level)
-            self._logger_items[logger.name] = item
+        index = 0
+        if not 'all' in self._stored_values:
+            all_item = LoggerItem(self.nodename, self.masteruri, 'all', '')
+            all_item.set_callback(self.change_all)
+            self.layout.insertWidget(0, all_item)
+            index += 1
+        for logger_name, logger_level in self._stored_values.items():
+            item = LoggerItem(self.nodename, self.masteruri, logger_name, logger_level)
+            self._logger_items[logger_name] = item
+            if (not logger_name in new_logger) or new_logger[logger_name] != logger_level:
+                item.set_level(logger_level, True)
             self.layout.insertWidget(index, item)
-            if logger.name in self._stored_values and self._stored_values[logger.name] != logger.level:
-                item.set_level(self._stored_values[logger.name])
             index += 1
             if self._filter.indexIn(logger.name) == -1:
                 item.setVisible(False)

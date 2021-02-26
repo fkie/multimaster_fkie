@@ -143,8 +143,8 @@ class LoggerItem(QFrame):
     def on_error_update(self, level):
         self.on_succes_update(level)
 
-    def set_level(self, level):
-        if self.current_level is not None:
+    def set_level(self, level, force=False):
+        if self.current_level is not None or force:
             if self._callback is not None:
                 self._callback(level)
             else:
