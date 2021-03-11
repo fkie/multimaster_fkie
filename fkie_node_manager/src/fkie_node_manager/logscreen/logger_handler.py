@@ -85,6 +85,8 @@ class LoggerHandler(QObject):
         self.loggers_signal.connect(self._handle_loggers)
         self._thread_update = None
         self._thread_set_all = None
+        self._all_item = LoggerItem(self.nodename, self.masteruri, 'all', '')
+        self._all_item.set_callback(self.change_all)
 
     def update(self):
         if self._thread_update is None:
@@ -107,23 +109,27 @@ class LoggerHandler(QObject):
         self._thread_update = None
 
     def _handle_loggers(self, loggers):
+        new_logger = {}
+        for logger in loggers:
+            new_logger[logger.name] = logger.level
+            self._stored_values[logger.name] = logger.level
         while self.layout.count() > 1:
             item = self.layout.takeAt(0)
             wd = item.widget()
-            if wd.current_level is not None:
+            if wd.current_level is not None and wd.loggername != 'all':
                 self._stored_values[wd.loggername] = wd.current_level
             wd.setParent(None)
         self._logger_items.clear()
-        all_item = LoggerItem(self.nodename, self.masteruri, 'all', '')
-        all_item.set_callback(self.change_all)
-        self.layout.insertWidget(0, all_item)
-        index = 1
-        for logger in loggers:
-            item = LoggerItem(self.nodename, self.masteruri, logger.name, logger.level)
-            self._logger_items[logger.name] = item
+        index = 0
+        if not 'all' in self._stored_values:
+            self.layout.insertWidget(0, self._all_item)
+            index += 1
+        for logger_name, logger_level in sorted(self._stored_values.items()):
+            item = LoggerItem(self.nodename, self.masteruri, logger_name, logger_level)
+            self._logger_items[logger_name] = item
+            if (not logger_name in new_logger) or new_logger[logger_name] != logger_level:
+                item.set_level(logger_level, True)
             self.layout.insertWidget(index, item)
-            if logger.name in self._stored_values and self._stored_values[logger.name] != logger.level:
-                item.set_level(self._stored_values[logger.name])
             index += 1
             if self._filter.indexIn(logger.name) == -1:
                 item.setVisible(False)
@@ -155,10 +161,14 @@ class LoggerHandler(QObject):
     def on_success_set(self, nodename, logger, level):
         if logger in self._logger_items:
             self._logger_items[logger].on_succes_update(level)
+        elif logger == 'all':
+            self._all_item.on_succes_update(level)
 
     def on_error_set(self, nodename, logger, level):
         if logger in self._logger_items:
             self._logger_items[logger].on_error_update(level)
+        elif logger == 'all':
+            self._all_item.on_error_update(level)
 
     def filter(self, text):
         self._filter = QRegExp(text, Qt.CaseInsensitive, QRegExp.Wildcard)
@@ -207,6 +217,7 @@ class SetAllThread(QObject, threading.Thread):
                     rospy.logwarn("Set logger %s for %s to %s failed: %s" % (logger, self._nodename, self._newlevel, err))
                     if level is not None:
                         self.error_signal.emit(self._nodename, logger, level)
+        self.success_signal.emit(self._nodename, 'all', self._newlevel)
 
     def cancel(self):
         self._cancel = True
