@@ -48,6 +48,7 @@ RESPAWN_SCRIPT = 'rosrun fkie_node_manager respawn'
 LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
 ''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
 
+SETTINGS_PATH = os.path.expanduser('~/.config/ros.fkie/')
 
 class Settings:
 
@@ -56,7 +57,7 @@ class Settings:
         self.version = version
         self.filename = filename
         if not self.filename:
-            self.filename = os.path.expanduser('~/.config/ros.fkie/node_manager_daemon.yaml')
+            self.filename = '%snode_manager_daemon.yaml' % SETTINGS_PATH
         cfg_path = os.path.dirname(self.filename)
         if not os.path.isdir(cfg_path):
             os.makedirs(cfg_path)
