@@ -114,7 +114,7 @@ class LoggerHandler(QObject):
         while self.layout.count() > 1:
             item = self.layout.takeAt(0)
             wd = item.widget()
-            if wd.current_level is not None:
+            if wd.current_level is not None and wd.loggername != 'all':
                 self._stored_values[wd.loggername] = wd.current_level
             wd.setParent(None)
         self._logger_items.clear()
