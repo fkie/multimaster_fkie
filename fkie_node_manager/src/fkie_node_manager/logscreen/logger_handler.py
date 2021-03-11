@@ -124,7 +124,7 @@ class LoggerHandler(QObject):
             all_item.set_callback(self.change_all)
             self.layout.insertWidget(0, all_item)
             index += 1
-        for logger_name, logger_level in self._stored_values.items():
+        for logger_name, logger_level in sorted(self._stored_values.items()):
             item = LoggerItem(self.nodename, self.masteruri, logger_name, logger_level)
             self._logger_items[logger_name] = item
             if (not logger_name in new_logger) or new_logger[logger_name] != logger_level:
