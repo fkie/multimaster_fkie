@@ -1840,7 +1840,7 @@ class MainWindow(QMainWindow):
                     del self.editor_dialogs[grpc_path]
                     self.on_launch_edit(grpc_path, search_text, 2)
             else:
-                editor = Editor([grpc_path], search_text)
+                editor = Editor([grpc_path], search_text, master_name=self.launch_dock.path2mastername(grpc_path))
                 if editor.tabWidget.count() > 0:
                     self.editor_dialogs[grpc_path] = editor
                     editor.finished_signal.connect(self._editor_dialog_closed)
