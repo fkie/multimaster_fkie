@@ -86,6 +86,7 @@ class LaunchFilesWidget(QDockWidget):
         # load the UI file
         ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'LaunchFilesDockWidget.ui')
         loadUi(ui_file, self, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
+        self.hostLabel.setVisible(False)
         self.ui_button_progress_cancel_cfg.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
         self.ui_button_reload.setIcon(nm.settings().icon('oxygen_view_refresh.png'))
         self.ui_button_edit.setIcon(nm.settings().icon('crystal_clear_edit_launch.png'))
@@ -131,6 +132,7 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_button_new.setMenu(self._menu_add)
         self._masteruri2name = {}
         self._reload_timer = None
+        self._first_path = self.launchlist_model.current_path
 
     def stop(self):
         '''
@@ -162,6 +164,7 @@ class LaunchFilesWidget(QDockWidget):
         Tries to load the launch file, if one was activated.
         '''
         selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+        mname = self.path2mastername(self.launchlist_model.current_path)
         for item in selected:
             try:
                 self.ui_search_line.set_process_active(True)
@@ -177,10 +180,15 @@ class LaunchFilesWidget(QDockWidget):
                         self.load_profile_signal.emit(item.path)
                     elif item.is_config_file():
                         self.edit_signal.emit(lfile)
-                if self.launchlist_model.current_path:
-                    self.setWindowTitle('Launch @%s' % get_hostname(self.launchlist_model.current_grpc))
+                mname = self.path2mastername(self.launchlist_model.current_path)
+                self.hostLabel.setText('Remote @ <b>%s</b>' % mname)
+                if mname and self._first_path != self.launchlist_model.current_path:
+                    self.hostLabel.setVisible(True)
                 else:
-                    self.setWindowTitle('Launch files')
+                    self.hostLabel.setVisible(False)
+                if mname:
+                    color = QColor.fromRgb(nm.settings().host_color(mname, self._default_color.rgb()))
+                    self._new_color(color)
             except Exception as e:
                 import traceback
                 print(traceback.format_exc())
@@ -188,10 +196,6 @@ class LaunchFilesWidget(QDockWidget):
                 MessageBox.warning(self, "Load error",
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
-        mname = self.path2mastername(self.launchlist_model.current_path)
-        if mname:
-            color = QColor.fromRgb(nm.settings().host_color(mname, self._default_color.rgb()))
-            self._new_color(color)
 
     def _new_color(self, color):
         bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
