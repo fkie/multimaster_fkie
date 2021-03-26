@@ -38,6 +38,8 @@ import sys
 
 import roslib
 import rospy
+import time
+
 try:
     from urlparse import urlparse  # python 2 compatibility
 except ImportError:
@@ -54,7 +56,7 @@ def get_default_rtcp_port(zeroconf=False):
     try:
         from fkie_master_discovery.common import masteruri_from_ros
         masteruri = masteruri_from_ros()
-        rospy.loginfo("ROS Master URI: %s", masteruri)
+        # rospy.loginfo("ROS Master URI: %s", masteruri)
         return urlparse(masteruri).port + (600 if zeroconf else 300)
     except:
         import traceback
@@ -91,11 +93,38 @@ def set_process_name(name):
             pass
 
 
+def is_port_in_use(port):
+    import socket, errno
+    result = False
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(('localhost', port))
+    except socket.error as e:
+        if e.errno == errno.EADDRINUSE:
+            result = True
+        else:
+            # something else raised the socket.error exception
+            print(e)
+    s.close()
+    return result
+
+
+def wait_for_free_port():
+    wait_index = 0
+    rpc_port = get_default_rtcp_port()
+    while wait_index < 12 and is_port_in_use(rpc_port):
+        wait_index += 1
+        if wait_index == 1:
+            print('RPC port %d is already in use, is there another instance of master_discovery running?' % rpc_port)
+        time.sleep(1)
+
+
 def main():
     '''
     Creates and runs the ROS node using multicast messages for discovering
     '''
     import fkie_master_discovery.master_discovery as master_discovery
+    wait_for_free_port()
     # setup the loglevel
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
@@ -118,7 +147,6 @@ def main():
         import traceback
         rospy.logerr("%s\nError while start master_discovery: %s" % (traceback.format_exc(), str(e)))
         os.kill(os.getpid(), signal.SIGKILL)
-        import time
         time.sleep(10)
 
 
@@ -128,6 +156,7 @@ def main_zeroconf():
     '''
     import fkie_master_discovery.zeroconf as zeroconf
     PROCESS_NAME = "zeroconf"
+    wait_for_free_port()
     # setup the loglevel
     try:
         log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
