@@ -123,7 +123,7 @@ class GroupItem(QStandardItem):
         self._re_cap_nodes = dict()
         self._is_group = is_group
         self._state = NodeItem.STATE_OFF
-        self.diagnostic_array = []
+        self.diagnostic_level = 0
         self.is_system_group = name == 'SYSTEM'
         self._clearup_mark_delete = False
 
@@ -668,7 +668,7 @@ class GroupItem(QStandardItem):
         has_off = False
         has_duplicate = False
         has_ghosts = False
-        diag_level = 0
+        self.diagnostic_level = 0
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, (GroupItem, NodeItem)):
@@ -682,12 +682,8 @@ class GroupItem(QStandardItem):
                     has_off = True
                 elif item.state == NodeItem.STATE_RUN:
                     has_running = True
-                    if item.diagnostic_array and item.diagnostic_array[-1].level > 0:
-                        if diag_level == 0:
-                            diag_level = item.diagnostic_array[-1].level
-                        elif item.diagnostic_array[-1].level == 2:
-                            diag_level = 2
-                        self.diagnostic_array = item.diagnostic_array
+                    if item.diagnostic_level > self.diagnostic_level:
+                        self.diagnostic_level = item.diagnostic_level
                 elif item.state == NodeItem.STATE_GHOST:
                     has_ghosts = True
                 elif item.state == NodeItem.STATE_DUPLICATE:
@@ -696,8 +692,8 @@ class GroupItem(QStandardItem):
                     has_running = True
                     has_off = True
         diag_icon = None
-        if diag_level > 0:
-            diag_icon = NodeItem._diagnostic_level2icon(diag_level)
+        if self.diagnostic_level > 0:
+            diag_icon = NodeItem._diagnostic_level2icon(self.diagnostic_level)
         if has_duplicate:
             self._state = NodeItem.STATE_DUPLICATE
             self.setIcon(nm.settings().icon('imacadam_stop.png'))
@@ -1407,6 +1403,12 @@ class NodeItem(QStandardItem):
             return nm.settings().icon('state_diag_stale.png')
         else:
             return nm.settings().icon('state_diag_other.png')
+
+    @property
+    def diagnostic_level(self):
+        if self.diagnostic_array:
+            return self.diagnostic_array[-1].level
+        return 0
 
     def _on_kill_param_values(self, masteruri, code, msg, params):
         if code == 1:
