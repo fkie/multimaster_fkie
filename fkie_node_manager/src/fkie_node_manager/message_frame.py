@@ -80,6 +80,7 @@ class MessageQueue(object):
             MessageFrame.TYPE_BINARY: [],
             MessageFrame.TYPE_NOSCREEN: [],
             MessageFrame.TYPE_NMD: [],
+            MessageFrame.TYPE_NMD_RESTART: [],
             MessageFrame.TYPE_NODE_CFG: []
         }
 
@@ -137,7 +138,8 @@ class MessageFrame(QFrame):
     TYPE_BINARY = 7
     TYPE_NOSCREEN = 8
     TYPE_NMD = 9
-    TYPE_NODE_CFG = 10
+    TYPE_NMD_RESTART = 10
+    TYPE_NODE_CFG = 11
 
     ICON_SIZE = 32
 

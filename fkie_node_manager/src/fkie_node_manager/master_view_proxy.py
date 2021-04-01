@@ -170,6 +170,7 @@ class MasterViewProxy(QWidget):
         self.__last_info_text = None
         self.__use_sim_time = False
         self.__current_user = nm.settings().host_user(self.mastername)
+        self.__daemon_user = ''
         self.__robot_icons = []
         self.__current_robot_icon = None
         self.__current_parameter_robot_icon = ''
@@ -460,6 +461,18 @@ class MasterViewProxy(QWidget):
         nm.settings().set_host_user(self.mastername, user)
 
     @property
+    def daemon_user(self):
+        return self.__daemon_user
+
+    @daemon_user.setter
+    def daemon_user(self, user):
+        self.__daemon_user = user
+        if user != self.current_user:
+            self.message_frame.show_question(MessageFrame.TYPE_NMD_RESTART, "node_manager_daemon is running with different user: '%s'.\nMany features may not function properly!\n\nRestart with user '%s'?\n\nNote: you should first close all open editors related to this host!" % (user, self.current_user), MessageData(self.masteruri))
+        else:
+            self.message_frame.hide_question([MessageFrame.TYPE_NMD_RESTART])
+
+    @property
     def is_local(self):
         return nm.is_local(get_hostname(self.masteruri))
 
@@ -581,10 +594,16 @@ class MasterViewProxy(QWidget):
             # only try to get updates from daemon if it is running
             nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
             # self.set_diagnostic_ok('/node_manager_daemon')
-            nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
-            nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
-            nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
-            nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().version.get_version_threaded(nmd_uri)
+            nm.nmd().screen.log_dir_size_threaded(nmd_uri)
+            nm.nmd().monitor.get_system_diagnostics_threaded(nmd_uri)
+            nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
+            nm.nmd().monitor.get_user(nmd_uri)
+
+    def is_valid_user_master_daemon(self):
+        if self.__daemon_user:
+            return self.__daemon_user == self.current_user
+        return True
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
@@ -3590,6 +3609,30 @@ class MasterViewProxy(QWidget):
             except Exception as err:
                 rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
                 MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+        elif questionid == MessageFrame.TYPE_NMD_RESTART:
+            try:
+                # start node manager daemon if not already running
+                rospy.loginfo("stop node manager daemon for %s", self.masteruri)
+                self.stop_nodes_by_name(['node_manager_daemon'])
+                host_addr = nm.nameres().address(self.masteruri)
+                rospy.loginfo("start node manager daemon for %s", self.masteruri)
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               'start node_manager_daemon for %s' % host_addr,
+                                               nm.starter().runNodeWithoutConfig,
+                                               {'host': host_addr,
+                                                'package': 'fkie_node_manager_daemon',
+                                                'binary': 'node_manager_daemon',
+                                                'name': 'node_manager_daemon',
+                                                'args': [],
+                                                'masteruri': self.masteruri,
+                                                'use_nmd': False,
+                                                'auto_pw_request': False,
+                                                'user': self.current_user
+                                               })
+                self._start_queue(self._progress_queue)
+            except Exception as err:
+                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
+                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))            
         elif questionid == MessageFrame.TYPE_BINARY:
             try:
                 self.stop_nodes_by_name([data.data.name])
