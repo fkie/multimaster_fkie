@@ -117,6 +117,9 @@ def wait_for_free_port():
         if wait_index == 1:
             print('RPC port %d is already in use, is there another instance of master_discovery running?' % rpc_port)
         time.sleep(1)
+    if wait_index > 1:
+        # give time for shutdown other node
+        time.sleep(3)
 
 
 def main():
