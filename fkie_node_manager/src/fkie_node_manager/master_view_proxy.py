@@ -33,7 +33,7 @@
 
 
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QRegExp, Qt, QTimer, Signal
+from python_qt_binding.QtCore import QRegExp, Qt, QTimer, QSize, Signal
 from python_qt_binding.QtGui import QKeySequence  # , QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
@@ -450,6 +450,64 @@ class MasterViewProxy(QWidget):
         if self.__echo_topics_dialogs:
             self.stop_nodes_by_name(self.__echo_topics_dialogs, only_local=False)
             self.__echo_topics_dialogs.clear()
+
+    def resizeEvent(self, event):
+        reduction = 4
+        redused_size = QSize(28,28)
+        increased_size = QSize(32,32)
+        height = 445
+        while event.size().height() <= height - (reduction*8) and redused_size.height() > 8:
+            redused_size = QSize(redused_size.width()-reduction,redused_size.height()-reduction)
+            increased_size = QSize(increased_size.width()-reduction,increased_size.height()-reduction)
+            height = height - (reduction*8)
+        if event.size().height() < height and event.oldSize().height() >= height:
+            self.ui.startButton.setIconSize(redused_size)
+            self.ui.stopButton.setIconSize(redused_size)
+            self.ui.ioButton.setIconSize(redused_size)
+            self.ui.logButton.setIconSize(redused_size)
+            self.ui.logDeleteButton.setIconSize(redused_size)
+            self.ui.dynamicConfigButton.setIconSize(redused_size)
+            self.ui.editConfigButton.setIconSize(redused_size)
+            self.ui.editRosParamButton.setIconSize(redused_size)
+            self.ui.closeCfgButton.setIconSize(redused_size)
+
+            self.ui.echoTopicButton.setIconSize(redused_size)
+            self.ui.hzTopicButton.setIconSize(redused_size)
+            self.ui.hzSshTopicButton.setIconSize(redused_size)
+            self.ui.pubTopicButton.setIconSize(redused_size)
+            self.ui.pubStopTopicButton.setIconSize(redused_size)
+
+            self.ui.callServiceButton.setIconSize(redused_size)
+            self.ui.getParameterButton.setIconSize(redused_size)
+            self.ui.addParameterButton.setIconSize(redused_size)
+            self.ui.deleteParameterButton.setIconSize(redused_size)
+            self.ui.saveParameterButton.setIconSize(redused_size)
+            self.ui.transferParameterButton.setIconSize(redused_size)
+        elif event.size().height() > height and event.oldSize().height() <= height or self.ui.startButton.iconSize().height() < increased_size.height() - reduction:
+            self.ui.startButton.setIconSize(increased_size)
+            self.ui.startButton.setIconSize(increased_size)
+            self.ui.stopButton.setIconSize(increased_size)
+            self.ui.ioButton.setIconSize(increased_size)
+            self.ui.logButton.setIconSize(increased_size)
+            self.ui.logDeleteButton.setIconSize(increased_size)
+            self.ui.dynamicConfigButton.setIconSize(increased_size)
+            self.ui.editConfigButton.setIconSize(increased_size)
+            self.ui.editRosParamButton.setIconSize(increased_size)
+            self.ui.closeCfgButton.setIconSize(increased_size)
+
+            self.ui.echoTopicButton.setIconSize(increased_size)
+            self.ui.hzTopicButton.setIconSize(increased_size)
+            self.ui.hzSshTopicButton.setIconSize(increased_size)
+            self.ui.pubTopicButton.setIconSize(increased_size)
+            self.ui.pubStopTopicButton.setIconSize(increased_size)
+
+            self.ui.callServiceButton.setIconSize(increased_size)
+            self.ui.getParameterButton.setIconSize(increased_size)
+            self.ui.addParameterButton.setIconSize(increased_size)
+            self.ui.deleteParameterButton.setIconSize(increased_size)
+            self.ui.saveParameterButton.setIconSize(increased_size)
+            self.ui.transferParameterButton.setIconSize(increased_size)
+        QWidget.resizeEvent(self, event)
 
     @property
     def current_user(self):
