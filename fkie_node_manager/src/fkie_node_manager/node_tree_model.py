@@ -1770,6 +1770,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         # separate into different hosts
         hosts = dict()
+        muris = []
         addresses = []
         updated_nodes = []
         for i in reversed(range(self.invisibleRootItem().rowCount())):
@@ -1777,7 +1778,8 @@ class NodeTreeModel(QStandardItemModel):
             host.reset_remote_launched_nodes()
         for (name, node) in nodes.items():
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
-            addresses.append(node.masteruri)
+            addresses.append(addr)
+            muris.append(node.masteruri)
             host = (node.masteruri, addr)
             if host not in hosts:
                 hosts[host] = dict()
@@ -1793,7 +1795,11 @@ class NodeTreeModel(QStandardItemModel):
         # update nodes of the hosts, which are not more exists
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host.masteruri not in addresses:
+            # remove hosts if they are not updated
+            if host.masteruri not in muris:
+                host.update_running_state({})
+            # remove hosts which are connected to local master using ROS_MASTER_URI
+            if (not host.local and host.host not in addresses):
                 host.update_running_state({})
         self._remove_empty_hosts()
         return updated_nodes
