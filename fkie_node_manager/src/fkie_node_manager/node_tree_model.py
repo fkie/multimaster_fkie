@@ -682,8 +682,6 @@ class GroupItem(QStandardItem):
                     has_off = True
                 elif item.state == NodeItem.STATE_RUN:
                     has_running = True
-                    if item.diagnostic_level > self.diagnostic_level:
-                        self.diagnostic_level = item.diagnostic_level
                 elif item.state == NodeItem.STATE_GHOST:
                     has_ghosts = True
                 elif item.state == NodeItem.STATE_DUPLICATE:
@@ -691,6 +689,9 @@ class GroupItem(QStandardItem):
                 elif item.state == NodeItem.STATE_PARTS:
                     has_running = True
                     has_off = True
+                if item.state == NodeItem.STATE_RUN or isinstance(item, GroupItem):
+                    if item.diagnostic_level > self.diagnostic_level:
+                        self.diagnostic_level = item.diagnostic_level
         diag_icon = None
         if self.diagnostic_level > 0:
             diag_icon = NodeItem._diagnostic_level2icon(self.diagnostic_level)
