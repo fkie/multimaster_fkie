@@ -175,6 +175,7 @@ class MasterViewProxy(QWidget):
         self.__current_robot_icon = None
         self.__current_parameter_robot_icon = ''
         self.__republish_params = {}  # { topic : params, created by dialog}
+        self.__current_icon_height = 8
         self.__last_selection = 0
         self.__last_node_activation = 0
         self.__last_question_start_nmd = 0
@@ -452,61 +453,40 @@ class MasterViewProxy(QWidget):
             self.__echo_topics_dialogs.clear()
 
     def resizeEvent(self, event):
-        reduction = 4
-        redused_size = QSize(28,28)
-        increased_size = QSize(32,32)
-        height = 445
-        while event.size().height() <= height - (reduction*8) and redused_size.height() > 8:
-            redused_size = QSize(redused_size.width()-reduction,redused_size.height()-reduction)
-            increased_size = QSize(increased_size.width()-reduction,increased_size.height()-reduction)
-            height = height - (reduction*8)
-        if event.size().height() < height and event.oldSize().height() >= height:
-            self.ui.startButton.setIconSize(redused_size)
-            self.ui.stopButton.setIconSize(redused_size)
-            self.ui.ioButton.setIconSize(redused_size)
-            self.ui.logButton.setIconSize(redused_size)
-            self.ui.logDeleteButton.setIconSize(redused_size)
-            self.ui.dynamicConfigButton.setIconSize(redused_size)
-            self.ui.editConfigButton.setIconSize(redused_size)
-            self.ui.editRosParamButton.setIconSize(redused_size)
-            self.ui.closeCfgButton.setIconSize(redused_size)
+        ch_height = 0
+        increment = 4
+        min_spacer_size = 8
+        const_size = 10 * self.ui.verticalLayout_4.spacing() + min_spacer_size + self.ui.line2_2.size().height() + self.ui.line1_2.size().height()
+        button_size = 9 * (self.ui.startButton.size().height() - self.__current_icon_height)
+        while (ch_height + increment) * 10 + const_size + button_size <= self.ui.controlNodesFrame.size().height() and ch_height < 32:
+            ch_height += increment
+        if ch_height < 8:
+            ch_height = 8
+        if ch_height != self.__current_icon_height:
+            self.__current_icon_height = ch_height
+            new_size = QSize(self.__current_icon_height, self.__current_icon_height)
+            self.ui.startButton.setIconSize(new_size)
+            self.ui.stopButton.setIconSize(new_size)
+            self.ui.ioButton.setIconSize(new_size)
+            self.ui.logButton.setIconSize(new_size)
+            self.ui.logDeleteButton.setIconSize(new_size)
+            self.ui.dynamicConfigButton.setIconSize(new_size)
+            self.ui.editConfigButton.setIconSize(new_size)
+            self.ui.editRosParamButton.setIconSize(new_size)
+            self.ui.closeCfgButton.setIconSize(new_size)
 
-            self.ui.echoTopicButton.setIconSize(redused_size)
-            self.ui.hzTopicButton.setIconSize(redused_size)
-            self.ui.hzSshTopicButton.setIconSize(redused_size)
-            self.ui.pubTopicButton.setIconSize(redused_size)
-            self.ui.pubStopTopicButton.setIconSize(redused_size)
+            self.ui.echoTopicButton.setIconSize(new_size)
+            self.ui.hzTopicButton.setIconSize(new_size)
+            self.ui.hzSshTopicButton.setIconSize(new_size)
+            self.ui.pubTopicButton.setIconSize(new_size)
+            self.ui.pubStopTopicButton.setIconSize(new_size)
 
-            self.ui.callServiceButton.setIconSize(redused_size)
-            self.ui.getParameterButton.setIconSize(redused_size)
-            self.ui.addParameterButton.setIconSize(redused_size)
-            self.ui.deleteParameterButton.setIconSize(redused_size)
-            self.ui.saveParameterButton.setIconSize(redused_size)
-            self.ui.transferParameterButton.setIconSize(redused_size)
-        elif event.size().height() > height and event.oldSize().height() <= height or self.ui.startButton.iconSize().height() < increased_size.height() - reduction:
-            self.ui.startButton.setIconSize(increased_size)
-            self.ui.startButton.setIconSize(increased_size)
-            self.ui.stopButton.setIconSize(increased_size)
-            self.ui.ioButton.setIconSize(increased_size)
-            self.ui.logButton.setIconSize(increased_size)
-            self.ui.logDeleteButton.setIconSize(increased_size)
-            self.ui.dynamicConfigButton.setIconSize(increased_size)
-            self.ui.editConfigButton.setIconSize(increased_size)
-            self.ui.editRosParamButton.setIconSize(increased_size)
-            self.ui.closeCfgButton.setIconSize(increased_size)
-
-            self.ui.echoTopicButton.setIconSize(increased_size)
-            self.ui.hzTopicButton.setIconSize(increased_size)
-            self.ui.hzSshTopicButton.setIconSize(increased_size)
-            self.ui.pubTopicButton.setIconSize(increased_size)
-            self.ui.pubStopTopicButton.setIconSize(increased_size)
-
-            self.ui.callServiceButton.setIconSize(increased_size)
-            self.ui.getParameterButton.setIconSize(increased_size)
-            self.ui.addParameterButton.setIconSize(increased_size)
-            self.ui.deleteParameterButton.setIconSize(increased_size)
-            self.ui.saveParameterButton.setIconSize(increased_size)
-            self.ui.transferParameterButton.setIconSize(increased_size)
+            self.ui.callServiceButton.setIconSize(new_size)
+            self.ui.getParameterButton.setIconSize(new_size)
+            self.ui.addParameterButton.setIconSize(new_size)
+            self.ui.deleteParameterButton.setIconSize(new_size)
+            self.ui.saveParameterButton.setIconSize(new_size)
+            self.ui.transferParameterButton.setIconSize(new_size)
         QWidget.resizeEvent(self, event)
 
     @property
