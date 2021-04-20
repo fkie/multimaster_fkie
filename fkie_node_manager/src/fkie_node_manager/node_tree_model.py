@@ -692,28 +692,22 @@ class GroupItem(QStandardItem):
                 if item.state == NodeItem.STATE_RUN or isinstance(item, GroupItem):
                     if item.diagnostic_level > self.diagnostic_level:
                         self.diagnostic_level = item.diagnostic_level
-        diag_icon = None
         if self.diagnostic_level > 0:
-            diag_icon = NodeItem._diagnostic_level2icon(self.diagnostic_level)
-        if has_duplicate:
-            self._state = NodeItem.STATE_DUPLICATE
-            self.setIcon(nm.settings().icon('imacadam_stop.png'))
-        elif has_ghosts:
-            self._state = NodeItem.STATE_GHOST
-            self.setIcon(nm.settings().icon('state_ghost.png'))
-        elif has_running and has_off:
-            if diag_icon is not None:
-                self.setIcon(diag_icon)
-            else:
+            self.setIcon(NodeItem._diagnostic_level2icon(self.diagnostic_level))
+        else:
+            if has_duplicate:
+                self._state = NodeItem.STATE_DUPLICATE
+                self.setIcon(nm.settings().icon('imacadam_stop.png'))
+            elif has_ghosts:
+                self._state = NodeItem.STATE_GHOST
+                self.setIcon(nm.settings().icon('state_ghost.png'))
+            elif has_running and has_off:
                 self._state = NodeItem.STATE_PARTS
                 self.setIcon(nm.settings().icon('state_part.png'))
-        elif not has_running:
-            self._state = NodeItem.STATE_OFF
-            self.setIcon(nm.settings().icon('state_off.png'))
-        elif not has_off and has_running:
-            if diag_icon is not None:
-                self.setIcon(diag_icon)
-            else:
+            elif not has_running:
+                self._state = NodeItem.STATE_OFF
+                self.setIcon(nm.settings().icon('state_off.png'))
+            elif not has_off and has_running:
                 self._state = NodeItem.STATE_RUN
                 self.setIcon(nm.settings().icon('state_run.png'))
         if self.parent_item is not None:
