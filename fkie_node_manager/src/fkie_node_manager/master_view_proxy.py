@@ -1934,13 +1934,14 @@ class MasterViewProxy(QWidget):
 
     def nodesFromIndexes(self, indexes, recursive=True):
         result = []
+        regex = QRegExp(self.ui.nodeFilterInput.text())
         for index in indexes:
             if index.column() == 0:
                 model_index = self.node_proxy_model.mapToSource(index)
                 item = self.node_tree_model.itemFromIndex(model_index)
                 res = self._nodesFromItems(item, recursive)
                 for r in res:
-                    if r not in result:
+                    if r not in result and (not regex.pattern() or regex.indexIn(r.name) != -1):
                         result.append(r)
         return result
 
