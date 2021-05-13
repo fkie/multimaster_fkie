@@ -2696,7 +2696,7 @@ class MasterViewProxy(QWidget):
                                             {'node': node.name,
                                             'grpc_url': self._grpc_from_node(node),
                                             'auto_item_request': False,
-                                            'use_log_widget': activated,
+                                            'use_log_widget': not nm.settings().open_screen_on_activate,
                                             'user': self.current_user,
                                             'pw': None,
                                             'items': [],

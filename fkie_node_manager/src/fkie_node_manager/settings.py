@@ -369,6 +369,12 @@ class Settings(object):
                                             ' <span style="font-weight:600;">Restart required!</span>',
                                             ':need_restart': True,
                                             },
+                  'Open screen on activate:': {':value': self.str2bool(settings.value('open_screen_on_activate', False)),
+                                                ':var': 'open_screen_on_activate',
+                                                ':default': False,
+                                                ':hint': 'Opens the screen in new terminal instead of log file in internal dock.',
+                                                ':need_restart': False,
+                                                },
                   }
         return result
 
