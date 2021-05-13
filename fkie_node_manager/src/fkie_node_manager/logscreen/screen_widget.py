@@ -120,6 +120,7 @@ class ScreenWidget(QWidget):
         # self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.pauseButton.setIcon(nm.settings().icon('sekkyumu_pause.png'))
         self._valid = True
+        self._logpath = ''
         self._lock = threading.RLock()
         self.finished = False
         self.qfile = None
@@ -282,13 +283,14 @@ class ScreenWidget(QWidget):
             self.clear_signal.emit()
         host = get_hostname(masteruri)
         if nm.is_local(host):
+            self.setWindowTitle(nodename)
             self._nodename = nodename
             if screen_name:
                 screen_log = screen.get_logfile(node=nodename)
             else:
                 screen_log = screen.get_ros_logfile(node=nodename)
+            self._logpath = screen_log
             self.qfile = QFile(screen_log)
-            self.setWindowTitle(nodename)
             if self.qfile.open(QIODevice.ReadOnly):
                 self._first_fill = True
                 self.qfile.seek(self.qfile.size()-1)
@@ -301,8 +303,9 @@ class ScreenWidget(QWidget):
                 self._valid = False
         else:
             self._connect_ssh(host, nodename, user)
-        self.logger_handler = LoggerHandler(nodename, masteruri=masteruri, layout=self.scrollAreaWidgetContents.layout())
-        self.logger_handler.update()
+        if self._valid:
+            self.logger_handler = LoggerHandler(nodename, masteruri=masteruri, layout=self.scrollAreaWidgetContents.layout())
+            self.logger_handler.update()
         return False
 
     def _read_log(self, filename, lines=80):

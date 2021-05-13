@@ -2679,16 +2679,28 @@ class MasterViewProxy(QWidget):
                     ret = MessageBox.question(self, "Show IO", "You are going to open the IO of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
                     ret = (ret == MessageBox.Ok)
                 if ret:
+                    queue = self._progress_queue_prio
+                    # we use normal queue, if there are not a lot of processes
+                    if self._progress_queue.count() < 5:
+                        queue = self._progress_queue
                     key_mod = QApplication.keyboardModifiers()
+                    use_log_widget = not nm.settings().open_screen_on_activate
                     if activated and (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
                         # show ROS log if shift or control was pressed while activating
-                        for node in selectedNodes:
-                            self.main_window.open_screen_dock(self.masteruri, screen_name='', nodename=node.name, user=self.current_user)
+                        if use_log_widget:
+                            for node in selectedNodes:
+                                self.main_window.open_screen_dock(self.masteruri, screen_name='', nodename=node.name, user=self.current_user)
+                        else:
+                            for node in selectedNodes:
+                                queue.add2queue(utf8(uuid.uuid4()),
+                                                'show log of %s' % node.name,
+                                                nm.starter().openLog,
+                                                {'nodename' : node.name,
+                                                'host': self.getHostFromNode(node),
+                                                'user': self.current_user,
+                                                'only_screen': False
+                                                })
                     else:
-                        queue = self._progress_queue_prio
-                        # we use normal queue, if there are not a lot of processes
-                        if self._progress_queue.count() < 5:
-                            queue = self._progress_queue
                         for node in selectedNodes:
                             queue.add2queue(utf8(uuid.uuid4()),
                                             'show IO of %s' % node.name,
@@ -2696,13 +2708,13 @@ class MasterViewProxy(QWidget):
                                             {'node': node.name,
                                             'grpc_url': self._grpc_from_node(node),
                                             'auto_item_request': False,
-                                            'use_log_widget': not nm.settings().open_screen_on_activate,
+                                            'use_log_widget': use_log_widget,
                                             'user': self.current_user,
                                             'pw': None,
                                             'items': [],
                                             'use_nmd': self._has_nmd
                                             })
-                        self._start_queue(queue)
+                    self._start_queue(queue)
             else:
                 self.on_show_all_screens()
         finally:

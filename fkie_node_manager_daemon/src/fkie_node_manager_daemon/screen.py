@@ -192,6 +192,7 @@ def get_ros_logfile(node):
     :return: the log file name
     :rtype: str
     '''
+    logfile = ''
     if node is not None:
         logfile = "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
         if os.path.exists(logfile):
@@ -212,7 +213,7 @@ def get_ros_logfile(node):
             for fn in files:
                 if p.match(fn):
                     return os.path.join(logpath, fn)
-    return ''
+    return logfile
 
 
 def get_pidfile(session=None, node=None):
