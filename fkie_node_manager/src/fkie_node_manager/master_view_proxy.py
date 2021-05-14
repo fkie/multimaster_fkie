@@ -913,7 +913,7 @@ class MasterViewProxy(QWidget):
             pass
 
     def question_restart_changed_binary(self, changed):
-        self.message_frame.show_question(MessageFrame.TYPE_BINARY, 'Binary changed of node:<br>%s<br>restart node?' % (HTMLDelegate.toHTML(changed.name)), MessageData(changed))
+        self.message_frame.show_question(MessageFrame.TYPE_BINARY, 'Binaries changed, restart nodes?', MessageData(changed.name, [changed]))
 
     def question_reload_changed_file(self, changed, affected):
         _filename, file_extension = os.path.splitext(changed)
@@ -3688,15 +3688,16 @@ class MasterViewProxy(QWidget):
                 MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))            
         elif questionid == MessageFrame.TYPE_BINARY:
             try:
-                self.stop_nodes_by_name([data.data.name])
-                if data.data.next_start_cfg:
-                    self.start_node(data.data, force=True, config=data.data.next_start_cfg)
-                else:
-                    self.start_nodes([data.data], force=True)
-                try:
-                    del self._changed_binaries[data.data.name]
-                except KeyError:
-                    pass
+                self.stop_nodes_by_name([node.name for node in data.data_list])
+                for node in data.data_list:
+                    if node.next_start_cfg:
+                        self.start_node(node, force=True, config=node.next_start_cfg)
+                    else:
+                        self.start_nodes([node], force=True)
+                    try:
+                        del self._changed_binaries[node.name]
+                    except KeyError:
+                        pass
             except Exception as err:
                 rospy.logwarn("Error while restart nodes %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Restart nodes", data.data, '%s' % utf8(err))

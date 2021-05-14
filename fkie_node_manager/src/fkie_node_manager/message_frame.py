@@ -201,7 +201,7 @@ class MessageFrame(QFrame):
             return
         except Exception:
             pass
-        if self.questionid != questionid or self.text != text or data != self.data:
+        if self.questionid != questionid or self.text != text:  # or data != self.data:
             self._queue.add(questionid, text, data)
         elif data.data_list:  # same question again
             # update the list of files or nodes which causes this question in current question
@@ -253,10 +253,14 @@ class MessageFrame(QFrame):
             self.ui.listLabel.setText('')
             for item in items:
                 ltext = self.ui.listLabel.text()
+                item_str = item
+                if not isinstance(item, str):
+                    if hasattr(item, 'name'):
+                        item_str = item.name
                 if ltext:
-                    self.ui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item)))
+                    self.ui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item_str)))
                 else:
-                    self.ui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item)))
+                    self.ui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item_str)))
             self.ui.listLabel.setVisible(True)
         else:
             self.ui.listLabel.setText('')
