@@ -2684,7 +2684,9 @@ class MasterViewProxy(QWidget):
                     if self._progress_queue.count() < 5:
                         queue = self._progress_queue
                     key_mod = QApplication.keyboardModifiers()
-                    use_log_widget = not nm.settings().open_screen_on_activate
+                    use_log_widget = activated
+                    if nm.settings().open_screen_on_activate:
+                        use_log_widget = not activated
                     if activated and (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
                         # show ROS log if shift or control was pressed while activating
                         if use_log_widget:
