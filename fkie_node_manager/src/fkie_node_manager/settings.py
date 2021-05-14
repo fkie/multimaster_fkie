@@ -369,10 +369,10 @@ class Settings(object):
                                             ' <span style="font-weight:600;">Restart required!</span>',
                                             ':need_restart': True,
                                             },
-                  'Open screen on activate:': {':value': self.str2bool(settings.value('open_screen_on_activate', False)),
-                                                ':var': 'open_screen_on_activate',
+                  'Use internal log widget:': {':value': self.str2bool(settings.value('use_internal_log_widget', True)),
+                                                ':var': 'use_internal_log_widget',
                                                 ':default': False,
-                                                ':hint': 'Opens the screen in new terminal instead of log file in internal dock.',
+                                                ':hint': 'Opens the log file in internal dock instead of new terminal. If deactivated still accessible with Ctrl modifier.',
                                                 ':need_restart': False,
                                                 },
                   }

@@ -2684,12 +2684,10 @@ class MasterViewProxy(QWidget):
                     if self._progress_queue.count() < 5:
                         queue = self._progress_queue
                     key_mod = QApplication.keyboardModifiers()
-                    use_log_widget = activated
-                    if nm.settings().open_screen_on_activate:
-                        use_log_widget = not activated
-                    if activated and (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
+                    use_log_widget = nm.settings().use_internal_log_widget
+                    if activated and (key_mod & Qt.ShiftModifier):
                         # show ROS log if shift or control was pressed while activating
-                        if use_log_widget:
+                        if use_log_widget or key_mod & Qt.ControlModifier:
                             for node in selectedNodes:
                                 self.main_window.open_screen_dock(self.masteruri, screen_name='', nodename=node.name, user=self.current_user)
                         else:
@@ -2710,7 +2708,7 @@ class MasterViewProxy(QWidget):
                                             {'node': node.name,
                                             'grpc_url': self._grpc_from_node(node),
                                             'auto_item_request': False,
-                                            'use_log_widget': use_log_widget,
+                                            'use_log_widget': activated and (use_log_widget or key_mod & Qt.ControlModifier),
                                             'user': self.current_user,
                                             'pw': None,
                                             'items': [],
