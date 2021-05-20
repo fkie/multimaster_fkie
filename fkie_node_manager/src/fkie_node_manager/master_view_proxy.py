@@ -199,6 +199,8 @@ class MasterViewProxy(QWidget):
         self._timer_nmd_request = QTimer()
         self._timer_nmd_request.timeout.connect(self._sysmon_update_callback)
         self._timer_nmd_request.setSingleShot(True)
+        self._ts_last_diagnostic_request = 0
+        self._has_diagnostics = False
 
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -634,9 +636,8 @@ class MasterViewProxy(QWidget):
             # self.set_diagnostic_ok('/node_manager_daemon')
             nm.nmd().version.get_version_threaded(nmd_uri)
             nm.nmd().screen.log_dir_size_threaded(nmd_uri)
-            nm.nmd().monitor.get_system_diagnostics_threaded(nmd_uri)
-            nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
             nm.nmd().monitor.get_user(nmd_uri)
+            self.perform_diagnostic_requests(force=True)
 
     def is_valid_user_master_daemon(self):
         if self.__daemon_user:
@@ -878,6 +879,14 @@ class MasterViewProxy(QWidget):
             nodes = self.get_nodes_runningIfLocal(True)
             if nodes:
                 nm.nmd().launch.get_changed_binaries_threaded(grpc_url, list(nodes.keys()))
+
+    def perform_diagnostic_requests(self, force=False):
+        now = time.time()
+        if self._has_nmd and (self._has_diagnostics or force) and now - self._ts_last_diagnostic_request >= 1.0:
+            nmd_uri = nmdurl.nmduri(self.masteruri)
+            nm.nmd().monitor.get_system_diagnostics_threaded(nmd_uri)
+            nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
+            self._ts_last_diagnostic_request = now
 
     def get_files_for_change_check(self):
         result = {}
@@ -1239,6 +1248,8 @@ class MasterViewProxy(QWidget):
         if (diagnostic_status.name == '/master_sync'):
             if get_hostname(self.masteruri) != diagnostic_status.hardware_id:
                 return False
+        if diagnostic_status.name not in ['/node_manager_daemon']:
+            self._has_diagnostics = True
         nodes = self.getNode(diagnostic_status.name)
         for node in nodes:
             node.append_diagnostic_status(diagnostic_status)

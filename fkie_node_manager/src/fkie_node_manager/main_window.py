@@ -1390,6 +1390,11 @@ class MainWindow(QMainWindow):
                 if master is not None and master.master_state is not None and nm.settings().autoupdate:
                     self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
                 self._refresh_time = current_time
+        for _, master in self.masters.items():
+            if master == self.currentMaster:
+                master.perform_diagnostic_requests()
+            elif int(current_time) % 3 == 0:
+                master.perform_diagnostic_requests()
 
     def showMasterName(self, masteruri, name, timestamp, online=True, force_warning=''):
         '''
