@@ -78,10 +78,10 @@ from .supervised_popen import SupervisedPopen
 from .topic_list_model import TopicModel, TopicItem, TopicGroupItem
 import fkie_node_manager as nm
 try:
-    from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
+    from python_qt_binding.QtGui import QAction, QFileDialog, QFrame, QMenu, QShortcut, QWidget
     from python_qt_binding.QtGui import QApplication, QVBoxLayout
 except Exception:
-    from python_qt_binding.QtWidgets import QAction, QFileDialog, QMenu, QShortcut, QWidget
+    from python_qt_binding.QtWidgets import QAction, QFileDialog, QFrame, QMenu, QShortcut, QWidget
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout
 
 
@@ -426,6 +426,7 @@ class MasterViewProxy(QWidget):
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
         self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
         self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
+        self.ui.controlNodesFrame.resizeEvent = self.resizeEventButtons
 
 #    print "================ create", self.objectName()
 #
@@ -454,7 +455,7 @@ class MasterViewProxy(QWidget):
             self.stop_nodes_by_name(self.__echo_topics_dialogs, only_local=False)
             self.__echo_topics_dialogs.clear()
 
-    def resizeEvent(self, event):
+    def resizeEventButtons(self, event):
         ch_height = 0
         increment = 4
         min_spacer_size = 8
@@ -489,7 +490,7 @@ class MasterViewProxy(QWidget):
             self.ui.deleteParameterButton.setIconSize(new_size)
             self.ui.saveParameterButton.setIconSize(new_size)
             self.ui.transferParameterButton.setIconSize(new_size)
-        QWidget.resizeEvent(self, event)
+        QFrame.resizeEvent(self, event)
 
     @property
     def current_user(self):
