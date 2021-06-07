@@ -32,6 +32,7 @@
 
 
 
+import getpass
 import os
 import rospy
 import signal
@@ -69,4 +70,9 @@ class MonitorServicer(mgrpc.MonitorServiceServicer):
     def KillProcess(self, request, context):
         os.kill(request.pid, signal.SIGKILL)
         reply = mmsg.Empty()
+        return reply
+
+    def GetUser(self, request, context):
+        reply = mmsg.User()
+        reply.user = getpass.getuser()
         return reply

@@ -80,6 +80,7 @@ class MessageQueue(object):
             MessageFrame.TYPE_BINARY: [],
             MessageFrame.TYPE_NOSCREEN: [],
             MessageFrame.TYPE_NMD: [],
+            MessageFrame.TYPE_NMD_RESTART: [],
             MessageFrame.TYPE_NODE_CFG: []
         }
 
@@ -137,7 +138,8 @@ class MessageFrame(QFrame):
     TYPE_BINARY = 7
     TYPE_NOSCREEN = 8
     TYPE_NMD = 9
-    TYPE_NODE_CFG = 10
+    TYPE_NMD_RESTART = 10
+    TYPE_NODE_CFG = 11
 
     ICON_SIZE = 32
 
@@ -156,7 +158,8 @@ class MessageFrame(QFrame):
                        7: nm.settings().pixmap('crystal_clear_binary.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        8: nm.settings().pixmap('crystal_clear_no_io.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
                        9: nm.settings().pixmap('crystal_clear_run_zeroconf.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
-                       10: nm.settings().pixmap('sekkyumu_restart.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                       10: nm.settings().pixmap('crystal_clear_run_zeroconf.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation),
+                       11: nm.settings().pixmap('sekkyumu_restart.png').scaled(self.ICON_SIZE, self.ICON_SIZE, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                        }
         self._new_request = False
         self._in_resp_process = False
@@ -198,7 +201,7 @@ class MessageFrame(QFrame):
             return
         except Exception:
             pass
-        if self.questionid != questionid or self.text != text or data != self.data:
+        if self.questionid != questionid or self.text != text:  # or data != self.data:
             self._queue.add(questionid, text, data)
         elif data.data_list:  # same question again
             # update the list of files or nodes which causes this question in current question
@@ -250,10 +253,14 @@ class MessageFrame(QFrame):
             self.ui.listLabel.setText('')
             for item in items:
                 ltext = self.ui.listLabel.text()
+                item_str = item
+                if not isinstance(item, str):
+                    if hasattr(item, 'name'):
+                        item_str = item.name
                 if ltext:
-                    self.ui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item)))
+                    self.ui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item_str)))
                 else:
-                    self.ui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item)))
+                    self.ui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item_str)))
             self.ui.listLabel.setVisible(True)
         else:
             self.ui.listLabel.setText('')

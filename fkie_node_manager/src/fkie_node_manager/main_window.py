@@ -342,6 +342,7 @@ class MainWindow(QMainWindow):
         self._update_handler.master_info_signal.connect(self.on_master_info_retrieved)
         self._update_handler.master_errors_signal.connect(self.on_master_errors_retrieved)
         self._update_handler.timediff_signal.connect(self.on_master_timediff_retrieved)
+        self._update_handler.username_signal.connect(self.on_master_username_retrieved)
         self._update_handler.error_signal.connect(self.on_master_info_error)
 
         # this monitor class is used, if no master_discovery node is running to get the state of the local ROS master
@@ -370,6 +371,7 @@ class MainWindow(QMainWindow):
         self._subscribe()
         nm.nmd().monitor.system_diagnostics_signal.connect(self._callback_system_diagnostics)
         nm.nmd().monitor.remote_diagnostics_signal.connect(self._callback_diagnostics)
+        nm.nmd().monitor.username_signal.connect(self._callback_username)
 
         self._select_index = 0
         self._shortcut_restart_nodes = QShortcut(QKeySequence(self.tr("Ctrl+Shift+R", "restart selected nodes")), self)
@@ -958,6 +960,11 @@ class MainWindow(QMainWindow):
     def on_master_timediff_retrieved(self, masteruri, timediff):
         self.master_model.updateTimeDiff(nm.nameres().mastername(masteruri), timediff)
 
+    def on_master_username_retrieved(self, masteruri, username):
+        master = self.getMaster(masteruri, create_new=False)
+        if master is not None:
+            master.current_user = username
+
     def on_master_info_error(self, masteruri, error):
         if masteruri not in self._con_tries:
             self._con_tries[masteruri] = 0
@@ -1371,6 +1378,9 @@ class MainWindow(QMainWindow):
                     if not nm.settings().autoupdate:
                         text = 'Press F5 or click on reload to get info'
                     self.showMasterName(masteruri, name, text, master.master_state.online)
+                self.userComboBox.setEditText(self.currentMaster.current_user)
+                if not master.is_valid_user_master_daemon():
+                    self.showMasterName(masteruri, name, self.timestampStr(master.master_info.check_ts), master.master_state.online, 'daemon is running with different user: %s' % master.daemon_user)
             else:
                 self.showMasterName('', 'No robot selected', None, False)
         if (current_time - self._refresh_time > 30.0):
@@ -1380,19 +1390,30 @@ class MainWindow(QMainWindow):
                 if master is not None and master.master_state is not None and nm.settings().autoupdate:
                     self._update_handler.requestMasterInfo(master.master_state.uri, master.master_state.monitoruri)
                 self._refresh_time = current_time
+        for _, master in self.masters.items():
+            if master == self.currentMaster:
+                master.perform_diagnostic_requests()
+            elif int(current_time) % 3 == 0:
+                master.perform_diagnostic_requests()
 
-    def showMasterName(self, masteruri, name, timestamp, online=True):
+    def showMasterName(self, masteruri, name, timestamp, online=True, force_warning=''):
         '''
         Update the view of the info frame.
         '''
         con_err = ''
+        user_warning = ''
+        force_color_update = False
+        if not force_warning:
+            force_color_update = 'daemon is running with different user:' in self.masterInfoLabel.text()
+        else:
+            user_warning = '<span style=" color:red;">  %s</span>' % utf8(force_warning)
         try:
             tries = self._con_tries[masteruri]
             if tries > 1:
                 con_err = '<span style=" color:red;">connection problems (%s tries)! </span>' % utf8(tries)
         except Exception:
             pass
-        if self.__current_master_label_name != name:
+        if self.__current_master_label_name != name or force_color_update:
             self.__current_master_label_name = name
             show_name = name if nm.settings().show_domain_suffix else subdomain(name)
             self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600; color:black">%s</span>' % show_name)
@@ -1401,7 +1422,7 @@ class MainWindow(QMainWindow):
         ts = 'updated: %s' % utf8(timestamp) if timestamp is not None else ''
         if not nm.settings().autoupdate:
             ts = '%s<span style=" color:orange;"> AU off</span>' % ts
-        self.masterInfoLabel.setText('<span style=" font-size:8pt; color:black">%s%s</span>' % (con_err, ts))
+        self.masterInfoLabel.setText('<span style=" font-size:8pt; color:black">%s%s%s</span>' % (con_err, ts, user_warning))
 
         # load the robot image, if one exists
         if self.masternameLabel.isEnabled():
@@ -1637,6 +1658,7 @@ class MainWindow(QMainWindow):
                         muri = None if masteruri == 'ROS_MASTER_URI' else utf8(masteruri)
                         # stop if master_discovery already running
                         self._append_stop_for('/%s' % utf8(discovery_type), hostname, muri, self._progress_queue)
+                        self._progress_queue_sync.start()
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start discovering on %s' % hostname,
                                                        nm.starter().runNodeWithoutConfig,
@@ -1704,7 +1726,7 @@ class MainWindow(QMainWindow):
             else:
                 cmuri = cmuri.replace('localhost', get_hostname(lmuri))
         elif cmuri is None:
-            cmuri = nm.nameres().masteruri(utf8(hostname))
+            cmuri = nm.nameres().masteruri(nm.nameres().hostname(utf8(hostname)))
         if cmuri is not None:
             master = self.getMaster(cmuri.rstrip('/') + '/', create_new=False)
             if master is not None:
@@ -1840,7 +1862,7 @@ class MainWindow(QMainWindow):
                     del self.editor_dialogs[grpc_path]
                     self.on_launch_edit(grpc_path, search_text, 2)
             else:
-                editor = Editor([grpc_path], search_text)
+                editor = Editor([grpc_path], search_text, master_name=self.launch_dock.path2mastername(grpc_path))
                 if editor.tabWidget.count() > 0:
                     self.editor_dialogs[grpc_path] = editor
                     editor.finished_signal.connect(self._editor_dialog_closed)
@@ -2253,6 +2275,15 @@ class MainWindow(QMainWindow):
                 self.diagnostics_signal.emit(diagnostic)
         except Exception as err:
             rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
+
+    def _callback_username(self, username, grpc_url=''):
+        try:
+            muri = nmdurl.masteruri(grpc_url)
+            master = self.getMaster(muri, create_new=False)
+            if master:
+                master.daemon_user = username
+        except Exception as err:
+            rospy.logwarn('Error while process username from daemon: %s' % utf8(err))
 
     def sysmon_active_update(self, masteruri):
         master = self.getMaster(masteruri, create_new=False)

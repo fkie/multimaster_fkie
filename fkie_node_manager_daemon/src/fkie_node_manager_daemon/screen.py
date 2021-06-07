@@ -192,6 +192,7 @@ def get_ros_logfile(node):
     :return: the log file name
     :rtype: str
     '''
+    logfile = ''
     if node is not None:
         logfile = "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
         if os.path.exists(logfile):
@@ -212,7 +213,7 @@ def get_ros_logfile(node):
             for fn in files:
                 if p.match(fn):
                     return os.path.join(logpath, fn)
-    return ''
+    return logfile
 
 
 def get_pidfile(session=None, node=None):
@@ -246,7 +247,11 @@ def get_cmd(node, env=[], keys=[]):
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    return '%s -c %s/screen.cfg -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, SETTINGS_PATH, get_logfile(node=node, for_new_screen=True), shell, create_session_name(node=node))
+    cfg_file = '%s/screen.cfg' % SETTINGS_PATH
+    cfg_opt = ''
+    if os.path.exists(cfg_file):
+        cfg_opt = '-c %s' % cfg_file
+    return '%s %s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, cfg_opt, get_logfile(node=node, for_new_screen=True), shell, create_session_name(node=node))
 
 
 def rosclean():

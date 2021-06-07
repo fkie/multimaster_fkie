@@ -68,6 +68,12 @@ class UpdateHandler(QObject):
   after the difference of time to the remote host is determined.
   '''
 
+    username_signal = Signal(str, str)
+    '''
+  :ivar: username_signal is a signal (masteruri, username), which is emitted
+  after the name was retrieved from host.
+  '''
+
     def __init__(self):
         QObject.__init__(self)
         self.__updateThreads = {}
@@ -116,6 +122,9 @@ class UpdateHandler(QObject):
     def _on_timediff(self, masteruri, timediff):
         self.timediff_signal.emit(masteruri, timediff)
 
+    def _on_username(self, masteruri, username):
+        self.username_signal.emit(masteruri, username)
+
     def _on_error(self, masteruri, error):
         self.error_signal.emit(masteruri, error)
         self.__handle_requests(masteruri)
@@ -124,6 +133,11 @@ class UpdateHandler(QObject):
         with self._lock:
             try:
                 thread = self.__updateThreads.pop(masteruri)
+                thread.update_signal.disconnect(self._on_master_info)
+                thread.master_errors_signal.disconnect(self._on_master_errors)
+                thread.error_signal.disconnect(self._on_error)
+                thread.timediff_signal.disconnect(self._on_timediff)
+                thread.username_signal.disconnect(self._on_username)
                 del thread
                 monitoruri, delayed_exec = self.__requestedUpdates.pop(masteruri)
                 self.__create_update_thread(monitoruri, masteruri, delayed_exec)
@@ -140,4 +154,5 @@ class UpdateHandler(QObject):
         upthread.master_errors_signal.connect(self._on_master_errors)
         upthread.error_signal.connect(self._on_error)
         upthread.timediff_signal.connect(self._on_timediff)
+        upthread.username_signal.connect(self._on_username)
         upthread.start()

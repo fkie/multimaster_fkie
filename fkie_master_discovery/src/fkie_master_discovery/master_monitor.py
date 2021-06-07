@@ -42,6 +42,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 from datetime import datetime
+import getpass
 import roslib.network
 import roslib.message
 import rospy
@@ -202,6 +203,7 @@ class MasterMonitor(object):
                 self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
                 self.rpcServer.register_function(self.setTime, 'setTime')
                 self.rpcServer.register_function(self.getTopicsMd5sum, 'getTopicsMd5sum')
+                self.rpcServer.register_function(self.getUser, 'getUser')
                 self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
                 self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
@@ -793,6 +795,16 @@ class MasterMonitor(object):
             except Exception as err:
                 rospy.logwarn(err)
         return topic_list
+
+    def getUser(self):
+        '''
+        The RPC method called by XML-RPC server to request the user name used to launch the master_discovery.
+
+        :return: (``ROS master URI``, ``user name``)
+        :rtype: (str, str)
+        '''
+        return (str(self.getMasteruri()), getpass.getuser())
+
 
     def checkState(self, clear_cache=False):
         '''

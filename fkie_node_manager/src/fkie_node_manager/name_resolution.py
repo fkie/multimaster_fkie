@@ -178,9 +178,10 @@ class MasterEntry(object):
         if isinstance(item, MasterEntry):
             result = []
             if nmdurl.equal_uri(self.masteruri, item.masteruri):
-                result = set(self.entry()).intersection(set(item.entry()))
+                result = set(self.addresses()).intersection(set(item.addresses()))
             return len(result) > 0
         return False
+
 
 class NameResolution(object):
     '''
