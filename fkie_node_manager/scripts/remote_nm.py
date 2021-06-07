@@ -108,7 +108,7 @@ def main(argv=sys.argv):
         options, args = parse_options(argv)
         if options['show_screen_log']:
             logfile = screen.get_logfile(node=options['show_screen_log'])
-            if os.path.isfile(logfile):
+            if not os.path.isfile(logfile):
                 raise Exception('screen logfile not found for: %s' % options['show_screen_log'])
             cmd = ' '.join([nm.Settings.LOG_VIEWER, str(logfile)])
             print(cmd)
@@ -117,7 +117,7 @@ def main(argv=sys.argv):
             print_help = False
         if options['tail_screen_log']:
             logfile = screen.get_logfile(node=options['tail_screen_log'])
-            if os.path.isfile(logfile):
+            if not os.path.isfile(logfile):
                 raise Exception('screen logfile not found for: %s' % options['tail_screen_log'])
             cmd = ' '.join(['tail', '-f', '-n', '25', str(logfile)])
             print(cmd)
@@ -126,7 +126,7 @@ def main(argv=sys.argv):
             print_help = False
         elif options['show_ros_log']:
             logfile = screen.get_ros_logfile(node=options['show_ros_log'])
-            if os.path.isfile(logfile):
+            if not os.path.isfile(logfile):
                 raise Exception('ros logfile not found for: %s' % options['show_ros_log'])
             cmd = ' '.join([nm.Settings.LOG_VIEWER, str(logfile)])
             print(cmd)
