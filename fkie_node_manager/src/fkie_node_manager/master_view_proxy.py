@@ -637,7 +637,7 @@ class MasterViewProxy(QWidget):
             # self.set_diagnostic_ok('/node_manager_daemon')
             nm.nmd().version.get_version_threaded(nmd_uri)
             nm.nmd().screen.log_dir_size_threaded(nmd_uri)
-            nm.nmd().monitor.get_user(nmd_uri)
+            nm.nmd().monitor.get_user_threaded(nmd_uri)
             self.perform_diagnostic_requests(force=True)
 
     def is_valid_user_master_daemon(self):
