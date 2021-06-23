@@ -1775,7 +1775,8 @@ class NodeTreeModel(QStandardItemModel):
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
             addresses.append(addr)
             muris.append(node.masteruri)
-            host = (node.masteruri, addr)
+            resaddr = nm.nameres().hostname(addr)
+            host = (node.masteruri, resaddr)
             if host not in hosts:
                 hosts[host] = dict()
             hosts[host][name] = node
