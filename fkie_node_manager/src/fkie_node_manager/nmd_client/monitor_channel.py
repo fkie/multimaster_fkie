@@ -113,7 +113,7 @@ class MonitorChannel(ChannelInterface):
             self.close_channel(channel, uri)
 
     def get_user_threaded(self, grpc_url='grpc://localhost:12321'):
-        self._threads.start_thread("gut_%s" % grpc_url, target=self.get_user, args=(grpc_url, True))
+        self._threads.start_thread("gut_%s" % grpc_url, target=self.get_user, args=(grpc_url,))
 
     def get_user(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get user from %s" % (grpc_url))
