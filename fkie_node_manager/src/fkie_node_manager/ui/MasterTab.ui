@@ -398,8 +398,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -439,8 +439,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -486,8 +486,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -520,8 +520,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -551,8 +551,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -589,8 +589,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -620,8 +620,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -651,8 +651,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -667,8 +667,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>16</width>
-                 <height>299</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
               </spacer>
@@ -695,8 +695,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="shortcut">
@@ -849,8 +849,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -880,8 +880,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -911,8 +911,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -946,8 +946,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -974,8 +974,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -990,8 +990,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>16</width>
-                 <height>40</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
               </spacer>
@@ -1132,8 +1132,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -1149,7 +1149,7 @@ p, li { white-space: pre-wrap; }
                <property name="sizeHint" stdset="0">
                 <size>
                  <width>20</width>
-                 <height>40</height>
+                 <height>8</height>
                 </size>
                </property>
               </spacer>
@@ -1299,8 +1299,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -1330,8 +1330,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -1358,8 +1358,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -1392,8 +1392,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -1426,8 +1426,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="iconSize">
                 <size>
-                 <width>32</width>
-                 <height>32</height>
+                 <width>8</width>
+                 <height>8</height>
                 </size>
                </property>
                <property name="flat">
@@ -1442,8 +1442,8 @@ p, li { white-space: pre-wrap; }
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
-                 <width>20</width>
-                 <height>40</height>
+                 <width>16</width>
+                 <height>8</height>
                 </size>
                </property>
               </spacer>

@@ -44,7 +44,7 @@ generate_grpc(PROTO_FILES file launch monitor screen settings version)
 install(
     DIRECTORY
     ${GRPC_GENERATED_SRC_DIR}
-    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
 
 install(

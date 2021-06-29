@@ -41,7 +41,7 @@ import rospy
 import rospkg
 import time
 
-from .settings import LOG_PATH
+from .settings import LOG_PATH, SETTINGS_PATH
 from .supervised_popen import SupervisedPopen
 
 
@@ -159,6 +159,8 @@ def test_screen():
     '''
     if not os.path.isfile(SCREEN):
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
+    with open('%s/screen.cfg' % SETTINGS_PATH, 'w') as sf:
+        sf.write('logfile flush 0')
 
 
 def get_logfile(session=None, node=None, for_new_screen=False):
@@ -190,6 +192,7 @@ def get_ros_logfile(node):
     :return: the log file name
     :rtype: str
     '''
+    logfile = ''
     if node is not None:
         logfile = "%s%s.log" % (LOG_PATH, node.strip('/').replace('/', '_'))
         if os.path.exists(logfile):
@@ -210,7 +213,7 @@ def get_ros_logfile(node):
             for fn in files:
                 if p.match(fn):
                     return os.path.join(logpath, fn)
-    return ''
+    return logfile
 
 
 def get_pidfile(session=None, node=None):
@@ -244,8 +247,11 @@ def get_cmd(node, env=[], keys=[]):
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    # return '%s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, get_logfile(node=node), shell, create_session_name(node=node))
-    return '%s -O -L -s %s -dmS %s' % (SCREEN, shell, create_session_name(node=node))
+    cfg_file = '%s/screen.cfg' % SETTINGS_PATH
+    cfg_opt = ''
+    if os.path.exists(cfg_file):
+        cfg_opt = '-c %s' % cfg_file
+    return '%s %s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, cfg_opt, get_logfile(node=node, for_new_screen=True), shell, create_session_name(node=node))
 
 
 def rosclean():

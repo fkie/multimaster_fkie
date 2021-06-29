@@ -239,7 +239,7 @@ class SyncThread(object):
         with self.__lock_intern:
             r = random.random() * 2.
             # start update timer with a random waiting time to avoid a congestion picks on changes of ROS master state
-            if self._update_timer is None or not self._update_timer.isAlive():
+            if self._update_timer is None or not self._update_timer.is_alive():
                 del self._update_timer
                 self._update_timer = threading.Timer(r, self._request_remote_state, args=(self._apply_remote_state,))
                 self._update_timer.start()
@@ -248,7 +248,7 @@ class SyncThread(object):
                     # if the timer thread can be canceled start new one
                     self._update_timer.cancel()
                     # if callback (XMLRPC request) is already running the timer is not canceled -> test for `self.__on_update`
-                    if not self._update_timer.isAlive() or not self.__on_update:
+                    if not self._update_timer.is_alive() or not self.__on_update:
                         self._delayed_update += 1
                         self._update_timer = threading.Timer(r, self._request_remote_state, args=(self._apply_remote_state,))
                         self._update_timer.start()

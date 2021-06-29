@@ -123,7 +123,7 @@ class GroupItem(QStandardItem):
         self._re_cap_nodes = dict()
         self._is_group = is_group
         self._state = NodeItem.STATE_OFF
-        self.diagnostic_array = []
+        self.diagnostic_level = 0
         self.is_system_group = name == 'SYSTEM'
         self._clearup_mark_delete = False
 
@@ -668,7 +668,7 @@ class GroupItem(QStandardItem):
         has_off = False
         has_duplicate = False
         has_ghosts = False
-        diag_level = 0
+        self.diagnostic_level = 0
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, (GroupItem, NodeItem)):
@@ -682,12 +682,6 @@ class GroupItem(QStandardItem):
                     has_off = True
                 elif item.state == NodeItem.STATE_RUN:
                     has_running = True
-                    if item.diagnostic_array and item.diagnostic_array[-1].level > 0:
-                        if diag_level == 0:
-                            diag_level = item.diagnostic_array[-1].level
-                        elif item.diagnostic_array[-1].level == 2:
-                            diag_level = 2
-                        self.diagnostic_array = item.diagnostic_array
                 elif item.state == NodeItem.STATE_GHOST:
                     has_ghosts = True
                 elif item.state == NodeItem.STATE_DUPLICATE:
@@ -695,28 +689,25 @@ class GroupItem(QStandardItem):
                 elif item.state == NodeItem.STATE_PARTS:
                     has_running = True
                     has_off = True
-        diag_icon = None
-        if diag_level > 0:
-            diag_icon = NodeItem._diagnostic_level2icon(diag_level)
-        if has_duplicate:
-            self._state = NodeItem.STATE_DUPLICATE
-            self.setIcon(nm.settings().icon('imacadam_stop.png'))
-        elif has_ghosts:
-            self._state = NodeItem.STATE_GHOST
-            self.setIcon(nm.settings().icon('state_ghost.png'))
-        elif has_running and has_off:
-            if diag_icon is not None:
-                self.setIcon(diag_icon)
-            else:
+                if item.state == NodeItem.STATE_RUN or isinstance(item, GroupItem):
+                    if item.diagnostic_level > self.diagnostic_level:
+                        self.diagnostic_level = item.diagnostic_level
+        if self.diagnostic_level > 0:
+            self.setIcon(NodeItem._diagnostic_level2icon(self.diagnostic_level))
+        else:
+            if has_duplicate:
+                self._state = NodeItem.STATE_DUPLICATE
+                self.setIcon(nm.settings().icon('imacadam_stop.png'))
+            elif has_ghosts:
+                self._state = NodeItem.STATE_GHOST
+                self.setIcon(nm.settings().icon('state_ghost.png'))
+            elif has_running and has_off:
                 self._state = NodeItem.STATE_PARTS
                 self.setIcon(nm.settings().icon('state_part.png'))
-        elif not has_running:
-            self._state = NodeItem.STATE_OFF
-            self.setIcon(nm.settings().icon('state_off.png'))
-        elif not has_off and has_running:
-            if diag_icon is not None:
-                self.setIcon(diag_icon)
-            else:
+            elif not has_running:
+                self._state = NodeItem.STATE_OFF
+                self.setIcon(nm.settings().icon('state_off.png'))
+            elif not has_off and has_running:
                 self._state = NodeItem.STATE_RUN
                 self.setIcon(nm.settings().icon('state_run.png'))
         if self.parent_item is not None:
@@ -1408,6 +1399,12 @@ class NodeItem(QStandardItem):
         else:
             return nm.settings().icon('state_diag_other.png')
 
+    @property
+    def diagnostic_level(self):
+        if self.diagnostic_array:
+            return self.diagnostic_array[-1].level
+        return 0
+
     def _on_kill_param_values(self, masteruri, code, msg, params):
         if code == 1:
             # assumption: all parameter are 'kill_on_stop' parameter
@@ -1768,6 +1765,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         # separate into different hosts
         hosts = dict()
+        muris = []
         addresses = []
         updated_nodes = []
         for i in reversed(range(self.invisibleRootItem().rowCount())):
@@ -1775,7 +1773,8 @@ class NodeTreeModel(QStandardItemModel):
             host.reset_remote_launched_nodes()
         for (name, node) in nodes.items():
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
-            addresses.append(node.masteruri)
+            addresses.append(addr)
+            muris.append(node.masteruri)
             host = (node.masteruri, addr)
             if host not in hosts:
                 hosts[host] = dict()
@@ -1791,7 +1790,11 @@ class NodeTreeModel(QStandardItemModel):
         # update nodes of the hosts, which are not more exists
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host.masteruri not in addresses:
+            # remove hosts if they are not updated
+            if host.masteruri not in muris:
+                host.update_running_state({})
+            # remove hosts which are connected to local master using ROS_MASTER_URI
+            if (not host.local and host.host not in addresses):
                 host.update_running_state({})
         self._remove_empty_hosts()
         return updated_nodes
@@ -1845,7 +1848,7 @@ class NodeTreeModel(QStandardItemModel):
                             changed = True
                 else:
                     try:
-                        for group, _ in capabilities[ns].items():
+                        for group, _ in list(capabilities[ns].items()):
                             try:
                                 # remove the config from item, if parameter was not foun on the ROS parameter server
                                 groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group))
@@ -1866,12 +1869,12 @@ class NodeTreeModel(QStandardItemModel):
                     except Exception:
                         pass
             # clearup namespaces to remove empty groups
-            for ns in capabilities.keys():
+            for ns in list(capabilities.keys()):
                 if ns and ns not in available_ns:
                     del capabilities[ns]
                     changed = True
                 else:
-                    for group in capabilities[ns].keys():
+                    for group in list(capabilities[ns].keys()):
                         if group and group not in available_groups:
                             del capabilities[ns][group]
                             changed = True

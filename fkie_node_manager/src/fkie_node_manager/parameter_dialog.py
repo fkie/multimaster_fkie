@@ -104,7 +104,9 @@ class ValueWidget(QWidget):
         self.parameter_description = parameter_description
         self._value_widget = None
         self.warn_label = QLabel(parent=self)
+        self.warn_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.help_label = QLabel(parameter_description.hint, parent=self)
+        self.help_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         vw = QWidget(self)
         hlayout = QHBoxLayout(vw)
         hlayout.setContentsMargins(0, 0, 0, 0)
@@ -193,6 +195,7 @@ class ValueWidget(QWidget):
             label = QLabel(value, parent=self)
             label.setMinimumHeight(20)
             label.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             self._value_widget = label
             return label
         else:
@@ -540,6 +543,7 @@ class MainBox(QFrame):
             self.hide_button.setMaximumSize(20, 20)
             self.hide_button.clicked.connect(self._on_hide_clicked)
             self.name_label = QLabel(name)
+            self.name_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             font = self.name_label.font()
             font.setBold(True)
             self.name_label.setFont(font)
@@ -628,6 +632,7 @@ class MainBox(QFrame):
                     label = QLabel(label_name, self)
                     label.setObjectName('%s_label' % name)
                     label.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+                    label.setTextInteractionFlags(Qt.TextSelectableByMouse)
                     hint = field.toolTip()
                     if hint:
                         label.setToolTip(hint)
@@ -1111,6 +1116,7 @@ class ParameterDialog(QDialog):
     def add_warning(self, message):
         label = QLabel(self)
         label.setWordWrap(True)
+        label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         label.setText(''.join(["<font color='red'>Warning!\n", message, "</font>"]))
         self.verticalLayout.insertWidget(1, label)
 
@@ -1577,4 +1583,9 @@ class ServiceDialog(ParameterDialog):
 
     def _handle_resp(self, req, resp):
         self.setWindowTitle(''.join(['Request / Response of ', self.service.name]))
-        self.setText('\n'.join([utf8(req), '---', utf8(resp)]))
+        # replace some of Escape Characters
+        resp_str = utf8(resp).replace('\\r\\n', '\n')
+        resp_str = resp_str.replace('\\n', '\n')
+        resp_str = resp_str.replace('\\t', '\t')
+        resp_str = resp_str.replace('\\v', '\v')
+        self.setText('\n'.join([utf8(req), '---', resp_str]))
