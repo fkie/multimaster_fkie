@@ -41,6 +41,7 @@ except Exception:
 from socket import getaddrinfo, AF_INET6
 import threading
 
+from fkie_master_discovery.master_discovery import DiscoveredMaster
 from fkie_master_discovery.common import get_hostname
 from fkie_node_manager_daemon.common import isstring
 import fkie_node_manager as nm
@@ -270,7 +271,7 @@ class MasterItem(QStandardItem):
             if quality is not None and quality != -1.:
                 tooltip = ''.join([tooltip, '<dt>', 'Quality: ', str(quality), ' %', '</dt>'])
             else:
-                tooltip = ''.join([tooltip, '<dt>', 'Quality: not available</dt>'])
+                tooltip = ''.join([tooltip, '<dt>', 'Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % DiscoveredMaster.MIN_HZ_FOR_QUALILTY])
         else:
             tooltip = ''.join([tooltip, '<dt>', 'offline', '</dt>'])
         tooltip = ''.join([tooltip, '</dl>'])
@@ -638,7 +639,7 @@ class MasterIconsDelegate(QItemDelegate):
                 if item.quality is not None and item.quality != -1.:
                     tooltip = '%s\n<dt>Quality: %.2f </dt>' % (tooltip, item.quality)
                 else:
-                    tooltip = '%s\n<dt>Quality: not available</dt>' % (tooltip)
+                    tooltip = '%s\n<dt>Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % (tooltip, DiscoveredMaster.MIN_HZ_FOR_QUALILTY)
             else:
                 tooltip = '%s\n<dt>offline</dt>' % (tooltip)
             # update warnings
