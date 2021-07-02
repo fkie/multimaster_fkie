@@ -134,6 +134,8 @@ class MainWindow(QMainWindow):
         self._last_window_state = False
         self._description_history = []
         self._description_accept = ''
+        self._nmd_last_errors = {}  # msg: timestamp
+        self._ts_nmd_error_last_check = 0
         # self.setAttribute(Qt.WA_AlwaysShowToolTips, True)
         # setup main window frame
         self.setObjectName('MainWindow')
@@ -2326,6 +2328,24 @@ class MainWindow(QMainWindow):
                                     'Error while parse parameter',
                                     '%s' % utf8(err))
 
+    def _throttle_nmd_errrors(self, reason, url, error, delay=60):
+        now = time.time()
+        doprint = False
+        key = (reason, url, error.details())
+        if key not in self._nmd_last_errors.keys():
+            doprint = True
+        elif now - self._nmd_last_errors[key] > delay:
+            doprint = True
+        if doprint:
+            rospy.logwarn("Error while %s from %s: %s" % (reason, url, utf8(error)))
+            self._nmd_last_errors[key] = now
+        if now - self._ts_nmd_error_last_check > 120:
+            # clean old messages
+            self._ts_nmd_error_last_check = now
+            for key, ts in self._nmd_last_errors.items():
+                if now - ts > 240:
+                    del self._nmd_last_errors[key]
+
     def on_nmd_err(self, method, url, path, error):
         '''
         Handles the error messages from node_manager_daemon.
@@ -2342,7 +2362,7 @@ class MainWindow(QMainWindow):
         reason = method
         if method == '_get_nodes':
             reason = 'get launch configuration'
-        rospy.logwarn("Error while %s from %s: %s" % (reason, url, utf8(error)))
+        self._throttle_nmd_errrors(reason, url, error, 60)
         if hasattr(error, 'code'):
             if error.code() == grpc.StatusCode.UNIMPLEMENTED:
                 muri = nmdurl.masteruri(url)
