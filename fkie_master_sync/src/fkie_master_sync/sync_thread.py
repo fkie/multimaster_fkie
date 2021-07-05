@@ -447,8 +447,9 @@ class SyncThread(object):
                         else:
                             rospy.logdebug("SyncThread[%s]: topic subscribed: %s, %s %s, node: %s", self.name, h[1], str(code), str(statusMessage), h[3])
                     if h[0] == 'sub' and code == 1 and len(r) > 0:
-                        # topic, nodeuri, node : list of publisher uris
-                        publiser_to_update[(h[1], h[4], h[3])] = r
+                        if not self._do_ignore_ntp(h[3], h[1], h[2]):
+                            # topic, nodeuri, node : list of publisher uris
+                            publiser_to_update[(h[1], h[4], h[3])] = r
                     elif h[0] == 'pub':
                         if code == -1:
                             rospy.logwarn("SyncThread[%s]: topic advertise error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
