@@ -201,6 +201,7 @@ class MasterViewProxy(QWidget):
         self._timer_nmd_request.setSingleShot(True)
         self._ts_last_diagnostic_request = 0
         self._has_diagnostics = False
+        self.has_master_sync = False
 
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -886,7 +887,10 @@ class MasterViewProxy(QWidget):
         if self._has_nmd and (self._has_diagnostics or force) and now - self._ts_last_diagnostic_request >= 1.0:
             nmd_uri = nmdurl.nmduri(self.masteruri)
             nm.nmd().monitor.get_system_diagnostics_threaded(nmd_uri)
-            nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
+            if not self.has_master_sync:
+                nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
+            elif nmdurl.equal_uri(self.masteruri, self.main_window.getMasteruri()):
+                nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
             self._ts_last_diagnostic_request = now
 
     def get_files_for_change_check(self):
@@ -2395,9 +2399,9 @@ class MasterViewProxy(QWidget):
                 socket.setdefaulttimeout(10)
                 p = xmlrpcclient.ServerProxy(node.uri)
                 p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
-                if node.kill_on_stop and node.pid:
+                if node.pid:
                     # wait kill_on_stop is an integer
-                    if isinstance(node.kill_on_stop, (int, float)):
+                    if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
                         time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
             except Exception as e:

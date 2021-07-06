@@ -911,6 +911,7 @@ class MainWindow(QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
         if minfo.masteruri in self.masters:
+            has_master_sync = False
             for _, master in self.masters.items():  # _:=uri
                 try:
                     if not master.online and master.masteruri != minfo.masteruri:
@@ -945,9 +946,12 @@ class MainWindow(QMainWindow):
                             if self.default_profile_load:
                                 self.default_profile_load = False
                                 QTimer.singleShot(2000, self._load_default_profile_slot)
+                        has_master_sync = has_master_sync or 'fkie_multimaster_msgs/GetSyncInfo' in [srv.type for srv in master.master_info.services.values()]
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception as e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
+            for _, master in self.masters.items():
+                master.has_master_sync = has_master_sync
             # update the duplicate nodes
             self.updateDuplicateNodes()
             # update the buttons, whether master is synchronized or not
