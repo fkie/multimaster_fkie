@@ -2331,7 +2331,10 @@ class MainWindow(QMainWindow):
     def _throttle_nmd_errrors(self, reason, url, error, delay=60):
         now = time.time()
         doprint = False
-        key = (reason, url, error.details())
+        try:
+            key = (reason, url, error.details())
+        except Exception:
+            key = (reason, url, utf8(error))
         if key not in self._nmd_last_errors.keys():
             doprint = True
         elif now - self._nmd_last_errors[key] > delay:
