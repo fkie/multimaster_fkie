@@ -816,11 +816,20 @@ class MainWindow(QMainWindow):
         if msg.state == MasterState.STATE_CHANGED:
             nm.nameres().add_master_entry(msg.master.uri, msg.master.name, host)
             msg.master.name = nm.nameres().mastername(msg.master.uri)
-            self.getMaster(msg.master.uri).master_state = msg.master
-            self._assigne_icon(msg.master.name)
-            self.master_model.updateMaster(msg.master)
-            if nm.settings().autoupdate:
-                self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+            master = self.getMaster(msg.master.uri)
+            update = master.master_state is None
+            if master.master_state is not None:
+                if master.master_state.last_change.secs != msg.master.last_change.secs \
+                    or master.master_state.last_change.nsecs != msg.master.last_change.nsecs:
+                    update = True
+            if update:
+                master.master_state = msg.master
+                self._assigne_icon(msg.master.name)
+                self.master_model.updateMaster(msg.master)
+                if nm.settings().autoupdate:
+                    self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+                else:
+                    rospy.loginfo("Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             else:
                 rospy.loginfo("Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             if not msg.master.online:
@@ -1098,7 +1107,7 @@ class MainWindow(QMainWindow):
                 if running_nodes:
                     ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?', buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.Yes:
-                        self.currentMaster.stop_nodes_by_name(running_nodes)
+                        self.currentMaster.stop_nodes_by_name(running_nodes, force=True)
                 if time_dialog.dateRadioButton.isChecked():
                     try:
                         rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
@@ -1728,7 +1737,7 @@ class MainWindow(QMainWindow):
             else:
                 cmuri = cmuri.replace('localhost', get_hostname(lmuri))
         elif cmuri is None:
-            cmuri = nm.nameres().masteruri(nm.nameres().hostname(utf8(hostname)))
+            cmuri = nm.nameres().masteruribyaddr(utf8(hostname))
         if cmuri is not None:
             master = self.getMaster(cmuri.rstrip('/') + '/', create_new=False)
             if master is not None:

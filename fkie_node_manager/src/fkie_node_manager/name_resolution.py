@@ -299,6 +299,13 @@ class NameResolution(object):
                     return m.masteruri
             return None
 
+    def masteruribyaddr(self, address):
+        with self.mutex:
+            for m in self._masters:
+                if m.has_address(address) and m.masteruri:
+                    return m.masteruri
+        return None
+
     def masterurisbyaddr(self, address):
         with self.mutex:
             result = []

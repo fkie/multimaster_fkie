@@ -696,7 +696,7 @@ class MasterViewProxy(QWidget):
         if self.master_info is not None:
             for _, node in self.master_info.nodes.items():  # _:=name
                 if node.isLocal:
-                    if not remove_system_nodes or not self._is_in_ignore_list(node.name):
+                    if remove_system_nodes or not self._is_in_ignore_list(node.name):
                         result[node.name] = self.master_info.masteruri
         return result
 
@@ -708,7 +708,7 @@ class MasterViewProxy(QWidget):
         :type master_info: :class:`fkie_master_discovery.msg.MasterInfo` <http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#module-fkie_master_discovery.master_info>
         '''
         if master_info is not None:
-            updated_nodes = self.node_tree_model.update_model_data(master_info.nodes)
+            updated_nodes = self.node_tree_model.update_model_data(master_info.nodes, master_info.masteruri)
             if updated_nodes:
                 for node in updated_nodes:
                     self.main_window.screen_dock.update_node(node)
@@ -1031,7 +1031,7 @@ class MasterViewProxy(QWidget):
         :type rosconfig: :class:`fkie_node_manager.launch_config.LaunchConfig`
         '''
         hosts = dict()  # dict(addr : dict(node : [config]) )
-        addr = nm.nameres().address(self.masteruri)
+        addr = get_hostname(self.masteruri)
         masteruri = self.masteruri
         for n in rosconfig.nodes:
             if n.machine_name and not n.machine_name == 'localhost':
@@ -1039,6 +1039,8 @@ class MasterViewProxy(QWidget):
                     raise Exception(''.join(["ERROR: unknown machine [", n.machine_name, "]"]))
                 addr = rosconfig.machines[n.machine_name].address
                 masteruri = nm.nameres().masteruri(n.machine_name)
+                if masteruri is None:
+                    masteruri = nm.nameres().masteruribyaddr(n.machine_name)
             node = roslib.names.ns_join(n.namespace, n.name)
             if (masteruri, addr) not in hosts:
                 hosts[(masteruri, addr)] = dict()
@@ -1083,7 +1085,7 @@ class MasterViewProxy(QWidget):
                     self._start_queue(self._progress_queue)
         masteruri = self.masteruri
         host = get_hostname(masteruri)
-        host_addr = nm.nameres().address(host)
+        host_addr = host
         if host_addr is None:
             host_addr = host
         new_configs = []
@@ -1169,7 +1171,6 @@ class MasterViewProxy(QWidget):
                 rospy.logwarn("CFG: unsupported config type: %s" % str(cfg))
                 continue
             if cfg.startswith(url):
-                print ("remove config", url, cfg)
                 self.remove_cfg_from_model(cfg)
                 del self.__configs[cfg]
             else:
@@ -1426,7 +1427,7 @@ class MasterViewProxy(QWidget):
             self.on_service_selection_changed(None, None, True)
 
     def on_host_inserted(self, item):
-        if item == (self.masteruri, nm.nameres().hostname(get_hostname(self.masteruri))):
+        if item == (self.masteruri, get_hostname(self.masteruri)):
             index = self.node_tree_model.indexFromItem(item)
             model_index = self.node_proxy_model.mapFromSource(index)
             if model_index.isValid():
