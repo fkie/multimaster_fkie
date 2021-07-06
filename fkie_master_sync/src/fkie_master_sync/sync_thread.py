@@ -116,8 +116,8 @@ class SyncThread(object):
         self._filter = FilterInterface()
         self._filter.load(self.name,
                           ['/rosout', self.discoverer_name, '/master_discovery', '/master_sync', '/node_manager', '/node_manager_daemon', '/zeroconf', '/param_sync'], [],
-                          ['/rosout', '/rosout_agg', '/diagnostics', '/diagnostics_agg'], ['/'] if sync_on_demand else [],
-                          ['/*get_loggers', '/*set_logger_level'], [],
+                          ['/rosout', '/rosout_agg', '/master_discovery/*', '/master_sync/*', '/zeroconf/*'], ['/'] if sync_on_demand else [],
+                          ['/*get_loggers', '/*set_logger_level', '/master_discovery/*', '/master_sync/*', '/node_manager_daemon/*', '/zeroconf/*'], [],
                           # do not sync the bond message of the nodelets!!
                           ['bond/Status', 'fkie_multimaster_msgs/SyncTopicInfo', 'fkie_multimaster_msgs/SyncServiceInfo', 'fkie_multimaster_msgs/SyncMasterInfo', 'fkie_multimaster_msgs/MasterState'],
                           [], [],
