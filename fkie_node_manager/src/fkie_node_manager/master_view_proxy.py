@@ -2394,24 +2394,32 @@ class MasterViewProxy(QWidget):
 
     def stop_node(self, node, force=False):
         if node is not None and node.uri is not None and (not self._is_in_ignore_list(node.name) or force):
+            success = False
             try:
                 rospy.loginfo("Stop node '%s'[%s]", utf8(node.name), utf8(node.uri))
                 socket.setdefaulttimeout(10)
                 p = xmlrpcclient.ServerProxy(node.uri)
-                p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
-                if node.pid:
+                (code, statusMessage, ignore) = p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
+                if code == 1:
+                    success = True
+                else:
+                    rospy.logwarn("Error while shutdown node '%s': %s", utf8(node.name), utf8(statusMessage))
+            except Exception as e:
+                err_msg = utf8(e)
+                if ' 111' in err_msg:
+                    # this error occurs sometimes after shutdown node
+                    rospy.logdebug("Error while stop node '%s': %s", utf8(node.name), utf8(e))
+                else:
+                    rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
+            finally:
+                socket.setdefaulttimeout(None)
+            if not success:
+                if node.pid and node.name != '/node_manager_daemon':
+                    rospy.loginfo("Try to kill process %d of the node: %s", node.pid, utf8(node.name))
                     # wait kill_on_stop is an integer
                     if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
                         time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
-            except Exception as e:
-                rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
-                if utf8(e).find(' 111') == 1:
-                    raise DetailedError("Stop error",
-                                        'Error while stop node %s' % node.name,
-                                        utf8(e))
-            finally:
-                socket.setdefaulttimeout(None)
         elif isinstance(node, NodeItem) and node.is_ghost:
             # since for ghost nodes no info is available, emit a signal to handle the
             # stop message in other master_view_proxy
