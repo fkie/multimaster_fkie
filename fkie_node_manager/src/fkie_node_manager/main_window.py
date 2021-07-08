@@ -493,7 +493,7 @@ class MainWindow(QMainWindow):
                             if m.is_local:
                                 self._stop_updating()
                                 self._stop_local_master = m
-                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(), True, [rospy.get_name(), '/rosout'])
+                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(remove_system_nodes=True), True, [rospy.get_name(), '/rosout'])
                             if not m.is_local:
                                 m.killall_roscore()
                     except Exception as e:
