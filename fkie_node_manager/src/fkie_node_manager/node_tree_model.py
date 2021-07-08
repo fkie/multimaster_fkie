@@ -241,7 +241,7 @@ class GroupItem(QStandardItem):
                 # create nodes for each group
                 nodes = descr['nodes']
                 if nodes:
-                    groupItem = self.get_group_item(roslib.names.ns_join(ns, group))
+                    groupItem = self.get_group_item(roslib.names.ns_join(ns, group), nocreate=False)
                     groupItem.descr_name = group
                     if descr['type']:
                         groupItem.descr_type = descr['type']
@@ -432,7 +432,7 @@ class GroupItem(QStandardItem):
             if isinstance(item, GroupItem):
                 if item == lns and not item._clearup_mark_delete:
                     if rns:
-                        return item.get_group_item(rns, is_group)
+                        return item.get_group_item(rns, is_group, nocreate)
                     return item
                 elif item > lns and not nocreate:
                     items = []
@@ -442,7 +442,7 @@ class GroupItem(QStandardItem):
                     items.append(cfgitem)
                     self.insertRow(i, items)
                     if rns:
-                        return newItem.get_group_item(rns, is_group)
+                        return newItem.get_group_item(rns, is_group, nocreate)
                     return newItem
         if nocreate:
             return None
@@ -453,7 +453,7 @@ class GroupItem(QStandardItem):
         items.append(cfgitem)
         self.appendRow(items)
         if rns:
-            return newItem.get_group_item(rns, is_group)
+            return newItem.get_group_item(rns, is_group, nocreate)
         return newItem
 
     def add_node(self, node, cfg=None):
@@ -469,13 +469,13 @@ class GroupItem(QStandardItem):
             for _, group_list in groups.items():
                 for group_name in group_list:
                     # insert in the group
-                    groupItem = self.get_group_item(group_name, True)
+                    groupItem = self.get_group_item(group_name, is_group=True)
                     groupItem.add_node(node, cfg)
         else:
             group_item = self
             if type(group_item) == HostItem:
                 # insert in the group
-                group_item = self.get_group_item(namespace(node.name), False)
+                group_item = self.get_group_item(namespace(node.name), is_group=False)
             # insert in order
             new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
             group_item._add_row_sorted(new_item_row)
@@ -516,11 +516,12 @@ class GroupItem(QStandardItem):
             item = self.child(i)
             if isinstance(item, NodeItem):
                 # set the running state of the node to None
-                if fixed_node_names is not None and item.name not in fixed_node_names:
-                    item.set_node_info(NodeInfo(item.name, item.node_info.masteruri))
+                if fixed_node_names is not None:
+                    if item.name not in fixed_node_names:
+                        item.set_node_info(NodeInfo(item.name, item.node_info.masteruri))
                 if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
                     removed = True
-                    self.removeRow(i)
+                    self._remove_row(i)
             else:  # if type(item) == GroupItem:
                 removed = item._clearup(fixed_node_names) or removed
         if self.rowCount() == 0 and self.parent_item is not None:
@@ -557,7 +558,7 @@ class GroupItem(QStandardItem):
                     rows = self._take_node_rows(item)
                     if rows:
                         rows2add = rows2add + rows
-                        self.removeRow(i)
+                        self._remove_row(i)
                 else:
                     item._remove_marked_groups()
         for row in rows2add:
@@ -578,8 +579,19 @@ class GroupItem(QStandardItem):
         for i in range(self.rowCount()):
             item = self.child(i)
             if type(item) == GroupItem and item == name and item.rowCount() == 0:
-                self.removeRow(i)
+                self._remove_row(i)
                 return  # we assume only one group with same name can exists
+
+    def _remove_row(self, index):
+        item = self.child(index)
+        item.parent_item = None
+        try:
+            cellitem = self.child(index, 1)
+            cellitem.parent_item = None
+            cellitem.item = None
+        except Exception as e:
+            rospy.logdebug_throttle(10, utf8(e))
+        self.removeRow(index)
 
     def reset_remote_launched_nodes(self):
         self._remote_launched_nodes_updated = False
@@ -589,7 +601,7 @@ class GroupItem(QStandardItem):
             return self._remote_launched_nodes_updated
         return True
 
-    def update_running_state(self, nodes):
+    def update_running_state(self, nodes, create_nodes=True):
         '''
         Updates the running state of the nodes given in a dictionary.
 
@@ -598,22 +610,26 @@ class GroupItem(QStandardItem):
         :return: a list with :class:`fkie_master_discovery.NodeInfo` items, which are changed their PID or URI.
         '''
         updated_nodes = []
-        for (name, node) in nodes.items():
-            # get the node items
-            items = self.get_node_items_by_name(name)
-            if items:
-                for item in items:
-                    # update the node item
-                    run_changed = item.set_node_info(node)
-                    if run_changed:
-                        updated_nodes.append(node)
-            else:
-                # create the new node
-                self.add_node(node)
-                updated_nodes.append(node)
-            if self._has_remote_launched_nodes:
-                self._remote_launched_nodes_updated = True
-        self.clearup(list(nodes.keys()))
+        if isinstance(nodes, dict):
+            for (name, node) in nodes.items():
+                # get the node items
+                items = self.get_node_items_by_name(name)
+                if items:
+                    for item in items:
+                        # update the node item
+                        run_changed = item.set_node_info(node)
+                        #updated_nodes.append(node)
+                        if run_changed:
+                            updated_nodes.append(node)
+                elif create_nodes:
+                    # create the new node
+                    self.add_node(node)
+                    updated_nodes.append(node)
+                if self._has_remote_launched_nodes:
+                    self._remote_launched_nodes_updated = True
+            self.clearup(list(nodes.keys()))
+        elif isinstance(nodes, list):
+            self.clearup(nodes)
         return updated_nodes
 
     def get_nodes_running(self):
@@ -923,7 +939,8 @@ class HostItem(GroupItem):
 
     @property
     def hostname(self):
-        return nm.nameres().hostname(self._host)
+        # return nm.nameres().hostname(self._host)
+        return self._host
 
     @property
     def addresses(self):
@@ -1563,7 +1580,7 @@ class NodeItem(QStandardItem):
                 if (type(item) == NodeItem) and item.name == self.name:
                     row = self.parent_item.takeRow(i)
                     break
-            group_item = self.parent_item.get_group_item(namespace(item.name), False)
+            group_item = self.parent_item.get_group_item(namespace(item.name), is_group=False)
             group_item._add_row_sorted(row)
             group_item.updateIcon()
 
@@ -1726,8 +1743,7 @@ class NodeTreeModel(QStandardItemModel):
         if masteruri is None:
             return None
         master_entry = nm.nameres().get_master(masteruri, address)
-        resaddr = nm.nameres().hostname(address)
-        host = (masteruri, resaddr)
+        host = (masteruri, address)
         # [address] + nm.nameres().resolve_cached(address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
                  nmdurl.equal_uri(self._local_masteruri, masteruri))
@@ -1738,7 +1754,7 @@ class NodeTreeModel(QStandardItemModel):
                 return root.child(i)
             elif root.child(i) > host:
                 items = []
-                hostItem = HostItem(masteruri, resaddr, local, master_entry)
+                hostItem = HostItem(masteruri, address, local, master_entry)
                 items.append(hostItem)
                 cfgitem = CellItem(masteruri, hostItem)
                 items.append(cfgitem)
@@ -1747,7 +1763,7 @@ class NodeTreeModel(QStandardItemModel):
                 self._set_std_capabilities(hostItem)
                 return hostItem
         items = []
-        hostItem = HostItem(masteruri, resaddr, local, master_entry)
+        hostItem = HostItem(masteruri, address, local, master_entry)
         items.append(hostItem)
         cfgitem = CellItem(masteruri, hostItem)
         items.append(cfgitem)
@@ -1756,7 +1772,7 @@ class NodeTreeModel(QStandardItemModel):
         self._set_std_capabilities(hostItem)
         return hostItem
 
-    def update_model_data(self, nodes):
+    def update_model_data(self, nodes, info_masteruri):
         '''
         Updates the model data.
 
@@ -1768,6 +1784,7 @@ class NodeTreeModel(QStandardItemModel):
         muris = []
         addresses = []
         updated_nodes = []
+        local_info = nmdurl.equal_uri(self._local_masteruri, info_masteruri)
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
@@ -1775,17 +1792,16 @@ class NodeTreeModel(QStandardItemModel):
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
             addresses.append(addr)
             muris.append(node.masteruri)
-            resaddr = nm.nameres().hostname(addr)
-            host = (node.masteruri, resaddr)
+            host = (node.masteruri, addr)
             if host not in hosts:
                 hosts[host] = dict()
             hosts[host][name] = node
         # update nodes for each host
-        for ((masteruri, host), nodes_filtered) in hosts.items():
-            hostItem = self.get_hostitem(masteruri, host)
+        for ((muri, host), nodes_filtered) in hosts.items():
+            hostItem = self.get_hostitem(muri, host)
             # rename the host item if needed
             if hostItem is not None:
-                updated_nodes.extend(hostItem.update_running_state(nodes_filtered))
+                updated_nodes.extend(hostItem.update_running_state(nodes_filtered, local_info))
             # request for all nodes in host the parameter capability_group
             self._requestCapabilityGroupParameter(hostItem)
         # update nodes of the hosts, which are not more exists
@@ -1793,10 +1809,10 @@ class NodeTreeModel(QStandardItemModel):
             host = self.invisibleRootItem().child(i)
             # remove hosts if they are not updated
             if host.masteruri not in muris:
-                host.update_running_state({})
+               host.update_running_state({}, local_info)
             # remove hosts which are connected to local master using ROS_MASTER_URI
             if (not host.local and host.host not in addresses):
-                host.update_running_state({})
+                host.update_running_state({}, local_info)
         self._remove_empty_hosts()
         return updated_nodes
         # update the duplicate state
@@ -1819,10 +1835,7 @@ class NodeTreeModel(QStandardItemModel):
         :param params: The dictionary of parameter names and request result as tuple(code, statusMessage, parameterValue)
         :type params: dict(str : (int, str, str)))
         '''
-        host = nm.nameres().address(masteruri)
-        if host is None:
-            # try with hostname of the masteruri
-            host = get_hostname(masteruri)
+        host = get_hostname(masteruri)
         hostItem = self.get_hostitem(masteruri, host)
         changed = False
         if hostItem is not None and code == 1:
@@ -1852,7 +1865,7 @@ class NodeTreeModel(QStandardItemModel):
                         for group, _ in list(capabilities[ns].items()):
                             try:
                                 # remove the config from item, if parameter was not foun on the ROS parameter server
-                                groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group))
+                                groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group), nocreate=True)
                                 if groupItem is not None:
                                     nodeItems = groupItem.get_node_items_by_name(nodename, True)
                                     for item in nodeItems:
@@ -1883,24 +1896,18 @@ class NodeTreeModel(QStandardItemModel):
             if changed:
                 if capabilities:
                     hostItem.add_capabilities('', capabilities, hostItem.masteruri)
-                hostItem.clearup()
+            hostItem.clearup()
         else:
             rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
 
     def update_system_diagnostics(self, masteruri, diagnostics):
-        host = nm.nameres().address(masteruri)
-        if host is None:
-            # try with hostname of the masteruri
-            host = get_hostname(masteruri)
+        host = get_hostname(masteruri)
         host_item = self.get_hostitem(masteruri, host)
         if host_item is not None:
             host_item.update_system_diagnostics(diagnostics)
 
     def sysmon_set_state(self, masteruri, state):
-        host = nm.nameres().address(masteruri)
-        if host is None:
-            # try with hostname of the masteruri
-            host = get_hostname(masteruri)
+        host = get_hostname(masteruri)
         host_item = self.get_hostitem(masteruri, host)
         if host_item is not None:
             host_item.sysmon_state = state

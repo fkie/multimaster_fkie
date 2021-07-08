@@ -835,6 +835,8 @@ class MasterMonitor(object):
                     rospy.logwarn(timejump_msg)
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
+                    self._exit_timer = threading.Timer(5.0, self._timejump_exit)
+                    self._exit_timer.start()
             if do_update:
                 self.updateSyncInfo()
                 with self._state_access_lock:
@@ -847,6 +849,10 @@ class MasterMonitor(object):
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
             return result
+
+    def _timejump_exit(self):
+        rospy.logwarn('Shutdown yourself to avoid system instability because of time jump into past!\n')
+        rospy.signal_shutdown('Shutdown yourself to avoid system instability because of time jump into past')
 
     def reset(self):
         '''

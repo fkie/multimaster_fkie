@@ -493,7 +493,7 @@ class MainWindow(QMainWindow):
                             if m.is_local:
                                 self._stop_updating()
                                 self._stop_local_master = m
-                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(), True, [rospy.get_name(), '/rosout'])
+                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(remove_system_nodes=True), True, [rospy.get_name(), '/rosout'])
                             if not m.is_local:
                                 m.killall_roscore()
                     except Exception as e:
@@ -816,11 +816,20 @@ class MainWindow(QMainWindow):
         if msg.state == MasterState.STATE_CHANGED:
             nm.nameres().add_master_entry(msg.master.uri, msg.master.name, host)
             msg.master.name = nm.nameres().mastername(msg.master.uri)
-            self.getMaster(msg.master.uri).master_state = msg.master
-            self._assigne_icon(msg.master.name)
-            self.master_model.updateMaster(msg.master)
-            if nm.settings().autoupdate:
-                self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+            master = self.getMaster(msg.master.uri)
+            update = master.master_state is None
+            if master.master_state is not None:
+                if master.master_state.last_change.secs != msg.master.last_change.secs \
+                    or master.master_state.last_change.nsecs != msg.master.last_change.nsecs:
+                    update = True
+            if update:
+                master.master_state = msg.master
+                self._assigne_icon(msg.master.name)
+                self.master_model.updateMaster(msg.master)
+                if nm.settings().autoupdate:
+                    self._update_handler.requestMasterInfo(msg.master.uri, msg.master.monitoruri)
+                else:
+                    rospy.loginfo("Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             else:
                 rospy.loginfo("Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             if not msg.master.online:
@@ -902,6 +911,7 @@ class MainWindow(QMainWindow):
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
         if minfo.masteruri in self.masters:
+            has_master_sync = False
             for _, master in self.masters.items():  # _:=uri
                 try:
                     if not master.online and master.masteruri != minfo.masteruri:
@@ -936,9 +946,12 @@ class MainWindow(QMainWindow):
                             if self.default_profile_load:
                                 self.default_profile_load = False
                                 QTimer.singleShot(2000, self._load_default_profile_slot)
+                        has_master_sync = has_master_sync or 'fkie_multimaster_msgs/GetSyncInfo' in [srv.type for srv in master.master_info.services.values()]
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception as e:
                     rospy.logwarn("Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
+            for _, master in self.masters.items():
+                master.has_master_sync = has_master_sync
             # update the duplicate nodes
             self.updateDuplicateNodes()
             # update the buttons, whether master is synchronized or not
@@ -1098,7 +1111,7 @@ class MainWindow(QMainWindow):
                 if running_nodes:
                     ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?', buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.Yes:
-                        self.currentMaster.stop_nodes_by_name(running_nodes)
+                        self.currentMaster.stop_nodes_by_name(running_nodes, force=True)
                 if time_dialog.dateRadioButton.isChecked():
                     try:
                         rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
@@ -1728,7 +1741,7 @@ class MainWindow(QMainWindow):
             else:
                 cmuri = cmuri.replace('localhost', get_hostname(lmuri))
         elif cmuri is None:
-            cmuri = nm.nameres().masteruri(nm.nameres().hostname(utf8(hostname)))
+            cmuri = nm.nameres().masteruribyaddr(utf8(hostname))
         if cmuri is not None:
             master = self.getMaster(cmuri.rstrip('/') + '/', create_new=False)
             if master is not None:
@@ -2331,7 +2344,10 @@ class MainWindow(QMainWindow):
     def _throttle_nmd_errrors(self, reason, url, error, delay=60):
         now = time.time()
         doprint = False
-        key = (reason, url, error.details())
+        try:
+            key = (reason, url, error.details())
+        except Exception:
+            key = (reason, url, utf8(error))
         if key not in self._nmd_last_errors.keys():
             doprint = True
         elif now - self._nmd_last_errors[key] > delay:

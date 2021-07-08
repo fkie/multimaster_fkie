@@ -169,6 +169,7 @@ class EchoDialog(QDialog):
             self.showArraysCheckBox.toggled.connect(self.on_no_arr_checkbox_toggled)
             self.maxDigitsComboBox.activated[str].connect(self.combobox_reduce_digits_activated)
             self.enableMsgFilterCheckBox.toggled.connect(self.on_enable_msg_filter_checkbox_toggled)
+            self.msgFilterCheckBox.toggled.connect(self.on_msg_filter_checkbox_toggled)
             self.maxLenComboBox.activated[str].connect(self.on_combobox_chars_activated)
             self.maxHzComboBox.activated[str].connect(self.on_combobox_hz_activated)
             self.displayCountComboBox.activated[str].connect(self.on_combobox_count_activated)
@@ -298,6 +299,9 @@ class EchoDialog(QDialog):
                 self._append_message(msg, self._latched, current_time, False)
 
     def on_enable_msg_filter_checkbox_toggled(self, state):
+        if state == self.enabled_message_filter:
+            return
+        self.msgFilterCheckBox.setChecked(state)
         self.enabled_message_filter = state
         self.maxLenComboBox.setEnabled(state)
         self.maxHzComboBox.setEnabled(state)
@@ -311,6 +315,11 @@ class EchoDialog(QDialog):
         with self.lock:
             for msg, current_time in self._msgs:
                 self._append_message(msg, self._latched, current_time, False)
+
+    def on_msg_filter_checkbox_toggled(self, state):
+        if state == self.enabled_message_filter:
+            return
+        self.enableMsgFilterCheckBox.setChecked(state)
 
     def on_combobox_chars_activated(self, chars_txt, update_display=True):
         if not self.enabled_message_filter:
