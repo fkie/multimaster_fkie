@@ -914,24 +914,17 @@ class HostItem(GroupItem):
         :param bool local: is this host the localhost where the node_manager is running.
         '''
         self._has_remote_launched_nodes = False
-        name = self.create_host_description(master_entry)
         self._masteruri = masteruri
         self._host = address
         self._mastername = address
         self._master_entry = master_entry
-        self._local = local
+        self._local = None
         self._diagnostics = []
+        name = self.create_host_description(master_entry)
         GroupItem.__init__(self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
-        image_file = nm.settings().robot_image_file(name)
-        if QFile.exists(image_file):
-            self.setIcon(QIcon(image_file))
-        else:
-            if local:
-                self.setIcon(nm.settings().icon('crystal_clear_miscellaneous.png'))
-            else:
-                self.setIcon(nm.settings().icon('remote.png'))
         self.descr_type = self.descr_name = self.descr = ''
         self.sysmon_state = False
+        self.local = local
 
     @property
     def host(self):
@@ -960,6 +953,20 @@ class HostItem(GroupItem):
     @property
     def local(self):
         return self._local
+
+    @local.setter
+    def local(self, islocal):
+        if self._local != islocal:
+            self._local = islocal
+            name = self.create_host_description(self._master_entry)
+            image_file = nm.settings().robot_image_file(name)
+            if QFile.exists(image_file):
+                self.setIcon(QIcon(image_file))
+            else:
+                if self._local:
+                    self.setIcon(nm.settings().icon('crystal_clear_miscellaneous.png'))
+                else:
+                    self.setIcon(nm.settings().icon('remote.png'))
 
     @property
     def diagnostics(self):
@@ -1744,15 +1751,16 @@ class NodeTreeModel(QStandardItemModel):
             return None
         master_entry = nm.nameres().get_master(masteruri, address)
         host = (masteruri, address)
-        # [address] + nm.nameres().resolve_cached(address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
                  nmdurl.equal_uri(self._local_masteruri, masteruri))
         # find the host item by address
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
-            if root.child(i) == master_entry:
-                return root.child(i)
-            elif root.child(i) > host:
+            host_item = root.child(i)
+            if host_item == master_entry:
+                host_item.local = local
+                return host_item
+            elif host_item > host:
                 items = []
                 hostItem = HostItem(masteruri, address, local, master_entry)
                 items.append(hostItem)
@@ -1784,7 +1792,6 @@ class NodeTreeModel(QStandardItemModel):
         muris = []
         addresses = []
         updated_nodes = []
-        local_info = nmdurl.equal_uri(self._local_masteruri, info_masteruri)
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
@@ -1792,18 +1799,18 @@ class NodeTreeModel(QStandardItemModel):
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
             addresses.append(addr)
             muris.append(node.masteruri)
-            host = (node.masteruri, addr)
+            host = self.get_hostitem(node.masteruri, addr)
             if host not in hosts:
                 hosts[host] = dict()
             hosts[host][name] = node
         # update nodes for each host
-        for ((muri, host), nodes_filtered) in hosts.items():
-            hostItem = self.get_hostitem(muri, host)
+        for (host_item, nodes_filtered) in hosts.items():
             # rename the host item if needed
-            if hostItem is not None:
-                updated_nodes.extend(hostItem.update_running_state(nodes_filtered, local_info))
+            if host_item is not None:
+                local_info = nmdurl.equal_uri(host_item.masteruri, info_masteruri)
+                updated_nodes.extend(host_item.update_running_state(nodes_filtered, local_info))
             # request for all nodes in host the parameter capability_group
-            self._requestCapabilityGroupParameter(hostItem)
+            self._requestCapabilityGroupParameter(host_item)
         # update nodes of the hosts, which are not more exists
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
