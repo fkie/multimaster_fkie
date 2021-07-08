@@ -42,6 +42,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 from datetime import datetime
+import getpass
 import roslib.network
 import roslib.message
 import rospy
@@ -202,6 +203,7 @@ class MasterMonitor(object):
                 self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
                 self.rpcServer.register_function(self.setTime, 'setTime')
                 self.rpcServer.register_function(self.getTopicsMd5sum, 'getTopicsMd5sum')
+                self.rpcServer.register_function(self.getUser, 'getUser')
                 self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
                 self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
@@ -794,6 +796,16 @@ class MasterMonitor(object):
                 rospy.logwarn(err)
         return topic_list
 
+    def getUser(self):
+        '''
+        The RPC method called by XML-RPC server to request the user name used to launch the master_discovery.
+
+        :return: (``ROS master URI``, ``user name``)
+        :rtype: (str, str)
+        '''
+        return (str(self.getMasteruri()), getpass.getuser())
+
+
     def checkState(self, clear_cache=False):
         '''
         Gets the state from the ROS master and compares it to the stored state.
@@ -823,6 +835,8 @@ class MasterMonitor(object):
                     rospy.logwarn(timejump_msg)
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
+                    self._exit_timer = threading.Timer(5.0, self._timejump_exit)
+                    self._exit_timer.start()
             if do_update:
                 self.updateSyncInfo()
                 with self._state_access_lock:
@@ -835,6 +849,10 @@ class MasterMonitor(object):
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
             return result
+
+    def _timejump_exit(self):
+        rospy.logwarn('Shutdown yourself to avoid system instability because of time jump into past!\n')
+        rospy.signal_shutdown('Shutdown yourself to avoid system instability because of time jump into past')
 
     def reset(self):
         '''

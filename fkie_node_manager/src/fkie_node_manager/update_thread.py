@@ -77,6 +77,12 @@ class UpdateThread(QObject, threading.Thread):
   after the difference of time to the remote host is determined.
   '''
 
+    username_signal = Signal(str, str)
+    '''
+  :ivar: username_signal is a signal (masteruri, username), which is emitted
+  after the name was retrieved from host.
+  '''
+
     def __init__(self, monitoruri, masteruri, delayed_exec=0., parent=None):
         '''
         :param str masteruri: the URI of the remote ROS master
@@ -112,7 +118,13 @@ class UpdateThread(QObject, threading.Thread):
                 muri, remote_ts = remote_monitor.getCurrentTime()
                 self.timediff_signal.emit(muri, remote_ts - myts - (time.time() - myts) / 2.0)
             except xmlrpcclient.Fault as _errts:
-                rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
+                rospy.logwarn("Older master_discovery on %s detected. It does not support getCurrentTime!" % self._masteruri)
+            # get the user name
+            try:
+                muri, username = remote_monitor.getUser()
+                self.username_signal.emit(muri, username)
+            except xmlrpcclient.Fault as _errts:
+                rospy.logwarn("Older master_discovery on %s detected. It does not support getUser!" % self._masteruri)
             # now get master info from master discovery
             remote_info = remote_monitor.masterInfo()
             master_info = MasterInfo.from_list(remote_info)

@@ -238,7 +238,7 @@ class StartHandler(object):
                 for n in [1, 2, 3, 4]:
                     try:
                         if n == 1:
-                            print("Launch ROS Master in screen  ...")
+                            print("Launch ROS Master in screen  ... %s" % (cmd_args))
                             SupervisedPopen(shlex.split(cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
                         elif n == 2:
                             print("ROS Master takes too long for start, wait for next 10 sec ...")

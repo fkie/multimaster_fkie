@@ -85,3 +85,10 @@ class MonitorStub(object):
         request = mmsg.Pid()
         request.pid = pid
         self.mm_stub.KillProcess(request, timeout=settings.GRPC_TIMEOUT)
+
+    def get_user(self):
+        '''
+        '''
+        request = mmsg.Empty()
+        response = self.mm_stub.GetUser(request, timeout=settings.GRPC_TIMEOUT)
+        return response.user

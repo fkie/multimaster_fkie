@@ -86,6 +86,7 @@ class ScreenDock(DetachableTabDock):
                 self.tab_widget.setCurrentIndex(tab_index)
                 self._nodes[(masteruri, nodename)] = sw
             else:
+                rospy.logwarn('ros log file %s not found!' % sw._logpath)
                 sw.close()
         else:
             index = self.tab_widget.indexOf(self._nodes[(masteruri, nodename)])
