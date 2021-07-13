@@ -1792,6 +1792,7 @@ class NodeTreeModel(QStandardItemModel):
         muris = []
         addresses = []
         updated_nodes = []
+        local_info = nmdurl.equal_uri(self._local_masteruri, info_masteruri)
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
@@ -1807,7 +1808,6 @@ class NodeTreeModel(QStandardItemModel):
         for (host_item, nodes_filtered) in hosts.items():
             # rename the host item if needed
             if host_item is not None:
-                local_info = nmdurl.equal_uri(host_item.masteruri, info_masteruri)
                 updated_nodes.extend(host_item.update_running_state(nodes_filtered, local_info))
             # request for all nodes in host the parameter capability_group
             self._requestCapabilityGroupParameter(host_item)
