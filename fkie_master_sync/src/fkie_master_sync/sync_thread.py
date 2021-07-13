@@ -90,7 +90,7 @@ class SyncThread(object):
 
         self.masteruri_local = masteruri_from_ros()
         self.hostname_local = get_hostname(self.masteruri_local)
-        rospy.logdebug("SyncThread[%s]: create this sync thread, discoverer_name: %s", (self.name, self.discoverer_name))
+        rospy.logdebug("SyncThread[%s]: create this sync thread, discoverer_name: %s", self.name, self.discoverer_name)
         # synchronization variables
         self.__lock_info = threading.RLock()
         self.__lock_intern = threading.RLock()
