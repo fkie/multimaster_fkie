@@ -58,6 +58,7 @@ from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring
 from fkie_node_manager_daemon.host import get_hostname, get_port
 from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon.version import detect_version
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
@@ -516,7 +517,7 @@ class MasterViewProxy(QWidget):
 
     @property
     def is_local(self):
-        return nm.is_local(get_hostname(self.masteruri))
+        return nm.is_local(get_hostname(self.masteruri), wait=False)
 
     @property
     def online(self):
@@ -1447,7 +1448,7 @@ class MasterViewProxy(QWidget):
 
     def _create_html_list(self, title, items, list_type=None, name=''):
         '''
-        :param list_type: LAUNCH, TOPIC, NODE, SERVICE
+        :param list_type: LAUNCH, TOPIC, NODE, SERVICE, LOG
         :type list_type: str
         '''
         result = ''
@@ -1461,6 +1462,9 @@ class MasterViewProxy(QWidget):
                 item = i
                 # reduce the displayed name
                 item_name = i
+                if list_type in ['LOG']:
+                    item = i.name
+                    item_name = i.name
                 if name:
                     if item_name.startswith(name):
                         item_name = item_name.replace('%s%s' % (name, roslib.names.SEP), '~', 1)
@@ -1469,7 +1473,7 @@ class MasterViewProxy(QWidget):
                         item_name = item_name.replace(ns, '', 1)
                 if list_type in ['NODE']:
                     item = '<tr>'
-                    item += '<td><a href="node://%s%s">%s</a><td>' % (self.mastername, i, item_name)
+                    item += '<td><a href="node://%s%s">%s</a></td>' % (self.mastername, i, item_name)
                     item += '</tr>'
                 elif list_type in ['TOPIC_PUB', 'TOPIC_SUB']:
                     # determine the count of publisher or subscriber
@@ -1489,40 +1493,58 @@ class MasterViewProxy(QWidget):
                     # add the count
                     if count is not None:
                         item = '<tr>'
-                        item += '<td><span style="color:gray;">%d</span><td>' % (count)
-                        item += '<td><a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a><td>' % (self.mastername, i)
-                        item += '<td><a href="topic://%s">%s</a><td>' % (i, item_name)
+                        item += '<td><span style="color:gray;">%d</span></td>' % (count)
+                        item += '<td><a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a></td>' % (self.mastername, i)
+                        item += '<td><a href="topic://%s">%s</a></td>' % (i, item_name)
                         #sekkyumu_topic_echo_24 = nm.settings().icon_path('sekkyumu_topic_echo_24.png')
                         #item += '<td><a href="topicecho://%s%s" title="Show the content of the topic"><img src="%s" alt="echo"></a></td>' % (self.mastername, i, sekkyumu_topic_echo_24)
                         item += '</tr>'
                     else:
                         item = '<tr>'
-                        item += '<td colspan="3" style="float:left"><span style="color:red;">!sync </span><a>%s</a><td>' % (item_name)
+                        item += '<td colspan="3" style="float:left"><span style="color:red;">!sync </span><a>%s</a></td>' % (item_name)
                         item += '</tr>'
                 elif list_type == 'SERVICE':
                     try:
                         srv = self.__master_info.getService(i)
                         if srv is not None and name in srv.serviceProvider:
                             item = '<tr>'
-                            item += '<td><a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a><td>' % (self.mastername, i)
-                            item += '<td><a href="service://%s%s">%s</a><td>' % (self.mastername, i, item_name)
+                            item += '<td><a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a></td>' % (self.mastername, i)
+                            item += '<td><a href="service://%s%s">%s</a></td>' % (self.mastername, i, item_name)
                             item += '</tr>'
                         else:
                             item = '<tr>'
-                            item += '<td colspan="2" style="float:left"><span style="color:red;">!sync </span>%s<td>' % (item_name)
+                            item += '<td colspan="2" style="float:left"><span style="color:red;">!sync </span>%s</td>' % (item_name)
                             item += '</tr>'
                     except Exception:
                         item = '<tr>'
-                        item += '<td colspan="2" style="float:left"><span style="color:red;">?sync </span>%s<td>' % (item_name)
+                        item += '<td colspan="2" style="float:left"><span style="color:red;">?sync </span>%s</td>' % (item_name)
                         item += '</tr>'
                 elif list_type == 'LAUNCH':
                     if i in self.__configs and self.__configs[i].global_param_done:
                         item = '<tr>'
                         item_ref = '<a href="%s">%s</a>' % (i.replace('grpc://', 'open-edit://'), os.path.basename(item_name))
-                        item += '<td>%s<td>' % (item_ref)
+                        item += '<td>%s</td>' % (item_ref)
                         pkg, _path = nm.nmd().file.package_name(i)
-                        item += '<td><i>%s</i><td>' % (os.path.dirname(item_name) if pkg is None else pkg)
+                        item += '<td><i>%s</i></td>' % (os.path.dirname(item_name) if pkg is None else pkg)
                         item += '</tr>'
+                elif list_type == 'LOG':
+                    node_host = self.getHostFromNode(i)
+                    if nm.is_local(node_host, wait=False):
+                        roslogfile = screen.get_ros_logfile(node=i.name)
+                        logfile = screen.get_logfile(node=i.name)
+                    else:
+                        roslogfile = '%s@%s' % (i.name, node_host)
+                        logfile = '%s@%s' % (i.name, node_host)
+                    item = '<tr>'
+                    item += '<td colspan="2" style="float:left"><span style="color:grey;">roslog: </span></td>'
+                    item_ref = '<a href="%s">%s</a>' % ('show-roslog://%s@%s' % (i.name, node_host), roslogfile)
+                    item += '<td>%s</td>' % (item_ref)
+                    item += '</tr>'
+                    item += '<tr>'
+                    item += '<td colspan="2" style="float:left"><span style="color:grey;">screen: </span></td>'
+                    item_ref = '<a href="%s">%s</a>' % ('show-log://%s@%s' % (i.name, node_host), logfile)
+                    item += '<td>%s</td>' % (item_ref)
+                    item += '</tr>'
                 result += item
             result += '</table>\n<br>'
         return result
@@ -1677,7 +1699,7 @@ class MasterViewProxy(QWidget):
                 text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
             if node.node_info.pid is None and node.node_info.uri is not None:
                 if not node.node_info.isLocal:
-                    text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'
+                    text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running.<br>Do all nodes have the same ROS_MASTER_URI or node uri?</b></font>'
                 else:
                     text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
                 text += ' <a href="unregister-node://%s">unregister</a></dt>' % node.name
@@ -1723,6 +1745,7 @@ class MasterViewProxy(QWidget):
             # set loaunch file paths
             text += self._create_html_list('<br>Launch Files:', launches, 'LAUNCH')
             # text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
+            text += self._create_html_list('<br>Logs:', [node], 'LOG')
 #      text += '<dt><a href="copy-log-path://%s">copy log path to clipboard</a></dt>'%node.name
         return text
 
@@ -2848,6 +2871,18 @@ class MasterViewProxy(QWidget):
             MessageBox.warning(self, "Show log error",
                                'Error while show Log',
                                utf8(e))
+
+    def show_log(self, nodename, host, roslog=True):
+        self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
+                                            'show log of %s' % nodename,
+                                            nm.starter().openLog,
+                                            {'nodename' : nodename,
+                                             'host': host,
+                                             'user': self.current_user,
+                                             'only_screen': not roslog,
+                                             'only_roslog': roslog
+                                            })
+        self._start_queue(self._progress_queue_prio)
 
     def on_log_path_copy(self):
         selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())

@@ -2119,6 +2119,20 @@ class MainWindow(QMainWindow):
                 self.currentMaster.show_diagnostic_messages(self._url_path(url))
         elif url.toString().startswith('open-edit://'):
             self.on_launch_edit(url.toString().replace('open-edit://', 'grpc://'))
+        elif url.toString().startswith('show-log://'):
+            if self.currentMaster is not None:
+                try:
+                    dest = url.toString().replace('show-log://', '').split('@')
+                    self.currentMaster.show_log(dest[0], dest[1], roslog=False)
+                except Exception as e:
+                    print(e)
+        elif url.toString().startswith('show-roslog://'):
+            if self.currentMaster is not None:
+                try:
+                    dest = url.toString().replace('show-roslog://', '').split('@')
+                    self.currentMaster.show_log(dest[0], dest[1], roslog=True)
+                except Exception as e:
+                    print(e)
         elif url.toString().startswith('back://'):
             if self._description_history:
                 # show last discription on click on back
@@ -2282,7 +2296,7 @@ class MainWindow(QMainWindow):
                 master.update_system_diagnostics(data)
                 self.master_model.update_master_diagnostic(nm.nameres().mastername(muri), data)
         except Exception as err:
-            rospy.logwarn('Error while process diagnostic messages: %s' % utf8(err))
+            rospy.logwarn('Error while process system diagnostic messages: %s' % utf8(err))
 
     def _callback_diagnostics(self, data, grpc_url=''):
         try:

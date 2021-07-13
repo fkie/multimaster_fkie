@@ -370,7 +370,7 @@ class StartHandler(object):
                 socket.setdefaulttimeout(None)
 
     @classmethod
-    def openLog(cls, nodename, host, user=None, only_screen=False):
+    def openLog(cls, nodename, host, user=None, only_screen=False, only_roslog=False):
         '''
         Opens the log file associated with the given node in a new terminal.
 
@@ -386,11 +386,12 @@ class StartHandler(object):
         if nm.is_local(host):
             found = False
             screenLog = screen.get_logfile(node=nodename)
-            if os.path.isfile(screenLog):
-                cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, screenLog], title_opt)
-                rospy.loginfo("open log: %s", cmd)
-                SupervisedPopen(shlex.split(cmd), object_id="Open log", description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
-                found = True
+            if not only_roslog:
+                if os.path.isfile(screenLog):
+                    cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, screenLog], title_opt)
+                    rospy.loginfo("open log: %s", cmd)
+                    SupervisedPopen(shlex.split(cmd), object_id="Open log", description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
+                    found = True
             # open roslog file
             roslog = screen.get_ros_logfile(nodename)
             if os.path.isfile(roslog) and (not only_screen or not found):
@@ -403,7 +404,8 @@ class StartHandler(object):
                 rospy.logwarn('no log files found for %s' % utf8(nodename))
             return found
         else:
-            _ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
+            if not only_roslog:
+                _ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
             if not only_screen:
                 _ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
         return False
