@@ -708,7 +708,7 @@ class Discoverer(object):
             if not (invalid_uri or invalid_state or rospy.is_shutdown() or self.do_finish):
                 self._publish_current_state()
                 # send update requests to group
-                if timer and self._init_notifications < self.INIT_NOTIFICATION_COUNT:
+                if timer and self._listen_mcast and self._init_notifications < self.INIT_NOTIFICATION_COUNT:
                     self._init_notifications += 1
                     rospy.logdebug("Send requests while init %d/%d" % (self._init_notifications, self.INIT_NOTIFICATION_COUNT))
                     self._request_state()
@@ -1131,7 +1131,8 @@ class Discoverer(object):
                     if v.mastername is not None:
                         # send an active unicast request
                         self._request_state(k[0][0], [v])
-                self._request_state()
+                if self._listen_mcast:
+                    self._request_state()
 #        self._send_current_state()
             except:
                 traceback.print_exc()
