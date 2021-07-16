@@ -96,7 +96,7 @@ class SyncThread(object):
         self.__lock_intern = threading.RLock()
         self._use_filtered_method = None
         self._use_md5check_topics = None
-        self._md5warnings = {}  # ditionary of {(topicname, node, nodeuri) : topictype}
+        self._md5warnings = {}  # ditionary of {(topicname, node, nodeuri) : (topictype, md5sum)}
         self._topic_type_warnings = {}  # ditionary of {(topicname, node, nodeuri) : remote topictype}
         # SyncMasterInfo with currently synchronized nodes, publisher (topic, node, nodeuri), subscriber(topic, node, nodeuri) and services
         self.__sync_info = None
@@ -529,12 +529,12 @@ class SyncThread(object):
                         if lmd5sum != rtmd5sum:
                             for topicname, topictype, node, nodeuri in topics_to_register:
                                 if topictype == rttype:
-                                    if (topicname, node, nodeuri, lmd5sum) not in self._md5warnings:
+                                    if (topicname, node, nodeuri) not in self._md5warnings:
                                         if lmd5sum is None:
                                             rospy.logwarn("Unknown message type %s for topic: %s, local host: %s, remote host: %s" % (rttype, topicname, self.hostname_local, self.name))
                                         else:
                                             rospy.logwarn("Different checksum detected for topic: %s, type: %s, local host: %s, remote host: %s" % (topicname, rttype, self.hostname_local, self.name))
-                                        self._md5warnings[(topicname, node, nodeuri, lmd5sum)] = topictype
+                                        self._md5warnings[(topicname, node, nodeuri)] = (topictype, lmd5sum)
                     except Exception as err:
                         import traceback
                         rospy.logwarn(err)
