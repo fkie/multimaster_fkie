@@ -39,6 +39,7 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QItemDelegate
 from datetime import datetime
+import hashlib
 import re
 import roslib
 import rospy
@@ -925,6 +926,11 @@ class HostItem(GroupItem):
                 self.setIcon(nm.settings().icon('remote.png'))
         self.descr_type = self.descr_name = self.descr = ''
         self.sysmon_state = False
+
+    def __hash__(self) -> int:
+        str = self._masteruri + self._host
+        hash_str = hashlib.md5(str.encode()).hexdigest()
+        return int(hash_str, base=16)
 
     @property
     def host(self):

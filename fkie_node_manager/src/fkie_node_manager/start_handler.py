@@ -169,6 +169,7 @@ class StartHandler(object):
                 startcmd.append(masteruri)
             rospy.loginfo("Run remote on %s: %s", host, ' '.join(startcmd))
             try:
+                error = ''
                 _, stdout, stderr, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request, close_stdin=True)
                 if ok:
                     output = stdout.read()
@@ -177,7 +178,7 @@ class StartHandler(object):
                     stderr.close()
                     if error:
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
-                        raise StartException(''.join(['The host "', host, '" reports:\n', error]))
+                        raise StartException("The host '%s' reports:\n%s" % (host, error))
                     if output:
                         if output.find("dn't") != -1:
                             rospy.logwarn("Warning while start '%s': %s", name, output)
@@ -186,7 +187,7 @@ class StartHandler(object):
                 else:
                     if error:
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
-                        raise StartException(''.join(['The host "', host, '" reports:\n', error]))
+                        raise StartException("The host '%s' reports:\n%s" % (host, error))
             except nm.AuthenticationRequest as e:
                 raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, {'host': host, 'package': package, 'binary': binary, 'name': name, 'args': args, 'masteruri': masteruri, 'use_nmd': use_nmd, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw, 'path': path})
 
