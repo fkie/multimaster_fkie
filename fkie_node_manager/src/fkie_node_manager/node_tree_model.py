@@ -927,7 +927,7 @@ class HostItem(GroupItem):
         self.sysmon_state = False
         self.local = local
 
-    def __hash__(self) -> int:
+    def __hash__(self):
         str = self._masteruri + self._host
         hash_str = hashlib.md5(str.encode()).hexdigest()
         return int(hash_str, base=16)
