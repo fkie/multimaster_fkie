@@ -136,6 +136,7 @@ class StartHandler(object):
             master.getUri(rospy.get_name())
         except Exception:
             # run a roscore
+            screen.test_screen()
             master_host = get_hostname(masteruri)
             if cls.is_local(master_host, True):
                 print("Start ROS-Master with %s ..." % masteruri)

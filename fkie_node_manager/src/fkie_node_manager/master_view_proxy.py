@@ -33,7 +33,7 @@
 
 
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import QRegExp, Qt, QTimer, Signal
+from python_qt_binding.QtCore import QRegExp, Qt, QTimer, QSize, Signal
 from python_qt_binding.QtGui import QKeySequence  # , QBrush, QPen
 from rosgraph.names import is_legal_name
 import getpass
@@ -58,6 +58,7 @@ from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring
 from fkie_node_manager_daemon.host import get_hostname, get_port
 from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon.version import detect_version
 from .common import package_name
 from .detailed_msg_box import MessageBox, DetailedError
@@ -78,10 +79,10 @@ from .supervised_popen import SupervisedPopen
 from .topic_list_model import TopicModel, TopicItem, TopicGroupItem
 import fkie_node_manager as nm
 try:
-    from python_qt_binding.QtGui import QAction, QFileDialog, QMenu, QShortcut, QWidget
+    from python_qt_binding.QtGui import QAction, QFileDialog, QFrame, QMenu, QShortcut, QWidget
     from python_qt_binding.QtGui import QApplication, QVBoxLayout
 except Exception:
-    from python_qt_binding.QtWidgets import QAction, QFileDialog, QMenu, QShortcut, QWidget
+    from python_qt_binding.QtWidgets import QAction, QFileDialog, QFrame, QMenu, QShortcut, QWidget
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout
 
 
@@ -170,10 +171,12 @@ class MasterViewProxy(QWidget):
         self.__last_info_text = None
         self.__use_sim_time = False
         self.__current_user = nm.settings().host_user(self.mastername)
+        self.__daemon_user = ''
         self.__robot_icons = []
         self.__current_robot_icon = None
         self.__current_parameter_robot_icon = ''
         self.__republish_params = {}  # { topic : params, created by dialog}
+        self.__current_icon_height = 8
         self.__last_selection = 0
         self.__last_node_activation = 0
         self.__last_question_start_nmd = 0
@@ -197,6 +200,9 @@ class MasterViewProxy(QWidget):
         self._timer_nmd_request = QTimer()
         self._timer_nmd_request.timeout.connect(self._sysmon_update_callback)
         self._timer_nmd_request.setSingleShot(True)
+        self._ts_last_diagnostic_request = 0
+        self._has_diagnostics = False
+        self.has_master_sync = False
 
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
@@ -422,6 +428,7 @@ class MasterViewProxy(QWidget):
 #        self._shortcut_copy.activated.connect(self.on_copy_c_pressed)
         self._shortcut_copy = QShortcut(QKeySequence(self.tr("Ctrl+X", "copy selected alternative values to clipboard")), self)
         self._shortcut_copy.activated.connect(self.on_copy_x_pressed)
+        self.ui.controlNodesFrame.resizeEvent = self.resizeEventButtons
 
 #    print "================ create", self.objectName()
 #
@@ -450,6 +457,43 @@ class MasterViewProxy(QWidget):
             self.stop_nodes_by_name(self.__echo_topics_dialogs, only_local=False)
             self.__echo_topics_dialogs.clear()
 
+    def resizeEventButtons(self, event):
+        ch_height = 0
+        increment = 4
+        min_spacer_size = 8
+        const_size = 10 * self.ui.verticalLayout_4.spacing() + min_spacer_size + self.ui.line2_2.size().height() + self.ui.line1_2.size().height()
+        button_size = 9 * (self.ui.startButton.size().height() - self.__current_icon_height)
+        while (ch_height + increment) * 10 + const_size + button_size <= self.ui.controlNodesFrame.size().height() and ch_height < 32:
+            ch_height += increment
+        if ch_height < 8:
+            ch_height = 8
+        if ch_height != self.__current_icon_height:
+            self.__current_icon_height = ch_height
+            new_size = QSize(self.__current_icon_height, self.__current_icon_height)
+            self.ui.startButton.setIconSize(new_size)
+            self.ui.stopButton.setIconSize(new_size)
+            self.ui.ioButton.setIconSize(new_size)
+            self.ui.logButton.setIconSize(new_size)
+            self.ui.logDeleteButton.setIconSize(new_size)
+            self.ui.dynamicConfigButton.setIconSize(new_size)
+            self.ui.editConfigButton.setIconSize(new_size)
+            self.ui.editRosParamButton.setIconSize(new_size)
+            self.ui.closeCfgButton.setIconSize(new_size)
+
+            self.ui.echoTopicButton.setIconSize(new_size)
+            self.ui.hzTopicButton.setIconSize(new_size)
+            self.ui.hzSshTopicButton.setIconSize(new_size)
+            self.ui.pubTopicButton.setIconSize(new_size)
+            self.ui.pubStopTopicButton.setIconSize(new_size)
+
+            self.ui.callServiceButton.setIconSize(new_size)
+            self.ui.getParameterButton.setIconSize(new_size)
+            self.ui.addParameterButton.setIconSize(new_size)
+            self.ui.deleteParameterButton.setIconSize(new_size)
+            self.ui.saveParameterButton.setIconSize(new_size)
+            self.ui.transferParameterButton.setIconSize(new_size)
+        QFrame.resizeEvent(self, event)
+
     @property
     def current_user(self):
         return self.__current_user
@@ -460,8 +504,20 @@ class MasterViewProxy(QWidget):
         nm.settings().set_host_user(self.mastername, user)
 
     @property
+    def daemon_user(self):
+        return self.__daemon_user
+
+    @daemon_user.setter
+    def daemon_user(self, user):
+        self.__daemon_user = user
+        if user != self.current_user:
+            self.message_frame.show_question(MessageFrame.TYPE_NMD_RESTART, "node_manager_daemon is running with different user: '%s'.\nMany features may not function properly!\n\nRestart with user '%s'?\n\nNote: you should first close all open editors related to this host!" % (user, self.current_user), MessageData(self.masteruri))
+        else:
+            self.message_frame.hide_question([MessageFrame.TYPE_NMD_RESTART])
+
+    @property
     def is_local(self):
-        return nm.is_local(get_hostname(self.masteruri))
+        return nm.is_local(get_hostname(self.masteruri), wait=False)
 
     @property
     def online(self):
@@ -581,10 +637,15 @@ class MasterViewProxy(QWidget):
             # only try to get updates from daemon if it is running
             nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
             # self.set_diagnostic_ok('/node_manager_daemon')
-            nm.nmd().version.get_version_threaded(nmdurl.nmduri(self.masteruri))
-            nm.nmd().screen.log_dir_size_threaded(nmdurl.nmduri(self.masteruri))
-            nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
-            nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().version.get_version_threaded(nmd_uri)
+            nm.nmd().screen.log_dir_size_threaded(nmd_uri)
+            nm.nmd().monitor.get_user_threaded(nmd_uri)
+            self.perform_diagnostic_requests(force=True)
+
+    def is_valid_user_master_daemon(self):
+        if self.__daemon_user:
+            return self.__daemon_user == self.current_user
+        return True
 
     def _start_queue(self, queue):
         if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
@@ -637,7 +698,7 @@ class MasterViewProxy(QWidget):
         if self.master_info is not None:
             for _, node in self.master_info.nodes.items():  # _:=name
                 if node.isLocal:
-                    if not remove_system_nodes or not self._is_in_ignore_list(node.name):
+                    if remove_system_nodes or not self._is_in_ignore_list(node.name):
                         result[node.name] = self.master_info.masteruri
         return result
 
@@ -649,7 +710,7 @@ class MasterViewProxy(QWidget):
         :type master_info: :class:`fkie_master_discovery.msg.MasterInfo` <http://docs.ros.org/kinetic/api/fkie_master_discovery/html/modules.html#module-fkie_master_discovery.master_info>
         '''
         if master_info is not None:
-            updated_nodes = self.node_tree_model.update_model_data(master_info.nodes)
+            updated_nodes = self.node_tree_model.update_model_data(master_info.nodes, master_info.masteruri)
             if updated_nodes:
                 for node in updated_nodes:
                     self.main_window.screen_dock.update_node(node)
@@ -822,6 +883,17 @@ class MasterViewProxy(QWidget):
             if nodes:
                 nm.nmd().launch.get_changed_binaries_threaded(grpc_url, list(nodes.keys()))
 
+    def perform_diagnostic_requests(self, force=False):
+        now = time.time()
+        if self._has_nmd and (self._has_diagnostics or force) and now - self._ts_last_diagnostic_request >= 1.0:
+            nmd_uri = nmdurl.nmduri(self.masteruri)
+            nm.nmd().monitor.get_system_diagnostics_threaded(nmd_uri)
+            if not self.has_master_sync:
+                nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
+            elif nmdurl.equal_uri(self.masteruri, self.main_window.getMasteruri()):
+                nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
+            self._ts_last_diagnostic_request = now
+
     def get_files_for_change_check(self):
         result = {}
         for path, cfg in self.__configs.items():
@@ -856,7 +928,7 @@ class MasterViewProxy(QWidget):
             pass
 
     def question_restart_changed_binary(self, changed):
-        self.message_frame.show_question(MessageFrame.TYPE_BINARY, 'Binary changed of node:<br>%s<br>restart node?' % (HTMLDelegate.toHTML(changed.name)), MessageData(changed))
+        self.message_frame.show_question(MessageFrame.TYPE_BINARY, 'Binaries changed, restart nodes?', MessageData(changed.name, [changed]))
 
     def question_reload_changed_file(self, changed, affected):
         _filename, file_extension = os.path.splitext(changed)
@@ -964,7 +1036,7 @@ class MasterViewProxy(QWidget):
         :type rosconfig: :class:`fkie_node_manager.launch_config.LaunchConfig`
         '''
         hosts = dict()  # dict(addr : dict(node : [config]) )
-        addr = nm.nameres().address(self.masteruri)
+        addr = get_hostname(self.masteruri)
         masteruri = self.masteruri
         for n in rosconfig.nodes:
             if n.machine_name and not n.machine_name == 'localhost':
@@ -972,6 +1044,8 @@ class MasterViewProxy(QWidget):
                     raise Exception(''.join(["ERROR: unknown machine [", n.machine_name, "]"]))
                 addr = rosconfig.machines[n.machine_name].address
                 masteruri = nm.nameres().masteruri(n.machine_name)
+                if masteruri is None:
+                    masteruri = nm.nameres().masteruribyaddr(n.machine_name)
             node = roslib.names.ns_join(n.namespace, n.name)
             if (masteruri, addr) not in hosts:
                 hosts[(masteruri, addr)] = dict()
@@ -1016,7 +1090,7 @@ class MasterViewProxy(QWidget):
                     self._start_queue(self._progress_queue)
         masteruri = self.masteruri
         host = get_hostname(masteruri)
-        host_addr = nm.nameres().address(host)
+        host_addr = host
         if host_addr is None:
             host_addr = host
         new_configs = []
@@ -1102,7 +1176,6 @@ class MasterViewProxy(QWidget):
                 rospy.logwarn("CFG: unsupported config type: %s" % str(cfg))
                 continue
             if cfg.startswith(url):
-                print ("remove config", url, cfg)
                 self.remove_cfg_from_model(cfg)
                 del self.__configs[cfg]
             else:
@@ -1182,6 +1255,8 @@ class MasterViewProxy(QWidget):
         if (diagnostic_status.name == '/master_sync'):
             if get_hostname(self.masteruri) != diagnostic_status.hardware_id:
                 return False
+        if diagnostic_status.name not in ['/node_manager_daemon']:
+            self._has_diagnostics = True
         nodes = self.getNode(diagnostic_status.name)
         for node in nodes:
             node.append_diagnostic_status(diagnostic_status)
@@ -1357,7 +1432,7 @@ class MasterViewProxy(QWidget):
             self.on_service_selection_changed(None, None, True)
 
     def on_host_inserted(self, item):
-        if item == (self.masteruri, nm.nameres().hostname(get_hostname(self.masteruri))):
+        if item == (self.masteruri, get_hostname(self.masteruri)):
             index = self.node_tree_model.indexFromItem(item)
             model_index = self.node_proxy_model.mapFromSource(index)
             if model_index.isValid():
@@ -1373,7 +1448,7 @@ class MasterViewProxy(QWidget):
 
     def _create_html_list(self, title, items, list_type=None, name=''):
         '''
-        :param list_type: LAUNCH, TOPIC, NODE, SERVICE
+        :param list_type: LAUNCH, TOPIC, NODE, SERVICE, LOG
         :type list_type: str
         '''
         result = ''
@@ -1387,6 +1462,9 @@ class MasterViewProxy(QWidget):
                 item = i
                 # reduce the displayed name
                 item_name = i
+                if list_type in ['LOG']:
+                    item = i.name
+                    item_name = i.name
                 if name:
                     if item_name.startswith(name):
                         item_name = item_name.replace('%s%s' % (name, roslib.names.SEP), '~', 1)
@@ -1395,7 +1473,7 @@ class MasterViewProxy(QWidget):
                         item_name = item_name.replace(ns, '', 1)
                 if list_type in ['NODE']:
                     item = '<tr>'
-                    item += '<td><a href="node://%s%s">%s</a><td>' % (self.mastername, i, item_name)
+                    item += '<td><a href="node://%s%s">%s</a></td>' % (self.mastername, i, item_name)
                     item += '</tr>'
                 elif list_type in ['TOPIC_PUB', 'TOPIC_SUB']:
                     # determine the count of publisher or subscriber
@@ -1415,40 +1493,58 @@ class MasterViewProxy(QWidget):
                     # add the count
                     if count is not None:
                         item = '<tr>'
-                        item += '<td><span style="color:gray;">%d</span><td>' % (count)
-                        item += '<td><a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a><td>' % (self.mastername, i)
-                        item += '<td><a href="topic://%s">%s</a><td>' % (i, item_name)
+                        item += '<td><span style="color:gray;">%d</span></td>' % (count)
+                        item += '<td><a href="topicecho://%s%s"><span style="color:gray;"><i>echo</i></span></a></td>' % (self.mastername, i)
+                        item += '<td><a href="topic://%s">%s</a></td>' % (i, item_name)
                         #sekkyumu_topic_echo_24 = nm.settings().icon_path('sekkyumu_topic_echo_24.png')
                         #item += '<td><a href="topicecho://%s%s" title="Show the content of the topic"><img src="%s" alt="echo"></a></td>' % (self.mastername, i, sekkyumu_topic_echo_24)
                         item += '</tr>'
                     else:
                         item = '<tr>'
-                        item += '<td colspan="3" style="float:left"><span style="color:red;">!sync </span><a>%s</a><td>' % (item_name)
+                        item += '<td colspan="3" style="float:left"><span style="color:red;">!sync </span><a>%s</a></td>' % (item_name)
                         item += '</tr>'
                 elif list_type == 'SERVICE':
                     try:
                         srv = self.__master_info.getService(i)
                         if srv is not None and name in srv.serviceProvider:
                             item = '<tr>'
-                            item += '<td><a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a><td>' % (self.mastername, i)
-                            item += '<td><a href="service://%s%s">%s</a><td>' % (self.mastername, i, item_name)
+                            item += '<td><a href="servicecall://%s%s"><span style="color:gray;"><i>call</i></span></a></td>' % (self.mastername, i)
+                            item += '<td><a href="service://%s%s">%s</a></td>' % (self.mastername, i, item_name)
                             item += '</tr>'
                         else:
                             item = '<tr>'
-                            item += '<td colspan="2" style="float:left"><span style="color:red;">!sync </span>%s<td>' % (item_name)
+                            item += '<td colspan="2" style="float:left"><span style="color:red;">!sync </span>%s</td>' % (item_name)
                             item += '</tr>'
                     except Exception:
                         item = '<tr>'
-                        item += '<td colspan="2" style="float:left"><span style="color:red;">?sync </span>%s<td>' % (item_name)
+                        item += '<td colspan="2" style="float:left"><span style="color:red;">?sync </span>%s</td>' % (item_name)
                         item += '</tr>'
                 elif list_type == 'LAUNCH':
                     if i in self.__configs and self.__configs[i].global_param_done:
                         item = '<tr>'
                         item_ref = '<a href="%s">%s</a>' % (i.replace('grpc://', 'open-edit://'), os.path.basename(item_name))
-                        item += '<td>%s<td>' % (item_ref)
+                        item += '<td>%s</td>' % (item_ref)
                         pkg, _path = nm.nmd().file.package_name(i)
-                        item += '<td><i>%s</i><td>' % (os.path.dirname(item_name) if pkg is None else pkg)
+                        item += '<td><i>%s</i></td>' % (os.path.dirname(item_name) if pkg is None else pkg)
                         item += '</tr>'
+                elif list_type == 'LOG':
+                    node_host = self.getHostFromNode(i)
+                    if nm.is_local(node_host, wait=False):
+                        roslogfile = screen.get_ros_logfile(node=i.name)
+                        logfile = screen.get_logfile(node=i.name)
+                    else:
+                        roslogfile = '%s@%s' % (i.name, node_host)
+                        logfile = '%s@%s' % (i.name, node_host)
+                    item = '<tr>'
+                    item += '<td colspan="2" style="float:left"><span style="color:grey;">roslog: </span></td>'
+                    item_ref = '<a href="%s">%s</a>' % ('show-roslog://%s@%s' % (i.name, node_host), roslogfile)
+                    item += '<td>%s</td>' % (item_ref)
+                    item += '</tr>'
+                    item += '<tr>'
+                    item += '<td colspan="2" style="float:left"><span style="color:grey;">screen: </span></td>'
+                    item_ref = '<a href="%s">%s</a>' % ('show-log://%s@%s' % (i.name, node_host), logfile)
+                    item += '<td>%s</td>' % (item_ref)
+                    item += '</tr>'
                 result += item
             result += '</table>\n<br>'
         return result
@@ -1603,7 +1699,7 @@ class MasterViewProxy(QWidget):
                 text += '<dt><font color="#339900"><b>synchronized</b></font></dt>'
             if node.node_info.pid is None and node.node_info.uri is not None:
                 if not node.node_info.isLocal:
-                    text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running</b></font>'
+                    text += '<dt><font color="#FF9900"><b>remote nodes will not be ping, so they are always marked running.<br>Do all nodes have the same ROS_MASTER_URI or node uri?</b></font>'
                 else:
                     text += '<dt><font color="#CC0000"><b>the node does not respond: </b></font>'
                 text += ' <a href="unregister-node://%s">unregister</a></dt>' % node.name
@@ -1649,6 +1745,7 @@ class MasterViewProxy(QWidget):
             # set loaunch file paths
             text += self._create_html_list('<br>Launch Files:', launches, 'LAUNCH')
             # text += self._create_html_list('Default Configurations:', default_cfgs, 'NODE')
+            text += self._create_html_list('<br>Logs:', [node], 'LOG')
 #      text += '<dt><a href="copy-log-path://%s">copy log path to clipboard</a></dt>'%node.name
         return text
 
@@ -1877,13 +1974,14 @@ class MasterViewProxy(QWidget):
 
     def nodesFromIndexes(self, indexes, recursive=True):
         result = []
+        regex = QRegExp(self.ui.nodeFilterInput.text())
         for index in indexes:
             if index.column() == 0:
                 model_index = self.node_proxy_model.mapToSource(index)
                 item = self.node_tree_model.itemFromIndex(model_index)
                 res = self._nodesFromItems(item, recursive)
                 for r in res:
-                    if r not in result:
+                    if r not in result and (not regex.pattern() or regex.indexIn(r.name) != -1):
                         result.append(r)
         return result
 
@@ -2319,24 +2417,32 @@ class MasterViewProxy(QWidget):
 
     def stop_node(self, node, force=False):
         if node is not None and node.uri is not None and (not self._is_in_ignore_list(node.name) or force):
+            success = False
             try:
                 rospy.loginfo("Stop node '%s'[%s]", utf8(node.name), utf8(node.uri))
                 socket.setdefaulttimeout(10)
                 p = xmlrpcclient.ServerProxy(node.uri)
-                p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
-                if node.kill_on_stop and node.pid:
-                    # wait kill_on_stop is an integer
-                    if isinstance(node.kill_on_stop, (int, float)):
-                        time.sleep(float(node.kill_on_stop) / 1000.0)
-                    nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
+                (code, statusMessage, ignore) = p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
+                if code == 1:
+                    success = True
+                else:
+                    rospy.logwarn("Error while shutdown node '%s': %s", utf8(node.name), utf8(statusMessage))
             except Exception as e:
-                rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
-                if utf8(e).find(' 111') == 1:
-                    raise DetailedError("Stop error",
-                                        'Error while stop node %s' % node.name,
-                                        utf8(e))
+                err_msg = utf8(e)
+                if ' 111' in err_msg:
+                    # this error occurs sometimes after shutdown node
+                    rospy.logdebug("Error while stop node '%s': %s", utf8(node.name), utf8(e))
+                else:
+                    rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
             finally:
                 socket.setdefaulttimeout(None)
+            if not success:
+                if node.pid and node.name != '/node_manager_daemon':
+                    rospy.loginfo("Try to kill process %d of the node: %s", node.pid, utf8(node.name))
+                    # wait kill_on_stop is an integer
+                    if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
+                        time.sleep(float(node.kill_on_stop) / 1000.0)
+                    nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
         elif isinstance(node, NodeItem) and node.is_ghost:
             # since for ghost nodes no info is available, emit a signal to handle the
             # stop message in other master_view_proxy
@@ -2621,16 +2727,28 @@ class MasterViewProxy(QWidget):
                     ret = MessageBox.question(self, "Show IO", "You are going to open the IO of " + utf8(len(selectedNodes)) + " nodes at once\nContinue?", buttons=MessageBox.Ok | MessageBox.Cancel)
                     ret = (ret == MessageBox.Ok)
                 if ret:
+                    queue = self._progress_queue_prio
+                    # we use normal queue, if there are not a lot of processes
+                    if self._progress_queue.count() < 5:
+                        queue = self._progress_queue
                     key_mod = QApplication.keyboardModifiers()
-                    if activated and (key_mod & Qt.ShiftModifier or key_mod & Qt.ControlModifier):
+                    use_log_widget = nm.settings().use_internal_log_widget
+                    if activated and (key_mod & Qt.ShiftModifier):
                         # show ROS log if shift or control was pressed while activating
-                        for node in selectedNodes:
-                            self.main_window.open_screen_dock(self.masteruri, screen_name='', nodename=node.name, user=self.current_user)
+                        if use_log_widget or key_mod & Qt.ControlModifier:
+                            for node in selectedNodes:
+                                self.main_window.open_screen_dock(self.masteruri, screen_name='', nodename=node.name, user=self.current_user)
+                        else:
+                            for node in selectedNodes:
+                                queue.add2queue(utf8(uuid.uuid4()),
+                                                'show log of %s' % node.name,
+                                                nm.starter().openLog,
+                                                {'nodename' : node.name,
+                                                'host': self.getHostFromNode(node),
+                                                'user': self.current_user,
+                                                'only_screen': False
+                                                })
                     else:
-                        queue = self._progress_queue_prio
-                        # we use normal queue, if there are not a lot of processes
-                        if self._progress_queue.count() < 5:
-                            queue = self._progress_queue
                         for node in selectedNodes:
                             queue.add2queue(utf8(uuid.uuid4()),
                                             'show IO of %s' % node.name,
@@ -2638,13 +2756,13 @@ class MasterViewProxy(QWidget):
                                             {'node': node.name,
                                             'grpc_url': self._grpc_from_node(node),
                                             'auto_item_request': False,
-                                            'use_log_widget': activated,
+                                            'use_log_widget': activated and (use_log_widget or key_mod & Qt.ControlModifier),
                                             'user': self.current_user,
                                             'pw': None,
                                             'items': [],
                                             'use_nmd': self._has_nmd
                                             })
-                        self._start_queue(queue)
+                    self._start_queue(queue)
             else:
                 self.on_show_all_screens()
         finally:
@@ -2753,6 +2871,18 @@ class MasterViewProxy(QWidget):
             MessageBox.warning(self, "Show log error",
                                'Error while show Log',
                                utf8(e))
+
+    def show_log(self, nodename, host, roslog=True):
+        self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
+                                            'show log of %s' % nodename,
+                                            nm.starter().openLog,
+                                            {'nodename' : nodename,
+                                             'host': host,
+                                             'user': self.current_user,
+                                             'only_screen': not roslog,
+                                             'only_roslog': roslog
+                                            })
+        self._start_queue(self._progress_queue_prio)
 
     def on_log_path_copy(self):
         selectedNodes = self.nodesFromIndexes(self.ui.nodeTreeView.selectionModel().selectedIndexes())
@@ -3590,17 +3720,42 @@ class MasterViewProxy(QWidget):
             except Exception as err:
                 rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
                 MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+        elif questionid == MessageFrame.TYPE_NMD_RESTART:
+            try:
+                # start node manager daemon if not already running
+                rospy.loginfo("stop node manager daemon for %s", self.masteruri)
+                self.stop_nodes_by_name(['node_manager_daemon'])
+                host_addr = nm.nameres().address(self.masteruri)
+                rospy.loginfo("start node manager daemon for %s", self.masteruri)
+                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                               'start node_manager_daemon for %s' % host_addr,
+                                               nm.starter().runNodeWithoutConfig,
+                                               {'host': host_addr,
+                                                'package': 'fkie_node_manager_daemon',
+                                                'binary': 'node_manager_daemon',
+                                                'name': 'node_manager_daemon',
+                                                'args': [],
+                                                'masteruri': self.masteruri,
+                                                'use_nmd': False,
+                                                'auto_pw_request': False,
+                                                'user': self.current_user
+                                               })
+                self._start_queue(self._progress_queue)
+            except Exception as err:
+                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
+                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))            
         elif questionid == MessageFrame.TYPE_BINARY:
             try:
-                self.stop_nodes_by_name([data.data.name])
-                if data.data.next_start_cfg:
-                    self.start_node(data.data, force=True, config=data.data.next_start_cfg)
-                else:
-                    self.start_nodes([data.data], force=True)
-                try:
-                    del self._changed_binaries[data.data.name]
-                except KeyError:
-                    pass
+                self.stop_nodes_by_name([node.name for node in data.data_list])
+                for node in data.data_list:
+                    if node.next_start_cfg:
+                        self.start_node(node, force=True, config=node.next_start_cfg)
+                    else:
+                        self.start_nodes([node], force=True)
+                    try:
+                        del self._changed_binaries[node.name]
+                    except KeyError:
+                        pass
             except Exception as err:
                 rospy.logwarn("Error while restart nodes %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Restart nodes", data.data, '%s' % utf8(err))

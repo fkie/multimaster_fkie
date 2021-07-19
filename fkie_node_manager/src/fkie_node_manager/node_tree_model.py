@@ -124,7 +124,7 @@ class GroupItem(QStandardItem):
         self._re_cap_nodes = dict()
         self._is_group = is_group
         self._state = NodeItem.STATE_OFF
-        self.diagnostic_array = []
+        self.diagnostic_level = 0
         self.is_system_group = name == 'SYSTEM'
         self._clearup_mark_delete = False
 
@@ -242,7 +242,7 @@ class GroupItem(QStandardItem):
                 # create nodes for each group
                 nodes = descr['nodes']
                 if nodes:
-                    groupItem = self.get_group_item(roslib.names.ns_join(ns, group))
+                    groupItem = self.get_group_item(roslib.names.ns_join(ns, group), nocreate=False)
                     groupItem.descr_name = group
                     if descr['type']:
                         groupItem.descr_type = descr['type']
@@ -433,7 +433,7 @@ class GroupItem(QStandardItem):
             if isinstance(item, GroupItem):
                 if item == lns and not item._clearup_mark_delete:
                     if rns:
-                        return item.get_group_item(rns, is_group)
+                        return item.get_group_item(rns, is_group, nocreate)
                     return item
                 elif item > lns and not nocreate:
                     items = []
@@ -443,7 +443,7 @@ class GroupItem(QStandardItem):
                     items.append(cfgitem)
                     self.insertRow(i, items)
                     if rns:
-                        return newItem.get_group_item(rns, is_group)
+                        return newItem.get_group_item(rns, is_group, nocreate)
                     return newItem
         if nocreate:
             return None
@@ -454,7 +454,7 @@ class GroupItem(QStandardItem):
         items.append(cfgitem)
         self.appendRow(items)
         if rns:
-            return newItem.get_group_item(rns, is_group)
+            return newItem.get_group_item(rns, is_group, nocreate)
         return newItem
 
     def add_node(self, node, cfg=None):
@@ -470,13 +470,13 @@ class GroupItem(QStandardItem):
             for _, group_list in groups.items():
                 for group_name in group_list:
                     # insert in the group
-                    groupItem = self.get_group_item(group_name, True)
+                    groupItem = self.get_group_item(group_name, is_group=True)
                     groupItem.add_node(node, cfg)
         else:
             group_item = self
             if type(group_item) == HostItem:
                 # insert in the group
-                group_item = self.get_group_item(namespace(node.name), False)
+                group_item = self.get_group_item(namespace(node.name), is_group=False)
             # insert in order
             new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
             group_item._add_row_sorted(new_item_row)
@@ -517,11 +517,12 @@ class GroupItem(QStandardItem):
             item = self.child(i)
             if isinstance(item, NodeItem):
                 # set the running state of the node to None
-                if fixed_node_names is not None and item.name not in fixed_node_names:
-                    item.set_node_info(NodeInfo(item.name, item.node_info.masteruri))
+                if fixed_node_names is not None:
+                    if item.name not in fixed_node_names:
+                        item.set_node_info(NodeInfo(item.name, item.node_info.masteruri))
                 if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
                     removed = True
-                    self.removeRow(i)
+                    self._remove_row(i)
             else:  # if type(item) == GroupItem:
                 removed = item._clearup(fixed_node_names) or removed
         if self.rowCount() == 0 and self.parent_item is not None:
@@ -558,7 +559,7 @@ class GroupItem(QStandardItem):
                     rows = self._take_node_rows(item)
                     if rows:
                         rows2add = rows2add + rows
-                        self.removeRow(i)
+                        self._remove_row(i)
                 else:
                     item._remove_marked_groups()
         for row in rows2add:
@@ -579,8 +580,19 @@ class GroupItem(QStandardItem):
         for i in range(self.rowCount()):
             item = self.child(i)
             if type(item) == GroupItem and item == name and item.rowCount() == 0:
-                self.removeRow(i)
+                self._remove_row(i)
                 return  # we assume only one group with same name can exists
+
+    def _remove_row(self, index):
+        item = self.child(index)
+        item.parent_item = None
+        try:
+            cellitem = self.child(index, 1)
+            cellitem.parent_item = None
+            cellitem.item = None
+        except Exception as e:
+            rospy.logdebug_throttle(10, utf8(e))
+        self.removeRow(index)
 
     def reset_remote_launched_nodes(self):
         self._remote_launched_nodes_updated = False
@@ -590,7 +602,7 @@ class GroupItem(QStandardItem):
             return self._remote_launched_nodes_updated
         return True
 
-    def update_running_state(self, nodes):
+    def update_running_state(self, nodes, create_nodes=True):
         '''
         Updates the running state of the nodes given in a dictionary.
 
@@ -599,22 +611,26 @@ class GroupItem(QStandardItem):
         :return: a list with :class:`fkie_master_discovery.NodeInfo` items, which are changed their PID or URI.
         '''
         updated_nodes = []
-        for (name, node) in nodes.items():
-            # get the node items
-            items = self.get_node_items_by_name(name)
-            if items:
-                for item in items:
-                    # update the node item
-                    run_changed = item.set_node_info(node)
-                    if run_changed:
-                        updated_nodes.append(node)
-            else:
-                # create the new node
-                self.add_node(node)
-                updated_nodes.append(node)
-            if self._has_remote_launched_nodes:
-                self._remote_launched_nodes_updated = True
-        self.clearup(list(nodes.keys()))
+        if isinstance(nodes, dict):
+            for (name, node) in nodes.items():
+                # get the node items
+                items = self.get_node_items_by_name(name)
+                if items:
+                    for item in items:
+                        # update the node item
+                        run_changed = item.set_node_info(node)
+                        #updated_nodes.append(node)
+                        if run_changed:
+                            updated_nodes.append(node)
+                elif create_nodes:
+                    # create the new node
+                    self.add_node(node)
+                    updated_nodes.append(node)
+                if self._has_remote_launched_nodes:
+                    self._remote_launched_nodes_updated = True
+            self.clearup(list(nodes.keys()))
+        elif isinstance(nodes, list):
+            self.clearup(nodes)
         return updated_nodes
 
     def get_nodes_running(self):
@@ -669,7 +685,7 @@ class GroupItem(QStandardItem):
         has_off = False
         has_duplicate = False
         has_ghosts = False
-        diag_level = 0
+        self.diagnostic_level = 0
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, (GroupItem, NodeItem)):
@@ -683,12 +699,6 @@ class GroupItem(QStandardItem):
                     has_off = True
                 elif item.state == NodeItem.STATE_RUN:
                     has_running = True
-                    if item.diagnostic_array and item.diagnostic_array[-1].level > 0:
-                        if diag_level == 0:
-                            diag_level = item.diagnostic_array[-1].level
-                        elif item.diagnostic_array[-1].level == 2:
-                            diag_level = 2
-                        self.diagnostic_array = item.diagnostic_array
                 elif item.state == NodeItem.STATE_GHOST:
                     has_ghosts = True
                 elif item.state == NodeItem.STATE_DUPLICATE:
@@ -696,28 +706,25 @@ class GroupItem(QStandardItem):
                 elif item.state == NodeItem.STATE_PARTS:
                     has_running = True
                     has_off = True
-        diag_icon = None
-        if diag_level > 0:
-            diag_icon = NodeItem._diagnostic_level2icon(diag_level)
-        if has_duplicate:
-            self._state = NodeItem.STATE_DUPLICATE
-            self.setIcon(nm.settings().icon('imacadam_stop.png'))
-        elif has_ghosts:
-            self._state = NodeItem.STATE_GHOST
-            self.setIcon(nm.settings().icon('state_ghost.png'))
-        elif has_running and has_off:
-            if diag_icon is not None:
-                self.setIcon(diag_icon)
-            else:
+                if item.state == NodeItem.STATE_RUN or isinstance(item, GroupItem):
+                    if item.diagnostic_level > self.diagnostic_level:
+                        self.diagnostic_level = item.diagnostic_level
+        if self.diagnostic_level > 0:
+            self.setIcon(NodeItem._diagnostic_level2icon(self.diagnostic_level))
+        else:
+            if has_duplicate:
+                self._state = NodeItem.STATE_DUPLICATE
+                self.setIcon(nm.settings().icon('imacadam_stop.png'))
+            elif has_ghosts:
+                self._state = NodeItem.STATE_GHOST
+                self.setIcon(nm.settings().icon('state_ghost.png'))
+            elif has_running and has_off:
                 self._state = NodeItem.STATE_PARTS
                 self.setIcon(nm.settings().icon('state_part.png'))
-        elif not has_running:
-            self._state = NodeItem.STATE_OFF
-            self.setIcon(nm.settings().icon('state_off.png'))
-        elif not has_off and has_running:
-            if diag_icon is not None:
-                self.setIcon(diag_icon)
-            else:
+            elif not has_running:
+                self._state = NodeItem.STATE_OFF
+                self.setIcon(nm.settings().icon('state_off.png'))
+            elif not has_off and has_running:
                 self._state = NodeItem.STATE_RUN
                 self.setIcon(nm.settings().icon('state_run.png'))
         if self.parent_item is not None:
@@ -908,24 +915,17 @@ class HostItem(GroupItem):
         :param bool local: is this host the localhost where the node_manager is running.
         '''
         self._has_remote_launched_nodes = False
-        name = self.create_host_description(master_entry)
         self._masteruri = masteruri
         self._host = address
         self._mastername = address
         self._master_entry = master_entry
-        self._local = local
+        self._local = None
         self._diagnostics = []
+        name = self.create_host_description(master_entry)
         GroupItem.__init__(self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
-        image_file = nm.settings().robot_image_file(name)
-        if QFile.exists(image_file):
-            self.setIcon(QIcon(image_file))
-        else:
-            if local:
-                self.setIcon(nm.settings().icon('crystal_clear_miscellaneous.png'))
-            else:
-                self.setIcon(nm.settings().icon('remote.png'))
         self.descr_type = self.descr_name = self.descr = ''
         self.sysmon_state = False
+        self.local = local
 
     def __hash__(self) -> int:
         str = self._masteruri + self._host
@@ -938,7 +938,8 @@ class HostItem(GroupItem):
 
     @property
     def hostname(self):
-        return nm.nameres().hostname(self._host)
+        # return nm.nameres().hostname(self._host)
+        return self._host
 
     @property
     def addresses(self):
@@ -958,6 +959,20 @@ class HostItem(GroupItem):
     @property
     def local(self):
         return self._local
+
+    @local.setter
+    def local(self, islocal):
+        if self._local != islocal:
+            self._local = islocal
+            name = self.create_host_description(self._master_entry)
+            image_file = nm.settings().robot_image_file(name)
+            if QFile.exists(image_file):
+                self.setIcon(QIcon(image_file))
+            else:
+                if self._local:
+                    self.setIcon(nm.settings().icon('crystal_clear_miscellaneous.png'))
+                else:
+                    self.setIcon(nm.settings().icon('remote.png'))
 
     @property
     def diagnostics(self):
@@ -1414,6 +1429,12 @@ class NodeItem(QStandardItem):
         else:
             return nm.settings().icon('state_diag_other.png')
 
+    @property
+    def diagnostic_level(self):
+        if self.diagnostic_array:
+            return self.diagnostic_array[-1].level
+        return 0
+
     def _on_kill_param_values(self, masteruri, code, msg, params):
         if code == 1:
             # assumption: all parameter are 'kill_on_stop' parameter
@@ -1572,7 +1593,7 @@ class NodeItem(QStandardItem):
                 if (type(item) == NodeItem) and item.name == self.name:
                     row = self.parent_item.takeRow(i)
                     break
-            group_item = self.parent_item.get_group_item(namespace(item.name), False)
+            group_item = self.parent_item.get_group_item(namespace(item.name), is_group=False)
             group_item._add_row_sorted(row)
             group_item.updateIcon()
 
@@ -1735,19 +1756,19 @@ class NodeTreeModel(QStandardItemModel):
         if masteruri is None:
             return None
         master_entry = nm.nameres().get_master(masteruri, address)
-        resaddr = nm.nameres().hostname(address)
-        host = (masteruri, resaddr)
-        # [address] + nm.nameres().resolve_cached(address)
+        host = (masteruri, address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
                  nmdurl.equal_uri(self._local_masteruri, masteruri))
         # find the host item by address
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
-            if root.child(i) == master_entry:
-                return root.child(i)
-            elif root.child(i) > host:
+            host_item = root.child(i)
+            if host_item == master_entry:
+                host_item.local = local
+                return host_item
+            elif host_item > host:
                 items = []
-                hostItem = HostItem(masteruri, resaddr, local, master_entry)
+                hostItem = HostItem(masteruri, address, local, master_entry)
                 items.append(hostItem)
                 cfgitem = CellItem(masteruri, hostItem)
                 items.append(cfgitem)
@@ -1756,7 +1777,7 @@ class NodeTreeModel(QStandardItemModel):
                 self._set_std_capabilities(hostItem)
                 return hostItem
         items = []
-        hostItem = HostItem(masteruri, resaddr, local, master_entry)
+        hostItem = HostItem(masteruri, address, local, master_entry)
         items.append(hostItem)
         cfgitem = CellItem(masteruri, hostItem)
         items.append(cfgitem)
@@ -1765,7 +1786,7 @@ class NodeTreeModel(QStandardItemModel):
         self._set_std_capabilities(hostItem)
         return hostItem
 
-    def update_model_data(self, nodes):
+    def update_model_data(self, nodes, info_masteruri):
         '''
         Updates the model data.
 
@@ -1774,31 +1795,37 @@ class NodeTreeModel(QStandardItemModel):
         '''
         # separate into different hosts
         hosts = dict()
+        muris = []
         addresses = []
         updated_nodes = []
+        local_info = nmdurl.equal_uri(self._local_masteruri, info_masteruri)
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
         for (name, node) in nodes.items():
             addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
-            addresses.append(node.masteruri)
-            host = (node.masteruri, addr)
+            addresses.append(addr)
+            muris.append(node.masteruri)
+            host = self.get_hostitem(node.masteruri, addr)
             if host not in hosts:
                 hosts[host] = dict()
             hosts[host][name] = node
         # update nodes for each host
-        for ((masteruri, host), nodes_filtered) in hosts.items():
-            hostItem = self.get_hostitem(masteruri, host)
+        for (host_item, nodes_filtered) in hosts.items():
             # rename the host item if needed
-            if hostItem is not None:
-                updated_nodes.extend(hostItem.update_running_state(nodes_filtered))
+            if host_item is not None:
+                updated_nodes.extend(host_item.update_running_state(nodes_filtered, local_info))
             # request for all nodes in host the parameter capability_group
-            self._requestCapabilityGroupParameter(hostItem)
+            self._requestCapabilityGroupParameter(host_item)
         # update nodes of the hosts, which are not more exists
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host.masteruri not in addresses:
-                host.update_running_state({})
+            # remove hosts if they are not updated
+            if host.masteruri not in muris:
+               host.update_running_state({}, local_info)
+            # remove hosts which are connected to local master using ROS_MASTER_URI
+            if (not host.local and host.host not in addresses):
+                host.update_running_state({}, local_info)
         self._remove_empty_hosts()
         return updated_nodes
         # update the duplicate state
@@ -1821,10 +1848,7 @@ class NodeTreeModel(QStandardItemModel):
         :param params: The dictionary of parameter names and request result as tuple(code, statusMessage, parameterValue)
         :type params: dict(str : (int, str, str)))
         '''
-        host = nm.nameres().address(masteruri)
-        if host is None:
-            # try with hostname of the masteruri
-            host = get_hostname(masteruri)
+        host = get_hostname(masteruri)
         hostItem = self.get_hostitem(masteruri, host)
         changed = False
         if hostItem is not None and code == 1:
@@ -1851,10 +1875,10 @@ class NodeTreeModel(QStandardItemModel):
                             changed = True
                 else:
                     try:
-                        for group, _ in capabilities[ns].items():
+                        for group, _ in list(capabilities[ns].items()):
                             try:
                                 # remove the config from item, if parameter was not foun on the ROS parameter server
-                                groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group))
+                                groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group), nocreate=True)
                                 if groupItem is not None:
                                     nodeItems = groupItem.get_node_items_by_name(nodename, True)
                                     for item in nodeItems:
@@ -1872,12 +1896,12 @@ class NodeTreeModel(QStandardItemModel):
                     except Exception:
                         pass
             # clearup namespaces to remove empty groups
-            for ns in capabilities.keys():
+            for ns in list(capabilities.keys()):
                 if ns and ns not in available_ns:
                     del capabilities[ns]
                     changed = True
                 else:
-                    for group in capabilities[ns].keys():
+                    for group in list(capabilities[ns].keys()):
                         if group and group not in available_groups:
                             del capabilities[ns][group]
                             changed = True
@@ -1885,24 +1909,18 @@ class NodeTreeModel(QStandardItemModel):
             if changed:
                 if capabilities:
                     hostItem.add_capabilities('', capabilities, hostItem.masteruri)
-                hostItem.clearup()
+            hostItem.clearup()
         else:
             rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
 
     def update_system_diagnostics(self, masteruri, diagnostics):
-        host = nm.nameres().address(masteruri)
-        if host is None:
-            # try with hostname of the masteruri
-            host = get_hostname(masteruri)
+        host = get_hostname(masteruri)
         host_item = self.get_hostitem(masteruri, host)
         if host_item is not None:
             host_item.update_system_diagnostics(diagnostics)
 
     def sysmon_set_state(self, masteruri, state):
-        host = nm.nameres().address(masteruri)
-        if host is None:
-            # try with hostname of the masteruri
-            host = get_hostname(masteruri)
+        host = get_hostname(masteruri)
         host_item = self.get_hostitem(masteruri, host)
         if host_item is not None:
             host_item.sysmon_state = state

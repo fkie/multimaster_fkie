@@ -47,7 +47,7 @@ except ImportError:
 from fkie_multimaster_msgs.msg import SyncTopicInfo, SyncServiceInfo, SyncMasterInfo
 import rospy
 
-from fkie_master_discovery.common import masteruri_from_ros
+from fkie_master_discovery.common import masteruri_from_ros, get_hostname
 from fkie_master_discovery.filter_interface import FilterInterface
 
 
@@ -89,13 +89,14 @@ class SyncThread(object):
         self._offline_ts = 0
 
         self.masteruri_local = masteruri_from_ros()
-        rospy.logdebug("SyncThread[%s]: create this sync thread", self.name)
+        self.hostname_local = get_hostname(self.masteruri_local)
+        rospy.logdebug("SyncThread[%s]: create this sync thread, discoverer_name: %s", self.name, self.discoverer_name)
         # synchronization variables
         self.__lock_info = threading.RLock()
         self.__lock_intern = threading.RLock()
         self._use_filtered_method = None
         self._use_md5check_topics = None
-        self._md5warnings = {}  # ditionary of {(topicname, node, nodeuri) : topictype}
+        self._md5warnings = {}  # ditionary of {(topicname, node, nodeuri) : (topictype, md5sum)}
         self._topic_type_warnings = {}  # ditionary of {(topicname, node, nodeuri) : remote topictype}
         # SyncMasterInfo with currently synchronized nodes, publisher (topic, node, nodeuri), subscriber(topic, node, nodeuri) and services
         self.__sync_info = None
@@ -115,11 +116,11 @@ class SyncThread(object):
         # setup the filter
         self._filter = FilterInterface()
         self._filter.load(self.name,
-                          ['/rosout', self.discoverer_name, '/node_manager', '/node_manager_daemon', '/zeroconf', '/param_sync'], [],
-                          ['/rosout', '/rosout_agg'], ['/'] if sync_on_demand else [],
-                          ['/*get_loggers', '/*set_logger_level'], [],
+                          ['/rosout', self.discoverer_name, '/master_discovery', '/master_sync', '/node_manager', '/node_manager_daemon', '/zeroconf', '/param_sync'], [],
+                          ['/rosout', '/rosout_agg', '/master_discovery/*', '/master_sync/*', '/zeroconf/*'], ['/'] if sync_on_demand else [],
+                          ['/*get_loggers', '/*set_logger_level', '/master_discovery/*', '/master_sync/*', '/node_manager_daemon/*', '/zeroconf/*'], [],
                           # do not sync the bond message of the nodelets!!
-                          ['bond/Status'],
+                          ['bond/Status', 'fkie_multimaster_msgs/SyncTopicInfo', 'fkie_multimaster_msgs/SyncServiceInfo', 'fkie_multimaster_msgs/SyncMasterInfo', 'fkie_multimaster_msgs/MasterState'],
                           [], [],
                           [])
 
@@ -239,7 +240,7 @@ class SyncThread(object):
         with self.__lock_intern:
             r = random.random() * 2.
             # start update timer with a random waiting time to avoid a congestion picks on changes of ROS master state
-            if self._update_timer is None or not self._update_timer.isAlive():
+            if self._update_timer is None or not self._update_timer.is_alive():
                 del self._update_timer
                 self._update_timer = threading.Timer(r, self._request_remote_state, args=(self._apply_remote_state,))
                 self._update_timer.start()
@@ -248,7 +249,7 @@ class SyncThread(object):
                     # if the timer thread can be canceled start new one
                     self._update_timer.cancel()
                     # if callback (XMLRPC request) is already running the timer is not canceled -> test for `self.__on_update`
-                    if not self._update_timer.isAlive() or not self.__on_update:
+                    if not self._update_timer.is_alive() or not self.__on_update:
                         self._delayed_update += 1
                         self._update_timer = threading.Timer(r, self._request_remote_state, args=(self._apply_remote_state,))
                         self._update_timer.start()
@@ -447,8 +448,9 @@ class SyncThread(object):
                         else:
                             rospy.logdebug("SyncThread[%s]: topic subscribed: %s, %s %s, node: %s", self.name, h[1], str(code), str(statusMessage), h[3])
                     if h[0] == 'sub' and code == 1 and len(r) > 0:
-                        # topic, nodeuri, node : list of publisher uris
-                        publiser_to_update[(h[1], h[4], h[3])] = r
+                        if not self._do_ignore_ntp(h[3], h[1], h[2]):
+                            # topic, nodeuri, node : list of publisher uris
+                            publiser_to_update[(h[1], h[4], h[3])] = r
                     elif h[0] == 'pub':
                         if code == -1:
                             rospy.logwarn("SyncThread[%s]: topic advertise error: %s (%s), %s %s", self.name, h[1], h[2], str(code), str(statusMessage))
@@ -523,13 +525,16 @@ class SyncThread(object):
                         lmd5sum = None
                         msg_class = roslib.message.get_message_class(rttype)
                         if msg_class is not None:
-                            lmd5sum = msg_class._md5sum 
+                            lmd5sum = msg_class._md5sum
                         if lmd5sum != rtmd5sum:
                             for topicname, topictype, node, nodeuri in topics_to_register:
                                 if topictype == rttype:
                                     if (topicname, node, nodeuri) not in self._md5warnings:
-                                        rospy.logwarn("Different checksum detected for topic: %s, type: %s, host: %s" % (topicname, rttype, self.name))
-                                        self._md5warnings[(topicname, node, nodeuri)] = topictype
+                                        if lmd5sum is None:
+                                            rospy.logwarn("Unknown message type %s for topic: %s, local host: %s, remote host: %s" % (rttype, topicname, self.hostname_local, self.name))
+                                        else:
+                                            rospy.logwarn("Different checksum detected for topic: %s, type: %s, local host: %s, remote host: %s" % (topicname, rttype, self.hostname_local, self.name))
+                                        self._md5warnings[(topicname, node, nodeuri)] = (topictype, lmd5sum)
                     except Exception as err:
                         import traceback
                         rospy.logwarn(err)
@@ -550,7 +555,7 @@ class SyncThread(object):
                             if own_topictype not in ['*', None] and topictype not in ['*', None] :
                                 if topictype != own_topictype:
                                     if (topicname, node, nodeuri) not in self._topic_type_warnings:
-                                        rospy.logwarn("Different topic types detected for topic: %s, own type: %s remote type: %s, host: %s" % (topicname, own_topictype, topictype, self.name))
+                                        rospy.logwarn("Different topic types detected for topic: %s, own type: %s remote type: %s, local host: %s, remote host: %s" % (topicname, own_topictype, topictype, self.hostname_local, self.name))
                                         self._topic_type_warnings[(topicname, node, nodeuri)] = "local: %s, remote: %s" % (own_topictype, topictype)
                     except Exception as err:
                         import traceback

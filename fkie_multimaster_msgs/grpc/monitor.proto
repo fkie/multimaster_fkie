@@ -43,6 +43,7 @@ service MonitorService {
 	// returns only warnings and errors
 	rpc GetWarnings (Empty) returns (DiagnosticArray);
 	rpc KillProcess (Pid) returns (Empty);
+	rpc GetUser (Empty) returns (User);
 }
 
 message Empty {
@@ -102,4 +103,12 @@ message KeyValue {
  */
 message Pid {
 	int32 pid = 1;
+}
+
+/*
+ * :param key: what to label this value when viewing
+ * :param value: a value to track over time
+ */
+message User {
+	string user = 1;
 }

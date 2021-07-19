@@ -178,9 +178,10 @@ class MasterEntry(object):
         if isinstance(item, MasterEntry):
             result = []
             if nmdurl.equal_uri(self.masteruri, item.masteruri):
-                result = set(self.entry()).intersection(set(item.entry()))
+                result = set(self.addresses()).intersection(set(item.addresses()))
             return len(result) > 0
         return False
+
 
 class NameResolution(object):
     '''
@@ -297,6 +298,13 @@ class NameResolution(object):
                 if m.has_mastername(mastername):
                     return m.masteruri
             return None
+
+    def masteruribyaddr(self, address):
+        with self.mutex:
+            for m in self._masters:
+                if m.has_address(address) and m.masteruri:
+                    return m.masteruri
+        return None
 
     def masterurisbyaddr(self, address):
         with self.mutex:

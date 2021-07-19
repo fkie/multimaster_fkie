@@ -201,7 +201,7 @@ class XmlHighlighter(QSyntaxHighlighter):
         self.dep_pattern = []
         if self.DEPRECATED_PARAMETER:
             attr_list = '|'.join(set([r'name="%s"' % attr for attr in self.DEPRECATED_PARAMETER.keys()]))
-            print(attr_list)
+            # print(attr_list)
             self.dep_pattern.append((self._create_regexp(attr_list), self._create_format(QColor(250, 0, 0), 'bold')))  # red
         # create patterns for strings
         self.string_pattern = QRegExp("\"")

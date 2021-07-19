@@ -368,13 +368,16 @@ class Main(object):
                     diag_state = DiagnosticStatus()
                     diag_state.level = level
                     diag_state.name = rospy.get_name()
-                    diag_state.message = 'Wrong topics md5sum @ %s and %s' % (mname, self._localname)
+                    diag_state.message = 'Wrong topic md5sum @ %s and %s' % (mname, self._localname)
                     diag_state.hardware_id = self.hostname
-                    for (topicname, _node, _nodeuri), ttype in warnings.items():
-                        key = KeyValue()
-                        key.key = topicname
-                        key.value = ttype
-                        diag_state.values.append(key)
+                    for (topicname, _node, _nodeuri), tmtype in warnings.items():
+                        if isinstance(tmtype, tuple):
+                            (md5sum, ttype) = tmtype
+                            if md5sum is not None:
+                                key = KeyValue()
+                                key.key = topicname
+                                key.value = ttype
+                                diag_state.values.append(key)
                     da.status.append(diag_state)
                 # add warnings if a topic with different type is synchrinozied to local host
                 for mname, warnings in ttype_warnings.items():
@@ -383,7 +386,10 @@ class Main(object):
                     diag_state.name = rospy.get_name()
                     diag_state.message = 'Wrong topics type @ %s and %s' % (mname, self._localname)
                     diag_state.hardware_id = self.hostname
-                    for (topicname, _node, _nodeuri), ttype in warnings.items():
+                    for (topicname, _node, _nodeuri), tmtype in warnings.items():
+                        ttype = tmtype
+                        if isinstance(tmtype, tuple):
+                            (md5sum, ttype) = tmtype
                         key = KeyValue()
                         key.key = topicname
                         key.value = ttype

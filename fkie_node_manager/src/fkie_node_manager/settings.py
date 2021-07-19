@@ -369,6 +369,12 @@ class Settings(object):
                                             ' <span style="font-weight:600;">Restart required!</span>',
                                             ':need_restart': True,
                                             },
+                  'Use internal log widget:': {':value': self.str2bool(settings.value('use_internal_log_widget', True)),
+                                                ':var': 'use_internal_log_widget',
+                                                ':default': False,
+                                                ':hint': 'Opens the log file in internal dock instead of new terminal. If deactivated still accessible with Ctrl modifier.',
+                                                ':need_restart': False,
+                                                },
                   }
         return result
 
@@ -620,33 +626,36 @@ class Settings(object):
         :return: command with a terminal prefix
         :rtype: str
         '''
-        if self._terminal_emulator is None:
-            self._terminal_emulator = ''
-            for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']:
-                if os.path.isfile(t) and os.access(t, os.X_OK):
-                    # workaround to support the command parameter in different terminal
-                    if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
-                        self._terminal_command_arg = 'x'
-                    else:
-                        self._terminal_command_arg = 'e'
-                    if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'gnome-terminal.wrapper']:
-                        self._noclose_str = '--profile hold'
-                        if noclose:
-                            rospy.loginfo("If your terminal close after the execution, you can change this behavior in "
-                                          "profiles. You can also create a profile with name 'hold'. This profile will "
-                                          "be then load by node_manager.")
-                    elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal']:
-                        self._noclose_str = ''
-                        self._terminal_title = '-T'
-                    self._terminal_emulator = t
-                    break
-        if self._terminal_emulator == '':
+        terminal_emulator = ''
+        terminal_title = self._terminal_title
+        noclose_str = self._noclose_str
+        terminal_command_arg = self._terminal_command_arg
+        for t in ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']:
+            if os.path.isfile(t) and os.access(t, os.X_OK):
+                print(os.path.basename(os.path.realpath(t)))
+                # workaround to support the command parameter in different terminal
+                if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'xfce4-terminal']:
+                    terminal_command_arg = 'x'
+                else:
+                    terminal_command_arg = 'e'
+                if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'gnome-terminal.wrapper']:
+                    noclose_str = '--profile hold'
+                    if noclose:
+                        rospy.loginfo("If your terminal close after the execution, you can change this behavior in "
+                                        "profiles. You can also create a profile with name 'hold'. This profile will "
+                                        "be then load by node_manager.")
+                elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal', 'xterm', 'lxterm', 'uxterm']:
+                    noclose_str = ''
+                    terminal_title = '-T'
+                terminal_emulator = t
+                break
+        if terminal_emulator == '':
             raise Exception("No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
-        self._noclose_str = self._noclose_str if noclose else ''
+        noclose_str = noclose_str if noclose else ''
         title_opt = ''
         if title:
-            title_opt = '%s "%s"' % (self._terminal_title, title)
-        return '%s %s %s -%s %s' % (self._terminal_emulator, title_opt, self._noclose_str, self._terminal_command_arg, ' '.join(cmd))
+            title_opt = '%s "%s"' % (terminal_title, title)
+        return '%s %s %s -%s %s' % (terminal_emulator, title_opt, noclose_str, terminal_command_arg, ' '.join(cmd))
 
     def qsettings(self, settings_file):
         path = settings_file
