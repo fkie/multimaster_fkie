@@ -2437,13 +2437,14 @@ class MasterViewProxy(QWidget):
             finally:
                 socket.setdefaulttimeout(None)
             # wait kill_on_stop is an integer
-            if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
-                time.sleep(float(node.kill_on_stop) / 1000.0)
-                nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
-            elif not success:
-                if node.pid and node.name != '/node_manager_daemon':
-                    rospy.loginfo("Try to kill process %d of the node: %s", node.pid, utf8(node.name))
+            if node.pid is not None:
+                if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
+                    time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
+                elif not success:
+                    if node.name != '/node_manager_daemon':
+                        rospy.loginfo("Try to kill process %d of the node: %s", node.pid, utf8(node.name))
+                        nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
         elif isinstance(node, NodeItem) and node.is_ghost:
             # since for ghost nodes no info is available, emit a signal to handle the
             # stop message in other master_view_proxy
