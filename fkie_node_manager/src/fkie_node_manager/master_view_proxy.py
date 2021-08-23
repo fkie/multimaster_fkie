@@ -2438,7 +2438,7 @@ class MasterViewProxy(QWidget):
                 socket.setdefaulttimeout(None)
             # wait kill_on_stop is an integer
             if node.pid is not None:
-                if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
+                if hasattr(node, 'kill_on_stop') and type(node.kill_on_stop) in [int, float]:
                     time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
                 elif not success:
