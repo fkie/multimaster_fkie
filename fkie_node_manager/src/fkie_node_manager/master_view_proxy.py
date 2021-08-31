@@ -648,7 +648,7 @@ class MasterViewProxy(QWidget):
         return True
 
     def _start_queue(self, queue):
-        if self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
+        if not rospy.is_shutdown() and  self.online and self.master_info is not None and isinstance(queue, ProgressQueue):
             queue.start()
 
     @property
@@ -3040,7 +3040,10 @@ class MasterViewProxy(QWidget):
             del self.__configs[cfg]
             nm.nmd().launch.get_nodes_threaded(cfg)
         except exceptions.ResourceNotFound:
-            del self.__configs[cfg]
+            try:
+                del self.__configs[cfg]
+            except Exception:
+                pass
             nm.nmd().launch.get_nodes_threaded(cfg)
         except Exception:
             rospy.logwarn(traceback.format_exc())

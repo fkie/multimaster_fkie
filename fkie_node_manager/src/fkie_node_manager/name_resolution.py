@@ -140,6 +140,12 @@ class MasterEntry(object):
         except socket.gaierror:
             # no suitable address found
             pass
+        except socket.herror as herr:
+            if herr.errno == 1:
+                rospy.logwarn_throttle(60, "Unknown hostname for: %s" % address)
+            else:
+                raise herr
+
 
     def get_mastername(self):
         try:
