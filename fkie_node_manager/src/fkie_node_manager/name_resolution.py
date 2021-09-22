@@ -83,18 +83,18 @@ class MasterEntry(object):
                 # it is an IP, try to get the hostname
                 with self.mutex:
                     self._addresses.append(address)
-                # resolve the name in a thread
-                thread = Thread(target=self._get_hostname, args=((address,)))
-                thread.daemon = True
-                thread.start()
+                    # resolve the name in a thread
+                    thread = Thread(target=self._get_hostname, args=((address,)))
+                    thread.daemon = True
+                    thread.start()
             else:
                 # it is a hostname: add at the fist place and try to get an IP for this host
                 with self.mutex:
                     self._addresses.insert(0, address)
-                # resolve the name in a thread
-                thread = Thread(target=self._get_address, args=((address,)))
-                thread.daemon = True
-                thread.start()
+                    # resolve the name in a thread
+                    thread = Thread(target=self._get_address, args=((address,)))
+                    thread.daemon = True
+                    thread.start()
 
     @classmethod
     def is_legal_ip(cls, addr):
@@ -123,7 +123,7 @@ class MasterEntry(object):
                     for addr in ipaddrlist:
                         if not self.has_address(addr):
                             self._addresses.append(addr)
-        except socket.gaierror:
+        except Exception:
             # no suitable address found
             pass
 
@@ -137,7 +137,7 @@ class MasterEntry(object):
                     self._addresses.insert(0, hostname)
                 if not self.has_address(name_splitted[0]):
                     self._addresses.insert(0, name_splitted[0])
-        except socket.gaierror:
+        except Exception:
             # no suitable address found
             pass
 
