@@ -58,14 +58,23 @@ class LineNumberWidget(QFrame):
             painter = QPainter(self)
             painter.setPen(Qt.darkGray)
             line_count = 0
+            first_pos = -1
+            posdiff = 0
             # Iterate over all text blocks in the document.
             block = self.edit.document().begin()
             while block.isValid():
                 line_count += 1
                 # the top left position of the block in the document
-                position = self.edit.document().documentLayout().blockBoundingRect(block).topLeft()
+                if posdiff == 0:
+                    position_y = self.edit.document().documentLayout().blockBoundingRect(block).topLeft().y()
+                    if first_pos == -1:
+                        first_pos = position_y
+                    else:
+                        posdiff = position_y - first_pos
+                else:
+                    position_y += posdiff
                 # check if the position of the block is out side of visible area
-                if position.y() > page_bottom:
+                if position_y > page_bottom:
                     break
                 # we want the line number for the selected line to be bold.
                 bold = False
@@ -77,7 +86,7 @@ class LineNumberWidget(QFrame):
                     painter.setPen(Qt.black)
                 # Draw the line number right justified at the y position of the
                 # line. 3 is the magic padding number. drawText(x, y, text)
-                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3, round(position.y()) - contents_y + font_metrics.ascent(), str(line_count))
+                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3, position_y - contents_y + font_metrics.ascent(), str(line_count))
                 if bold:
                     font = painter.font()
                     font.setBold(False)

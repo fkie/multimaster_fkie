@@ -78,15 +78,12 @@ class TextEdit(QTextEdit):
         self.customContextMenuRequested.connect(self.show_custom_context_menu)
 #        self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.setAcceptRichText(False)
-        font = QFont()
-        font.setFamily('Fixed')
-        font.setPointSize(12)
+        font = QFont("courier new", 12)
         self.setFont(font)
         self.setLineWrapMode(QTextEdit.NoWrap)
         self.setTabStopWidth(25)
         self.setAcceptRichText(False)
         self.setCursorWidth(2)
-        self.setFontFamily("courier new")
         self.setProperty("backgroundVisible", True)
         bg_style = "QTextEdit { background-color: #fffffc;}"
         self.setStyleSheet("%s" % (bg_style))
@@ -126,7 +123,8 @@ class TextEdit(QTextEdit):
             self.file_mtime = file_mtime
             if self._ext in self.CONTEXT_FILE_EXT:
                 self._internal_args = get_internal_args(content)
-            self.setText(content)
+            self.document().setPlainText(content)
+            self.document().setModified(False)
             self._is_launchfile = False
             if self._ext in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
                 if self._ext in self.CONTEXT_FILE_EXT:
@@ -312,7 +310,7 @@ class TextEdit(QTextEdit):
             if result == MessageBox.Yes:
                 try:
                     _, self.file_mtime, file_content = nm.nmd().file.get_file_content(self.filename, force=True)
-                    self.setText(file_content)
+                    self.document().setPlainText(file_content)
                     self.document().setModified(False)
                     self.textChanged.emit()
                 except Exception as err:
