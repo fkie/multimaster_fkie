@@ -70,26 +70,24 @@ class MasterEntry(object):
         return mastername in self._masternames
 
     def has_address(self, address):
-        with self.mutex:
-            return address in self._addresses
+        return address in self._addresses
 
     def add_mastername(self, mastername):
         if mastername and mastername not in self._masternames:
             self._masternames.insert(0, mastername)
 
     def add_address(self, address):
-        if address and not self.has_address(address):
-            if self.is_legal_ip(address):
-                # it is an IP, try to get the hostname
-                with self.mutex:
+        with self.mutex:
+            if address and not self.has_address(address):
+                if self.is_legal_ip(address):
+                    # it is an IP, try to get the hostname
                     self._addresses.append(address)
                     # resolve the name in a thread
                     thread = Thread(target=self._get_hostname, args=((address,)))
                     thread.daemon = True
                     thread.start()
-            else:
-                # it is a hostname: add at the fist place and try to get an IP for this host
-                with self.mutex:
+                else:
+                    # it is a hostname: add at the fist place and try to get an IP for this host
                     self._addresses.insert(0, address)
                     # resolve the name in a thread
                     thread = Thread(target=self._get_address, args=((address,)))
