@@ -840,9 +840,6 @@ class MasterViewProxy(QWidget):
         if filename in self.__configs:
             # store expanded items
             self.__expanded_items[filename] = self._get_expanded_groups()
-            # close the current loaded configuration with the same name
-            self.remove_cfg_from_model(filename)
-            del self.__configs[filename]
 
     def _apply_mtimes(self, launchfile, mtime, includes):
         if launchfile in self.__configs:
