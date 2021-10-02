@@ -1131,8 +1131,8 @@ class MasterViewProxy(QWidget):
                     self.host_description_updated.emit(masteruri, robot_addr, tooltip)
             node_cfgs = dict()
             for n in ld.nodes:
-                if n not in alredy_added_nodes:
-                    node_cfgs[n] = ld.path
+                # if n not in alredy_added_nodes:
+                node_cfgs[n] = ld.path
             self.node_tree_model.append_config(masteruri, host_addr, node_cfgs)
             # set the robot_icon
             if ld.path in self.__robot_icons:
