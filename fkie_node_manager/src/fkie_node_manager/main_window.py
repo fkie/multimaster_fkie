@@ -130,6 +130,7 @@ class MainWindow(QMainWindow):
         self.__current_icon = None
         self.__current_master_label_name = None
         self._syncs_to_start = []  # hostnames
+        self._daemons_to_start = []  # hostnames
         self._accept_next_update = False
         self._last_window_state = False
         self._description_history = []
@@ -859,9 +860,9 @@ class MainWindow(QMainWindow):
                 self.master_model.removeMaster(msg.master.name)
                 self.setMasterOnline(msg.master.uri, False)
 #                self.removeMaster(msg.master.uri)
-        # start master_sync, if it was selected in the start dialog to start with master_dsicovery
-        if self._syncs_to_start:
-            if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+        if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+            # start master_sync, if it was selected in the start dialog to start with master_dsicovery
+            if self._syncs_to_start:
                 # we don't know which name for host was used to start master discovery
                 if host in self._syncs_to_start:
                     self._syncs_to_start.remove(host)
@@ -875,6 +876,21 @@ class MainWindow(QMainWindow):
                         if address in self._syncs_to_start:
                             self._syncs_to_start.remove(address)
                             self.on_sync_start(msg.master.uri)
+            # start daemon, if it was selected in the start dialog to start with master_dsicovery
+            if self._daemons_to_start:
+                # we don't know which name for host was used to start master discovery
+                if host in self._daemons_to_start:
+                    self._daemons_to_start.remove(host)
+                    self.on_daemon_start(msg.master.uri)
+                elif msg.master.name in self._daemons_to_start:
+                    self._daemons_to_start.remove(msg.master.name)
+                    self.on_daemon_start(msg.master.uri)
+                else:
+                    addresses = nm.nameres().addresses(msg.master.uri)
+                    for address in addresses:
+                        if address in self._daemons_to_start:
+                            self._daemons_to_start.remove(address)
+                            self.on_daemon_start(msg.master.uri)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
 
@@ -1368,6 +1384,13 @@ class MainWindow(QMainWindow):
             if node is not None:
                 master.stop_nodes([node])
 
+    def on_daemon_start(self, masteruri=None):
+        master = self.currentMaster
+        if masteruri is not None:
+            master = self.getMaster(masteruri, False)
+        if master is not None:
+            master.start_daemon()
+
     def on_master_timecheck(self):
         # HACK: sometimes the local monitoring will not be activated. This is the detection.
         if len(self.masters) < 2 and self.currentMaster is None:
@@ -1625,6 +1648,7 @@ class MainWindow(QMainWindow):
         params = {'Host': {':type': 'string', ':value': 'localhost'},
                   'Network(0..99)': {':type': 'int', ':value': '0'},
                   'Start sync': {':type': 'bool', ':value': nm.settings().start_sync_with_discovery},
+                  'Start daemon': {':type': 'bool', ':value': nm.settings().start_daemon_with_discovery},
                   'Optional Parameter': params_optional
                   }
         dia = ParameterDialog(params, sidebar_var='Host', store_geometry="start_robot_dialog")
@@ -1637,6 +1661,7 @@ class MainWindow(QMainWindow):
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 port = params['Network(0..99)']
                 start_sync = params['Start sync']
+                start_daemon = params['Start daemon']
                 discovery_type = params['Optional Parameter']['Discovery type']
                 mastername = 'autodetect'
                 masteruri = 'ROS_MASTER_URI'
@@ -1716,6 +1741,11 @@ class MainWindow(QMainWindow):
                             else:
                                 if hostname not in self._syncs_to_start:
                                     self._syncs_to_start.append(hostname)
+                        if start_daemon:
+                            # local daemon will be started anyway
+                            if not nm.is_local(hostname):
+                                if hostname not in self._daemons_to_start:
+                                    self._daemons_to_start.append(hostname)
                     except (Exception, nm.StartException) as e:
                         import traceback
                         print(traceback.format_exc(1))

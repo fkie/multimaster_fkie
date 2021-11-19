@@ -3698,51 +3698,12 @@ class MasterViewProxy(QWidget):
                 rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
         elif questionid == MessageFrame.TYPE_NMD:
-            try:
-                # start node manager daemon if not already running
-                host_addr = nm.nameres().address(self.masteruri)
-                rospy.loginfo("start node manager daemon for %s", self.masteruri)
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               'start node_manager_daemon for %s' % host_addr,
-                                               nm.starter().runNodeWithoutConfig,
-                                               {'host': host_addr,
-                                                'package': 'fkie_node_manager_daemon',
-                                                'binary': 'node_manager_daemon',
-                                                'name': 'node_manager_daemon',
-                                                'args': [],
-                                                'masteruri': self.masteruri,
-                                                'use_nmd': False,
-                                                'auto_pw_request': False,
-                                                'user': self.current_user
-                                               })
-                self._start_queue(self._progress_queue)
-            except Exception as err:
-                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
-                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+            self.start_daemon()
         elif questionid == MessageFrame.TYPE_NMD_RESTART:
-            try:
-                # start node manager daemon if not already running
-                rospy.loginfo("stop node manager daemon for %s", self.masteruri)
-                self.stop_nodes_by_name(['node_manager_daemon'])
-                host_addr = nm.nameres().address(self.masteruri)
-                rospy.loginfo("start node manager daemon for %s", self.masteruri)
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               'start node_manager_daemon for %s' % host_addr,
-                                               nm.starter().runNodeWithoutConfig,
-                                               {'host': host_addr,
-                                                'package': 'fkie_node_manager_daemon',
-                                                'binary': 'node_manager_daemon',
-                                                'name': 'node_manager_daemon',
-                                                'args': [],
-                                                'masteruri': self.masteruri,
-                                                'use_nmd': False,
-                                                'auto_pw_request': False,
-                                                'user': self.current_user
-                                               })
-                self._start_queue(self._progress_queue)
-            except Exception as err:
-                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
-                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))            
+            # start node manager daemon if not already running
+            rospy.loginfo("stop node manager daemon for %s", self.masteruri)
+            self.stop_nodes_by_name(['node_manager_daemon'])
+            self.start_daemon()
         elif questionid == MessageFrame.TYPE_BINARY:
             try:
                 self.stop_nodes_by_name([node.name for node in data.data_list])
@@ -3770,6 +3731,30 @@ class MasterViewProxy(QWidget):
 
     def _on_info_ok(self, questionid, data):
         pass
+
+    def start_daemon(self):
+        try:
+            # start node manager daemon if not already running
+            host_addr = nm.nameres().address(self.masteruri)
+            rospy.loginfo("start node manager daemon for %s", self.masteruri)
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                            'start node_manager_daemon for %s' % host_addr,
+                                            nm.starter().runNodeWithoutConfig,
+                                            {'host': host_addr,
+                                            'package': 'fkie_node_manager_daemon',
+                                            'binary': 'node_manager_daemon',
+                                            'name': 'node_manager_daemon',
+                                            'args': [],
+                                            'masteruri': self.masteruri,
+                                            'use_nmd': False,
+                                            'auto_pw_request': False,
+                                            'user': self.current_user
+                                            })
+            self._start_queue(self._progress_queue)
+        except Exception as err:
+            rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
+            MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%
