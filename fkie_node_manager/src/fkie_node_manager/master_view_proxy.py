@@ -203,7 +203,8 @@ class MasterViewProxy(QWidget):
         self._ts_last_diagnostic_request = 0
         self._has_diagnostics = False
         self.has_master_sync = False
-
+        self.restarting_daemon = False
+        self.reloading_files = {}
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
 #         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
@@ -1085,6 +1086,17 @@ class MasterViewProxy(QWidget):
                                                          'args_forced': {}
                                                         })
                     self._start_queue(self._progress_queue)
+        if self.restarting_daemon:
+            self.restarting_daemon = False
+            for lf, lc in self.reloading_files.items():
+                    self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
+                                                        'Loading %s' % os.path.basename(lf),
+                                                        self._load_launchfile,
+                                                        {'launchfile': lf,
+                                                         'args_forced': lc.args
+                                                        })
+            self._start_queue(self._progress_queue)
+
         masteruri = self.masteruri
         host = get_hostname(masteruri)
         host_addr = host
@@ -2486,9 +2498,15 @@ class MasterViewProxy(QWidget):
         found_nodes = []
         if self.master_info is not None:
             req_nodes = []
+            md_node = False
             for n in nodes:
                 if n not in ignore:
-                    req_nodes.append(n)
+                    if '/master_dsicovery' == n:
+                        md_node = True
+                    else:
+                        req_nodes.append(n)
+            if md_node:
+                req_nodes.append('/master_dsicovery')
             found_nodes = self.node_tree_model.get_node_items_by_name(req_nodes, only_local)
         return found_nodes
 

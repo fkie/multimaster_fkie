@@ -129,6 +129,7 @@ class MainWindow(QMainWindow):
                         }
         self.__current_icon = None
         self.__current_master_label_name = None
+        self.mcast_port = 11511
         self._syncs_to_start = []  # hostnames
         self._daemons_to_start = []  # hostnames
         self._accept_next_update = False
@@ -716,8 +717,8 @@ class MainWindow(QMainWindow):
             else:
                 try:
                     # determine the ROS network ID
-                    mcast_group = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
-                    self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
+                    self.mcast_port = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
+                    self.networkDock.setWindowTitle("ROS Network [id: %d]" % (self.mcast_port - 11511))
                     self._subscribe()
                 except Exception:
                     # try to get the multicast port of master discovery from log
@@ -1125,9 +1126,44 @@ class MainWindow(QMainWindow):
             if time_dialog.exec_():
                 running_nodes = self.currentMaster.get_nodes_runningIfLocal(remove_system_nodes=True)
                 if running_nodes:
-                    ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?', buttons=MessageBox.Yes | MessageBox.No)
+                    ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.Yes:
+                        launchfiles = {}
+                        if '/node_manager_daemon' in running_nodes:
+                            self.currentMaster.reloading_files = self.currentMaster.launchfiles
+                            self.currentMaster.restarting_daemon = True
                         self.currentMaster.stop_nodes_by_name(running_nodes, force=True)
+                        if '/node_manager_daemon' in running_nodes:
+                            self.currentMaster.start_daemon()
+                        if '/master_discovery' in running_nodes:
+                            self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                        'start discovering on %s' % host,
+                                                        nm.starter().runNodeWithoutConfig,
+                                                        {'host': utf8(host),
+                                                            'package': 'fkie_master_discovery',
+                                                            'binary': 'master_discovery',
+                                                            'name': '/master_discovery',
+                                                            'args': [],
+                                                            'masteruri': self.currentMaster.master_state.uri,
+                                                            'use_nmd': False,
+                                                            'auto_pw_request': False,
+                                                            'user': self.currentMaster.current_user
+                                                        })
+                        if '/master_sync' in running_nodes:
+                            self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                                'start sync on ' + utf8(host),
+                                                                nm.starter().runNodeWithoutConfig,
+                                                                {'host': utf8(host),
+                                                                'package': 'fkie_master_sync',
+                                                                'binary': 'master_sync',
+                                                                'name': 'master_sync',
+                                                                'args': [],
+                                                                'masteruri': self.currentMaster.master_state.uri,
+                                                                'use_nmd': False,
+                                                                'auto_pw_request': False,
+                                                                'user': self.currentMaster.current_user
+                                                                })
+                        self.currentMaster._progress_queue.start()
                 if time_dialog.dateRadioButton.isChecked():
                     try:
                         rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
@@ -1646,7 +1682,7 @@ class MainWindow(QMainWindow):
                            'Heartbeat [Hz]': {':type': 'float', ':value': 0.5}
                            }
         params = {'Host': {':type': 'string', ':value': 'localhost'},
-                  'Network(0..99)': {':type': 'int', ':value': '0'},
+                  'Network(0..99)': {':type': 'int', ':value': str(self.mcast_port - 11511)},
                   'Start sync': {':type': 'bool', ':value': nm.settings().start_sync_with_discovery},
                   'Start daemon': {':type': 'bool', ':value': nm.settings().start_daemon_with_discovery},
                   'Optional Parameter': params_optional
