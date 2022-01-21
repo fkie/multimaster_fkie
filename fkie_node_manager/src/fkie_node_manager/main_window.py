@@ -514,13 +514,13 @@ class MainWindow(QMainWindow):
             self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s ...closing...</span>' % self.masternameLabel.text())
             rospy.loginfo("Wait for running processes are finished...")
             event.ignore()
+        try:
+            self.storeSetting()
+        except Exception as e:
+            rospy.logwarn("Error while store settings: %s" % e)
         if event.isAccepted():
             self.on_finish = True
             self.master_timecheck_timer.stop()
-            try:
-                self.storeSetting()
-            except Exception as e:
-                rospy.logwarn("Error while store settings: %s" % e)
             self.finish()
             QMainWindow.closeEvent(self, event)
 
