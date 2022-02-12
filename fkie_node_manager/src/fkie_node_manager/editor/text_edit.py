@@ -78,15 +78,12 @@ class TextEdit(QTextEdit):
         self.customContextMenuRequested.connect(self.show_custom_context_menu)
 #        self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.setAcceptRichText(False)
-        font = QFont()
-        font.setFamily('Fixed')
-        font.setPointSize(12)
+        font = QFont("courier new", 12)
         self.setFont(font)
         self.setLineWrapMode(QTextEdit.NoWrap)
         self.setTabStopWidth(25)
         self.setAcceptRichText(False)
         self.setCursorWidth(2)
-        self.setFontFamily("courier new")
         self.setProperty("backgroundVisible", True)
         bg_style = "QTextEdit { background-color: #fffffc;}"
         self.setStyleSheet("%s" % (bg_style))
@@ -126,7 +123,8 @@ class TextEdit(QTextEdit):
             self.file_mtime = file_mtime
             if self._ext in self.CONTEXT_FILE_EXT:
                 self._internal_args = get_internal_args(content)
-            self.setText(content)
+            self.document().setPlainText(content)
+            self.document().setModified(False)
             self._is_launchfile = False
             if self._ext in ['.launch', '.xml', '.xacro', '.srdf', '.urdf']:
                 if self._ext in self.CONTEXT_FILE_EXT:
@@ -312,7 +310,7 @@ class TextEdit(QTextEdit):
             if result == MessageBox.Yes:
                 try:
                     _, self.file_mtime, file_content = nm.nmd().file.get_file_content(self.filename, force=True)
-                    self.setText(file_content)
+                    self.document().setPlainText(file_content)
                     self.document().setModified(False)
                     self.textChanged.emit()
                 except Exception as err:
@@ -488,6 +486,17 @@ class TextEdit(QTextEdit):
         else:
             QTextEdit.keyReleaseEvent(self, event)
 
+    def goto(self, linenr, select_line=True):
+            if linenr > self.document().blockCount():
+                linenr = self.document().blockCount()
+            curpos = self.textCursor().blockNumber() + 1
+            while curpos != linenr:
+                mov = QTextCursor.NextBlock if curpos < linenr else QTextCursor.PreviousBlock
+                self.moveCursor(mov)
+                curpos = self.textCursor().blockNumber() + 1
+            self.moveCursor(QTextCursor.EndOfBlock)
+            self.moveCursor(QTextCursor.StartOfBlock, QTextCursor.KeepAnchor)
+
     def _has_uncommented(self):
         cursor = QTextCursor(self.textCursor())
         if not cursor.isNull():
@@ -540,7 +549,7 @@ class TextEdit(QTextEdit):
             ext = os.path.splitext(self.filename)
             # XML comment
             xml_file = ext[1] in self.CONTEXT_FILE_EXT
-            while (cursor.block().blockNumber() < block_end + 1):
+            while (cursor.block().blockNumber() <= block_end):
                 cursor.movePosition(QTextCursor.StartOfLine)
                 # XML comment
                 if xml_file:
@@ -573,7 +582,11 @@ class TextEdit(QTextEdit):
                         if hres:
                             res = res.replace(hres.group(), "", 1)
                         cursor.insertText(res)
+                bn = cursor.block().blockNumber()
                 cursor.movePosition(QTextCursor.NextBlock)
+                if cursor.block().blockNumber() == bn:
+                    # break if no new line is there
+                    break
             # Set our cursor's selection to span all of the involved lines.
             cursor.endEditBlock()
             cursor.setPosition(start, QTextCursor.MoveAnchor)
@@ -755,6 +768,9 @@ class TextEdit(QTextEdit):
         if self.isReadOnly():
             return
         menu = QTextEdit.createStandardContextMenu(self)
+        comment_action = QAction("Switch comment", self, statusTip="", triggered=self.commentText)
+        comment_action.setShortcuts(QKeySequence("Ctrl+7"))
+        menu.addAction(comment_action)
         formattext_action = None
         if isinstance(self.hl, XmlHighlighter):
             formattext_action = QAction("Format XML", self, statusTip="", triggered=self.toprettyxml)

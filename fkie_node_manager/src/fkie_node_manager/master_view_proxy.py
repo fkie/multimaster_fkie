@@ -203,7 +203,8 @@ class MasterViewProxy(QWidget):
         self._ts_last_diagnostic_request = 0
         self._has_diagnostics = False
         self.has_master_sync = False
-
+        self.restarting_daemon = False
+        self.reloading_files = {}
 #         self.default_cfg_handler = DefaultConfigHandler()
 #         self.default_cfg_handler.node_list_signal.connect(self.on_default_cfg_nodes_retrieved)
 #         self.default_cfg_handler.description_signal.connect(self.on_default_cfg_descr_retrieved)
@@ -840,9 +841,6 @@ class MasterViewProxy(QWidget):
         if filename in self.__configs:
             # store expanded items
             self.__expanded_items[filename] = self._get_expanded_groups()
-            # close the current loaded configuration with the same name
-            self.remove_cfg_from_model(filename)
-            del self.__configs[filename]
 
     def _apply_mtimes(self, launchfile, mtime, includes):
         if launchfile in self.__configs:
@@ -1088,6 +1086,17 @@ class MasterViewProxy(QWidget):
                                                          'args_forced': {}
                                                         })
                     self._start_queue(self._progress_queue)
+        if self.restarting_daemon:
+            self.restarting_daemon = False
+            for lf, lc in self.reloading_files.items():
+                    self._progress_queue_prio.add2queue(utf8(uuid.uuid4()),
+                                                        'Loading %s' % os.path.basename(lf),
+                                                        self._load_launchfile,
+                                                        {'launchfile': lf,
+                                                         'args_forced': lc.args
+                                                        })
+            self._start_queue(self._progress_queue)
+
         masteruri = self.masteruri
         host = get_hostname(masteruri)
         host_addr = host
@@ -1134,8 +1143,8 @@ class MasterViewProxy(QWidget):
                     self.host_description_updated.emit(masteruri, robot_addr, tooltip)
             node_cfgs = dict()
             for n in ld.nodes:
-                if n not in alredy_added_nodes:
-                    node_cfgs[n] = ld.path
+                # if n not in alredy_added_nodes:
+                node_cfgs[n] = ld.path
             self.node_tree_model.append_config(masteruri, host_addr, node_cfgs)
             # set the robot_icon
             if ld.path in self.__robot_icons:
@@ -2436,13 +2445,15 @@ class MasterViewProxy(QWidget):
                     rospy.logwarn("Error while stop node '%s': %s", utf8(node.name), utf8(e))
             finally:
                 socket.setdefaulttimeout(None)
-            if not success:
-                if node.pid and node.name != '/node_manager_daemon':
-                    rospy.loginfo("Try to kill process %d of the node: %s", node.pid, utf8(node.name))
-                    # wait kill_on_stop is an integer
-                    if hasattr(node, 'kill_on_stop') and isinstance(node.kill_on_stop, (int, float)):
-                        time.sleep(float(node.kill_on_stop) / 1000.0)
+            # wait kill_on_stop is an integer
+            if node.pid is not None:
+                if hasattr(node, 'kill_on_stop') and type(node.kill_on_stop) in [int, float]:
+                    time.sleep(float(node.kill_on_stop) / 1000.0)
                     nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
+                elif not success:
+                    if node.name != '/node_manager_daemon':
+                        rospy.loginfo("Try to kill process %d of the node: %s", node.pid, utf8(node.name))
+                        nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
         elif isinstance(node, NodeItem) and node.is_ghost:
             # since for ghost nodes no info is available, emit a signal to handle the
             # stop message in other master_view_proxy
@@ -2487,9 +2498,15 @@ class MasterViewProxy(QWidget):
         found_nodes = []
         if self.master_info is not None:
             req_nodes = []
+            md_node = False
             for n in nodes:
                 if n not in ignore:
-                    req_nodes.append(n)
+                    if '/master_dsicovery' == n:
+                        md_node = True
+                    else:
+                        req_nodes.append(n)
+            if md_node:
+                req_nodes.append('/master_dsicovery')
             found_nodes = self.node_tree_model.get_node_items_by_name(req_nodes, only_local)
         return found_nodes
 
@@ -3699,51 +3716,12 @@ class MasterViewProxy(QWidget):
                 rospy.logwarn("Error while transfer changed files %s: %s" % (data.data, utf8(err)))
                 MessageBox.warning(self, "Loading launch file", data.data, '%s' % utf8(err))
         elif questionid == MessageFrame.TYPE_NMD:
-            try:
-                # start node manager daemon if not already running
-                host_addr = nm.nameres().address(self.masteruri)
-                rospy.loginfo("start node manager daemon for %s", self.masteruri)
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               'start node_manager_daemon for %s' % host_addr,
-                                               nm.starter().runNodeWithoutConfig,
-                                               {'host': host_addr,
-                                                'package': 'fkie_node_manager_daemon',
-                                                'binary': 'node_manager_daemon',
-                                                'name': 'node_manager_daemon',
-                                                'args': [],
-                                                'masteruri': self.masteruri,
-                                                'use_nmd': False,
-                                                'auto_pw_request': False,
-                                                'user': self.current_user
-                                               })
-                self._start_queue(self._progress_queue)
-            except Exception as err:
-                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
-                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+            self.start_daemon()
         elif questionid == MessageFrame.TYPE_NMD_RESTART:
-            try:
-                # start node manager daemon if not already running
-                rospy.loginfo("stop node manager daemon for %s", self.masteruri)
-                self.stop_nodes_by_name(['node_manager_daemon'])
-                host_addr = nm.nameres().address(self.masteruri)
-                rospy.loginfo("start node manager daemon for %s", self.masteruri)
-                self._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                               'start node_manager_daemon for %s' % host_addr,
-                                               nm.starter().runNodeWithoutConfig,
-                                               {'host': host_addr,
-                                                'package': 'fkie_node_manager_daemon',
-                                                'binary': 'node_manager_daemon',
-                                                'name': 'node_manager_daemon',
-                                                'args': [],
-                                                'masteruri': self.masteruri,
-                                                'use_nmd': False,
-                                                'auto_pw_request': False,
-                                                'user': self.current_user
-                                               })
-                self._start_queue(self._progress_queue)
-            except Exception as err:
-                rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
-                MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))            
+            # start node manager daemon if not already running
+            rospy.loginfo("stop node manager daemon for %s", self.masteruri)
+            self.stop_nodes_by_name(['node_manager_daemon'])
+            self.start_daemon()
         elif questionid == MessageFrame.TYPE_BINARY:
             try:
                 self.stop_nodes_by_name([node.name for node in data.data_list])
@@ -3771,6 +3749,30 @@ class MasterViewProxy(QWidget):
 
     def _on_info_ok(self, questionid, data):
         pass
+
+    def start_daemon(self):
+        try:
+            # start node manager daemon if not already running
+            host_addr = nm.nameres().address(self.masteruri)
+            rospy.loginfo("start node manager daemon for %s", self.masteruri)
+            self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                            'start node_manager_daemon for %s' % host_addr,
+                                            nm.starter().runNodeWithoutConfig,
+                                            {'host': host_addr,
+                                            'package': 'fkie_node_manager_daemon',
+                                            'binary': 'node_manager_daemon',
+                                            'name': 'node_manager_daemon',
+                                            'args': [],
+                                            'masteruri': self.masteruri,
+                                            'use_nmd': False,
+                                            'auto_pw_request': False,
+                                            'user': self.current_user
+                                            })
+            self._start_queue(self._progress_queue)
+        except Exception as err:
+            rospy.logwarn("Error while start node manager daemon on %s: %s" % (self.masteruri, utf8(err)))
+            MessageBox.warning(self, "Start node manager daemon", self.masteruri, '%s' % utf8(err))
+
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # %%%%%%%%%%%%%   Shortcuts handling                               %%%%%%%%

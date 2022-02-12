@@ -288,6 +288,12 @@ class Settings(object):
                                                  ':hint': "Sets 'start sync' in 'Start' master discovery"
                                                  "dialog to True, if this option is set to true."
                                                  },
+                  'Start daemon with discovery:': {':value': self.str2bool(settings.value('start_daemon_with_discovery', False)),
+                                                 ':var': 'start_daemon_with_discovery',
+                                                 ':default': False,
+                                                 ':hint': "Sets 'start daemons' in 'Start' master discovery"
+                                                 "dialog to True, if this option is set to true."
+                                                 },
                   'Confirm exit when closing:': {':value': self.str2bool(settings.value('confirm_exit_when_closing', True)),
                                                  ':var': 'confirm_exit_when_closing',
                                                  ':default': True,

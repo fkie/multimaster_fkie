@@ -430,7 +430,7 @@ class Editor(QMainWindow):
                     self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
                     self._search_thread.start()
             if goto_line != -1:
-                self._goto(goto_line, True)
+                self.tabWidget.currentWidget().goto(goto_line, True)
             self.upperButton.setEnabled(self.tabWidget.count() > 1)
         except Exception as err:
             self.tabWidget.setUpdatesEnabled(True)
@@ -450,7 +450,7 @@ class Editor(QMainWindow):
     def on_graph_goto(self, path, linenr):
         if path == self.tabWidget.currentWidget().filename:
             if linenr != -1:
-                self._goto(linenr, True)
+                self.tabWidget.currentWidget().goto(linenr, True)
 
     def on_graph_finished(self):
         self.on_graph_info("build tree: finished", False)
@@ -706,19 +706,8 @@ class Editor(QMainWindow):
             value, ok = QInputDialog.getInt(self, "Goto", self.tr("Line number:"),
                                                   QLineEdit.Normal, min=1, step=1)
         if ok:
-            self._goto(value)
+            self.tabWidget.currentWidget().goto(value)
         self.tabWidget.currentWidget().setFocus(Qt.ActiveWindowFocusReason)
-
-    def _goto(self, linenr, select_line=True):
-            if linenr > self.tabWidget.currentWidget().document().blockCount():
-                linenr = self.tabWidget.currentWidget().document().blockCount()
-            curpos = self.tabWidget.currentWidget().textCursor().blockNumber() + 1
-            while curpos != linenr:
-                mov = QTextCursor.NextBlock if curpos < linenr else QTextCursor.PreviousBlock
-                self.tabWidget.currentWidget().moveCursor(mov)
-                curpos = self.tabWidget.currentWidget().textCursor().blockNumber() + 1
-            self.tabWidget.currentWidget().moveCursor(QTextCursor.EndOfBlock)
-            self.tabWidget.currentWidget().moveCursor(QTextCursor.StartOfBlock, QTextCursor.KeepAnchor)
 
     ##############################################################################
     # SLOTS for search dialog

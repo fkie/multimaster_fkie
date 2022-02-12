@@ -129,7 +129,9 @@ class MainWindow(QMainWindow):
                         }
         self.__current_icon = None
         self.__current_master_label_name = None
+        self.mcast_port = 11511
         self._syncs_to_start = []  # hostnames
+        self._daemons_to_start = []  # hostnames
         self._accept_next_update = False
         self._last_window_state = False
         self._description_history = []
@@ -512,13 +514,13 @@ class MainWindow(QMainWindow):
             self.masternameLabel.setText('<span style=" font-size:14pt; font-weight:600;">%s ...closing...</span>' % self.masternameLabel.text())
             rospy.loginfo("Wait for running processes are finished...")
             event.ignore()
+        try:
+            self.storeSetting()
+        except Exception as e:
+            rospy.logwarn("Error while store settings: %s" % e)
         if event.isAccepted():
             self.on_finish = True
             self.master_timecheck_timer.stop()
-            try:
-                self.storeSetting()
-            except Exception as e:
-                rospy.logwarn("Error while store settings: %s" % e)
             self.finish()
             QMainWindow.closeEvent(self, event)
 
@@ -715,8 +717,8 @@ class MainWindow(QMainWindow):
             else:
                 try:
                     # determine the ROS network ID
-                    mcast_group = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
-                    self.networkDock.setWindowTitle("ROS Network [id: %d]" % (mcast_group - 11511))
+                    self.mcast_port = rospy.get_param(rospy.names.ns_join(discoverer, 'mcast_port'))
+                    self.networkDock.setWindowTitle("ROS Network [id: %d]" % (self.mcast_port - 11511))
                     self._subscribe()
                 except Exception:
                     # try to get the multicast port of master discovery from log
@@ -859,9 +861,9 @@ class MainWindow(QMainWindow):
                 self.master_model.removeMaster(msg.master.name)
                 self.setMasterOnline(msg.master.uri, False)
 #                self.removeMaster(msg.master.uri)
-        # start master_sync, if it was selected in the start dialog to start with master_dsicovery
-        if self._syncs_to_start:
-            if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+        if msg.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
+            # start master_sync, if it was selected in the start dialog to start with master_dsicovery
+            if self._syncs_to_start:
                 # we don't know which name for host was used to start master discovery
                 if host in self._syncs_to_start:
                     self._syncs_to_start.remove(host)
@@ -875,6 +877,21 @@ class MainWindow(QMainWindow):
                         if address in self._syncs_to_start:
                             self._syncs_to_start.remove(address)
                             self.on_sync_start(msg.master.uri)
+            # start daemon, if it was selected in the start dialog to start with master_dsicovery
+            if self._daemons_to_start:
+                # we don't know which name for host was used to start master discovery
+                if host in self._daemons_to_start:
+                    self._daemons_to_start.remove(host)
+                    self.on_daemon_start(msg.master.uri)
+                elif msg.master.name in self._daemons_to_start:
+                    self._daemons_to_start.remove(msg.master.name)
+                    self.on_daemon_start(msg.master.uri)
+                else:
+                    addresses = nm.nameres().addresses(msg.master.uri)
+                    for address in addresses:
+                        if address in self._daemons_to_start:
+                            self._daemons_to_start.remove(address)
+                            self.on_daemon_start(msg.master.uri)
 #      if len(self.masters) == 0:
 #        self._setLocalMonitoring(True)
 
@@ -1109,9 +1126,44 @@ class MainWindow(QMainWindow):
             if time_dialog.exec_():
                 running_nodes = self.currentMaster.get_nodes_runningIfLocal(remove_system_nodes=True)
                 if running_nodes:
-                    ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?', buttons=MessageBox.Yes | MessageBox.No)
+                    ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.Yes:
+                        launchfiles = {}
+                        if '/node_manager_daemon' in running_nodes:
+                            self.currentMaster.reloading_files = self.currentMaster.launchfiles
+                            self.currentMaster.restarting_daemon = True
                         self.currentMaster.stop_nodes_by_name(running_nodes, force=True)
+                        if '/node_manager_daemon' in running_nodes:
+                            self.currentMaster.start_daemon()
+                        if '/master_discovery' in running_nodes:
+                            self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                        'start discovering on %s' % host,
+                                                        nm.starter().runNodeWithoutConfig,
+                                                        {'host': utf8(host),
+                                                            'package': 'fkie_master_discovery',
+                                                            'binary': 'master_discovery',
+                                                            'name': '/master_discovery',
+                                                            'args': [],
+                                                            'masteruri': self.currentMaster.master_state.uri,
+                                                            'use_nmd': False,
+                                                            'auto_pw_request': False,
+                                                            'user': self.currentMaster.current_user
+                                                        })
+                        if '/master_sync' in running_nodes:
+                            self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                                'start sync on ' + utf8(host),
+                                                                nm.starter().runNodeWithoutConfig,
+                                                                {'host': utf8(host),
+                                                                'package': 'fkie_master_sync',
+                                                                'binary': 'master_sync',
+                                                                'name': 'master_sync',
+                                                                'args': [],
+                                                                'masteruri': self.currentMaster.master_state.uri,
+                                                                'use_nmd': False,
+                                                                'auto_pw_request': False,
+                                                                'user': self.currentMaster.current_user
+                                                                })
+                        self.currentMaster._progress_queue.start()
                 if time_dialog.dateRadioButton.isChecked():
                     try:
                         rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
@@ -1368,6 +1420,13 @@ class MainWindow(QMainWindow):
             if node is not None:
                 master.stop_nodes([node])
 
+    def on_daemon_start(self, masteruri=None):
+        master = self.currentMaster
+        if masteruri is not None:
+            master = self.getMaster(masteruri, False)
+        if master is not None:
+            master.start_daemon()
+
     def on_master_timecheck(self):
         # HACK: sometimes the local monitoring will not be activated. This is the detection.
         if len(self.masters) < 2 and self.currentMaster is None:
@@ -1623,8 +1682,9 @@ class MainWindow(QMainWindow):
                            'Heartbeat [Hz]': {':type': 'float', ':value': 0.5}
                            }
         params = {'Host': {':type': 'string', ':value': 'localhost'},
-                  'Network(0..99)': {':type': 'int', ':value': '0'},
+                  'Network(0..99)': {':type': 'int', ':value': str(self.mcast_port - 11511)},
                   'Start sync': {':type': 'bool', ':value': nm.settings().start_sync_with_discovery},
+                  'Start daemon': {':type': 'bool', ':value': nm.settings().start_daemon_with_discovery},
                   'Optional Parameter': params_optional
                   }
         dia = ParameterDialog(params, sidebar_var='Host', store_geometry="start_robot_dialog")
@@ -1637,6 +1697,7 @@ class MainWindow(QMainWindow):
                 hostnames = params['Host'] if isinstance(params['Host'], list) else [params['Host']]
                 port = params['Network(0..99)']
                 start_sync = params['Start sync']
+                start_daemon = params['Start daemon']
                 discovery_type = params['Optional Parameter']['Discovery type']
                 mastername = 'autodetect'
                 masteruri = 'ROS_MASTER_URI'
@@ -1716,6 +1777,11 @@ class MainWindow(QMainWindow):
                             else:
                                 if hostname not in self._syncs_to_start:
                                     self._syncs_to_start.append(hostname)
+                        if start_daemon:
+                            # local daemon will be started anyway
+                            if not nm.is_local(hostname):
+                                if hostname not in self._daemons_to_start:
+                                    self._daemons_to_start.append(hostname)
                     except (Exception, nm.StartException) as e:
                         import traceback
                         print(traceback.format_exc(1))

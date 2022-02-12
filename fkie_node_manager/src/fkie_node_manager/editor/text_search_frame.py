@@ -153,6 +153,7 @@ class TextSearchFrame(QDockWidget):
         self.found_files_list.setFrameStyle(QFrame.StyledPanel)
         self.found_files_list.setHeaderHidden(True)
         self.found_files_list.itemActivated.connect(self.on_itemActivated)
+        self.found_files_list.itemClicked.connect(self.on_itemActivated)
         self.found_files_list.setStyleSheet(
             "QTreeWidget {"
             "background-color:transparent;"

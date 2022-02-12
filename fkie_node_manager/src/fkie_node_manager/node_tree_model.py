@@ -391,6 +391,25 @@ class GroupItem(QStandardItem):
                 return [item]
         return result
 
+    def get_node_items_by_cfg(self, cfg):
+        '''
+        Returns all nodes with config in this group and subgroups.
+
+        :param str cfg: returns the nodes for given config
+        :return: The list with node items.
+        :rtype: list(:class:`QtGui.QStandardItem` <https://srinikom.github.io/pyside-docs/PySide/QtGui/QStandardItem.html>)
+        '''
+        result = []
+        for i in range(self.rowCount()):
+            item = self.child(i)
+            if isinstance(item, GroupItem):
+                    result[len(result):] = item.get_node_items_by_cfg(cfg)
+            elif isinstance(item, NodeItem):
+                if cfg in item.cfgs:
+                    result.append(item)
+        return result
+
+
     def get_node_items(self, recursive=True):
         '''
         Returns all nodes in this group and subgroups.
@@ -927,7 +946,7 @@ class HostItem(GroupItem):
         self.sysmon_state = False
         self.local = local
 
-    def __hash__(self) -> int:
+    def __hash__(self):
         str = self._masteruri + self._host
         hash_str = hashlib.md5(str.encode()).hexdigest()
         return int(hash_str, base=16)
@@ -1961,30 +1980,43 @@ class NodeTreeModel(QStandardItemModel):
         :param nodes: a dictionary with node names and their configurations
         :type nodes: {str: str}
         '''
-        hostItem = self.get_hostitem(masteruri, host_address)
-        if hostItem is not None:
-            groups = {}
-            for (name, cfg) in nodes.items():
-                items = hostItem.get_node_items_by_name(name)
-                for item in items:
-                    if item.parent_item is not None:
-                        groups[item.parent_item.get_namespace()] = item.parent_item
-                    item.add_config(cfg)
-                    item.readd()
-                if not items:
-                    # create the new node
-                    node_info = NodeInfo(name, masteruri)
-                    hostItem.add_node(node_info, cfg)
-                    # get the group of the added node to be able to update the group view, if needed
+        try:
+            hostItem = self.get_hostitem(masteruri, host_address)
+            if hostItem is not None:
+                groups = {}
+                cfgs = {}
+                for (name, cfg) in nodes.items():
+                    if cfg not in cfgs:
+                        cfgs[cfg] = hostItem.get_node_items_by_cfg(cfg)
                     items = hostItem.get_node_items_by_name(name)
                     for item in items:
                         if item.parent_item is not None:
                             groups[item.parent_item.get_namespace()] = item.parent_item
-            # update the changed groups
-            for _name, g in groups.items():
-                g.update_displayed_config()
-            hostItem.clearup()
-        self._remove_empty_hosts()
+                        item.add_config(cfg)
+                        item.readd()
+                        try:
+                            cfgs[cfg].remove(item)
+                        except Exception:
+                            pass
+                    if not items:
+                        # create the new node
+                        node_info = NodeInfo(name, masteruri)
+                        hostItem.add_node(node_info, cfg)
+                        # get the group of the added node to be able to update the group view, if needed
+                        items = hostItem.get_node_items_by_name(name)
+                        for item in items:
+                            if item.parent_item is not None:
+                                groups[item.parent_item.get_namespace()] = item.parent_item
+                for cfg in cfgs:
+                    for node in cfgs[cfg]:
+                        node.rem_config(cfg)
+                # update the changed groups
+                for _name, g in groups.items():
+                    g.update_displayed_config()
+                hostItem.clearup()
+            self._remove_empty_hosts()
+        except Exception:
+            rospy.logwarn('Error while apply configuration to current view: %s' %traceback.format_exc())
         # update the duplicate state
 #    self.set_duplicate_nodes(self.get_nodes_running())
 

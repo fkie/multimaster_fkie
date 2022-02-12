@@ -376,7 +376,7 @@ class Main(object):
                             if md5sum is not None:
                                 key = KeyValue()
                                 key.key = topicname
-                                key.value = ttype
+                                key.value = str(ttype)
                                 diag_state.values.append(key)
                     da.status.append(diag_state)
                 # add warnings if a topic with different type is synchrinozied to local host
@@ -392,7 +392,7 @@ class Main(object):
                             (md5sum, ttype) = tmtype
                         key = KeyValue()
                         key.key = topicname
-                        key.value = ttype
+                        key.value = str(ttype)
                         diag_state.values.append(key)
                     da.status.append(diag_state)
             else:
