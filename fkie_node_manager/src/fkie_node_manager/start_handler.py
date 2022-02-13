@@ -180,7 +180,7 @@ class StartHandler(object):
                         rospy.logwarn("ERROR while start '%s': %s", name, error)
                         raise StartException("The host '%s' reports:\n%s" % (host, error))
                     if output:
-                        if output.find("dn't") != -1:
+                        if output.find(b"dn't") != -1:
                             rospy.logwarn("Warning while start '%s': %s", name, output)
                         else:
                             rospy.loginfo("STDOUT while start '%s': %s", name, output)
