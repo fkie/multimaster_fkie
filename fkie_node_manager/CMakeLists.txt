@@ -28,7 +28,6 @@ catkin_install_python(
         nodes/dynamic_reconfigure
         nodes/node_manager
         nodes/script_runner.py
-        scripts/reduced_nm.py
         scripts/remote_nm.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
