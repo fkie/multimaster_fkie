@@ -142,6 +142,23 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     return result
 
 
+def remove_src_binary(cls, cmdlist):
+    result = []
+    count = 0
+    if len(cmdlist) > 1:
+        for c in cmdlist:
+            if c.find('/src/') == -1:
+                result.append(c)
+                count += 1
+    else:
+        result = cmdlist
+    if count > 1:
+        # we have more binaries in src directory
+        # aks the user
+        result = cmdlist
+    return result
+
+
 def run_node(startcfg):
     '''
     Start a node local or on specified host using a :class:`.startcfg.StartConfig`
@@ -185,6 +202,7 @@ def run_node(startcfg):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
                 raise exceptions.StartException('%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
+            cmd = remove_src_binary(cmd)
             if len(cmd) > 1:
                 # Open selection for executables
                 err = 'Multiple executables with same name in package [%s]  found:' % startcfg.package
