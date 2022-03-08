@@ -106,7 +106,7 @@ class StartHandler(object):
                     cmd = [path]
                 else:
                     try:
-                        cmd = roslib.packages.find_node(package, binary)
+                        cmd = roslib.packages.find_resource(package, binary)
                     except roslib.packages.ROSPkgException as e:
                         # multiple nodes, invalid package
                         raise StartException(utf8(e))

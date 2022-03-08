@@ -194,7 +194,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     StartHandler._prepareROSMaster(masteruri)
     # start node
     try:
-        cmd = roslib.packages.find_node(package, executable)
+        cmd = roslib.packages.find_resource(package, executable)
     except roslib.packages.ROSPkgException as e:
         # multiple nodes, invalid package
         raise StartException(str(e))

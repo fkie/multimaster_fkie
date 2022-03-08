@@ -176,7 +176,7 @@ def run_node(startcfg):
         # get binary path from package
         if not cmd_type:
             try:
-                cmd = roslib.packages.find_node(startcfg.package, startcfg.binary)
+                cmd = roslib.packages.find_resource(startcfg.package, startcfg.binary)
             except (roslib.packages.ROSPkgException, rospkg.ResourceNotFound) as e:
                 # multiple nodes, invalid package
                 rospy.logwarn("resource not found: %s" % utf8(e))
