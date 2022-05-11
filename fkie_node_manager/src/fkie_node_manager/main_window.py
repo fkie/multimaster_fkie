@@ -1126,7 +1126,7 @@ class MainWindow(QMainWindow):
                 time_dialog.dateFrame.setVisible(False)
             if time_dialog.exec_():
                 running_nodes = master2update.get_nodes_runningIfLocal(remove_system_nodes=True)
-                restart_ret == MessageBox.No
+                restart_ret = MessageBox.No
                 if running_nodes:
                     restart_ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)
                     if restart_ret == MessageBox.Yes:
