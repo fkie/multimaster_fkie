@@ -1114,66 +1114,40 @@ class MainWindow(QMainWindow):
                                    '%s' % utf8(err))
 
     def on_set_time_clicked(self):
-        if self.currentMaster is not None:  # and not self.currentMaster.is_local:
+        master2update = self.currentMaster
+        if master2update is not None:  # and not master2update.is_local:
             time_dialog = QDialog()
             ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'TimeInput.ui')
             loadUi(ui_file, time_dialog)
-            host = get_hostname(self.currentMaster.master_state.uri)
+            host = get_hostname(master2update.master_state.uri)
             time_dialog.setWindowTitle('Set time on %s' % host)
             time_dialog.hostsComboBox.addItems(nm.history().cachedParamValues('/ntp'))
-            if self.currentMaster.is_local:
+            if master2update.is_local:
                 time_dialog.dateFrame.setVisible(False)
             if time_dialog.exec_():
-                running_nodes = self.currentMaster.get_nodes_runningIfLocal(remove_system_nodes=True)
+                running_nodes = master2update.get_nodes_runningIfLocal(remove_system_nodes=True)
                 if running_nodes:
                     ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.Yes:
-                        launchfiles = {}
+                        if '/node_manager' in running_nodes:
+                            del running_nodes['/node_manager']
                         if '/node_manager_daemon' in running_nodes:
-                            self.currentMaster.reloading_files = self.currentMaster.launchfiles
-                            self.currentMaster.restarting_daemon = True
-                        self.currentMaster.stop_nodes_by_name(running_nodes, force=True)
-                        if '/node_manager_daemon' in running_nodes:
-                            self.currentMaster.start_daemon()
-                        if '/master_discovery' in running_nodes:
-                            self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                        'start discovering on %s' % host,
-                                                        nm.starter().runNodeWithoutConfig,
-                                                        {'host': utf8(host),
-                                                            'package': 'fkie_master_discovery',
-                                                            'binary': 'master_discovery',
-                                                            'name': '/master_discovery',
-                                                            'args': [],
-                                                            'masteruri': self.currentMaster.master_state.uri,
-                                                            'use_nmd': False,
-                                                            'auto_pw_request': False,
-                                                            'user': self.currentMaster.current_user
-                                                        })
-                        if '/master_sync' in running_nodes:
-                            self.currentMaster._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                                'start sync on ' + utf8(host),
-                                                                nm.starter().runNodeWithoutConfig,
-                                                                {'host': utf8(host),
-                                                                'package': 'fkie_master_sync',
-                                                                'binary': 'master_sync',
-                                                                'name': 'master_sync',
-                                                                'args': [],
-                                                                'masteruri': self.currentMaster.master_state.uri,
-                                                                'use_nmd': False,
-                                                                'auto_pw_request': False,
-                                                                'user': self.currentMaster.current_user
-                                                                })
-                        self.currentMaster._progress_queue.start()
+                            master2update.reloading_files = master2update.launchfiles
+                            master2update.restarting_daemon = True
+                        master2update.stop_nodes_by_name(running_nodes, force=True)
+                        master2update._progress_queue.start()
+
                 if time_dialog.dateRadioButton.isChecked():
                     try:
-                        rospy.loginfo("Set remote host time to local time: %s" % self.currentMaster.master_state.uri)
+                        rospy.loginfo("Set remote host time to local time: %s" % master2update.master_state.uri)
                         socket.setdefaulttimeout(10)
-                        p = xmlrpcclient.ServerProxy(self.currentMaster.master_state.monitoruri)
-                        uri, success, newtime, errormsg = p.setTime(time.time())
+                        p = xmlrpcclient.ServerProxy(master2update.master_state.monitoruri)
+                        uri, success, newtime, errormsg = p.setTime(time.time()) 
                         if not success:
+                            errormsg = str(errormsg)
                             if errormsg.find('password') > -1:
                                 errormsg += "\nPlease modify /etc/sudoers with sudoedit and add user privilege, e.g:"
-                                errormsg += "\n%s  ALL=NOPASSWD: /bin/date" % self.currentMaster.current_user
+                                errormsg += "\n%s  ALL=NOPASSWD: /bin/date" % master2update.current_user
                                 errormsg += "\n!!!needed to be at the very end of file, don't forget a new line at the end!!!"
                                 errormsg += "\n\nBe aware, it does not replace the time synchronization!"
                                 errormsg += "\nIt sets approximate time without undue delays on communication layer."
@@ -1181,15 +1155,16 @@ class MainWindow(QMainWindow):
                                                'Error while set time on %s' % uri, '%s' % utf8(errormsg))
                         else:
                             timediff = time.time() - newtime
-                            rospy.loginfo("  New time difference to %s is approx.: %.3fs" % (self.currentMaster.master_state.uri, timediff))
-                            self.on_master_timediff_retrieved(self.currentMaster.master_state.uri, timediff)
+                            rospy.loginfo("  New time difference to %s is approx.: %.3fs" % (master2update.master_state.uri, timediff))
+                            self.on_master_timediff_retrieved(master2update.master_state.uri, timediff)
                     except Exception as e:
                         errormsg = '%s' % e
                         if errormsg.find('setTime') > -1:
                             errormsg += "\nUpdate remote fkie_multimaster!"
-                        rospy.logwarn("Error while set time on %s: %s" % (self.currentMaster.master_state.uri, utf8(errormsg)))
+                        import traceback
+                        rospy.logwarn("Error while set time on %s: %s" % (master2update.master_state.uri, utf8(errormsg)))
                         MessageBox.warning(self, "Time sync error",
-                                           'Error while set time on %s' % self.currentMaster.master_state.uri,
+                                           'Error while set time on %s' % master2update.master_state.uri,
                                            '%s' % utf8(errormsg))
                     finally:
                         socket.setdefaulttimeout(None)
@@ -1198,6 +1173,39 @@ class MainWindow(QMainWindow):
                     nm.history().addParamCache('/ntp', ntp_host)
                     cmd = "%s %s" % ('sudo ntpdate -v -u -t 1', ntp_host)
                     nm.starter().ntpdate(host, cmd)
+                # now start system nodes
+                if running_nodes and ret == MessageBox.Yes:
+                    if '/node_manager_daemon' in running_nodes:
+                        master2update.start_daemon()
+                    if '/master_discovery' in running_nodes:
+                        master2update._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                    'start discovering on %s' % host,
+                                                    nm.starter().runNodeWithoutConfig,
+                                                    {'host': utf8(host),
+                                                        'package': 'fkie_master_discovery',
+                                                        'binary': 'master_discovery',
+                                                        'name': '/master_discovery',
+                                                        'args': [],
+                                                        'masteruri': master2update.master_state.uri,
+                                                        'use_nmd': False,
+                                                        'auto_pw_request': False,
+                                                        'user': master2update.current_user
+                                                    })
+                    if '/master_sync' in running_nodes:
+                        master2update._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                                            'start sync on ' + utf8(host),
+                                                            nm.starter().runNodeWithoutConfig,
+                                                            {'host': utf8(host),
+                                                            'package': 'fkie_master_sync',
+                                                            'binary': 'master_sync',
+                                                            'name': 'master_sync',
+                                                            'args': [],
+                                                            'masteruri': master2update.master_state.uri,
+                                                            'use_nmd': False,
+                                                            'auto_pw_request': False,
+                                                            'user': master2update.current_user
+                                                            })
+                    master2update._progress_queue.start()
 
     def on_refresh_master_clicked(self):
         if self.currentMaster is not None:
@@ -1734,7 +1742,7 @@ class MainWindow(QMainWindow):
                         muri = None if masteruri == 'ROS_MASTER_URI' else utf8(masteruri)
                         # stop if master_discovery already running
                         self._append_stop_for('/%s' % utf8(discovery_type), hostname, muri, self._progress_queue)
-                        self._progress_queue_sync.start()
+                        self._progress_queue.start()
                         self._progress_queue.add2queue(utf8(uuid.uuid4()),
                                                        'start discovering on %s' % hostname,
                                                        nm.starter().runNodeWithoutConfig,
@@ -1761,7 +1769,7 @@ class MainWindow(QMainWindow):
                                                      '_sync_remote_nodes:=False']
                                 self._append_stop_for('/master_sync', hostname, muri, self._progress_queue_sync)
                                 self._progress_queue_sync.start()
-                                self._progress_queue.add2queue(utf8(uuid.uuid4()),
+                                self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                                'start sync on %s' % hostname,
                                                                nm.starter().runNodeWithoutConfig,
                                                                {'host': utf8(hostname),
@@ -1790,6 +1798,7 @@ class MainWindow(QMainWindow):
                                            'Error while start master_discovery',
                                            utf8(e))
                     self._progress_queue.start()
+                    self._progress_queue_sync.start()
             except Exception as e:
                 MessageBox.warning(self, "Start error",
                                    'Error while parse parameter',
