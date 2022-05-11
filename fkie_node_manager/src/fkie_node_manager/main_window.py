@@ -1126,9 +1126,10 @@ class MainWindow(QMainWindow):
                 time_dialog.dateFrame.setVisible(False)
             if time_dialog.exec_():
                 running_nodes = master2update.get_nodes_runningIfLocal(remove_system_nodes=True)
+                restart_ret == MessageBox.No
                 if running_nodes:
-                    ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)
-                    if ret == MessageBox.Yes:
+                    restart_ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)
+                    if restart_ret == MessageBox.Yes:
                         if '/node_manager' in running_nodes:
                             del running_nodes['/node_manager']
                         if '/node_manager_daemon' in running_nodes:
@@ -1174,7 +1175,7 @@ class MainWindow(QMainWindow):
                     cmd = "%s %s" % ('sudo ntpdate -v -u -t 1', ntp_host)
                     nm.starter().ntpdate(host, cmd)
                 # now start system nodes
-                if running_nodes and ret == MessageBox.Yes:
+                if running_nodes and restart_ret == MessageBox.Yes:
                     if '/node_manager_daemon' in running_nodes:
                         master2update.start_daemon()
                     if '/master_discovery' in running_nodes:
