@@ -226,6 +226,8 @@ class MainWindow(QMainWindow):
         self._progress_queue = ProgressQueue(self.progressFrame, self.progressBar, self.progressCancelButton, 'Network')
         self._progress_queue_sync = ProgressQueue(self.progressFrame_sync, self.progressBar_sync, self.progressCancelButton_sync, 'Sync')
 
+        rospy.loginfo('Detected ROS Master URI: %s' % self.getMasteruri())
+
         # initialize the view for the discovered ROS master
         self.master_model = MasterModel(self.getMasteruri())
         self.master_model.sync_start.connect(self.on_sync_start)
