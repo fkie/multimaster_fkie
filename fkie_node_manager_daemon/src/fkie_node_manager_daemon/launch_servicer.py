@@ -258,6 +258,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return topic
 
     def GetLoadedFiles(self, request, context):
+        rospy.logdebug('GetLoadedFiles request:\n%s' % str(request))
         # self._register_callback(context)
         for _cfgid, lf in self._loaded_files.items():
             reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, masteruri=lf.masteruri, host=lf.host)
@@ -335,6 +336,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def ReloadLaunch(self, request, context):
+        rospy.logdebug('ReloadLaunch request:\n%s' % str(request))
         result = lmsg.LoadLaunchReply()
         result.path.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
@@ -390,6 +392,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def UnloadLaunch(self, request, context):
+        rospy.logdebug('UnloadLaunch request:\n%s' % str(request))
         result = lmsg.LoadLaunchReply()
         result.path.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
@@ -410,6 +413,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def GetNodes(self, request, context):
+        rospy.logdebug('GetNodes request:\n%s' % str(request))
         requested_files = []
         lfiles = request.launch_files
         for lfile in lfiles:
@@ -506,6 +510,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
 
     def StartNode(self, request_iterator, context):
         for request in request_iterator:
+            rospy.logdebug('StartNode request:\n%s' % str(request))
             try:
                 result = lmsg.StartNodeReply(name=request.name)
                 launch_configs = []
@@ -557,6 +562,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 yield result
 
     def StartStandaloneNode(self, request, context):
+        rospy.logdebug('StartStandaloneNode request:\n%s' % str(request))
         result = lmsg.StartNodeReply(name=request.name)
         try:
             startcfg = StartConfig.from_msg(request)
@@ -577,6 +583,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def GetIncludedFiles(self, request, context):
+        rospy.logdebug('GetIncludedFiles request:\n%s' % str(request))
         try:
             pattern = INCLUDE_PATTERN
             if request.pattern:
@@ -609,6 +616,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             rospy.logwarn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
 
     def InterpretPath(self, request, context):
+        rospy.logdebug('InterpretPath request:\n%s' % str(request))
         for text in request.paths:
             if text:
                 reply = lmsg.InterpredPath()
@@ -622,6 +630,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 yield reply
 
     def GetMtime(self, request, context):
+        rospy.logdebug('GetMtime request:\n%s' % str(request))
         try:
             result = lmsg.MtimeReply()
             result.path = request.path
@@ -652,6 +661,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             rospy.logwarn(traceback.format_exc())
 
     def GetChangedBinaries(self, request, context):
+        rospy.logdebug('GetChangedBinaries request:\n%s' % str(request))
         result = lmsg.MtimeNodes()
         changed = launcher.changed_binaries([node for node in request.names])
         nodes = []
@@ -662,6 +672,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def GetStartCfg(self, request, context):
+        rospy.logdebug('GetStartCfg request:\n%s' % str(request))
         result = lmsg.StartCfgReply(name=request.name)
         launch_configs = []
         if request.opt_launch:
@@ -692,6 +703,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     def ResetPackageCache(self, request, context):
+        rospy.logdebug('ResetPackageCache request:\n%s' % str(request))
         result = lmsg.Empty()
         reset_package_cache()
         return result
