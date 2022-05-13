@@ -359,14 +359,15 @@ def replace_internal_args(content, resolve_args={}, path=None):
             new_content = new_content.decode('utf-8')
         for arg_key, args_val in resolve_args.items():
             replaced = True
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
         resolve_args_intern = get_internal_args(content)
         for arg_key, args_val in resolve_args_intern.items():
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val).encode('utf-8')
+            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
             replaced = True
     except Exception as err:
         print("%s in %s" % (utf8(err), path))
-        rospy.logdebug("%s in %s" % (utf8(err), path))
+        import traceback
+        rospy.logdebug("%s in %s" % (traceback.format_exc(), path))
     return replaced, new_content, resolve_args_intern
 
 
