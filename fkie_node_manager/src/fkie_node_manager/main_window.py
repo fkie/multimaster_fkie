@@ -69,7 +69,7 @@ from .editor.editor import Editor
 from .launch_enhanced_line_edit import EnhancedLineEdit
 from .launch_files_widget import LaunchFilesWidget
 from .log_widget import LogWidget
-from .master_list_model import MasterModel, MasterIconsDelegate
+from .master_list_model import MasterModel, MasterButtonDelegate, MasterIconsDelegate
 from .master_view_proxy import MasterViewProxy
 from .menu_rqt import MenuRqt
 from .network_discovery_dialog import NetworkDiscoveryDialog
@@ -232,6 +232,8 @@ class MainWindow(QMainWindow):
         self.master_model = MasterModel(self.getMasteruri())
         self.master_model.sync_start.connect(self.on_sync_start)
         self.master_model.sync_stop.connect(self.on_sync_stop)
+        self.master_delegate_button = MasterButtonDelegate()
+        self.masterTableView.setItemDelegateForColumn(0, self.master_delegate_button)
         self.master_delegate = MasterIconsDelegate()
         self.masterTableView.setItemDelegateForColumn(1, self.master_delegate)
         self.masterTableView.setModel(self.master_model)
