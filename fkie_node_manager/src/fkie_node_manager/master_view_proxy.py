@@ -1118,6 +1118,12 @@ class MasterViewProxy(QWidget):
             new_configs.append(ld.path)
             self.__configs[ld.path].nodes = ld.nodes
             alredy_added_nodes = set()
+            # update node configuration
+            node_cfgs = dict()
+            for n in ld.nodes:
+                # if n not in alredy_added_nodes:
+                node_cfgs[n] = ld.path
+            self.node_tree_model.append_config(masteruri, host_addr, node_cfgs)
             # update capabilities
             for rd in ld.robot_descriptions:
                 # add capabilities
@@ -1134,19 +1140,17 @@ class MasterViewProxy(QWidget):
                 valid_machine = False
                 if rd.machine and rd.machine != host:
                     robot_addr = rd.machine
-                self.node_tree_model.append_config(masteruri, robot_addr, rd_node_cfgs)
+                    valid_machine = True
+                # print('append', masteruri, robot_addr, rd_node_cfgs)
+                if robot_addr != host_addr:
+                    self.node_tree_model.append_config(masteruri, robot_addr, rd_node_cfgs)
                 if valid_machine or not rd.robot_name or utf8(rd.robot_name) == self.mastername:
                     self.node_tree_model.add_capabilities(masteruri, robot_addr, ld.path, caps)
                     # set host description
                     tooltip = self.node_tree_model.update_host_description(masteruri, robot_addr, rd.robot_type, utf8(rd.robot_name), interpret_path(utf8(rd.robot_descr)))
                     self.capabilities_update_signal.emit(masteruri, robot_addr, ld.path, [rd])
                     self.host_description_updated.emit(masteruri, robot_addr, tooltip)
-            node_cfgs = dict()
-            for n in ld.nodes:
-                # if n not in alredy_added_nodes:
-                node_cfgs[n] = ld.path
-            self.node_tree_model.append_config(masteruri, host_addr, node_cfgs)
-            # set the robot_icon
+             # set the robot_icon
             if ld.path in self.__robot_icons:
                 self.__robot_icons.remove(ld.path)
             self.__robot_icons.insert(0, ld.path)
