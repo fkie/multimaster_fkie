@@ -1616,7 +1616,7 @@ class MasterViewProxy(QWidget):
         if len(selectedNodes) > 1 or len(selectedGroups) > 0:
             restartable_nodes = [sn for sn in selectedNodes if len(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
             restartable_nodes_with_launchfiles = [sn for sn in selectedNodes if sn.has_launch_cfgs(sn.cfgs) > 0 and not self._is_in_ignore_list(sn.name)]
-            killable_nodes = [sn for sn in selectedNodes if sn.node_info.pid is not None and not self._is_in_ignore_list(sn.name)]
+            killable_nodes = [sn for sn in selectedNodes if not self._is_in_ignore_list(sn.name)]
             unregisterble_nodes = [sn for sn in selectedNodes if sn.node_info.pid is None and sn.node_info.uri is not None and sn.node_info.isLocal and not self._is_in_ignore_list(sn.name)]
             # add description for multiple selected nodes
             if restartable_nodes or killable_nodes or unregisterble_nodes:
