@@ -57,12 +57,25 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from . import interface_finder
+import json
+from json import JSONEncoder
+from typing import List, Dict
 
+# crossbar-io dependencies
+from twisted.internet.defer import inlineCallbacks
+import asyncio
+from autobahn import wamp
+from autobahn.asyncio.component import Component, run
+from autobahn.wamp.types import ComponentConfig
+from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
+from asyncio import coroutine
+
+from . import interface_finder
 from .common import masteruri_from_ros, get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
+from .crossbar_interface import RosNode, SelfEncoder
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -117,7 +130,7 @@ class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
                  logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
-class MasterMonitor(object):
+class MasterMonitor(ApplicationSession):
     '''
     This class provides methods to get the state from the ROS master using his
     RPC API and test for changes. Furthermore an XML-RPC server will be created
@@ -223,6 +236,20 @@ class MasterMonitor(object):
         self._re_hide_nodes = gen_pattern(rospy.get_param('~hide_nodes', []), 'hide_nodes')
         self._re_hide_topics = gen_pattern(rospy.get_param('~hide_topics', []), 'hide_topics')
         self._re_hide_services = gen_pattern(rospy.get_param('~hide_services', []), 'hide_services')
+
+        # Start Crossbar server
+        self.crossbar_port = 11911
+        self.crossbar_realm = "ros"
+        ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
+        self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
+        self.crossbar_loop = asyncio.get_event_loop()
+        self.crossbar_session = ApplicationSession()
+        coro = self.crossbar_runner.run(self, start_loop=False)
+        (self.__transport, self.__protocol) = self.crossbar_loop.run_until_complete(coro)
+        self._crossbarThread = threading.Thread(target=self.run_crossbar_forever)
+        self._crossbarThread.setDaemon(True)
+        self._crossbarThread.start()
+
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
         rospy.loginfo("Subscribe to parameter `/roslaunch/uris`")
@@ -848,6 +875,9 @@ class MasterMonitor(object):
                     self.__master_state.timestamp_local = ts_local
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
+            if result:
+                result = {"timestamp": self.__new_master_state.timestamp}
+                self.publish('ros.nodes.changed', result)
             return result
 
     def _timejump_exit(self):
@@ -865,3 +895,26 @@ class MasterMonitor(object):
 
     def update_master_errors(self, error_list):
         self._master_errors = list(error_list)
+
+    ### Crossbar - AUTOBAHN
+    def onDisconnect(self):
+        rospy.loginfo('Autobahn disconnected')
+
+    @wamp.register('ros.nodes.get_list')
+    def getNodeList(self) -> str:
+        rospy.loginfo('Request to [ros.nodes.get_list]')
+        node_list: List[RosNode] = self.__master_state.toCrossbar()
+        return json.dumps(node_list, cls=SelfEncoder)
+
+    @wamp.register('ros.system.get_uri')
+    def getSystemURI(self) -> str:
+        rospy.loginfo('Request to [ros.system.get_uri]')
+        return f"{self.getMasteruri()} [{self.crossbar_port}]"
+
+    @coroutine
+    def onJoin(self, details):
+        res = yield from self.register(self)
+        rospy.loginfo("Crossbar: {} procedures registered!".format(len(res)))
+
+    def run_crossbar_forever(self):
+        self.crossbar_loop.run_forever()

@@ -40,6 +40,11 @@ import rospy
 
 from .common import get_hostname
 from .filter_interface import FilterInterface
+from .crossbar_interface import RosNode
+from .crossbar_interface import RosService
+from .crossbar_interface import RosTopic
+
+from typing import List, Dict
 
 
 class NodeInfo(object):
@@ -1357,3 +1362,50 @@ class MasterInfo(object):
                         self.__servicelist[s] = other_local_srvs[s].copy(self.masteruri)
 
         return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
+
+    def toCrossbar(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
+        try:
+            iffilter = filter_interface
+            ros_nodes = dict()
+            # filter the topics
+            for name, topic in self.topics.items():
+                ros_topic = RosTopic(name, topic.type)
+                for n in topic.publisherNodes:
+                    if not iffilter.is_ignored_publisher(n, name, topic.type):
+                        ros_topic.publisher.append(n)
+                        node = ros_nodes.get(n, RosNode(n, n))
+                        node.publishers.append(ros_topic)
+                        ros_nodes[n] = node
+                for n in topic.subscriberNodes:
+                    if not iffilter.is_ignored_subscriber(n, name, topic.type):
+                        ros_topic.subscriber.append(n)
+                        node = ros_nodes.get(n, RosNode(n, n))
+                        node.subscribers.append(ros_topic)
+                        ros_nodes[n] = node
+            # filter the services
+            for name, service in self.services.items():
+                ros_service = RosService(name, service.type)
+                for sp in service.serviceProvider:
+                    if not iffilter.is_ignored_service(sp, name):
+                        ros_service.provider.append(sp)
+                        node = ros_nodes.get(sp, RosNode(sp, sp))
+                        node.services.append(ros_service)
+                        ros_nodes[sp] = node
+                ros_service.service_API_URI = service.uri
+                ros_service.masteruri = service.masteruri
+                ros_service.location = 'local' if service.isLocal else 'remote'
+
+            result = []
+            # creates the nodes list
+            for name, node in self.nodes.items():
+                ros_node = ros_nodes.get(name, RosNode(name, name))
+                ros_node.node_API_URI = node.uri
+                ros_node.masteruri = node.masteruri
+                ros_node.pid = node.pid
+                ros_node.location = 'local' if node.isLocal else 'remote'
+                result.append(ros_node)
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
+        return result
+
