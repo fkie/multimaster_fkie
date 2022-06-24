@@ -84,6 +84,7 @@ class GrpcServer:
         rospy.loginfo('use GRPC_VERBOSITY=%s' % self._grpc_verbosity)
         self._grpc_poll_strategy = settings.param('global/grpc_poll_strategy', '')
         if self._grpc_poll_strategy:
+            os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '1'
             os.environ['GRPC_POLL_STRATEGY'] = self._grpc_poll_strategy
             rospy.loginfo('use GRPC_POLL_STRATEGY=%s' % self._grpc_poll_strategy)
         else:
@@ -91,6 +92,7 @@ class GrpcServer:
                 del os.environ['GRPC_POLL_STRATEGY']
             except Exception:
                 pass
+            os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '0'
         if old_verbosity != self._grpc_verbosity or old_strategy != self._grpc_poll_strategy:
             rospy.loginfo('gRPC verbosity or poll strategy changed: trigger restart grpc server on %s' % self._launch_url)
             restart_timer = threading.Timer(1.0, self.restart)
