@@ -39,13 +39,13 @@ from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from fkie_node_manager_daemon.common import formated_ts
 
 
-class SensorInterface(object):
+class SensorInterface(threading.Thread):
 
     def __init__(self, hostname='', sensorname='noname', interval=1.0):
+        threading.Thread.__init__(self, daemon=True)
         self.hostname = hostname
         self.mutex = threading.RLock()
         self._interval = interval
-        self._timer = None
         self._stat_msg = DiagnosticStatus()
         self._stat_msg.name = '%s' % (sensorname)
         self._stat_msg.level = 3
@@ -53,7 +53,8 @@ class SensorInterface(object):
         self._stat_msg.message = 'No Data'
         self._stat_msg.values = []
         self._ts_last = 0
-        self._start_check_sensor()
+        self._stop_event = threading.Event()
+        self.start()
 
     # @abc.abstractmethod
     def check_sensor(self):
@@ -63,12 +64,12 @@ class SensorInterface(object):
     def reload_parameter(self, settings):
         pass
 
-    def _start_check_sensor(self):
-        if not self.is_active():
-            return
-        self.check_sensor()
-        if self.is_active() and self._interval > 0:
-            self.start_timer(self._interval, self._start_check_sensor)
+    def run(self):
+        while not self._stop_event.wait(self._interval):
+            self.check_sensor()
+
+    def stop(self):
+        self._stop_event.set()
 
     def last_state(self, ts_now, filter_level=0, filter_ts=0):
         '''
@@ -89,19 +90,3 @@ class SensorInterface(object):
         if msg.values and msg.values[-1].key == 'Timestamp':
             del msg.values[-1]
         msg.values.append(KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
-
-    def is_active(self):
-        if rospy.is_shutdown():
-            with self.mutex:
-                self.cancel_timer()
-            return False
-        return True
-
-    def start_timer(self, interval, callback):
-        self._timer = threading.Timer(interval, callback)
-        self._timer.start()
-
-    def cancel_timer(self):
-        if self._timer is not None:
-            self._timer.cancel()
-            self._timer = None
