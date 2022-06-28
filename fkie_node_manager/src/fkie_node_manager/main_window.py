@@ -358,6 +358,7 @@ class MainWindow(QMainWindow):
         self.own_master_monitor.init(monitor_port)
         self.own_master_monitor.state_signal.connect(self.on_master_state_changed)
         self.own_master_monitor.err_signal.connect(self.on_master_monitor_err)
+        self.own_master_monitor.crossbar_signal.connect(self.on_master_monitor_crossbar)
 
         # get the name of the service and topic of the discovery node. The name are determine by the message type  of those topics
         self.masterlist_service = masterlist_service = MasterListService()
@@ -916,7 +917,13 @@ class MainWindow(QMainWindow):
                 del self.__icons[name]
 
     def on_master_monitor_err(self, msg):
+        if self.getMasteruri() not in self._con_tries:
+            self._con_tries[self.getMasteruri()] = 0
         self._con_tries[self.getMasteruri()] += 1
+
+    def on_master_monitor_crossbar(self, state):
+        if not state:
+            self.own_master_monitor._master_monitor.crossbar_reconnect()
 
     def on_master_info_retrieved(self, minfo):
         '''

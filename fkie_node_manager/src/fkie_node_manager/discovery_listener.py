@@ -353,6 +353,8 @@ class OwnMasterMonitoring(QObject):
     '''@ivar: a signal to inform about an error.
   Parameter: L{str}'''
 
+    crossbar_signal = Signal(bool)
+
     ROSMASTER_HZ = 1
     '''@ivar: the rate to test ROS master for changes.'''
 
@@ -417,6 +419,8 @@ class OwnMasterMonitoring(QObject):
                         current_check_hz = float(current_check_hz) / 2.0
                     elif current_check_hz * cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
                         current_check_hz = float(current_check_hz) * 2.0
+                    if not self._master_monitor.crossbar_connected:
+                        self.crossbar_signal.emit(False)
             except MasterConnectionException as mce:
                 self._handle_exception("MasterConnectionException while master check loop", mce)
             except RuntimeError as ree:

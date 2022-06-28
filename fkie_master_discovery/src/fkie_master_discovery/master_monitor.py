@@ -76,6 +76,7 @@ from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 from .crossbar_interface import RosNode, SelfEncoder
+from .crossbar_server import crossbar_start_server
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -238,17 +239,17 @@ class MasterMonitor(ApplicationSession):
         self._re_hide_services = gen_pattern(rospy.get_param('~hide_services', []), 'hide_services')
 
         # Start Crossbar server
+        self.crossbar_connected = False
+        self.crossbar_connecting = False
+        self.crossbar_loop = asyncio.get_event_loop()
+        self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+        self._crossbarThread.start()
+        self._crossbarThread = None
         self.crossbar_port = 11911
         self.crossbar_realm = "ros"
         ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
         self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
-        self.crossbar_loop = asyncio.get_event_loop()
-        self.crossbar_session = ApplicationSession()
-        coro = self.crossbar_runner.run(self, start_loop=False)
-        (self.__transport, self.__protocol) = self.crossbar_loop.run_until_complete(coro)
-        self._crossbarThread = threading.Thread(target=self.run_crossbar_forever)
-        self._crossbarThread.setDaemon(True)
-        self._crossbarThread.start()
+        task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
@@ -897,8 +898,13 @@ class MasterMonitor(ApplicationSession):
         self._master_errors = list(error_list)
 
     ### Crossbar - AUTOBAHN
+    def onConnect(self):
+        print("Autobahn connected")
+        self.join(self.config.realm)
+
     def onDisconnect(self):
         rospy.loginfo('Autobahn disconnected')
+        self.crossbar_connected = False
 
     @wamp.register('ros.nodes.get_list')
     def getNodeList(self) -> str:
@@ -916,5 +922,37 @@ class MasterMonitor(ApplicationSession):
         res = yield from self.register(self)
         rospy.loginfo("Crossbar: {} procedures registered!".format(len(res)))
 
-    def run_crossbar_forever(self):
-        self.crossbar_loop.run_forever()
+    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+        print("run_forever_exited")
+
+    async def crossbar_connect_async(self):
+        self.crossbar_connected = False
+        while not self.crossbar_connected:
+            try:
+                self.crossbar_connecting = True
+                coro = await self.crossbar_runner.run(self, start_loop=False)
+                (self.__crossbar_transport, self.__crossbar_protocol) = coro
+                self.crossbar_connected = True
+                self.crossbar_connecting = False
+            except Exception as err:
+                rospy.logwarn(err)
+                self.crossbar_connecting = False
+                try:
+                    crossbar_start_server(self.crossbar_port)
+                except:
+                    import traceback
+                    print(traceback.format_exc())
+                time.sleep(5.0)
+
+    async def crossbar_connect(self) -> None:
+        current_task = asyncio.current_task()
+        if not self.crossbar_connecting:
+            task = asyncio.create_task(self.crossbar_connect_async())
+        else:
+            task = current_task
+        await asyncio.gather(task)
+
+    def crossbar_reconnect(self):
+        asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
