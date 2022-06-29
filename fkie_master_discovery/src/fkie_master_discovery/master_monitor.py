@@ -76,7 +76,7 @@ from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 from .crossbar_interface import RosNode, SelfEncoder
-from .crossbar_server import crossbar_start_server
+from .crossbar_server import crossbar_start_server, CROSSBAR_PATH
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -877,8 +877,11 @@ class MasterMonitor(ApplicationSession):
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
             if result:
-                result = {"timestamp": self.__new_master_state.timestamp}
-                self.publish('ros.nodes.changed', result)
+                try:
+                    result = {"timestamp": self.__new_master_state.timestamp}
+                    self.publish('ros.nodes.changed', result)
+                except Exception as cpe:
+                    pass
             return result
 
     def _timejump_exit(self):
@@ -940,6 +943,7 @@ class MasterMonitor(ApplicationSession):
                 rospy.logwarn(err)
                 self.crossbar_connecting = False
                 try:
+                    rospy.loginfo(f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}, config: {CROSSBAR_PATH}")
                     crossbar_start_server(self.crossbar_port)
                 except:
                     import traceback

@@ -1,12 +1,11 @@
+import errno
 import json
-import os, errno
+import os
 import subprocess
 import shutil
 
 
-LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
-CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser('~'), 'crosspath_server'), '.crossbar')
-#CROSSBAR_PATH = os.path.join(LOG_PATH, '.crossbar')
+CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser('~'), 'tmp'), '.crossbar')
 
 CROSSBAR_CONFIG_JSON = {
     "version": 2,
