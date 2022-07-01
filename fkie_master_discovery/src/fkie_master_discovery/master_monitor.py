@@ -58,7 +58,6 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 import json
-from json import JSONEncoder
 from typing import List, Dict
 
 # crossbar-io dependencies

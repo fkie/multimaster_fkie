@@ -34,6 +34,7 @@ try:
     import queue
 except ImportError:
     import Queue as queue  # python 2 compatibility
+import json
 import errno
 import rospy
 import socket
@@ -52,6 +53,7 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
+from .crossbar_interface import RosProvider, SelfEncoder
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -954,6 +956,16 @@ class Discoverer(object):
                 except Exception as e:
                     rospy.logwarn("Error while decode message: %s", str(e))
 
+    def _crossbar_publish_masters(self):
+        try:
+            result = []
+            for (addr, port), master in self.masters.items():
+                cbmaster = RosProvider(name=master.mastername, host=addr[0], port=self.master_monitor.crossbar_port)
+                result.append(cbmaster)
+            self.master_monitor.publish('ros.provider.list', json.dumps(result, cls=SelfEncoder))
+        except Exception as cpe:
+            pass
+
     def _check_timejump(self):
         if self._last_datetime > time.time():
             self._stop_timers()
@@ -1048,6 +1060,8 @@ class Discoverer(object):
                     self._services_initialized = True
                     rospy.Service('~list_masters', DiscoverMasters, self.rosservice_list_masters)
                     rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
+                if master_state.state != MasterState.STATE_CHANGED:
+                    self._crossbar_publish_masters()
             except:
                 traceback.print_exc()
 

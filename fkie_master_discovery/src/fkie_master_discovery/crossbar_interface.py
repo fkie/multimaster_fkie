@@ -76,3 +76,19 @@ class RosNode:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class RosProvider:
+    '''
+    :param str name: the name of the ROS Host
+    :param str host: hostname
+    :param int port: port of crossbar server
+    '''
+    def __init__(self, name: str, host: str, port: int) -> None:
+        self.name = name
+        self.host = host
+        self.port = port
+        self.type = 'crossbar-wamp'
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
