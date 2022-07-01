@@ -47,6 +47,9 @@ import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as stgrpc
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 
+# crossbar-io dependencies
+import asyncio
+
 from .common import interpret_path
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
@@ -59,6 +62,9 @@ from .version_servicer import VersionServicer
 class GrpcServer:
 
     def __init__(self):
+        self.crossbar_port = 11911
+        self.crossbar_realm = "ros"
+        self.crossbar_loop = asyncio.get_event_loop()
         self.server = None
         self.settings_servicer = SettingsServicer()
         self._grpc_verbosity = self.settings_servicer.settings.param('global/grpc_verbosity', 'INFO')
@@ -71,6 +77,7 @@ class GrpcServer:
         rospy.Service('~run', Task, self._rosservice_start_node)
 
     def __del__(self):
+        self.crossbar_loop.stop()
         self.server.stop(3)
         self.launch_servicer = None
         self.monitor_servicer = None
@@ -99,6 +106,7 @@ class GrpcServer:
             restart_timer.start()
 
     def restart(self):
+        self.crossbar_loop.stop()
         self.shutdown()
         del self.server
         self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
@@ -124,7 +132,7 @@ class GrpcServer:
             time.sleep(2.)
             insecure_port = self.server.add_insecure_port(url)
         if insecure_port > 0:
-            fgrpc.add_FileServiceServicer_to_server(FileServicer(), self.server)
+            fgrpc.add_FileServiceServicer_to_server(FileServicer(self.crossbar_loop, self.crossbar_realm, self.crossbar_port), self.server)
             lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
             mgrpc.add_MonitorServiceServicer_to_server(self.monitor_servicer, self.server)
             sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(), self.server)
@@ -132,8 +140,16 @@ class GrpcServer:
             vgrpc.add_VersionServiceServicer_to_server(VersionServicer(), self.server)
             self.server.start()
             rospy.loginfo("Server at '%s' started!" % url)
+        #rospy.loginfo(f"Connect to crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}")
+        self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+        self._crossbarThread.start()
+
+    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
 
     def shutdown(self):
+        self.crossbar_loop.stop()
         self.launch_servicer.stop()
         self.monitor_servicer.stop()
         self.server.stop(3)

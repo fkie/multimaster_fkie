@@ -64,7 +64,6 @@ from typing import List, Dict
 from twisted.internet.defer import inlineCallbacks
 import asyncio
 from autobahn import wamp
-from autobahn.asyncio.component import Component, run
 from autobahn.wamp.types import ComponentConfig
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from asyncio import coroutine
@@ -243,7 +242,6 @@ class MasterMonitor(ApplicationSession):
         self.crossbar_loop = asyncio.get_event_loop()
         self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
-        self._crossbarThread = None
         self.crossbar_port = 11911
         self.crossbar_realm = "ros"
         ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))

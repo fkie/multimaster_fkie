@@ -36,6 +36,10 @@ import os
 import rospy
 import shutil
 
+import json
+import asyncio
+from autobahn import wamp
+
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fms_grpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fms
 from . import file_item
@@ -43,6 +47,12 @@ from . import remote
 from . import settings
 from . import url as nmdurl
 from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
+from .crossbar_base_session import CrossbarBaseSession
+from .crossbar_base_session import SelfEncoder
+from .crossbar_file_interface import RosPackage
+from .crossbar_file_interface import PathItem
+
+from typing import List
 
 try:
     from catkin_pkg.package import parse_package
@@ -64,14 +74,16 @@ MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
 
 
-class FileServicer(fms_grpc.FileServiceServicer):
+class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
     FILE_CHUNK_SIZE = 1024
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
         rospy.loginfo("Create file manger servicer")
         fms_grpc.FileServiceServicer.__init__(self)
+        CrossbarBaseSession.__init__(self, loop, realm, port)
         self.DIR_CACHE = {}
+        self.CB_DIR_CACHE = {}
         self._peers = {}
 
 #     def _terminated(self):
@@ -339,6 +351,33 @@ class FileServicer(fms_grpc.FileServiceServicer):
         result.items.extend(path_list)
         return result
 
+    @wamp.register('ros.path.get_list')
+    def getPathList(self, path: str) -> List[PathItem]:
+        rospy.loginfo('Request to [ros.path.get_list] for %s' % path)
+        path_list: List[PathItem] = []
+        # list the path
+        dirlist = os.listdir(path)
+        for cfile in dirlist:
+            path = os.path.normpath('%s%s%s' % (path, os.path.sep, cfile))
+            if os.path.isfile(path):
+                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type='file'))
+            elif path in self.CB_DIR_CACHE:
+                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=self.CB_DIR_CACHE[path]))
+            elif os.path.isdir(path):
+                try:
+                    fileList = os.listdir(path)
+                    file_type = None
+                    if is_package(fileList):
+                        file_type = 'package'
+                    else:
+                        file_type = 'dir'
+                    self.CB_DIR_CACHE[path] = file_type
+                    path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                except Exception as _:
+                    pass
+        return json.dumps(path_list, cls=SelfEncoder)
+
+
     def _get_packages(self, path):
         result = {}
         if os.path.isdir(path):
@@ -379,6 +418,27 @@ class FileServicer(fms_grpc.FileServiceServicer):
             result.status.code = ERROR
             result.status.error_msg = utf8(err)
         return result
+
+    @wamp.register('ros.packages.get_list')
+    def getPackageList(self) -> List[RosPackage]:
+        rospy.loginfo('Request to [ros.packages.get_list]')
+        clear_cache=False
+        if clear_cache:
+            try:
+                from roslaunch import substitution_args
+                import rospkg
+                substitution_args._rospack = rospkg.RosPack()
+            except Exception as err:
+                rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
+        package_list: List[RosPackage] = []
+        # fill the input fields
+        root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+        for p in root_paths:
+            ret = self._get_packages(p)
+            for name, path in ret.items():
+                package = RosPackage(name=name, path=path)
+                package_list.append(package)
+        return json.dumps(package_list, cls=SelfEncoder)
 
     def ChangedFiles(self, request, context):
         result = fms.PathList()
