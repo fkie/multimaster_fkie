@@ -876,7 +876,8 @@ class MasterMonitor(ApplicationSession):
             if result:
                 try:
                     result = {"timestamp": self.__new_master_state.timestamp}
-                    self.publish('ros.nodes.changed', result)
+                    # self.publish('ros.nodes.changed', result)
+                    self.publish('ros.nodes.changed', json.dumps(result, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
             return result
