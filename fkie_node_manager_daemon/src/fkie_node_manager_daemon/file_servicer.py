@@ -35,6 +35,7 @@ from io import FileIO
 import os
 import rospy
 import shutil
+import glob
 
 import json
 import asyncio
@@ -352,17 +353,17 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         return result
 
     @wamp.register('ros.path.get_list')
-    def getPathList(self, path: str) -> List[PathItem]:
-        rospy.loginfo('Request to [ros.path.get_list] for %s' % path)
+    def getPathList(self, inputPath: str) -> List[PathItem]:
+        rospy.loginfo('Request to [ros.path.get_list] for %s' % inputPath)
         path_list: List[PathItem] = []
         # list the path
-        dirlist = os.listdir(path)
+        dirlist = os.listdir(inputPath)
         for cfile in dirlist:
-            path = os.path.normpath('%s%s%s' % (path, os.path.sep, cfile))
+            path = os.path.normpath('%s%s%s' % (inputPath, os.path.sep, cfile))
             if os.path.isfile(path):
-                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type='file'))
+                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), path_type='file'))                
             elif path in self.CB_DIR_CACHE:
-                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=self.CB_DIR_CACHE[path]))
+                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), path_type=self.CB_DIR_CACHE[path]))
             elif os.path.isdir(path):
                 try:
                     fileList = os.listdir(path)
@@ -372,9 +373,22 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     else:
                         file_type = 'dir'
                     self.CB_DIR_CACHE[path] = file_type
-                    path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                    path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), path_type=file_type))
                 except Exception as _:
                     pass
+        return json.dumps(path_list, cls=SelfEncoder)
+
+    @wamp.register('ros.path.get_list_recursive')
+    def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
+        rospy.loginfo('Request to [ros.path.get_list_recursive] for %s' % inputPath)
+        path_list: List[PathItem] = []
+
+        for filename in glob.iglob(inputPath + '**/**', recursive=True):
+            if filename == inputPath: continue
+
+            if os.path.isfile(filename):
+                path_list.append(PathItem(path=filename, mtime=os.path.getmtime(filename), size=os.path.getsize(filename), path_type='file'))
+            
         return json.dumps(path_list, cls=SelfEncoder)
 
 
