@@ -57,3 +57,22 @@ class PathItem:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LogPathItem:
+    '''
+    :param str node: complete node name
+    :param str screen_log: the absolute path to the screen log file.
+    :param bool screen_log_exists: False if the file does not exists.
+    :param str ros_log: the absolute path to the ros log file.
+    :param bool ros_log_exists: False if the file does not exists.
+    '''
+    def __init__(self, node: str, screen_log: str = '', screen_log_exists: bool = False, ros_log: str = '', ros_log_exists: bool = False) -> None:
+        self.node = node
+        self.screen_log = screen_log
+        self.screen_log_exists = screen_log_exists
+        self.ros_log = ros_log
+        self.ros_log_exists = ros_log_exists
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)

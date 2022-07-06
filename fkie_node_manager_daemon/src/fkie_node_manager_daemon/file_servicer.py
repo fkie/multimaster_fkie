@@ -52,6 +52,9 @@ from .crossbar_base_session import CrossbarBaseSession
 from .crossbar_base_session import SelfEncoder
 from .crossbar_file_interface import RosPackage
 from .crossbar_file_interface import PathItem
+from .crossbar_file_interface import LogPathItem
+from .screen import get_logfile
+from .screen import get_ros_logfile
 
 from typing import List
 
@@ -434,7 +437,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         return result
 
     @wamp.register('ros.packages.get_list')
-    def getPackageList(self) -> List[RosPackage]:
+    def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         rospy.loginfo('Request to [ros.packages.get_list]')
         clear_cache=False
         if clear_cache:
@@ -453,6 +456,21 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 package = RosPackage(name=name, path=path)
                 package_list.append(package)
         return json.dumps(package_list, cls=SelfEncoder)
+
+    @wamp.register('ros.path.get_log_paths')
+    def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
+        rospy.loginfo('Request to [ros.path.get_log_paths] for %s' % nodes)
+        result = []
+        for node in nodes:
+            screen_log = get_logfile(node=node, for_new_screen=True)
+            ros_log = get_ros_logfile(node)
+            log_path_item = LogPathItem(node,
+                                        screen_log=screen_log,
+                                        screen_log_exists=os.path.exists(screen_log),
+                                        ros_log=ros_log,
+                                        ros_log_exists=os.path.exists(ros_log))
+            result.append(log_path_item)
+        return json.dumps(result, cls=SelfEncoder)
 
     def ChangedFiles(self, request, context):
         result = fms.PathList()
