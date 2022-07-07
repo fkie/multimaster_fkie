@@ -516,11 +516,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 rospy.logwarn("Unloading launch file: %s", err_details)
                 result.status.code = 'ERROR'
                 result.status.msg = utf8(err_details)
-                return result
         else:
             result.status.code = 'FILE_NOT_FOUND'
-            return result
-        return result
+        return json.dumps(result, cls=SelfEncoder)
 
     def GetNodes(self, request, context):
         rospy.logdebug('GetNodes request:\n%s' % str(request))
@@ -669,7 +667,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 assmsg.nodes.extend(ass)
                 reply_lc.associations.append(assmsg)
             reply.append(reply_lc)
-        return reply
+        return json.dumps(reply, cls=SelfEncoder)
 
     def StartNode(self, request_iterator, context):
         for request in request_iterator:
@@ -745,12 +743,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             if not launch_configs:
                 result.status.code = 'NODE_NOT_FOUND'
                 result.status.msg = "Node '%s' not found" % request.name
-                return result
+                return json.dumps(result, cls=SelfEncoder)
             if len(launch_configs) > 1:
                 result.status.code = 'MULTIPLE_LAUNCHES'
                 result.status.msg = "Node '%s' found in multiple launch files" % request.name
                 result.launch_files.extend([lcfg.filename for lcfg in launch_configs])
-                return result
+                return json.dumps(result, cls=SelfEncoder)
             try:
                 result.launch_files.append(launch_configs[0].filename)
                 startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
@@ -760,23 +758,23 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.code = 'MULTIPLE_BINARIES'
                 result.status.msg = "multiple binaries found for node '%s': %s" % (request.name, bsr.choices)
                 result.paths.extend(bsr.choices)
-                return result
+                return json.dumps(result, cls=SelfEncoder)
             except grpc.RpcError as conerr:
                 result.status.code = 'CONNECTION_ERROR'
                 result.status.msg = utf8(conerr)
-                return result
+                return json.dumps(result, cls=SelfEncoder)
         except exceptions.ResourceNotFound as err_nf:
             result = StartNodeReply(name=request.name)
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (request.name, utf8(err_nf))
-            return result
+            return json.dumps(result, cls=SelfEncoder)
         except Exception as _errr:
             result = StartNodeReply(name=request.name)
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
-            return result
+            return json.dumps(result, cls=SelfEncoder)
         finally:
-            return result
+            return json.dumps(result, cls=SelfEncoder)
 
     def StartStandaloneNode(self, request, context):
         rospy.logdebug('StartStandaloneNode request:\n%s' % str(request))
