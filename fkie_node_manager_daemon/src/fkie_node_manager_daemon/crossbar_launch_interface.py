@@ -68,7 +68,7 @@ class LaunchArgument:
         return json.dumps(dict(self), ensure_ascii=False)    
 
 
-class LoadLaunchReply:
+class LaunchLoadReply:
 	
     def __init__(self, *, status: LaunchReturnStatus = LaunchReturnStatus('OK'),
                           paths: List[str] = [],
@@ -95,7 +95,7 @@ class LaunchFile:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
-class LoadLaunchRequest:
+class LaunchLoadRequest:
     '''
     The request message to list the ROS packages in given path.
     :param str package: ROS package name
@@ -103,7 +103,6 @@ class LoadLaunchRequest:
                        more then one launch file with same name,
                        you have to specify the sub-path with launch file.
     :param str path: if set, this will be used instead of package/launch
-    :param bool load_params: loads all parameter into ROS parameter server after successful load.
     :param Argument args: arguments to load the launch file. If args are empty but the launch file needs them,
                           the reply status has code PARAMS_REQUIRED and args list will be filled with requested args.
     :param bool force_first_file: if True, use first file if more than one was found in the package.
@@ -112,11 +111,11 @@ class LoadLaunchRequest:
                       the nodes are started on the host specified by hostname of the masteruri.
     :param str host: start nodes of this file on specified host.
     '''
-    def __init__(self, *, package: str = '', launch: str = '', path: str = '',
+    def __init__(self, *, ros_package: str = '', launch: str = '', path: str = '',
                           args: List[LaunchArgument] = [], force_first_file: bool = False,
                           request_args: bool = False,
                           masteruri: str = '', host: str = '') -> None:
-        self.package = package
+        self.ros_package = ros_package
         self.launch = launch
         self.path = path
         self.args = args
@@ -134,7 +133,7 @@ class LoadLaunchRequest:
     :param str manager: nodelete manager
     :param [str] nodes: list with nodes (full name) controlled by nodelet manager.
     '''
-class Nodelets:
+class LaunchNodelets:
     def __init__(self, manager: str, nodes: List[str]) -> None:
         self.manager = manager
         self.nodes = nodes
@@ -148,7 +147,7 @@ class Nodelets:
     :param str node: node (full name)
     :param [str] nodes: list with associated nodes (full name).
     '''
-class Associations:
+class LaunchAssociations:
 	
     def __init__(self, node: str, nodes: List[str]) -> None:
         self.node = node
@@ -160,7 +159,7 @@ class Associations:
 
     '''
     Report the nodes of a launch file.
-    :param str launch_file: full path of the launch file with contains the reported nodes.
+    :param str path: full path of the launch file with contains the reported nodes.
     :param Argument args: arguments used to load the launch file.
     :param str masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
                           the nodes are started on the host specified by hostname of the masteruri.
@@ -169,14 +168,14 @@ class Associations:
    '''
 class LaunchContent:
 
-    def __init__(self, launch_file: str, *,
+    def __init__(self, path: str, *,
                        args: List[LaunchArgument] = [],
                        masteruri: str = '',
                        host: str = '',
                        nodes: List[str] = [],
-                       nodelets: List[Nodelets] = [],
-                       associations: List[Associations] = []) -> None:
-        self.launch_file = launch_file
+                       nodelets: List[LaunchNodelets] = [],
+                       associations: List[LaunchAssociations] = []) -> None:
+        self.path = path
         self.args = args
         self.masteruri = masteruri
         self.host = host
@@ -225,7 +224,7 @@ class LaunchNode:
     :param [str] path: a list of paths with binaries for a node, only if MULTIPLE_BINARIES is returned.
     :param [str] launch: a list with names launch files, only if MULTIPLE_LAUNCHES is returned.
     '''
-class StartNodeReply:
+class LaunchNodeReply:
 
     def __init__(self, name: str, *,
                        status: str = 'OK',

@@ -62,13 +62,13 @@ from .crossbar_base_session import CrossbarBaseSession
 from .crossbar_base_session import SelfEncoder
 from .crossbar_launch_interface import LaunchArgument
 from .crossbar_launch_interface import LaunchFile
-from .crossbar_launch_interface import LoadLaunchRequest
-from .crossbar_launch_interface import LoadLaunchReply
+from .crossbar_launch_interface import LaunchLoadRequest
+from .crossbar_launch_interface import LaunchLoadReply
 from .crossbar_launch_interface import LaunchContent
-from .crossbar_launch_interface import Nodelets
-from .crossbar_launch_interface import Associations
+from .crossbar_launch_interface import LaunchNodelets
+from .crossbar_launch_interface import LaunchAssociations
 from .crossbar_launch_interface import LaunchNode
-from .crossbar_launch_interface import StartNodeReply
+from .crossbar_launch_interface import LaunchNodeReply
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -353,27 +353,27 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     @wamp.register('ros.launch.load')
-    def loadLaunch(self, request: LoadLaunchRequest) -> LoadLaunchReply:
+    def loadLaunch(self, request: LaunchLoadRequest) -> LaunchLoadReply:
         '''
         Loads launch file by crossbar request
         '''
-        result = LoadLaunchReply()
+        result = LaunchLoadReply()
         launchfile = request.path
-        rospy.logdebug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (launchfile, request.package, request.launch, request.masteruri, request.host, request.args))
+        rospy.logdebug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (launchfile, request.ros_package, request.launch, request.masteruri, request.host, request.args))
         if not launchfile:
             # determine path from package name and launch name
             try:
-                paths = roslib.packages.find_resource(request.package, request.launch)
+                paths = roslib.packages.find_resource(request.ros_package, request.launch)
                 if not paths:
                     result.status.code = 'FILE_NOT_FOUND'
-                    result.status.msg = utf8('Launch files %s in package %s found!' % (request.launch, request.package))
+                    result.status.msg = utf8('Launch files %s in package %s found!' % (request.launch, request.ros_package))
                     return json.dumps(result, cls=SelfEncoder)
                 elif len(paths) > 1:
                     if request.force_first_file:
                         launchfile = paths[0]
                     else:
                         result.status.code = 'MULTIPLE_LAUNCHES'
-                        result.status.msg = utf8('Multiple launch files with name %s in package %s found!' % (request.launch, request.package))
+                        result.status.msg = utf8('Multiple launch files with name %s in package %s found!' % (request.launch, request.ros_package))
                         for mp in paths:
                             result.paths.append(mp)
                         rospy.logdebug('..load aborted, MULTIPLE_LAUNCHES')
@@ -382,7 +382,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     launchfile = paths[0]
             except rospkg.ResourceNotFound as rnf:
                     result.status.code = 'FILE_NOT_FOUND'
-                    result.status.msg = utf8('Package %s not found: %s' % (request.package, rnf))
+                    result.status.msg = utf8('Package %s not found: %s' % (request.ros_package, rnf))
                     rospy.logdebug('..load aborted, FILE_NOT_FOUND')
                     return json.dumps(result, cls=SelfEncoder)
         result.paths.append(launchfile)
@@ -501,9 +501,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     @wamp.register('ros.launch.unload')
-    def unloadLaunch(self, request: LaunchFile) -> LoadLaunchReply:
+    def unloadLaunch(self, request: LaunchFile) -> LaunchLoadReply:
         rospy.logdebug('UnloadLaunch request:\n%s' % str(request))
-        result = LoadLaunchReply()
+        result = LaunchLoadReply()
         result.path.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
         if cfgid in self._loaded_files:
@@ -623,7 +623,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         reply = []
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
-            reply_lc = LaunchContent(launch_file=cfgid.path, masteruri=lc.masteruri, host=lc.host)
+            reply_lc = LaunchContent(path=cfgid.path, masteruri=lc.masteruri, host=lc.host)
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
                 reply_lc.node.append(node_fullname)
@@ -638,7 +638,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             nodelets[nodelet_mngr] = []
                         nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
             for mngr, ndl in nodelets.items():
-                nlmsg = Nodelets(manager=mngr)
+                nlmsg = LaunchNodelets(manager=mngr)
                 nlmsg.nodes.extend(ndl)
                 reply_lc.nodelets.append(nlmsg)
             # create association description
@@ -663,7 +663,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                         values.append(roslib.names.ns_join(item.namespace, split))
                     associations[node_fullname] = values
             for node, ass in associations.items():
-                assmsg = Associations(node=node)
+                assmsg = LaunchAssociations(node=node)
                 assmsg.nodes.extend(ass)
                 reply_lc.associations.append(assmsg)
             reply.append(reply_lc)
@@ -723,9 +723,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 yield result
 
     @wamp.register('ros.launch.start_node')
-    def startNode(self, request: LaunchNode) -> StartNodeReply:
+    def startNode(self, request: LaunchNode) -> LaunchNodeReply:
         rospy.logdebug('StartNode request:\n%s' % str(request))
-        result = StartNodeReply(name=request.name)
+        result = LaunchNodeReply(name=request.name)
         try:
             launch_configs = []
             if request.opt_launch:
@@ -764,12 +764,10 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.msg = utf8(conerr)
                 return json.dumps(result, cls=SelfEncoder)
         except exceptions.ResourceNotFound as err_nf:
-            result = StartNodeReply(name=request.name)
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (request.name, utf8(err_nf))
             return json.dumps(result, cls=SelfEncoder)
         except Exception as _errr:
-            result = StartNodeReply(name=request.name)
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
             return json.dumps(result, cls=SelfEncoder)
