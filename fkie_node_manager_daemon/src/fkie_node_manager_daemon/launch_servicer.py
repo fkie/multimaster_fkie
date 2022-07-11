@@ -429,7 +429,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             argv = ['%s:=%s' % (arg.name, arg.value) for arg in request.args if arg.name in req_args_dict]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
-            result.args.append([LaunchArgument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
+            result.args.extend([LaunchArgument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug('..load complete!')
         except Exception as e:
