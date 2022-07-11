@@ -344,6 +344,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug("..load complete!")
+
+            # notify changes to crossbar GUI
+            try:
+                self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+            except Exception as cpe:
+                pass
         except Exception as e:
             err_text = "%s loading failed!" % launchfile
             err_details = "%s: %s" % (err_text, utf8(e))
@@ -364,6 +370,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         # TODO: Why is this required? why the args and paths accumulates? 
         result.args = []
         result.paths = []
+        result.changed_nodes = []
 
         # Covert input dictionary into a proper python object
         request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
@@ -432,6 +439,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             result.args.extend([LaunchArgument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             rospy.logdebug('..load complete!')
+
+            # notify changes to crossbar GUI
+            try:
+                self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+            except Exception as cpe:
+                pass
         except Exception as e:
             err_text = '%s loading failed!' % launchfile
             err_details = '%s: %s' % (err_text, utf8(e))
@@ -485,6 +498,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                         if not re.search(r"\d{3,6}_\d{10,}", n):
                             result.changed_nodes.append(n)
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
+                
+                # notify changes to crossbar GUI
+                try:
+                    self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                except Exception as cpe:
+                    pass
             except Exception as e:
                 print(traceback.format_exc())
                 err_text = "%s loading failed!" % request.path
@@ -507,6 +526,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             try:
                 del self._loaded_files[cfgid]
                 result.status.code = OK
+
+                # notify changes to crossbar GUI
+                try:
+                    self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                except Exception as cpe:
+                    pass
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -520,15 +545,31 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         return result
 
     @wamp.register('ros.launch.unload')
-    def unloadLaunch(self, request: LaunchFile) -> LaunchLoadReply:
+    def unloadLaunch(self, request_json: LaunchFile) -> LaunchLoadReply:
+        rospy.logdebug('Request to [ros.launch.unload]')
+
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+
         rospy.logdebug('UnloadLaunch request:\n%s' % str(request))
         result = LaunchLoadReply()
-        result.path.append(request.path)
+        # TODO: Why is this required? why the args and paths accumulates? 
+        result.args = []
+        result.paths = []
+        result.changed_nodes = []
+
+        result.paths.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
         if cfgid in self._loaded_files:
             try:
                 del self._loaded_files[cfgid]
                 result.status.code = 'OK'
+
+                # notify changes to crossbar GUI
+                try:
+                    self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                except Exception as cpe:
+                    pass
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -637,15 +678,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
 
     @wamp.register('ros.launch.get_list')
     def getList(self) -> List[LaunchContent]:
-        rospy.logdebug('getNodes request')
+        rospy.logdebug('Request to [ros.launch.get_list]')
         requested_files = list(self._loaded_files.keys())
         reply = []
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
             reply_lc = LaunchContent(path=cfgid.path, masteruri=lc.masteruri, host=lc.host)
+            # TODO: Why is this required?
+            reply_lc.args = []
+            reply_lc.nodes = []
+            reply_lc.nodelets = []
+            reply_lc.associations = []
+
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
-                reply_lc.node.append(node_fullname)
+                reply_lc.nodes.append(node_fullname)
+
             # create nodelets description
             nodelets = {}
             for n in lc.roscfg.nodes:
@@ -660,6 +708,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 nlmsg = LaunchNodelets(manager=mngr)
                 nlmsg.nodes.extend(ndl)
                 reply_lc.nodelets.append(nlmsg)
+
             # create association description
             associations = {}
             for n in lc.roscfg.nodes:
@@ -686,6 +735,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 assmsg.nodes.extend(ass)
                 reply_lc.associations.append(assmsg)
             reply.append(reply_lc)
+        
         return json.dumps(reply, cls=SelfEncoder)
 
     def StartNode(self, request_iterator, context):
