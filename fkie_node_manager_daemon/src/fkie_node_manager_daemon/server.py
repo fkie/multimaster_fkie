@@ -71,7 +71,7 @@ class GrpcServer:
         self._grpc_poll_strategy = self.settings_servicer.settings.param('global/grpc_poll_strategy', '')
         self.settings_servicer.settings.add_reload_listener(self._update_grpc_parameter)
         self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
-        self.launch_servicer = LaunchServicer(self.monitor_servicer)
+        self.launch_servicer = LaunchServicer(self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         rospy.Service('~start_launch', LoadLaunch, self._rosservice_start_launch)
         rospy.Service('~load_launch', LoadLaunch, self._rosservice_load_launch)
         rospy.Service('~run', Task, self._rosservice_start_node)

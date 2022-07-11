@@ -43,6 +43,7 @@ import threading
 import traceback
 
 import json
+from types import SimpleNamespace
 import asyncio
 from autobahn import wamp
 
@@ -133,14 +134,15 @@ class CfgId(object):
         return False
 
 
-class LaunchServicer(lgrpc.LaunchServiceServicer):
+class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
     '''
     Handles GRPC-requests defined in `launch.proto`.
     '''
 
-    def __init__(self, monitor_servicer):
+    def __init__(self, monitor_servicer, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
         rospy.loginfo("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
+        CrossbarBaseSession.__init__(self, loop, realm, port)
         self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
@@ -353,13 +355,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         return result
 
     @wamp.register('ros.launch.load')
-    def loadLaunch(self, request: LaunchLoadRequest) -> LaunchLoadReply:
+    def loadLaunch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
         '''
         Loads launch file by crossbar request
         '''
+        rospy.logdebug('Request to [ros.launch.load]')
         result = LaunchLoadReply()
+        # TODO: Why is this required? why the args and paths accumulates? 
+        result.args = []
+        result.paths = []
+
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        
         launchfile = request.path
         rospy.logdebug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (launchfile, request.ros_package, request.launch, request.masteruri, request.host, request.args))
+        
         if not launchfile:
             # determine path from package name and launch name
             try:
@@ -386,27 +397,35 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     rospy.logdebug('..load aborted, FILE_NOT_FOUND')
                     return json.dumps(result, cls=SelfEncoder)
         result.paths.append(launchfile)
+
         # it is already loaded?
         if (launchfile, request.masteruri) in list(self._loaded_files.keys()):
             result.status.code = 'ALREADY_OPEN'
             result.status.msg = utf8('Launch file %s already loaded!' % (launchfile))
             rospy.logdebug('..load aborted, ALREADY_OPEN')
             return json.dumps(result, cls=SelfEncoder)
+
         # load launch configuration
         try:
             # test for required args
             provided_args = ['%s' % arg.name for arg in request.args]
             launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
+            
             # get the list with needed launch args
             req_args = launch_config.get_args()
             req_args_dict = launch_config.argv2dict(req_args)
+            
             if request.request_args and req_args:
                 for arg, value in req_args_dict.items():
                     if arg not in provided_args:
-                        result.args.append([LaunchArgument(name=arg, value=value) for arg, value in req_args_dict.items()])
-                        result.status.code = 'PARAMS_REQUIRED'
-                        rospy.logdebug('..load aborted, PARAMS_REQUIRED')
-                        return json.dumps(result, cls=SelfEncoder)
+                        # result.args.append([LaunchArgument(name=arg, value=value) for arg, value in req_args_dict.items()])
+                        result.args.append(LaunchArgument(name=arg, value=value))
+                        
+                if len(result.args) > 0:
+                    result.status.code = 'PARAMS_REQUIRED'
+                    rospy.logdebug('..load aborted, PARAMS_REQUIRED')
+                    return json.dumps(result, cls=SelfEncoder)
+
             argv = ['%s:=%s' % (arg.name, arg.value) for arg in request.args if arg.name in req_args_dict]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
