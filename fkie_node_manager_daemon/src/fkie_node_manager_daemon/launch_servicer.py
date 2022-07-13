@@ -366,11 +366,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         Loads launch file by crossbar request
         '''
         rospy.logdebug('Request to [ros.launch.load]')
-        result = LaunchLoadReply()
-        # TODO: Why is this required? why the args and paths accumulates? 
-        result.args = []
-        result.paths = []
-        result.changed_nodes = []
+        result = LaunchLoadReply(paths = [], args = [], changed_nodes = [])
 
         # Covert input dictionary into a proper python object
         request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
@@ -552,11 +548,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
 
         rospy.logdebug('UnloadLaunch request:\n%s' % str(request))
-        result = LaunchLoadReply()
-        # TODO: Why is this required? why the args and paths accumulates? 
-        result.args = []
-        result.paths = []
-        result.changed_nodes = []
+        result = LaunchLoadReply(paths = [], changed_nodes = [], args = [])
 
         result.paths.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
@@ -683,12 +675,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         reply = []
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
-            reply_lc = LaunchContent(path=cfgid.path, masteruri=lc.masteruri, host=lc.host)
-            # TODO: Why is this required?
-            reply_lc.args = []
-            reply_lc.nodes = []
-            reply_lc.nodelets = []
-            reply_lc.associations = []
+            reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host, 
+                            nodes=[], nodelets=[], associations=[])
 
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
@@ -792,9 +780,14 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 yield result
 
     @wamp.register('ros.launch.start_node')
-    def startNode(self, request: LaunchNode) -> LaunchNodeReply:
-        rospy.logdebug('StartNode request:\n%s' % str(request))
-        result = LaunchNodeReply(name=request.name)
+    def startNode(self, request_json: LaunchNode) -> LaunchNodeReply:
+        rospy.logdebug('Request to [ros.launch.start_node]')
+
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+
+        result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
+
         try:
             launch_configs = []
             if request.opt_launch:

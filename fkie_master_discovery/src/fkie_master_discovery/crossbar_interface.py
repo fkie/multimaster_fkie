@@ -65,7 +65,7 @@ class RosNode:
         self.id = id
         self.name = get_node_name(name)
         self.namespace = get_namespace(name)
-        self.status = 'Active'
+        self.status = 'running'
         self.pid = -1
         self.node_API_URI = ''
         self.masteruri = ''
