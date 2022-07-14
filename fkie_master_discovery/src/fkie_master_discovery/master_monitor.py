@@ -918,6 +918,29 @@ class MasterMonitor(ApplicationSession):
         rospy.loginfo('Request to [ros.system.get_uri]')
         return f"{self.getMasteruri()} [{self.crossbar_port}]"
 
+    @wamp.register('ros.nodes.stop_node')
+    def stopNode(self, name: str) -> bool:
+        success = False
+        if self.__master_state is not None:
+            try:
+                rospy.loginfo("Stop node '%s'[%s]", name)
+                node_uri = ''
+                with self._state_access_lock:
+                    node_uri = self.__master_state.nodes[name]
+                if node_uri:
+                    socket.setdefaulttimeout(10)
+                    p = xmlrpcclient.ServerProxy(node_uri)
+                    (code, statusMessage, ignore) = p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
+                    if code == 1:
+                        success = True
+                    else:
+                        rospy.logwarn("Error while shutdown node '%s': %s", name, statusMessage)
+            except Exception as e:
+                rospy.logwarn("Error while stop node '%s': %s", name, e)
+            finally:
+                socket.setdefaulttimeout(None)
+        return json.dumps(success, cls=SelfEncoder)
+
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
