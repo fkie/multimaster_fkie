@@ -110,7 +110,7 @@ class GrpcServer:
         self.shutdown()
         del self.server
         self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
-        self.launch_servicer = LaunchServicer(self.monitor_servicer)
+        self.launch_servicer = LaunchServicer(self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.start(self._launch_url)
 
     def start(self, url='[::]:12311'):
@@ -135,7 +135,7 @@ class GrpcServer:
             fgrpc.add_FileServiceServicer_to_server(FileServicer(self.crossbar_loop, self.crossbar_realm, self.crossbar_port), self.server)
             lgrpc.add_LaunchServiceServicer_to_server(self.launch_servicer, self.server)
             mgrpc.add_MonitorServiceServicer_to_server(self.monitor_servicer, self.server)
-            sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(), self.server)
+            sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(self.crossbar_loop, self.crossbar_realm, self.crossbar_port), self.server)
             stgrpc.add_SettingsServiceServicer_to_server(self.settings_servicer, self.server)
             vgrpc.add_VersionServiceServicer_to_server(VersionServicer(), self.server)
             self.server.start()

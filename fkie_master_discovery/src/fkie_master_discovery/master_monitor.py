@@ -920,26 +920,37 @@ class MasterMonitor(ApplicationSession):
 
     @wamp.register('ros.nodes.stop_node')
     def stopNode(self, name: str) -> bool:
+        rospy.loginfo("Stop node '%s'", name)
         success = False
         if self.__master_state is not None:
             try:
-                rospy.loginfo("Stop node '%s'[%s]", name)
                 node_uri = ''
                 with self._state_access_lock:
-                    node_uri = self.__master_state.nodes[name]
+                    node_uri = self.__master_state.nodes[name].uri
+                rospy.logdebug('  found URI: %s', node_uri)
                 if node_uri:
                     socket.setdefaulttimeout(10)
                     p = xmlrpcclient.ServerProxy(node_uri)
-                    (code, statusMessage, ignore) = p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.mastername)
+                    (code, statusMessage, ignore) = p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.__mastername)
                     if code == 1:
                         success = True
                     else:
-                        rospy.logwarn("Error while shutdown node '%s': %s", name, statusMessage)
+                        msg = "Error while shutdown node '%s': %s" % (name, statusMessage)
+                        rospy.logwarn(msg)
+                        return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+            except KeyError:
+                msg = "Error while stop node, Node '%s' not found" % name
+                rospy.logwarn(msg)
+                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except Exception as e:
-                rospy.logwarn("Error while stop node '%s': %s", name, e)
+                msg = "Error while stop node '%s': %s" % (name, e)
+                rospy.logwarn(msg)
+                import traceback
+                print(traceback.format_exc())
+                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             finally:
                 socket.setdefaulttimeout(None)
-        return json.dumps(success, cls=SelfEncoder)
+        return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
     @coroutine
     def onJoin(self, details):

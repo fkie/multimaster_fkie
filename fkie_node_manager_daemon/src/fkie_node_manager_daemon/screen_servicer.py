@@ -31,18 +31,26 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+import json
+from types import SimpleNamespace
+import asyncio
+from autobahn import wamp
 
+import os
 import rospy
+import signal
 import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.screen_pb2 as smsg
 from . import screen
+from .crossbar_base_session import CrossbarBaseSession
+from .crossbar_base_session import SelfEncoder
 
+class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
 
-class ScreenServicer(sgrpc.ScreenServiceServicer):
-
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
         rospy.loginfo("Create screen servicer")
         sgrpc.ScreenServiceServicer.__init__(self)
+        CrossbarBaseSession.__init__(self, loop, realm, port)
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
 
     def stop(self):
@@ -103,3 +111,14 @@ class ScreenServicer(sgrpc.ScreenServiceServicer):
         screen.wipe()
         reply = smsg.Empty()
         return reply
+
+    @wamp.register('ros.screen.kill_node')
+    def killNode(self, name: str) -> bool:
+        rospy.loginfo("Kill node '%s'", name)
+        success = False
+        screens = screen.get_active_screens(name)
+        for session_name, node_name in screens.items():
+            pid, session_name = screen.split_session_name(session_name)
+            os.kill(pid, signal.SIGKILL)
+            success = True
+        return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
