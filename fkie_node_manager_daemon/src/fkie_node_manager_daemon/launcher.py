@@ -137,8 +137,23 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
+    if reload_global_param:
+        result.clear_params.extend(get_global_clear_params(launchcfg.roscfg))
     rospy.logdebug("set delete parameter:\n  %s", '\n  '.join(result.clear_params))
     rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[:80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
+    return result
+
+
+def get_global_clear_params(roscfg):
+    result = []
+    for cparam in roscfg.clear_params:
+        nodesparam = False
+        for n in roscfg.resolved_node_names:
+            if cparam.startswith(n):
+                nodesparam = True
+                break
+        if not nodesparam:
+            result.append(cparam)
     return result
 
 
