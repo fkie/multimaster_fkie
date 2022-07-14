@@ -499,7 +499,6 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         try:
             path = get_pkg_path(request.name)
             self._get_binaries(path, binaries)
-            result.items.extend(binaries)
             # find binaries in catkin workspace
             from catkin.find_in_workspaces import find_in_workspaces as catkin_find
             search_paths = catkin_find(search_dirs=['libexec', 'share'], project=request.name, first_matching_workspace_only=True)
@@ -509,6 +508,13 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             import traceback
             print(traceback.format_exc())
             pass
+        for b in binaries:
+            found = False
+            for item in result.items:
+                if item.path == b.path:
+                    found = True
+            if not found:
+                result.items.extend([b])
         return result
 
     def Delete(self, request, context):
