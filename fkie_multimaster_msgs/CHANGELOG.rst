@@ -2,6 +2,11 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.1 (2022-07-15)
+------------------
+* fkie_multimaster_msgs: fix python3 dependency
+* Contributors: Alexander Tiderko
+
 1.3.0 (2022-07-15)
 ------------------
 

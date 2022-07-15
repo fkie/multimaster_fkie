@@ -2,6 +2,9 @@
 Changelog for package fkie_node_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.1 (2022-07-15)
+------------------
+
 1.3.0 (2022-07-15)
 ------------------
 * fkie_node_manager: fixed deselect nodes while start nodes on other host
