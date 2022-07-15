@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>fkie_master_discovery</name>
-  <replace>master_discovery_fkie</replace>
+  <!-- <replace>master_discovery_fkie</replace> -->
   <description>
      Discover the running ROS Masters in local network. The 
      discovering is done by sending an echo heartbeat messages to a defined 
