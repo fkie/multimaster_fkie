@@ -7,7 +7,7 @@
      configured ROS nodes on different hosts. For discovering 
      the running ROS master master_discovery node will be used.
   </description>
-  <version>1.3.0</version>
+  <version>1.3.1</version>
   <license>BSD, some icons are licensed under the GNU Lesser General Public License (LGPL) or Creative Commons Attribution-Noncommercial 3.0 License</license>
   <author>Alexander Tiderko</author>
   <author>Timo Roehling</author>
