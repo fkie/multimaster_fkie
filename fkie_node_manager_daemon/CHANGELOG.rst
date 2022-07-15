@@ -2,6 +2,19 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2022-07-15)
+------------------
+Forthcoming
+-----------
+* fkie_node_manager_damoen: fix clear_param for group
+  These parameter are now deleted on restart nodes with reload global
+  parameter
+* fkie_node_manager_daemon: fix find package binaries
+* fkie_node_manager_daemon: use threads for each sensor instead of timer
+* fkie_node_manager_daemon: set GRPC_ENABLE_FORK_SUPPORT=0 by default
+* fkie_node_manager_daemon: added parameter to set grpc poll strategy and verbosity
+* Contributors: Alexander Tiderko
+
 1.2.7 (2021-01-23)
 ------------------
 

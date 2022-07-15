@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>fkie_master_sync</name>
-  <replace>master_sync_fkie</replace>
+  <!-- <replace>master_sync_fkie</replace> -->
   <description>
      Synchronize the local ROS master to the remote masters 
      discovered by fkie_master_discovery node. The registration
      of topics and services is only perform by local ROS master.
   </description>
-  <version>1.2.7</version>
+  <version>1.3.0</version>
   <license>BSD</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
