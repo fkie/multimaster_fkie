@@ -2,6 +2,9 @@
 Changelog for package fkie_multimaster_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2022-07-15)
+------------------
+
 1.2.7 (2021-01-23)
 ------------------
 * Fix install location for generated gRPC submodule

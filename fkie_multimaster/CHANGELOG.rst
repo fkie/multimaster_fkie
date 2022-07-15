@@ -2,6 +2,108 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2022-07-15)
+------------------
+* fkie_node_manager_damoen: fix clear_param for group
+  These parameter are now deleted on restart nodes with reload global
+  parameter
+* fkie_node_manager_daemon: fix find package binaries
+* fkie_node_manager_daemon: use threads for each sensor instead of timer
+* fkie_node_manager_daemon: set GRPC_ENABLE_FORK_SUPPORT=0 by default
+* fkie_node_manager_daemon: added parameter to set grpc poll strategy and verbosity
+* fkie_node_manager: fixed deselect nodes while start nodes on other host
+* fkie_node_manager: show kill button for nodes without valid PID, too
+* fkie_node_manager: editor: do not close editor on ESC
+* fkie_node_manager: fixed bug with changed master selection after reload launch files
+* fkie_node_manager: added output for detected ROS Master URI
+* fkie_node_manager: fix restart system nodes after set time and answer 'no'
+* fkie_node_manager: fix restart system nodes after set time and answer 'no'
+* fkie_node_manager: fix restart system nodes after set time
+* Use more conservative terminal emulator parameters
+  This should make the x-terminal-emulator call more compatible with
+  different types of terminals
+* fkie_node_manager: remove binaries in src path if multiple executables are found
+* fkie_multimaster_fkie: added python3 dependencies
+* fkie_node_manager: filter binaries from src directory if more then one executable found
+* fkie_node_manager: use find_resource insteadof find_node to get executable nodes
+* fkie_node_manager: fixed remote start using reduced_nm module
+* fkie_node_manager: fixed a bug while comment/uncomment of last line
+  added Switch comment to context menu
+* fkie_node_manager: fixed save gui setting on exit if stop master was selected
+* fkie_node_manager: restart system nodes after set time
+* fkie_node_manager: added option 'start daemon' to start dialog
+* fkie_node_manager: fix for visualization of nodes with and without capability groups
+* fkie_node_manager: retain selected node after reload a configuration
+* fkie_node_manager: fixed missed text in editor after reload changed launch file
+* fkie_node_manager: requests for name resolution
+* fkie_node_manager: changed exception handling in name resolution
+* check for pid before execute
+* fkie_node_manager: fix kill on stop every node
+* fkie_node_manager: go to search result on item selection
+* fkie_node_manager: fix error on stop nodes
+* fkie_node_manager: force kill if kill_on_stop is defined
+* fkie_node_manager: fixed not compatible python2 code
+* fkie_node_manager: fixed error in noetic, see issue `#160 <https://github.com/fkie/multimaster_fkie/issues/160>`_
+* fkie_node_manager: fixed view of synced nodes
+* fkie_node_manager: added links for roslog and screen log in the node description
+* fkie_node_manager: fixed stop all nodes on exit
+  removed warning about connection refused after shutdown call on the
+  XMLRPC API of the node
+* fkie_node_manager: echo dialog: added message file checkbox for quick access
+* fkie_node_manager: changed requests for diagnostic messages to avoid multiple messages if sync is enabled
+* fkie_node_manager: fix for visualization in environments with ROS_IP
+* fkie_node_manager: fixed crash on daemon exception
+* fkie_node_manager: added throttle daemon error output
+* fkie_node_manager: added info to a host if no quality is available
+* fkie_node_manager: fixed threaded call to get remote user
+* fkie_node_manager: do not block on username request
+* fkie_node_manager: add nodes to view with not reachable nodeuri
+* fkie_node_manager: fixed resize of control buttons
+* fkie_node_manager: changed terminal detection
+* fkie_node_manager: fix remote log view
+* fkie_node_manager: increased the update rate for analysis of diagnostic messages
+* fkie_node_manager: set text selectable in parameter dialog
+* fkie_node_manager: renamed parameter
+  Open screen on activate -> Use internal log widget
+* fkie_node_manager: changed question behaviour on changed binaries
+* fkie_node_manager: fixed 'Open screen on activate' option
+* fkie_node_manager: open log file in new terminal or dock widget depending on new parameter
+  new parameter: Open screen on activate
+* added 'Open screen on activate' parameter
+* fkie_node_manager: stop/restart only filtered nodes
+* fkie_node_manager: changed state visualization of running nodes
+* fkie_node_manager: resize control buttons
+* fkie_node_manager: fixed propagation of node states to parent groups
+* fkie_node_manager: fixed visualization of remote nodes connected to local master using ROS_MASTER_URI
+* fkie_node_manager: reduce control buttons on size change
+* fkie_node_manager: fixed crash after change of configuration
+* added detection if master and daemon a launched with different user
+* changed handling of the diagnostics level in group view
+* fixed remote start of roscore
+* added label for host name in launch widget
+* added host highlighting in launch editor
+* deselect all log level after change
+* sort logger level
+* fixed change all loglevel
+* fkie_node_manager: update logger before they are available
+* fixed param sync
+* fkie_master_sync: convert diagnostic value to string
+* fkie_master_sync: fix value error while prepare diagnostic report
+* fkie_master_sync: fixed debug output
+* fkie_master_sync: improved warnings for unsupported or wrong md5sum message types
+* fkie_master_sync: added names and topics of multimaster nodes to default ignore lists
+* fkie_master_sync: do not update publisher node if it is in filter lister
+* fkie_master_sync: added master_sync and master_discovery
+* fkie_master_sync: added diagnostics and master_sync topics to default ignore list
+* fkie_master_discovery: do not send requests if listen_mcast is disabled
+* fkie_master_discovery: shutdown node if time jump into past detected
+  this cause whole system instability
+* fkie_master_discovery: send init requests in mixed scenario
+  Network has hosts with different heartbeat hz
+* added support for request user name of running master_discovery and daemon
+* wait until RCP port is free to avoid shutdown because of "new node registered with same name"
+* Contributors: Alexander Tiderko, Timo Röhling
+
 1.2.7 (2021-01-23)
 ------------------
 * Fix install location for generated gRPC submodule

@@ -2,6 +2,17 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.0 (2022-07-15)
+------------------
+* fkie_master_discovery: do not send requests if listen_mcast is disabled
+* fkie_master_discovery: shutdown node if time jump into past detected
+  this cause whole system instability
+* fkie_master_discovery: send init requests in mixed scenario
+  Network has hosts with different heartbeat hz
+* added support for request user name of running master_discovery and daemon
+* wait until RCP port is free to avoid shutdown because of "new node registered with same name"
+* Contributors: Alexander Tiderko
+
 1.2.7 (2021-01-23)
 ------------------
 
