@@ -148,8 +148,8 @@ class Settings(object):
         '''
         self._terminal_emulator = None
         self._terminal_command_arg = 'e'
-        self._noclose_str = '-hold'
-        self._terminal_title = '--title'
+        self._noclose_str = ''
+        self._terminal_title = '-T'
         self._masteruri = masteruri_from_ros()
         self.CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
         # loads the current configuration path. If the path was changed, a redirection

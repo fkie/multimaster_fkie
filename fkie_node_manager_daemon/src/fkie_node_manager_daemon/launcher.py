@@ -137,8 +137,40 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
+    if reload_global_param:
+        result.clear_params.extend(get_global_clear_params(launchcfg.roscfg))
     rospy.logdebug("set delete parameter:\n  %s", '\n  '.join(result.clear_params))
     rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[:80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
+    return result
+
+
+def get_global_clear_params(roscfg):
+    result = []
+    for cparam in roscfg.clear_params:
+        nodesparam = False
+        for n in roscfg.resolved_node_names:
+            if cparam.startswith(n):
+                nodesparam = True
+                break
+        if not nodesparam:
+            result.append(cparam)
+    return result
+
+
+def remove_src_binary(cmdlist):
+    result = []
+    count = 0
+    if len(cmdlist) > 1:
+        for c in cmdlist:
+            if c.find('/src/') == -1:
+                result.append(c)
+                count += 1
+    else:
+        result = cmdlist
+    if count > 1:
+        # we have more binaries in src directory
+        # aks the user
+        result = cmdlist
     return result
 
 
@@ -185,6 +217,7 @@ def run_node(startcfg):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
                 raise exceptions.StartException('%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
+            cmd = remove_src_binary(cmd)
             if len(cmd) > 1:
                 # Open selection for executables
                 err = 'Multiple executables with same name in package [%s]  found:' % startcfg.package

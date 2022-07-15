@@ -35,6 +35,8 @@
 from concurrent import futures
 import grpc
 import rospy
+import os
+import threading
 import time
 
 from fkie_multimaster_msgs.srv import LoadLaunch, LoadLaunchResponse, Task
@@ -59,6 +61,9 @@ class GrpcServer:
     def __init__(self):
         self.server = None
         self.settings_servicer = SettingsServicer()
+        self._grpc_verbosity = self.settings_servicer.settings.param('global/grpc_verbosity', 'INFO')
+        self._grpc_poll_strategy = self.settings_servicer.settings.param('global/grpc_poll_strategy', '')
+        self.settings_servicer.settings.add_reload_listener(self._update_grpc_parameter)
         self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
         self.launch_servicer = LaunchServicer(self.monitor_servicer)
         rospy.Service('~start_launch', LoadLaunch, self._rosservice_start_launch)
@@ -71,8 +76,38 @@ class GrpcServer:
         self.monitor_servicer = None
         self.settings_servicer = None
 
+    def _update_grpc_parameter(self, settings):
+        old_verbosity = self._grpc_verbosity
+        old_strategy = self._grpc_poll_strategy
+        self._grpc_verbosity = settings.param('global/grpc_verbosity', 'INFO')
+        os.environ['GRPC_VERBOSITY'] = self._grpc_verbosity
+        rospy.loginfo('use GRPC_VERBOSITY=%s' % self._grpc_verbosity)
+        self._grpc_poll_strategy = settings.param('global/grpc_poll_strategy', '')
+        if self._grpc_poll_strategy:
+            os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '1'
+            os.environ['GRPC_POLL_STRATEGY'] = self._grpc_poll_strategy
+            rospy.loginfo('use GRPC_POLL_STRATEGY=%s' % self._grpc_poll_strategy)
+        else:
+            try:
+                del os.environ['GRPC_POLL_STRATEGY']
+            except Exception:
+                pass
+            os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '0'
+        if old_verbosity != self._grpc_verbosity or old_strategy != self._grpc_poll_strategy:
+            rospy.loginfo('gRPC verbosity or poll strategy changed: trigger restart grpc server on %s' % self._launch_url)
+            restart_timer = threading.Timer(1.0, self.restart)
+            restart_timer.start()
+
+    def restart(self):
+        self.shutdown()
+        del self.server
+        self.monitor_servicer = MonitorServicer(self.settings_servicer.settings)
+        self.launch_servicer = LaunchServicer(self.monitor_servicer)
+        self.start(self._launch_url)
+
     def start(self, url='[::]:12311'):
-        rospy.loginfo("Start grpc server on %s" % url)
+        self._launch_url = url
+        rospy.loginfo('Start grpc server on %s' % url)
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         # create credentials
         # read in key and certificate

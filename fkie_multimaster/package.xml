@@ -1,6 +1,6 @@
 <package format="2">
   <name>fkie_multimaster</name>
-  <replace>multimaster_fkie</replace>
+  <!-- <replace>multimaster_fkie</replace> -->
   <description>
     The metapackage to combine the nodes required to establish and manage a multimaster network.
     This requires no or minimal configuration. The changes are automatically detected and synchronized.

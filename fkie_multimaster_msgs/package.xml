@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>fkie_multimaster_msgs</name>
-  <replace>multimaster_msgs_fkie</replace>
+  <!-- <replace>multimaster_msgs_fkie</replace> -->
   <description>
      The messages required by multimaster packages.
   </description>

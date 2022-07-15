@@ -558,7 +558,8 @@ class Editor(QMainWindow):
                 event.accept()
             elif result == MessageBox.No:
                 event.accept()
-            elif rospy.is_shutdown():
+            # elif rospy.is_shutdown():
+            else:
                 event.ignore()
         else:
             event.accept()

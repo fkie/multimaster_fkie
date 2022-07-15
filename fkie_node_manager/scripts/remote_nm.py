@@ -184,6 +184,23 @@ def rosconsole_cfg_file(package, loglevel='INFO'):
     return result
 
 
+def remove_src_binary(cmdlist):
+    result = []
+    count = 0
+    if len(cmdlist) > 1:
+        for c in cmdlist:
+            if c.find('/src/') == -1:
+                result.append(c)
+                count += 1
+    else:
+        result = cmdlist
+    if count > 1:
+        # we have more binaries in src directory
+        # aks the user
+        result = cmdlist
+    return result
+
+
 def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=None, loglevel=''):
     '''
     Runs a ROS node. Starts a roscore if needed.
@@ -204,6 +221,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     if cmd is None or len(cmd) == 0:
         raise StartException(' '.join([executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
     # create string for node parameter. Set arguments with spaces into "'".
+    cmd = remove_src_binary(cmd)
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
     cmd_args = [screen.get_cmd(name), RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
     print('run on remote host:', ' '.join(cmd_args))

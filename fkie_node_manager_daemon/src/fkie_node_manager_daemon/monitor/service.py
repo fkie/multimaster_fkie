@@ -145,4 +145,4 @@ class Service:
     def stop(self):
         with self._mutex:
             for sensor in self.sensors:
-                sensor.cancel_timer()
+                sensor.stop()

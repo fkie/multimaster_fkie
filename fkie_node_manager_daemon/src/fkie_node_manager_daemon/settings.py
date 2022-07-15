@@ -79,6 +79,8 @@ class Settings:
                 'grpc_timeout': {':value': 15.0, ':type': 'float', ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
                 'use_diagnostics_agg': {':value': False, ':hint': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'"},
                 'reset': {':value': False, ':hint': 'if this flag is set to True the configuration will be reseted'},
+                'grpc_verbosity': {':value': 'INFO', ':alt': ['DEBUG', 'INFO', 'ERROR'], ':hint': 'change gRPC verbosity', ':need_restart': True},
+                'grpc_poll_strategy': {':value': '', ':alt': ['', 'poll', 'epollex', 'epoll1'], ':hint': 'change the strategy if you get warnings. Empty sets to default.', ':need_restart': True}
             },
             'sysmon':
             {
@@ -185,15 +187,15 @@ class Settings:
         '''
         with self._mutex:
             try:
+                self._cfg = self.default()
                 with open(self.filename, 'r') as stream:
                     result = ruamel.yaml.load(stream, Loader=ruamel.yaml.Loader)
                     if result is None:
                         rospy.loginfo('reset configuration file %s' % self.filename)
-                        self._cfg = self.default()
                         self.save()
                     else:
                         rospy.loginfo('loaded configuration from %s' % self.filename)
-                        self._cfg = result
+                        self._cfg = self._apply_recursive(result, self._cfg)
             except (ruamel.yaml.YAMLError, IOError) as exc:
                 rospy.loginfo('%s: use default configuration!' % utf8(exc))
                 self._cfg = self.default()
