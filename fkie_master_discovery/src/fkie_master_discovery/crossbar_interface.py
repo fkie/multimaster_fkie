@@ -92,3 +92,17 @@ class RosProvider:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class ScreenRepetitions:
+    '''
+    :param str name: full node name
+    :param [str] screens: list the screen names associated with given node.
+    '''
+    def __init__(self, name: str, screens: List[str]) -> None:
+        self.name = name
+        self.screens = screens
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+

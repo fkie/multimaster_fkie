@@ -69,11 +69,14 @@ from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from asyncio import coroutine
 
 from . import interface_finder
+from . import screen
 from .common import masteruri_from_ros, get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
-from .crossbar_interface import RosNode, SelfEncoder
+from .crossbar_interface import RosNode
+from .crossbar_interface import SelfEncoder
+from .crossbar_interface import ScreenRepetitions
 from .crossbar_server import crossbar_start_server, CROSSBAR_PATH
 
 
@@ -243,6 +246,8 @@ class MasterMonitor(ApplicationSession):
         self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
         self.crossbar_port = 11911
+        if rpcport != 22622:
+            self.crossbar_port = rpcport + 300
         self.crossbar_realm = "ros"
         ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
         self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
@@ -265,6 +270,10 @@ class MasterMonitor(ApplicationSession):
                 self.__launch_uris[roslib.names.ns_join('/roslaunch/uris', k)] = v
         self._update_launch_uris()
         # === END: UPDATE THE LAUNCH URIS Section ===
+        self._multiple_screen_do_check = False
+        self._multiple_screen_thread = threading.Thread(target=self.checkMultipleScreens, daemon=True)
+        self._multiple_screen_thread.start()
+
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -880,6 +889,7 @@ class MasterMonitor(ApplicationSession):
                     self.publish('ros.nodes.changed', json.dumps(result, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
+                self._multiple_screen_do_check = True
             return result
 
     def _timejump_exit(self):
@@ -922,6 +932,7 @@ class MasterMonitor(ApplicationSession):
     def stopNode(self, name: str) -> bool:
         rospy.loginfo("Stop node '%s'", name)
         success = False
+        self._multiple_screen_do_check = True
         if self.__master_state is not None:
             try:
                 node_uri = ''
@@ -951,6 +962,27 @@ class MasterMonitor(ApplicationSession):
             finally:
                 socket.setdefaulttimeout(None)
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
+
+    def checkMultipleScreens(self):
+        while not rospy.is_shutdown():
+            if self._multiple_screen_do_check:
+                self._multiple_screen_do_check = False
+                screens = screen.get_active_screens()
+                screen_dict: Dict[str, ScreenRepetitions] = {}
+                for session_name, node_name in screens.items():
+                    if node_name in screen_dict:
+                        screen_dict[node_name].screens.append(session_name)
+                    else:
+                        screen_dict[node_name] = ScreenRepetitions(name=node_name, screens=[session_name])
+                crossbar_msg: List(ScreenRepetitions) = []
+                for node_name, msg in screen_dict.items():
+                    if len(msg.screens) > 1:
+                        crossbar_msg.append(msg)
+                try:
+                    self.publish('ros.screen.multiple', json.dumps(crossbar_msg, cls=SelfEncoder))
+                except Exception:
+                    pass
+            time.sleep(1.0)
 
     @coroutine
     def onJoin(self, details):
