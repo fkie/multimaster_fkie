@@ -117,6 +117,9 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
         rospy.loginfo("Kill node '%s'", name)
         success = False
         screens = screen.get_active_screens(name)
+        if len(screens.items()) == 0:
+            return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
+            
         for session_name, node_name in screens.items():
             pid, session_name = screen.split_session_name(session_name)
             os.kill(pid, signal.SIGKILL)

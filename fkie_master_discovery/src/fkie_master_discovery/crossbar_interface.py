@@ -73,6 +73,7 @@ class RosNode:
         self.publishers: List[RosTopic] = []
         self.subscribers: List[RosTopic] = []
         self.services: List[RosService] = []
+        self.screens: List[str] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

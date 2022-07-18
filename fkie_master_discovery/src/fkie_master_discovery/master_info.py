@@ -39,6 +39,7 @@ import roslib
 import rospy
 
 from .common import get_hostname
+from . import screen
 from .filter_interface import FilterInterface
 from .crossbar_interface import RosNode
 from .crossbar_interface import RosService
@@ -1403,6 +1404,11 @@ class MasterInfo(object):
                 ros_node.masteruri = node.masteruri
                 ros_node.pid = node.pid
                 ros_node.location = 'local' if node.isLocal else 'remote'
+
+                # Add active screens for a given node
+                screens = screen.get_active_screens(name)
+                for session_name, _ in screens.items():
+                    ros_node.screens.append(session_name)
                 result.append(ros_node)
         except Exception:
             import traceback
