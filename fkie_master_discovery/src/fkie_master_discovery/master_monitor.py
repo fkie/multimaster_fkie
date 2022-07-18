@@ -946,15 +946,15 @@ class MasterMonitor(ApplicationSession):
                     if code == 1:
                         success = True
                     else:
-                        msg = "Error while shutdown node '%s': %s" % (name, statusMessage)
+                        msg = "Error while shutting down node '%s': %s" % (name, statusMessage)
                         rospy.logwarn(msg)
                         return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except KeyError:
-                msg = "Error while stop node, Node '%s' not found" % name
+                msg = "Error while stopping node: Node '%s' not found" % name
                 rospy.logwarn(msg)
                 return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except Exception as e:
-                msg = "Error while stop node '%s': %s" % (name, e)
+                msg = "Error while stopping node '%s': %s" % (name, e)
                 rospy.logwarn(msg)
                 import traceback
                 print(traceback.format_exc())
