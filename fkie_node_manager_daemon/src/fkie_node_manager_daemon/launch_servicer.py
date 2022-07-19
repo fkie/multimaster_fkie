@@ -698,8 +698,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                             nodelets[nodelet_mngr] = []
                         nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
             for mngr, ndl in nodelets.items():
-                nlmsg = LaunchNodelets(manager=mngr)
-                nlmsg.nodes.extend(ndl)
+                nlmsg = LaunchNodelets(manager=mngr, nodes=ndl)
                 reply_lc.nodelets.append(nlmsg)
 
             # create association description
@@ -724,8 +723,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                         values.append(roslib.names.ns_join(item.namespace, split))
                     associations[node_fullname] = values
             for node, ass in associations.items():
-                assmsg = LaunchAssociations(node=node)
-                assmsg.nodes.extend(ass)
+                assmsg = LaunchAssociations(node=node, nodes=ass)
                 reply_lc.associations.append(assmsg)
             reply.append(reply_lc)
         
