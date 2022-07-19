@@ -49,6 +49,7 @@ from autobahn import wamp
 
 from typing import List
 
+from fkie_master_discovery.crossbar_interface import RosParameter
 from fkie_master_discovery.common import masteruri_from_master
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
@@ -676,11 +677,15 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
             reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host, 
-                            nodes=[], nodelets=[], associations=[])
+                            nodes=[], parameters=[], nodelets=[], associations=[])
 
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
                 reply_lc.nodes.append(node_fullname)
+
+            # Add parameter values
+            for name, p in lc.roscfg.params.items():
+                reply_lc.parameters.append(RosParameter(name, p.value))
 
             # create nodelets description
             nodelets = {}

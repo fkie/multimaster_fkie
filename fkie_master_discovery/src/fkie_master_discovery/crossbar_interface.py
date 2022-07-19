@@ -1,6 +1,7 @@
 import json
 from json import JSONEncoder
 import os
+from typing import Union
 
 # ROS dependencies
 import rosnode
@@ -60,6 +61,15 @@ class RosService:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
+class RosParameter:
+    def __init__(self, name: str, value: Union[float, bool, str, List, Dict]) -> None:
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
+
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
@@ -74,6 +84,7 @@ class RosNode:
         self.subscribers: List[RosTopic] = []
         self.services: List[RosService] = []
         self.screens: List[str] = []
+        self.parameters: List[RosParameter] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
@@ -85,6 +96,7 @@ class RosProvider:
     :param str host: hostname
     :param int port: port of crossbar server
     '''
+
     def __init__(self, name: str, host: str, port: int) -> None:
         self.name = name
         self.host = host
@@ -100,10 +112,10 @@ class ScreenRepetitions:
     :param str name: full node name
     :param [str] screens: list the screen names associated with given node.
     '''
+
     def __init__(self, name: str, screens: List[str]) -> None:
         self.name = name
         self.screens = screens
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
-
