@@ -699,7 +699,7 @@ class MasterViewProxy(QWidget):
         if self.master_info is not None:
             for _, node in self.master_info.nodes.items():  # _:=name
                 if node.isLocal:
-                    if remove_system_nodes or not self._is_in_ignore_list(node.name):
+                    if not remove_system_nodes or not self._is_in_ignore_list(node.name):
                         result[node.name] = self.master_info.masteruri
         return result
 

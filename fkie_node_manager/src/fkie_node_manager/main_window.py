@@ -648,7 +648,8 @@ class MainWindow(QMainWindow):
                 self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.addWidget(self.masters[masteruri])
             if masteruri == self.getMasteruri():
-                self.masters[masteruri].default_load_launch = self.default_load_launch
+                if not self.default_profile_load:
+                    self.masters[masteruri].default_load_launch = self.default_load_launch
         return self.masters[masteruri]
 
     def on_host_update_request(self, host):
