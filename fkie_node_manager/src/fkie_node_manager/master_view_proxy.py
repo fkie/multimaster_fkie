@@ -877,7 +877,7 @@ class MasterViewProxy(QWidget):
             if lfiles:
                 nm.nmd().file.check_for_changed_files_threaded(lfiles)
                 nm.nmd().screen.multiple_screens_threaded(grpc_url)
-            nodes = self.get_nodes_runningIfLocal(True)
+            nodes = self.get_nodes_runningIfLocal()
             if nodes:
                 nm.nmd().launch.get_changed_binaries_threaded(grpc_url, list(nodes.keys()))
 
@@ -1181,8 +1181,11 @@ class MasterViewProxy(QWidget):
             with self._associations_lock:
                 self._associations[ld.path] = ld.associations
             if ld.path in self._start_nodes_after_load_cfg:
-                self.start_nodes_by_name(self._start_nodes_after_load_cfg[ld.path], ld.path, True)
-                del self._start_nodes_after_load_cfg[ld.path]
+                if self._has_nmd:
+                    self.start_nodes_by_name(self._start_nodes_after_load_cfg[ld.path], ld.path, True)
+                    del self._start_nodes_after_load_cfg[ld.path]
+                elif not self._has_nmd:
+                    self.force_next_update()
         removed_configs = set(self.__configs.keys()) - set(new_configs)
         for cfg in removed_configs:
             if isinstance(cfg, tuple):
@@ -3019,11 +3022,12 @@ class MasterViewProxy(QWidget):
         if stop_nodes:
             self._on_stop_kill_roscore = True
             # stop all nodes, system nodes at the end
-            ignore_nodes = [rospy.get_name(), '/master_discovery', '/rosout']
-            self.stop_nodes_by_name(self.get_nodes_runningIfLocal(), True, ignore_nodes)
+            ignore_nodes = [rospy.get_name(), '/node_manager_daemon', '/master_discovery', '/rosout']
+            self.stop_nodes_by_name(self.get_nodes_runningIfLocal(remove_system_nodes=False), True, ignore_nodes)
             if shutdown:
                 self.poweroff()
             else:
+                self.stop_nodes_by_name(['/node_manager_daemon'], True)
                 self.stop_nodes_by_name(['/master_discovery'], True)
             self.stop_nodes_by_name(['/node_manager'], True)
         elif shutdown:

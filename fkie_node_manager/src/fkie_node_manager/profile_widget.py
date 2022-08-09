@@ -216,7 +216,7 @@ class ProfileWidget(QDockWidget):
                         if 'zeroconf' in master_dict:
                             self._start_node_from_profile(master, hostname, 'fkie_master_discovery', 'zeroconf', usr, cfg=master_dict['zeroconf'])
                             self._current_profile[rmuri].add('/zeroconf')
-                        if 'node_manager_daemon' in master_dict:
+                        if 'node_manager_daemon' in master_dict and not nm.is_local(master.mastername):
                             self._start_node_from_profile(master, hostname, 'fkie_node_manager_daemon', 'node_manager_daemon', usr, cfg=master_dict['node_manager_daemon'])
                             self._current_profile[rmuri].add('/node_manager_daemon')
                         try:
