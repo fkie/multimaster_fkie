@@ -2,6 +2,12 @@
 Changelog for package fkie_master_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.2 (2022-07-17)
+------------------
+
+1.3.1 (2022-07-15)
+------------------
+
 1.3.0 (2022-07-15)
 ------------------
 * fkie_master_discovery: do not send requests if listen_mcast is disabled

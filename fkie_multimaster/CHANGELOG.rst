@@ -2,6 +2,16 @@
 Changelog for package fkie_multimaster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.2 (2022-07-17)
+------------------
+* fkie_multimaster_msgs: fix for installing generated grpc files when building Debian package
+* Contributors: Alexander Tiderko
+
+1.3.1 (2022-07-15)
+------------------
+* fkie_multimaster_msgs: fix python3 dependency
+* Contributors: Alexander Tiderko
+
 1.3.0 (2022-07-15)
 ------------------
 * fkie_node_manager_damoen: fix clear_param for group

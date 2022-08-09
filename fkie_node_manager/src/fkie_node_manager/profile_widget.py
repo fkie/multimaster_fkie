@@ -181,7 +181,9 @@ class ProfileWidget(QDockWidget):
 
         :param str grpc_url: the path of the profile file.
         '''
-        _url, path = nmdurl.split(grpc_url)
+        path = grpc_url
+        if grpc_url.startswith('grpc'):
+            _url, path = nmdurl.split(grpc_url)
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
@@ -233,8 +235,8 @@ class ProfileWidget(QDockWidget):
                                     if 'args' in cmdict:
                                         args = cmdict['args']
                                     # do we need to load to load/reload launch file
-                                    if cfg_name in master.launchfiles:
-                                        reload_launch = set(master.launchfiles[cfg_name].args.values()) != set(args.values())
+                                    #if cfg_name in master.launchfiles:
+                                    #    reload_launch = set(master.launchfiles[cfg_name].args.values()) != set(args.values())
                                 if reload_launch:
                                     self._main_window.launch_dock.load_file(cfg_name, args, master.masteruri)
                                 if 'nodes' in cmdict:

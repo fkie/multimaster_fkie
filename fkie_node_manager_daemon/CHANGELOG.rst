@@ -2,10 +2,14 @@
 Changelog for package fkie_node_manager_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.3.2 (2022-07-17)
+------------------
+
+1.3.1 (2022-07-15)
+------------------
+
 1.3.0 (2022-07-15)
 ------------------
-Forthcoming
------------
 * fkie_node_manager_damoen: fix clear_param for group
   These parameter are now deleted on restart nodes with reload global
   parameter
