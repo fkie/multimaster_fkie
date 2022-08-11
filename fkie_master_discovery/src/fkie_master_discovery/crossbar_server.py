@@ -68,6 +68,8 @@ CROSSBAR_CONFIG_JSON = {
 
 
 def crossbar_create_config(port: int) -> None:
+    global CROSSBAR_PATH
+    CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser('~'), os.path.join('tmp', 'crossbar_%d' % port)), '.crossbar')
     try:
         os.makedirs(CROSSBAR_PATH)
     except OSError as e:
