@@ -51,6 +51,7 @@ import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 import asyncio
 
 from .common import interpret_path
+from .url import nmdport, NMD_SERVER_PORT_OFFSET
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
@@ -62,7 +63,7 @@ from .version_servicer import VersionServicer
 class GrpcServer:
 
     def __init__(self):
-        self.crossbar_port = 11911
+        self.crossbar_port = nmdport() - NMD_SERVER_PORT_OFFSET + 600
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
         self.server = None
