@@ -82,3 +82,4 @@ def crossbar_create_config(port: int) -> None:
 def crossbar_start_server(port: int) -> None:
     crossbar_create_config(port)
     p = subprocess.Popen([shutil.which('screen'), "-dmS", "_crossbar_server_%d" % port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH])
+    return CROSSBAR_PATH

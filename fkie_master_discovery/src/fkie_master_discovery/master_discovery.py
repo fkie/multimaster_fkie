@@ -597,18 +597,18 @@ class Discoverer(object):
         # create a thread to monitor the ROS master state
         mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
         is_ip6 = self._is_ipv6_group(mgroup)
-        self.master_monitor = MasterMonitor(monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr)
+        self.master_monitor = MasterMonitor(monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_crossbar=True)
         # create timer to check for ros master changes
         self._timer_ros_changes = threading.Timer(0.1, self.checkROSMaster_loop)
         # init socket for discovering. Exit on errors!
         self._init_socket(True)
         # create a timer monitor the offline ROS master and calculate the link qualities
         self._timer_stats = threading.Timer(1, self.timed_stats_calculation)
-        # create timer and paramter for heartbeat notifications
+        # create timer and parameter for heartbeat notifications
         self._init_notifications = 0
         # disable parameter, if HEARTBEAT_HZ is active (> zero)
         if self.HEARTBEAT_HZ > DiscoveredMaster.MIN_HZ_FOR_QUALILTY:
-            # send init requests in mixed szenario: self._init_notifications = self.INIT_NOTIFICATION_COUNT
+            # send init requests in mixed scenario: self._init_notifications = self.INIT_NOTIFICATION_COUNT
             self._current_change_notification_count = self.CHANGE_NOTIFICATION_COUNT
         self._timer_heartbeat = threading.Timer(1.0, self.send_heartbeat)
         # set the callback to finish all running threads
@@ -960,9 +960,13 @@ class Discoverer(object):
         try:
             result = []
             for (addr, port), master in self.masters.items():
-                cbmaster = RosProvider(name=master.mastername, host=addr[0], port=self.master_monitor.crossbar_port)
+                # TODO: Check provider port
+                cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}', 
+                                        host=addr[0], 
+                                        port=port + 300, 
+                                        masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
                 result.append(cbmaster)
-            self.master_monitor.publish('ros.provider.list', json.dumps(result, cls=SelfEncoder))
+            self.master_monitor.setProviderList(result)
         except Exception as cpe:
             pass
 

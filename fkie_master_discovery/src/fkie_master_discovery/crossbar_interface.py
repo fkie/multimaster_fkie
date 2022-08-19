@@ -95,13 +95,15 @@ class RosProvider:
     :param str name: the name of the ROS Host
     :param str host: hostname
     :param int port: port of crossbar server
+    :param str masteruri: master uri
     '''
 
-    def __init__(self, name: str, host: str, port: int) -> None:
+    def __init__(self, name: str, host: str, port: int, masteruri: str) -> None:
         self.name = name
         self.host = host
         self.port = port
         self.type = 'crossbar-wamp'
+        self.masteruri = masteruri
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

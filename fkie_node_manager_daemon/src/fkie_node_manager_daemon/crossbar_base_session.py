@@ -34,6 +34,7 @@
 import time
 
 from json import JSONEncoder
+import json
 
 # crossbar-io dependencies
 import asyncio
@@ -60,8 +61,8 @@ class CrossbarBaseSession(ApplicationSession):
         if test_env:
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
-        self._crossbar_connected = False
-        self._crossbar_connecting = False
+        self.crossbar_connected = False
+        self.crossbar_connecting = False
         self.uri = f"ws://localhost:{self.port}/ws"
         self.crossbar_runner = ApplicationRunner(self.uri, self.config.realm)
         task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
@@ -73,36 +74,45 @@ class CrossbarBaseSession(ApplicationSession):
     def onDisconnect(self):
         rospy.loginfo('%s: autobahn disconnected' % self.__class__.__name__)
         self.crossbar_connected = False
+        self.crossbar_connecting = False
 
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
         rospy.loginfo("{}: {} crossbar procedures registered!".format(self.__class__.__name__, len(res), ))
 
+        # notify node changes to remote GUIs
+        self.publish('ros.system.changed', "")
+
     async def crossbar_connect_async(self):
-        self._crossbar_connected = False
-        while not self._crossbar_connected:
+        self.crossbar_connected = False
+        while not self.crossbar_connected:
             try:
-                rospy.loginfo(f"Connect to crossbar server @ {self.uri}, realm: {self.config.realm}")
-                self._crossbar_connecting = True
+                # try to connect to the crossbar server
+                self.crossbar_connecting = True
                 coro = await self.crossbar_runner.run(self, start_loop=False)
                 (self.__crossbar_transport, self.__crossbar_protocol) = coro
-                self._crossbar_connected = True
-                self._crossbar_connecting = False
+                self.crossbar_connected = True
+                self.crossbar_connecting = False
             except Exception as err:
                 rospy.logwarn(err)
-                self._crossbar_connecting = False
+
+                # try to start the crossbar server
                 try:
-                    rospy.loginfo(f"start crossbar server @ {self.uri}, realm: {self.config.realm}, config: {CROSSBAR_PATH}")
-                    crossbar_start_server(self.port)
+                    config_path = crossbar_start_server(self.port)
+                    rospy.loginfo(
+                        f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())
-                time.sleep(5.0)
+
+                self.crossbar_connecting = False
+                self.crossbar_connected = False
+                time.sleep(2.0)
 
     async def crossbar_connect(self) -> None:
         current_task = asyncio.current_task()
-        if not self._crossbar_connecting:
+        if not self.crossbar_connecting:
             task = asyncio.create_task(self.crossbar_connect_async())
         else:
             task = current_task

@@ -160,7 +160,7 @@ class MasterMonitor(ApplicationSession):
 
     INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-    def __init__(self, rpcport=11611, do_retry=True, ipv6=False, rpc_addr=''):
+    def __init__(self, rpcport=11611, do_retry=True, ipv6=False, rpc_addr='', connect_crossbar=False):
         '''
         Initialize method. Creates an XML-RPC server on given port and starts this
         in its own thread.
@@ -239,19 +239,24 @@ class MasterMonitor(ApplicationSession):
         self._re_hide_topics = gen_pattern(rospy.get_param('~hide_topics', []), 'hide_topics')
         self._re_hide_services = gen_pattern(rospy.get_param('~hide_services', []), 'hide_services')
 
-        # Start Crossbar server
         self.crossbar_connected = False
         self.crossbar_connecting = False
-        self.crossbar_loop = asyncio.get_event_loop()
-        self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
-        self._crossbarThread.start()
+        self.provider_list = []
+        self.crossbar_realm = "ros"
         self.crossbar_port = 11911
         if rpcport != 22622:
+            # TODO: Put "300" in a constant global value to prevent inconsistencies
             self.crossbar_port = rpcport + 300
-        self.crossbar_realm = "ros"
-        ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
-        self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
-        task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
+
+        # Start Crossbar server only if requested
+        if connect_crossbar:
+            self.crossbar_loop = asyncio.get_event_loop()
+            self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+            self._crossbarThread.start()
+        
+            ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
+            self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
+            task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
@@ -885,7 +890,6 @@ class MasterMonitor(ApplicationSession):
             if result:
                 try:
                     result = {"timestamp": self.__new_master_state.timestamp}
-                    # self.publish('ros.nodes.changed', result)
                     self.publish('ros.nodes.changed', json.dumps(result, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
@@ -920,7 +924,9 @@ class MasterMonitor(ApplicationSession):
     @wamp.register('ros.nodes.get_list')
     def getNodeList(self) -> str:
         rospy.loginfo('Request to [ros.nodes.get_list]')
-        node_list: List[RosNode] = self.__master_state.toCrossbar()
+        node_list: List[RosNode] = []
+        if self.__master_state is not None:
+            node_list = self.__master_state.toCrossbar()
         return json.dumps(node_list, cls=SelfEncoder)
 
     @wamp.register('ros.system.get_uri')
@@ -984,10 +990,25 @@ class MasterMonitor(ApplicationSession):
                     pass
             time.sleep(1.0)
 
+    def setProviderList(self, provider_list):
+        self.provider_list = provider_list
+        rospy.loginfo("setProviderList: {0}".format(json.dumps(provider_list, cls=SelfEncoder)))
+        # notify changes
+        self.publish('ros.provider.list', json.dumps(provider_list, cls=SelfEncoder))
+
+    @wamp.register('ros.provider.get_list')
+    def getProviderList(self) -> str:
+        rospy.loginfo('Request to [ros.provider.get_list]')
+        # rospy.loginfo("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
+        return json.dumps(self.provider_list, cls=SelfEncoder)
+
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
         rospy.loginfo("Crossbar: {} procedures registered!".format(len(res)))
+
+        # notify node changes to remote GUIs
+        self.publish('ros.system.changed', "")
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
@@ -998,6 +1019,7 @@ class MasterMonitor(ApplicationSession):
         self.crossbar_connected = False
         while not self.crossbar_connected:
             try:
+                # try to connect to the crossbar server
                 self.crossbar_connecting = True
                 coro = await self.crossbar_runner.run(self, start_loop=False)
                 (self.__crossbar_transport, self.__crossbar_protocol) = coro
@@ -1005,14 +1027,20 @@ class MasterMonitor(ApplicationSession):
                 self.crossbar_connecting = False
             except Exception as err:
                 rospy.logwarn(err)
-                self.crossbar_connecting = False
+
+                # try to start the crossbar server
                 try:
-                    rospy.loginfo(f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}, config: {CROSSBAR_PATH}")
-                    crossbar_start_server(self.crossbar_port)
+                    config_path = crossbar_start_server(self.port)
+                    rospy.loginfo(
+                        f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())
-                time.sleep(5.0)
+
+                self.crossbar_connecting = False
+                self.crossbar_connected = False
+                time.sleep(2.0)
+
 
     async def crossbar_connect(self) -> None:
         current_task = asyncio.current_task()
