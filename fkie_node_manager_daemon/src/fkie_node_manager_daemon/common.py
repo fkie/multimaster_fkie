@@ -260,8 +260,7 @@ def interpret_path(path, pwd='.'):
     '''
     result = path.strip()
     # try replace package name by package path
-    # pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
-    pkg_pattern = re.compile(r"%s" % '|'.join(INCLUDE_PATTERN))
+    pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
     for groups in pkg_pattern.finditer(path):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]

@@ -144,10 +144,10 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
     Handles GRPC-requests defined in `launch.proto`.
     '''
 
-    def __init__(self, monitor_servicer, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
+    def __init__(self, monitor_servicer, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
         rospy.loginfo("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
-        CrossbarBaseSession.__init__(self, loop, realm, port)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)

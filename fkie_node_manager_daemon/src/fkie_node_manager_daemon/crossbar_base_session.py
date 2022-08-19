@@ -54,9 +54,11 @@ class SelfEncoder(JSONEncoder):
 
 class CrossbarBaseSession(ApplicationSession):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
         self.port = port
         self.crossbar_loop = loop
+        if test_env:
+            return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
         self._crossbar_connected = False
         self._crossbar_connecting = False

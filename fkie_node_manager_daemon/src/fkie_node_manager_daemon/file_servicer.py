@@ -82,10 +82,10 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
     FILE_CHUNK_SIZE = 1024
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
         rospy.loginfo("Create file manger servicer")
         fms_grpc.FileServiceServicer.__init__(self)
-        CrossbarBaseSession.__init__(self, loop, realm, port)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self.DIR_CACHE = {}
         self.CB_DIR_CACHE = {}
         self._peers = {}

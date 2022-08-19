@@ -109,7 +109,7 @@ class TestFileServiceServicer(unittest.TestCase):
             pass
 
     def test_list_path(self):
-        fs = FileServicer()
+        fs = FileServicer(loop=None, test_env=True)
         root_paths = set(os.getenv('ROS_PACKAGE_PATH').split(':'))
 #        launch_response = fs.ListPath(fmsg.ListPathRequest(path=''), DummyContext())
 #        self.assertEqual(len(root_paths), len(launch_response.items), 'ROS root paths are not equal, expected: %s, got: %s' % (root_paths, launch_response.items))
@@ -127,11 +127,11 @@ class TestFileServiceServicer(unittest.TestCase):
         self.assertEqual(fmsg.ReturnStatus.StatusType.Value('OS_ERROR'), launch_response.status.code, 'wrong status code if path not exists')
 
     def test_list_packages(self):
-        fs = FileServicer()
+        fs = FileServicer(loop=None, test_env=True)
         pacakges_response = fs.ListPackages(fmsg.ListPackagesRequest(clear_ros_cache=True), DummyContext())
 
     def test_get_content(self):
-        fs = FileServicer()
+        fs = FileServicer(loop=None, test_env=True)
         fs.FILE_CHUNK_SIZE = 10
         content_response = fs.GetFileContent(fmsg.GetFileContentRequest(path=''), DummyContext())
         self.assertEqual(next(content_response).status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), 'wrong status code if path is empty')
@@ -171,7 +171,7 @@ class TestFileServiceServicer(unittest.TestCase):
             yield content
 
     def test_save_content(self):
-        fs = FileServicer()
+        fs = FileServicer(loop=None, test_env=True)
         test_data = b'This is a test file for save content test.'
         content = fmsg.SaveFileContentRequest()
         content.file.path = self.test_save_content_path
@@ -224,7 +224,7 @@ class TestFileServiceServicer(unittest.TestCase):
     def test_rename_file(self):
         with FileIO(self.test_rename_from_file, 'w') as testfile:
             testfile.write(b'test content for file which will be renamed')
-        fs = FileServicer()
+        fs = FileServicer(loop=None, test_env=True)
         # test rename of not existing file
         rename_request = fmsg.RenameRequest()
         rename_request.old = self.test_rename_to_file
