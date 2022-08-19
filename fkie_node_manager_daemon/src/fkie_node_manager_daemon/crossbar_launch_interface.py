@@ -298,6 +298,7 @@ class LaunchIncludedFilesRequest:
                  search_in_ext: List[str] = SEARCH_IN_EXT,
                  args: List[LaunchArgument] = []) -> None:
         '''
+        Request to parse the given file for included files.
         :param str path: file to parse.
         :param bool recursive: True to read recursive. Default: True.
         :param bool unique: True to ignore files included multiple times. Default: False.
