@@ -32,7 +32,10 @@
 
 import json
 
-from typing import List
+from typing import List, Dict
+
+from .common import INCLUDE_PATTERN
+from .common import SEARCH_IN_EXT
 
 from fkie_master_discovery.crossbar_interface import RosParameter
 
@@ -241,6 +244,111 @@ class LaunchNodeReply:
         self.status = LaunchReturnStatus(status)
         self.paths = paths
         self.launch_files = launch_files
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchInterpretPathRequest:
+    '''
+    Request to parse the text for included paths.
+    :param str text: line in the launch config.
+    :param [LaunchArgument] launch: a list of the arguments used load the launch file.
+    '''
+
+    def __init__(self, text: str, *,
+                 args: List[LaunchArgument] = []) -> None:
+        self.text = text
+        self.args = args
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchInterpretPathReply:
+    '''
+    Response for a request to parse the text for included paths.
+    :param str text: line in the launch config.
+    :param str status: the status of the parsing. One of the codes of LaunchReturnStatus. Default: 'OK'
+    :param str path: the path of the configuration file containing the text.
+    :param bool exists: True if detected include path exists.
+    :param [LaunchArgument] launch: a list of the arguments used load the launch file.
+    '''
+
+    def __init__(self, text: str, *,
+                 status: str = 'OK',
+                 path: str = '',
+                 exists: bool = False,
+                 args: List[LaunchArgument] = []) -> None:
+        self.text = text
+        self.status = LaunchReturnStatus(status)
+        self.path = path
+        self.args = args
+        self.exists = exists
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchIncludedFilesRequest:
+    def __init__(self, path: str, *,
+                 recursive: bool = True,
+                 unique: bool = False,
+                 pattern: List[str] = INCLUDE_PATTERN,
+                 search_in_ext: List[str] = SEARCH_IN_EXT,
+                 args: List[LaunchArgument] = []) -> None:
+        '''
+        :param str path: file to parse.
+        :param bool recursive: True to read recursive. Default: True.
+        :param bool unique: True to ignore files included multiple times. Default: False.
+        :param [str] pattern: pattern to change include detection.
+        :param [str] search_in_ext: search only for files with given extensions. Default: ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+        :param [LaunchArgument] include_args: use include launch arguments.
+        '''
+        self.path = path
+        self.recursive = recursive
+        self.unique = unique
+        self.pattern = pattern
+        self.search_in_ext = search_in_ext
+        self.args = args
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchIncludedFile:
+
+    def __init__(self, path: str,
+                 line_number: int,
+                 inc_path: str,
+                 exists: bool,
+                 raw_inc_path: str,
+                 rec_depth: int,
+                 args: List[LaunchArgument],
+                 default_inc_args: List[LaunchArgument],
+                 size: int = 0):
+        '''
+        Representation of an included file found in given string or path of a file.
+
+        :param str path: current reading file.
+        :param int line_number: line number of the occurrence. If `unique` is True the line number is zero.
+        :param str inc_path: resolved path.
+        :param bool exists: True if resolved path exists.
+        :param str raw_inc_path: representation of included file without resolved arg and find statements.
+        :param int rec_depth: depth of recursion. if `unique` is True the depth is zero
+        :param [LaunchArgument] args: a list with arguments forwarded within include tag for 'inc_path'.
+        :param [LaunchArgument] default_inc_args: a list with default arguments defined in 'inc_path'.
+        :param int size: size of the file in bytes.
+        '''
+        self.path = path
+        self.line_number = line_number
+        self.inc_path = inc_path
+        self.exists = exists
+        self.raw_inc_path = raw_inc_path
+        self.rec_depth = rec_depth
+        self.args = args
+        self.default_inc_args = default_inc_args
+        self.size = size
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

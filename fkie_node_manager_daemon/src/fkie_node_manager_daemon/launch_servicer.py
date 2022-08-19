@@ -57,7 +57,7 @@ import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from . import exceptions
 from . import launcher
 from . import url
-from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, find_included_files, interpret_path, utf8, reset_package_cache
+from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, replace_arg, get_arg_names, find_included_files, interpret_path, utf8, reset_package_cache
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 from .crossbar_base_session import CrossbarBaseSession
@@ -71,6 +71,10 @@ from .crossbar_launch_interface import LaunchNodelets
 from .crossbar_launch_interface import LaunchAssociations
 from .crossbar_launch_interface import LaunchNode
 from .crossbar_launch_interface import LaunchNodeReply
+from .crossbar_launch_interface import LaunchInterpretPathRequest
+from .crossbar_launch_interface import LaunchInterpretPathReply
+from .crossbar_launch_interface import LaunchIncludedFilesRequest
+from .crossbar_launch_interface import LaunchIncludedFile
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -860,6 +864,47 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
         return result
 
+    @wamp.register('ros.launch.get_included_files')
+    def GetIncludedFiles(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        path = request.path
+        rospy.logdebug('Request to [ros.launch.get_included_files]%s' % str(path))
+        result = []
+        try:
+            pattern = INCLUDE_PATTERN
+            if request.pattern:
+                pattern = request.pattern
+            search_in_ext = SEARCH_IN_EXT
+            if request.search_in_ext:
+                search_in_ext = request.search_in_ext
+            # search for loaded file and get the arguments
+            resolve_args = {arg.name: arg.value for arg in request.include_args}
+            if not resolve_args:
+                for cfgid, lcfg in self._loaded_files.items():
+                    if cfgid.path == request.path:
+                        resolve_args.update(lcfg.resolve_dict)
+                        break
+            # replay each file
+            for inc_file in find_included_files(request.path, request.recursive, request.unique, pattern, search_in_ext, resolve_args):
+                file_size = 0
+                if inc_file.exists:
+                    file_size = os.path.getsize(inc_file.inc_path)
+                lincf = LaunchIncludedFile(path = inc_file.path_or_str,
+                                           line_number = inc_file.line_number,
+                                           inc_path = inc_file.inc_path,
+                                           exists = inc_file.exists,
+                                           raw_inc_path = inc_file.raw_inc_path,
+                                           rec_depth = inc_file.rec_depth,
+                                           args = [LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
+                                           default_inc_args = [LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
+                                           size = file_size
+                                           )
+                result.append(lincf)
+        except Exception:
+            rospy.logwarn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
+        return json.dumps(result, cls=SelfEncoder)
+
     def GetIncludedFiles(self, request, context):
         rospy.logdebug('GetIncludedFiles request:\n%s' % str(request))
         try:
@@ -892,6 +937,53 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 yield reply
         except Exception:
             rospy.logwarn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
+
+    @wamp.register('ros.launch.interpret_path')
+    def InterpretPath(self, request_json: LaunchInterpretPathRequest)-> List[LaunchInterpretPathReply]:
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        text = request.text
+        rospy.logdebug('Request to [ros.launch.interpret_path]: %s' % str(text))
+        args = {arg.name: arg.value for arg in request.args}
+        result = []
+        if text:
+            try:
+                for inc_file in find_included_files(text, False, False, search_in_ext=[]):
+                    aval = inc_file.raw_inc_path
+                    aitems = aval.split("'")
+                    for search_for in aitems:
+                        if not search_for:
+                            continue
+                        rospy.logdebug("try to interpret: %s" % search_for)
+                        args_in_name = get_arg_names(search_for)
+                        request_args = False
+                        for arg_name in args_in_name:
+                            if not arg_name in args:
+                                request_args = True
+                                break
+                        if request_args:
+                            req_args = []
+                            for arg_name in args_in_name:
+                                if arg_name in args:
+                                    req_args.append(LaunchArgument(arg_name, args[arg_name]))
+                                else:
+                                    req_args.append(LaunchArgument(arg_name))
+                            reply = LaunchInterpretPathReply(text=search_for, status='PARAMS_REQUIRED', args=req_args)
+                            reply.status.code = 'PARAMS_REQUIRED'
+                            result.append(reply)
+                        else:
+                            search_for_rpl = replace_arg(search_for, args)
+                            reply = LaunchInterpretPathReply(text=search_for, status='OK', path=search_for_rpl, exists=os.path.exists(search_for), args=request.args)
+                            result.append(reply)
+            except Exception as err:
+                reply = LaunchInterpretPathReply(text=text, status='ERROR', args=request.args)
+                reply.status.error_msg = utf8(err)
+                result.append(reply)
+        else:
+            reply = LaunchInterpretPathReply(text=text, status='ERROR', args=request.args)
+            reply.status.msg = utf8('empty request')
+            result.append(reply)
+        return json.dumps(result, cls=SelfEncoder)
 
     def InterpretPath(self, request, context):
         rospy.logdebug('InterpretPath request:\n%s' % str(request))

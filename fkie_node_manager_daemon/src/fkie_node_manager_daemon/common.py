@@ -247,6 +247,7 @@ def reset_package_cache():
     global SOURCE_PATH_TO_PACKAGES
     SOURCE_PATH_TO_PACKAGES = {}
 
+
 def interpret_path(path, pwd='.'):
     '''
     Tries to determine the path of included file. The statement of $(find 'package') will be resolved.
@@ -259,7 +260,8 @@ def interpret_path(path, pwd='.'):
     '''
     result = path.strip()
     # try replace package name by package path
-    pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
+    # pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
+    pkg_pattern = re.compile(r"%s" % '|'.join(INCLUDE_PATTERN))
     for groups in pkg_pattern.finditer(path):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]
