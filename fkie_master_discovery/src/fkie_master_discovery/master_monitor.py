@@ -1030,9 +1030,10 @@ class MasterMonitor(ApplicationSession):
 
                 # try to start the crossbar server
                 try:
-                    config_path = crossbar_start_server(self.port)
-                    rospy.loginfo(
-                        f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
+                    config_path = crossbar_start_server(self.crossbar_port)
+                    if len(config_path) > 0:
+                        rospy.loginfo(
+                            f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())
