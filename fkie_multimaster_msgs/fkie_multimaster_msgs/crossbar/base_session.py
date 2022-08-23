@@ -43,9 +43,9 @@ from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from asyncio import coroutine
 
 # ros
-import rospy
+#import rospy
 
-from fkie_master_discovery.crossbar_server import crossbar_start_server, CROSSBAR_PATH
+from .server import crossbar_start_server, CROSSBAR_PATH
 
 
 class SelfEncoder(JSONEncoder):
@@ -68,18 +68,20 @@ class CrossbarBaseSession(ApplicationSession):
         task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
 
     def onConnect(self):
-        rospy.loginfo("%s: autobahn connected" % self.__class__.__name__)
+        #rospy.loginfo("%s: autobahn connected" % self.__class__.__name__)
+        print(f"{self.__class__.__name__}: autobahn connected")
         self.join(self.config.realm)
 
     def onDisconnect(self):
-        rospy.loginfo('%s: autobahn disconnected' % self.__class__.__name__)
+        #rospy.loginfo('%s: autobahn disconnected' % self.__class__.__name__)
+        print(f"{self.__class__.__name__}: autobahn disconnected")
         self.crossbar_connected = False
         self.crossbar_connecting = False
 
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
-        rospy.loginfo("{}: {} crossbar procedures registered!".format(self.__class__.__name__, len(res), ))
+        print(f"{self.__class__.__name__}: {len(res)} crossbar procedures registered!")
 
         # notify node changes to remote GUIs
         self.publish('ros.system.changed', "")
@@ -95,13 +97,13 @@ class CrossbarBaseSession(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                rospy.logwarn(err)
+                import sys
+                sys.stderr.write(err)
 
                 # try to start the crossbar server
                 try:
                     config_path = crossbar_start_server(self.port)
-                    rospy.loginfo(
-                        f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
+                    print(f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())

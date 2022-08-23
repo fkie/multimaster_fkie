@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- start grpc server unit test node -->
+  <test test-name="test_grpc_server" pkg="fkie_node_manager_daemon" type="test_grpc_server.py"
+        cwd="node"
+        name="test_grpc_server" time-limit="10.0">
+  </test>
+
+</launch>

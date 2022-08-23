@@ -358,7 +358,8 @@ class MainWindow(QMainWindow):
         self.own_master_monitor.init(monitor_port)
         self.own_master_monitor.state_signal.connect(self.on_master_state_changed)
         self.own_master_monitor.err_signal.connect(self.on_master_monitor_err)
-        
+        # self.own_master_monitor.crossbar_signal.connect(self.on_master_monitor_crossbar)
+
         # get the name of the service and topic of the discovery node. The name are determine by the message type  of those topics
         self.masterlist_service = masterlist_service = MasterListService()
         masterlist_service.masterlist_signal.connect(self.on_master_list_retrieved)

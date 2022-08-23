@@ -41,9 +41,9 @@ import rospy
 from .common import get_hostname
 from . import screen
 from .filter_interface import FilterInterface
-from .crossbar_interface import RosNode
-from .crossbar_interface import RosService
-from .crossbar_interface import RosTopic
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
 
 from typing import List, Dict
 

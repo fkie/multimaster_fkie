@@ -53,7 +53,7 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
-from .crossbar_interface import RosProvider, SelfEncoder
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosProvider
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site

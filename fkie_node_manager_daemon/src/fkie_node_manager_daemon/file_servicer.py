@@ -48,11 +48,11 @@ from . import remote
 from . import settings
 from . import url as nmdurl
 from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
-from .crossbar_base_session import CrossbarBaseSession
-from .crossbar_base_session import SelfEncoder
-from .crossbar_file_interface import RosPackage
-from .crossbar_file_interface import PathItem
-from .crossbar_file_interface import LogPathItem
+from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.crossbar.file_interface import RosPackage
+from fkie_multimaster_msgs.crossbar.file_interface import PathItem
+from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
 from .screen import get_logfile
 from .screen import get_ros_logfile
 

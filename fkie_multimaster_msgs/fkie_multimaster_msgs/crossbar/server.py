@@ -3,7 +3,6 @@ import json
 import os
 import subprocess
 import shutil
-import rospy
 
 CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser('~'), 'tmp'), '.crossbar')
 
@@ -81,9 +80,13 @@ def crossbar_create_config(port: int) -> None:
 
 def crossbar_start_server(port: int) -> str:
     crossbar_create_config(port)
-
     if shutil.which('crossbar') is None:
-        rospy.logerr("shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
+        try:
+            import rospy
+            rospy.logerr("shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
+        except:
+            import sys
+            sys.stderr.write("shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
         return ""
 
     print(shutil.which('screen'), "-dmS", "_crossbar_server_%d" % port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH)

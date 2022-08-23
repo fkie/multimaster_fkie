@@ -1,4 +1,4 @@
-<package format="2">
+<package format="3">
   <name>fkie_multimaster</name>
   <!-- <replace>multimaster_fkie</replace> -->
   <description>
@@ -11,16 +11,18 @@
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
   <url>http://ros.org/wiki/fkie_multimaster</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
   <exec_depend>fkie_multimaster_msgs</exec_depend>
   <exec_depend>fkie_master_discovery</exec_depend>
-  <exec_depend>fkie_master_sync</exec_depend>
-  <exec_depend>fkie_node_manager</exec_depend>
   <exec_depend>fkie_node_manager_daemon</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_master_sync</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_node_manager</exec_depend>
 
   <export>
-    <metapackage/>
+    <!-- <metapackage condition="$ROS_VERSION == 1"></metapackage> -->
+    <!-- <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type> -->
   </export>
 
 </package>

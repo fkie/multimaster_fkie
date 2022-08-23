@@ -14,48 +14,49 @@
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
   <url>http://ros.org/wiki/node_manager_fkie</url>
   
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
   
   <build_depend condition="$ROS_PYTHON_VERSION == 2">python-catkin-pkg</build_depend>
   <!-- <build_depend condition="$ROS_PYTHON_VERSION == 3">python3-catkin-pkg</build_depend> -->
-  <build_depend>fkie_master_discovery</build_depend>
-  <build_depend>fkie_multimaster_msgs</build_depend>
-  <build_depend>fkie_node_manager_daemon</build_depend>
-  <build_depend>diagnostic_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">fkie_master_discovery</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">fkie_multimaster_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">fkie_node_manager_daemon</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">diagnostic_msgs</build_depend>
 
-  <exec_depend>fkie_master_discovery</exec_depend>
-  <exec_depend>fkie_master_sync</exec_depend>
-  <exec_depend>fkie_multimaster_msgs</exec_depend>
-  <exec_depend>fkie_node_manager_daemon</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>roslib</exec_depend>
-  <exec_depend>rosmsg</exec_depend>
-  <exec_depend>rosgraph</exec_depend>
-  <exec_depend>roslaunch</exec_depend>
-  <exec_depend>rosservice</exec_depend>
-  <exec_depend>dynamic_reconfigure</exec_depend>
-  <exec_depend>rqt_reconfigure</exec_depend>
-  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_master_discovery</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_master_sync</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_multimaster_msgs</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_node_manager_daemon</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rospy</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roslib</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rosmsg</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rosgraph</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roslaunch</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rosservice</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">dynamic_reconfigure</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rqt_reconfigure</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">diagnostic_msgs</exec_depend>
 
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-docutils</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-paramiko</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-pycryptodome</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-qt5-bindings-webkit</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-ruamel.yaml</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-docutils</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-paramiko</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-pycryptodome</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-qt5-bindings-webkit</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-ruamel.yaml</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-docutils</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-paramiko</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-pycryptodome</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-qt5-bindings-webkit</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-ruamel.yaml</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-docutils</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-paramiko</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-pycryptodome</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-qt5-bindings-webkit</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-ruamel.yaml</exec_depend>
 
-  <exec_depend>python_qt_binding</exec_depend>
-  <exec_depend>screen</exec_depend>
-  <exec_depend>xterm</exec_depend>
-  <exec_depend>rqt_gui</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">python_qt_binding</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">screen</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">xterm</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rqt_gui</exec_depend>
   
   <export>
     <rosdoc config="rosdoc.yaml" />
-    <rqt_gui plugin="${prefix}/plugin.xml"/>
+    <rqt_gui condition="$ROS_VERSION == 1" plugin="${prefix}/plugin.xml"/>
   </export>
 
 </package>

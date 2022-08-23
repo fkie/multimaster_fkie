@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+
+  <executable cmd="pub topic_name std_msgs/String '{data: delayed start}' -r 1" cwd="/home/ros2" launch-prefix="ros2 topic">
+    <param name="capability_group" value="autostart" />
+    <param name="autostart/delay" value="5.0" />
+  </executable>
+
+  <executable cmd="echo topic_name" cwd="/home/ros2" launch-prefix="ros2 topic">
+    <param name="capability_group" value="autostart" />
+    <param name="autostart/exclude" value="false" />
+    <param name="autostart/delay" value="5.0" />
+    <param name="autostart/required/publisher" value="topic_name" />
+  </executable>
+
+  <executable cmd="echo respawn" cwd="/home/ros2" launch-prefix="ros2 topic">
+    <param name="capability_group" value="autostart" />
+    <param name="respawn/max" value="5" />
+    <param name="respawn/min_runtime" value="60" />
+    <param name="respawn/delay" value="2" />
+  </executable>
+
+</launch>

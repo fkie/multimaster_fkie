@@ -74,10 +74,10 @@ from .common import masteruri_from_ros, get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
-from .crossbar_interface import RosNode
-from .crossbar_interface import SelfEncoder
-from .crossbar_interface import ScreenRepetitions
-from .crossbar_server import crossbar_start_server, CROSSBAR_PATH
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
+from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
+from fkie_multimaster_msgs.crossbar.server import crossbar_start_server, CROSSBAR_PATH
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -253,7 +253,7 @@ class MasterMonitor(ApplicationSession):
             self.crossbar_loop = asyncio.get_event_loop()
             self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
             self._crossbarThread.start()
-        
+
             ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
             self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
             task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
@@ -1032,12 +1032,10 @@ class MasterMonitor(ApplicationSession):
                 try:
                     config_path = crossbar_start_server(self.crossbar_port)
                     if len(config_path) > 0:
-                        rospy.loginfo(
-                            f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
+                        rospy.loginfo(f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())
-
                 self.crossbar_connecting = False
                 self.crossbar_connected = False
                 time.sleep(2.0)

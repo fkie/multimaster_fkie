@@ -15,25 +15,33 @@
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
   <url>http://ros.org/wiki/master_discovery_fkie</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
-  <build_depend>fkie_multimaster_msgs</build_depend>
-  <build_depend>std_srvs</build_depend>
-  <build_export_depend>fkie_multimaster_msgs</build_export_depend>
-  <build_export_depend>std_srvs</build_export_depend>
-  <exec_depend>fkie_multimaster_msgs</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
+  <depend>fkie_multimaster_msgs</depend>
+  <depend condition="$ROS_VERSION == 1">std_srvs</depend>
+  <depend condition="$ROS_VERSION == 1">rospy</depend>
+  <depend condition="$ROS_VERSION == 1">roslib</depend>
+  <depend condition="$ROS_VERSION == 1">rosgraph</depend>
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-avahi</depend>
+  <depend condition="$ROS_VERSION == 1">avahi-daemon</depend>
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
 
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>roslib</exec_depend>
-  <exec_depend>rosgraph</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-avahi</exec_depend>
-  <!-- <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-avahi</exec_depend> -->
-  <exec_depend>avahi-daemon</exec_depend>
-  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-autobahn</exec_depend>
+  <depend condition="$ROS_VERSION == 2">lifecycle_msgs</depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp_lifecycle</depend>
+  <depend condition="$ROS_VERSION == 2 and $ROS_DISTRO != eloquent">rosidl_typesupport_fastrtps_cpp</depend>
+  <depend condition="$ROS_VERSION == 2 and $ROS_DISTRO != eloquent">rmw_dds_common</depend>
+  <depend condition="$ROS_VERSION == 2 and $ROS_DISTRO != eloquent">rmw_fastrtps_cpp</depend>
+  <depend condition="$ROS_VERSION == 2">rmw_fastrtps_shared_cpp</depend>
+
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
 
   <export>
-    <rosdoc config="rosdoc.yaml" />
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
   </export>
 
 </package>

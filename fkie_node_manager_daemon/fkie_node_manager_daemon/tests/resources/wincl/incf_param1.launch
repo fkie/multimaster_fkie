@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="param" default="one"/>
+
+  <node name="node_from_$(arg param)" pkg="rostopic" type="rostopic"
+      args="pub one std_msgs/String -r 1 'one :)'"/>
+</launch>

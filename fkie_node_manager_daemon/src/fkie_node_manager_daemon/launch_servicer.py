@@ -49,7 +49,6 @@ from autobahn import wamp
 
 from typing import List
 
-from fkie_master_discovery.crossbar_interface import RosParameter
 from fkie_master_discovery.common import masteruri_from_master
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
@@ -60,21 +59,22 @@ from . import url
 from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, replace_arg, get_arg_names, find_included_files, interpret_path, utf8, reset_package_cache
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
-from .crossbar_base_session import CrossbarBaseSession
-from .crossbar_base_session import SelfEncoder
-from .crossbar_launch_interface import LaunchArgument
-from .crossbar_launch_interface import LaunchFile
-from .crossbar_launch_interface import LaunchLoadRequest
-from .crossbar_launch_interface import LaunchLoadReply
-from .crossbar_launch_interface import LaunchContent
-from .crossbar_launch_interface import LaunchNodelets
-from .crossbar_launch_interface import LaunchAssociations
-from .crossbar_launch_interface import LaunchNode
-from .crossbar_launch_interface import LaunchNodeReply
-from .crossbar_launch_interface import LaunchInterpretPathRequest
-from .crossbar_launch_interface import LaunchInterpretPathReply
-from .crossbar_launch_interface import LaunchIncludedFilesRequest
-from .crossbar_launch_interface import LaunchIncludedFile
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadReply
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodelets
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchAssociations
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNode
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeReply
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathRequest
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')

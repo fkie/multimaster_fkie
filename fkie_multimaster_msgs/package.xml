@@ -11,15 +11,32 @@
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
   <url>http://ros.org/wiki/multimaster_msgs_fkie</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake_python</buildtool_depend>
 
-  <build_depend>message_generation</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  <build_depend condition="$ROS_PYTHON_VERSION == 2">python-grpc-tools</build_depend>
-  <build_depend condition="$ROS_PYTHON_VERSION == 3">python3-grpc-tools</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">message_generation</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">std_msgs</build_depend>
+  <build_export_depend condition="$ROS_VERSION == 1">std_msgs</build_export_depend>
+  <build_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-grpc-tools</build_depend>
+  <build_depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-grpc-tools</build_depend>
+  <exec_depend condition="$ROS_VERSION == 1">message_runtime</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">std_msgs</exec_depend>
+  <depend condition="$ROS_VERSION == 1">rospy</depend>
+  <depend condition="$ROS_VERSION == 2">rclpy</depend>
 
-  <exec_depend>message_runtime</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
+  <build_depend condition="$ROS_VERSION == 2">builtin_interfaces</build_depend>
+  <build_depend condition="$ROS_VERSION == 2">rosidl_default_generators</build_depend>
+  <exec_depend condition="$ROS_VERSION == 2">builtin_interfaces</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
+
+  <depend condition="$ROS_VERSION == 2 or $ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
+
+  <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
 
 </package>

@@ -34,10 +34,15 @@ import json
 
 from typing import List, Dict
 
-from .common import INCLUDE_PATTERN
-from .common import SEARCH_IN_EXT
+INCLUDE_PATTERN = [r"\s*(\$\(find-pkg-share.*?\)[^ \"]*)",
+                   r"file=\"(.*?)\"",
+                   r"textfile=\"(.*?)\"",
+                   r"binfile=\"(.*?)\"",
+                   r"\"\s*(pkg:\/\/.*?)\"",
+                   r"\"\s*(package:\/\/.*?)\""]
+SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
-from fkie_master_discovery.crossbar_interface import RosParameter
+from .runtime_interface import RosParameter
 
 
 class LaunchReturnStatus:

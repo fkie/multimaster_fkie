@@ -261,9 +261,11 @@ def interpret_path(path, pwd='.'):
     result = path.strip()
     # try replace package name by package path
     pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
+    #pkg_pattern = re.compile(r"%s" % '|'.join(INCLUDE_PATTERN))
     for groups in pkg_pattern.finditer(path):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]
+            print("PKGNAME", pkg_name)
             if pkg_name:
                 pkg = get_pkg_path(pkg_name)
                 rospy.logdebug("rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))

@@ -1,13 +1,13 @@
 import json
-from json import JSONEncoder
 import os
-from typing import Union
+from typing import List, Dict, Union
 
-# ROS dependencies
-import rosnode
-import rospy
-from rosgraph import Master
-from typing import List, Dict
+SEP = '/'
+try:
+    import rospy
+    SEP = rospy.names.SEP
+except ImportError:
+    pass
 
 
 def get_namespace(name):
@@ -17,8 +17,8 @@ def get_namespace(name):
     :rtype: str
     '''
     result = os.path.dirname(name)
-    if not result.endswith(rospy.names.SEP):
-        result += rospy.names.SEP
+    if not result.endswith(SEP):
+        result += SEP
     return result
 
 
@@ -28,17 +28,13 @@ def get_node_name(name):
     :return: The name without namespace.
     :rtype: str
     '''
-    result = os.path.basename(name).strip(rospy.names.SEP)
+    result = os.path.basename(name).strip(SEP)
     return result
-
-
-class SelfEncoder(JSONEncoder):
-    def default(self, obj):
-        return obj.__dict__
 
 
 class RosTopic:
     def __init__(self, name: str, msgtype: str) -> None:
+        print("  topic", name, msgtype)
         self.name = name
         self.msgtype = msgtype
         self.publisher: List[str] = []
@@ -98,7 +94,7 @@ class RosProvider:
     :param str masteruri: master uri
     '''
 
-    def __init__(self, name: str, host: str, port: int, masteruri: str) -> None:
+    def __init__(self, name: str, host: str, port: int, masteruri: str = '') -> None:
         self.name = name
         self.host = host
         self.port = port
