@@ -51,6 +51,7 @@ except ImportError as err:
         "Cannot import SetLoggerLevel service definition: %s" % err)
 
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class LoggerItem(QFrame):
@@ -140,7 +141,7 @@ class LoggerItem(QFrame):
         elif level.upper() == 'FATAL':
             button = self.fatal
         elif level:
-            rospy.logwarn("loglevel not found '%s'" % (level))
+            Log.warn("loglevel not found '%s'" % (level))
             return
         if button is not None:
             checked = self._callback is None
@@ -181,8 +182,8 @@ class LoggerItem(QFrame):
                     serviceuri, service_name, self.loggername, level)
                 self.success_signal.emit(level)
         except rospy.ServiceException as e:
-            rospy.logwarn("Set logger %s for %s to %s failed: %s" %
-                          (self.loggername, self.nodename, level, e))
+            Log.warn("Set logger %s for %s to %s failed: %s" %
+                     (self.loggername, self.nodename, level, e))
             if backup_level is not None:
                 self.error_signal.emit(backup_level)
 

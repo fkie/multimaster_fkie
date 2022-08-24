@@ -49,6 +49,7 @@ from fkie_node_manager_daemon.common import utf8
 import fkie_node_manager as nm
 from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg
 from .detailed_msg_box import MessageBox
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class ProfileWidget(QDockWidget):
@@ -117,7 +118,7 @@ class ProfileWidget(QDockWidget):
                 path = self.get_profile_file(current_path)
                 if path is None:
                     return
-            rospy.loginfo("Save profile %s" % path)
+            Log.info("Save profile %s" % path)
             content = {}
             for muri, master in self._main_window.masters.items():
                 running_nodes = master.get_nodes_runningIfLocal()
@@ -186,7 +187,7 @@ class ProfileWidget(QDockWidget):
         path = grpc_url
         if grpc_url.startswith('grpc'):
             _url, path = nmdurl.split(grpc_url)
-        rospy.loginfo("Load profile %s" % path)
+        Log.info("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
         self.setWindowTitle("%s profile started" %
@@ -288,7 +289,7 @@ class ProfileWidget(QDockWidget):
                         except Exception as ml:
                             import traceback
                             print(utf8(traceback.format_exc(1)))
-                            rospy.logwarn(
+                            Log.warn(
                                 "Can not load launch file for %s: %s" % (muri, utf8(ml)))
             except Exception as e:
                 import traceback
@@ -320,7 +321,7 @@ class ProfileWidget(QDockWidget):
                     self.progressBar.setValue(progress)
 
     def closeEvent(self, event):
-        rospy.loginfo("Cancel profile loading...")
+        Log.info("Cancel profile loading...")
         QDockWidget.closeEvent(self, event)
         ret = MessageBox.warning(self, "Cancel Start?",
                                  'This stops all starting queues!', buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -333,7 +334,7 @@ class ProfileWidget(QDockWidget):
             if master is not None:
                 master.start_nodes_after_load_cfg_clear()
                 master._progress_queue.stop()
-        rospy.loginfo("Profile loading canceled!")
+        Log.info("Profile loading canceled!")
 
     def _start_node_from_profile(self, master, hostname, pkg, binary, usr, cfg={}):
         try:
@@ -371,5 +372,5 @@ class ProfileWidget(QDockWidget):
                                                              })
                 self._main_window._progress_queue.start()
         except Exception as me:
-            rospy.logwarn("Can not start %s for %s: %s" %
-                          (binary, master.masteruri, utf8(me)))
+            Log.warn("Can not start %s for %s: %s" %
+                     (binary, master.masteruri, utf8(me)))

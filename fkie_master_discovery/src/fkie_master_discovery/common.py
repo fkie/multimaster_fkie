@@ -46,6 +46,8 @@ except ImportError:
 import roslib.names
 import rospy
 
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 EMPTY_PATTERN = re.compile('\b', re.I)
 IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
@@ -293,9 +295,9 @@ def _parse_value(value, mastername, def_list):
 def gen_pattern(filter_list, name, print_info=True, mastername=None):
     if print_info:
         if mastername is not None and mastername:
-            rospy.loginfo("[%s] %s: %s", mastername, name, str(filter_list))
+            Log.info(f'[{mastername}] {name}: {filter_list}')
         else:
-            rospy.loginfo("%s: %s", name, str(filter_list))
+            Log.info(f'{name}: {filter_list}')
     def_list = [''.join(['\A', n.strip().replace('*', '.*'), '\Z'])
                 for n in filter_list]
     if def_list:

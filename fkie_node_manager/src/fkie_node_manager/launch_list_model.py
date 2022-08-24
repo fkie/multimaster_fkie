@@ -47,6 +47,8 @@ from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon.file_item import FileItem
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 from .common import package_name
 from .detailed_msg_box import MessageBox
@@ -269,8 +271,8 @@ class PathItem(QStandardItem):
                     self._path = new_path
                 except Exception as err:
                     import traceback
-                    rospy.logwarn("Error while save new file: %s" %
-                                  traceback.format_exc())
+                    Log.warn("Error while save new file: %s" %
+                             traceback.format_exc())
                     MessageBox.warning(None, "Rename failed", utf8(err))
         return QStandardItem.setData(self, value, role)
 
@@ -662,9 +664,9 @@ class LaunchListModel(QStandardItemModel):
                 try:
                     if text == dest_path:
                         dest_path = self._autorename(dest_path)
-                        rospy.logdebug(
+                        Log.debug(
                             "Autorename destination from %s to %s" % (text, dest_path))
-                    rospy.logdebug("Copy %s to %s" % (text, dest_path))
+                    Log.debug("Copy %s to %s" % (text, dest_path))
                     nm.nmd().file.copy(text, dest_path)
                     self.reload_current_path(clear_cache=True)
                 except Exception as err:
@@ -709,8 +711,8 @@ class LaunchListModel(QStandardItemModel):
             return path_item
         except Exception:
             import traceback
-            rospy.logwarn("Error while add new item: %s" %
-                          traceback.format_exc())
+            Log.warn("Error while add new item: %s" %
+                     traceback.format_exc())
         return []
 
     def _exists(self, name):

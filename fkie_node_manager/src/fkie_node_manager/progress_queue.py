@@ -40,6 +40,7 @@ import rospy
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox, DetailedError
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class InteractionNeededError(Exception):
@@ -103,7 +104,7 @@ class ProgressQueue(QObject):
         Defaults to None, meaning nothing is called.
         :param kwargs: is the argument dictionary for the function invocation. Defaults to {}
         '''
-        rospy.logdebug("+ add '%s' with %s to %s" % (descr, kwargs, self))
+        Log.debug("+ add '%s' with %s to %s" % (descr, kwargs, self))
         pthread = ProgressThread(str(ident), descr, target, kwargs)
         pthread.finished_signal.connect(self._progress_thread_finished)
         pthread.error_signal.connect(self._progress_thread_error)
@@ -306,7 +307,7 @@ class ProgressThread(QObject, threading.Thread):
         '''
         '''
         try:
-            rospy.logdebug("run '%s' with %s" % (self.descr, self._kwargs))
+            Log.debug("run '%s' with %s" % (self.descr, self._kwargs))
             if self._target is not None:
                 if sys.version_info[0] <= 2:
                     varnames = self._target.func_code.co_varnames
@@ -334,7 +335,7 @@ class ProgressThread(QObject, threading.Thread):
             while not last_line and len(formatted_lines) > index:
                 index += 1
                 last_line = formatted_lines[-index]
-            rospy.logwarn("%s failed:\n\t%s", utf8(
+            Log.warn("%s failed:\n\t%s", utf8(
                 self.descr), utf8(last_line))
             self.error_signal.emit(self._id, 'Progress Job Error',
                                    "%s failed:\n%s" % (

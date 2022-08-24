@@ -42,6 +42,7 @@ import fkie_node_manager as nm
 
 from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon.common import replace_arg, utf8
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class TextSearchThread(QObject, threading.Thread):
@@ -94,7 +95,7 @@ class TextSearchThread(QObject, threading.Thread):
             # formatted_lines = traceback.format_exc(1).splitlines()
             msg = "Error while search for '%s' in '%s': %s" % (
                 self._search_text, self._path, traceback.print_exc())
-            rospy.logwarn(msg)
+            Log.warn(msg)
             self.warning_signal.emit(msg)
         finally:
             if self._isrunning:
@@ -171,7 +172,7 @@ class TextSearchThread(QObject, threading.Thread):
             self.search(search_text, path, recursive, args, count)
         else:
             # read XML content and update the arguments
-            rospy.logdebug("search for node '%s' in %s with args: %s, recursive: %s" % (
+            Log.debug("search for node '%s' in %s with args: %s, recursive: %s" % (
                 search_text, path, args, recursive))
             resolve_args = dict(args)
             if not resolve_args:
@@ -204,7 +205,7 @@ class TextSearchThread(QObject, threading.Thread):
                         queue.append(
                             (search_text, inc_file.inc_path, recursive, inc_file.args))
                     elif inc_file.inc_path.endswith('.launch') or inc_file.inc_path.find('.launch.') > 0:
-                        rospy.logwarn(
+                        Log.warn(
                             "skip parsing of not existing included file: %s" % inc_file.inc_path)
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
@@ -228,7 +229,7 @@ class TextSearchThread(QObject, threading.Thread):
         except Exception as err:
             msg = "%s in %s" % (utf8(err), path)
             self.warning_signal.emit(msg)
-            rospy.logwarn(msg)
+            Log.warn(msg)
         return result
 
     def _resolve_args(self, launch_node, resolve_args, path):
@@ -255,7 +256,7 @@ class TextSearchThread(QObject, threading.Thread):
                                                 arg_key, args_val)
                         resolve_args_intern[aname] = aval
         except Exception as err:
-            rospy.logwarn("%s in %s" % (utf8(err), path))
+            Log.warn("%s in %s" % (utf8(err), path))
         return resolve_args_intern
 
     def _next_node_name(self, content, node_name, resolve_args={}, path=''):
@@ -269,7 +270,7 @@ class TextSearchThread(QObject, threading.Thread):
         re_nodes = re.compile(r"<node[\w\W\S\s]*?name=\"(?P<name>.*?)\"")
         for groups in re_nodes.finditer(content):
             aname = groups.group("name")
-            rospy.logdebug("  check node name '%s' for '%s' in group %s" % (
+            Log.debug("  check node name '%s' for '%s' in group %s" % (
                 aname, node_name, groups.span("name")))
             if aname == node_name:
                 yield node_name, aname, groups.span("name")
@@ -297,7 +298,7 @@ class TextSearchThread(QObject, threading.Thread):
                                 return val in ['false', '0']
                     idx += 1
         except Exception as err:
-            rospy.logwarn("%s in %s" % (utf8(err), path))
+            Log.warn("%s in %s" % (utf8(err), path))
         return True
 
     def _get_text(self, path):
@@ -309,7 +310,7 @@ class TextSearchThread(QObject, threading.Thread):
                 _, _, data = nm.nmd().file.get_file_content(path)
                 result = utf8(data)
             except Exception as err:
-                rospy.logwarn("can't get content: %s" % (utf8(err)))
+                Log.warn("can't get content: %s" % (utf8(err)))
         return result
 
     def _strip_text(self, data, pos):

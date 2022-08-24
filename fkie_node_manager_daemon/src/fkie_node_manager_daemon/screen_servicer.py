@@ -44,12 +44,13 @@ import fkie_multimaster_msgs.grpc.screen_pb2 as smsg
 from . import screen
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
-        rospy.loginfo("Create screen servicer")
+        Log.info("Create screen servicer")
         sgrpc.ScreenServiceServicer.__init__(self)
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
@@ -116,7 +117,7 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
 
     @wamp.register('ros.screen.kill_node')
     def killNode(self, name: str) -> bool:
-        rospy.loginfo("Kill node '%s'", name)
+        Log.info("Kill node '%s'", name)
         success = False
         screens = screen.get_active_screens(name)
         if len(screens.items()) == 0:

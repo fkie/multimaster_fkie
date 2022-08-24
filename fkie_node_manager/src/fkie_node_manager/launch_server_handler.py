@@ -42,6 +42,7 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 import rospy
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class LaunchServerHandler(QObject):
@@ -159,7 +160,7 @@ class LaunchServerUpdateThread(QObject, threading.Thread):
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Connection to launch server @ %s failed:\n\t%s", str(
+            Log.warn("Connection to launch server @ %s failed:\n\t%s", str(
                 self._launch_serveruri), formatted_lines[-1])
             # 'print "request failed", self._monitoruri
             self.error_signal.emit(self._launch_serveruri, formatted_lines[-1])

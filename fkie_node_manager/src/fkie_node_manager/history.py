@@ -39,6 +39,7 @@ import rospy
 
 from fkie_node_manager_daemon.common import utf8
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class History(QObject):
@@ -117,13 +118,13 @@ class History(QObject):
                             ignored[key] = (value, utf8(e))
                         except Exception:
                             import traceback
-                            rospy.logwarn(
+                            Log.warn(
                                 "Storing history aborted: %s", traceback.format_exc(3))
                         count += 1
                     else:
                         break
         if ignored:
-            rospy.logwarn("Error while storing follow keys: %s", utf8(ignored))
+            Log.warn("Error while storing follow keys: %s", utf8(ignored))
 
     def _add2Cache(self, cache, key, value):
         uvalue = utf8(value)

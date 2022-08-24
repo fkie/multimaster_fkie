@@ -45,6 +45,8 @@ import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as stgrpc
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 # crossbar-io dependencies
 import asyncio
@@ -94,14 +96,14 @@ class GrpcServer:
         old_strategy = self._grpc_poll_strategy
         self._grpc_verbosity = settings.param('global/grpc_verbosity', 'INFO')
         os.environ['GRPC_VERBOSITY'] = self._grpc_verbosity
-        rospy.loginfo('use GRPC_VERBOSITY=%s' % self._grpc_verbosity)
+        Log.info('use GRPC_VERBOSITY=%s' % self._grpc_verbosity)
         self._grpc_poll_strategy = settings.param(
             'global/grpc_poll_strategy', '')
         if self._grpc_poll_strategy:
             os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '1'
             os.environ['GRPC_POLL_STRATEGY'] = self._grpc_poll_strategy
-            rospy.loginfo('use GRPC_POLL_STRATEGY=%s' %
-                          self._grpc_poll_strategy)
+            Log.info('use GRPC_POLL_STRATEGY=%s' %
+                     self._grpc_poll_strategy)
         else:
             try:
                 del os.environ['GRPC_POLL_STRATEGY']
@@ -109,7 +111,7 @@ class GrpcServer:
                 pass
             os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '0'
         if old_verbosity != self._grpc_verbosity or old_strategy != self._grpc_poll_strategy:
-            rospy.loginfo(
+            Log.info(
                 'gRPC verbosity or poll strategy changed: trigger restart grpc server on %s' % self._launch_url)
             restart_timer = threading.Timer(1.0, self.restart)
             restart_timer.start()
@@ -126,7 +128,7 @@ class GrpcServer:
 
     def start(self, url='[::]:12311'):
         self._launch_url = url
-        rospy.loginfo('Start grpc server on %s' % url)
+        Log.info('Start grpc server on %s' % url)
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         # create credentials
         # read in key and certificate
@@ -139,7 +141,7 @@ class GrpcServer:
 #         print("port: ", self.server.add_secure_port(url, server_credentials))
         insecure_port = self.server.add_insecure_port(url)
         while insecure_port == 0 and not rospy.is_shutdown():
-            rospy.logwarn(
+            Log.warn(
                 "can not add insecure channel to '%s', try again..." % url)
             time.sleep(2.)
             insecure_port = self.server.add_insecure_port(url)
@@ -157,8 +159,8 @@ class GrpcServer:
             vgrpc.add_VersionServiceServicer_to_server(
                 VersionServicer(), self.server)
             self.server.start()
-            rospy.loginfo("Server at '%s' started!" % url)
-        #rospy.loginfo(f"Connect to crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}")
+            Log.info("Server at '%s' started!" % url)
+        #Log.info(f"Connect to crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}")
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
@@ -177,13 +179,13 @@ class GrpcServer:
         self.launch_servicer.load_launch_file(interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
-        rospy.loginfo("Service request to load and start %s" % request.path)
+        Log.info("Service request to load and start %s" % request.path)
         self.launch_servicer.load_launch_file(
             interpret_path(request.path), True)
         return LoadLaunchResponse()
 
     def _rosservice_load_launch(self, request):
-        rospy.loginfo("Service request to load %s" % request.path)
+        Log.info("Service request to load %s" % request.path)
         self.launch_servicer.load_launch_file(
             interpret_path(request.path), False)
         return LoadLaunchResponse()

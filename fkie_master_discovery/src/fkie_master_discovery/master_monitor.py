@@ -74,6 +74,7 @@ from .common import masteruri_from_ros, get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
+from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
@@ -210,8 +211,8 @@ class MasterMonitor(ApplicationSession):
                     RPCClass = RPCThreadingV6
                 self.rpcServer = RPCClass(
                     (rpc_addr, rpcport), logRequests=False, allow_none=True)
-                rospy.loginfo("Start RPC-XML Server at %s",
-                              self.rpcServer.server_address)
+                Log.info("Start RPC-XML Server at %s",
+                         self.rpcServer.server_address)
                 self.rpcServer.register_introspection_functions()
                 self.rpcServer.register_function(
                     self.getListedMasterInfo, 'masterInfo')
@@ -236,7 +237,7 @@ class MasterMonitor(ApplicationSession):
                 if not do_retry:
                     raise Exception(
                         "Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?" % (rpcport, e))
-                rospy.logwarn(
+                Log.warn(
                     "Error while start RPC-XML server on port %d: %s\nTry again..." % (rpcport, e))
                 time.sleep(1)
             except:
@@ -278,7 +279,7 @@ class MasterMonitor(ApplicationSession):
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
-        rospy.loginfo("Subscribe to parameter `/roslaunch/uris`")
+        Log.info("Subscribe to parameter `/roslaunch/uris`")
         self.__mycache_param_server = rospy.impl.paramserver.get_param_server_cache()
         # HACK: use own method to get the updates also for parameters in the subgroup
         self.__mycache_param_server.update = self.__update_param
@@ -322,14 +323,14 @@ class MasterMonitor(ApplicationSession):
                 pass
         if hasattr(self, 'rpcServer'):
             if self._master is not None:
-                rospy.loginfo("Unsubscribe from parameter `/roslaunch/uris`")
+                Log.info("Unsubscribe from parameter `/roslaunch/uris`")
                 try:
                     self._master.unsubscribeParam(
                         self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
                 except Exception as e:
-                    rospy.logwarn(
+                    Log.warn(
                         "Error while unsubscribe from `/roslaunch/uris`: %s" % e)
-            rospy.loginfo("shutdown own RPC server")
+            Log.info("shutdown own RPC server")
             self.rpcServer.shutdown()
             del self.rpcServer.socket
             del self.rpcServer
@@ -696,15 +697,15 @@ class MasterMonitor(ApplicationSession):
         if msg not in self._printed_errors[provider]:
             self._printed_errors[provider][msg] = time.time()
             if level == rospy.DEBUG:
-                rospy.logdebug("MasterMonitor[%s]: %s" % (provider, msg))
+                Log.debug("MasterMonitor[%s]: %s" % (provider, msg))
             elif level == rospy.INFO:
-                rospy.loginfo("MasterMonitor[%s]: %s" % (provider, msg))
+                Log.info("MasterMonitor[%s]: %s" % (provider, msg))
             elif level == rospy.WARN:
-                rospy.logwarn("MasterMonitor[%s]: %s" % (provider, msg))
+                Log.warn("MasterMonitor[%s]: %s" % (provider, msg))
             elif level == rospy.ERROR:
-                rospy.logerr("MasterMonitor[%s]: %s" % (provider, msg))
+                Log.error("MasterMonitor[%s]: %s" % (provider, msg))
             elif level == rospy.FATAL:
-                rospy.logfatal("MasterMonitor[%s]: %s" % (provider, msg))
+                Log.fatal("MasterMonitor[%s]: %s" % (provider, msg))
 
     def _clearup_cached_logs(self, age=300):
         cts = time.time()
@@ -752,7 +753,7 @@ class MasterMonitor(ApplicationSession):
                         try:
                             sync_info = get_sync_info()
                         except rospy.ServiceException as e:
-                            rospy.logwarn(
+                            Log.warn(
                                 "ERROR Service call 'get_sync_info' failed: %s", str(e))
                         finally:
                             socket.setdefaulttimeout(None)
@@ -859,7 +860,7 @@ class MasterMonitor(ApplicationSession):
         '''
         dtime = datetime.fromtimestamp(timestamp)
         args = ['sudo', '-n', '/bin/date', '-s', '%s' % dtime]
-        rospy.loginfo('Set time: %s' % args)
+        Log.info('Set time: %s' % args)
         subp = subprocess.Popen(args, stderr=subprocess.PIPE)
         success = True
         result_err = ''
@@ -885,7 +886,7 @@ class MasterMonitor(ApplicationSession):
                 entry = (ttype, roslib.message.get_message_class(ttype)._md5sum)
                 topic_list.append(entry)
             except Exception as err:
-                rospy.logwarn(err)
+                Log.warn(err)
         return topic_list
 
     def getUser(self):
@@ -923,7 +924,7 @@ class MasterMonitor(ApplicationSession):
                     do_update = True
                     result = True
                     timejump_msg = "Timejump into past detected! Restart all ROS nodes, includes master_discovery, please!"
-                    rospy.logwarn(timejump_msg)
+                    Log.warn(timejump_msg)
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
                     self._exit_timer = threading.Timer(
@@ -951,7 +952,7 @@ class MasterMonitor(ApplicationSession):
             return result
 
     def _timejump_exit(self):
-        rospy.logwarn(
+        Log.warn(
             'Shutdown yourself to avoid system instability because of time jump into past!\n')
         rospy.signal_shutdown(
             'Shutdown yourself to avoid system instability because of time jump into past')
@@ -974,12 +975,12 @@ class MasterMonitor(ApplicationSession):
         self.join(self.config.realm)
 
     def onDisconnect(self):
-        rospy.loginfo('Autobahn disconnected')
+        Log.info('Autobahn disconnected')
         self.crossbar_connected = False
 
     @wamp.register('ros.nodes.get_list')
     def getNodeList(self) -> str:
-        rospy.loginfo('Request to [ros.nodes.get_list]')
+        Log.info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = []
         if self.__master_state is not None:
             node_list = self.__master_state.toCrossbar()
@@ -987,12 +988,12 @@ class MasterMonitor(ApplicationSession):
 
     @wamp.register('ros.system.get_uri')
     def getSystemURI(self) -> str:
-        rospy.loginfo('Request to [ros.system.get_uri]')
+        Log.info('Request to [ros.system.get_uri]')
         return f"{self.getMasteruri()} [{self.crossbar_port}]"
 
     @wamp.register('ros.nodes.stop_node')
     def stopNode(self, name: str) -> bool:
-        rospy.loginfo("Stop node '%s'", name)
+        Log.info("Stop node '%s'", name)
         success = False
         self._multiple_screen_do_check = True
         if self.__master_state is not None:
@@ -1000,7 +1001,7 @@ class MasterMonitor(ApplicationSession):
                 node_uri = ''
                 with self._state_access_lock:
                     node_uri = self.__master_state.nodes[name].uri
-                rospy.logdebug('  found URI: %s', node_uri)
+                Log.debug('  found URI: %s', node_uri)
                 if node_uri:
                     socket.setdefaulttimeout(10)
                     p = xmlrpcclient.ServerProxy(node_uri)
@@ -1011,15 +1012,15 @@ class MasterMonitor(ApplicationSession):
                     else:
                         msg = "Error while shutting down node '%s': %s" % (
                             name, statusMessage)
-                        rospy.logwarn(msg)
+                        Log.warn(msg)
                         return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except KeyError:
                 msg = "Error while stopping node: Node '%s' not found" % name
-                rospy.logwarn(msg)
+                Log.warn(msg)
                 return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except Exception as e:
                 msg = "Error while stopping node '%s': %s" % (name, e)
-                rospy.logwarn(msg)
+                Log.warn(msg)
                 import traceback
                 print(traceback.format_exc())
                 return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
@@ -1052,7 +1053,7 @@ class MasterMonitor(ApplicationSession):
 
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
-        rospy.loginfo("setProviderList: {0}".format(
+        Log.info("setProviderList: {0}".format(
             json.dumps(provider_list, cls=SelfEncoder)))
         # notify changes
         self.publish('ros.provider.list', json.dumps(
@@ -1060,14 +1061,14 @@ class MasterMonitor(ApplicationSession):
 
     @wamp.register('ros.provider.get_list')
     def getProviderList(self) -> str:
-        rospy.loginfo('Request to [ros.provider.get_list]')
-        # rospy.loginfo("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
+        Log.info('Request to [ros.provider.get_list]')
+        # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
 
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
-        rospy.loginfo("Crossbar: {} procedures registered!".format(len(res)))
+        Log.info("Crossbar: {} procedures registered!".format(len(res)))
 
         # notify node changes to remote GUIs
         self.publish('ros.system.changed', "")
@@ -1088,13 +1089,13 @@ class MasterMonitor(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                rospy.logwarn(err)
+                Log.warn(err)
 
                 # try to start the crossbar server
                 try:
                     config_path = crossbar_start_server(self.crossbar_port)
                     if len(config_path) > 0:
-                        rospy.loginfo(
+                        Log.info(
                             f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback

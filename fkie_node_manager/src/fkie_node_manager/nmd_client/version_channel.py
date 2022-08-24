@@ -36,6 +36,7 @@ from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.version_stub as vstub
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_multimaster_msgs.logging.logging import Log
 
 from .channel_interface import ChannelInterface
 
@@ -59,7 +60,7 @@ class VersionChannel(ChannelInterface):
             "gvt_%s" % grpc_url, target=self.get_version, args=(grpc_url, True))
 
     def get_version(self, grpc_url='grpc://localhost:12321', threaded=False):
-        rospy.logdebug("get version from %s" % (grpc_url))
+        Log.debug("get version from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         vm, channel = self.get_version_manager(uri)
         try:

@@ -37,6 +37,7 @@ import rospy
 import time
 
 from .supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class ScreenException(Exception):
@@ -106,8 +107,8 @@ def get_active_screens(nodename=''):
         ps.stdout.read(), 'utf-8')
     if output:
         if time.time() - starttime > 1.0:
-            rospy.logwarn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" %
-                          (SCREEN, time.time() - starttime))
+            Log.warn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" %
+                     (SCREEN, time.time() - starttime))
         splits = output.splitlines()
         for item in splits:
             pid, nodepart = split_session_name(item)

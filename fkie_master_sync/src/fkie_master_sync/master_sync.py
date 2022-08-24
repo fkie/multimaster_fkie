@@ -49,6 +49,7 @@ import rospy
 from fkie_master_discovery.common import masteruri_from_master, resolve_url, read_interface, create_pattern, is_empty_pattern, get_hostname
 from fkie_master_discovery.master_info import MasterInfo
 import fkie_master_discovery.interface_finder as interface_finder
+from fkie_multimaster_msgs.logging.logging import Log
 
 from .sync_thread import SyncThread
 
@@ -82,7 +83,7 @@ class Main(object):
         self.sub_changes = dict()
         '''@ivar: `dict` with topics {name: U{rospy.Subscriber<http://docs.ros.org/api/rospy/html/rospy.topics.Subscriber-class.html>}} publishes the changes of the discovered ROS masters.'''
         for topic_name in topic_names:
-            rospy.loginfo("listen for updates on %s", topic_name)
+            Log.info("listen for updates on %s", topic_name)
             self.sub_changes[topic_name] = rospy.Subscriber(
                 topic_name, MasterState, self._rosmsg_callback_master_state)
         self.__timestamp_local = None
@@ -146,7 +147,7 @@ class Main(object):
                             resp = discoverMasters()
                             masters = []
                             master_names = [m.name for m in resp.masters]
-                            rospy.loginfo(
+                            Log.info(
                                 "ROS masters obtained from '%s': %s", service_name, master_names)
                             for m in resp.masters:
                                 # do not sync to the master, if it is in ignore list or not in filled sync list
@@ -157,11 +158,11 @@ class Main(object):
                             for key in set(self.masters.keys()) - set(masters):
                                 self.remove_master(self.masters[key].name)
                         except rospy.ServiceException as e:
-                            rospy.logwarn(
+                            Log.warn(
                                 "ERROR Service call 'list_masters' failed: %s", str(e))
                 except:
                     import traceback
-                    rospy.logwarn(
+                    Log.warn(
                         "ERROR while initial list masters: %s", traceback.format_exc())
                 finally:
                     socket.setdefaulttimeout(None)
@@ -222,7 +223,7 @@ class Main(object):
                     self._timer_update_diagnostics.start()
         except:
             import traceback
-            rospy.logwarn("ERROR while update master[%s]: %s", str(
+            Log.warn("ERROR while update master[%s]: %s", str(
                 mastername), traceback.format_exc())
 
     def get_own_state(self, monitoruri):
@@ -244,8 +245,8 @@ class Main(object):
                 self.__timestamp_local = own_state.timestamp_local
         except:
             import traceback
-            rospy.logwarn("ERROR while getting own state from '%s': %s",
-                          monitoruri, traceback.format_exc())
+            Log.warn("ERROR while getting own state from '%s': %s",
+                     monitoruri, traceback.format_exc())
             socket.setdefaulttimeout(None)
             time.sleep(3)
             if self.own_state_getter is not None and not rospy.is_shutdown():
@@ -270,46 +271,46 @@ class Main(object):
                     thread.start()
         except Exception:
             import traceback
-            rospy.logwarn(
+            Log.warn(
                 "ERROR while removing master[%s]: %s", ros_master_name, traceback.format_exc())
 
     def _threading_stop_sync(self, sync_thread, ident):
         if isinstance(sync_thread, SyncThread):
-            rospy.loginfo("  Stop synchronization to `%s`" % sync_thread.name)
+            Log.info("  Stop synchronization to `%s`" % sync_thread.name)
             sync_thread.stop()
             with self.__lock:
                 del self._join_threads[ident]
-            rospy.loginfo("  Finished synchronization to `%s`" %
-                          sync_thread.name)
+            Log.info("  Finished synchronization to `%s`" %
+                     sync_thread.name)
             del sync_thread
 
     def finish(self, msg=''):
         '''
         Removes all remote masters and unregister their topics and services.
         '''
-        rospy.loginfo("Stop synchronization...")
+        Log.info("Stop synchronization...")
         with self.__lock:
             # stop update timer
-            rospy.loginfo("  Stop timers...")
+            Log.info("  Stop timers...")
             if self.update_timer is not None:
                 self.update_timer.cancel()
             if self.resync_timer is not None:
                 self.resync_timer.cancel()
             # unregister from update topics
-            rospy.loginfo("  Unregister from master discovery...")
+            Log.info("  Unregister from master discovery...")
             for (_, v) in self.sub_changes.items():
                 v.unregister()
             self.own_state_getter = None
             # Stop all sync threads
             for key in self.masters.keys():
-                rospy.loginfo("  Remove master: %s", key)
+                Log.info("  Remove master: %s", key)
                 self.remove_master(key)
         # wait for their ending
         while len(self._join_threads) > 0:
-            rospy.loginfo("  Wait for ending of %s threads ...",
-                          str(len(self._join_threads)))
+            Log.info("  Wait for ending of %s threads ...",
+                     str(len(self._join_threads)))
             time.sleep(1)
-        rospy.loginfo("Synchronization is now off")
+        Log.info("Synchronization is now off")
 
     def _perform_resync(self):
         self.resync_timer = None
@@ -335,7 +336,7 @@ class Main(object):
     def _load_interface(self):
         interface_file = resolve_url(rospy.get_param('~interface_url', ''))
         if interface_file:
-            rospy.loginfo("interface_url: %s", interface_file)
+            Log.info("interface_url: %s", interface_file)
         try:
             data = read_interface(interface_file) if interface_file else {}
             # set the ignore hosts list
@@ -351,20 +352,20 @@ class Main(object):
             elif rospy.has_param('~sync_topics_on_demand'):
                 self.__sync_topics_on_demand = rospy.get_param(
                     '~sync_topics_on_demand')
-            rospy.loginfo("sync_topics_on_demand: %s",
-                          self.__sync_topics_on_demand)
+            Log.info("sync_topics_on_demand: %s",
+                     self.__sync_topics_on_demand)
             self.__resync_on_reconnect = rospy.get_param(
                 '~resync_on_reconnect', True)
-            rospy.loginfo("resync_on_reconnect: %s",
-                          self.__resync_on_reconnect)
+            Log.info("resync_on_reconnect: %s",
+                     self.__resync_on_reconnect)
             self.__resync_on_reconnect_timeout = rospy.get_param(
                 '~resync_on_reconnect_timeout', 0)
-            rospy.loginfo("resync_on_reconnect_timeout: %s",
-                          self.__resync_on_reconnect_timeout)
+            Log.info("resync_on_reconnect_timeout: %s",
+                     self.__resync_on_reconnect_timeout)
         except:
             import traceback
             # kill the ros node, to notify the user about the error
-            rospy.logerr("Error on load interface: %s", traceback.format_exc())
+            Log.error("Error on load interface: %s", traceback.format_exc())
             import os
             import signal
             os.kill(os.getpid(), signal.SIGKILL)

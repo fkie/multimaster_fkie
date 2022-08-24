@@ -35,6 +35,8 @@ import rospy
 
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2 as smsg
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 from . import version
 from .settings import Settings
@@ -43,7 +45,7 @@ from .settings import Settings
 class SettingsServicer(sgrpc.SettingsServiceServicer):
 
     def __init__(self):
-        rospy.loginfo("Create settings servicer")
+        Log.info("Create settings servicer")
         sgrpc.SettingsServiceServicer.__init__(self)
         self.settings = Settings(
             version=version.detect_version('fkie_node_manager_daemon')[0])

@@ -48,6 +48,7 @@ from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.common import get_ros_home
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class LoggingConfig(object):
@@ -662,9 +663,9 @@ class Settings(object):
                 if os.path.basename(os.path.realpath(t)) in ['terminator', 'gnome-terminal', 'gnome-terminal.wrapper']:
                     noclose_str = '--profile hold'
                     if noclose:
-                        rospy.loginfo("If your terminal close after the execution, you can change this behavior in "
-                                      "profiles. You can also create a profile with name 'hold'. This profile will "
-                                      "be then load by node_manager.")
+                        Log.info("If your terminal close after the execution, you can change this behavior in "
+                                 "profiles. You can also create a profile with name 'hold'. This profile will "
+                                 "be then load by node_manager.")
                 elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal', 'xterm', 'lxterm', 'uxterm']:
                     noclose_str = ''
                     terminal_title = '-T'

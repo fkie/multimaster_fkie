@@ -59,6 +59,8 @@ from fkie_node_manager_daemon.common import utf8, get_pkg_path
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_multimaster_msgs.logging.logging import Log
+
 import fkie_node_manager as nm
 
 from .capability_table import CapabilityTable
@@ -246,7 +248,7 @@ class MainWindow(QMainWindow):
         self._progress_queue_sync = ProgressQueue(
             self.progressFrame_sync, self.progressBar_sync, self.progressCancelButton_sync, 'Sync')
 
-        rospy.loginfo('Detected ROS Master URI: %s' % self.getMasteruri())
+        Log.info('Detected ROS Master URI: %s' % self.getMasteruri())
 
         # initialize the view for the discovered ROS master
         self.master_model = MasterModel(self.getMasteruri())
@@ -342,7 +344,7 @@ class MainWindow(QMainWindow):
         try:
             screen.test_screen()
         except Exception as e:
-            rospy.logerr("No SCREEN available! You can't launch nodes.")
+            Log.error("No SCREEN available! You can't launch nodes.")
 #      MessageBox.warning(self, "No SCREEN",
 #                        "No SCREEN available! You can't launch nodes.",
 #                        '%s'%utf8(e))
@@ -354,7 +356,7 @@ class MainWindow(QMainWindow):
             self.readSettings()
             self.launch_dock.raise_()
         except Exception as e:
-            rospy.logwarn("Error while read settings: %s" % e)
+            Log.warn("Error while read settings: %s" % e)
         # setup the hide button, which hides the docks on left side
         docks = self._dock_widget_in(Qt.LeftDockWidgetArea, only_visible=True)
         if not docks:
@@ -544,7 +546,7 @@ class MainWindow(QMainWindow):
                             if not m.is_local:
                                 m.killall_roscore()
                     except Exception as e:
-                        rospy.logwarn(
+                        Log.warn(
                             "Error while stop nodes on %s: %s" % (uri, utf8(e)))
                 QTimer.singleShot(200, self._test_for_finish)
                 if masters2stop:
@@ -559,12 +561,12 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(200, self._test_for_finish)
             self.masternameLabel.setText(
                 '<span style=" font-size:14pt; font-weight:600;">%s ...closing...</span>' % self.masternameLabel.text())
-            rospy.loginfo("Wait for running processes are finished...")
+            Log.info("Wait for running processes are finished...")
             event.ignore()
         try:
             self.storeSetting()
         except Exception as e:
-            rospy.logwarn("Error while store settings: %s" % e)
+            Log.warn("Error while store settings: %s" % e)
         if event.isAccepted():
             self.on_finish = True
             self.master_timecheck_timer.stop()
@@ -812,7 +814,7 @@ class MainWindow(QMainWindow):
         the local monitoring will be enabled.
         '''
         if 'no service' not in error:
-            rospy.logwarn(error)
+            Log.warn(error)
         self._setLocalMonitoring(True)
 
     def hasDiscoveryService(self, minfo):
@@ -881,7 +883,7 @@ class MainWindow(QMainWindow):
         '''
         # do not update while closing
         if hasattr(self, "on_finish"):
-            rospy.logdebug(
+            Log.debug(
                 "ignore changes on %s, because currently on closing...", msg.master.uri)
             return
         host = get_hostname(msg.master.uri)
@@ -902,14 +904,14 @@ class MainWindow(QMainWindow):
                     self._update_handler.requestMasterInfo(
                         msg.master.uri, msg.master.monitoruri)
                 else:
-                    rospy.loginfo(
+                    Log.info(
                         "Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             else:
-                rospy.loginfo(
+                Log.info(
                     "Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
             if not msg.master.online:
                 host = get_hostname(msg.master.uri)
-                rospy.loginfo(
+                Log.info(
                     "remove SSH connection for '%s' because the master is now offline" % host)
                 nm.ssh().remove(host)
         if msg.state == MasterState.STATE_NEW:
@@ -926,7 +928,7 @@ class MainWindow(QMainWindow):
                 self._update_handler.requestMasterInfo(
                     msg.master.uri, msg.master.monitoruri)
             else:
-                rospy.loginfo(
+                Log.info(
                     "Autoupdate disabled, the data will not be updated for %s" % msg.master.uri)
         if msg.state == MasterState.STATE_REMOVED:
             if msg.master.uri == self.getMasteruri():
@@ -1004,11 +1006,11 @@ class MainWindow(QMainWindow):
         @type minfo: U{fkie_master_discovery.MasterInfo<http://docs.ros.org/api/fkie_master_discovery/html/modules.html#module-fkie_master_discovery.master_info>}
         '''
         if hasattr(self, "on_finish"):
-            rospy.logdebug(
+            Log.debug(
                 "ignore changes on %s, because currently on closing...", minfo.masteruri)
             return
-        rospy.logdebug("MASTERINFO from %s (%s) received",
-                       minfo.mastername, minfo.masteruri)
+        Log.debug(
+            f"MASTERINFO from {minfo.mastername} ({minfo.masteruri}) received")
         self._con_tries[minfo.masteruri] = 0
 #    cputimes_m = os.times()
 #    cputime_init_m = cputimes_m[0] + cputimes_m[1]
@@ -1055,7 +1057,7 @@ class MainWindow(QMainWindow):
                             srv.type for srv in master.master_info.services.values()]
                     self.capabilitiesTable.updateState(minfo.masteruri, minfo)
                 except Exception as e:
-                    rospy.logwarn(
+                    Log.warn(
                         "Error while process received master info from %s: %s", minfo.masteruri, utf8(e))
             for _, master in self.masters.items():
                 master.has_master_sync = has_master_sync
@@ -1095,7 +1097,7 @@ class MainWindow(QMainWindow):
             self._con_tries[masteruri] = 0
         self._con_tries[masteruri] += 1
         if masteruri == self.getMasteruri():
-            rospy.logwarn(
+            Log.warn(
                 "Error while connect to local master_discovery %s: %s", masteruri, error)
             # switch to local monitoring after 3 timeouts
             if self._con_tries[masteruri] > 2:
@@ -1203,7 +1205,7 @@ class MainWindow(QMainWindow):
                     except (Exception, nm.StartException) as err:
                         import traceback
                         print(traceback.format_exc(1))
-                        rospy.logwarn("Error while show LOG for master_discovery %s: %s" % (
+                        Log.warn("Error while show LOG for master_discovery %s: %s" % (
                             utf8(hostname), utf8(err)))
                         MessageBox.warning(self, "Show log error",
                                            'Error while show log of master_discovery',
@@ -1246,7 +1248,7 @@ class MainWindow(QMainWindow):
 
                 if time_dialog.dateRadioButton.isChecked():
                     try:
-                        rospy.loginfo(
+                        Log.info(
                             "Set remote host time to local time: %s" % master2update.master_state.uri)
                         socket.setdefaulttimeout(10)
                         p = xmlrpcclient.ServerProxy(
@@ -1265,7 +1267,7 @@ class MainWindow(QMainWindow):
                                                'Error while set time on %s' % uri, '%s' % utf8(errormsg))
                         else:
                             timediff = time.time() - newtime
-                            rospy.loginfo("  New time difference to %s is approx.: %.3fs" % (
+                            Log.info("  New time difference to %s is approx.: %.3fs" % (
                                 master2update.master_state.uri, timediff))
                             self.on_master_timediff_retrieved(
                                 master2update.master_state.uri, timediff)
@@ -1274,7 +1276,7 @@ class MainWindow(QMainWindow):
                         if errormsg.find('setTime') > -1:
                             errormsg += "\nUpdate remote fkie_multimaster!"
                         import traceback
-                        rospy.logwarn("Error while set time on %s: %s" % (
+                        Log.warn("Error while set time on %s: %s" % (
                             master2update.master_state.uri, utf8(errormsg)))
                         MessageBox.warning(self, "Time sync error",
                                            'Error while set time on %s' % master2update.master_state.uri,
@@ -1323,7 +1325,7 @@ class MainWindow(QMainWindow):
 
     def on_refresh_master_clicked(self):
         if self.currentMaster is not None:
-            rospy.loginfo("Request an update from %s", utf8(
+            Log.info("Request an update from %s", utf8(
                 self.currentMaster.master_state.monitoruri))
             if self.currentMaster.master_info is not None:
                 check_ts = self.currentMaster.master_info.check_ts
@@ -1359,7 +1361,7 @@ class MainWindow(QMainWindow):
                                                        params)
                         self._progress_queue.start()
                     except (Exception, nm.StartException) as e:
-                        rospy.logwarn("Error while run `%s` on %s: %s" % (
+                        Log.warn("Error while run `%s` on %s: %s" % (
                             params['binary'], params['host'], utf8(e)))
                         MessageBox.warning(self, "Run error",
                                            'Error while run node %s [%s]' % (
@@ -1434,7 +1436,7 @@ class MainWindow(QMainWindow):
             except (Exception, nm.StartException) as e:
                 import traceback
                 print(utf8(traceback.format_exc(1)))
-                rospy.logwarn("Error while start %s: %s" % (name, utf8(e)))
+                Log.warn("Error while start %s: %s" % (name, utf8(e)))
                 MessageBox.warning(self, "Start error",
                                    'Error while start %s' % name,
                                    '%s' % utf8(e))
@@ -1950,7 +1952,7 @@ class MainWindow(QMainWindow):
                     except (Exception, nm.StartException) as e:
                         import traceback
                         print(traceback.format_exc(1))
-                        rospy.logwarn("Error while start master_discovery for %s: %s" % (
+                        Log.warn("Error while start master_discovery for %s: %s" % (
                             utf8(hostname), utf8(e)))
                         MessageBox.warning(self, "Start error",
                                            'Error while start master_discovery',
@@ -2010,7 +2012,7 @@ class MainWindow(QMainWindow):
                                             })
             self._progress_queue.start()
         except (Exception, nm.StartException) as e:
-            rospy.logwarn(
+            Log.warn(
                 "Error while start master_discovery for %s: %s", utf8(hostname), utf8(e))
             MessageBox.warning(self, "Start error",
                                'Error while start master_discovery',
@@ -2036,7 +2038,7 @@ class MainWindow(QMainWindow):
             self.on_description_update('Description', '')
             self.launch_dock.raise_()
         except (Exception, nm.StartException) as e:
-            rospy.logwarn("Error while poweroff %s: %s", host, utf8(e))
+            Log.warn("Error while poweroff %s: %s", host, utf8(e))
             MessageBox.warning(self, "Run error",
                                'Error while poweroff %s' % host,
                                '%s' % utf8(e))
@@ -2063,7 +2065,7 @@ class MainWindow(QMainWindow):
             self._progress_queue.start()
             self.launch_dock.raise_()
         except (Exception, nm.StartException) as e:
-            rospy.logwarn("Error while rosclean %s: %s", masteruri, utf8(e))
+            Log.warn("Error while rosclean %s: %s", masteruri, utf8(e))
             MessageBox.warning(self, "Run error",
                                'Error while rosclean %s' % masteruri,
                                '%s' % utf8(e))
@@ -2157,7 +2159,7 @@ class MainWindow(QMainWindow):
                     recursive = params['recursive']
                     for path in files:
                         nmd_url = nmdurl.nmduri(nmd_url)
-                        rospy.loginfo("TRANSFER to %s: %s" % (nmd_url, path))
+                        Log.info("TRANSFER to %s: %s" % (nmd_url, path))
                         self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
                                                                   'transfer files to %s' % nmd_url,
                                                                   nm.starter().transfer_file_nmd,
@@ -2410,7 +2412,7 @@ class MainWindow(QMainWindow):
                 from python_qt_binding.QtGui import QDesktopServices
                 QDesktopServices.openUrl(url)
             except Exception as err:
-                rospy.logwarn("can't open url %s: %s" % (url, err))
+                Log.warn("can't open url %s: %s" % (url, err))
             self._accept_next_update = False
 
     def _url_path(self, url):
@@ -2516,7 +2518,7 @@ class MainWindow(QMainWindow):
                                    'Set robot image for %s failed!' % utf8(
                                        self.__current_master_label_name),
                                    '%s' % utf8(e))
-                rospy.logwarn("Error while set robot image for %s: %s", utf8(
+                Log.warn("Error while set robot image for %s: %s", utf8(
                     self.__current_master_label_name), utf8(e))
 
     def _set_custom_colors(self):
@@ -2553,7 +2555,7 @@ class MainWindow(QMainWindow):
                                    'Set robot color for %s failed!' % utf8(
                                        self.__current_master_label_name),
                                    '%s' % utf8(e))
-                rospy.logwarn("Error while set robot color for %s: %s", utf8(
+                Log.warn("Error while set robot color for %s: %s", utf8(
                     self.__current_master_label_name), utf8(e))
 
     def _on_robot_icon_changed(self, masteruri, path):
@@ -2573,7 +2575,7 @@ class MainWindow(QMainWindow):
                 self.master_model.update_master_diagnostic(
                     nm.nameres().mastername(muri), data)
         except Exception as err:
-            rospy.logwarn(
+            Log.warn(
                 'Error while process system diagnostic messages: %s' % utf8(err))
 
     def _callback_diagnostics(self, data, grpc_url=''):
@@ -2581,7 +2583,7 @@ class MainWindow(QMainWindow):
             for diagnostic in data.status:
                 self.diagnostics_signal.emit(diagnostic)
         except Exception as err:
-            rospy.logwarn(
+            Log.warn(
                 'Error while process diagnostic messages: %s' % utf8(err))
 
     def _callback_username(self, username, grpc_url=''):
@@ -2591,7 +2593,7 @@ class MainWindow(QMainWindow):
             if master:
                 master.daemon_user = username
         except Exception as err:
-            rospy.logwarn(
+            Log.warn(
                 'Error while process username from daemon: %s' % utf8(err))
 
     def sysmon_active_update(self, masteruri):
@@ -2608,7 +2610,7 @@ class MainWindow(QMainWindow):
         try:
             params = ruamel.yaml.load(data, Loader=ruamel.yaml.Loader)
         except Exception as err:
-            rospy.logwarn(
+            Log.warn(
                 "Error while parse daemon configuration: %s" % utf8(err))
         dia = ParameterDialog(params, store_geometry="nmd_cfg_dialog")
         dia.setWindowTitle('Daemon Configuration')
@@ -2649,8 +2651,8 @@ class MainWindow(QMainWindow):
         elif now - self._nmd_last_errors[key] > delay:
             doprint = True
         if doprint:
-            rospy.logwarn("Error while %s from %s: %s" %
-                          (reason, url, utf8(error)))
+            Log.warn("Error while %s from %s: %s" %
+                     (reason, url, utf8(error)))
             self._nmd_last_errors[key] = now
         if now - self._ts_nmd_error_last_check > 120:
             # clean old messages
@@ -2731,7 +2733,7 @@ class MainWindow(QMainWindow):
                     import traceback
                     msg = "Error while generate help: %s" % traceback.format_exc(
                         2)
-                    rospy.logwarn(msg)
+                    Log.warn(msg)
             else:
                 QDesktopServices.openUrl(link)
         # update navigation buttons

@@ -41,7 +41,7 @@ import roslib
 import rospy
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-
+from fkie_multimaster_msgs.logging.logging import Log
 from fkie_master_discovery.common import masteruri_from_master
 from .common import package_name, utf8
 
@@ -210,7 +210,7 @@ class LaunchConfig(object):
                     ds.message = 'Deprecated parameter detected'
                     ds.values.append(KeyValue('deprecated', 'associations'))
                     ds.values.append(KeyValue('new', 'nm/associations'))
-                    rospy.logwarn(
+                    Log.warn(
                         "'associations' is deprecated, use 'nm/associations'! found for node: %s in %s" % (node_fullname, self.filename))
                     diag_dep.status.append(ds)
             if self._monitor_servicer is not None:
@@ -331,7 +331,7 @@ class LaunchConfig(object):
                 if param.endswith('/robots'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 5:
-                            rospy.logwarn(
+                            Log.warn(
                                 "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
@@ -359,7 +359,7 @@ class LaunchConfig(object):
                 if param.endswith('capabilities'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 4:
-                            rospy.logwarn(
+                            Log.warn(
                                 "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:

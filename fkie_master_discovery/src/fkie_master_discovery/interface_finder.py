@@ -38,6 +38,7 @@ except ImportError:
 
 import rospy
 from .common import get_hostname
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 def get_changes_topic(masteruri, wait=True, check_host=True):
@@ -108,7 +109,7 @@ def _get_topic(masteruri, ttype, wait=True, check_host=True):
 
     :type wait: bool
 
-    :param check_host: check for eqaul hostname of topic provider and master uri.
+    :param check_host: check for equal hostname of topic provider and master uri.
 
     :type check_host: bool
 
@@ -147,12 +148,12 @@ def _get_topic(masteruri, ttype, wait=True, check_host=True):
                             else:
                                 result.append(topic)
             if not result and wait:
-                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for topic with type '%s' @%s." % (
-                    own_host, nodes_host, ttype, own_host))
+                Log.warn(
+                    f'Master_discovery node appear not to running @{own_host}, only found on {nodes_host}. Wait for topic with type "{ttype}" @{own_host}.')
                 time.sleep(1)
         elif not result and wait:
-            rospy.logwarn(
-                "Can't get published topics from ROS master: %s, %s. Will keep trying!" % (code, msg))
+            Log.warn(
+                f'Cannot get published topics from ROS master: {code}, {msg}. Will keep trying!')
             time.sleep(1)
         if not wait:
             return result
@@ -227,7 +228,7 @@ def _get_service(masteruri, name, wait=True, check_host=True):
 
     :type wait: bool
 
-    :param check_host: check for eqaul hostname of topic provider and master uri.
+    :param check_host: check for equal hostname of topic provider and master uri.
 
     :type check_host: bool
 
@@ -259,12 +260,11 @@ def _get_service(masteruri, name, wait=True, check_host=True):
                     else:
                         result.append(srv)
             if not result and wait:
-                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for service '%s' @%s." % (
-                    own_host, nodes_host, name, own_host))
+                Log.warn(
+                    f'master_discovery node appear not to running @{own_host}, only found on {nodes_host}. Wait for service "{name}" @{own_host}.')
                 time.sleep(1)
         elif not result and wait:
-            rospy.logwarn(
-                "can't get state from ROS master: %s, %s" % (code, msg))
+            Log.warn(f'cannot get state from ROS master: {code}, {msg}')
             time.sleep(1)
         if not wait:
             return result

@@ -38,12 +38,13 @@ import signal
 from fkie_node_manager_daemon.monitor import Service, grpc_msg
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2 as mmsg
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class MonitorServicer(mgrpc.MonitorServiceServicer):
 
     def __init__(self, settings):
-        rospy.loginfo("Create monitor servicer")
+        Log.info("Create monitor servicer")
         mgrpc.MonitorServiceServicer.__init__(self)
         self._monitor = Service(settings)
 

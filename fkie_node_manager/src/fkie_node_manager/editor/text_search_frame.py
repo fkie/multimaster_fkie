@@ -39,6 +39,7 @@ from fkie_node_manager.common import package_name
 
 from .line_edit import EnhancedLineEdit
 from .text_search_thread import TextSearchThread
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 try:
@@ -293,7 +294,7 @@ class TextSearchFrame(QDockWidget):
         self._update_label()
 
     def on_warning_result(self, text):
-        rospy.logwarn(text)
+        Log.warn(text)
 
     def on_replace_click(self):
         self.on_replace()

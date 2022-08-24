@@ -50,6 +50,7 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QAbstractItemView
     from python_qt_binding.QtCore import QItemSelectionModel
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class GraphViewWidget(QDockWidget):
@@ -164,7 +165,7 @@ class GraphViewWidget(QDockWidget):
         for index in selected:
             item = self.graphTreeView.model().itemFromIndex(index.parent())
             if item is not None:
-                rospy.logdebug("graph_view: send request to load parent file %s" % item.data(
+                Log.debug("graph_view: send request to load parent file %s" % item.data(
                     self.DATA_INC_FILE))
                 self.load_signal.emit(
                     item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
@@ -173,12 +174,12 @@ class GraphViewWidget(QDockWidget):
         item = self.graphTreeView.model().itemFromIndex(index)
         if item is not None:
             if item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_FILE:
-                rospy.logdebug("graph_view: send request to load %s" %
-                               item.data(self.DATA_INC_FILE))
+                Log.debug("graph_view: send request to load %s" %
+                          item.data(self.DATA_INC_FILE))
                 self.load_signal.emit(
                     item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
             elif item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_ARG:
-                rospy.logdebug("graph_view: send request to search for '<arg name=\"%s\"' in %s" % (
+                Log.debug("graph_view: send request to search for '<arg name=\"%s\"' in %s" % (
                     item.data(self.DATA_ARG_NAME), item.data(self.DATA_INC_FILE)))
                 self.search_signal.emit(item.data(self.DATA_INC_FILE), "<arg name=\"%s\"" % item.data(
                     self.DATA_ARG_NAME), -1, -1, False, 1)
@@ -410,8 +411,8 @@ class GraphThread(QObject, threading.Thread):
             filelist = nm.nmd().launch.get_included_files(
                 self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
             for inc_file in filelist:
-                rospy.logdebug("build tree: append file: %s" %
-                               inc_file.inc_path)
+                Log.debug("build tree: append file: %s" %
+                          inc_file.inc_path)
                 inc_file.unset_default_args = self.find_default_args(
                     inc_file.inc_path, inc_file.args)
                 result.append(inc_file)
@@ -420,16 +421,16 @@ class GraphThread(QObject, threading.Thread):
                         "build tree: skip parse %s, not exist" % inc_file.inc_path, True)
             self.graph.emit(result)
         except exceptions.GrpcTimeout as tout:
-            rospy.logwarn("Build launch tree failed! Daemon not responded within %.2f seconds while"
-                          " get configuration file: %s\nYou can try to increase"
-                          " the timeout for GRPC requests in node manager settings." % (nm.settings().timeout_grpc, tout.remote))
+            Log.warn("Build launch tree failed! Daemon not responded within %.2f seconds while"
+                     " get configuration file: %s\nYou can try to increase"
+                     " the timeout for GRPC requests in node manager settings." % (nm.settings().timeout_grpc, tout.remote))
             self.error.emit('failed: timeout')
         except Exception:
             import traceback
             # print("Error while parse launch file for includes:\n\t%s" % traceback.format_exc())
             formatted_lines = traceback.format_exc(1).splitlines()
             try:
-                rospy.logwarn(
+                Log.warn(
                     "Error while parse launch file for includes:\n\t%s", formatted_lines[-5])
             except Exception:
                 pass
@@ -466,5 +467,5 @@ class GraphThread(QObject, threading.Thread):
         except Exception as err:
             msg = "can't get default arguments for %s: %s" % (path, utf8(err))
             self.error.emit(msg)
-            rospy.logwarn(msg)
+            Log.warn(msg)
         return not_set_args

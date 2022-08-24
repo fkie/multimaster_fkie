@@ -53,6 +53,8 @@ from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.editor.line_edit import EnhancedLineEdit
 from fkie_node_manager.parameter_handler import ParameterHandler
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 import fkie_node_manager as nm
 try:
@@ -233,7 +235,7 @@ class ValueWidget(QWidget):
                         if alt_value not in items:
                             items.append(alt_value)
                 except Exception as err:
-                    rospy.logwarn('Can not add alternative values to %s: %s' % (
+                    Log.warn('Can not add alternative values to %s: %s' % (
                         pd.name(), utf8(err)))
             pd._value_org = items[0] if items else ''
             cb.addItems(items)
@@ -1297,7 +1299,6 @@ class ParameterDialog(QDialog):
 # %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
     def _store_geometry(self):
         if self._geometry_name:
             settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
@@ -1386,7 +1387,7 @@ class MasterParameterDialog(ParameterDialog):
                 params = self.keywords2params(params)
                 ros_params = dict()
                 for p, v in params.items():
-                    rospy.logdebug(
+                    Log.debug(
                         "updated parameter: %s, %s, %s", p, utf8(v), type(v))
                     ros_params[roslib.names.ns_join(self.ns, p)] = v
                 if ros_params:
@@ -1599,7 +1600,7 @@ class ServiceDialog(ParameterDialog):
             thread.setDaemon(True)
             thread.start()
         except Exception as e:
-            rospy.logwarn("Error while reading parameter for %s service: %s", utf8(
+            Log.warn("Error while reading parameter for %s service: %s", utf8(
                 self.service.name), utf8(e))
             self.setText(
                 ''.join(['Error while reading parameter:\n', utf8(e)]))
@@ -1612,8 +1613,8 @@ class ServiceDialog(ParameterDialog):
             self.service_resp_signal.emit(utf8(repr(req)), utf8(repr(resp)))
         except Exception as e:
             print(traceback.format_exc(2))
-            rospy.logwarn("Error while call service '%s': %s",
-                          utf8(self.service.name), utf8(e))
+            Log.warn("Error while call service '%s': %s",
+                     utf8(self.service.name), utf8(e))
             self.service_resp_signal.emit(utf8(repr(req)), utf8(e))
 
     @classmethod
@@ -1650,7 +1651,7 @@ class ServiceDialog(ParameterDialog):
                             result[slot] = subresult
                 except ValueError as e:
                     print(traceback.format_exc())
-                    rospy.logwarn(
+                    Log.warn(
                         "Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result
 

@@ -43,6 +43,8 @@ from fkie_master_discovery.common import get_hostname
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager_daemon.common import isstring
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 RESOLVE_CACHE = {}  # hostname : address
 
@@ -256,7 +258,7 @@ class NameResolution(object):
                 nr = nr + 1
                 new_name = '%s_%d' % (mastername, nr)
                 mm = self.masteruri(new_name)
-            rospy.logwarn("master name '%s' is already assigned to '%s', rename to '%s'" % (
+            Log.warn("master name '%s' is already assigned to '%s', rename to '%s'" % (
                 mastername, mm, new_name))
             return new_name
         return mastername

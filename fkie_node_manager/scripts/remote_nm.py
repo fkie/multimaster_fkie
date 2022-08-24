@@ -29,6 +29,8 @@ except Exception:
     from fkie_node_manager.reduced_nm import StartHandler
     from fkie_node_manager.reduced_nm import StartException
 
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 def _get_optparse():
     '''
@@ -252,8 +254,8 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     subprocess.Popen(shlex.split(str(' '.join(cmd_args))),
                      cwd=cwd, env=new_env)
     if len(cmd) > 1:
-        rospy.logwarn(
-            'Multiple executables are found! The first one was started! Exceutables:\n%s', str(cmd))
+        Log.warn(
+            'Multiple executables were found! The first one was started! Executables:\n%s', str(cmd))
 
 
 if __name__ == '__main__':

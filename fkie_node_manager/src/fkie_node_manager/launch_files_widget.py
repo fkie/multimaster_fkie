@@ -51,6 +51,8 @@ import threading
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_multimaster_msgs.logging.logging import Log
+
 import fkie_node_manager as nm
 from .detailed_msg_box import MessageBox
 from .html_delegate import HTMLDelegate
@@ -210,8 +212,8 @@ class LaunchFilesWidget(QDockWidget):
             except Exception as e:
                 import traceback
                 print(traceback.format_exc())
-                rospy.logwarn("Error while load launch file %s: %s" %
-                              (item, utf8(e)))
+                Log.warn("Error while load launch file %s: %s" %
+                         (item, utf8(e)))
                 MessageBox.warning(self, "Load error",
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
@@ -404,7 +406,7 @@ class LaunchFilesWidget(QDockWidget):
                                     self.launchlist_model.reload_current_path(
                                         clear_cache=True)
                                 except Exception as e:
-                                    rospy.logwarn(
+                                    Log.warn(
                                         "Error while delete %s: %s" % (item.path, utf8(e)))
                                     MessageBox.warning(self, "Delete error",
                                                        'Error while delete:\n%s' % item.name,

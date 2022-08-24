@@ -45,6 +45,8 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 # MCAST_GROUP = "ff02::1"# ipv6 multicast group
 MCAST_GROUP = "226.0.0.0"  # ipv4 multicast group
@@ -56,7 +58,7 @@ def get_default_rtcp_port(zeroconf=False):
     try:
         from fkie_master_discovery.common import masteruri_from_ros
         masteruri = masteruri_from_ros()
-        # rospy.loginfo("ROS Master URI: %s", masteruri)
+        # Log.info(f'ROS Master URI: {masteruri}')
         return urlparse(masteruri).port + (600 if zeroconf else 300)
     except:
         import traceback
@@ -151,8 +153,8 @@ def main():
         discoverer.finish()
     except Exception as e:
         import traceback
-        rospy.logerr("%s\nError while start master_discovery: %s" %
-                     (traceback.format_exc(), str(e)))
+        Log.error(f'Error while starting master_discovery: {e}',
+                  traceback.format_exc())
         os.kill(os.getpid(), signal.SIGKILL)
         time.sleep(10)
 

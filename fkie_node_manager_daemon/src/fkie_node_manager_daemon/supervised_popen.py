@@ -34,6 +34,7 @@
 import rospy
 import subprocess
 import threading
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class SupervisedPopen():
@@ -55,7 +56,7 @@ class SupervisedPopen():
         '''
         self._args = args
         self._object_id = object_id
-        rospy.logdebug("start job [%s]" % self._object_id)
+        Log.debug("start job [%s]" % self._object_id)
         self._description = description
         # wait for process to avoid 'defunct' processes
         self.popen = subprocess.Popen(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
@@ -89,6 +90,6 @@ class SupervisedPopen():
         if self.stderr is not None:
             result_err = self.stderr.read()
         if result_err:
-            rospy.logwarn('%s - %s: %s' %
-                          (self._object_id, self._description, result_err))
-        rospy.logdebug("job [%s] finished" % self._object_id)
+            Log.warn('%s - %s: %s' %
+                     (self._object_id, self._description, result_err))
+        Log.debug("job [%s] finished" % self._object_id)

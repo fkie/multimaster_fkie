@@ -33,6 +33,8 @@
 
 from python_qt_binding.QtCore import QObject, Signal
 from rosgraph_msgs.msg import Log
+from fkie_multimaster_msgs.logging.logging import Log as Logger
+
 
 import rospy
 
@@ -54,7 +56,7 @@ class RosoutListener(QObject):
         Logs. The retrieved messages will be emitted as *_signal.
         '''
         self.sub_rosout = None
-        rospy.loginfo("listen for logs on %s", '/rosout_agg')
+        Logger.info("listen for logs on %s", '/rosout_agg')
         self.sub_rosout = rospy.Subscriber('/rosout_agg', Log, self._on_log)
 
     def stop(self):

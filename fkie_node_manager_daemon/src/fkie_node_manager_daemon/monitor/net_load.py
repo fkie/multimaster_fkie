@@ -37,6 +37,7 @@ import time
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 # from fkie_node_manager_daemon.common import sizeof_fmt
 from .sensor_interface import SensorInterface
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class NetLoad(SensorInterface):
@@ -136,6 +137,6 @@ class NetLoad(SensorInterface):
         except Exception as error:
             import traceback
             print(traceback.format_exc())
-            rospy.logwarn(
+            Log.warn(
                 "Sensor network not checked because of error: %s" % utf8(error))
             self._interval = 0

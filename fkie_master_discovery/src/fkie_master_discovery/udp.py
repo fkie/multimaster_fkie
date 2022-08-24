@@ -52,6 +52,8 @@ except:
     _use_netifaces = False
 
 from rosgraph.network import get_local_addresses
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 SEND_ERRORS = {}
 
@@ -138,7 +140,7 @@ class DiscoverSocket(socket.socket):
         self.interface_ip = ''
         if self.unicast_only:
             # inform about no braodcasting
-            rospy.logwarn(
+            Log.warn(
                 "Multicast disabled! This master is only by unicast reachable!")
         if self.interface:
             addrinfo = UcastSocket.getaddrinfo(self.interface, addrinfo[0])
@@ -148,15 +150,15 @@ class DiscoverSocket(socket.socket):
         elif self.unicast_only:
             self.unicast_socket = UcastSocket('', port)
 
-        rospy.logdebug("mgroup: %s", self.mgroup)
-        rospy.logdebug("interface : %s", self.interface)
-        rospy.logdebug("inet: %s", addrinfo)
+        Log.debug("mgroup: %s", self.mgroup)
+        Log.debug("interface : %s", self.interface)
+        Log.debug("inet: %s", addrinfo)
 
         socket.socket.__init__(
             self, addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.addrinfo = addrinfo
         if not self.unicast_only:
-            rospy.logdebug(
+            Log.debug(
                 "Create multicast socket at ('%s', %d)", self.mgroup, port)
             # initialize multicast socket
             # Allow multiple copies of this program on one machine
@@ -164,7 +166,7 @@ class DiscoverSocket(socket.socket):
                 try:
                     self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 except:
-                    rospy.logwarn(
+                    Log.warn(
                         "SO_REUSEPORT failed: Protocol not available, some functions are not available.")
             # Set Time-to-live (optional) and loop count
             ttl_bin = struct.pack('@i', ttl)
@@ -185,8 +187,8 @@ class DiscoverSocket(socket.socket):
                 self.bind((to_group, port))
             except socket.error as errobj:
                 msg = str(errobj)
-                rospy.logfatal("Unable to bind multicast to interface: %s, check that it exists: %s",
-                               self.mgroup, msg)
+                Log.fatal("Unable to bind multicast to interface: %s, check that it exists: %s",
+                          self.mgroup, msg)
                 raise
 
             self.join_group()
@@ -206,7 +208,7 @@ class DiscoverSocket(socket.socket):
     def join_group(self):
         try:
             if self.listen_mcast:
-                rospy.logdebug('join to %s' % self.mgroup)
+                Log.debug('join to %s' % self.mgroup)
                 if self.addrinfo[0] == socket.AF_INET:  # IPv4
                     # Create group_bin for de-register later
                     # Set socket options for multicast specific interface or general
@@ -276,8 +278,8 @@ class DiscoverSocket(socket.socket):
                     self.setsockopt(socket.IPPROTO_IPV6,
                                     socket.IPV6_LEAVE_GROUP,
                                     self.group_bin)
-            rospy.logdebug("Close multicast socket at ('%s', %s)",
-                           self.mgroup, self.port)
+            Log.debug("Close multicast socket at ('%s', %s)",
+                      self.mgroup, self.port)
             self.sendto(b'', ('localhost', self.port))
             socket.socket.close(self)
         # close the unicast socket
@@ -290,9 +292,9 @@ class DiscoverSocket(socket.socket):
         except queue.Full as full:
             import traceback
             print(traceback.format_exc())
-            rospy.logwarn("Can't send message: %s" % full)
+            Log.warn("Can't send message: %s" % full)
         except Exception as e:
-            rospy.logwarn("Error while put message into queue: %s" % e)
+            Log.warn("Error while put message into queue: %s" % e)
 
     def _get_next_queue_item(self):
         '''
@@ -305,7 +307,7 @@ class DiscoverSocket(socket.socket):
             except queue.Empty:
                 pass
             except Exception as e:
-                rospy.logwarn("Error while get send item from queue: %s" % e)
+                Log.warn("Error while get send item from queue: %s" % e)
         return None
 
     def _send_loop_from_queue(self):
@@ -335,16 +337,16 @@ class DiscoverSocket(socket.socket):
                             # -2: Name or service not known
                             if errobj.errno in [-5, -2]:
                                 if addr not in self.sock_5_error_printed:
-                                    rospy.logwarn(erro_msg)
+                                    Log.warn(erro_msg)
                                     self.sock_5_error_printed.append(addr)
                             else:
-                                rospy.logwarn(erro_msg)
+                                Log.warn(erro_msg)
                             if errobj.errno in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET, errno]:
                                 self.SOKET_ERRORS_NEEDS_RECONNECT = True
                         except Exception as e:
                             erro_msg = "Send to robot host '%s' failed: %s" % (
                                 addr, e)
-                            rospy.logwarn(erro_msg)
+                            Log.warn(erro_msg)
                             SEND_ERRORS[addr] = erro_msg
                 else:
                     # send a multicast message
@@ -374,16 +376,16 @@ class DiscoverSocket(socket.socket):
                         # -2: Name or service not known
                         if errobj.errno in [-5, -2]:
                             if addr not in self.sock_5_error_printed:
-                                rospy.logwarn(erro_msg)
+                                Log.warn(erro_msg)
                                 self.sock_5_error_printed.append(addr)
                         else:
-                            rospy.logdebug(erro_msg)
+                            Log.debug(erro_msg)
                         if errobj.errno in [errno.ENETDOWN, errno.ENETUNREACH, errno.ENETRESET]:
                             self.SOKET_ERRORS_NEEDS_RECONNECT = True
                     except Exception as e:
                         erro_msg = "Send to robot host '%s' failed: %s" % (
                             addr, e)
-                        rospy.logwarn(erro_msg)
+                        Log.warn(erro_msg)
                         SEND_ERRORS[addr] = erro_msg
 
     def hasEnabledMulticastIface(self):
@@ -473,11 +475,11 @@ class DiscoverSocket(socket.socket):
             except socket.timeout:
                 pass
             except queue.Full as full_error:
-                rospy.logwarn(
+                Log.warn(
                     "Error while process recevied multicast message: %s", full_error)
             except socket.error:
                 import traceback
-                rospy.logwarn("socket error: %s", traceback.format_exc())
+                Log.warn("socket error: %s", traceback.format_exc())
 
     def recv_loop_unicast(self):
         '''
@@ -493,12 +495,12 @@ class DiscoverSocket(socket.socket):
                 except socket.timeout:
                     pass
                 except queue.Full as full_error:
-                    rospy.logwarn(
+                    Log.warn(
                         "Error while process recevied unicast message: %s", full_error)
                 except socket.error:
                     import traceback
-                    rospy.logwarn("unicast socket error: %s",
-                                  traceback.format_exc())
+                    Log.warn("unicast socket error: %s",
+                             traceback.format_exc())
 
 
 class UcastSocket(socket.socket):
@@ -524,12 +526,12 @@ class UcastSocket(socket.socket):
                 if not (iface.startswith('127') or iface.startswith('::1')):
                     self.interface = iface
                     break
-            rospy.loginfo("+ Bind to unicast socket @(%s:%s)",
-                          self.interface, port)
+            Log.info("+ Bind to unicast socket @(%s:%s)",
+                     self.interface, port)
             addrinfo = UcastSocket.getaddrinfo(self.interface)
         else:
             # Otherwise get the address info for the interface specified.
-            rospy.loginfo(
+            Log.info(
                 "+ Bind to specified unicast socket @(%s:%s)", self.interface, port)
             addrinfo = UcastSocket.getaddrinfo(self.interface)
 
@@ -543,17 +545,17 @@ class UcastSocket(socket.socket):
             try:
                 self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             except:
-                rospy.logwarn(
+                Log.warn(
                     "SO_REUSEPORT failed: Protocol not available, some functions are not available.")
 
         # Bind to the port
         try:
-            rospy.logdebug("Ucast bind to: (%s:%s)", addrinfo[4][0], port)
+            Log.debug("Ucast bind to: (%s:%s)", addrinfo[4][0], port)
             self.bind((addrinfo[4][0], port))
         except socket.error as errobj:
             msg = str(errobj)
-            rospy.logfatal("Unable to bind unicast to interface: %s, check that it exists: %s",
-                           self.interface, msg)
+            Log.fatal("Unable to bind unicast to interface: %s, check that it exists: %s",
+                      self.interface, msg)
             raise
 
     def send2addr(self, msg, addr):
@@ -571,7 +573,7 @@ class UcastSocket(socket.socket):
             msg = str(errobj)
             if errobj.errno in [-5]:
                 if addr not in self.sock_5_error_printed:
-                    rospy.logwarn(
+                    Log.warn(
                         "socket.error[%d]: %s, addr: %s", errobj.errno, msg, addr)
                     self.sock_5_error_printed.append(addr)
             elif errobj.errno in [errno.EINVAL, -2]:

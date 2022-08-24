@@ -44,6 +44,7 @@ from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class NoScreenOpenLogRequest(Exception):
@@ -103,12 +104,12 @@ class ScreenHandler(object):
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd(
                 [screen.SCREEN, '-x', screen_name], title_opt)
-            rospy.loginfo("Open screen terminal: %s", cmd)
+            Log.info("Open screen terminal: %s", cmd)
             SupervisedPopen(shlex.split(cmd), object_id=title_opt,
                             description="Open screen terminal: %s" % title_opt)
         else:
-            rospy.loginfo("Open remote screen terminal for %s to %s" %
-                          (nodename, host))
+            Log.info("Open remote screen terminal for %s to %s" %
+                     (nodename, host))
             _ps = nm.ssh().ssh_x11_exec(
                 host, [screen.SCREEN, '-x', screen_name], title_opt, user)
 
@@ -145,7 +146,7 @@ class ScreenHandler(object):
                         screens = cls._bc_get_active_screens(
                             host, node, False, user=user, pwd=pw)
                 except grpc.RpcError as e:
-                    rospy.logwarn(
+                    Log.warn(
                         "can not connect to node manager daemon, detect screens using ssh...")
                     screens = cls._bc_get_active_screens(
                         host, node, False, user=user, pwd=pw)
@@ -235,7 +236,7 @@ class ScreenHandler(object):
                                 # nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
                             except Exception:
                                 import traceback
-                                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(
+                                Log.warn("Error while kill screen (PID: %s) on host '%s': %s", utf8(
                                     pid), utf8(host), traceback.format_exc(1))
                     nm.nmd().screen.wipe_screens(grpc_url)
                     # if nm.is_local(host):

@@ -48,6 +48,8 @@ except ImportError:
 from rosgraph.network import get_local_addresses
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 from . import host
 from . import exceptions
@@ -84,7 +86,7 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     # set launch prefix
     prefix = n.launch_prefix if n.launch_prefix is not None else ''
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
-        rospy.loginfo("SCREEN prefix removed before start!")
+        Log.info("SCREEN prefix removed before start!")
         prefix = ''
     result.prefix = '%s %s' % (cmd_prefix, prefix) if cmd_prefix else prefix
     result.env = {key: value for key, value in n.env_args}
@@ -127,8 +129,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     if result.masteruri not in launchcfg.global_param_done:
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
-        rospy.loginfo("add global parameter for '%s'" % launchcfg.filename)
-        rospy.logdebug("add global parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(
+        Log.info("add global parameter for '%s'" % launchcfg.filename)
+        Log.debug("add global parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(
             val)[:80], '...' if len(utf8(val)) > 80 else'') for key, val in global_params.items()))
         launchcfg.global_param_done.append(result.masteruri)
     # add params and clear_params
@@ -141,10 +143,10 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
             result.clear_params.append(cparam)
     if reload_global_param:
         result.clear_params.extend(get_global_clear_params(launchcfg.roscfg))
-    rospy.logdebug("set delete parameter:\n  %s",
-                   '\n  '.join(result.clear_params))
-    rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[
-                   :80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
+    Log.debug("set delete parameter:\n  %s",
+              '\n  '.join(result.clear_params))
+    Log.debug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[
+        :80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
     return result
 
 
@@ -198,7 +200,7 @@ def run_node(startcfg):
             new_arg = arg
             if arg.startswith('$(find'):
                 new_arg = interpret_path(arg)
-                rospy.logdebug("interpret arg '%s' to '%s'" % (arg, new_arg))
+                Log.debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
         # set name and namespace of the node
         if startcfg.name:
@@ -216,7 +218,7 @@ def run_node(startcfg):
                     startcfg.package, startcfg.binary)
             except (roslib.packages.ROSPkgException, rospkg.ResourceNotFound) as e:
                 # multiple nodes, invalid package
-                rospy.logwarn("resource not found: %s" % utf8(e))
+                Log.warn("resource not found: %s" % utf8(e))
                 raise exceptions.ResourceNotFound(
                     startcfg.package, "resource not found: %s" % utf8(e))
             if isstring(cmd):
@@ -281,22 +283,22 @@ def run_node(startcfg):
             if ros_hostname:
                 addr = socket.gethostbyname(ros_hostname)
                 if addr in set(ip for ip in get_local_addresses()):
-                    rospy.loginfo('set ROS_HOSTNAME to %s' % ros_hostname)
+                    Log.info('set ROS_HOSTNAME to %s' % ros_hostname)
                     new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
         cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, list(
             startcfg.env.keys())), cmd_type, ' '.join(args)))
-        rospy.loginfo("%s (launch_file: '%s', masteruri: %s)" %
-                      (cmd_str, startcfg.config_path, masteruri))
-        rospy.logdebug(
+        Log.info("%s (launch_file: '%s', masteruri: %s)" %
+                 (cmd_str, startcfg.config_path, masteruri))
+        Log.debug(
             "environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
                         startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
         nmduri = startcfg.nmduri
-        rospy.loginfo("remote run node '%s' at '%s'" % (nodename, nmduri))
+        Log.info("remote run node '%s' at '%s'" % (nodename, nmduri))
         startcfg.params.update(_params_to_package_path(startcfg.params))
         startcfg.args = _args_to_package_path(startcfg.args)
         # run on a remote machine
@@ -384,7 +386,7 @@ def _load_parameters(masteruri, params, clear_params):
         r = param_server_multi()
         for code, msg, _ in r:
             if code != 1 and not msg.find("is not set"):
-                rospy.logwarn("Failed to clear parameter: %s", msg)
+                Log.warn("Failed to clear parameter: %s", msg)
 #          raise StartException("Failed to clear parameter: %s"%(msg))
 
         # multi-call objects are not reusable
@@ -395,8 +397,8 @@ def _load_parameters(masteruri, params, clear_params):
             # resolve path elements
             if isstring(value) and (value.startswith('$')):
                 value = interpret_path(value)
-                rospy.logdebug("interpret parameter '%s' to '%s'" %
-                               (value, pval))
+                Log.debug("interpret parameter '%s' to '%s'" %
+                          (value, pval))
             # add parameter to the multicall
             param_server_multi.setParam(rospy.get_name(), pkey, value)
             test_ret = _test_value(pkey, value)
@@ -425,7 +427,7 @@ def _test_value(key, value):
     if value is None:
         msg = "Invalid parameter value of '%s': '%s'" % (key, value)
         result.append(msg)
-        rospy.logwarn(msg)
+        Log.warn(msg)
     elif isinstance(value, list):
         for val in value:
             ret = _test_value(key, val)
@@ -444,7 +446,7 @@ def _abs_to_package_path(path):
     pname, ppath = package_name(path)
     if pname is not None:
         result = path.replace(ppath, '$(find %s)' % pname)
-        rospy.logdebug("replace abs path '%s' by '%s'" % (path, result))
+        Log.debug("replace abs path '%s' by '%s'" % (path, result))
     return result
 
 

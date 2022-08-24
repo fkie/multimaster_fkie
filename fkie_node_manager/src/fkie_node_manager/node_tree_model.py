@@ -53,6 +53,7 @@ from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_node_manager.name_resolution import NameResolution, MasterEntry
 from fkie_node_manager.parameter_handler import ParameterHandler
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class CellItem(QStandardItem):
@@ -224,8 +225,8 @@ class GroupItem(QStandardItem):
                         self._re_cap_nodes[(config, ns, groupname)] = re.compile(
                             '\b', re.I)
                 except Exception:
-                    rospy.logwarn("create_cap_nodes_pattern: %s" %
-                                  traceback.format_exc(1))
+                    Log.warn("create_cap_nodes_pattern: %s" %
+                             traceback.format_exc(1))
 
     def add_capabilities(self, config, capabilities, masteruri):
         '''
@@ -805,7 +806,7 @@ class GroupItem(QStandardItem):
                         tooltip += '<b><u>Detailed description:</u></b>'
                         tooltip += examples.html_body(utf8(self.descr))
                 except Exception:
-                    rospy.logwarn(
+                    Log.warn(
                         "Error while generate description for a tooltip: %s", traceback.format_exc(1))
                     tooltip += '<br>'
             # get nodes
@@ -1078,7 +1079,7 @@ class HostItem(GroupItem):
                         tooltip += examples.html_body(self.descr,
                                                       input_encoding='utf8')
                 except Exception:
-                    rospy.logwarn(
+                    Log.warn(
                         "Error while generate description for a tooltip: %s", traceback.format_exc(1))
                     tooltip += '<br>'
         tooltip += '<h3>%s</h3>' % self.mastername
@@ -1183,7 +1184,7 @@ class HostItem(GroupItem):
                 tooltip += examples.html_body('- %s' %
                                               ('\n- '.join(capabilities)), input_encoding='utf8')
             except Exception:
-                rospy.logwarn(
+                Log.warn(
                     "Error while generate description for a tooltip: %s", traceback.format_exc(1))
         return '<div>%s</div>' % tooltip if tooltip else ''
 
@@ -1201,7 +1202,7 @@ class HostItem(GroupItem):
         Compares the address of the masteruri.
         '''
         if isstring(item):
-            rospy.logwarn("compare HostItem with unicode deprecated")
+            Log.warn("compare HostItem with unicode deprecated")
             return False
         elif isinstance(item, tuple):
             return nmdurl.equal_uri(self.masteruri, item[0]) and self.host == item[1]
@@ -1216,7 +1217,7 @@ class HostItem(GroupItem):
         Compares the address of the masteruri.
         '''
         if isstring(item):
-            rospy.logwarn("compare HostItem with unicode deprecated")
+            Log.warn("compare HostItem with unicode deprecated")
             return False
         elif isinstance(item, tuple):
             return self.masteruri > item[0]
@@ -1997,7 +1998,7 @@ class NodeTreeModel(QStandardItemModel):
                         '', capabilities, hostItem.masteruri)
             hostItem.clearup()
         else:
-            rospy.logwarn(
+            Log.warn(
                 "Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
 
     def update_system_diagnostics(self, masteruri, diagnostics):
@@ -2086,7 +2087,7 @@ class NodeTreeModel(QStandardItemModel):
                 hostItem.clearup()
             self._remove_empty_hosts()
         except Exception:
-            rospy.logwarn(
+            Log.warn(
                 'Error while apply configuration to current view: %s' % traceback.format_exc())
         # update the duplicate state
 #    self.set_duplicate_nodes(self.get_nodes_running())

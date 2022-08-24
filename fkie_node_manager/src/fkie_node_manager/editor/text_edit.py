@@ -47,6 +47,7 @@ import fkie_node_manager as nm
 
 from .xml_highlighter import XmlHighlighter
 from .yaml_highlighter import YamlHighlighter
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 try:
@@ -252,7 +253,7 @@ class TextEdit(QTextEdit):
                 cursor.endEditBlock()
         except Exception as err:
             msg = "Format XML failed: %s" % utf8(err)
-            rospy.logwarn(msg)
+            Log.warn(msg)
             MessageBox.warning(self, "Warning", msg)
 
     def toprettyyaml(self):
@@ -270,7 +271,7 @@ class TextEdit(QTextEdit):
                 cursor.endEditBlock()
         except Exception as err:
             msg = "Format YAML failed: %s" % utf8(err)
-            rospy.logwarn(msg)
+            Log.warn(msg)
             MessageBox.warning(self, "Warning", msg)
 
     def markLine(self, no):
@@ -376,12 +377,12 @@ class TextEdit(QTextEdit):
                         if not search_for:
                             continue
                         try:
-                            rospy.logdebug("try to interpret: %s" % search_for)
+                            Log.debug("try to interpret: %s" % search_for)
                             args_in_name = get_arg_names(search_for)
                             resolved_args = {}
                             # if found arg in the name, try to detect values
                             if args_in_name:
-                                rospy.logdebug(
+                                Log.debug(
                                     "  args %s in filename found, try to resolve..." % args_in_name)
                                 resolved_args = self.parent.graph_view.get_include_args(
                                     args_in_name, search_for, self.filename)
@@ -409,13 +410,13 @@ class TextEdit(QTextEdit):
                                     QTextEdit.mouseReleaseEvent(self, event)
                                     return
                             # now resolve find-statements
-                            rospy.logdebug(
+                            Log.debug(
                                 "  send interpret request to daemon: %s" % search_for)
                             inc_files = nm.nmd().launch.get_interpreted_path(
                                 self.filename, text=[search_for])
                             for path, exists in inc_files:
                                 try:
-                                    rospy.logdebug(
+                                    Log.debug(
                                         "  received interpret request from daemon: %s, exists: %d" % (path, exists))
                                     if exists:
                                         event.setAccepted(True)

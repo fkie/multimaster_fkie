@@ -58,6 +58,7 @@ import rospy
 
 from .logger_item import LoggerItem
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class LoggerHandler(QObject):
@@ -104,9 +105,9 @@ class LoggerHandler(QObject):
                     serviceuri, service_name, GetLoggers, service_args=[])
                 self.loggers_signal.emit(resp.loggers)
         except (rospy.ServiceException, nm.StartException) as e:
-            rospy.logwarn("Get loggers for %s failed: %s" % (self.nodename, e))
+            Log.warn("Get loggers for %s failed: %s" % (self.nodename, e))
         except IOError as err:
-            rospy.logwarn("Get loggers for %s failed; cannot get service URI from %s: %s" % (
+            Log.warn("Get loggers for %s failed; cannot get service URI from %s: %s" % (
                 self.nodename, self.masteruri, err))
         self._thread_update = None
 
@@ -221,7 +222,7 @@ class SetAllThread(QObject, threading.Thread):
                         self.success_signal.emit(
                             self._nodename, logger, self._newlevel)
                 except Exception as err:
-                    rospy.logwarn("Set logger %s for %s to %s failed: %s" % (
+                    Log.warn("Set logger %s for %s to %s failed: %s" % (
                         logger, self._nodename, self._newlevel, err))
                     if level is not None:
                         self.error_signal.emit(self._nodename, logger, level)

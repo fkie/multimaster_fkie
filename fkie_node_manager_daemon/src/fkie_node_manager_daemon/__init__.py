@@ -43,6 +43,7 @@ import rospy
 from . import url
 from .server import GrpcServer
 from .screen import test_screen
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 def set_terminal_name(name):
@@ -113,7 +114,7 @@ def start_server(node_name='node_manager_daemon'):
     try:
         test_screen()
     except Exception as e:
-        rospy.logerr("No SCREEN available! You can't launch nodes.")
+        Log.error("No SCREEN available! You can't launch nodes.")
     try:
         launch_manager = GrpcServer()
         launch_manager.start('[::]:%s' % str(url.nmdport()))
@@ -127,7 +128,7 @@ def start_server(node_name='node_manager_daemon'):
     except Exception:
         # on load error the process will be killed to notify user in node_manager
         # about error
-        rospy.logwarn("Start server failed: %s", traceback.format_exc())
+        Log.warn("Start server failed: %s", traceback.format_exc())
         sys.stdout.write(traceback.format_exc())
         sys.stdout.flush()
         os.kill(os.getpid(), signal.SIGKILL)

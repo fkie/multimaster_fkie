@@ -50,6 +50,8 @@ except ImportError:
     from urllib.parse import urlparse
 
 import rospy
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 from .common import get_hostname
 from .master_monitor import MasterMonitor
@@ -254,14 +256,14 @@ class Zeroconf(threading.Thread):
         self.on_service_updated()
 
     def __avahi_callback_error(self, err):
-        rospy.logwarn(str(err))
+        Log.warn(str(err))
 
     def __avahi_callback_print_error(self, *args):
         '''
         This method will be called, if an error occurs while service resolving.
         '''
         for arg in args:
-            rospy.logwarn('Error while resolving: %s', arg)
+            Log.warn('Error while resolving: %s', arg)
         self.on_resolve_error()
 
     def __avahi_callback_state_changed(self, state):
@@ -286,7 +288,7 @@ class Zeroconf(threading.Thread):
         This callback will be called, if a new service was registered. The service
         will the resolved to get more information about the service.
         '''
-        rospy.logdebug("Service Browser - itemNew: %s", name)
+        Log.debug("Service Browser - itemNew: %s", name)
         self.__server.ResolveService(interface,
                                      protocol,
                                      name,
@@ -339,7 +341,7 @@ class Zeroconf(threading.Thread):
                                     avahi.string_array_to_txt_array(self.masterInfo.txt))
             self.__group.Commit()
         except dbus.DBusException as e:
-            rospy.logfatal(''.join(['registerService: ', str(e)]))
+            Log.fatal(''.join(['registerService: ', str(e)]))
             self.on_group_collision()
 
 #        rospy.signal_shutdown(-1)
@@ -400,7 +402,7 @@ class Zeroconf(threading.Thread):
 
     def stop(self):
         self.stopped = True
-        rospy.logdebug("Zeroconf stop")
+        Log.debug("Zeroconf stop")
         print("Zeroconf stop")
         self.__main_loop.quit()
         print("MainLoop quit executed")
@@ -412,43 +414,43 @@ class Zeroconf(threading.Thread):
         return hasattr(self, 'stopped')
 
     def on_server_running(self):
-        rospy.loginfo("Template: on_server_running")
+        Log.info("Template: on_server_running")
         if hasattr(self, 'collision'):
             self.stop()
             sys.exit("ERROR: Template: on_group_collision - EXIT!")
 
     def on_server_collision(self):
-        rospy.logfatal("Template: on_server_collision")
+        Log.fatal("Template: on_server_collision")
         self.collision = True
 
     def on_server_failure(self):
-        rospy.logfatal("Template: on_server_failure")
+        Log.fatal("Template: on_server_failure")
 
     def on_group_established(self):
-        rospy.logdebug("Template: on_group_established")
+        Log.debug("Template: on_group_established")
 
     def on_group_collision(self):
-        rospy.logfatal("Template: on_group_collision")
+        Log.fatal("Template: on_group_collision")
         self.collision = True
         self.stop()
         sys.exit("ERROR: Template: on_group_collision - EXIT!")
 
     def on_group_failure(self, error):
-        rospy.logfatal("Template: on_group_failure - %s", error)
+        Log.fatal("Template: on_group_failure - %s", error)
         self.stop()
         sys.exit("ERROR: Template: on_group_failure - EXIT! [%s]" % error)
 
     def on_group_removed(self, name):
-        rospy.loginfo("Template: on_group_removed - %s", name)
+        Log.info("Template: on_group_removed - %s", name)
 
     def on_resolve_reply(self, master_info):
-        rospy.logdebug("Template: on_resolve_reply - %s", master_info.name)
+        Log.debug("Template: on_resolve_reply - %s", master_info.name)
 
     def on_service_updated(self):
-        rospy.logdebug('Template: on_service_updated')
+        Log.debug('Template: on_service_updated')
 
     def on_resolve_error(self):
-        rospy.logdebug("Template: on_resolve_error")
+        Log.debug("Template: on_resolve_error")
 
 
 class Polling(threading.Thread):
@@ -564,8 +566,8 @@ class MasterList(object):
             m = self.__masters[name]
             # publish the master list, only on new state
             if (state != m.online):
-                rospy.loginfo("%s is now %s", m.name,
-                              "online" if state else "offline")
+                Log.info("%s is now %s", m.name,
+                         "online" if state else "offline")
                 m.online = state
                 self.pubchanges.publish(MasterState(MasterState.STATE_CHANGED,
                                                     ROSMaster(str(m.name),
@@ -595,8 +597,8 @@ class MasterList(object):
                 if time.time() - master.lastUpdate > 1.0 / Discoverer.ROSMASTER_HZ + 2:
                     self.setMasterOnline(key, False)
         except Exception:
-            rospy.logwarn("Error while check master state: %s",
-                          traceback.format_exc())
+            Log.warn("Error while check master state: %s",
+                     traceback.format_exc())
         finally:
             self.__lock.release()
 
@@ -613,7 +615,7 @@ class MasterList(object):
             self.__lock.acquire()
             network_id = master_info.getTXTValue('network_id')
             if network_id is None:
-                rospy.logwarn(
+                Log.warn(
                     "old zeroconf client on %s detected. Please update fkie_multimaster package!" % master_info.host)
             if (self._network_id == network_id):
                 if (master_info.name in self.__masters):
@@ -655,8 +657,8 @@ class MasterList(object):
                                       self.rosservice_list_masters)
 #            rospy.Service('~refresh', std_srvs.srv.Empty, self.rosservice_refresh)
         except Exception:
-            rospy.logwarn("Error while update master: %s",
-                          traceback.format_exc())
+            Log.warn("Error while update master: %s",
+                     traceback.format_exc())
         finally:
             self.__lock.release()
 
@@ -671,7 +673,7 @@ class MasterList(object):
         '''
         try:
             self.__lock.acquire()
-            rospy.logdebug("remove master: %s", name)
+            Log.debug("remove master: %s", name)
             if (name in self.__pollings):
                 r = self.__pollings.pop(name)
                 r.stop()
@@ -692,8 +694,8 @@ class MasterList(object):
 #        r.stop()
                 del r
         except Exception:
-            rospy.logwarn("Error while remove master: %s",
-                          traceback.format_exc())
+            Log.warn("Error while remove master: %s",
+                     traceback.format_exc())
         finally:
             self.__lock.release()
 
@@ -714,8 +716,8 @@ class MasterList(object):
             self.__lock.acquire()
             result = self.__masters[name]
         except Exception:
-            rospy.logwarn("Error while getMasterInfo: %s",
-                          traceback.format_exc())
+            Log.warn("Error while getMasterInfo: %s",
+                     traceback.format_exc())
         finally:
             self.__lock.release()
             return result
@@ -743,7 +745,7 @@ class MasterList(object):
                                                                   'zname', ''),
                                                               master.getTXTValue('rpcuri', ''))))
         except Exception:
-            rospy.logwarn("Error while removeAll: %s", traceback.format_exc())
+            Log.warn("Error while removeAll: %s", traceback.format_exc())
         finally:
             self.__lock.release()
 
@@ -798,13 +800,13 @@ class Discoverer(Zeroconf):
         if rospy.has_param('~rosmaster_hz'):
             Discoverer.ROSMASTER_HZ = rospy.get_param('~rosmaster_hz')
         self.network_id = str(network_id)
-        rospy.loginfo("Network ID: %s" % self.network_id)
+        Log.info("Network ID: %s" % self.network_id)
         self._use_fqdn = rospy.get_param('~fqdn', False)
-        rospy.loginfo("Fully-Qualified Domain Name: %s" %
-                      ('enabled' if self._use_fqdn else 'disabled'))
+        Log.info("Fully-Qualified Domain Name: %s" %
+                 ('enabled' if self._use_fqdn else 'disabled'))
         self._use_ipv6 = 'ROS_IPV6' in os.environ and os.environ['ROS_IPV6'] == 'on'
-        rospy.loginfo("IPv6: %s" %
-                      ('enabled' if self._use_ipv6 else 'disabled'))
+        Log.info("IPv6: %s" %
+                 ('enabled' if self._use_ipv6 else 'disabled'))
         self.master_monitor = MasterMonitor(monitor_port, ipv6=self._use_ipv6)
         name = self.master_monitor.getMastername()
         materuri = self.master_monitor.getMasteruri()
@@ -823,7 +825,7 @@ class Discoverer(Zeroconf):
         rpcuri = 'http://%s:%s/' % (hostname, str(monitor_port))
         txtArray = ["timestamp=%s" % str(0), "timestamp_local=%s" % str(
             0), "master_uri=%s" % materuri, "zname=%s" % rospy.get_name(), "rpcuri=%s" % rpcuri, "network_id=%s" % self.network_id]
-        rospy.loginfo("Publish txtArray: %s" % txtArray)
+        Log.info("Publish txtArray: %s" % txtArray)
         # the Zeroconf class, which contains the QMainLoop to receive the signals from avahi
         Zeroconf.__init__(self, name, '_ros-master._tcp', hostname,
                           masterport, domain='local', txt_array=txtArray)
@@ -862,42 +864,42 @@ class Discoverer(Zeroconf):
         return ''.join(['Discoverer: ', repr(self.masterInfo)])
 
     def on_server_running(self):
-        rospy.loginfo("Zeroconf server now running.")
+        Log.info("Zeroconf server now running.")
 
     def on_server_collision(self):
-        rospy.logfatal("Zeroconf server collision.")
+        Log.fatal("Zeroconf server collision.")
         self.collision = True
         self.finish()
         rospy.signal_shutdown("Zeroconf server collision.")
 
     def on_server_failure(self):
-        rospy.logfatal("Zeroconf server error.")
+        Log.fatal("Zeroconf server error.")
         self.finish()
         rospy.signal_shutdown("on_server_failure")
 
     def on_group_established(self):
-        rospy.logdebug("Service %s established.", self.masterInfo.name)
+        Log.debug("Service %s established.", self.masterInfo.name)
 
     def on_group_collision(self):
         if not self.isStopped():
-            rospy.logwarn(
+            Log.warn(
                 "ERROR: Service name collision. %s already exists. Retry in 3 sec...", self.masterInfo.name)
             self._removeService()
             time.sleep(3)
             self._registerService()
 
     def on_group_failure(self, error):
-        rospy.logfatal("Error in group %s: %s", self.masterInfo.name, error)
+        Log.fatal("Error in group %s: %s", self.masterInfo.name, error)
         self.finish()
         rospy.signal_shutdown("Error in group")
 
     def on_group_removed(self, name):
         if (name != self.masterInfo.name):
-            rospy.loginfo("%s group removed from zeroconf.", name)
+            Log.info("%s group removed from zeroconf.", name)
             self.masters.removeMaster(name)
 
     def on_resolve_reply(self, master_info):
-        rospy.logdebug("on_resolve_reply: %s", master_info.name)
+        Log.debug("on_resolve_reply: %s", master_info.name)
         self.masters.updateMaster(master_info)
 
     def on_service_updated(self):
@@ -925,6 +927,5 @@ class Discoverer(Zeroconf):
                 self.updateService(self.masterInfo.txt)
             return self.masterInfo
         except Exception:
-            rospy.logerr("Error while check local master: %s",
-                         traceback.format_exc())
+            Log.error("Error while check local master", traceback.format_exc())
         return None

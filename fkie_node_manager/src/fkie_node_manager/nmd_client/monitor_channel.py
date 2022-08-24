@@ -39,6 +39,7 @@ import fkie_node_manager_daemon.monitor_stub as mstub
 from fkie_node_manager_daemon import url as nmdurl
 
 from .channel_interface import ChannelInterface
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class MonitorChannel(ChannelInterface):
@@ -68,7 +69,7 @@ class MonitorChannel(ChannelInterface):
             "gmsdt_%s" % grpc_url, target=self.get_system_diagnostics, args=(grpc_url, True))
 
     def get_system_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
-        rospy.logdebug("get system diagnostics from %s" % (grpc_url))
+        Log.debug("get system diagnostics from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         vm, channel = self.get_monitor_manager(uri)
         try:
@@ -87,7 +88,7 @@ class MonitorChannel(ChannelInterface):
             "gmdt_%s" % grpc_url, target=self.get_diagnostics, args=(grpc_url, True))
 
     def get_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
-        rospy.logdebug("get diagnostics from %s" % (grpc_url))
+        Log.debug("get diagnostics from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         vm, channel = self.get_monitor_manager(uri)
         try:
@@ -103,7 +104,7 @@ class MonitorChannel(ChannelInterface):
 
     def kill_process(self, pid, grpc_url='grpc://localhost:12321'):
         if pid is not None:
-            rospy.logdebug("kill process %d on %s" % (pid, grpc_url))
+            Log.debug("kill process %d on %s" % (pid, grpc_url))
             uri, _ = nmdurl.split(grpc_url)
             vm, channel = self.get_monitor_manager(uri)
             try:
@@ -118,7 +119,7 @@ class MonitorChannel(ChannelInterface):
             "gut_%s" % grpc_url, target=self.get_user, args=(grpc_url,))
 
     def get_user(self, grpc_url='grpc://localhost:12321'):
-        rospy.logdebug("get user from %s" % (grpc_url))
+        Log.debug("get user from %s" % (grpc_url))
         uri, _ = nmdurl.split(grpc_url)
         vm, channel = self.get_monitor_manager(uri)
         user = ''

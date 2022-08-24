@@ -10,6 +10,7 @@ except ImportError:
     from rqt_reconfigure.dynreconf_client_widget import DynreconfClientWidget
 import dynamic_reconfigure.client
 import rospy
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 app = None
@@ -74,7 +75,7 @@ def main(argv=sys.argv):
         dynreconf_client = dynamic_reconfigure.client.Client(
             str(node), timeout=5.0)
     except rospy.exceptions.ROSException:
-        rospy.logerr("Could not connect to %s" % node)
+        Log.error("Could not connect to %s" % node)
         # TODO(Isaac) Needs to show err msg on GUI too.
         return
 

@@ -50,6 +50,7 @@ except ImportError as err:
 from fkie_node_manager_daemon.host import get_hostname
 from .detachable_tab_dock import DetachableTabDock
 from .screen_widget import ScreenWidget
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class ScreenDock(DetachableTabDock):
@@ -89,7 +90,7 @@ class ScreenDock(DetachableTabDock):
                 self.tab_widget.setCurrentIndex(tab_index)
                 self._nodes[(masteruri, nodename)] = sw
             else:
-                rospy.logwarn('ros log file %s not found!' % sw._logpath)
+                Log.warn('ros log file %s not found!' % sw._logpath)
                 sw.close()
         else:
             index = self.tab_widget.indexOf(self._nodes[(masteruri, nodename)])

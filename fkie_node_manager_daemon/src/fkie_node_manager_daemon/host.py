@@ -44,6 +44,7 @@ except ImportError:
 
 import rospy
 from rosgraph.network import get_local_addresses, get_local_address
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 HOSTS_CACHE = dict()
@@ -146,8 +147,8 @@ def is_local(hostname, wait=True):
         result = hostname.startswith(
             '127.') or hostname == '::1' or hostname in local_addresses
         with _LOCK:
-            rospy.logdebug("host::HOSTS_CACHE add local %s:%s" %
-                           (hostname, result))
+            Log.debug("host::HOSTS_CACHE add local %s:%s" %
+                      (hostname, result))
             HOSTS_CACHE[hostname] = result
         return result
     except socket.error:
@@ -174,7 +175,7 @@ def __is_local(hostname):
             hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
     except socket.gaierror:
         with _LOCK:
-            rospy.logdebug("host::HOSTS_CACHE resolve %s failed" % hostname)
+            Log.debug("host::HOSTS_CACHE resolve %s failed" % hostname)
             HOSTS_CACHE[hostname] = False
         return False
     local_addresses = ['localhost'] + get_local_addresses()
@@ -182,6 +183,6 @@ def __is_local(hostname):
     result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != [
     ]) or (set(machine_ips) & set(local_addresses) != set())
     with _LOCK:
-        rospy.logdebug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
+        Log.debug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
         HOSTS_CACHE[hostname] = result
     return result

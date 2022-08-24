@@ -7,6 +7,7 @@ import traceback
 
 import roslib
 import rospy
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 rospy.init_node("launch_test_node", log_level=rospy.DEBUG)
@@ -17,7 +18,7 @@ try:
 except Exception:
     # on load error the process will be killed to notify user in node_manager
     # about error
-    rospy.logwarn("%s", traceback.format_exc())
+    Log.warn("%s", traceback.format_exc())
     sys.stdout.write(traceback.format_exc())
     sys.stdout.flush()
     os.kill(os.getpid(), signal.SIGKILL)

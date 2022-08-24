@@ -40,6 +40,8 @@ import fkie_node_manager as nm
 
 from fkie_node_manager_daemon.common import interpret_path, replace_paths, utf8
 from fkie_node_manager_daemon.host import get_hostname
+from fkie_multimaster_msgs.logging.logging import Log
+
 try:
     from python_qt_binding.QtGui import QFrame, QLabel, QPushButton, QTableWidget, QTableWidgetItem
     from python_qt_binding.QtGui import QHeaderView, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
@@ -131,8 +133,8 @@ class CapabilityHeader(QHeaderView):
                 text = examples.html_body(text)
             except Exception:
                 import traceback
-                rospy.logwarn("Error while generate description for %s: %s",
-                              self._data[index]['name'], traceback.format_exc(1))
+                Log.warn("Error while generate description for %s: %s",
+                         self._data[index]['name'], traceback.format_exc(1))
             self.description_requested_signal.emit(title, text)
 
     def setDescription(self, index, cfg, name, displayed_name, robot_type, description, images):

@@ -11,6 +11,8 @@ import time
 import rospy
 
 from fkie_master_discovery.common import resolve_url
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 ROS_NODE = 'script_runner'
 
@@ -123,18 +125,18 @@ class RunThread(threading.Thread):
                 if self.spopen.popen.stderr is not None:
                     reserr = self.spopen.popen.stderr.read()
                     if reserr:
-                        rospy.logwarn(
+                        Log.warn(
                             "script returns follow exception: %s" % reserr.strip())
                     time.sleep(0.1)
             if self.spopen.popen.returncode is not None and self.spopen.popen.returncode != 0:
-                rospy.logerr("Script ends with error, code: %d" %
-                             self.spopen.popen.returncode)
+                Log.error("Script ends with error, code: %d" %
+                          self.spopen.popen.returncode)
                 os.kill(os.getpid(), signal.SIGKILL)
         except OSError as err:
-            rospy.logerr("Error while run '%s': %s" % (self._script, err))
+            Log.error("Error while run '%s': %s" % (self._script, err))
             os.kill(os.getpid(), signal.SIGKILL)
-        rospy.loginfo('script finished with code: %d' %
-                      self.spopen.popen.returncode)
+        Log.info('script finished with code: %d' %
+                 self.spopen.popen.returncode)
         rospy.signal_shutdown('script finished with code: %d' %
                               self.spopen.popen.returncode)
 
@@ -142,7 +144,7 @@ class RunThread(threading.Thread):
         self.stopped = True
         if send_sigint and self.spopen is not None:
             if self.spopen.popen.pid is not None and self.spopen.popen.returncode is None:
-                rospy.loginfo("stop process %d" % self.spopen.popen.pid)
+                Log.info("stop process %d" % self.spopen.popen.pid)
                 self.spopen.popen.send_signal(signal.SIGINT)
 
 
@@ -155,19 +157,19 @@ if __name__ == '__main__':
     try:
         param_script = rospy.get_param('~script')
     except KeyError:
-        rospy.logerr(
+        Log.error(
             "No script specified! Use ~script parameter to specify the script!")
         os.kill(os.getpid(), signal.SIGKILL)
     param_stop_script = rospy.get_param('~stop_script', '')
-    rospy.loginfo("~script: %s" % param_script)
-    rospy.loginfo("~stop_script: %s" % param_stop_script)
+    Log.info("~script: %s" % param_script)
+    Log.info("~stop_script: %s" % param_stop_script)
     runthread = RunThread(param_script)
     runthread.start()
     rospy.spin()
     # stop the script
     if param_stop_script:
         runthread.stop(False)
-        rospy.loginfo("stop using %s" % param_stop_script)
+        Log.info("stop using %s" % param_stop_script)
         stopthread = RunThread(param_stop_script)
         stopthread.start()
         stopthread.join(3)
@@ -175,14 +177,14 @@ if __name__ == '__main__':
             if stopthread.spopen.popen.stderr is not None:
                 reserr = stopthread.spopen.popen.stderr.read()
                 if reserr:
-                    rospy.logwarn(
+                    Log.warn(
                         "stop script has follow exception: %s" % reserr)
     else:
         runthread.stop()
         runthread.join(3)
     if runthread.is_alive():
-        rospy.logwarn("Script does not stop, try to kill %d..." %
-                      runthread.spopen.popen.pid)
+        Log.warn("Script does not stop, try to kill %d..." %
+                 runthread.spopen.popen.pid)
         if runthread.spopen is not None:
             runthread.spopen.popen.send_signal(signal.SIGKILL)
         if runthread.spopen is not None:

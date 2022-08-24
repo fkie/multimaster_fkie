@@ -69,12 +69,12 @@ class CrossbarBaseSession(ApplicationSession):
             self.crossbar_connect(), self.crossbar_loop)
 
     def onConnect(self):
-        #rospy.loginfo("%s: autobahn connected" % self.__class__.__name__)
+        #Log.info("%s: autobahn connected" % self.__class__.__name__)
         print(f"{self.__class__.__name__}: autobahn connected")
         self.join(self.config.realm)
 
     def onDisconnect(self):
-        #rospy.loginfo('%s: autobahn disconnected' % self.__class__.__name__)
+        #Log.info('%s: autobahn disconnected' % self.__class__.__name__)
         print(f"{self.__class__.__name__}: autobahn disconnected")
         self.crossbar_connected = False
         self.crossbar_connecting = False

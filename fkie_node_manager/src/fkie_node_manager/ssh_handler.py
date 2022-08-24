@@ -41,6 +41,8 @@ import rospy
 from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 try:
     import Cryptodome.Cipher.AES as AES
@@ -125,8 +127,8 @@ class SSHhandler(object):
                     except Exception:
                         pass
                     sftp.put(local_file, remote_file)
-                    rospy.loginfo("SSH COPY %s -> %s@%s:%s", local_file,
-                                  ssh._transport.get_username(), host, remote_file)
+                    Log.info("SSH COPY %s -> %s@%s:%s", local_file,
+                             ssh._transport.get_username(), host, remote_file)
             except AuthenticationRequest as _aerr:
                 raise
             except Exception as _err:
@@ -153,8 +155,8 @@ class SSHhandler(object):
                     host) if user is None else user, pw, True, auto_pw_request)
                 if ssh is not None:
                     cmd_str = utf8(' '.join(cmd))
-                    rospy.loginfo("REMOTE execute on %s@%s: %s",
-                                  ssh._transport.get_username(), host, cmd_str)
+                    Log.info("REMOTE execute on %s@%s: %s",
+                             ssh._transport.get_username(), host, cmd_str)
                     (stdin, stdout, stderr) = (None, None, None)
                     if get_pty:
                         (stdin, stdout, stderr) = ssh.exec_command(
@@ -208,7 +210,7 @@ class SSHhandler(object):
                         [ssh_str, ' '.join(cmd)], title)
                 else:
                     cmd_str = utf8(' '.join([ssh_str, ' '.join(cmd)]))
-                rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
+                Log.info("REMOTE x11 execute on %s: %s", host, cmd_str)
                 return SupervisedPopen(shlex.split(cmd_str), object_id=utf8(title), description="REMOTE x11 execute on %s: %s" % (host, cmd_str))
             except Exception:
                 raise
@@ -246,7 +248,7 @@ class SSHhandler(object):
                         else:
                             raise AuthenticationRequest(user, host, utf8(e))
                     else:
-                        rospy.logwarn(
+                        Log.warn(
                             "ssh connection to %s failed: %s", host, utf8(e))
                         raise Exception(
                             ' '.join(["ssh connection to", host, "failed:", utf8(e)]))

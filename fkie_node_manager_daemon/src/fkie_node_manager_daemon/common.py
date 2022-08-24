@@ -40,6 +40,8 @@ import rospy
 import roslib
 import rospkg
 from xml.dom import minidom
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
@@ -270,13 +272,13 @@ def interpret_path(path, pwd='.'):
             print("PKGNAME", pkg_name)
             if pkg_name:
                 pkg = get_pkg_path(pkg_name)
-                rospy.logdebug(
+                Log.debug(
                     "rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))
                 path_suffix = path[groups.end():].rstrip("'")
                 if path_suffix.startswith('/'):
                     paths = roslib.packages._find_resource(
                         pkg, path_suffix.strip(os.path.sep))
-                    rospy.logdebug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (
+                    Log.debug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (
                         path_suffix.strip(os.path.sep), paths))
                     if len(paths) > 0:
                         # if more then one launch file is found, take the first one
@@ -296,7 +298,7 @@ def interpret_path(path, pwd='.'):
                                 return paths[0]
                         except Exception:
                             import traceback
-                            rospy.logwarn(
+                            Log.warn(
                                 "search in install/devel space failed: %s" % traceback.format_exc())
                     return full_path
                 else:
@@ -352,7 +354,7 @@ def get_internal_args(content, path=None, only_default=False):
                         resolve_args_intern[aname] = aval
     except Exception as err:
         print("%s while get_internal_args %s" % (utf8(err), path))
-        rospy.logdebug("%s while get_internal_args %s" % (utf8(err), path))
+        Log.debug("%s while get_internal_args %s" % (utf8(err), path))
     return resolve_args_intern
 
 
@@ -378,7 +380,7 @@ def replace_internal_args(content, resolve_args={}, path=None):
     except Exception as err:
         print("%s in %s" % (utf8(err), path))
         import traceback
-        rospy.logdebug("%s in %s" % (traceback.format_exc(), path))
+        Log.debug("%s in %s" % (traceback.format_exc(), path))
     return replaced, new_content, resolve_args_intern
 
 
@@ -441,7 +443,7 @@ def __get_include_args(content, resolve_args):
                     included_files.append((filename, resolved_inc_args))
     except Exception as err:
         print("__get_include_args reports: %s" % utf8(err))
-        rospy.logdebug(utf8(err))
+        Log.debug(utf8(err))
     return included_files
 
 
@@ -523,7 +525,7 @@ def find_included_files(string,
                         filename = replace_arg(filename, resolve_args_intern)
                         filename = interpret_path(filename, pwd)
                     except Exception as err:
-                        rospy.logwarn("Interpret file failed: %s" % utf8(err))
+                        Log.warn("Interpret file failed: %s" % utf8(err))
                     if os.path.isdir(filename):
                         filename = ''
                     exists = os.path.isfile(filename)
@@ -553,10 +555,10 @@ def find_included_files(string,
                                                 res_item.inc_path)
                                             yield res_item
                             except Exception as e:
-                                rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (
+                                Log.warn("Error while recursive search for include pattern in %s: %s" % (
                                     filename, utf8(e)))
                 except Exception as e:
-                    rospy.logwarn("Error while parse %s for include pattern: %s" % (
+                    Log.warn("Error while parse %s for include pattern: %s" % (
                         content_info, utf8(e)))
 
 

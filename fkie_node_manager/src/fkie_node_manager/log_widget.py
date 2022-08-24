@@ -49,6 +49,7 @@ except ImportError as err:
 from fkie_node_manager_daemon.common import utf8
 from .rosout_listener import RosoutListener
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class LogWidget(QDockWidget):
@@ -112,7 +113,7 @@ class LogWidget(QDockWidget):
             except rospy.ServiceException as e:
                 err_msg = "Service call '%s' failed: %s" % (
                     service_name, utf8(e))
-                rospy.logwarn(err_msg)
+                Log.warn(err_msg)
         self.checkBox_debug.stateChanged.connect(
             self._on_checkbox_debug_state_changed)
 
@@ -126,7 +127,7 @@ class LogWidget(QDockWidget):
             _resp = log_level_srvs(msg)
         except rospy.ServiceException as e:
             err_msg = "Service call '%s' failed: %s" % (service_name, utf8(e))
-            rospy.logwarn(err_msg)
+            Log.warn(err_msg)
 
     def count(self):
         '''

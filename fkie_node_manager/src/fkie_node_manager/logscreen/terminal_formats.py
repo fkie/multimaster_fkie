@@ -34,6 +34,7 @@
 
 from python_qt_binding.QtCore import QRegExp, Qt, QObject
 from python_qt_binding.QtGui import QColor, QFont, QFontDatabase, QTextCharFormat, QTextCursor
+from fkie_multimaster_msgs.logging.logging import Log
 
 import re
 import rospy
@@ -211,7 +212,7 @@ class TerminalFormats(QObject):
                     self._update_format(
                         current_char_format, self.formats[code], font_helper=font_helper)
                 except Exception as err:
-                    rospy.logwarn(
+                    Log.warn(
                         "Failed update format for ANSI_escape_code %d: %s" % (code, err))
             cidx = match.end()
         cursor.insertText(text[cidx:], current_char_format)

@@ -38,6 +38,7 @@ import time
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from fkie_node_manager_daemon.common import utf8
 from .sensor_interface import SensorInterface
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class CpuTemperatur(SensorInterface):
@@ -81,6 +82,6 @@ class CpuTemperatur(SensorInterface):
         except Exception as error:
             import traceback
             print(traceback.format_exc())
-            rospy.logwarn(
+            Log.warn(
                 "Sensor temperatures are not checked because of error: %s" % utf8(error))
             self._interval = 0

@@ -3,6 +3,8 @@ import json
 import os
 import subprocess
 import shutil
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 CROSSBAR_PATH = os.path.join(os.path.join(
     os.path.expanduser('~'), 'tmp'), '.crossbar')
@@ -86,7 +88,7 @@ def crossbar_start_server(port: int) -> str:
     if shutil.which('crossbar') is None:
         try:
             import rospy
-            rospy.logerr(
+            Log.error(
                 "shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
         except:
             import sys

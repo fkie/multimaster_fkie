@@ -36,6 +36,7 @@ import rospy
 
 import fkie_node_manager_daemon.remote as remote
 from .thread_manager import ThreadManager
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class ChannelInterface(QObject):
@@ -57,7 +58,7 @@ class ChannelInterface(QObject):
 
     def close_channel(self, channel, uri):
         if channel is not None:
-            rospy.logdebug("close channel to %s" % uri)
+            Log.debug("close channel to %s" % uri)
             channel.close()
 
     def clear_cache(self, grpc_path=''):

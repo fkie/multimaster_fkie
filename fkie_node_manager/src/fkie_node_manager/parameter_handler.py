@@ -38,6 +38,7 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
+from fkie_multimaster_msgs.logging.logging import Log
 
 import rospy
 
@@ -199,7 +200,7 @@ class RequestListThread(QObject, threading.Thread):
                 import traceback
                 err_msg = "Error while retrieve the parameter list from %s: %s" % (
                     self._masteruri, traceback.format_exc(1))
-                rospy.logwarn(err_msg)
+                Log.warn(err_msg)
 #        lines = traceback.format_exc(1).splitlines()
                 self.parameter_list_signal.emit(
                     self._masteruri, -1, err_msg, [])
@@ -240,7 +241,7 @@ class RequestValuesThread(QObject, threading.Thread):
             except Exception:
                 import traceback
 #        err_msg = "Error while retrieve parameter values from %s: %s"%(self._masteruri, traceback.format_exc(1))
-#        rospy.logwarn(err_msg)
+#        Log.warn(err_msg)
 #        lines = traceback.format_exc(1).splitlines()
                 self.parameter_values_signal.emit(
                     self._masteruri, -1, traceback.format_exc(1), result)
@@ -288,6 +289,6 @@ class DeliverValuesThread(QObject, threading.Thread):
                 import traceback
                 err_msg = "Error while deliver parameter values to %s: %s" % (
                     self._masteruri, traceback.format_exc(1))
-                rospy.logwarn(err_msg)
+                Log.warn(err_msg)
 #        lines = traceback.format_exc(1).splitlines()
                 self.result_signal.emit(self._masteruri, -1, err_msg, result)

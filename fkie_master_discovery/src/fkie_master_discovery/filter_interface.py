@@ -37,6 +37,7 @@ import rospy
 
 from .common import create_pattern, gen_pattern, is_empty_pattern, EMPTY_PATTERN
 from .common import get_ros_param, resolve_url, read_interface
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class FilterInterface(object):
@@ -197,8 +198,8 @@ class FilterInterface(object):
         :note: If the filter object is not initialized by load() or from_list() the
               returned value is `False`
         '''
-        rospy.logwarn("Call to deprecated method 'is_ignored_topic'. Please use"
-                      "'is_ignored_subscriber' and 'is_ignored_publisher' instead")
+        Log.warn("Call to deprecated method 'is_ignored_topic'",
+                 "Please use 'is_ignored_subscriber' and 'is_ignored_publisher' instead")
         self._is_ignored_topic(node, topic, topictype)
 
     def _is_ignored_topic(self, node, topic, topictype):

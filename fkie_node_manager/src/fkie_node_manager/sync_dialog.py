@@ -51,6 +51,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class SyncHighlighter(YamlHighlighter):
@@ -465,7 +466,7 @@ class InterfacesThread(QObject, threading.Thread):
         except Exception:
             import traceback
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn(
+            Log.warn(
                 "Error while list sync interfaces:\n\t%s", formatted_lines[-1])
 
     def _get_interfaces(self, path, package=None):

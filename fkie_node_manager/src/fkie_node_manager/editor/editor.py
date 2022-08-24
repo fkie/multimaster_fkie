@@ -52,6 +52,8 @@ from .graph_view import GraphViewWidget
 from .text_edit import TextEdit
 from .text_search_frame import TextSearchFrame
 from .text_search_thread import TextSearchThread
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 try:
     from python_qt_binding.QtGui import QApplication, QAction, QLineEdit, QDockWidget, QWidget, QMainWindow
@@ -434,7 +436,7 @@ class Editor(QMainWindow):
                 except Exception:
                     pass
                 # TODO: put all text of all tabs into path_text
-                rospy.logdebug("serach for '%s'" % search_text)
+                Log.debug("serach for '%s'" % search_text)
                 self._search_node_count = 0
                 self._search_thread = TextSearchThread(
                     search_text, filename, recursive=True, only_launch=only_launch, count_results=count_results)
@@ -456,7 +458,7 @@ class Editor(QMainWindow):
             import traceback
             msg = "Error while open %s: %s" % (
                 filename, traceback.format_exc())
-            rospy.logwarn(msg)
+            Log.warn(msg)
             MessageBox.critical(self, "Error", utf8(err), msg)
             if self.tabWidget.count() == 0:
                 self.close()
@@ -540,8 +542,8 @@ class Editor(QMainWindow):
             self._last_search_request = None
         except Exception:
             import traceback
-            rospy.logwarn("Error while close tab %s: %s",
-                          str(tab_index), traceback.format_exc(1))
+            Log.warn("Error while close tab %s: %s",
+                     str(tab_index), traceback.format_exc(1))
         self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def reject(self):
@@ -620,7 +622,7 @@ class Editor(QMainWindow):
     def _on_new_packages(self, url):
         try:
             if nmdurl.nmduri_from_path(url) == nmdurl.nmduri_from_path(self.tabWidget.currentWidget().filename):
-                rospy.logdebug("packages updated, rebuild graph")
+                Log.debug("packages updated, rebuild graph")
                 if self.graph_view.has_none_packages:
                     self.graph_view.clear_cache()
         except Exception:
@@ -661,7 +663,7 @@ class Editor(QMainWindow):
         saved, errors, msg = self.tabWidget.currentWidget().save()
         if errors:
             if msg:
-                rospy.logwarn(msg)
+                Log.warn(msg)
                 MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(
                     self.tabWidget.currentWidget().filename), detailed_text=msg)
             self.tabWidget.setTabIcon(

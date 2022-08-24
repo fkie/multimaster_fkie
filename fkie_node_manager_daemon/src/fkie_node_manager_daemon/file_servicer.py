@@ -53,6 +53,8 @@ from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.file_interface import RosPackage
 from fkie_multimaster_msgs.crossbar.file_interface import PathItem
 from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
+from fkie_multimaster_msgs.logging.logging import Log
+
 from .screen import get_logfile
 from .screen import get_ros_logfile
 
@@ -83,7 +85,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
     FILE_CHUNK_SIZE = 1024
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
-        rospy.loginfo("Create file manger servicer")
+        Log.info("Create file manger servicer")
         fms_grpc.FileServiceServicer.__init__(self)
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self.DIR_CACHE = {}
@@ -91,11 +93,11 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         self._peers = {}
 
 #     def _terminated(self):
-#         rospy.loginfo("terminated context")
+#         Log.info("terminated context")
 #
 #     def _register_callback(self, context):
 #         if (context.peer() not in self._peers):
-#             rospy.loginfo("Add callback to peer context @%s" % context.peer())
+#             Log.info("Add callback to peer context @%s" % context.peer())
 #             if context.add_callback(self._terminated):
 #                 pass
 #                 # self._peers[context.peer()] = context
@@ -370,7 +372,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
     @wamp.register('ros.path.get_list')
     def getPathList(self, inputPath: str) -> List[PathItem]:
-        rospy.loginfo('Request to [ros.path.get_list] for %s' % inputPath)
+        Log.info('Request to [ros.path.get_list] for %s' % inputPath)
         path_list: List[PathItem] = []
         # list the path
         dirlist = os.listdir(inputPath)
@@ -399,7 +401,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
     @wamp.register('ros.path.get_list_recursive')
     def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
-        rospy.loginfo(
+        Log.info(
             'Request to [ros.path.get_list_recursive] for %s' % inputPath)
         path_list: List[PathItem] = []
 
@@ -438,7 +440,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 import rospkg
                 substitution_args._rospack = rospkg.RosPack()
             except Exception as err:
-                rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
+                Log.warn("Cannot reset package cache: %s" % utf8(err))
         result = fms.ListPackagesReply()
         try:
             # fill the input fields
@@ -457,7 +459,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
     @wamp.register('ros.packages.get_list')
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
-        rospy.loginfo('Request to [ros.packages.get_list]')
+        Log.info('Request to [ros.packages.get_list]')
         clear_cache = False
         if clear_cache:
             try:
@@ -465,7 +467,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 import rospkg
                 substitution_args._rospack = rospkg.RosPack()
             except Exception as err:
-                rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
+                Log.warn("Cannot reset package cache: %s" % utf8(err))
         package_list: List[RosPackage] = []
         # fill the input fields
         root_paths = [os.path.normpath(p) for p in os.getenv(
@@ -479,7 +481,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
     @wamp.register('ros.path.get_log_paths')
     def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
-        rospy.loginfo('Request to [ros.path.get_log_paths] for %s' % nodes)
+        Log.info('Request to [ros.path.get_log_paths] for %s' % nodes)
         result = []
         for node in nodes:
             screen_log = get_logfile(node=node, for_new_screen=True)

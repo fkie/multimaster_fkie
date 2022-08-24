@@ -52,6 +52,7 @@ import rospy
 
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 def _convert_getattr(val, f, t):
@@ -415,8 +416,8 @@ class EchoDialog(QDialog):
                 self.topicControlButton.setIcon(
                     nm.settings().icon('sekkyumu_play.png'))
         except Exception as e:
-            rospy.logwarn('Error while stop/play echo for topic %s: %s' %
-                          (self.topic, utf8(e)))
+            Log.warn('Error while stop/play echo for topic %s: %s' %
+                     (self.topic, utf8(e)))
 
     def _msg_handle(self, data):
         self.msg_signal.emit(

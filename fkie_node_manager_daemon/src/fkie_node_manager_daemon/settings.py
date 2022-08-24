@@ -37,6 +37,8 @@ import ruamel.yaml
 import threading
 
 from .common import utf8
+from fkie_multimaster_msgs.logging.logging import Log
+
 
 GRPC_TIMEOUT = 15.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
@@ -135,7 +137,7 @@ class Settings:
             else:
                 result = value
         except Exception as exc:
-            rospy.logdebug("Cant't get parameter '%s', full parameter path: '%s'" % (
+            Log.debug("Cant't get parameter '%s', full parameter path: '%s'" % (
                 utf8(exc), param_name))
         return result
 
@@ -181,7 +183,7 @@ class Settings:
             if changed:
                 self.save()
         except Exception as exc:
-            rospy.logdebug("Cant't set parameter '%s', full parameter path: '%s'" % (
+            Log.debug("Cant't set parameter '%s', full parameter path: '%s'" % (
                 utf8(exc), param_name))
 
     def reload(self):
@@ -196,15 +198,15 @@ class Settings:
                     result = ruamel.yaml.load(
                         stream, Loader=ruamel.yaml.Loader)
                     if result is None:
-                        rospy.loginfo('reset configuration file %s' %
-                                      self.filename)
+                        Log.info('reset configuration file %s' %
+                                 self.filename)
                         self.save()
                     else:
-                        rospy.loginfo(
+                        Log.info(
                             'loaded configuration from %s' % self.filename)
                         self._cfg = self._apply_recursive(result, self._cfg)
             except (ruamel.yaml.YAMLError, IOError) as exc:
-                rospy.loginfo('%s: use default configuration!' % utf8(exc))
+                Log.info('%s: use default configuration!' % utf8(exc))
                 self._cfg = self.default()
             self._notify_reload_callbacks()
 
@@ -216,9 +218,9 @@ class Settings:
             try:
                 ruamel.yaml.dump(self._cfg, stream,
                                  Dumper=ruamel.yaml.RoundTripDumper)
-                rospy.logdebug("Configuration saved to '%s'" % self.filename)
+                Log.debug("Configuration saved to '%s'" % self.filename)
             except ruamel.yaml.YAMLError as exc:
-                rospy.logwarn("Cant't save configuration to '%s': %s" % (
+                Log.warn("Cant't save configuration to '%s': %s" % (
                     self.filename, utf8(exc)))
 
     def yaml(self, _nslist=[]):
@@ -242,10 +244,10 @@ class Settings:
                 data, Loader=ruamel.yaml.Loader), self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
-                rospy.loginfo("Reset configuration requested!")
+                Log.info("Reset configuration requested!")
                 self._cfg = self.default()
             else:
-                rospy.logdebug("new configuration applied, save now.")
+                Log.debug("new configuration applied, save now.")
             self.save()
             self._notify_reload_callbacks()
 

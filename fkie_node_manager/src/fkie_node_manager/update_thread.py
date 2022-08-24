@@ -45,6 +45,7 @@ import rospy
 
 from fkie_master_discovery.master_info import MasterInfo
 from fkie_node_manager_daemon.common import utf8
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class UpdateThread(QObject, threading.Thread):
@@ -110,7 +111,7 @@ class UpdateThread(QObject, threading.Thread):
                 muri, errors = remote_monitor.masterErrors()
                 self.master_errors_signal.emit(muri, errors)
             except xmlrpcclient.Fault as _err:
-                rospy.logwarn(
+                Log.warn(
                     "Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
             # get the time difference
             try:
@@ -119,14 +120,14 @@ class UpdateThread(QObject, threading.Thread):
                 self.timediff_signal.emit(
                     muri, remote_ts - myts - (time.time() - myts) / 2.0)
             except xmlrpcclient.Fault as _errts:
-                rospy.logwarn(
+                Log.warn(
                     "Older master_discovery on %s detected. It does not support getCurrentTime!" % self._masteruri)
             # get the user name
             try:
                 muri, username = remote_monitor.getUser()
                 self.username_signal.emit(muri, username)
             except xmlrpcclient.Fault as _errts:
-                rospy.logwarn(
+                Log.warn(
                     "Older master_discovery on %s detected. It does not support getUser!" % self._masteruri)
             # now get master info from master discovery
             remote_info = remote_monitor.masterInfo()
@@ -138,7 +139,7 @@ class UpdateThread(QObject, threading.Thread):
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Cannot update ROS state, connection to %s failed:\n\t%s", utf8(
+            Log.warn("Cannot update ROS state, connection to %s failed:\n\t%s", utf8(
                 self._monitoruri), formatted_lines[-1])
             # 'print "request failed", self._monitoruri
             self.error_signal.emit(self._masteruri, formatted_lines[-1])
